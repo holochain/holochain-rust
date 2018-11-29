@@ -6,9 +6,11 @@ pub mod entry_types;
 use crate::{
     dna::wasm::DnaWasm, entry::entry_type::EntryType, error::HolochainError, json::JsonString,
 };
-use dna::zome::entry_types::EntryTypeDef;
-use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
+use dna::zome::entry_types::serialize_entry_types;
+use dna::zome::entry_types::deserialize_entry_types;
+use serde::Deserialize;
 use std::collections::BTreeMap;
+use dna::zome::entry_types::EntryTypeDef;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -48,34 +50,8 @@ impl Config {
     }
 }
 
-fn serialize_entry_types<S>(
-    entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let mut map = serializer.serialize_map(Some(entry_types.len()))?;
-    for (k, v) in entry_types {
-        map.serialize_entry(&String::from(k.to_owned()), &v)?;
-    }
-    map.end()
-}
-
-fn deserialize_entry_types<'de, D>(
-    deserializer: D,
-) -> Result<(BTreeMap<EntryType, entry_types::EntryTypeDef>), D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let serialized_entry_types = BTreeMap::<String, EntryTypeDef>::deserialize(deserializer)?;
-
-    let mut map = BTreeMap::new();
-    for (k, v) in serialized_entry_types {
-        map.insert(EntryType::from(k), v);
-    }
-    Ok(map)
-}
+pub type ZomeEntryTypes = BTreeMap<EntryType, EntryTypeDef>;
+pub type ZomeCapabilities = BTreeMap<String, capabilities::Capability>;
 
 /// Represents an individual "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
@@ -94,11 +70,11 @@ pub struct Zome {
     #[serde(default)]
     #[serde(serialize_with = "serialize_entry_types")]
     #[serde(deserialize_with = "deserialize_entry_types")]
-    pub entry_types: BTreeMap<EntryType, entry_types::EntryTypeDef>,
+    pub entry_types: ZomeEntryTypes,
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
-    pub capabilities: BTreeMap<String, capabilities::Capability>,
+    pub capabilities: ZomeCapabilities,
 
     /// Validation code for this entry_type.
     #[serde(default)]
@@ -145,6 +121,7 @@ pub mod tests {
     use crate::dna::zome::Zome;
     use serde_json;
     use std::{collections::BTreeMap, convert::TryFrom};
+    use crate::dna::zome::entry_types::EntryTypeDef;
 
     pub fn test_zome() -> Zome {
         Zome::default()

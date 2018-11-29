@@ -2,6 +2,13 @@
 
 use error::HolochainError;
 use json::JsonString;
+use std::collections::BTreeMap;
+use entry::entry_type::EntryType;
+use serde::Deserializer;
+use serde::Serializer;
+use serde::ser::SerializeMap;
+use serde::Deserialize;
+use dna::zome::ZomeEntryTypes;
 
 /// Enum for Zome EntryType "sharing" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -89,6 +96,35 @@ impl LinkedFrom {
     pub fn new() -> Self {
         Default::default()
     }
+}
+
+pub fn serialize_entry_types<S>(
+    entry_types: &ZomeEntryTypes,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut map = serializer.serialize_map(Some(entry_types.len()))?;
+    for (k, v) in entry_types {
+        map.serialize_entry(&String::from(k.to_owned()), &v)?;
+    }
+    map.end()
+}
+
+pub fn deserialize_entry_types<'de, D>(
+    deserializer: D,
+) -> Result<(ZomeEntryTypes), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let serialized_entry_types = BTreeMap::<String, EntryTypeDef>::deserialize(deserializer)?;
+
+    let mut map = BTreeMap::new();
+    for (k, v) in serialized_entry_types {
+        map.insert(EntryType::from(k), v);
+    }
+    Ok(map)
 }
 
 /// Represents an individual object in the "zome" "entry_types" array.

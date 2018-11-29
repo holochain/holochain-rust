@@ -171,7 +171,7 @@ macro_rules! define_zome {
 
         #[no_mangle]
         #[allow(unused_imports)]
-        pub fn __list_capabilities() -> HashMap<String, Capability> {
+        pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
 
             use $crate::holochain_core_types::dna::zome::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
             use std::collections::HashMap;

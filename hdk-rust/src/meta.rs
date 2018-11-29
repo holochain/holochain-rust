@@ -1,6 +1,5 @@
 use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::{
-    dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
     entry::entry_type::{AppEntryType, EntryType},
     error::HolochainError,
     json::JsonString,
@@ -12,15 +11,25 @@ use holochain_wasm_utils::{
     holochain_core_types::error::RibosomeErrorCode,
     memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
-use std::collections::HashMap;
 use holochain_core_types::dna::zome::entry_types::serialize_entry_types;
 use holochain_core_types::dna::zome::entry_types::deserialize_entry_types;
+use holochain_core_types::dna::zome::ZomeEntryTypes;
+use holochain_core_types::dna::zome::ZomeCapabilities;
+use std::collections::BTreeMap;
 
 
 use crate::api::debug;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
+}
+
+#[derive(Debug, Serialize, Deserialize, DefaultJson, Default)]
+struct PartialZome {
+    #[serde(serialize_with = "serialize_entry_types")]
+    #[serde(deserialize_with = "deserialize_entry_types")]
+    entry_types: ZomeEntryTypes,
+    capabilities: ZomeCapabilities,
 }
 
 #[allow(improper_ctypes)]
@@ -44,7 +53,7 @@ impl ZomeDefinition {
 #[allow(improper_ctypes)]
 extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
-    fn __list_capabilities() -> HashMap<String, Capability>;
+    fn __list_capabilities() -> ZomeCapabilities;
 }
 
 #[no_mangle]
@@ -114,14 +123,6 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
             }
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, DefaultJson, Default)]
-struct PartialZome {
-    #[serde(serialize_with = "serialize_entry_types")]
-    #[serde(deserialize_with = "deserialize_entry_types")]
-    entry_types: HashMap<EntryType, EntryTypeDef>,
-    capabilities: HashMap<String, Capability>,
 }
 
 #[no_mangle]
@@ -211,7 +212,7 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
         zome_setup(&mut zd);
     }
 
-    let mut entry_types = HashMap::new();
+    let mut entry_types = BTreeMap::new();
     for validating_entry_type in zd.entry_types {
         entry_types.insert(
             validating_entry_type.name,
@@ -244,20 +245,20 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
 #[cfg(test)]
 pub mod tests {
     use crate::{self as hdk};
-    use holochain_core_types::dna::zome::capabilities::Capability;
-    use std::collections::HashMap;
     use meta::PartialZome;
     use holochain_core_types::error::HolochainError;
     use holochain_core_types::json::JsonString;
     use crate::ValidationPackageDefinition;
     use holochain_core_types::dna::zome::entry_types::Sharing;
+    use std::collections::BTreeMap;
+    use holochain_core_types::dna::zome::ZomeCapabilities;
 
     // Adding empty zome_setup() so that the cfg(test) build can link.
     #[no_mangle]
     pub fn zome_setup(_: &mut super::ZomeDefinition) {}
     #[no_mangle]
-    pub fn __list_capabilities() -> HashMap<String, Capability> {
-        HashMap::new()
+    pub fn __list_capabilities() -> ZomeCapabilities {
+        BTreeMap::new()
     }
 
     #[test]
@@ -268,7 +269,7 @@ pub mod tests {
             date_created: String,
         }
 
-        let mut entry_types = HashMap::new();
+        let mut entry_types = BTreeMap::new();
 
         let validating_entry_type = entry!(
             name: "post",
@@ -296,7 +297,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from(""),
+            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{}}"),
         );
     }
 }

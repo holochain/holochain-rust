@@ -1,5 +1,5 @@
-pub mod entry_type;
 pub mod deletion_entry;
+pub mod entry_type;
 
 use crate::{
     cas::content::{Address, AddressableContent, Content},

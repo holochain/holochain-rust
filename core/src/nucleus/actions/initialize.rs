@@ -44,72 +44,72 @@ pub async fn initialize_application(
 
     let context_clone = context.clone();
 
-        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        dispatch_action_and_wait(
-            &context_clone.action_channel,
-            &context_clone.observer_channel,
-            action_wrapper.clone(),
-        );
+    let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
+    dispatch_action_and_wait(
+        &context_clone.action_channel,
+        &context_clone.observer_channel,
+        action_wrapper.clone(),
+    );
 
-        // Commit DNA to chain
-        let dna_entry = dna.to_entry();
+    // Commit DNA to chain
+    let dna_entry = dna.to_entry();
     let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
         // Let initialization fail if DNA could not be committed.
         // Currently this cannot happen since ToEntry for Dna always creates
         // an entry from a Dna object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
-                context_clone
-                    .action_channel
-                    .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                        Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
-                    )))
-                    .expect("Action channel not usable in initialize_application()");
-        return Err(HolochainError::new("error committing DNA"));
-        }
-
-        // Commit AgentId to chain
-        let agent_id_entry = context_clone.agent.to_entry();
-    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone,));
-
-        // Let initialization fail if AgentId could not be committed.
-        // Currently this cannot happen since ToEntry for Agent always creates
-        // an entry from an Agent object. So I can't create a test for the code below.
-        // Hence skipping it for codecov for now but leaving it in for resilience.
-
-            if agent_id_commit.is_err() {
-                context_clone
-                    .action_channel
-                    .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                        Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
-                    )))
-                    .expect("Action channel not usable in initialize_application()");
-        return Err(HolochainError::new("error committing Agent"));
-        }
-
-        // map genesis across every zome
-        let results: Vec<_> = dna
-            .zomes
-            .keys()
-            .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
-            .collect();
-
-        let fail_result = results.iter().find(|ref r| match r {
-            CallbackResult::Fail(_) => true,
-            _ => false,
-        });
-
-        let maybe_error = fail_result.and_then(|result| match result {
-            CallbackResult::Fail(error_string) => Some(error_string.clone()),
-            _ => None,
-        });
-
         context_clone
             .action_channel
             .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                maybe_error,
+                Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
             )))
             .expect("Action channel not usable in initialize_application()");
+        return Err(HolochainError::new("error committing DNA"));
+    }
+
+    // Commit AgentId to chain
+    let agent_id_entry = context_clone.agent.to_entry();
+    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone,));
+
+    // Let initialization fail if AgentId could not be committed.
+    // Currently this cannot happen since ToEntry for Agent always creates
+    // an entry from an Agent object. So I can't create a test for the code below.
+    // Hence skipping it for codecov for now but leaving it in for resilience.
+
+    if agent_id_commit.is_err() {
+        context_clone
+            .action_channel
+            .send(ActionWrapper::new(Action::ReturnInitializationResult(
+                Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
+            )))
+            .expect("Action channel not usable in initialize_application()");
+        return Err(HolochainError::new("error committing Agent"));
+    }
+
+    // map genesis across every zome
+    let results: Vec<_> = dna
+        .zomes
+        .keys()
+        .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
+        .collect();
+
+    let fail_result = results.iter().find(|ref r| match r {
+        CallbackResult::Fail(_) => true,
+        _ => false,
+    });
+
+    let maybe_error = fail_result.and_then(|result| match result {
+        CallbackResult::Fail(error_string) => Some(error_string.clone()),
+        _ => None,
+    });
+
+    context_clone
+        .action_channel
+        .send(ActionWrapper::new(Action::ReturnInitializationResult(
+            maybe_error,
+        )))
+        .expect("Action channel not usable in initialize_application()");
 
     await!(InitializationFuture {
         context: context.clone(),

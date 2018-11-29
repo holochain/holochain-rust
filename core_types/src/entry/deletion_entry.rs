@@ -17,7 +17,9 @@ pub struct DeletionEntry {
 
 impl DeletionEntry {
     pub fn new(deleted_entry_address: Address) -> Self {
-        DeletionEntry { deleted_entry_address }
+        DeletionEntry {
+            deleted_entry_address,
+        }
     }
 
     pub fn deleted_entry_address(self) -> Address {
@@ -43,12 +45,12 @@ impl ToEntry for DeletionEntry {
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use crate::{
         cas::content::AddressableContent,
         entry::{test_entry_a, Entry, ToEntry},
         json::JsonString,
     };
-    use super::*;
 
     pub fn test_deletion_entry() -> DeletionEntry {
         let entry = test_entry_a();
@@ -57,8 +59,10 @@ pub mod tests {
 
     #[test]
     fn deletion_smoke_test() {
-        assert_eq!(test_entry_a().address(),
-                   test_deletion_entry().deleted_entry_address());
+        assert_eq!(
+            test_entry_a().address(),
+            test_deletion_entry().deleted_entry_address()
+        );
     }
 
     #[test]

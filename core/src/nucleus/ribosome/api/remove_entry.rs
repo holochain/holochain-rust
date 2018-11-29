@@ -1,6 +1,6 @@
 use crate::{
-    dht::actions::remove_entry::remove_entry,
     agent::actions::commit::commit_entry,
+    dht::actions::remove_entry::remove_entry,
     nucleus::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
@@ -12,7 +12,7 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    entry::{ToEntry, deletion_entry::DeletionEntry},
+    entry::{deletion_entry::DeletionEntry, ToEntry},
     error::HolochainError,
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
@@ -56,19 +56,14 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 validate_entry(deletion_entry.clone(), validation_data, &runtime.context)
             })
             // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| {
-                commit_entry(
-                    deletion_entry.clone(),
-                    None,
-                    &runtime.context,
-                )
-            })
+            .and_then(|_| commit_entry(deletion_entry.clone(), None, &runtime.context))
             // 4. Remove the entry in DHT metadata
             .and_then(|_| {
                 remove_entry(
                     &runtime.context,
                     &runtime.context.action_channel,
-                    deleted_entry_address)
+                    deleted_entry_address,
+                )
             }),
     );
     // Done

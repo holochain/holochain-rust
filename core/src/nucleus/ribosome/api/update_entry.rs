@@ -68,13 +68,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 validate_entry(entry.clone(), validation_data, &runtime.context)
             })
             // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| {
-                commit_entry(
-                    entry.clone(),
-                    Some(chain_header_address),
-                    &runtime.context,
-                )
-            })
+            .and_then(|_| commit_entry(entry.clone(), Some(chain_header_address), &runtime.context))
             // 4. Update the entry in DHT metadata
             .and_then(|new_address| {
                 update_entry(

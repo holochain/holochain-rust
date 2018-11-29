@@ -172,7 +172,6 @@ pub(crate) fn reduce_add_link(
     Some(new_store)
 }
 
-
 //
 pub(crate) fn reduce_update_entry(
     context: Arc<Context>,
@@ -188,28 +187,28 @@ pub(crate) fn reduce_update_entry(
     if !(*content_storage.read().unwrap())
         .contains(&old_address)
         .unwrap()
-        {
-            new_store.actions_mut().insert(
-                action_wrapper.clone(),
-                Err(HolochainError::ErrorGeneric(String::from(
-                    "old_entry is not present in DHT's CAS",
-                ))),
-            );
-            return Some(new_store);
-        }
+    {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "old_entry is not present in DHT's CAS",
+            ))),
+        );
+        return Some(new_store);
+    }
     //  pre-condition: Must already have new_entry in local content_storage
     if !(*content_storage.read().unwrap())
         .contains(&new_address)
         .unwrap()
-        {
-            new_store.actions_mut().insert(
-                action_wrapper.clone(),
-                Err(HolochainError::ErrorGeneric(String::from(
-                    "new_entry is not present in DHT's CAS",
-                ))),
-            );
-            return Some(new_store);
-        }
+    {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "new_entry is not present in DHT's CAS",
+            ))),
+        );
+        return Some(new_store);
+    }
     // pre-condition: old_entry's latest version must have LIVE crud-status
     // get latest entry
     let mut entry_result = GetEntryResult::new();
@@ -426,7 +425,7 @@ pub mod tests {
             &store.dht(),
             &ActionWrapper::new(Action::Hold(sys_entry.clone())),
         )
-            .expect("there should be a new store for committing a sys entry");
+        .expect("there should be a new store for committing a sys entry");
 
         assert_eq!(
             Some(sys_entry.clone()),

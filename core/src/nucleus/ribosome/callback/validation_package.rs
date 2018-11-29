@@ -12,9 +12,9 @@ use crate::{
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry, ToEntry},
     error::HolochainError,
+    json::JsonString,
     link::link_add::LinkAddEntry,
     validation::ValidationPackageDefinition,
-    json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
 use std::{convert::TryFrom, sync::Arc};
@@ -85,10 +85,8 @@ pub fn get_validation_package_definition(
                 &call,
                 Some(call.parameters.into_bytes()),
             )?
-        },
-        EntryType::Delete => {
-            JsonString::from(ValidationPackageDefinition::ChainFull)
-        },
+        }
+        EntryType::Delete => JsonString::from(ValidationPackageDefinition::ChainFull),
         _ => Err(HolochainError::NotImplemented)?,
     };
 

@@ -64,6 +64,10 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
     loop {
         let readline = rl.readline(">> ")?;
 
+        if readline.is_empty() {
+            continue;
+        }
+
         match readline.as_str() {
             "exit" => break,
             _ => println!(

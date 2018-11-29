@@ -4,7 +4,6 @@ use hdk::holochain_core_types::{
     error::HolochainError,
     dna::zome::entry_types::Sharing,
     json::JsonString,
-    // cas::content::Address,
 };
 use hdk::{
     entry_definition::ValidatingEntryType,

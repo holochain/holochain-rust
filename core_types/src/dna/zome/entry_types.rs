@@ -1,14 +1,11 @@
 //! File holding all the structs for handling entry types defined by DNA.
 
+use dna::zome::ZomeEntryTypes;
+use entry::entry_type::EntryType;
 use error::HolochainError;
 use json::JsonString;
+use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
 use std::collections::BTreeMap;
-use entry::entry_type::EntryType;
-use serde::Deserializer;
-use serde::Serializer;
-use serde::ser::SerializeMap;
-use serde::Deserialize;
-use dna::zome::ZomeEntryTypes;
 
 /// Enum for Zome EntryType "sharing" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -112,9 +109,7 @@ where
     map.end()
 }
 
-pub fn deserialize_entry_types<'de, D>(
-    deserializer: D,
-) -> Result<(ZomeEntryTypes), D::Error>
+pub fn deserialize_entry_types<'de, D>(deserializer: D) -> Result<(ZomeEntryTypes), D::Error>
 where
     D: Deserializer<'de>,
 {

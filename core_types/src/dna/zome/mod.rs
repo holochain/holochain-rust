@@ -6,10 +6,8 @@ pub mod entry_types;
 use crate::{
     dna::wasm::DnaWasm, entry::entry_type::EntryType, error::HolochainError, json::JsonString,
 };
-use dna::zome::entry_types::serialize_entry_types;
-use dna::zome::entry_types::deserialize_entry_types;
+use dna::zome::entry_types::{deserialize_entry_types, serialize_entry_types, EntryTypeDef};
 use std::collections::BTreeMap;
-use dna::zome::entry_types::EntryTypeDef;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -117,10 +115,9 @@ impl Zome {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::dna::zome::Zome;
+    use crate::dna::zome::{entry_types::EntryTypeDef, Zome};
     use serde_json;
     use std::{collections::BTreeMap, convert::TryFrom};
-    use crate::dna::zome::entry_types::EntryTypeDef;
 
     pub fn test_zome() -> Zome {
         Zome::default()

@@ -207,12 +207,12 @@ macro_rules! entry {
                                 $entry_validation
                             },
                             Err(_) => {
-                                Err(String::from("Schema valiation failed"))
+                                Err(::hdk::holochain_core_types::error::HolochainError::from("Schema valiation failed"))
                             }
                         }
                     },
                     _ => {
-                        Err(String::from("Schema validation failed"))
+                        Err(::hdk::holochain_core_types::error::HolochainError::from("Schema validation failed"))
                     }
                 }
             });

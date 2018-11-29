@@ -12,6 +12,7 @@ extern crate holochain_core_types_derive;
 use boolinator::Boolinator;
 use hdk::holochain_core_types::dna::zome::entry_types::Sharing;
 use hdk::holochain_core_types::json::JsonString;
+use hdk::holochain_core_types::json::RawString;
 use hdk::holochain_core_types::error::HolochainError;
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug)]
@@ -31,8 +32,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |entry: String, _ctx: hdk::ValidationData| {
-                (entry != "FAIL")
+            validation: |entry: RawString, _ctx: hdk::ValidationData| {
+                (String::from(entry) != String::from("FAIL"))
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
         ),

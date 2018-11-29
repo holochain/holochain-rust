@@ -44,7 +44,6 @@ pub async fn initialize_application(
     }
 
     let context_clone = context.clone();
-    let dna_clone = dna.clone();
 
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
     dispatch_action_and_wait(
@@ -54,7 +53,7 @@ pub async fn initialize_application(
     );
 
     // Commit DNA to chain
-    let dna_entry = Entry::Dna(dna);
+    let dna_entry = Entry::Dna(dna.clone());
     let dna_commit = await!(commit_entry(dna_entry, &context_clone));
     if dna_commit.is_err() {
         // Let initialization fail if DNA could not be committed.
@@ -71,7 +70,7 @@ pub async fn initialize_application(
     }
 
     // Commit AgentId to chain
-    let agent_id_entry = Entry::AgentId(context_clone.agent_id);
+    let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
     let agent_id_commit = await!(commit_entry(agent_id_entry, &context_clone,));
 
     // Let initialization fail if AgentId could not be committed.

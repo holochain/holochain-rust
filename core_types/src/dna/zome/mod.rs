@@ -144,7 +144,7 @@ pub mod tests {
     use super::*;
     use crate::dna::zome::Zome;
     use serde_json;
-    use std::{collections::HashMap, convert::TryFrom};
+    use std::{collections::BTreeMap, convert::TryFrom};
 
     pub fn test_zome() -> Zome {
         Zome::default()
@@ -173,7 +173,7 @@ pub mod tests {
 
     #[test]
     fn zome_json_test() {
-        let mut entry_types = HashMap::new();
+        let mut entry_types = BTreeMap::new();
         entry_types.insert(EntryType::from("foo"), EntryTypeDef::new());
         let zome = Zome {
             entry_types,

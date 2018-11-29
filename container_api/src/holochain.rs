@@ -179,7 +179,7 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::{agent::Agent, dna::Dna};
+    use holochain_core_types::{agent::AgentId, dna::Dna};
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;

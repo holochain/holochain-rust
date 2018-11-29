@@ -261,7 +261,7 @@ fn create_memory_context(
     _: &String,
     network_config: JsonString,
 ) -> Result<Context, HolochainError> {
-    let agent = Agent::generate_fake("c+bob");
+    let agent = AgentId::generate_fake("c+bob");
     let tempdir = tempdir().unwrap();
     let file_storage = Arc::new(RwLock::new(
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
@@ -282,7 +282,7 @@ fn create_file_context(
     path: &String,
     network_config: JsonString,
 ) -> Result<Context, HolochainError> {
-    let agent = Agent::generate_fake("c+bob");
+    let agent = AgentId::generate_fake("c+bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
     create_path_if_not_exists(&cas_path)?;

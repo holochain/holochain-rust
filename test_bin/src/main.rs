@@ -13,7 +13,7 @@ use holochain_core::{
     logger::SimpleLogger,
     persister::SimplePersister,
 };
-use holochain_core_types::{agent::Agent, dna::Dna};
+use holochain_core_types::{agent::AgentId, dna::Dna};
 use std::{
     env,
     sync::{Arc, Mutex, RwLock},

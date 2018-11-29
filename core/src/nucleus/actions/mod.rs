@@ -18,7 +18,7 @@ pub mod tests {
             zome::{capabilities::Capability, entry_types::EntryTypeDef},
             Dna,
         },
-        entry::{entry_type::EntryType, Entry},
+        entry::{entry_type::AppEntryType, Entry},
     };
     use std::sync::Arc;
     use test_utils::*;

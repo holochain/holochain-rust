@@ -44,10 +44,10 @@ pub mod tests {
 
     use crate::{
         cas::content::AddressableContent,
-        entry::{entry_type::EntryType, test_entry_a, test_entry_b, Entry, ToEntry},
+        entry::{test_entry_a, test_entry_b, Entry},
         json::JsonString,
         link::{
-            link_add::LinkAddEntry,
+            link_add::LinkAdd,
             tests::{example_link, example_link_action_kind, example_link_tag},
         },
     };

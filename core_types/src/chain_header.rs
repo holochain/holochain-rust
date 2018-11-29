@@ -127,7 +127,7 @@ pub mod tests {
         chain_header::{test_chain_header, ChainHeader},
         entry::{
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
-            test_entry, test_entry_a, test_entry_b, ToEntry,
+            test_entry, test_entry_a, test_entry_b,
         },
         signature::{test_signature, test_signature_b},
         time::test_iso_8601,

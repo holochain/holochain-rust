@@ -115,15 +115,15 @@ install_rust_tools: tools_toolchain
 .PHONY: install_ci
 install_ci: core_toolchain
 	# tarpaulin (code coverage)
-	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
+	#if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
 		 $(CARGO_TARPULIN) install cargo-tarpaulin; \
-	fi
+	#fi
 
 .PHONY: install_mdbook
 install_mdbook: tools_toolchain
-	#if ! $(CARGO_TOOLS) install --list | grep 'mdbook'; then \
+	if ! $(CARGO_TOOLS) install --list | grep 'mdbook'; then \
 	$(CARGO_TOOLS) install mdbook --vers "^0.2.2"; \
-	#fi
+	fi
 
 # list all our found "C" binding tests
 c_binding_tests: ${C_BINDING_DIRS}

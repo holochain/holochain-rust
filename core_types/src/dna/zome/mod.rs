@@ -8,7 +8,6 @@ use crate::{
 };
 use dna::zome::entry_types::serialize_entry_types;
 use dna::zome::entry_types::deserialize_entry_types;
-use serde::Deserialize;
 use std::collections::BTreeMap;
 use dna::zome::entry_types::EntryTypeDef;
 

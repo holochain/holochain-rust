@@ -293,8 +293,6 @@ pub mod tests {
             ..Default::default()
         };
 
-        println!("foo: {:?}", &partial_zome);
-
         assert_eq!(
             JsonString::from(partial_zome),
             JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{}}"),

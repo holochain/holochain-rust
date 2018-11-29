@@ -174,10 +174,10 @@ macro_rules! define_zome {
         pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
 
             use $crate::holochain_core_types::dna::zome::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
-            use std::collections::HashMap;
+            use std::collections::BTreeMap;
 
-            let return_value: HashMap<String, Capability> = {
-                let mut cap_map = HashMap::new();
+            let return_value: $crate::holochain_core_types::dna::zome::ZomeCapabilities = {
+                let mut cap_map = BTreeMap::new();
 
                 $(
                     {

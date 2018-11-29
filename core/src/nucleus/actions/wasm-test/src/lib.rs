@@ -20,20 +20,19 @@ struct TestEntryType {
     stuff: String,
 }
 
-
 define_zome! {
     entries: [
         entry!(
             name: "testEntryType",
-            description: "asdfda",
+            description: "asdfdaz",
             sharing: Sharing::Public,
 
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |entry: RawString, _ctx: hdk::ValidationData| {
-                (String::from(entry) != String::from("FAIL"))
+            validation: |s: RawString, _ctx: hdk::ValidationData| {
+                (String::from(s) != String::from("FAIL"))
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
         ),

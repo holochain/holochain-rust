@@ -166,7 +166,7 @@ macro_rules! entry {
     ) => (
 
         {
-            let mut entry_type = ::hdk::holochain_core_types::dna::zome::entry_types::EntryTypeDef::new();
+            let mut entry_type = hdk::holochain_core_types::dna::zome::entry_types::EntryTypeDef::new();
             entry_type.description = String::from($description);
             entry_type.sharing = $sharing;
 
@@ -196,10 +196,10 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|entry: ::hdk::holochain_core_types::entry::Entry, ctx: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
+            let validator = Box::new(|entry: hdk::holochain_core_types::entry::Entry, ctx: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
                 let $ctx = ctx;
                 match entry {
-                    ::hdk::holochain_core_types::entry::Entry::App(_, app_entry_value) => {
+                    hdk::holochain_core_types::entry::Entry::App(_, app_entry_value) => {
                         let entry: $entry_type = ::std::convert::TryInto::try_into(app_entry_value)?;
                         let $entry = entry;
                         $entry_validation
@@ -211,8 +211,8 @@ macro_rules! entry {
             });
 
 
-            ::hdk::entry_definition::ValidatingEntryType {
-                name: ::hdk::holochain_core_types::entry::entry_type::EntryType::App(::hdk::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string())),
+            hdk::entry_definition::ValidatingEntryType {
+                name: hdk::holochain_core_types::entry::entry_type::EntryType::App(hdk::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string())),
                 entry_type_definition: entry_type,
                 package_creator,
                 validator,

@@ -4,12 +4,12 @@ use hdk::holochain_core_types::{
     error::HolochainError,
     dna::zome::entry_types::Sharing,
     json::JsonString,
-    cas::content::Address,
+    // cas::content::Address,
 };
 use hdk::{
     entry_definition::ValidatingEntryType,
 };
-use boolinator::Boolinator;
+// use boolinator::Boolinator;
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar
@@ -18,8 +18,17 @@ use boolinator::Boolinator;
 /// So this is our normative schema definition:
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 pub struct Post {
-    pub content: String,
-    pub date_created: String,
+    content: String,
+    date_created: String,
+}
+
+impl Post {
+    pub fn new (content: &str, date_created: &str) -> Post {
+        Post {
+            content: content.to_owned(),
+            date_created: date_created.to_owned(),
+        }
+    }
 }
 
 /// This is what creates the full definition of our entry type.
@@ -34,30 +43,31 @@ pub struct Post {
 pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "post",
-        description: "",
+        description: "blog entry post",
         sharing: Sharing::Public,
-        native_type: Post,
+        // native_type: Post
 
         validation_package: || {
-            hdk::ValidationPackageDefinition::ChainFull
+            hdk::ValidationPackageDefinition::Entry
         },
 
-        validation: |post: Post, _ctx: hdk::ValidationData| {
-            (post.content.len() < 280)
-                .ok_or_else(|| String::from("Content too long"))
-        },
+        validation: |_post: crate::post::Post, _ctx: hdk::ValidationData| {
+            // (entry.content.len() < 280)
+            //     .ok_or_else(|| String::from("Content too long"))
+            Ok(())
+        }
 
-        links: [
-            from!(
-                "%agent_id",
-                tag: "authored_posts",
-                validation_package: || {
-                    hdk::ValidationPackageDefinition::ChainFull
-                },
-                validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
-                    Ok(())
-                }
-            )
-        ]
+        // links: [
+        //     from!(
+        //         "%agent_id",
+        //         tag: "authored_posts",
+        //         validation_package: || {
+        //             hdk::ValidationPackageDefinition::ChainFull
+        //         },
+        //         validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
+        //             Ok(())
+        //         }
+        //     )
+        // ]
     )
 }

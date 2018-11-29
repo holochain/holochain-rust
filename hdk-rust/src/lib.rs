@@ -26,6 +26,7 @@ extern crate holochain_core_types_derive;
 pub extern crate holochain_wasm_utils;
 
 pub mod api;
+#[macro_use]
 pub mod entry_definition;
 pub mod error;
 pub mod global_fns;

@@ -48,7 +48,7 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
 
     container
         .load_config(&base_config)
-        .or_else(|err| Err(format_err!("{}", err)))?;
+        .map_err(|err| format_err!("{}", err))?;
 
     container.start_all_interfaces();
     container.start_all_instances()?;
@@ -64,16 +64,13 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
     loop {
         let readline = rl.readline(">> ")?;
 
-        if readline.is_empty() {
-            continue;
-        }
-
         match readline.as_str() {
             "exit" => break,
-            _ => println!(
+            _ if !readline.is_empty() => eprintln!(
                 "command {:?} not recognized. Available commands are: exit",
                 readline
             ),
+            _ => continue
         }
     }
 

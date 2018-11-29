@@ -17,9 +17,6 @@ use holochain_core_types::dna::zome::ZomeEntryTypes;
 use holochain_core_types::dna::zome::ZomeCapabilities;
 use std::collections::BTreeMap;
 
-
-use crate::api::debug;
-
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
 }
@@ -206,7 +203,7 @@ pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
     crate::global_fns::init_global_memory(encoded_allocation_of_input);
-    debug("__hdk_get_json_definition").unwrap();
+
     let mut zd = ZomeDefinition::new();
     unsafe {
         zome_setup(&mut zd);
@@ -227,14 +224,7 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
         capabilities,
     };
 
-    debug(format!("foo: {:?}", &partial_zome)).unwrap();
-
     let json_string = JsonString::from(partial_zome);
-
-    debug(
-        format!("bar: {:?}",
-        json_string.clone())
-    ).unwrap();
 
     unsafe {
         store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &String::from(json_string))

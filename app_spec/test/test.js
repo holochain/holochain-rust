@@ -24,84 +24,84 @@ test('get entry address', (t) => {
   const params = {content: "Holo world"}
   const result = app.call("blog", "main", "hash_post", params)
 
-  t.equal(result.address, "QmNndXfXcxqwsnAXdvbnzdZUS7bm4WqimY7w873C3Uttx1")
+  t.equal(result.address, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
-// test('create_post', (t) => {
-//   t.plan(1)
-//
-//   const content = "Holo world"
-//   const in_reply_to = ""
-//   const params = {content, in_reply_to}
-//   const result = app.call("blog", "main", "create_post", params)
-//   t.equal(result.address.length, 46)
-// })
+test('create_post', (t) => {
+  t.plan(1)
 
-// test('post max content size 280 characters', (t) => {
-//   t.plan(1)
-//
-//   const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-//   const in_reply_to = ""
-//   const params = {content, in_reply_to}
-//   const result = app.call("blog", "main", "create_post", params)
-//
-//   t.notEqual(result.error, undefined)
-// })
+  const content = "Holo world"
+  const in_reply_to = ""
+  const params = {content, in_reply_to}
+  const result = app.call("blog", "main", "create_post", params)
+  t.equal(result.address.length, 46)
+})
 
-// test('posts_by_agent', (t) => {
-//   t.plan(1)
-//
-//   const agent = "Bob"
-//   const params = {agent}
-//
-//   const result = app.call("blog", "main", "posts_by_agent", params)
-//
-//   t.deepEqual(result, {"addresses":[]})
-// })
+test('post max content size 280 characters', (t) => {
+  t.plan(1)
 
-// test('my_posts', (t) => {
-//   t.plan(1)
-//
-//   app.call("blog", "main", "create_post",
-//     {"content": "Holo world", "in_reply_to": ""}
-//   )
-//
-//   app.call("blog", "main", "create_post",
-//     {"content": "Another post", "in_reply_to": ""}
-//   )
-//
-//   const result = app.call("blog", "main", "my_posts", {})
-//   t.equal(result.addresses.length, 2)
-// })
+  const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
+  const in_reply_to = ""
+  const params = {content, in_reply_to}
+  const result = app.call("blog", "main", "create_post", params)
 
+  t.notEqual(result.error, undefined)
+})
 
-// test('create/get_post rountrip', (t) => {
-//   t.plan(1)
-//
-//   const content = "Holo world"
-//   const in_reply_to = ""
-//   const params = {content, in_reply_to}
-//   const create_post_result = app.call("blog", "main", "create_post", params)
-//   const post_address = create_post_result.address
-//
-//   const params_get = {post_address}
-//   const result = app.call("blog", "main", "get_post", params_get)
-//
-//   const entry = result
-//   t.equal(entry.content, content)
-// })
+test('posts_by_agent', (t) => {
+  t.plan(1)
+
+  const agent = "Bob"
+  const params = {agent}
+
+  const result = app.call("blog", "main", "posts_by_agent", params)
+
+  t.deepEqual(result, {"addresses":[]})
+})
+
+test('my_posts', (t) => {
+  t.plan(1)
+
+  app.call("blog", "main", "create_post",
+    {"content": "Holo world", "in_reply_to": ""}
+  )
+
+  app.call("blog", "main", "create_post",
+    {"content": "Another post", "in_reply_to": ""}
+  )
+
+  const result = app.call("blog", "main", "my_posts", {})
+  t.equal(result.addresses.length, 2)
+})
 
 
-// test('get_post with non-existant hash returns null', (t) => {
-//   t.plan(1)
-//
-//   const post_address = "RANDOM"
-//   const params_get = {post_address}
-//   const result = app.call("blog", "main", "get_post", params_get)
-//
-//   const entry = result
-//   t.same(entry, null)
-// })
+test('create/get_post rountrip', (t) => {
+  t.plan(1)
+
+  const content = "Holo world"
+  const in_reply_to = ""
+  const params = {content, in_reply_to}
+  const create_post_result = app.call("blog", "main", "create_post", params)
+  const post_address = create_post_result.address
+
+  const params_get = {post_address}
+  const result = app.call("blog", "main", "get_post", params_get)
+
+  const entry = result
+  t.equal(entry.content, content)
+})
+
+
+test('get_post with non-existant hash returns null', (t) => {
+  t.plan(1)
+
+  const post_address = "RANDOM"
+  const params_get = {post_address}
+  const result = app.call("blog", "main", "get_post", params_get)
+
+  const entry = result
+  t.same(entry, null)
+})
 
 // // this test is flaky!
 // // even when we loop and wait sometimes app2 never sees the published entry

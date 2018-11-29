@@ -147,7 +147,7 @@ impl Packager {
                     // What we get back is a JSON string with all the entry types and zome functions
                     // defined in that WASM code, constructed through our Rust macros define_zome!
                     // and entry!.
-                    println!("zzzz");
+
                     let call_result = ribosome::run_dna(
                         "HC",
                         context,
@@ -155,10 +155,10 @@ impl Packager {
                         &ZomeFnCall::new("", "", "__hdk_get_json_definition", ""),
                         Some("{}".as_bytes().to_vec()),
                     )?;
-                    println!("yyyy");
+
                     let json_from_wasm: Map<String, Value> =
                         serde_json::from_str(&call_result.to_string())?;
-                    println!("xxxx");
+
                     let mut sub_tree_content = self.bundle_recurse(&node)?;
                     for key in json_from_wasm.keys() {
                         sub_tree_content

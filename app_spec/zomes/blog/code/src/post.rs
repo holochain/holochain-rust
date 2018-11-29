@@ -45,29 +45,28 @@ pub fn definition() -> ValidatingEntryType {
         name: "post",
         description: "blog entry post",
         sharing: Sharing::Public,
-        // native_type: Post
+        native_type: Post
 
         validation_package: || {
             hdk::ValidationPackageDefinition::Entry
         },
 
         validation: |_post: crate::post::Post, _ctx: hdk::ValidationData| {
-            // (entry.content.len() < 280)
-            //     .ok_or_else(|| String::from("Content too long"))
-            Ok(())
+            (entry.content.len() < 280)
+                .ok_or_else(|| String::from("Content too long"))
         }
 
-        // links: [
-        //     from!(
-        //         "%agent_id",
-        //         tag: "authored_posts",
-        //         validation_package: || {
-        //             hdk::ValidationPackageDefinition::ChainFull
-        //         },
-        //         validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
-        //             Ok(())
-        //         }
-        //     )
-        // ]
+        links: [
+            from!(
+                "%agent_id",
+                tag: "authored_posts",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
+                    Ok(())
+                }
+            )
+        ]
     )
 }

@@ -1,5 +1,5 @@
-use crate::{cli::package, error::DefaultResult, util};
 use colored::*;
+use crate::{cli::package, error::DefaultResult, util};
 use std::{fs, path::PathBuf};
 
 pub const TEST_DIR_NAME: &str = "test";
@@ -62,8 +62,8 @@ pub fn test(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::cli::package;
     use assert_cmd::prelude::*;
+    use crate::cli::package;
     use std::process::Command;
     use tempfile::{Builder, TempDir};
 
@@ -93,15 +93,19 @@ pub mod tests {
             .unwrap_or_else(|e| panic!("test call failed: {}", e));
 
         // check success of packaging step
-        assert!(temp_dir_path_buf
-            .join(&DIST_DIR_NAME)
-            .join(package::DEFAULT_BUNDLE_FILE_NAME)
-            .exists());
+        assert!(
+            temp_dir_path_buf
+                .join(&DIST_DIR_NAME)
+                .join(package::DEFAULT_BUNDLE_FILE_NAME)
+                .exists()
+        );
         // check success of npm install step
-        assert!(temp_dir_path_buf
-            .join(&TEST_DIR_NAME)
-            .join("node_modules")
-            .exists());
+        assert!(
+            temp_dir_path_buf
+                .join(&TEST_DIR_NAME)
+                .join("node_modules")
+                .exists()
+        );
     }
 
     #[test]

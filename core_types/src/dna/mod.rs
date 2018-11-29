@@ -28,15 +28,15 @@ pub mod zome;
 
 use crate::{
     dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
-    entry::{entry_type::EntryType, Entry, ToEntry},
+    entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
 };
+use entry::entry_type::AppEntryType;
 use multihash;
 use serde_json::{self, Value};
 use std::{
     collections::BTreeMap,
-    convert::TryInto,
     hash::{Hash, Hasher},
 };
 use uuid::Uuid;

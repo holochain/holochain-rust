@@ -39,7 +39,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
             .get_zome_name_for_app_entry_type(&match entry.entry_type() {
                 EntryType::App(app_entry_type) => app_entry_type,
                 _ => {
-                    return Box::new(future::err(HolochainError::ValidationFailed(format!(
+                    return Box::new(futures::future::err(HolochainError::ValidationFailed(format!(
                         "Attempted to validate system entry type {:?}",
                         entry.entry_type()
                     ))))

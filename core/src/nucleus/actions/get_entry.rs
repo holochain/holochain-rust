@@ -3,7 +3,7 @@ use crate::context::Context;
 use futures::future::{self, FutureObj};
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, SerializedEntry},
+    entry::Entry,
     error::HolochainError,
 };
 use std::{convert::TryInto, sync::Arc};

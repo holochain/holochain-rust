@@ -2,7 +2,8 @@
 
 use crate::{
     cas::content::{Address, AddressableContent, Content},
-    entry::{entry_type::EntryType, Entry, ToEntry},
+    entry::Entry,
+    error::HcResult,
     json::JsonString,
 };
 

@@ -1,11 +1,9 @@
 use crate::{
     cas::content::Address,
-    entry::{entry_type::EntryType, Entry, ToEntry},
     error::HolochainError,
     json::JsonString,
     link::{Link, LinkActionKind},
 };
-use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------
 // LinkAdd

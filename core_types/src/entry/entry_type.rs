@@ -12,7 +12,7 @@ macro_rules! sys_prefix {
     };
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Eq)]
 pub struct AppEntryType(String);
 
 impl From<&'static str> for AppEntryType {
@@ -41,7 +41,9 @@ impl ToString for AppEntryType {
 
 // Enum for listing all System Entry Types
 // Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize, DefaultJson)]
+#[derive(
+    Debug, Clone, PartialEq, Hash, Serialize, Deserialize, DefaultJson, PartialOrd, Ord, Eq,
+)]
 pub enum EntryType {
     App(AppEntryType),
 
@@ -54,8 +56,6 @@ pub enum EntryType {
     ChainHeader,
     ChainMigrate,
 }
-
-impl Eq for EntryType {}
 
 impl EntryType {
     pub fn is_app(&self) -> bool {
@@ -82,16 +82,16 @@ impl EntryType {
             return None;
         }
         let entry_type_def = maybe_def.unwrap();
-
+        
         // app entry type must be publishable
         if !entry_type_def.sharing.clone().can_publish() {
             return None;
         }
             */
-            match self {
-                EntryType::Dna => false,
-                _ => true,
-            }
+        match self {
+            EntryType::Dna => false,
+            _ => true,
+        }
     }
 
     /// Checks entry_type_name is valid

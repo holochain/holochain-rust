@@ -3,9 +3,10 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use futures::executor::block_on;
-use holochain_core_types::{entry::ToEntry, error::HolochainError, link::link_add::LinkAddEntry};
+use holochain_core_types::{error::HolochainError, link::link_add::LinkAdd};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
+use holochain_core_types::entry::Entry;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::LinkEntries function code

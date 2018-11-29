@@ -6,10 +6,10 @@ use crate::{
     state::State,
 };
 use holochain_core_types::{
-    agent::Agent,
+    agent::AgentId,
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
-    entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
+    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     json::*,
     signature::Signature,
@@ -21,6 +21,7 @@ use std::{
     convert::{TryFrom, TryInto},
     sync::Arc,
 };
+use holochain_core_types::error::HcResult;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -69,7 +70,7 @@ impl AgentState {
     pub async fn get_agent<'a>(
         &'a self,
         context: &'a Arc<Context>,
-    ) -> Result<Agent, HolochainError> {
+    ) -> HcResult<AgentId> {
         let agent_entry_address = self
             .chain()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
@@ -82,7 +83,17 @@ impl AgentState {
         let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?
             .ok_or("Agent entry not found".to_string())?;
 
-        Ok(Agent::from_entry(&agent_entry))
+        match agent_entry {
+            Entry::AgentId(agent_id) => Ok(agent_id),
+            _ => Err(
+                HolochainError::ErrorGeneric(
+                    format!(
+                        "Expected Entry::AgentId found {:?}",
+                        agent_entry,
+                    )
+                )
+            )
+        }
     }
 }
 

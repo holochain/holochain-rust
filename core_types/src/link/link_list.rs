@@ -1,10 +1,4 @@
-use crate::{
-    entry::{entry_type::EntryType, Entry, ToEntry},
-    error::error::HolochainError,
-    json::JsonString,
-    link::Link,
-};
-use std::convert::TryInto;
+use crate::{error::error::HolochainError, json::JsonString, link::Link};
 
 //-------------------------------------------------------------------------------------------------
 // LinkList

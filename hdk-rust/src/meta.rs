@@ -1,5 +1,10 @@
 use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::dna::zome::capabilities::Capability;
+use holochain_core_types::entry::entry_type::EntryType;
+use holochain_core_types::entry::entry_type::AppEntryType;
+use holochain_core_types::json::JsonString;
+use holochain_core_types::error::HolochainError;
+use holochain_core_types::dna::zome::entry_types::EntryTypeDef;
 use holochain_wasm_utils::{
     api_serialization::validation::{
         EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,

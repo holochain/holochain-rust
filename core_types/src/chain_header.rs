@@ -2,14 +2,14 @@ use crate::{
     cas::content::{Address, AddressableContent, Content},
     entry::{
         entry_type::{test_entry_type, EntryType},
-        test_entry, Entry, ToEntry,
+        test_entry,
     },
     error::HolochainError,
     json::JsonString,
     signature::{test_signature, Signature},
     time::{test_iso_8601, Iso8601},
 };
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 
 /// ChainHeader of a source chain "Item"
 /// The address of the ChainHeader is used as the Item's key in the source chain hash table

@@ -4,9 +4,9 @@ use crate::{
     network::util::EntryWithHeader,
 };
 use futures::executor::block_on;
-use holochain_core_types::{entry::ToEntry, link::link_add::LinkAddEntry};
 use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolWrapper};
 use std::{convert::TryFrom, sync::Arc};
+use holochain_core_types::entry::Entry;
 
 pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
@@ -19,7 +19,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap())
                         .unwrap();
                 let _ = block_on(hold_entry(
-                    &entry_with_header.entry.deserialize(),
+                    &entry_with_header.entry,
                     &context.clone(),
                 ));
             }
@@ -29,9 +29,11 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                         .unwrap();
                 match dht_meta_data.attribute.as_ref() {
                     "link" => {
-                        let link_add_entry =
-                            LinkAddEntry::from_entry(&entry_with_header.entry.deserialize());
-                        let link = link_add_entry.link().clone();
+                        let link_add = match entry_with_header.entry {
+                            Entry::LinkAdd(link_add) => link_add,
+                            _ => unreachable!(),
+                        };
+                        let link = link_add.link().clone();
                         let _ = block_on(add_link(&link, &context.clone()));
                     }
                     _ => {}

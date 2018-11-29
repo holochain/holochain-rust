@@ -45,6 +45,8 @@ stdenv.mkDerivation rec {
     binutils gcc gnumake openssl pkgconfig
     carnix
 
+    unixtools.watch
+
     cmake
     python
     pkgconfig
@@ -69,10 +71,6 @@ stdenv.mkDerivation rec {
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   RUSTFLAGS = "-D warnings -Z external-macro-backtrace";
-
-  shellHook = ''
-  export PATH=$PATH:~/.cargo/bin;
-  '';
 
   shellHook = ''
   export PATH=$PATH:~/.cargo/bin;

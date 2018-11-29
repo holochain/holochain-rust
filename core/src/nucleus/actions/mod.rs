@@ -57,6 +57,9 @@ pub mod tests {
             .entry_types
             .insert("package_chain_full".into(), EntryTypeDef::new());
 
+        dna
+    }
+
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
         let (instance, context) =

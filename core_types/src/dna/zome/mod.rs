@@ -3,7 +3,11 @@
 pub mod capabilities;
 pub mod entry_types;
 
-use crate::dna::wasm::DnaWasm;
+use crate::{
+    dna::wasm::DnaWasm, entry::entry_type::EntryType, error::HolochainError, json::JsonString,
+};
+use dna::zome::entry_types::EntryTypeDef;
+use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
 use std::collections::BTreeMap;
 
 /// Enum for "zome" "config" "error_handling" property.
@@ -45,7 +49,7 @@ impl Config {
 }
 
 fn serialize_entry_types<S>(
-    entry_types: &HashMap<EntryType, entry_types::EntryTypeDef>,
+    entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -60,15 +64,13 @@ where
 
 fn deserialize_entry_types<'de, D>(
     deserializer: D,
-) -> Result<(HashMap<EntryType, entry_types::EntryTypeDef>), D::Error>
+) -> Result<(BTreeMap<EntryType, entry_types::EntryTypeDef>), D::Error>
 where
     D: Deserializer<'de>,
 {
-    // type SerializedEntryTypes = ;
+    let serialized_entry_types = BTreeMap::<String, EntryTypeDef>::deserialize(deserializer)?;
 
-    let serialized_entry_types = HashMap::<String, EntryTypeDef>::deserialize(deserializer)?;
-
-    let mut map = HashMap::new();
+    let mut map = BTreeMap::new();
     for (k, v) in serialized_entry_types {
         map.insert(EntryType::from(k), v);
     }

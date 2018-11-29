@@ -13,12 +13,13 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{dna::Dna, entry::ToEntry, error::HolochainError};
+use holochain_core_types::{dna::Dna, error::HolochainError};
 use std::{
     pin::{Pin, Unpin},
     sync::Arc,
     time::*,
 };
+use holochain_core_types::entry::Entry;
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -53,7 +54,7 @@ pub async fn initialize_application(
     );
 
     // Commit DNA to chain
-    let dna_entry = dna.to_entry();
+    let dna_entry = Entry::Dna(dna);
     let dna_commit = await!(commit_entry(dna_entry, &context_clone));
     if dna_commit.is_err() {
         // Let initialization fail if DNA could not be committed.
@@ -70,7 +71,7 @@ pub async fn initialize_application(
     }
 
     // Commit AgentId to chain
-    let agent_id_entry = context_clone.agent.to_entry();
+    let agent_id_entry = Entry::AgentId(context_clone.agent_id);
     let agent_id_commit = await!(commit_entry(agent_id_entry, &context_clone,));
 
     // Let initialization fail if AgentId could not be committed.

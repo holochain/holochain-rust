@@ -3,11 +3,7 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use futures::executor::block_on;
-use holochain_core_types::{
-    cas::content::Address,
-    entry::Entry,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 

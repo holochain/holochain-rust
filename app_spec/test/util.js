@@ -2,7 +2,11 @@
 const defaultOpts = {timeout: 2000, interval: 100}
 const identity = x => x
 
-const waitFor = (
+/**
+ * Run a function at intervals until some condition is met,
+ * capturing the result (or timeout event) in a Promise
+ */
+const pollFor = (
   fn, 
   pred = identity, 
   {timeout, interval} = defaultOpts
@@ -15,9 +19,8 @@ const waitFor = (
       if (pred(val)) {
         fulfill(val)
       } else {
-        console.log(t)
         if (t >= timeout) {
-          reject()
+          reject(`pollFor timed out after ${timeout}ms`)
         } else {
           t += interval
           setTimeout(run, interval)
@@ -28,4 +31,4 @@ const waitFor = (
   }
 )
 
-module.exports = {waitFor}
+module.exports = {pollFor}

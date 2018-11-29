@@ -1,6 +1,6 @@
 const test = require('tape');
 const Container = require('../../nodejs_container');
-const {waitFor} = require('./util');
+const {pollFor} = require('./util');
 
 const app = Container.instanceFromNameAndDna("bob", "dist/app_spec.hcpkg")
 app.start()
@@ -107,7 +107,7 @@ test('get_post with non-existant hash returns null', (t) => {
 
 // this test is flaky!
 // even when we loop and wait sometimes app2 never sees the published entry
-test('scenario test create & publish post -> get from other instance', (t) => {
+test('scenario test create & publish post -> get from other instance', async (t) => {
     t.plan(3)
 
     const content = "Holo world"
@@ -121,7 +121,9 @@ test('scenario test create & publish post -> get from other instance', (t) => {
     const post_address = create_result.address
     const params_get = {post_address}
 
-    waitFor(() => app2.call("blog", "main", "get_post", params_get))
-      .then(result => t.equal(result.content, content))
-      .catch(t.end)
+    const result = await pollFor(
+      () => app2.call("blog", "main", "get_post", params_get)
+    ).catch(t.fail)
+
+    t.equal(result.content, content)
 })

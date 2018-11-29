@@ -4,10 +4,12 @@ use hdk::holochain_core_types::{
     error::HolochainError,
     dna::zome::entry_types::Sharing,
     json::JsonString,
+    cas::content::Address,
 };
 use hdk::{
     entry_definition::ValidatingEntryType,
 };
+use boolinator::Boolinator;
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar
@@ -43,16 +45,16 @@ pub fn definition() -> ValidatingEntryType {
         name: "post",
         description: "blog entry post",
         sharing: Sharing::Public,
-        native_type: Post
+        native_type: Post,
 
         validation_package: || {
-            hdk::ValidationPackageDefinition::Entry
+            hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation: |_post: crate::post::Post, _ctx: hdk::ValidationData| {
-            (entry.content.len() < 280)
+        validation: |post: crate::post::Post, _ctx: hdk::ValidationData| {
+            (post.content.len() < 280)
                 .ok_or_else(|| String::from("Content too long"))
-        }
+        },
 
         links: [
             from!(

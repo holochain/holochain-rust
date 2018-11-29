@@ -186,7 +186,7 @@ fn handle_links_roundtrip() -> JsonString {
         Err(_) => return link_2_result.into(),
     };
     hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
-    
+
     let get_links_result = hdk::get_links(&entry1_address, "test-tag");
     hdk::debug(format!("{:?}", &get_links_result)).unwrap();
 

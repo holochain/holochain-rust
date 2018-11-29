@@ -51,7 +51,7 @@ Run `hc help` for help.
 | package   | Builds the current Holochain app into a `.dna.json` file            |
 | unpack    | Unpacks a Holochain bundle into its original file system structure  |
 | test      | Runs tests written in the test folder                               |
-| web (u)   | Starts a web server for the current Holochain app                   |
+| run       | Starts a websocket server for the current Holochain app             |
 | agent (u) | Starts a Holochain node as an agent                                 |
 
 ## How To Get Started Building An App

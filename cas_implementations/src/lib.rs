@@ -7,7 +7,6 @@
 
 extern crate holochain_core_types;
 extern crate snowflake;
-extern crate unwrap_to;
 extern crate walkdir;
 
 extern crate uuid;

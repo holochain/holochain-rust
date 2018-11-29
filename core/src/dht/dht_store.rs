@@ -1,4 +1,4 @@
-use action::ActionWrapper;
+use crate::action::ActionWrapper;
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},
@@ -108,9 +108,6 @@ impl DhtStore {
     }
     pub(crate) fn network(&self) -> &Network {
         &self.network
-    }
-    pub(crate) fn network_mut(&mut self) -> &mut Network {
-        &mut self.network
     }
     pub fn add_link_actions(&self) -> &HashMap<ActionWrapper, Result<(), HolochainError>> {
         &self.add_link_actions

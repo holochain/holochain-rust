@@ -1,6 +1,4 @@
-use action::ActionWrapper;
-use context::Context;
-use state::State;
+use crate::{action::ActionWrapper, context::Context, state::State};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -284,12 +282,14 @@ pub mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use action::{tests::test_action_wrapper_get, Action, ActionWrapper};
-    use agent::{
-        chain_store::ChainStore,
-        state::{ActionResponse, AgentState},
+    use crate::{
+        action::{tests::test_action_wrapper_get, Action, ActionWrapper},
+        agent::{
+            chain_store::ChainStore,
+            state::{ActionResponse, AgentState},
+        },
+        context::{mock_network_config, Context},
     };
-    use context::Context;
     use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
@@ -300,15 +300,17 @@ pub mod tests {
         entry::entry_type::EntryType,
         json::{JsonString, RawString},
     };
-    use holochain_net::p2p_network::P2pNetwork;
 
-    use logger::Logger;
-    use nucleus::{
-        actions::initialize::initialize_application,
-        ribosome::{callback::Callback, Defn},
+    use crate::{
+        logger::Logger,
+        network::actions::initialize_network::initialize_network,
+        nucleus::{
+            actions::initialize::initialize_application,
+            ribosome::{callback::Callback, Defn},
+        },
+        persister::SimplePersister,
+        state::State,
     };
-    use persister::SimplePersister;
-    use state::State;
 
     use std::{
         sync::{
@@ -341,18 +343,6 @@ pub mod tests {
         Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
     }
 
-    /// create a test network
-    #[cfg_attr(tarpaulin, skip)]
-    fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
-        let res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
-            &json!({
-                "backend": "mock"
-            }).into(),
-        ).unwrap();
-        Arc::new(Mutex::new(res))
-    }
-
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
@@ -371,10 +361,12 @@ pub mod tests {
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        ).unwrap(),
+                        )
+                        .unwrap(),
                     )),
-                    make_mock_net(),
-                ).unwrap(),
+                    mock_network_config(),
+                )
+                .unwrap(),
             ),
             logger,
         )
@@ -411,8 +403,9 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                make_mock_net(),
-            ).unwrap(),
+                mock_network_config(),
+            )
+            .unwrap(),
         )
     }
 
@@ -430,8 +423,9 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            make_mock_net(),
-        ).unwrap();
+            mock_network_config(),
+        )
+        .unwrap();
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -451,8 +445,9 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            make_mock_net(),
-        ).unwrap();
+            mock_network_config(),
+        )
+        .unwrap();
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
@@ -472,16 +467,29 @@ pub mod tests {
         test_instance_and_context(dna).map(|tuple| tuple.0)
     }
 
-    /// create a test instance
+    /// create a canonical test instance
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
+        test_instance_and_context_by_name(dna, "jane")
+    }
+
+    /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn test_instance_and_context_by_name(
+        dna: Dna,
+        name: &str,
+    ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context("jane");
+        let context = test_context(name);
         let mut instance = Instance::new(context.clone());
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
-
-        block_on(initialize_application(dna.clone(), context.clone()))?;
+        block_on(
+            async {
+                await!(initialize_application(dna.clone(), &context))?;
+                await!(initialize_network(&context))
+            },
+        )?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
@@ -642,7 +650,7 @@ pub mod tests {
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         let dna = Dna::new();
@@ -653,14 +661,14 @@ pub mod tests {
         // the initial state is not intialized
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::New
+            crate::nucleus::state::NucleusStatus::New
         );
 
         instance.dispatch_and_wait(action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(
             instance.state().nucleus().status(),
-            ::nucleus::state::NucleusStatus::Initializing
+            crate::nucleus::state::NucleusStatus::Initializing
         );
     }
 

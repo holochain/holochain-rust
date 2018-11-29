@@ -1,7 +1,9 @@
 //! let file_system = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
 //!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
 //!     file_system.clone(),
-#![feature(try_from)]
+
+#![feature(try_from, async_await, await_macro)]
+
 /// Holochain Container API
 ///
 /// This crate is a library that provides types and functions that help with building
@@ -61,7 +63,7 @@
 ///                     container.instances.len()
 ///                 );
 ///                 println!("Starting all of them...");
-///                 container.start_all();
+///                 container.start_all_instances();
 ///                 println!("Done.");
 ///                 loop {}
 ///             } else {
@@ -100,13 +102,17 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 extern crate boolinator;
+extern crate jsonrpc_ws_server;
 #[cfg(test)]
 extern crate test_utils;
+extern crate tiny_http;
 extern crate toml;
 
 pub mod config;
 pub mod container;
 pub mod error;
 pub mod holochain;
+pub mod interface;
+pub mod interface_impls;
 
-pub use holochain::Holochain;
+pub use crate::holochain::Holochain;

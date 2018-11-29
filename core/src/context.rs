@@ -1,16 +1,14 @@
-use action::ActionWrapper;
+use crate::{
+    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, state::State,
+};
 use holochain_core_types::{
     agent::AgentId,
     cas::storage::ContentAddressableStorage,
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     error::HolochainError,
+    json::JsonString,
 };
-use holochain_net::p2p_network::P2pNetwork;
-use instance::Observer;
-use logger::Logger;
-use persister::Persister;
-use state::State;
 use std::{
     sync::{
         mpsc::{sync_channel, SyncSender},
@@ -34,7 +32,7 @@ pub struct Context {
     pub observer_channel: SyncSender<Observer>,
     pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
-    pub network: Arc<Mutex<P2pNetwork>>,
+    pub network_config: JsonString,
 }
 
 impl Context {
@@ -48,7 +46,7 @@ impl Context {
         persister: Arc<Mutex<Persister>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
-        net: Arc<Mutex<P2pNetwork>>,
+        network_config: JsonString,
     ) -> Result<Context, HolochainError> {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
@@ -61,7 +59,7 @@ impl Context {
             observer_channel: tx_observer,
             file_storage: cas,
             eav_storage: eav,
-            network: net,
+            network_config,
         })
     }
 
@@ -73,7 +71,7 @@ impl Context {
         observer_channel: SyncSender<Observer>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
-        net: Arc<Mutex<P2pNetwork>>,
+        network_config: JsonString,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id,
@@ -84,7 +82,7 @@ impl Context {
             observer_channel,
             file_storage: cas,
             eav_storage: eav,
-            network: net,
+            network_config,
         })
     }
     // helper function to make it easier to call the logger
@@ -145,28 +143,22 @@ impl Context {
 
 /// create a test network
 #[cfg_attr(tarpaulin, skip)]
-pub fn make_mock_net() -> Arc<Mutex<P2pNetwork>> {
-    let res = P2pNetwork::new(
-        Box::new(|_r| Ok(())),
-        &json!({
-            "backend": "mock"
-        }).into(),
-    ).unwrap();
-    Arc::new(Mutex::new(res))
+pub fn mock_network_config() -> JsonString {
+    json!({"backend": "mock"}).into()
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate tempfile;
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use context::make_mock_net;
+    use crate::{
+        context::mock_network_config, instance::tests::test_logger, persister::SimplePersister,
+        state::State,
+    };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
-    use instance::tests::test_logger;
-    use persister::SimplePersister;
-    use state::State;
     use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
@@ -175,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn test_state() {
+    fn state_test() {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
@@ -188,8 +180,9 @@ mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            make_mock_net(),
-        ).unwrap();
+            mock_network_config(),
+        )
+        .unwrap();
 
         assert!(maybe_context.state().is_none());
 
@@ -218,8 +211,9 @@ mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            make_mock_net(),
-        ).unwrap();
+            mock_network_config(),
+        )
+        .unwrap();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

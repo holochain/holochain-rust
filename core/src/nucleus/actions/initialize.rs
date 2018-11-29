@@ -1,15 +1,24 @@
 extern crate futures;
-use action::{Action, ActionWrapper};
-use agent::actions::commit::commit_entry;
-use context::Context;
-use futures::{executor::block_on, future, Async, Future};
-use holochain_core_types::{dna::Dna, entry::Entry};
-use instance::dispatch_action_and_wait;
-use nucleus::{
-    ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
-    state::NucleusStatus,
+use crate::{
+    action::{Action, ActionWrapper},
+    agent::actions::commit::commit_entry,
+    context::Context,
+    instance::dispatch_action_and_wait,
+    nucleus::{
+        ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
+        state::NucleusStatus,
+    },
 };
-use std::{sync::Arc, thread, time::*};
+use futures::{
+    future::Future,
+    task::{LocalWaker, Poll},
+};
+use holochain_core_types::{dna::Dna, entry::ToEntry, error::HolochainError};
+use std::{
+    pin::{Pin, Unpin},
+    sync::Arc,
+    time::*,
+};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -23,104 +32,87 @@ const INITIALIZATION_TIMEOUT: u64 = 30;
 /// the Dna error or errors from the genesis callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
-pub fn initialize_application(
+pub async fn initialize_application(
     dna: Dna,
-    context: Arc<Context>,
-) -> Box<dyn Future<Item = NucleusStatus, Error = String>> {
+    context: &Arc<Context>,
+) -> Result<NucleusStatus, HolochainError> {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
-        return Box::new(future::err(
-            "Can't trigger initialization: Nucleus status is not New".to_string(),
+        return Err(HolochainError::new(
+            "Can't trigger initialization: Nucleus status is not New",
         ));
     }
 
     let context_clone = context.clone();
     let dna_clone = dna.clone();
 
-    thread::spawn(move || {
-        let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        dispatch_action_and_wait(
-            &context_clone.action_channel,
-            &context_clone.observer_channel,
-            action_wrapper.clone(),
-        );
+    let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
+    dispatch_action_and_wait(
+        &context_clone.action_channel,
+        &context_clone.observer_channel,
+        action_wrapper.clone(),
+    );
 
-        let dna_entry = Entry::Dna(dna_clone);
-        let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
-
-        // Commit DNA to chain
-        let dna_commit = block_on(commit_entry(
-            dna_entry,
-            &context_clone.action_channel.clone(),
-            &context_clone,
-        ));
-
+    // Commit DNA to chain
+    let dna_entry = dna.to_entry();
+    let dna_commit = await!(commit_entry(dna_entry, &context_clone));
+    if dna_commit.is_err() {
         // Let initialization fail if DNA could not be committed.
         // Currently this cannot happen since ToEntry for Dna always creates
         // an entry from a Dna object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
-        #[cfg_attr(tarpaulin, skip)]
-        {
-            if dna_commit.is_err() {
-                context_clone
-                    .action_channel
-                    .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                        Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
-                    )))
-                    .expect("Action channel not usable in initialize_application()");
-                return;
-            };
-        }
-
-        // Commit AgentId to chain
-        let agent_id_commit = block_on(commit_entry(
-            agent_id_entry,
-            &context_clone.action_channel.clone(),
-            &context_clone,
-        ));
-
-        // Let initialization fail if AgentId could not be committed.
-        // Currently this cannot happen since ToEntry for Agent always creates
-        // an entry from an Agent object. So I can't create a test for the code below.
-        // Hence skipping it for codecov for now but leaving it in for resilience.
-        #[cfg_attr(tarpaulin, skip)]
-        {
-            if agent_id_commit.is_err() {
-                context_clone
-                    .action_channel
-                    .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                        Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
-                    )))
-                    .expect("Action channel not usable in initialize_application()");
-                return;
-            };
-        }
-
-        // map genesis across every zome
-        let results: Vec<_> = dna
-            .zomes
-            .keys()
-            .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
-            .collect();
-
-        let fail_result = results.iter().find(|ref r| match r {
-            CallbackResult::Fail(_) => true,
-            _ => false,
-        });
-
-        let maybe_error = fail_result.and_then(|result| match result {
-            CallbackResult::Fail(error_string) => Some(error_string.clone()),
-            _ => None,
-        });
-
         context_clone
             .action_channel
             .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                maybe_error,
+                Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
             )))
             .expect("Action channel not usable in initialize_application()");
+        return Err(HolochainError::new("error committing DNA"));
+    }
+
+    // Commit AgentId to chain
+    let agent_id_entry = context_clone.agent.to_entry();
+    let agent_id_commit = await!(commit_entry(agent_id_entry, &context_clone,));
+
+    // Let initialization fail if AgentId could not be committed.
+    // Currently this cannot happen since ToEntry for Agent always creates
+    // an entry from an Agent object. So I can't create a test for the code below.
+    // Hence skipping it for codecov for now but leaving it in for resilience.
+
+    if agent_id_commit.is_err() {
+        context_clone
+            .action_channel
+            .send(ActionWrapper::new(Action::ReturnInitializationResult(
+                Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
+            )))
+            .expect("Action channel not usable in initialize_application()");
+        return Err(HolochainError::new("error committing Agent"));
+    }
+
+    // map genesis across every zome
+    let results: Vec<_> = dna
+        .zomes
+        .keys()
+        .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
+        .collect();
+
+    let fail_result = results.iter().find(|ref r| match r {
+        CallbackResult::Fail(_) => true,
+        _ => false,
     });
 
-    Box::new(InitializationFuture {
+    let maybe_error = fail_result.and_then(|result| match result {
+        CallbackResult::Fail(error_string) => Some(error_string.clone()),
+        _ => None,
+    });
+
+    context_clone
+        .action_channel
+        .send(ActionWrapper::new(Action::ReturnInitializationResult(
+            maybe_error,
+        )))
+        .expect("Action channel not usable in initialize_application()");
+
+    await!(InitializationFuture {
         context: context.clone(),
         created_at: Instant::now(),
     })
@@ -133,34 +125,36 @@ pub struct InitializationFuture {
     created_at: Instant,
 }
 
-impl Future for InitializationFuture {
-    type Item = NucleusStatus;
-    type Error = String;
+impl Unpin for InitializationFuture {}
 
-    fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<Async<Self::Item>, Self::Error> {
+impl Future for InitializationFuture {
+    type Output = Result<NucleusStatus, HolochainError>;
+
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
 
         if Instant::now().duration_since(self.created_at)
             > Duration::from_secs(INITIALIZATION_TIMEOUT)
         {
-            return Err("Timeout while initializing".to_string());
+            return Poll::Ready(Err(HolochainError::ErrorGeneric(
+                "Timeout while initializing".to_string(),
+            )));
         }
         if let Some(state) = self.context.state() {
             match state.nucleus().status {
-                NucleusStatus::New => Ok(futures::Async::Pending),
-                NucleusStatus::Initializing => Ok(futures::Async::Pending),
-                NucleusStatus::Initialized => Ok(futures::Async::Ready(NucleusStatus::Initialized)),
-                NucleusStatus::InitializationFailed(ref error) => Err(error.clone()),
+                NucleusStatus::New => Poll::Pending,
+                NucleusStatus::Initializing => Poll::Pending,
+                NucleusStatus::Initialized => Poll::Ready(Ok(NucleusStatus::Initialized)),
+                NucleusStatus::InitializationFailed(ref error) => {
+                    Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
+                }
             }
         } else {
-            Ok(futures::Async::Pending)
+            Poll::Pending
         }
     }
 }

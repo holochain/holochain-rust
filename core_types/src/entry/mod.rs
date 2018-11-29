@@ -198,11 +198,13 @@ pub fn test_unpublishable_entry() -> Entry {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use cas::{
-        content::{AddressableContent, AddressableContentTestSuite},
-        storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+    use crate::{
+        cas::{
+            content::{AddressableContent, AddressableContentTestSuite},
+            storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
+        },
+        entry::{expected_entry_address, Entry},
     };
-    use entry::{expected_entry_address, Entry};
 
     #[test]
     /// tests for PartialEq

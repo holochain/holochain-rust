@@ -1,7 +1,11 @@
-use cas::content::Address;
-use error::HolochainError;
-use json::JsonString;
-use link::{Link, LinkActionKind};
+use crate::{
+    cas::content::Address,
+    entry::{entry_type::EntryType, Entry, ToEntry},
+    error::HolochainError,
+    json::JsonString,
+    link::{Link, LinkActionKind},
+};
+use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------
 // LinkAdd
@@ -40,12 +44,14 @@ impl LinkAdd {
 #[cfg(test)]
 pub mod tests {
 
-    use cas::content::AddressableContent;
-    use entry::{test_entry_a, test_entry_b, Entry};
-    use json::JsonString;
-    use link::{
-        link_add::LinkAdd,
-        tests::{example_link, example_link_action_kind, example_link_tag},
+    use crate::{
+        cas::content::AddressableContent,
+        entry::{entry_type::EntryType, test_entry_a, test_entry_b, Entry, ToEntry},
+        json::JsonString,
+        link::{
+            link_add::LinkAddEntry,
+            tests::{example_link, example_link_action_kind, example_link_tag},
+        },
     };
     use std::convert::TryFrom;
 

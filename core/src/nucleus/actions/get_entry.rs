@@ -1,7 +1,11 @@
 extern crate serde_json;
-use context::Context;
-use futures::{future, Future};
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
+use crate::context::Context;
+use futures::future::{self, FutureObj};
+use holochain_core_types::{
+    cas::content::Address,
+    entry::{Entry, SerializedEntry},
+    error::HolochainError,
+};
 use std::{convert::TryInto, sync::Arc};
 
 fn get_entry_from_dht_cas(
@@ -20,21 +24,21 @@ fn get_entry_from_dht_cas(
 /// GetEntry Action Creator
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
-pub fn get_entry(
-    context: &Arc<Context>,
+pub fn get_entry<'a>(
+    context: &'a Arc<Context>,
     address: Address,
-) -> Box<dyn Future<Item = Option<Entry>, Error = HolochainError>> {
+) -> FutureObj<'a, Result<Option<Entry>, HolochainError>> {
     match get_entry_from_dht_cas(context, address) {
-        Err(err) => Box::new(future::err(err)),
-        Ok(result) => Box::new(future::ok(result)),
+        Err(err) => FutureObj::new(Box::new(future::err(err))),
+        Ok(result) => FutureObj::new(Box::new(future::ok(result))),
     }
 }
 
 #[cfg(test)]
 pub mod tests {
+    use crate::instance::tests::test_context_with_state;
     use futures::executor::block_on;
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
-    use instance::tests::test_context_with_state;
 
     #[test]
     fn get_entry_from_dht_cas() {

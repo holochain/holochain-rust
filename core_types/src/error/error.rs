@@ -1,7 +1,9 @@
 use self::HolochainError::*;
-use error::{DnaError, RibosomeErrorCode};
+use crate::{
+    error::{DnaError, RibosomeErrorCode},
+    json::*,
+};
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::*;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -136,6 +138,12 @@ impl Error for HolochainError {
 impl From<HolochainError> for String {
     fn from(holochain_error: HolochainError) -> Self {
         holochain_error.to_string()
+    }
+}
+
+impl From<String> for HolochainError {
+    fn from(error: String) -> Self {
+        HolochainError::ErrorGeneric(error)
     }
 }
 
@@ -322,7 +330,8 @@ mod tests {
                 kind: error,
                 file: file!().to_string(),
                 line: line!().to_string(),
-            }.to_string(),
+            }
+            .to_string(),
         );
     }
 

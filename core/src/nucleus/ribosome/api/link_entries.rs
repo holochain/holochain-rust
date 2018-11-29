@@ -1,18 +1,10 @@
-use agent::actions::commit::*;
-use dht::actions::add_link::*;
-use futures::{executor::block_on, FutureExt};
-use holochain_core_types::{
-    cas::content::Address,
-    entry::Entry,
-    error::HolochainError,
-    link::link_add::LinkAdd,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
+use crate::{
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::author_entry::author_entry,
 };
+use futures::executor::block_on;
+use holochain_core_types::{entry::ToEntry, error::HolochainError, link::link_add::LinkAddEntry};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
-use nucleus::{
-    actions::{build_validation_package::*, validate::*},
-    ribosome::{api::ZomeApiResult, Runtime},
-};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -39,33 +31,8 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let entry = Entry::LinkAdd(link_add);
 
     // Wait for future to be resolved
-    let result: Result<(), HolochainError> = block_on(
-        // 1. Build the context needed for validation of the entry
-        build_validation_package(&entry, &runtime.context)
-            .and_then(|validation_package| {
-                Ok(ValidationData {
-                    package: validation_package,
-                    sources: vec![Address::from("<insert your agent key here>")],
-                    lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Commit,
-                })
-            })
-            // 2. Validate the entry
-            .and_then(|validation_data| {
-                validate_entry(entry.clone(), validation_data, &runtime.context)
-            })
-            // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| {
-                commit_entry(
-                    entry.clone(),
-                    &runtime.context.action_channel,
-                    &runtime.context,
-                )
-            })
-            // 4. Add link to the DHT's meta system so it can actually be retrieved
-            //    when looked-up via the base
-            .and_then(|_| add_link(&input.to_link(), &runtime.context)),
-    );
+    let result: Result<(), HolochainError> =
+        block_on(author_entry(&entry, &runtime.context)).map(|_| ());
 
     runtime.store_result(result)
 }
@@ -75,8 +42,18 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use agent::actions::commit::commit_entry;
-    use context::Context;
+    use crate::{
+        agent::actions::commit::commit_entry,
+        context::Context,
+        instance::{
+            tests::{test_context_and_logger, test_instance},
+            Instance,
+        },
+        nucleus::ribosome::{
+            api::{tests::*, ZomeApiFunction},
+            Defn,
+        },
+    };
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -85,14 +62,6 @@ pub mod tests {
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::link_entries::*;
-    use instance::{
-        tests::{test_context_and_logger, test_instance},
-        Instance,
-    };
-    use nucleus::ribosome::{
-        api::{tests::*, ZomeApiFunction},
-        Defn,
-    };
     use serde_json;
     use std::{convert::TryFrom, sync::Arc};
 
@@ -170,11 +139,7 @@ pub mod tests {
     fn returns_ok_if_base_is_present() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(
-            test_entry(),
-            &context.action_channel.clone(),
-            &context,
-        )).expect("Could not commit entry for testing");
+        block_on(commit_entry(test_entry(), &context)).expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -196,11 +161,7 @@ pub mod tests {
     fn errors_with_wrong_tag() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(
-            test_entry(),
-            &context.action_channel.clone(),
-            &context,
-        )).expect("Could not commit entry for testing");
+        block_on(commit_entry(test_entry(), &context)).expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -221,17 +182,10 @@ pub mod tests {
     fn works_with_linked_from_defined_link() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(
-            test_entry(),
-            &context.action_channel.clone(),
-            &context,
-        )).expect("Could not commit entry for testing");
+        block_on(commit_entry(test_entry(), &context)).expect("Could not commit entry for testing");
 
-        block_on(commit_entry(
-            test_entry_b(),
-            &context.action_channel.clone(),
-            &context,
-        )).expect("Could not commit entry for testing");
+        block_on(commit_entry(test_entry_b(), &context))
+            .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),

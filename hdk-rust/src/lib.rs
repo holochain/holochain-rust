@@ -37,5 +37,5 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 
 pub mod meta;
 
-pub use api::*;
+pub use crate::api::*;
 pub use holochain_core_types::validation::*;

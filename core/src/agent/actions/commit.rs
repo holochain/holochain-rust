@@ -1,28 +1,33 @@
 extern crate futures;
-use action::{Action, ActionWrapper};
-use agent::state::ActionResponse;
-use context::Context;
-use futures::Future;
+use crate::{
+    action::{Action, ActionWrapper},
+    agent::state::ActionResponse,
+    context::Context,
+    instance::dispatch_action,
+};
+use futures::{
+    future::Future,
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
-use instance::dispatch_action;
-use std::sync::{mpsc::SyncSender, Arc};
+use std::{
+    pin::{Pin, Unpin},
+    sync::Arc,
+};
+//use core::mem::PinMut;
 
 /// Commit Action Creator
 /// This is the high-level commit function that wraps the whole commit process and is what should
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an ActionResponse.
-pub fn commit_entry(
-    entry: Entry,
-    action_channel: &SyncSender<ActionWrapper>,
-    context: &Arc<Context>,
-) -> CommitFuture {
+pub async fn commit_entry(entry: Entry, context: &Arc<Context>) -> Result<Address, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::Commit(entry));
-    dispatch_action(action_channel, action_wrapper.clone());
-    CommitFuture {
+    dispatch_action(&context.action_channel, action_wrapper.clone());
+    await!(CommitFuture {
         context: context.clone(),
         action: action_wrapper,
-    }
+    })
 }
 
 /// CommitFuture resolves to ActionResponse
@@ -32,19 +37,17 @@ pub struct CommitFuture {
     action: ActionWrapper,
 }
 
-impl Future for CommitFuture {
-    type Item = Address;
-    type Error = HolochainError;
+impl Unpin for CommitFuture {}
 
-    fn poll(
-        &mut self,
-        cx: &mut futures::task::Context<'_>,
-    ) -> Result<futures::Async<Address>, Self::Error> {
+impl Future for CommitFuture {
+    type Output = Result<Address, HolochainError>;
+
+    fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().wake();
+        lw.wake();
         match self
             .context
             .state()
@@ -54,11 +57,11 @@ impl Future for CommitFuture {
             .get(&self.action)
         {
             Some(ActionResponse::Commit(result)) => match result {
-                Ok(address) => Ok(futures::Async::Ready(address.clone())),
-                Err(error) => Err(error.clone()),
+                Ok(address) => Poll::Ready(Ok(address.clone())),
+                Err(error) => Poll::Ready(Err(error.clone())),
             },
             Some(_) => unreachable!(),
-            None => Ok(futures::Async::Pending),
+            None => Poll::Pending,
         }
     }
 }

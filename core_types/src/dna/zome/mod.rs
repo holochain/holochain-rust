@@ -3,12 +3,8 @@
 pub mod capabilities;
 pub mod entry_types;
 
-use dna::{wasm::DnaWasm, zome::entry_types::EntryTypeDef};
-use entry::entry_type::EntryType;
-use error::HolochainError;
-use json::JsonString;
-use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
-use std::collections::HashMap;
+use crate::dna::wasm::DnaWasm;
+use std::collections::BTreeMap;
 
 /// Enum for "zome" "config" "error_handling" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -96,11 +92,11 @@ pub struct Zome {
     #[serde(default)]
     #[serde(serialize_with = "serialize_entry_types")]
     #[serde(deserialize_with = "deserialize_entry_types")]
-    pub entry_types: HashMap<EntryType, entry_types::EntryTypeDef>,
+    pub entry_types: BTreeMap<EntryType, entry_types::EntryTypeDef>,
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
-    pub capabilities: HashMap<String, capabilities::Capability>,
+    pub capabilities: BTreeMap<String, capabilities::Capability>,
 
     /// Validation code for this entry_type.
     #[serde(default)]
@@ -115,8 +111,8 @@ impl Default for Zome {
         Zome {
             description: String::new(),
             config: Config::new(),
-            entry_types: HashMap::new(),
-            capabilities: HashMap::new(),
+            entry_types: BTreeMap::new(),
+            capabilities: BTreeMap::new(),
             code: DnaWasm::new(),
         }
     }
@@ -127,8 +123,8 @@ impl Zome {
     pub fn new(
         description: &str,
         config: &Config,
-        entry_types: &HashMap<EntryType, entry_types::EntryTypeDef>,
-        capabilities: &HashMap<String, capabilities::Capability>,
+        entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
+        capabilities: &BTreeMap<String, capabilities::Capability>,
         code: &DnaWasm,
     ) -> Zome {
         Zome {
@@ -143,9 +139,8 @@ impl Zome {
 
 #[cfg(test)]
 pub mod tests {
-    use dna::zome::{entry_types::EntryTypeDef, ErrorHandling, Zome};
-    use entry::entry_type::EntryType;
-    use json::JsonString;
+    use super::*;
+    use crate::dna::zome::Zome;
     use serde_json;
     use std::{collections::HashMap, convert::TryFrom};
 
@@ -164,7 +159,8 @@ pub mod tests {
                 "entry_types": {},
                 "capabilities": {}
             }"#,
-        ).unwrap();
+        )
+        .unwrap();
 
         let mut zome = Zome::default();
         zome.description = String::from("test");

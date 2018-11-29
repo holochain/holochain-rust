@@ -1,13 +1,15 @@
-use context::Context;
+use crate::{
+    context::Context,
+    nucleus::{
+        ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
+        ZomeFnCall, ZomeFnResult,
+    },
+};
 use holochain_core_types::{
     error::{HcResult, HolochainError, RibosomeErrorCode, RibosomeReturnCode},
     json::JsonString,
 };
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
-use nucleus::{
-    ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
-    ZomeFnCall, ZomeFnResult,
-};
 use std::{str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,

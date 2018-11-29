@@ -1,8 +1,10 @@
 //! all DHT reducers
 
-use action::{Action, ActionWrapper};
-use context::Context;
-use dht::dht_store::DhtStore;
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    dht::dht_store::DhtStore,
+};
 use holochain_core_types::{
     cas::content::AddressableContent, eav::EntityAttributeValue, entry::Entry,
     error::HolochainError,
@@ -37,7 +39,7 @@ pub fn reduce(
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
-        Action::Commit(_) => Some(reduce_commit_entry),
+        Action::Hold(_) => Some(reduce_hold_entry),
         Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::AddLink(_) => Some(reduce_add_link),
         //Action::GetLinks(_) => Some(reduce_get_links),
@@ -46,91 +48,24 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
 }
 
 //
-pub(crate) fn commit_sys_entry(
+pub(crate) fn reduce_hold_entry(
     _context: Arc<Context>,
     old_store: &DhtStore,
-    entry: &Entry,
+    action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    // system entry type must be publishable
-    if !entry.entry_type().to_owned().can_publish() {
-        return None;
-    }
-    // Add it local storage
-    let new_store = (*old_store).clone();
-    let storage = &new_store.content_storage().clone();
-    let res = storage.write().unwrap().add(entry);
-    if res.is_err() {
-        // TODO #439 - Log the error. Once we have better logging.
-        return None;
-    }
-    // Note: System entry types are not published to the network
-    Some(new_store)
-}
-
-//
-pub(crate) fn commit_app_entry(
-    context: Arc<Context>,
-    old_store: &DhtStore,
-    entry: &Entry,
-) -> Option<DhtStore> {
-    // pre-condition: if app entry_type must be valid
-    // get entry_type definition
-    let dna = context
-        .state()
-        .expect("context must have a State.")
-        .nucleus()
-        .dna()
-        .expect("context.state must hold DNA in order to commit an app entry.");
-    let maybe_def = dna.get_entry_type_def(&entry.entry_type().to_string());
-    if maybe_def.is_none() {
-        // TODO #439 - Log the error. Once we have better logging.
-        return None;
-    }
-    let entry_type_def = maybe_def.unwrap();
-
-    // app entry type must be publishable
-    if !entry_type_def.sharing.clone().can_publish() {
-        return None;
-    }
+    let action = action_wrapper.action();
+    let entry = unwrap_to!(action => Action::Hold);
 
     // Add it to local storage...
-    let mut new_store = (*old_store).clone();
+    let new_store = (*old_store).clone();
     let storage = &new_store.content_storage().clone();
     let res = (*storage.write().unwrap()).add(entry);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         return None;
     }
-    // ...and publish to the network if its not private
-    new_store.network_mut().publish(entry);
     // Done
     Some(new_store)
-}
-
-//
-pub(crate) fn reduce_commit_entry(
-    context: Arc<Context>,
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Commit);
-
-    // pre-condition: Must not already have entry in local storage
-    let storage = &old_store.content_storage().clone();
-    if (*storage.read().unwrap())
-        .contains(&entry.address())
-        .unwrap()
-    {
-        // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
-        return None;
-    }
-
-    // Handle sys entries and app entries differently
-    if entry.entry_type().to_owned().is_sys() {
-        return commit_sys_entry(context, old_store, entry);
-    }
-    return commit_app_entry(context, old_store, entry);
 }
 
 //
@@ -214,45 +149,42 @@ pub(crate) fn reduce_get_links(
 #[cfg(test)]
 pub mod tests {
 
-    use action::{Action, ActionWrapper};
-    use dht::{
-        dht_reducers::{commit_sys_entry, reduce},
-        dht_store::DhtStore,
+    use crate::{
+        action::{Action, ActionWrapper},
+        dht::{
+            dht_reducers::{reduce, reduce_hold_entry},
+            dht_store::DhtStore,
+        },
+        instance::tests::test_context,
+        state::test_store,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_entry, test_sys_entry, test_unpublishable_entry, Entry},
+        entry::{test_entry, test_sys_entry, Entry, SerializedEntry},
         link::Link,
     };
-    use instance::tests::test_context;
-    use state::test_store;
-    use std::sync::{Arc, RwLock};
+    use std::{
+        convert::TryFrom,
+        sync::{Arc, RwLock},
+    };
 
     #[test]
-    fn commit_sys_entry_test() {
+    fn reduce_hold_entry_test() {
         let context = test_context("bob");
         let store = test_store(context.clone());
-        let entry = test_entry();
-
-        let unpublishable_entry = test_unpublishable_entry();
-
-        let new_dht_store =
-            commit_sys_entry(Arc::clone(&context), &store.dht(), &unpublishable_entry);
 
         // test_entry is not sys so should do nothing
         let storage = &store.dht().content_storage().clone();
-        assert_eq!(None, new_dht_store);
-        assert_eq!(
-            None,
-            (*storage.read().unwrap())
-                .fetch(&entry.address())
-                .expect("could not fetch from cas")
-        );
 
         let sys_entry = test_sys_entry();
 
-        let new_dht_store = commit_sys_entry(Arc::clone(&context), &store.dht(), &sys_entry)
-            .expect("there should be a new store for committing a sys entry");
+        let new_dht_store = reduce_hold_entry(
+            Arc::clone(&context),
+            &store.dht(),
+            &ActionWrapper::new(Action::Hold(sys_entry.clone())),
+        )
+        .expect("there should be a new store for committing a sys entry");
+
         assert_eq!(
             Some(sys_entry.clone()),
             (*storage.read().unwrap())
@@ -343,6 +275,27 @@ pub mod tests {
         let result = new_dht_store.add_link_actions().get(&action).unwrap();
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    pub fn reduce_hold_test() {
+        let context = test_context("bill");
+        let store = test_store(context.clone());
+
+        let entry = test_entry();
+        let action_wrapper = ActionWrapper::new(Action::Hold(entry.clone()));
+
+        store.reduce(context.clone(), action_wrapper);
+
+        let cas = context.file_storage.read().unwrap();
+
+        let maybe_json = cas.fetch(&entry.address()).unwrap();
+        let result_entry = match maybe_json {
+            Some(content) => SerializedEntry::try_from(content).unwrap().deserialize(),
+            None => panic!("Could not find received entry in CAS"),
+        };
+
+        assert_eq!(&entry, &result_entry,);
     }
 
 }

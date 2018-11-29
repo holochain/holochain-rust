@@ -1,15 +1,12 @@
-use agent::actions::commit::*;
-use futures::{executor::block_on, FutureExt};
+use crate::{
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::author_entry::author_entry,
+};
+use futures::executor::block_on;
 use holochain_core_types::{
     cas::content::Address,
     entry::Entry,
     error::HolochainError,
-    hash::HashString,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
-};
-use nucleus::{
-    actions::{build_validation_package::*, validate::*},
-    ribosome::{api::ZomeApiResult, Runtime},
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -34,30 +31,8 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     };
 
     // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> = block_on(
-        // 1. Build the context needed for validation of the entry
-        build_validation_package(&entry, &runtime.context)
-            .and_then(|validation_package| {
-                Ok(ValidationData {
-                    package: validation_package,
-                    sources: vec![HashString::from("<insert your agent key here>")],
-                    lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Commit,
-                })
-            })
-            // 2. Validate the entry
-            .and_then(|validation_data| {
-                validate_entry(entry.clone(), validation_data, &runtime.context)
-            })
-            // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| {
-                commit_entry(
-                    entry.clone(),
-                    &runtime.context.action_channel,
-                    &runtime.context,
-                )
-            }),
-    );
+    let task_result: Result<Address, HolochainError> =
+        block_on(author_entry(&entry, &runtime.context));
 
     runtime.store_result(task_result)
 }
@@ -67,15 +42,15 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
+    use crate::nucleus::ribosome::{
+        api::{tests::test_zome_api_function, ZomeApiFunction},
+        Defn,
+    };
     use holochain_core_types::{
         cas::content::Address,
         entry::{test_entry, Entry},
         error::ZomeApiInternalResult,
         json::JsonString,
-    };
-    use nucleus::ribosome::{
-        api::{tests::test_zome_api_function, ZomeApiFunction},
-        Defn,
     };
 
     /// dummy commit args from standard test entry
@@ -103,5 +78,4 @@ pub mod tests {
             ),
         );
     }
-
 }

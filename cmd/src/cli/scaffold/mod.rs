@@ -1,7 +1,7 @@
 pub mod assemblyscript;
 pub mod rust;
 
-use error::DefaultResult;
+use crate::error::DefaultResult;
 use std::path::Path;
 
 pub trait Scaffold {

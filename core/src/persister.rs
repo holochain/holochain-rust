@@ -1,5 +1,8 @@
-use agent::state::{AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS};
-use context::Context;
+use crate::{
+    agent::state::{AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS},
+    context::Context,
+    state::State,
+};
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent, Content},
@@ -7,7 +10,6 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use state::State;
 use std::{
     convert::TryFrom,
     sync::{Arc, RwLock},
@@ -65,8 +67,10 @@ mod tests {
 
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use instance::tests::test_context_with_agent_state;
-    use persister::{Persister, SimplePersister};
+    use crate::{
+        instance::tests::test_context_with_agent_state,
+        persister::{Persister, SimplePersister},
+    };
     use std::fs::File;
 
     #[test]
@@ -80,6 +84,12 @@ mod tests {
         let state = context.state().unwrap().clone();
         persistance.save(state.clone()).unwrap();
         let state_from_file = persistance.load(context).unwrap().unwrap();
-        assert_eq!(state, state_from_file)
+        assert_eq!(state.agent(), state_from_file.agent());
+        assert_eq!(state.nucleus(), state_from_file.nucleus());
+        assert_eq!(state.dht(), state_from_file.dht());
+
+        // the network is NOT the same because it can't be serialzied rationally
+        // need to fix this so `persitance.load()` takes a networks or something
+        assert_ne!(state.network(), state_from_file.network());
     }
 }

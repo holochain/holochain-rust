@@ -1,18 +1,21 @@
-use action::{Action, ActionWrapper, AgentReduceFn};
-use agent::chain_store::ChainStore;
-use context::Context;
+use crate::{
+    action::{Action, ActionWrapper, AgentReduceFn},
+    agent::chain_store::ChainStore,
+    context::Context,
+    nucleus::actions::get_entry::get_entry,
+    state::State,
+};
 use holochain_core_types::{
+    agent::Agent,
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
-    entry::Entry,
+    entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
     error::HolochainError,
     json::*,
-    keys::Keys,
     signature::Signature,
     time::Iso8601,
 };
 use serde_json;
-use state::State;
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
@@ -23,7 +26,6 @@ use std::{
 /// Holds the agent's source chain and keys.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
-    keys: Option<Keys>,
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
@@ -36,7 +38,6 @@ impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain: ChainStore) -> AgentState {
         AgentState {
-            keys: None,
             actions: HashMap::new(),
             chain,
             top_chain_header: None,
@@ -45,16 +46,10 @@ impl AgentState {
 
     pub fn new_with_top_chain_header(chain: ChainStore, chain_header: ChainHeader) -> AgentState {
         AgentState {
-            keys: None,
             actions: HashMap::new(),
             chain,
             top_chain_header: Some(chain_header),
         }
-    }
-
-    /// getter for a copy of self.keys
-    pub fn keys(&self) -> Option<Keys> {
-        self.keys.clone()
     }
 
     /// getter for a copy of self.actions
@@ -69,6 +64,25 @@ impl AgentState {
 
     pub fn top_chain_header(&self) -> Option<ChainHeader> {
         self.top_chain_header.clone()
+    }
+
+    pub async fn get_agent<'a>(
+        &'a self,
+        context: &'a Arc<Context>,
+    ) -> Result<Agent, HolochainError> {
+        let agent_entry_address = self
+            .chain()
+            .iter_type(&self.top_chain_header, &EntryType::AgentId)
+            .nth(0)
+            .and_then(|chain_header| Some(chain_header.entry_address().clone()))
+            .ok_or(HolochainError::ErrorGeneric(
+                "Agent entry not found".to_string(),
+            ))?;
+
+        let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?
+            .ok_or("Agent entry not found".to_string())?;
+
+        Ok(Agent::from_entry(&agent_entry))
     }
 }
 
@@ -252,8 +266,11 @@ pub mod tests {
     use super::{
         reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState, AgentStateSnapshot,
     };
-    use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use agent::chain_store::tests::test_chain_store;
+    use crate::{
+        action::tests::{test_action_wrapper_commit, test_action_wrapper_get},
+        agent::chain_store::tests::test_chain_store,
+        instance::tests::test_context,
+    };
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
@@ -261,7 +278,6 @@ pub mod tests {
         error::HolochainError,
         json::JsonString,
     };
-    use instance::tests::test_context;
     use serde_json;
     use std::{collections::HashMap, sync::Arc};
 
@@ -284,12 +300,6 @@ pub mod tests {
     /// smoke test for building a new AgentState
     fn agent_state_new() {
         test_agent_state();
-    }
-
-    #[test]
-    /// test for the agent state keys getter
-    fn agent_state_keys() {
-        assert_eq!(None, test_agent_state().keys());
     }
 
     #[test]

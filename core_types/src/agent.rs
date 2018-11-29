@@ -1,13 +1,14 @@
 //! Represents an agent entry in the cas
 
-use cas::content::{Address, AddressableContent, Content};
-use entry::Entry;
-use error::HcResult;
-use json::JsonString;
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::{entry_type::EntryType, Entry, ToEntry},
+    json::JsonString,
+};
 
 use std::convert::TryFrom;
 
-use error::HolochainError;
+use crate::error::HolochainError;
 use reed_solomon::{Decoder, Encoder};
 
 const PARITY_LEN: usize = 2;

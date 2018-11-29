@@ -21,8 +21,8 @@ pub fn create_path_if_not_exists(path: &str) -> HcResult<()> {
 #[cfg(test)]
 pub mod tests {
     use super::create_path_if_not_exists;
+    use crate::path::storage_path;
     use holochain_core_types::error::HolochainError;
-    use path::storage_path;
     use std::path::{Path, MAIN_SEPARATOR};
     extern crate tempfile;
     use self::tempfile::tempdir;
@@ -36,7 +36,7 @@ pub mod tests {
 
     #[test]
     fn test_create_path_if_not_exists() {
-        let bad_path = storage_path(Path::new("/foo"), "bar").unwrap();
+        let bad_path = storage_path(Path::new("/*?abc"), "bar").unwrap();
         let result = create_path_if_not_exists(&bad_path);
         match result {
             Ok(()) => unreachable!(),

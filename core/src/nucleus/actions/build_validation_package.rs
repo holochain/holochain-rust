@@ -42,14 +42,10 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                     return ValidationPackageFuture {
                         context: context.clone(),
                         key: id,
-                        error: Some(
-                            HolochainError::ValidationFailed(
-                                format!(
-                                    "Attempted to validate system entry type {:?}",
-                                    entry.entry_type(),
-                                )
-                            )
-                        )
+                        error: Some(HolochainError::ValidationFailed(format!(
+                            "Attempted to validate system entry type {:?}",
+                            entry.entry_type(),
+                        ))),
                     };
                 }
             })

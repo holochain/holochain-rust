@@ -13,13 +13,12 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{dna::Dna, error::HolochainError};
+use holochain_core_types::{dna::Dna, entry::Entry, error::HolochainError};
 use std::{
     pin::{Pin, Unpin},
     sync::Arc,
     time::*,
 };
-use holochain_core_types::entry::Entry;
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.

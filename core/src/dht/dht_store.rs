@@ -91,11 +91,9 @@ impl DhtStore {
         address: Address,
         tag: String,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        self.meta_storage.read()?.fetch_eav(
-            Some(address),
-            Some(format!("link__{}", tag)),
-            None,
-        )
+        self.meta_storage
+            .read()?
+            .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)
     }
 
     // Getters (for reducers)

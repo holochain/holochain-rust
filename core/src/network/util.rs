@@ -1,9 +1,6 @@
 use crate::{agent::chain_header, context::Context};
 use holochain_core_types::{
-    cas::content::Address,
-    chain_header::ChainHeader,
-    entry::Entry,
-    error::HolochainError,
+    cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
 };
 use std::{convert::TryInto, sync::Arc};
 

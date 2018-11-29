@@ -4,9 +4,9 @@ use crate::{
     network::util::EntryWithHeader,
 };
 use futures::executor::block_on;
+use holochain_core_types::entry::Entry;
 use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolWrapper};
 use std::{convert::TryFrom, sync::Arc};
-use holochain_core_types::entry::Entry;
 
 pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
@@ -18,10 +18,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 let entry_with_header: EntryWithHeader =
                     serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap())
                         .unwrap();
-                let _ = block_on(hold_entry(
-                    &entry_with_header.entry,
-                    &context.clone(),
-                ));
+                let _ = block_on(hold_entry(&entry_with_header.entry, &context.clone()));
             }
             Ok(ProtocolWrapper::StoreDhtMeta(dht_meta_data)) => {
                 let entry_with_header: EntryWithHeader =

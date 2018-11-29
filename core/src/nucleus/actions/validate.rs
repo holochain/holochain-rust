@@ -46,18 +46,12 @@ pub fn validate_entry<'a>(
             .get_zome_name_for_app_entry_type(match &entry.entry_type() {
                 EntryType::App(app_entry_type) => app_entry_type,
                 _ => {
-                    return FutureObj::new(
-                        Box::new(
-                            future::err(
-                                HolochainError::ValidationFailed(
-                                    format!(
-                                        "Attempted to validate system entry type {:?}",
-                                        entry.entry_type()
-                                    )
-                                )
-                            )
-                        )
-                    );
+                    return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
+                        format!(
+                            "Attempted to validate system entry type {:?}",
+                            entry.entry_type()
+                        ),
+                    ))));
                 }
             })
             .is_none()

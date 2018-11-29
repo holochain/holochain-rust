@@ -52,14 +52,12 @@ fn publish_link(
     let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
     let link_add = match entry {
         Entry::LinkAdd(link_add) => link_add,
-        _ => return Err(
-            HolochainError::ErrorGeneric(
-                format!(
-                    "Received bad entry type. Expected Entry::LinkAdd received {:?}",
-                    entry,
-                )
-            )
-        )
+        _ => {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Received bad entry type. Expected Entry::LinkAdd received {:?}",
+                entry,
+            )))
+        }
     };
     let link = link_add.link().clone();
 

@@ -48,7 +48,6 @@ where
 /// data is stored as a JsonString
 #[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub enum Entry {
-    // @TODO don't skip
     #[serde(serialize_with = "serialize_app_entry")]
     #[serde(deserialize_with = "deserialize_app_entry")]
     App(AppEntryType, AppEntryValue),

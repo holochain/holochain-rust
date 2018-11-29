@@ -9,7 +9,7 @@
 
 all: lint build_holochain build_cmd
 
-CORE_RUST_VERSION ?= nightly-2018-10-12
+CORE_RUST_VERSION ?= nightly-2018-11-28
 TOOLS_RUST_VERSION ?= nightly-2018-10-12
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
@@ -116,13 +116,13 @@ install_rust_tools: tools_toolchain
 install_ci: core_toolchain
 	# tarpaulin (code coverage)
 	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
-	$(CARGO_TARPULIN) install -f cargo-tarpaulin; \
+		 $(CARGO_TARPULIN) install cargo-tarpaulin --force; \
 	fi
 
 .PHONY: install_mdbook
 install_mdbook: tools_toolchain
 	if ! $(CARGO_TOOLS) install --list | grep 'mdbook'; then \
-		$(CARGO_TOOLS) install mdbook --vers "^0.2.2"; \
+	    $(CARGO_TOOLS) install mdbook --vers "^0.2.2"; \
 	fi
 
 # list all our found "C" binding tests

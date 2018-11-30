@@ -13,7 +13,7 @@ CORE_RUST_VERSION ?= nightly-2018-11-28
 TOOLS_RUST_VERSION ?= nightly-2018-10-12
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
-CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+CARGO_TARPULIN_INSTALL = RUSTFLAGS="--cfg procmacro2_semver_exempt -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -116,7 +116,7 @@ install_rust_tools: tools_toolchain
 install_ci: core_toolchain
 	# tarpaulin (code coverage)
 	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
-		 $(CARGO_TARPULIN) install cargo-tarpaulin --force; \
+		 $(CARGO_TARPULIN_INSTALL) install cargo-tarpaulin --force; \
 	fi
 
 .PHONY: install_mdbook

@@ -118,15 +118,18 @@ pub fn get_entry_rec<'a>(
     entry_result.crud_status.push(meta.0);
     if let Some(new_address) = meta.1 {
         entry_result.crud_links.insert(address, new_address.clone());
-        // 4. Follow link depending on StatusRequestKind
-        match options.status_request {
-            StatusRequestKind::Initial => {}
-            StatusRequestKind::Latest => {
-                *entry_result = GetEntryResult::new();
-                get_entry_rec(context, entry_result, new_address, options)?;
-            }
-            StatusRequestKind::All => {
-                get_entry_rec(context, entry_result, new_address, options)?;
+        // Don't follow link if its a DeletionEntry
+        if meta.0 != CrudStatus::DELETED {
+            // 4. Follow link depending on StatusRequestKind
+            match options.status_request {
+                StatusRequestKind::Initial => {}
+                StatusRequestKind::Latest => {
+                    *entry_result = GetEntryResult::new();
+                    get_entry_rec(context, entry_result, new_address, options)?;
+                }
+                StatusRequestKind::All => {
+                    get_entry_rec(context, entry_result, new_address, options)?;
+                }
             }
         }
     }

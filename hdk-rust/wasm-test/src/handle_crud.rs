@@ -242,7 +242,7 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     assert_eq!(history.entries[1], SerializedEntry::from(entry_v2.clone()));
     assert_eq!(history.addresses[1], addr_v2.clone());
     assert_eq!(history.crud_status[1], CrudStatus::DELETED);
-    assert_eq!(history.crud_links.get(&addr_v2.clone()), None);
+    assert!(history.crud_links.get(&addr_v2.clone()).is_some());
 
     JsonString::from(history)
 }

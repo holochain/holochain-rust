@@ -27,9 +27,19 @@ let
   ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
   '';
 
+  hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
+  ''
+  rm -rf ~/.cargo/registry;
+  rm -rf ~/.cargo/git;
+  '';
+
   hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test --all --exclude hc";
 
-  hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container" "cd nodejs_container && yarn install --ignore-scripts && node ./publish.js";
+  hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
+  ''
+  . ./scripts/build_nodejs_container.sh;
+  '';
+
   hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
@@ -37,10 +47,10 @@ let
   ''
   hc-fmt-check && \
   hc-wasm-build && \
-  hc-install-cmd && \
-  hc-install-node-container && \
   hc-test && \
-  hc-test-cmd && \
+  hc-install-cmd && \
+  # hc-test-cmd && \
+  hc-install-node-container && \
   hc-test-app-spec;
   '';
 
@@ -66,6 +76,8 @@ stdenv.mkDerivation rec {
 
     nodejs-8_13
     yarn
+
+    hc-flush-cargo-registry
 
     hc-wasm-build
     hc-test

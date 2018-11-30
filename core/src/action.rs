@@ -79,7 +79,7 @@ pub enum Action {
     ///
     UpdateEntry((Address, Address)),
     ///
-    RemoveEntry(Address),
+    RemoveEntry((Address, Address)),
     /// link to add
     AddLink(Link),
     /// get links from entry address and attribute-name

@@ -281,15 +281,14 @@ pub(crate) fn reduce_remove_entry(
 ) -> Option<DhtStore> {
     // Setup
     let action = action_wrapper.action();
-    let address = unwrap_to!(action => Action::RemoveEntry);
+    let (deleted_address, deletion_address) = unwrap_to!(action => Action::RemoveEntry);
     let mut new_store = (*old_store).clone();
-
     // Get latest entry
     let mut entry_result = GetEntryResult::new();
     let res = get_entry_rec(
         &context,
         &mut entry_result,
-        address.clone(),
+        deleted_address.clone(),
         GetEntryOptions::new(StatusRequestKind::Latest),
     );
     if let Err(err) = res {
@@ -298,14 +297,14 @@ pub(crate) fn reduce_remove_entry(
             .insert(action_wrapper.clone(), Err(err));
         return Some(new_store);
     }
-    let latest_address = entry_result.addresses.iter().last().unwrap();
 
+    let latest_deleted_address = entry_result.addresses.iter().last().unwrap();
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &old_store.content_storage().clone();
     let maybe_entry = content_storage
         .read()
         .unwrap()
-        .fetch(latest_address)
+        .fetch(latest_deleted_address)
         .unwrap();
     if maybe_entry.is_none() {
         new_store.actions_mut().insert(
@@ -318,7 +317,7 @@ pub(crate) fn reduce_remove_entry(
     }
     let ser_entry = SerializedEntry::try_from(maybe_entry.unwrap()).unwrap();
     let entry = Entry::from(ser_entry);
-    // pre-condition entry_type must not by sys type, since they cannot be deleted
+    // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
@@ -332,7 +331,7 @@ pub(crate) fn reduce_remove_entry(
     // get current status
     let meta_storage = &old_store.meta_storage().clone();
     let maybe_status_eav = meta_storage.read().unwrap().fetch_eav(
-        Some(latest_address.clone()),
+        Some(latest_deleted_address.clone()),
         Some(STATUS_NAME.to_string()),
         None,
     );
@@ -361,9 +360,18 @@ pub(crate) fn reduce_remove_entry(
     }
 
     // Update crud-status
-    let new_status_eav = create_crud_status_eav(latest_address, CrudStatus::DELETED);
+    let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::DELETED);
     let meta_storage = &new_store.meta_storage().clone();
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
+    if let Err(err) = res {
+        new_store
+            .actions_mut()
+            .insert(action_wrapper.clone(), Err(err));
+        return Some(new_store);
+    }
+    // Update crud-link
+    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address);
+    let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
     if let Err(err) = res {
         new_store
             .actions_mut()
@@ -373,7 +381,7 @@ pub(crate) fn reduce_remove_entry(
     // Done
     new_store
         .actions_mut()
-        .insert(action_wrapper.clone(), res.map(|_| latest_address.clone()));
+        .insert(action_wrapper.clone(), res.map(|_| latest_deleted_address.clone()));
     Some(new_store)
 }
 

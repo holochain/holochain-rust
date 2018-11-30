@@ -11,7 +11,7 @@ use futures::{
     future::{self, TryFutureExt},
 };
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::{Address, AddressableContent},
     entry::{deletion_entry::DeletionEntry, ToEntry},
     error::HolochainError,
     hash::HashString,
@@ -56,13 +56,14 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 validate_entry(deletion_entry.clone(), validation_data, &runtime.context)
             })
             // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| commit_entry(deletion_entry.clone(), None, &runtime.context))
+            .and_then(|_| commit_entry(deletion_entry.clone(), Some(deleted_entry_address.clone()), &runtime.context))
             // 4. Remove the entry in DHT metadata
             .and_then(|_| {
                 remove_entry(
                     &runtime.context,
                     &runtime.context.action_channel,
-                    deleted_entry_address,
+                    deleted_entry_address.clone(),
+                    deletion_entry.address().clone(),
                 )
             }),
     );

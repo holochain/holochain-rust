@@ -21,9 +21,10 @@ use std::{
 pub fn remove_entry(
     context: &Arc<Context>,
     action_channel: &SyncSender<ActionWrapper>,
-    address: Address,
+    deleted_address: Address,
+    deletion_address: Address,
 ) -> RemoveEntryFuture {
-    let action_wrapper = ActionWrapper::new(Action::RemoveEntry(address));
+    let action_wrapper = ActionWrapper::new(Action::RemoveEntry((deleted_address, deletion_address)));
     dispatch_action(action_channel, action_wrapper.clone());
     RemoveEntryFuture {
         context: context.clone(),

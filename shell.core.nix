@@ -32,6 +32,17 @@ let
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container" "cd nodejs_container && yarn install --ignore-scripts && node ./publish.js";
   hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
+  hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
+  hc-build-and-test-all = nixpkgs.writeShellScriptBin "hc-build-and-test-all"
+  ''
+  hc-fmt-check && \
+  hc-wasm-build && \
+  hc-install-cmd && \
+  hc-install-node-container && \
+  hc-test && \
+  hc-test-cmd && \
+  hc-test-app-spec;
+  '';
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
@@ -62,6 +73,8 @@ stdenv.mkDerivation rec {
     hc-install-node-container
     hc-install-cmd
     hc-test-cmd
+    hc-test-app-spec
+    hc-build-and-test-all
 
     hc-fmt
     hc-fmt-check

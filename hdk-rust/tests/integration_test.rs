@@ -252,8 +252,8 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry_result",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
-                ))),
+            {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+        ))),
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -265,8 +265,8 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
-                ))),
+            {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+        ))),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);

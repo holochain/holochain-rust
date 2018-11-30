@@ -202,10 +202,10 @@ mod tests {
         IpcNetWorker::new(
             Box::new(|_r| Ok(())),
             &json!({
-            "socketType": "zmq",
-            "ipcUri": "tcp://127.0.0.1:0",
-            "blockConnect": false
-        })
+                "socketType": "zmq",
+                "ipcUri": "tcp://127.0.0.1:0",
+                "blockConnect": false
+            })
             .into(),
         )
         .unwrap();
@@ -244,9 +244,9 @@ mod tests {
 
         let json = Protocol::Json(
             json!({
-            "method": "state",
-            "state": "need_config"
-        })
+                "method": "state",
+                "state": "need_config"
+            })
             .into(),
         );
         let data: NamedBinaryData = (&json).into();
@@ -270,9 +270,9 @@ mod tests {
 
         let json = Protocol::Json(
             json!({
-            "method": "defaultConfig",
-            "config": "test_config"
-        })
+                "method": "defaultConfig",
+                "config": "test_config"
+            })
             .into(),
         );
         let data: NamedBinaryData = (&json).into();
@@ -290,11 +290,11 @@ mod tests {
 
         let json = Protocol::Json(
             json!({
-            "method": "state",
-            "state": "ready",
-            "id": "test_id",
-            "bindings": ["test_binding_1"]
-        })
+                "method": "state",
+                "state": "ready",
+                "id": "test_id",
+                "bindings": ["test_binding_1"]
+            })
             .into(),
         );
         let data: NamedBinaryData = (&json).into();

@@ -719,7 +719,12 @@ pub fn verify_signature<S: Into<String>>(
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
+/// Commit an entry to your local source chain that "updates" a previous entry, meaning when getting
+/// the previous entry, the updated entry will be returned.
+/// `update_entry` sets the previous entry's status to `Modified` and adds the updated entry's
+/// address in the previous entry's metadata.
+/// The updated entry will hold the previous entry's address in its header,
+/// which will be used by validation routes.
 pub fn update_entry(new_entry: Entry, address: Address) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
     unsafe {
@@ -757,7 +762,9 @@ pub fn update_agent() -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
+/// Commit a DeletionEntry to your local source chain that marks an entry as 'Deleted by setting
+/// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
+/// metadata, which will be used by validation routes.
 pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
     let mut mem_stack: SinglePageStack;
     unsafe {

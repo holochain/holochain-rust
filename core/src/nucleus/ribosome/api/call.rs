@@ -198,7 +198,6 @@ pub mod tests {
     use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry
-    #[cfg_attr(tarpaulin, skip)]
     pub fn test_bad_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
             zome_name: "zome_name".to_string(),
@@ -211,7 +210,6 @@ pub mod tests {
             .into_bytes()
     }
 
-    #[cfg_attr(tarpaulin, skip)]
     pub fn test_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
             zome_name: test_zome_name(),
@@ -224,7 +222,6 @@ pub mod tests {
             .into_bytes()
     }
 
-    #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
@@ -245,7 +242,6 @@ pub mod tests {
         )
     }
 
-    #[cfg_attr(tarpaulin, skip)]
     fn test_reduce_call(
         dna: Dna,
         expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,

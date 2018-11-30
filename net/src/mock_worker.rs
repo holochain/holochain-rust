@@ -325,7 +325,6 @@ mod tests {
     static AGENT_ID_2: &'static str = "agent-hash-test-2";
 
     #[test]
-    #[cfg_attr(tarpaulin, skip)]
     fn it_mock_networker_flow() {
         // -- setup client 1 -- //
 

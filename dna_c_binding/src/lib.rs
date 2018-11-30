@@ -21,7 +21,6 @@ use holochain_core_types::json::JsonString;
 pub extern "C" fn holochain_dna_create() -> *mut Dna {
     match catch_unwind(|| Box::into_raw(Box::new(Dna::new()))) {
         Ok(r) => r,
-        #[cfg_attr(tarpaulin, skip)]
         Err(_) => std::ptr::null_mut(),
     }
 }

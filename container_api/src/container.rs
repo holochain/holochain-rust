@@ -344,7 +344,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg_attr(tarpaulin, skip)]
     fn test_instantiate_from_config() {
         let config = load_configuration::<Configuration>(test_toml()).unwrap();
         let maybe_holochain = instantiate_from_config(

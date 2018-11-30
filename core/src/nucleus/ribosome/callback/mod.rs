@@ -66,7 +66,6 @@ impl FromStr for Callback {
 
 impl Callback {
     // cannot test this because PartialEq is not implemented for fns
-    #[cfg_attr(tarpaulin, skip)]
     pub fn as_fn(
         &self,
     ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {

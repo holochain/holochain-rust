@@ -69,7 +69,6 @@ mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::Link};
 
-    #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry() -> Entry {
         nucleus::actions::tests::test_entry_package_entry()
     }

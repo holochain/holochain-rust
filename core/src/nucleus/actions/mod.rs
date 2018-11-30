@@ -23,10 +23,12 @@ pub mod tests {
     use std::sync::Arc;
     use test_utils::*;
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
         instance_by_name("jane", test_dna())
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_dna() -> Dna {
         // Setup the holochain instance
         let wasm =
@@ -57,6 +59,7 @@ pub mod tests {
         dna
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
         let (instance, context) =
             test_instance_and_context_by_name(dna, name).expect("Could not create test instance");
@@ -64,10 +67,12 @@ pub mod tests {
         (instance, initialized_context)
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_entry() -> Entry {
         Entry::new(EntryType::App(String::from("package_entry")), "test value")
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_entries() -> Entry {
         Entry::new(
             EntryType::App(String::from("package_chain_entries")),
@@ -75,6 +80,7 @@ pub mod tests {
         )
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_headers() -> Entry {
         Entry::new(
             EntryType::App(String::from("package_chain_headers")),
@@ -82,6 +88,7 @@ pub mod tests {
         )
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_full() -> Entry {
         Entry::new(
             EntryType::App(String::from("package_chain_full")),
@@ -89,6 +96,7 @@ pub mod tests {
         )
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
         let chain = context.state().unwrap().agent().chain();
 

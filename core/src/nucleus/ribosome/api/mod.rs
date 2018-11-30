@@ -142,6 +142,7 @@ fn noop(_runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
 
 impl ZomeApiFunction {
     // cannot test this because PartialEq is not implemented for fns
+    #[cfg_attr(tarpaulin, skip)]
     pub fn as_fn(&self) -> (fn(&mut Runtime, &RuntimeArgs) -> ZomeApiResult) {
         // TODO Implement a proper "abort" function for handling assemblyscript aborts
         // @see: https://github.com/holochain/holochain-rust/issues/324

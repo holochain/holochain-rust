@@ -336,11 +336,13 @@ pub mod tests {
     }
 
     /// create a test logger
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_logger() -> Arc<Mutex<TestLogger>> {
         Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
     }
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = Agent::generate_fake(agent_name);
         let file_storage = Arc::new(RwLock::new(
@@ -369,12 +371,14 @@ pub mod tests {
     }
 
     /// create a test context
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context(agent_name: &str) -> Arc<Context> {
         let (context, _) = test_context_and_logger(agent_name);
         context
     }
 
     /// create a test context
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
         agent_name: &str,
         action_channel: &SyncSender<ActionWrapper>,
@@ -403,6 +407,7 @@ pub mod tests {
         )
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_state() -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
@@ -424,6 +429,7 @@ pub mod tests {
         Arc::new(context)
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_agent_state() -> Arc<Context> {
         let file_system =
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
@@ -454,16 +460,19 @@ pub mod tests {
         assert_eq!(Context::default_channel_buffer_size(), 100);
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance(dna: Dna) -> Result<Instance, String> {
         test_instance_and_context(dna).map(|tuple| tuple.0)
     }
 
     /// create a canonical test instance
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
         test_instance_and_context_by_name(dna, "jane")
     }
 
     /// create a test instance
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_and_context_by_name(
         dna: Dna,
         name: &str,
@@ -542,6 +551,7 @@ pub mod tests {
     }
 
     /// create a test instance with a blank DNA
+    #[cfg_attr(tarpaulin, skip)]
     pub fn test_instance_blank() -> Instance {
         let mut dna = Dna::new();
         dna.zomes.insert("".to_string(), Zome::default());

@@ -379,9 +379,10 @@ pub(crate) fn reduce_remove_entry(
         return Some(new_store);
     }
     // Done
-    new_store
-        .actions_mut()
-        .insert(action_wrapper.clone(), res.map(|_| latest_deleted_address.clone()));
+    new_store.actions_mut().insert(
+        action_wrapper.clone(),
+        res.map(|_| latest_deleted_address.clone()),
+    );
     Some(new_store)
 }
 

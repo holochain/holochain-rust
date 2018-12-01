@@ -56,7 +56,13 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 validate_entry(deletion_entry.clone(), validation_data, &runtime.context)
             })
             // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| commit_entry(deletion_entry.clone(), Some(deleted_entry_address.clone()), &runtime.context))
+            .and_then(|_| {
+                commit_entry(
+                    deletion_entry.clone(),
+                    Some(deleted_entry_address.clone()),
+                    &runtime.context,
+                )
+            })
             // 4. Remove the entry in DHT metadata
             .and_then(|_| {
                 remove_entry(

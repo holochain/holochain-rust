@@ -474,7 +474,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// ```
 pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(address, GetEntryOptions::default())?;
-    if entry_result.entries.len() == 0 {
+    if entry_result.entries.is_empty() {
         return Ok(None);
     }
     assert_eq!(entry_result.entries.len(), 1);
@@ -489,7 +489,7 @@ pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
 /// Returns None if no entry exists at the specified address.
 pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::Initial))?;
-    if entry_result.entries.len() == 0 {
+    if entry_result.entries.is_empty() {
         return Ok(None);
     }
     assert_eq!(entry_result.entries.len(), 1);
@@ -502,7 +502,7 @@ pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
 /// Returns None if no entry exists at the specified address.
 pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<GetEntryResult>> {
     let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::All))?;
-    if entry_result.entries.len() == 0 {
+    if entry_result.entries.is_empty() {
         return Ok(None);
     }
     Ok(Some(entry_result))

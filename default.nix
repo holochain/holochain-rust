@@ -75,8 +75,8 @@ stdenv.mkDerivation rec {
     zeromq
     rust-build
 
-    nodejs-8_13
-    yarn
+    # nodejs-8_13
+    # yarn
 
     hc-flush-cargo-registry
 

@@ -179,10 +179,10 @@ jobs:
         - sudo mkdir -p /etc/nix && echo 'sandbox = true' | sudo tee /etc/nix/nix.conf
         # - curl https://nixos.org/nix/install | sh
       script:
-        - nix-shell --pure shell.core.nix --run hc-build-and-test-all
+        - nix-shell --pure --run hc-fmt
       before_cache:
         - mkdir -p $HOME/nix.store
-        - nix copy --to file://$HOME/nix.store -f shell.core.nix buildInputs
+        - nix copy --to file://$HOME/nix.store -f default.nix buildInputs
 
 
     # - name: "Holochain tests & code coverage"

@@ -176,8 +176,8 @@ jobs:
         # - rm -rf $HOME/.cargo/registry/index
       script:
         - nix-shell --pure --run hc-fmt-check --max-jobs auto --cores 0
-        #
-        # - nix-shell --pure --run hc-tarpaulin --max-jobs auto --cores 0
+        
+        - nix-shell --pure --run hc-tarpaulin --max-jobs auto --cores 0
 
     # https://nixos.wiki/wiki/Nix_on_Travis
     # - name: "nix-shell test"

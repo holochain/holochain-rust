@@ -46,8 +46,8 @@ let
   hc-build-and-test-all = nixpkgs.writeShellScriptBin "hc-build-and-test-all"
   ''
   hc-fmt-check && \
-  hc-wasm-build && \
-  hc-test && \
+  # hc-wasm-build && \
+  # hc-test && \
   # hc-install-cmd && \
   # hc-test-cmd && \
   # hc-install-node-container && \

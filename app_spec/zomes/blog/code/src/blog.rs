@@ -122,7 +122,7 @@ pub fn handle_get_post(post_address: HashString) -> JsonString {
     // where T is the type that you used to commit the entry, in this case a Blog
     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
     // Otherwise its a Some(T) or a None
-    let result : Result<Option<Entry>,ZomeApiError> = hdk::get_entry(post_address);
+    let result: Result<Option<Entry>,ZomeApiError> = hdk::get_entry(post_address);
     match result {
         // In the case we don't get an error
         // it might be an entry ...

@@ -87,7 +87,7 @@ test('create/get_post rountrip', (t) => {
   const params_get = {post_address}
   const result = app.call("blog", "main", "get_post", params_get)
 
-    t.comment("get_post() result = " + get_result + "")
+    t.comment("get_post() result = " + result + "")
   const entry = result
   t.equal(entry.content, content)
 })

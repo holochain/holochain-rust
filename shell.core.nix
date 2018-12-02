@@ -48,10 +48,11 @@ let
   hc-fmt-check && \
   hc-wasm-build && \
   hc-test && \
-  hc-install-cmd && \
+  # hc-install-cmd && \
   # hc-test-cmd && \
-  hc-install-node-container && \
-  hc-test-app-spec;
+  # hc-install-node-container && \
+  # hc-test-app-spec && \
+  echo "fin";
   '';
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";

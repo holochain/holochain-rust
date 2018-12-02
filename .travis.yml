@@ -186,7 +186,7 @@ jobs:
         # - nix-shell --pure --run hc-test
       before_cache:
         - mkdir -p $HOME/nix.store
-        - nix copy --to file://$HOME/nix.store -f default.nix buildInputs
+        - nix copy --to file://$HOME/nix.store -f shell.nix buildInputs
 
 
     # - name: "Holochain tests & code coverage"

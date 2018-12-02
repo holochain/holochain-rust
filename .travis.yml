@@ -166,7 +166,7 @@ jobs:
         - export PATH=$HOME/.cargo/bin:$PATH
       before_cache:
         - cd $TRAVIS_BUILD_DIR && . scripts/travis_cache_clean.sh
-        - rm -rf $HOME/.cargo/registry/index
+        # - rm -rf $HOME/.cargo/registry/index
       script:
         - nix-shell --pure --run hc-fmt-check --max-jobs auto --cores 0
 

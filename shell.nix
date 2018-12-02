@@ -66,12 +66,12 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig
+    binutils gcc gnumake openssl pkgconfig coreutils
     carnix
 
     unixtools.watch
 
-    # cmake
+    cmake
     python
     pkgconfig
     zeromq

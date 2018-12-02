@@ -159,6 +159,8 @@ jobs:
       cache:
         directories:
           - /nix
+          - $HOME/.cargo
+          - $TRAVIS_BUILD_DIR/target
         timeout: 1000
       script:
         - nix-shell --pure --run hc-fmt-check --max-jobs auto --cores 0

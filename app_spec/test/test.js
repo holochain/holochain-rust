@@ -87,7 +87,7 @@ test('create/get_post rountrip', (t) => {
   const params_get = {post_address}
   const result = app.call("blog", "main", "get_post", params_get)
 
-    t.comment("get_post() result = " + get_result)
+    t.comment("get_post() result = " + get_result + "")
   const entry = result
   t.equal(entry.content, content)
 })
@@ -119,10 +119,10 @@ test('scenario test create & publish post -> get from other instance', (t) => {
 
     const post_address = create_result.address
     const params_get = {post_address}
-    t.comment("params_get = " + params_get)
+    t.comment("params_get = " + params_get + "")
     const check_get_result = function check_get_result (i = 0, get_result) {
       t.comment('checking get result for the ' + i + 1 + 'th time')
-      t.comment("\t -> result = " + get_result)
+      t.comment("\t -> result = " + get_result + "")
 
       if (get_result) {
         t.equal(get_result.content, content)

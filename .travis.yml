@@ -162,7 +162,7 @@ jobs:
       script:
         - nix-shell --pure --run hc-fmt-check
         - nix-shell --pure --run hc-wasm-build
-        - nix-shell --pure --run hc-test
+        # - nix-shell --pure --run hc-test
 
     # https://nixos.wiki/wiki/Nix_on_Travis
     - name: "nix-shell test"
@@ -183,7 +183,7 @@ jobs:
       script:
         - nix-shell --pure --run hc-fmt-check
         - nix-shell --pure --run hc-wasm-build
-        - nix-shell --pure --run hc-test
+        # - nix-shell --pure --run hc-test
       before_cache:
         - mkdir -p $HOME/nix.store
         - nix copy --to file://$HOME/nix.store -f default.nix buildInputs

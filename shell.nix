@@ -62,7 +62,7 @@ with nixpkgs;
 stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
-  src = ./.;
+  src = builtins.filterSource (p: t: lib.cleanSourceFilter p t && baseNameOf p != "target") ./.;
 
   buildInputs = [
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
@@ -71,7 +71,7 @@ stdenv.mkDerivation rec {
 
     unixtools.watch
 
-    cmake
+    # cmake
     python
     pkgconfig
     zeromq
@@ -96,6 +96,8 @@ stdenv.mkDerivation rec {
 
     zeromq3
   ];
+
+  builder = "${hc-fmt}/bin/hc-fmt";
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   RUSTFLAGS = "-D warnings -Z external-macro-backtrace";

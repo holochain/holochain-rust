@@ -113,6 +113,12 @@ test('scenario test create & publish post -> get from other instance', (t) => {
     const in_reply_to = ""
     const params = {content, in_reply_to}
     const create_result = app.call("blog", "main", "create_post", params)
+    t.comment("create_result = " + create_result.address + "")
+
+    const content2 = "post 2"
+    const params2 = {content2, in_reply_to}
+    const create_result2 = app2.call("blog", "main", "create_post", params2)
+    t.comment("create_result2 = " + create_result2.address + "")
 
     t.equal(create_result.address.length, 46)
     t.equal(create_result.address, "QmNndXfXcxqwsnAXdvbnzdZUS7bm4WqimY7w873C3Uttx1")

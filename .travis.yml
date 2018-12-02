@@ -152,13 +152,26 @@ _cmd_deploy_template: &_cmd_deploy_template
 
 jobs:
   include:
+    # https://nixos.wiki/wiki/Nix_on_Travis
     - name: "nix-shell test"
       language: nix
+      cache:
+        directories:
+          - $HOME/nix.store
+      before_install:
+        - sudo mkdir -p /etc/nix
+        - echo "substituters = https://cache.nixos.org/ file://$HOME/nix.store" | sudo tee -a /etc/nix/nix.conf > /dev/null
+        - echo 'require-sigs = false' | sudo tee -a /etc/nix/nix.conf > /dev/null
       install:
         - echo "foo"
+      before_script:
+        - sudo mkdir /etc/nix && echo 'sandbox = true' | sudo tee /etc/nix/nix.conf
         # - curl https://nixos.org/nix/install | sh
       script:
         - nix-shell --pure shell.core.nix --run hc-build-and-test-all
+      before_cache:
+        - mkdir -p $HOME/nix.store
+        - nix copy --to file://$HOME/nix.store -f default.nix buildInputs
     # - name: "Holochain tests & code coverage"
     #   <<: *_trusty_nodejs
     #   <<: *_cargo_cache_template

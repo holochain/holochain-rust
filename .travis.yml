@@ -155,7 +155,7 @@ jobs:
     # https://github.com/travis-ci/travis-ci/issues/6604
     - name: "nix-shell alt cache"
       sudo: required
-      language: nix
+      language: rust
       cache:
         directories:
           - /nix
@@ -164,12 +164,13 @@ jobs:
         timeout: 1000
       install:
         - df -h
+        - curl https://nixos.org/nix/install | sh
         - export PATH=$HOME/.cargo/bin:$PATH
       before_cache:
         - cd $TRAVIS_BUILD_DIR && . scripts/travis_cache_clean.sh
         # - rm -rf $HOME/.cargo/registry/index
       script:
-        # - nix-shell --pure --run hc-fmt-check --max-jobs auto --cores 0
+        - nix-shell --pure --run hc-fmt-check --max-jobs auto --cores 0
         #
         # - nix-shell --pure --run hc-wasm-build --max-jobs auto --cores 0
         # - nix-shell --pure --run hc-install-tarpaulin --max-jobs auto --cores 0

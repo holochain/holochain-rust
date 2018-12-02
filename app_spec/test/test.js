@@ -122,7 +122,7 @@ test('scenario test create & publish post -> get from other instance', (t) => {
     t.comment(t.comment("params_get = " + params_get)
     const check_get_result = function check_get_result (i = 0, get_result) {
       t.comment('checking get result for the ' + i + 1 + 'th time')
-      t.comment(t.comment("\t -> result = " + get_result)
+      t.comment("\t -> result = " + get_result)
 
       if (get_result) {
         t.equal(get_result.content, content)

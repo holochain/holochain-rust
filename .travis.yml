@@ -152,9 +152,19 @@ _cmd_deploy_template: &_cmd_deploy_template
 
 jobs:
   include:
+    # https://github.com/travis-ci/travis-ci/issues/6604
+    - name: "nix-shell alt cache"
+      sudo: required
+      language: nix
+      cache:
+        directories:
+          - /nix
+      script:
+        - nix-shell --pure hc-fmt-check
+
     # https://nixos.wiki/wiki/Nix_on_Travis
     - name: "nix-shell test"
-      sudo: true
+      sudo: required
       language: nix
       cache:
         directories:

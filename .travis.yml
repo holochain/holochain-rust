@@ -152,114 +152,119 @@ _cmd_deploy_template: &_cmd_deploy_template
 
 jobs:
   include:
-    - name: "Holochain tests & code coverage"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-      script: make code_coverage
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-
-    - name: "windows build & test all"
-      <<: *_windows_template
-      env:
-        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-        - NODIST_X64=1
-        - TRAVIS_NODE_VERSION=8
-        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      install:
-        - rustup target add wasm32-unknown-unknown
-      script:
-        # Build WASMs
-        - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
-        # Build & test All
-        - cargo test --all
-
-    - name: "C binding tests"
-      <<: *_trusty_bash
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          # faster to build this than manage a cache for the target
-          # - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script:
-        - make test_c_ci
-      before_cache:
-        - rm -rf $HOME/.cargo/registry/index
-
-    - name: "Lint (fmt & _clippy)"
-      <<: *_trusty_bash
-      <<: *_cargo_cache_template
-      script:
-        - make fmt_check
-        # @see #431
-        # - make clippy
-
-    - name: "Command-line tools"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      script:
-        - make test_cmd
-
-    - name: "App-spec"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      script:
-        - make test_app_spec
-
-    - name: "Nodejs Container Test"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      <<: *_unix_nodejs_container_template
-      env:
-      - TRAVIS_NODE_VERSION="8"
-
-    # holochain-cmd releases section
-    - name: "CMD DEPLOY - 64 bit Linux"
-      <<: *_cmd_deploy_template
-      env:
-        - TARGET=x86_64-unknown-linux-gnu
-        - CRATE_NAME=hc
-      os: linux
-    - name: "CMD DEPLOY - 64 bit OSX"
-      <<: *_cmd_deploy_template
-      env:
-        - TARGET=x86_64-apple-darwin
-        - CRATE_NAME=hc
-      os: osx
-    - name: "CMD DEPLOY - 64 bit Windows MSVC"
-      <<: *_cmd_deploy_template
-      os: windows
-      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
-      env:
-        - TARGET=x86_64-pc-windows-msvc
-        - CRATE_NAME=hc
-        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      before_script:
-        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
-    - name: "CMD DEPLOY - 64 bit Windows GNU"
-      <<: *_cmd_deploy_template
-      os: windows
-      rust: nightly-2018-10-12-x86_64-pc-windows-gnu
-      env:
-        - TARGET=x86_64-pc-windows-gnu
-        - CRATE_NAME=hc
-        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      before_script:
-        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+    - name: "nix-shell test"
+    - language: nix
+    - script: nix-shell --pure shell.core.nix --run hc-build-and-test-all
+    # - name: "Holochain tests & code coverage"
+    #   <<: *_trusty_nodejs
+    #   <<: *_cargo_cache_template
+    #   # sudo is needed for codecov, && system library install which makes things 20-50s slower
+    #   # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+    #   sudo: true
+    #   script: make code_coverage
+    #   after_success:
+    #     - bash <(curl -s https://codecov.io/bash)
+    #
+    # - name: "windows build & test all"
+    #   <<: *_windows_template
+    #   env:
+    #     - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+    #     - NODIST_X64=1
+    #     - TRAVIS_NODE_VERSION=8
+    #     - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+    #   install:
+    #     - rustup target add wasm32-unknown-unknown
+    #   script:
+    #     # Build WASMs
+    #     - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+    #     - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+    #     - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+    #     - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+    #     # Build & test All
+    #     - cargo test --all
+    #
+    # - name: "C binding tests"
+    #   <<: *_trusty_bash
+    #   # sudo is needed for codecov, && system library install which makes things 20-50s slower
+    #   # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+    #   sudo: true
+    #   # manually cache as we manually install rustup
+    #   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+    #   cache:
+    #     timeout: 1000
+    #     directories:
+    #       - $HOME/.cargo
+    #       # faster to build this than manage a cache for the target
+    #       # - $TRAVIS_BUILD_DIR/target
+    #   install:
+    #     - export PATH=$HOME/.cargo/bin:$PATH
+    #   script:
+    #     - make test_c_ci
+    #   before_cache:
+    #     - rm -rf $HOME/.cargo/registry/index
+    #
+    # - name: "Lint (fmt & _clippy)"
+    #   <<: *_trusty_bash
+    #   <<: *_cargo_cache_template
+    #   script:
+    #     - make fmt_check
+    #     # @see #431
+    #     # - make clippy
+    #
+    # - name: "Command-line tools"
+    #   <<: *_trusty_nodejs
+    #   <<: *_cargo_cache_template
+    #   script:
+    #     - make test_cmd
+    #
+    # - name: "App-spec"
+    #   <<: *_trusty_nodejs
+    #   <<: *_cargo_cache_template
+    #   script:
+    #     - make test_app_spec
+    #
+    # - name: "Nodejs Container Test"
+    #   <<: *_trusty_nodejs
+    #   <<: *_cargo_cache_template
+    #   <<: *_unix_nodejs_container_template
+    #   env:
+    #   - TRAVIS_NODE_VERSION="8"
+    #
+    # # holochain-cmd releases section
+    # - name: "CMD DEPLOY - 64 bit Linux"
+    #   <<: *_cmd_deploy_template
+    #   env:
+    #     - TARGET=x86_64-unknown-linux-gnu
+    #     - CRATE_NAME=hc
+    #   os: linux
+    #
+    # - name: "CMD DEPLOY - 64 bit OSX"
+    #   <<: *_cmd_deploy_template
+    #   env:
+    #     - TARGET=x86_64-apple-darwin
+    #     - CRATE_NAME=hc
+    #   os: osx
+    # - name: "CMD DEPLOY - 64 bit Windows MSVC"
+    #   <<: *_cmd_deploy_template
+    #   os: windows
+    #   rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+    #   env:
+    #     - TARGET=x86_64-pc-windows-msvc
+    #     - CRATE_NAME=hc
+    #     - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+    #   before_script:
+    #     - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+    #
+    # - name: "CMD DEPLOY - 64 bit Windows GNU"
+    #   <<: *_cmd_deploy_template
+    #   os: windows
+    #   rust: nightly-2018-10-12-x86_64-pc-windows-gnu
+    #   env:
+    #     - TARGET=x86_64-pc-windows-gnu
+    #     - CRATE_NAME=hc
+    #     - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+    #   before_script:
+    #     - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
 
     # holochain-nodejs releases section
     - name: "Linux - Node 8"

@@ -154,7 +154,8 @@ jobs:
   include:
     - name: "nix-shell test"
     - language: nix
-    - script: nix-shell --pure shell.core.nix --run hc-build-and-test-all
+    - script:
+      - nix-shell --pure shell.core.nix --run hc-build-and-test-all
     # - name: "Holochain tests & code coverage"
     #   <<: *_trusty_nodejs
     #   <<: *_cargo_cache_template

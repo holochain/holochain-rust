@@ -165,6 +165,7 @@ jobs:
       install:
         # - curl https://nixos.org/nix/install | sh
         - export PATH=$HOME/.cargo/bin:$PATH
+        - export TMPDIR=$TRAVIS_TMPDIR
         - printenv
         - df -h
         - du -hs $TRAVIS_BUILD_DIR/target/*

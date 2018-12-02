@@ -160,7 +160,7 @@ jobs:
         directories:
           - /nix
       script:
-        - nix-shell --pure hc-fmt-check
+        - nix-shell --pure --run hc-fmt-check
 
     # https://nixos.wiki/wiki/Nix_on_Travis
     - name: "nix-shell test"

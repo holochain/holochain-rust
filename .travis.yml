@@ -154,6 +154,7 @@ jobs:
   include:
     # https://nixos.wiki/wiki/Nix_on_Travis
     - name: "nix-shell test"
+      sudo: true
       language: nix
       cache:
         directories:

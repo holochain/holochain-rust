@@ -62,6 +62,8 @@ with nixpkgs;
 stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
+  src = ./.;
+
   buildInputs = [
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig
@@ -75,8 +77,8 @@ stdenv.mkDerivation rec {
     zeromq
     rust-build
 
-    # nodejs-8_13
-    # yarn
+    nodejs-8_13
+    yarn
 
     hc-flush-cargo-registry
 

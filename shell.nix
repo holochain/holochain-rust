@@ -100,7 +100,7 @@ stdenv.mkDerivation rec {
   builder = "${hc-fmt}/bin/hc-fmt";
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
-  RUSTFLAGS = "-D warnings -Z external-macro-backtrace";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
 
   shellHook = ''
   export PATH=$PATH:~/.cargo/bin;

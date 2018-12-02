@@ -160,8 +160,8 @@ jobs:
         directories:
           - /nix
       script:
-        - nix-shell --pure --run hc-fmt-check
-        - nix-shell --pure --run hc-wasm-build
+        - nix-shell --pure --run hc-fmt-check --max-jobs auto --cores 0
+        - nix-shell --pure --run hc-wasm-build --max-jobs auto --cores 0
         # - nix-shell --pure --run hc-test
 
     # https://nixos.wiki/wiki/Nix_on_Travis
@@ -181,8 +181,8 @@ jobs:
         - sudo mkdir -p /etc/nix && echo 'sandbox = true' | sudo tee /etc/nix/nix.conf
         # - curl https://nixos.org/nix/install | sh
       script:
-        - nix-shell --pure --run hc-fmt-check
-        - nix-shell --pure --run hc-wasm-build
+        - nix-shell --pure --run hc-fmt-check --max-jobs auto --cores 0
+        - nix-shell --pure --run hc-wasm-build --max-jobs auto --cores 0
         # - nix-shell --pure --run hc-test
       before_cache:
         - mkdir -p $HOME/nix.store

@@ -161,6 +161,7 @@ jobs:
           - /nix
       script:
         - nix-shell --pure --run hc-fmt-check
+        - nix-shell --pure --run hc-wasm-build
         - nix-shell --pure --run hc-test
 
     # https://nixos.wiki/wiki/Nix_on_Travis
@@ -181,6 +182,7 @@ jobs:
         # - curl https://nixos.org/nix/install | sh
       script:
         - nix-shell --pure --run hc-fmt-check
+        - nix-shell --pure --run hc-wasm-build
         - nix-shell --pure --run hc-test
       before_cache:
         - mkdir -p $HOME/nix.store

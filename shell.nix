@@ -40,6 +40,9 @@ let
   . ./scripts/build_nodejs_container.sh;
   '';
 
+  hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin" "if ! cargo --list | grep --quiet tarpaulin; then cargo install cargo-tarpaulin; fi;";
+  hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc";
+
   hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
@@ -82,6 +85,9 @@ stdenv.mkDerivation rec {
     hc-wasm-build
     hc-test
 
+    hc-install-tarpaulin
+    hc-tarpaulin
+
     hc-install-node-container
     hc-install-cmd
     hc-test-cmd
@@ -95,7 +101,7 @@ stdenv.mkDerivation rec {
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
-  RUSTFLAGS = "-D warnings -Z external-macro-backtrace";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
 
   shellHook = ''
   export PATH=$PATH:~/.cargo/bin;

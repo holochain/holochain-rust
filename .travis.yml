@@ -172,7 +172,7 @@ jobs:
         - nix-shell --pure shell.core.nix --run hc-build-and-test-all
       before_cache:
         - mkdir -p $HOME/nix.store
-        - nix copy --to file://$HOME/nix.store -f default.nix buildInputs
+        - nix copy --to file://$HOME/nix.store -f shell.core.nix buildInputs
 
     # - name: "Holochain tests & code coverage"
     #   <<: *_trusty_nodejs

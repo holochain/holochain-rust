@@ -153,9 +153,9 @@ _cmd_deploy_template: &_cmd_deploy_template
 jobs:
   include:
     - name: "nix-shell test"
-    - language: nix
+    - language: bash
     - install:
-      - echo "foo"
+      - curl https://nixos.org/nix/install | sh
     - script:
       - nix-shell --pure shell.core.nix --run hc-build-and-test-all
     # - name: "Holochain tests & code coverage"

@@ -29,38 +29,43 @@ use std::{
 pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> ValidationPackageFuture {
     let id = snowflake::ProcessUniqueId::new();
 
-    if let EntryType::App(_) = entry.entry_type() {
-        if context
-            .state()
-            .unwrap()
-            .nucleus()
-            .dna()
-            .unwrap()
-            .get_zome_name_for_app_entry_type(&match entry.entry_type() {
-                EntryType::App(app_entry_type) => app_entry_type,
-                _ => {
-                    return ValidationPackageFuture {
-                        context: context.clone(),
-                        key: id,
-                        error: Some(HolochainError::ValidationFailed(format!(
-                            "Attempted to validate system entry type {:?}",
-                            entry.entry_type(),
-                        ))),
-                    };
-                }
-            })
-            .is_none()
-        {
+    match entry.entry_type() {
+        EntryType::App(app_entry_type) => {
+            if context
+                .state()
+                .unwrap()
+                .nucleus()
+                .dna()
+                .unwrap()
+                .get_zome_name_for_app_entry_type(&app_entry_type)
+                .is_none()
+            {
+                return ValidationPackageFuture {
+                    context: context.clone(),
+                    key: id,
+                    error: Some(HolochainError::ValidationFailed(format!(
+                        "Unknown app entry type '{}'",
+                        String::from(app_entry_type),
+                    ))),
+                };
+            }
+        }
+
+        EntryType::LinkAdd => {
+            // link validation is a pass through
+        }
+
+        _ => {
             return ValidationPackageFuture {
                 context: context.clone(),
                 key: id,
                 error: Some(HolochainError::ValidationFailed(format!(
-                    "Unknown entry type: '{}'",
-                    String::from(entry.entry_type().to_owned())
+                    "Attempted to validate system entry type {:?}",
+                    entry.entry_type(),
                 ))),
             };
         }
-    }
+    };
 
     {
         let id = id.clone();

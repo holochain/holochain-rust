@@ -241,6 +241,14 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # #[no_mangle]
 /// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
 /// # pub fn hc_call(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {

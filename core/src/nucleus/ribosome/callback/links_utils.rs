@@ -59,7 +59,7 @@ pub fn find_link_definition_in_dna(
     let dna = context.get_dna().expect("No DNA found?!");
     match base_type {
         EntryType::App(app_entry_type) => dna
-            .get_entry_type_def(&app_entry_type)
+            .get_entry_type_def(&app_entry_type.to_string())
             .ok_or(HolochainError::ErrorGeneric(String::from(
                 "Unknown entry type",
             )))?
@@ -70,8 +70,8 @@ pub fn find_link_definition_in_dna(
             })
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
-                    zome_name: dna.get_zome_name_for_entry_type(app_entry_type)?,
-                    entry_type_name: app_entry_type.clone(),
+                    zome_name: dna.get_zome_name_for_app_entry_type(app_entry_type)?,
+                    entry_type_name: app_entry_type.to_string(),
                     direction: LinkDirection::To,
                     tag: link_def.tag.clone(),
                 })
@@ -80,7 +80,7 @@ pub fn find_link_definition_in_dna(
     }
     .or(match target_type {
         EntryType::App(app_entry_type) => dna
-            .get_entry_type_def(&app_entry_type)
+            .get_entry_type_def(&app_entry_type.to_string())
             .ok_or(HolochainError::ErrorGeneric(String::from(
                 "Unknown entry type",
             )))?
@@ -91,8 +91,8 @@ pub fn find_link_definition_in_dna(
             })
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
-                    zome_name: dna.get_zome_name_for_entry_type(app_entry_type)?,
-                    entry_type_name: app_entry_type.clone(),
+                    zome_name: dna.get_zome_name_for_app_entry_type(app_entry_type)?,
+                    entry_type_name: app_entry_type.to_string(),
                     direction: LinkDirection::From,
                     tag: link_def.tag.clone(),
                 })

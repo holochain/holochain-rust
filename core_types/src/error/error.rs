@@ -143,7 +143,13 @@ impl From<HolochainError> for String {
 
 impl From<String> for HolochainError {
     fn from(error: String) -> Self {
-        HolochainError::ErrorGeneric(error)
+        HolochainError::new(&error)
+    }
+}
+
+impl From<&'static str> for HolochainError {
+    fn from(error: &str) -> Self {
+        HolochainError::new(error)
     }
 }
 

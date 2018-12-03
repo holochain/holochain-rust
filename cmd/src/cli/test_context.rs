@@ -9,7 +9,7 @@ use holochain_core::{
     logger::Logger,
     persister::SimplePersister,
 };
-use holochain_core_types::agent::Agent;
+use holochain_core_types::agent::AgentId;
 use std::sync::{Arc, Mutex, RwLock};
 
 #[derive(Clone, Debug)]
@@ -35,7 +35,7 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context(agent_name: &str) -> Arc<Context> {
     let tempdir = tempdir().unwrap();
-    let agent = Agent::generate_fake(agent_name);
+    let agent = AgentId::generate_fake(agent_name);
     let logger = test_logger();
     let file_storage = Arc::new(RwLock::new(
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),

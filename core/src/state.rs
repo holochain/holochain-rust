@@ -12,7 +12,7 @@ use crate::{
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::Dna,
-    entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
+    entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
 use std::{
@@ -61,7 +61,7 @@ impl State {
         fn get_dna(
             agent_state: &Arc<AgentState>,
             cas: Arc<RwLock<dyn ContentAddressableStorage>>,
-        ) -> Result<Dna, HolochainError> {
+        ) -> HcResult<Dna> {
             let dna_entry_header = agent_state
                 .chain()
                 .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
@@ -71,13 +71,17 @@ impl State {
                         .to_string(),
                 ))?;
             let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-            let serialized_entry: SerializedEntry =
+            let entry: Entry =
                 json.map(|e| e.try_into())
                     .ok_or(HolochainError::ErrorGeneric(
                         "No DNA entry found in storage while creating state from agent".to_string(),
                     ))??;
-            let entry: Entry = serialized_entry.into();
-            Ok(Dna::from_entry(&entry))
+            match entry {
+                Entry::Dna(dna) => Ok(dna),
+                _ => Err(HolochainError::SerializationError(
+                    "Tried to get Dna from non-Dna Entry".into(),
+                )),
+            }
         }
 
         let mut nucleus_state = NucleusState::new();

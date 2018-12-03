@@ -62,13 +62,13 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
     let mut rl = rustyline::Editor::<()>::new();
 
     loop {
-        let readline = rl.readline(">> ")?;
+        let readline = rl.readline("hc> ")?;
 
         match readline.as_str() {
             "exit" => break,
-            _ if !readline.is_empty() => eprintln!(
+            other if !other.is_empty() => eprintln!(
                 "command {:?} not recognized. Available commands are: exit",
-                readline
+                other
             ),
             _ => continue,
         }

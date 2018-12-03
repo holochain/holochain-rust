@@ -75,8 +75,6 @@ pub struct ChainStoreIterator {
 }
 
 impl ChainStoreIterator {
-    #[allow(unknown_lints)]
-    #[allow(needless_pass_by_value)]
     pub fn new(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         current: Option<ChainHeader>,
@@ -122,8 +120,6 @@ pub struct ChainStoreTypeIterator {
 }
 
 impl ChainStoreTypeIterator {
-    #[allow(unknown_lints)]
-    #[allow(needless_pass_by_value)]
     pub fn new(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         current: Option<ChainHeader>,

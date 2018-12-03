@@ -3,7 +3,6 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    network::actions::ActionResponse,
 };
 use futures::{
     future::Future,
@@ -11,6 +10,7 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::Address,
+    entry::Entry,
     error::{HcResult, HolochainError},
 };
 use snowflake;
@@ -25,11 +25,11 @@ use std::{
 ///
 /// Returns a future that resolves to an ActionResponse.
 pub async fn get_entry(address: Address, context: &Arc<Context>) -> HcResult<Option<Entry>> {
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(address));
+    let action_wrapper = ActionWrapper::new(Action::GetEntry(address.clone()));
     dispatch_action(&context.action_channel, action_wrapper.clone());
     await!(GetEntryFuture {
         context: context.clone(),
-        address: action_wrapper,
+        address,
     })
 }
 
@@ -43,7 +43,7 @@ pub struct GetEntryFuture {
 impl Unpin for GetEntryFuture {}
 
 impl Future for GetEntryFuture {
-    type Output = HcResult<Entry>;
+    type Output = HcResult<Option<Entry>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();
@@ -58,7 +58,7 @@ impl Future for GetEntryFuture {
         //
         lw.wake();
         match state.get_entry_results.get(&self.address) {
-            Some(Some(result)) => Poll::Ready(result),
+            Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,
         }
     }

@@ -24,7 +24,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let address = try_address.unwrap();
-    
+
     let result = block_on(get_entry(&runtime.context, &address));
 
     let api_result = result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry)));

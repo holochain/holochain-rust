@@ -68,7 +68,7 @@ fn validate_link_entry(
         _ => {
             return Err(HolochainError::ValidationFailed(
                 "Could not extract link_add from entry".into(),
-            ))
+            ));
         }
     };
     let link = link_add.link().clone();

@@ -66,7 +66,7 @@ pub fn validate_entry<'a>(
                     "Attempted to validate system entry type {:?}",
                     entry.entry_type(),
                 ),
-            ))))
+            ))));
         }
     }
 

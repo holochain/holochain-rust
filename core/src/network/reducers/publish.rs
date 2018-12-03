@@ -1,9 +1,9 @@
-use boolinator::*;
 use crate::{
     action::ActionWrapper,
     context::Context,
     network::{actions::ActionResponse, state::NetworkState, util},
 };
+use boolinator::*;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     chain_header::ChainHeader,
@@ -56,7 +56,7 @@ fn publish_link(
             return Err(HolochainError::ErrorGeneric(format!(
                 "Received bad entry type. Expected Entry::LinkAdd received {:?}",
                 entry,
-            )))
+            )));
         }
     };
     let link = link_add.link().clone();

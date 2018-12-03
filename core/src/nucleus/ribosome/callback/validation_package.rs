@@ -53,7 +53,7 @@ pub fn get_validation_package_definition(
                 _ => {
                     return Err(HolochainError::ValidationFailed(
                         "Failed to extract LinkAdd".into(),
-                    ))
+                    ));
                 }
             };
             let (base, target) = links_utils::get_link_entries(link_add.link(), &context)?;

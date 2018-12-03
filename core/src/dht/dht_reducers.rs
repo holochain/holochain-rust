@@ -6,7 +6,7 @@ use crate::{
     dht::dht_store::DhtStore,
 };
 use holochain_core_types::{
-    cas::content::AddressableContent, eav::EntityAttributeValue, entry::Entry,
+    eav::EntityAttributeValue,
     error::HolochainError,
 };
 use std::sync::Arc;

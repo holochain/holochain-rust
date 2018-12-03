@@ -8,20 +8,22 @@ use hdk::{
     holochain_core_types::hash::HashString,
     holochain_core_types::json::JsonString,
     holochain_core_types::entry::Entry,
-    holochain_core_types::entry::entry_type::EntryType,
+    holochain_core_types::entry::AppEntryValue,
+    holochain_core_types::entry::entry_type::AppEntryType,
     AGENT_ADDRESS,
 };
+use hdk::holochain_core_types::cas::content::Address;
 
 use post::Post;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct AddressResponse {
-    address: HashString
+    address: Address
 }
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct MultiAddressResponse {
-    addresses: Vec<HashString>
+    addresses: Vec<Address>
 }
 
 pub fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
@@ -43,13 +45,15 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
 }
 
 pub fn handle_hash_post(content: String) -> JsonString {
-    let post_entry = Entry::new(EntryType::App("post".into()),
-        Post {
-            content: content.to_string(),
-            date_created: "now".to_string()
-        }
+    let post_entry = Entry::App(
+        AppEntryType::from("post"),
+        AppEntryValue::from(
+            Post::new(
+                &content,
+                "now",
+            ),
+        )
     );
-
 
     match hdk::entry_address(&post_entry) {
         Ok(address) => AddressResponse{address}.into(),
@@ -59,11 +63,11 @@ pub fn handle_hash_post(content: String) -> JsonString {
 
 pub fn handle_create_post(content: String, in_reply_to: HashString) -> JsonString {
 
-    let post_entry = Entry::new(EntryType::App("post".into()),
-        Post {
-            content: content.to_string(),
-            date_created: "now".to_string()
-        }
+    let post_entry = Entry::App(AppEntryType::from("post"),
+        Post::new(
+            &content,
+            "now",
+        ).into()
     );
 
     match hdk::commit_entry(&post_entry) {
@@ -104,7 +108,6 @@ pub fn handle_my_posts() -> JsonString {
     }
 }
 
-
 pub fn handle_my_posts_as_commited() -> JsonString {
     // In the current implementation of hdk::query the second parameter
     // specifies the starting index and the third parameter the maximum
@@ -117,6 +120,7 @@ pub fn handle_my_posts_as_commited() -> JsonString {
         Err(hdk_error) => hdk_error.into(),
     }
 }
+
 pub fn handle_get_post(post_address: HashString) -> JsonString {
     // get_entry returns a Result<Option<T>, ZomeApiError>
     // where T is the type that you used to commit the entry, in this case a Blog
@@ -126,8 +130,8 @@ pub fn handle_get_post(post_address: HashString) -> JsonString {
     match result {
         // In the case we don't get an error
         // it might be an entry ...
-        Ok(Some(entry)) => {
-            entry.value().to_owned()
+        Ok(Some(Entry::App(_, entry_value))) => {
+            entry_value
         },
         Ok(None) => {}.into(),
 
@@ -135,5 +139,6 @@ pub fn handle_get_post(post_address: HashString) -> JsonString {
         // is not a stringified JSON which should not
         // happen but might be a bug somewhere else:
         Err(err) => err.into(),
+        _ => unreachable!(),
     }
 }

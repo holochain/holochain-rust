@@ -15,7 +15,8 @@ pub mod handle_crud;
 
 use boolinator::Boolinator;
 use hdk::{
-    error::{ZomeApiError, ZomeApiResult},
+    error::ZomeApiError,
+    error::ZomeApiResult,
     globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{
@@ -23,9 +24,11 @@ use holochain_wasm_utils::{
     holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        entry::{Entry, entry_type::EntryType, SerializedEntry},
+        entry::{Entry, entry_type::EntryType},
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},
+        entry::AppEntryValue,
+        entry::entry_type::AppEntryType,
     },
     memory_allocation::*,
     memory_serialization::*,
@@ -35,23 +38,24 @@ use handle_crud::{
     handle_update_entry_ok, handle_remove_entry_ok, handle_remove_modified_entry_ok,
 };
 
-#[no_mangle]
-pub extern "C" fn handle_check_global() -> JsonString {
-    hdk::AGENT_LATEST_HASH.clone().into()
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct TestEntryType {
+    stuff: String,
 }
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 struct CommitOutputStruct {
     address: String,
 }
 
-impl From<CommitOutputStruct> for JsonString {
-    fn from(commit_output_struct: CommitOutputStruct) -> JsonString {
-        JsonString::from(
-            serde_json::to_string(&commit_output_struct)
-                .expect("could not Jsonify CommitOutputStruct"),
-        )
-    }
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
+struct EntryStruct {
+    stuff: String,
+}
+
+#[no_mangle]
+pub extern "C" fn handle_check_global() -> JsonString {
+    hdk::AGENT_LATEST_HASH.clone().into()
 }
 
 #[no_mangle]
@@ -68,9 +72,9 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
         return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
     }
 
-    let serialized_entry: SerializedEntry = result.unwrap();
-    hdk::debug(format!("SerializedEntry: {:?}", serialized_entry)).expect("debug() must work");
-    let res = hdk::commit_entry(&serialized_entry.into());
+    let entry: Entry = result.unwrap();
+    hdk::debug(format!("Entry: {:?}", entry)).expect("debug() must work");
+    let res = hdk::commit_entry(&entry.into());
 
     let res_obj: JsonString = match res {
         Ok(hash) => hash.into(),
@@ -82,13 +86,8 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     }
 }
 
-#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
-struct EntryStruct {
-    stuff: String,
-}
-
-fn handle_check_commit_entry_macro(entry_type: String, value: String) -> JsonString {
-    let entry = Entry::new(entry_type.into(), value);
+fn handle_check_commit_entry_macro(entry: Entry) -> JsonString {
+    hdk::debug(entry.clone()).unwrap();
     match hdk::commit_entry(&entry) {
         Ok(address) => address.into(),
         Err(e) => e.into(),
@@ -104,35 +103,35 @@ fn handle_check_get_entry_result(entry_address: Address) -> JsonString {
 
 fn handle_check_get_entry(entry_address: Address) -> JsonString {
     match hdk::get_entry(entry_address) {
-        Ok(result) => result.and_then(|entry| Some(entry.serialize())).into(),
+        Ok(result) => result.into(),
         Err(e) => e.into(),
     }
 }
 
 fn handle_commit_validation_package_tester() -> JsonString {
-    hdk::commit_entry(&Entry::new(
+    hdk::commit_entry(&Entry::App(
         "validation_package_tester".into(),
-        RawString::from("test"),
+        JsonString::from(RawString::from("test")),
     )).into()
 }
 
 fn handle_link_two_entries() -> JsonString {
-    let entry1_result = hdk::commit_entry(&Entry::new(
+    let entry1_result = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry1".into(),
-        },
+        }.into(),
     ));
 
     if entry1_result.is_err() {
         return entry1_result.into();
     }
 
-    let entry2_result = hdk::commit_entry(&Entry::new(
+    let entry2_result = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry2".into(),
-        },
+        }.into(),
     ));
 
     if entry2_result.is_err() {
@@ -143,11 +142,11 @@ fn handle_link_two_entries() -> JsonString {
 }
 
 fn handle_links_roundtrip() -> JsonString {
-    let entry1_hash_result = hdk::commit_entry(&Entry::new(
+    let entry1_hash_result = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry1".into(),
-        },
+        }.into(),
     ));
     let entry1_address = match entry1_hash_result {
         Ok(hash) => hash,
@@ -155,11 +154,11 @@ fn handle_links_roundtrip() -> JsonString {
     };
     hdk::debug(format!("entry1_address: {:?}", entry1_address)).unwrap();
 
-    let entry2_hash_result = hdk::commit_entry(&Entry::new(
+    let entry2_hash_result = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry2".into(),
-        },
+        }.into(),
     ));
     let entry2_address = match entry2_hash_result {
         Ok(hash) => hash,
@@ -167,11 +166,11 @@ fn handle_links_roundtrip() -> JsonString {
     };
     hdk::debug(format!("entry2_address: {:?}", entry2_address)).unwrap();
 
-    let entry3_hash_result = hdk::commit_entry(&Entry::new(
+    let entry3_hash_result = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry3".into(),
-        },
+        }.into(),
     ));
     let entry3_address = match entry3_hash_result {
         Ok(hash) => hash,
@@ -192,6 +191,9 @@ fn handle_links_roundtrip() -> JsonString {
         Err(_) => return link_2_result.into(),
     };
     hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
+
+    let get_links_result = hdk::get_links(&entry1_address, "test-tag");
+    hdk::debug(format!("{:?}", &get_links_result)).unwrap();
 
     hdk::get_links(&entry1_address, "test-tag").into()
 }
@@ -223,11 +225,11 @@ fn handle_check_query() -> JsonString {
     }
 
     // Query Zome entry
-    let _ = hdk::commit_entry(&Entry::new(
+    let _ = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry1".into(),
-        },
+        }.into(),
     )).unwrap();
     let addresses = hdk::query("testEntryType", 0, 1).unwrap();
 
@@ -236,17 +238,17 @@ fn handle_check_query() -> JsonString {
     }
 
     // Query Zome entries
-    let _ = hdk::commit_entry(&Entry::new(
+    let _ = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry2".into(),
-        },
+        }.into(),
     )).unwrap();
-    let _ = hdk::commit_entry(&Entry::new(
+    let _ = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry3".into(),
-        },
+        }.into(),
     )).unwrap();
 
     let addresses = hdk::query("testEntryType", 0, 0).unwrap();
@@ -260,11 +262,11 @@ fn handle_check_query() -> JsonString {
 
 fn handle_check_app_entry_address() -> JsonString {
     // Setup
-    let entry_value = JsonString::from(TestEntryType {
+    let entry_value = AppEntryValue::from(TestEntryType {
         stuff: "entry1".into(),
     });
-    let entry_type = EntryType::from("testEntryType");
-    let entry = Entry::new(entry_type, entry_value.clone());
+    let entry_type = AppEntryType::from("testEntryType");
+    let entry = Entry::App(entry_type, entry_value.clone());
 
     let commit_result = hdk::commit_entry(&entry);
     if commit_result.is_err() {
@@ -272,7 +274,7 @@ fn handle_check_app_entry_address() -> JsonString {
     }
 
     // Check bad entry type name
-    let bad_result = hdk::entry_address(&Entry::new("bad".into(), entry_value.clone()));
+    let bad_result = hdk::entry_address(&Entry::App(AppEntryType::from("bad"), entry_value.clone()));
     if !bad_result.is_err() {
         return bad_result.into();
     }
@@ -290,10 +292,10 @@ fn handle_check_app_entry_address() -> JsonString {
     }
 }
 
-fn handle_check_sys_entry_address() -> JsonString {
-    // TODO
-    json!({"result": "FIXME"}).into()
-}
+// fn handle_check_sys_entry_address() -> JsonString {
+//     // TODO
+//     json!({"result": "FIXME"}).into()
+// }
 
 fn handle_check_call() -> JsonString {
     let empty_dumpty = json!({});
@@ -312,7 +314,7 @@ fn handle_check_call() -> JsonString {
 }
 
 fn handle_check_call_with_args() -> JsonString {
-    let args = hdk_test_entry().serialize();
+    let args = json!({"entry": hdk_test_entry()}).to_string();
     hdk::debug(format!("args = {:?}", args)).ok();
 
     let maybe_address = hdk::call(
@@ -343,15 +345,15 @@ fn handle_send_tweet(author: String, content: String) -> JsonString {
 }
 
 fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
-    let entry_type = EntryType::from("link_validator");
+    let app_entry_type = AppEntryType::from("link_validator");
     let entry_value1 = JsonString::from(TestEntryType {
         stuff: stuff1,
     });
     let entry_value2 = JsonString::from(TestEntryType {
         stuff: stuff2,
     });
-    let entry1 = Entry::new(entry_type.clone(), entry_value1.clone());
-    let entry2 = Entry::new(entry_type.clone(), entry_value2.clone());
+    let entry1 = Entry::App(app_entry_type.clone(), entry_value1.clone());
+    let entry2 = Entry::App(app_entry_type.clone(), entry_value2.clone());
 
     let _ = hdk::commit_entry(&entry1);
     let _ = hdk::commit_entry(&entry2);
@@ -359,24 +361,18 @@ fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
     JsonString::from(hdk::link_entries(&entry1.address(), &entry2.address(), "longer"))
 }
 
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
-struct TestEntryType {
-    stuff: String,
+fn hdk_test_app_entry_type() -> AppEntryType {
+    AppEntryType::from("testEntryType")
 }
 
-fn hdk_test_entry_type() -> EntryType {
-    EntryType::from("testEntryType")
-}
-
-fn hdk_test_entry_value() -> TestEntryType {
+fn hdk_test_entry_value() -> AppEntryValue {
     TestEntryType {
         stuff: "non fail".into(),
-    }
+    }.into()
 }
 
 fn hdk_test_entry() -> Entry {
-    Entry::new(hdk_test_entry_type(), hdk_test_entry_value())
+    Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
 define_zome! {
@@ -447,17 +443,21 @@ define_zome! {
                         hdk::ValidationPackageDefinition::Entry
                     },
                     validation: |base: Address, target: Address, ctx: hdk::ValidationData | {
-                        let base = TestEntryType::try_from(
-                            hdk::get_entry(base)?
-                            .ok_or("Base not found")?
-                            .value()
-                        )?;
+                        let base = match hdk::get_entry(base)? {
+                            Some(entry) => match entry {
+                                Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
+                                _ => Err("System entry found")?
+                            },
+                            None => Err("Base not found")?,
+                        };
 
-                        let target = TestEntryType::try_from(
-                            hdk::get_entry(target)?
-                            .ok_or("Target not found")?
-                            .value()
-                        )?;
+                        let target = match hdk::get_entry(target)? {
+                            Some(entry) => match entry {
+                                Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
+                                _ => Err("System entry found")?,
+                            }
+                            None => Err("Target not found")?,
+                        };
 
                         (target.stuff.len() > base.stuff.len())
                             .ok_or("Target stuff is not longer".to_string())
@@ -479,7 +479,7 @@ define_zome! {
             }
 
             check_commit_entry_macro: {
-                inputs: |entry_type: String, value: String|,
+                inputs: |entry: Entry|,
                 outputs: |result: JsonString|,
                 handler: handle_check_commit_entry_macro
             }
@@ -544,11 +544,11 @@ define_zome! {
                 handler: handle_check_query
             }
 
-            check_sys_entry_address: {
-                inputs: | |,
-                outputs: |result: JsonString|,
-                handler: handle_check_sys_entry_address
-            }
+            // check_sys_entry_address: {
+            //     inputs: | |,
+            //     outputs: |result: JsonString|,
+            //     handler: handle_check_sys_entry_address
+            // }
 
             update_entry_ok: {
                 inputs: | |,

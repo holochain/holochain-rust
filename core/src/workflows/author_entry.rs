@@ -69,7 +69,7 @@ pub mod tests {
         let x: String = json.unwrap().to_string();
         assert_eq!(
             x,
-            "{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}".to_string()
+            "{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}".to_string(),
         );
     }
 }

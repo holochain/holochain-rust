@@ -231,6 +231,14 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # #[no_mangle]
 /// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
 /// # pub fn hc_call(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
@@ -395,8 +403,12 @@ pub fn call<S: Into<String>>(
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
+///
+/// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+///
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -407,10 +419,10 @@ pub fn call<S: Into<String>>(
 ///
 /// pub fn handle_create_post(content: String) -> JsonString {
 ///
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::commit_entry(&post_entry) {
 ///         Ok(address) => address.into(),
@@ -427,7 +439,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
 
     // Call Ribosome's commit_entry()
     let encoded_allocation_of_result: u32;
@@ -466,7 +478,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 ///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
 ///     // Otherwise its a Some(T) or a None
 ///     match hdk::get_entry(post_address) {
-///         Ok(maybe_post) => maybe_post.and_then(|entry| Some(entry.serialize())).into(),
+///         Ok(maybe_post) => maybe_post.into(),
 ///         Err(e) => e.into(),
 ///     }
 /// }
@@ -559,7 +571,7 @@ pub fn get_entry_result(
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::cas::content::Address;
 /// # use hdk::AGENT_ADDRESS;
@@ -572,10 +584,10 @@ pub fn get_entry_result(
 /// }
 ///
 /// pub fn handle_link_entries(content: String) -> JsonString {
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::commit_entry(&post_entry) {
 ///         Ok(post_address) => {
@@ -652,7 +664,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # fn main() {
 ///
@@ -664,10 +676,10 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///
 /// fn handle_post_address(content: String) -> JsonString {
 ///
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::entry_address(&post_entry) {
 ///         Ok(address) => address.into(),
@@ -684,7 +696,7 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
         mem_stack = G_MEM_STACK.unwrap();
     }
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
 
     let encoded_allocation_of_result: u32;
     unsafe {

@@ -3,7 +3,10 @@
 pub mod capabilities;
 pub mod entry_types;
 
-use crate::dna::wasm::DnaWasm;
+use crate::{
+    dna::wasm::DnaWasm, entry::entry_type::EntryType, error::HolochainError, json::JsonString,
+};
+use dna::zome::entry_types::{deserialize_entry_types, serialize_entry_types, EntryTypeDef};
 use std::collections::BTreeMap;
 
 /// Enum for "zome" "config" "error_handling" property.
@@ -44,8 +47,11 @@ impl Config {
     }
 }
 
+pub type ZomeEntryTypes = BTreeMap<EntryType, EntryTypeDef>;
+pub type ZomeCapabilities = BTreeMap<String, capabilities::Capability>;
+
 /// Represents an individual "zome".
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct Zome {
     /// A description of this zome.
     #[serde(default)]
@@ -59,11 +65,13 @@ pub struct Zome {
 
     /// An array of entry_types associated with this zome.
     #[serde(default)]
-    pub entry_types: BTreeMap<String, entry_types::EntryTypeDef>,
+    #[serde(serialize_with = "serialize_entry_types")]
+    #[serde(deserialize_with = "deserialize_entry_types")]
+    pub entry_types: ZomeEntryTypes,
 
     /// An array of capabilities associated with this zome.
     #[serde(default)]
-    pub capabilities: BTreeMap<String, capabilities::Capability>,
+    pub capabilities: ZomeCapabilities,
 
     /// Validation code for this entry_type.
     #[serde(default)]
@@ -90,7 +98,7 @@ impl Zome {
     pub fn new(
         description: &str,
         config: &Config,
-        entry_types: &BTreeMap<String, entry_types::EntryTypeDef>,
+        entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
         capabilities: &BTreeMap<String, capabilities::Capability>,
         code: &DnaWasm,
     ) -> Zome {
@@ -107,8 +115,9 @@ impl Zome {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::dna::zome::Zome;
+    use crate::dna::zome::{entry_types::EntryTypeDef, Zome};
     use serde_json;
+    use std::{collections::BTreeMap, convert::TryFrom};
 
     pub fn test_zome() -> Zome {
         Zome::default()
@@ -133,5 +142,24 @@ pub mod tests {
         zome.config.error_handling = ErrorHandling::ThrowErrors;
 
         assert_eq!(fixture, zome);
+    }
+
+    #[test]
+    fn zome_json_test() {
+        let mut entry_types = BTreeMap::new();
+        entry_types.insert(EntryType::from("foo"), EntryTypeDef::new());
+        let zome = Zome {
+            entry_types,
+            ..Default::default()
+        };
+
+        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"}}";
+
+        assert_eq!(
+            JsonString::from(expected.clone()),
+            JsonString::from(zome.clone()),
+        );
+
+        assert_eq!(zome, Zome::try_from(JsonString::from(expected)).unwrap(),);
     }
 }

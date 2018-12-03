@@ -75,15 +75,12 @@ impl EntityAttributeValue {
         self.value.clone()
     }
 
-    // this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
-    pub fn filter_on_eav<T>(eav: T, e: &Option<T>) -> bool
+    /// this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
+    pub fn filter_on_eav<T>(eav: &T, e: Option<&T>) -> bool
     where
         T: PartialOrd,
     {
-        match e {
-            Some(ref a) => &eav == a,
-            None => true,
-        }
+        e.map_or(true, |a| eav == a)
     }
 }
 

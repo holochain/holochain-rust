@@ -3,7 +3,7 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use futures::executor::block_on;
-use holochain_core_types::{entry::ToEntry, error::HolochainError, link::link_add::LinkAddEntry};
+use holochain_core_types::{entry::Entry, error::HolochainError, link::link_add::LinkAdd};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -27,8 +27,8 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     };
 
     let link = input.to_link();
-    let link_add_entry = LinkAddEntry::from_link(&link);
-    let entry = link_add_entry.to_entry();
+    let link_add = LinkAdd::from_link(&link);
+    let entry = Entry::LinkAdd(link_add);
 
     // Wait for future to be resolved
     let result: Result<(), HolochainError> =
@@ -57,7 +57,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{entry_type::EntryType, test_entry, Entry},
+        entry::{entry_type::AppEntryType, test_entry, AppEntryValue, Entry},
         error::{CoreError, ZomeApiInternalResult},
         json::JsonString,
     };
@@ -66,7 +66,10 @@ pub mod tests {
     use std::{convert::TryFrom, sync::Arc};
 
     pub fn test_entry_b() -> Entry {
-        Entry::new(EntryType::App(String::from("testEntryTypeB")), "test")
+        Entry::App(
+            AppEntryType::from("testEntryTypeB"),
+            AppEntryValue::from("test"),
+        )
     }
 
     /// dummy link_entries args from standard test entry
@@ -99,7 +102,7 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        JsonString::from(test_entry().serialize()).into_bytes()
+        JsonString::from(test_entry()).into_bytes()
     }
 
     fn create_test_instance() -> (Instance, Arc<Context>) {

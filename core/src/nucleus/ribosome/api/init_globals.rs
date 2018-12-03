@@ -15,7 +15,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
     let mut globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
         dna_hash: HashString::from(""),
-        agent_id_str: JsonString::from(runtime.context.agent.clone()).to_string(),
+        agent_id_str: JsonString::from(runtime.context.agent_id.clone()).to_string(),
         // TODO #233 - Implement agent pub key hash
         agent_address: Address::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
         agent_initial_hash: HashString::from(""),
@@ -67,7 +67,6 @@ pub mod tests {
     fn test_init_globals() {
         let input: Vec<u8> = vec![];
         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
-        println!("{:?}", call_result);
 
         let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
         let globals =
@@ -77,10 +76,10 @@ pub mod tests {
         // TODO #233 - Implement agent address
         // assert_eq!(obj.agent_address, "QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD");
         // TODO (david.b) this should work:
-        //assert_eq!(globals.agent_id_str, String::from(Agent::generate_fake("jane")));
+        //assert_eq!(globals.agent_id_str, String::from(AgentId::generate_fake("jane")));
         // assert_eq!(
         //     globals.agent_initial_hash,
-        //     Agent::generate_fake("jane").address()
+        //     AgentId::generate_fake("jane").address()
         // );
         assert_eq!(globals.agent_initial_hash, globals.agent_latest_hash);
     }

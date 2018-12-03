@@ -89,7 +89,7 @@ impl LinkedFrom {
 }
 
 /// Represents an individual object in the "zome" "entry_types" array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct EntryTypeDef {
     /// A description of this entry type.
     #[serde(default)]
@@ -106,18 +106,6 @@ pub struct EntryTypeDef {
     /// An array of link definitions for links pointing to entries of this type
     #[serde(default)]
     pub linked_from: Vec<LinkedFrom>,
-}
-
-impl Default for EntryTypeDef {
-    /// Provide defaults for a "zome"s "entry_types" object.
-    fn default() -> Self {
-        EntryTypeDef {
-            description: String::new(),
-            sharing: Sharing::Public,
-            links_to: Vec::new(),
-            linked_from: Vec::new(),
-        }
-    }
 }
 
 impl EntryTypeDef {

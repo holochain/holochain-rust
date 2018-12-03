@@ -49,6 +49,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                         dispatch_action(&context.action_channel, action_wrapper.clone());
                     });
             },
+            Ok(ProtocolWrapper::GetDhtResult(dht_data)) => {
+                let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));
+                dispatch_action(&context.action_channel, action_wrapper.clone());
+            },
             _ => {}
         }
         Ok(())

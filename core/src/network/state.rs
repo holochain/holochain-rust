@@ -11,7 +11,7 @@ use std::{
 };
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
-type GetEntryResult = Option<Result<Entry, HolochainError>>;
+type GetEntryResult = Option<Result<Option<Entry>, HolochainError>>;
 
 #[derive(Clone, Debug)]
 pub struct NetworkState {

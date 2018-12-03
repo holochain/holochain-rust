@@ -26,8 +26,8 @@ fn inner(
     let data = DhtData {
         msg_id: get_dht_data.msg_id.clone(),
         dna_hash: network_state.dna_hash.clone().unwrap(),
-        agent_id: network_state.agent_id.clone().unwrap(),
-        address: get_dht_data.from_agent_id.clone(),
+        agent_id: get_dht_data.from_agent_id.clone(),
+        address:  get_dht_data.address.clone(),
         content: serde_json::from_str(&serde_json::to_string(&maybe_entry).unwrap()).unwrap(),
     };
 

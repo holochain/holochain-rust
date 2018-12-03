@@ -9,11 +9,8 @@ use crate::{
     context::Context,
     network::{
         reducers::{
-            get_entry::reduce_get_entry,
-            handle_get_result::reduce_handle_get_result,
-            init::reduce_init,
-            publish::reduce_publish,
-            respond_get::reduce_respond_get,
+            get_entry::reduce_get_entry, handle_get_result::reduce_handle_get_result,
+            init::reduce_init, publish::reduce_publish, respond_get::reduce_respond_get,
         },
         state::NetworkState,
     },

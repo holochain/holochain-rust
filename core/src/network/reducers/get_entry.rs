@@ -1,26 +1,16 @@
 use boolinator::*;
-use crate::{
-    action::ActionWrapper,
-    context::Context,
-    network::state::NetworkState,
-};
-use holochain_core_types::{
-    cas::content::{Address},
-    error::HolochainError,
-};
+use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol_wrapper::{GetDhtData, ProtocolWrapper},
 };
 use std::sync::Arc;
 
-fn inner(
-    network_state: &mut NetworkState,
-    address: &Address,
-) -> Result<(), HolochainError> {
+fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), HolochainError> {
     (network_state.network.is_some()
         && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-        .ok_or("Network not initialized".to_string())?;
+    .ok_or("Network not initialized".to_string())?;
 
     let data = GetDhtData {
         msg_id: "?".to_string(),
@@ -52,20 +42,22 @@ pub fn reduce_get_entry(
 
     let result = match inner(network_state, &address) {
         Ok(()) => None,
-        Err(err) => Some(Err(err))
+        Err(err) => Some(Err(err)),
     };
 
     println!("ADR: {}", address);
 
-    network_state.get_entry_results.insert(address.clone(), result);
+    network_state
+        .get_entry_results
+        .insert(address.clone(), result);
 }
 
 #[cfg(test)]
 mod tests {
 
     use crate::{
-        context::mock_network_config,
         action::{Action, ActionWrapper},
+        context::mock_network_config,
         instance::tests::test_context,
         state::test_store,
     };
@@ -80,9 +72,17 @@ mod tests {
         let action_wrapper = ActionWrapper::new(Action::GetEntry(entry.address()));
 
         let store = store.reduce(context.clone(), action_wrapper);
-        let maybe_get_entry_result = store.network().get_entry_results.get(&entry.address())
+        let maybe_get_entry_result = store
+            .network()
+            .get_entry_results
+            .get(&entry.address())
             .map(|result| result.clone());
-        assert_eq!(maybe_get_entry_result, Some(Some(Err(HolochainError::ErrorGeneric("Network not initialized".to_string())))));
+        assert_eq!(
+            maybe_get_entry_result,
+            Some(Some(Err(HolochainError::ErrorGeneric(
+                "Network not initialized".to_string()
+            ))))
+        );
     }
 
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
@@ -92,14 +92,21 @@ mod tests {
         let context = test_context("alice");
         let store = test_store(context.clone());
 
-        let action_wrapper = ActionWrapper::new(Action::InitNetwork((mock_network_config(), String::from("abcd"), String::from("abcd"))));
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork((
+            mock_network_config(),
+            String::from("abcd"),
+            String::from("abcd"),
+        )));
         let store = store.reduce(context.clone(), action_wrapper);
 
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::GetEntry(entry.address()));
 
         let store = store.reduce(context.clone(), action_wrapper);
-        let maybe_get_entry_result = store.network().get_entry_results.get(&entry.address())
+        let maybe_get_entry_result = store
+            .network()
+            .get_entry_results
+            .get(&entry.address())
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
     }

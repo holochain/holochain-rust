@@ -7,14 +7,10 @@ mod util;
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        instance::tests::{test_instance_and_context_by_name},
-        network::actions::get_entry::get_entry,
+        instance::tests::test_instance_and_context_by_name, network::actions::get_entry::get_entry,
     };
     use futures::executor::block_on;
-    use holochain_core_types::{
-        cas::content::AddressableContent,
-        entry::test_entry,
-    };
+    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
     use test_utils::*;
 
     #[test]

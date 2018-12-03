@@ -161,6 +161,7 @@ jobs:
           - /nix
           - $HOME/.cargo
           - $TRAVIS_BUILD_DIR/target
+          - $TRAVIS_BUILD_DIR/core/src/nucleus/actions/wasm-test/target
         timeout: 1000
       install:
         # - curl https://nixos.org/nix/install | sh
@@ -179,7 +180,7 @@ jobs:
         - nix-shell --pure --run hc-fmt-check --max-jobs auto --cores 0
 
         - nix-shell --pure --run hc-tarpaulin --max-jobs auto --cores 0
-        - nix-shell --pure --run hc-test-cmd
+        # - nix-shell --pure --run hc-test-cmd
 
     # https://nixos.wiki/wiki/Nix_on_Travis
     # - name: "nix-shell test"

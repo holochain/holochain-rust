@@ -1,9 +1,6 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
+    cas::{content::Address, storage::ContentAddressableStorage},
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
     error::HolochainError,
     link::Link,
@@ -13,25 +10,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-// Placeholder network module
-#[derive(Clone, Debug, PartialEq)]
-pub struct Network {
-    // FIXME
-}
-impl Network {
-    pub fn publish(&mut self, _content: &AddressableContent) {
-        // FIXME
-    }
-    pub fn publish_meta(&mut self, _meta: &EntityAttributeValue) {
-        // FIXME
-    }
-
-    pub fn get(&mut self, _address: &Address) -> Option<Content> {
-        // FIXME
-        None
-    }
-}
-
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
 #[derive(Clone, Debug)]
@@ -39,8 +17,6 @@ pub struct DhtStore {
     // Storages holding local shard data
     content_storage: Arc<RwLock<ContentAddressableStorage>>,
     meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
-    // Placeholder network module
-    network: Network,
 
     add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
 }
@@ -52,8 +28,7 @@ impl PartialEq for DhtStore {
         let meta = &self.meta_storage.clone();
         let other_meta = &other.meta_storage.clone();
 
-        self.network == other.network
-            && self.add_link_actions == other.add_link_actions
+        self.add_link_actions == other.add_link_actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
     }
@@ -66,11 +41,9 @@ impl DhtStore {
         content_storage: Arc<RwLock<ContentAddressableStorage>>,
         meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Self {
-        let network = Network {};
         DhtStore {
             content_storage,
             meta_storage,
-            network,
             add_link_actions: HashMap::new(),
         }
     }
@@ -103,9 +76,6 @@ impl DhtStore {
     }
     pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
         self.meta_storage.clone()
-    }
-    pub(crate) fn network(&self) -> &Network {
-        &self.network
     }
     pub fn add_link_actions(&self) -> &HashMap<ActionWrapper, Result<(), HolochainError>> {
         &self.add_link_actions

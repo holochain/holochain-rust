@@ -17,6 +17,7 @@ extern crate toml;
 #[macro_use]
 extern crate serde_json;
 extern crate ignore;
+extern crate notify;
 extern crate rustyline;
 extern crate tempfile;
 extern crate uuid;
@@ -108,6 +109,12 @@ enum Cli {
             help = "Automatically package project before running"
         )]
         package: bool,
+        #[structopt(
+            long,
+            short,
+            help = "Rebuild and rerun container on file system change"
+        )]
+        watch: bool,
     },
     #[structopt(
         name = "test",
@@ -148,20 +155,20 @@ fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
     match args {
-        Cli::Agent => cli::agent().map_err(|err| HolochainError::Default(err))?,
+        Cli::Agent => cli::agent().map_err(HolochainError::Default)?,
         Cli::Package { strip_meta, output } => {
-            cli::package(strip_meta, output).map_err(|err| HolochainError::Default(err))?
+            cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
-        Cli::Unpack { path, to } => {
-            cli::unpack(&path, &to).map_err(|err| HolochainError::Default(err))?
-        }
-        Cli::Init { path } => cli::init(&path).map_err(|err| HolochainError::Default(err))?,
+        Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,
+        Cli::Init { path } => cli::init(&path).map_err(HolochainError::Default)?,
         Cli::Generate { zome, language } => {
-            cli::generate(&zome, &language).map_err(|err| HolochainError::Default(err))?
+            cli::generate(&zome, &language).map_err(HolochainError::Default)?
         }
-        Cli::Run { package, port } => {
-            cli::run(package, port).map_err(|err| HolochainError::Default(err))?
-        }
+        Cli::Run {
+            package,
+            port,
+            watch,
+        } => cli::run(package, port, watch).map_err(HolochainError::Default)?,
         Cli::Test {
             dir,
             testfile,
@@ -170,7 +177,7 @@ fn run() -> HolochainResult<()> {
             let tests_folder = dir.unwrap_or(cli::TEST_DIR_NAME.to_string());
             let test_file = testfile.unwrap_or("test/index.js".to_string());
             cli::test(&PathBuf::from("."), &tests_folder, &test_file, skip_build)
-                .map_err(|err| HolochainError::Default(err))?
+                .map_err(HolochainError::Default)?
         }
     }
 

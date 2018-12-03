@@ -132,7 +132,7 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
-        .iter(&top_header)
+        .iter(top_header.as_ref())
         .filter(|ref chain_header| chain_header.entry_type().can_publish())
         .map(|chain_header| {
             let storage = chain.content_storage().clone();
@@ -150,7 +150,7 @@ fn all_public_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
-        .iter(&top_header)
+        .iter(top_header.as_ref())
         .filter(|ref chain_header| chain_header.entry_type().can_publish())
         .collect::<Vec<_>>()
 }

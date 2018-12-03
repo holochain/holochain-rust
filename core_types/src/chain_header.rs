@@ -53,16 +53,16 @@ impl ChainHeader {
         entry_type: &EntryType,
         entry_address: &Address,
         entry_signature: &Signature,
-        link: &Option<Address>,
-        link_same_type: &Option<Address>,
+        link: Option<&Address>,
+        link_same_type: Option<&Address>,
         timestamp: &Iso8601,
     ) -> Self {
         ChainHeader {
             entry_type: entry_type.to_owned(),
             entry_address: entry_address.to_owned(),
             entry_signature: entry_signature.to_owned(),
-            link: link.to_owned(),
-            link_same_type: link_same_type.to_owned(),
+            link: link.cloned(),
+            link_same_type: link_same_type.cloned(),
             timestamp: timestamp.to_owned(),
         }
     }
@@ -126,8 +126,8 @@ pub fn test_chain_header() -> ChainHeader {
         &test_entry_type(),
         &test_entry().address(),
         &test_signature(),
-        &None,
-        &None,
+        None,
+        None,
         &test_iso_8601(),
     )
 }
@@ -156,8 +156,8 @@ pub mod tests {
             &test_entry_type_b(),
             &test_entry_b().address(),
             &test_signature_b(),
-            &None,
-            &None,
+            None,
+            None,
             &test_iso_8601(),
         )
     }
@@ -183,16 +183,16 @@ pub mod tests {
                 &entry_a.entry_type(),
                 &entry_a.address(),
                 &test_signature(),
-                &None,
-                &None,
+                None,
+                None,
                 &test_iso_8601(),
             ),
             ChainHeader::new(
                 &entry_b.entry_type(),
                 &entry_a.address(),
                 &test_signature(),
-                &None,
-                &None,
+                None,
+                None,
                 &test_iso_8601(),
             ),
         );
@@ -204,16 +204,16 @@ pub mod tests {
                 &entry.entry_type(),
                 &entry.address(),
                 &test_signature(),
-                &None,
-                &None,
+                None,
+                None,
                 &test_iso_8601(),
             ),
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
                 &test_signature(),
-                &Some(test_chain_header().address()),
-                &None,
+                Some(&test_chain_header().address()),
+                None,
                 &test_iso_8601(),
             ),
         );
@@ -249,8 +249,8 @@ pub mod tests {
             &entry_b.entry_type(),
             &entry_b.address(),
             &test_signature(),
-            &Some(chain_header_a.address()),
-            &None,
+            Some(&chain_header_a.address()),
+            None,
             &test_iso_8601(),
         );
         assert_eq!(None, chain_header_a.link());
@@ -270,8 +270,8 @@ pub mod tests {
             &entry_b.entry_type(),
             &entry_b.address(),
             &test_signature_b(),
-            &Some(chain_header_a.address()),
-            &None,
+            Some(&chain_header_a.address()),
+            None,
             &test_iso_8601(),
         );
         let entry_c = test_entry_a();
@@ -279,8 +279,8 @@ pub mod tests {
             &entry_c.entry_type(),
             &entry_c.address(),
             &test_signature(),
-            &Some(chain_header_b.address()),
-            &Some(chain_header_a.address()),
+            Some(&chain_header_b.address()),
+            Some(&chain_header_a.address()),
             &test_iso_8601(),
         );
 
@@ -324,8 +324,8 @@ pub mod tests {
                 &test_entry_type_a(),
                 &test_entry().address(),
                 &test_signature(),
-                &None,
-                &None,
+                None,
+                None,
                 &test_iso_8601(),
             )
             .address(),
@@ -333,8 +333,8 @@ pub mod tests {
                 &test_entry_type_b(),
                 &test_entry().address(),
                 &test_signature(),
-                &None,
-                &None,
+                None,
+                None,
                 &test_iso_8601(),
             )
             .address(),
@@ -351,8 +351,8 @@ pub mod tests {
                 &entry.entry_type(),
                 &entry.address(),
                 &test_signature(),
-                &Some(test_chain_header().address()),
-                &None,
+                Some(&test_chain_header().address()),
+                None,
                 &test_iso_8601(),
             )
             .address(),
@@ -369,8 +369,8 @@ pub mod tests {
                 &entry.entry_type(),
                 &entry.address(),
                 &test_signature(),
-                &None,
-                &Some(test_chain_header().address()),
+                None,
+                Some(&test_chain_header().address()),
                 &test_iso_8601(),
             )
             .address(),

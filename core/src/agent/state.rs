@@ -72,7 +72,7 @@ impl AgentState {
     ) -> Result<Agent, HolochainError> {
         let agent_entry_address = self
             .chain()
-            .iter_type(&self.top_chain_header, &EntryType::AgentId)
+            .iter_type(self.top_chain_header.as_ref(), &EntryType::AgentId)
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
             .ok_or(HolochainError::ErrorGeneric(
@@ -151,15 +151,17 @@ pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> Chain
         &entry.address(),
         // @TODO signatures
         &Signature::from(""),
-        &agent_state
+        agent_state
             .top_chain_header
             .clone()
-            .and_then(|chain_header| Some(chain_header.address())),
-        &agent_state
+            .map(|chain_header| chain_header.address())
+            .as_ref(),
+        agent_state
             .chain()
-            .iter_type(&agent_state.top_chain_header, &entry.entry_type())
+            .iter_type(agent_state.top_chain_header.as_ref(), &entry.entry_type())
             .nth(0)
-            .and_then(|chain_header| Some(chain_header.address())),
+            .map(|chain_header| chain_header.address())
+            .as_ref(),
         // @TODO timestamp
         &Iso8601::from(""),
     )

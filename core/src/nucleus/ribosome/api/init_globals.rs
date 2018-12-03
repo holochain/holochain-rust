@@ -36,7 +36,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             for chain_header in state
                 .agent()
                 .chain()
-                .iter_type(&maybe_top, &EntryType::AgentId)
+                .iter_type(maybe_top.as_ref(), &EntryType::AgentId)
             {
                 found_entries.push(chain_header.entry_address().to_owned());
             }

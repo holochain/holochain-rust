@@ -33,13 +33,13 @@ impl ChainStore {
         self.content_storage.clone()
     }
 
-    pub fn iter(&self, start_chain_header: &Option<ChainHeader>) -> ChainStoreIterator {
-        ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
+    pub fn iter(&self, start_chain_header: Option<&ChainHeader>) -> ChainStoreIterator {
+        ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.cloned())
     }
 
     pub fn iter_type(
         &self,
-        start_chain_header: &Option<ChainHeader>,
+        start_chain_header: Option<&ChainHeader>,
         entry_type: &EntryType,
     ) -> ChainStoreTypeIterator {
         ChainStoreTypeIterator::new(
@@ -51,7 +51,7 @@ impl ChainStore {
 
     pub fn query(
         &self,
-        start_chain_header: &Option<ChainHeader>,
+        start_chain_header: Option<&ChainHeader>,
         entry_type: &EntryType,
         start: u32,
         limit: u32,
@@ -190,8 +190,8 @@ pub mod tests {
             &entry.entry_type(),
             &entry.address(),
             &test_signature_b(),
-            &Some(chain_header_a.address()),
-            &None,
+            Some(&chain_header_a.address()),
+            None,
             &test_iso_8601(),
         );
 
@@ -205,14 +205,14 @@ pub mod tests {
 
         let expected = vec![chain_header_b.clone(), chain_header_a.clone()];
         let mut found = vec![];
-        for chain_header in chain_store.iter(&Some(chain_header_b)) {
+        for chain_header in chain_store.iter(Some(&chain_header_b)) {
             found.push(chain_header);
         }
         assert_eq!(expected, found);
 
         let expected = vec![chain_header_a.clone()];
         let mut found = vec![];
-        for chain_header in chain_store.iter(&Some(chain_header_a)) {
+        for chain_header in chain_store.iter(Some(&chain_header_a)) {
             found.push(chain_header);
         }
         assert_eq!(expected, found);
@@ -230,8 +230,8 @@ pub mod tests {
             &entry_b.entry_type(),
             &entry_b.address(),
             &test_signature(),
-            &Some(chain_header_a.address()),
-            &None,
+            Some(&chain_header_a.address()),
+            None,
             &test_iso_8601(),
         );
         // c has same type as a
@@ -240,8 +240,8 @@ pub mod tests {
             &entry_c.entry_type(),
             &entry_c.address(),
             &test_signature(),
-            &Some(chain_header_b.address()),
-            &Some(chain_header_a.address()),
+            Some(&chain_header_b.address()),
+            Some(&chain_header_a.address()),
             &test_iso_8601(),
         );
 
@@ -255,7 +255,7 @@ pub mod tests {
         let expected = vec![chain_header_c.clone(), chain_header_a.clone()];
         let mut found = vec![];
         for chain_header in
-            chain_store.iter_type(&Some(chain_header_c.clone()), &chain_header_c.entry_type())
+            chain_store.iter_type(Some(&chain_header_c), &chain_header_c.entry_type())
         {
             found.push(chain_header);
         }
@@ -264,7 +264,7 @@ pub mod tests {
         let expected = vec![chain_header_a.clone()];
         let mut found = vec![];
         for chain_header in
-            chain_store.iter_type(&Some(chain_header_b.clone()), &chain_header_c.entry_type())
+            chain_store.iter_type(Some(&chain_header_b), &chain_header_c.entry_type())
         {
             found.push(chain_header);
         }
@@ -273,7 +273,7 @@ pub mod tests {
         let expected = vec![chain_header_b.clone()];
         let mut found = vec![];
         for chain_header in
-            chain_store.iter_type(&Some(chain_header_c.clone()), &chain_header_b.entry_type())
+            chain_store.iter_type(Some(&chain_header_c), &chain_header_b.entry_type())
         {
             found.push(chain_header);
         }
@@ -282,7 +282,7 @@ pub mod tests {
         let expected = vec![chain_header_b.clone()];
         let mut found = vec![];
         for chain_header in
-            chain_store.iter_type(&Some(chain_header_b.clone()), &chain_header_b.entry_type())
+            chain_store.iter_type(Some(&chain_header_b), &chain_header_b.entry_type())
         {
             found.push(chain_header);
         }
@@ -300,8 +300,8 @@ pub mod tests {
             &entry.entry_type(),
             &entry.address(),
             &test_signature_b(),
-            &Some(chain_header_a.address()),
-            &None,
+            Some(&chain_header_a.address()),
+            None,
             &test_iso_8601(),
         );
         let entry = test_entry_c();
@@ -309,8 +309,8 @@ pub mod tests {
             &entry.entry_type(),
             &entry.address(),
             &test_signature_c(),
-            &Some(chain_header_b.address()),
-            &Some(chain_header_b.address()),
+            Some(&chain_header_b.address()),
+            Some(&chain_header_b.address()),
             &test_iso_8601(),
         );
 
@@ -325,14 +325,14 @@ pub mod tests {
             .add(&chain_header_c)
             .expect("could not add header to cas");
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type(), 0, 0);
+        let found = chain_store.query(Some(&chain_header_c), entry.entry_type(), 0, 0);
         let expected = vec![
             chain_header_c.entry_address().clone(),
             chain_header_b.entry_address().clone(),
         ];
         assert_eq!(expected, found);
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type(), 0, 1);
+        let found = chain_store.query(Some(&chain_header_c), entry.entry_type(), 0, 1);
         let expected = vec![chain_header_c.entry_address().clone()];
         assert_eq!(expected, found);
     }

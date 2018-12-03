@@ -29,7 +29,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         .expect("Should have genesis entries.");
 
     runtime.store_result(Ok(agent.chain().query(
-        &Some(top),
+        Some(&top),
         &entry_type,
         query.start,
         query.limit,

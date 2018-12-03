@@ -1,8 +1,9 @@
 use cli::{self, package};
+use colored::*;
 use error::DefaultResult;
 use holochain_container_api::{config::*, container::Container};
-use notify::{watcher, RecursiveMode, Watcher};
-use std::{sync::mpsc, time::Duration};
+use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
+use std::{path::PathBuf, sync::mpsc, time::Duration};
 
 /// Starts a small container with the current application running
 pub fn run(package: bool, port: u16, watch: bool) -> DefaultResult<()> {
@@ -66,15 +67,27 @@ pub fn run(package: bool, port: u16, watch: bool) -> DefaultResult<()> {
 
         let (tx, rx) = mpsc::channel();
 
-        let mut watcher = watcher(tx, Duration::from_secs(1))?;
+        let mut watcher = watcher(tx, Duration::from_secs(2))?;
 
         watcher.watch(".", RecursiveMode::Recursive)?;
 
-        loop {
-            while rx.recv().is_ok() {
-                println!("Files have changed. Rebuilding...");
+        let bundle_path = PathBuf::from(package::DEFAULT_BUNDLE_FILE_NAME).canonicalize()?;
 
-                cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
+        loop {
+            while let Ok(event) = rx.recv() {
+                match event {
+                    DebouncedEvent::Write(write_path)
+                    | DebouncedEvent::Create(write_path)
+                    | DebouncedEvent::Chmod(write_path)
+                    | DebouncedEvent::Remove(write_path) => {
+                        println!("Files have changed. Rebuilding...");
+
+                        if write_path != bundle_path {
+                            cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
+                        }
+                    }
+                    _ => {}
+                }
             }
         }
     } else {
@@ -85,11 +98,11 @@ pub fn run(package: bool, port: u16, watch: bool) -> DefaultResult<()> {
         loop {
             let readline = rl.readline("hc> ")?;
 
-            match readline.as_str() {
+            match readline.as_str().trim() {
                 "exit" => break,
                 other if !other.is_empty() => eprintln!(
-                    "command {:?} not recognized. Available commands are: exit",
-                    other
+                    "command {} not recognized. Available commands are: exit",
+                    other.red().bold()
                 ),
                 _ => continue,
             }

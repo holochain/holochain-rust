@@ -105,7 +105,7 @@ pub mod tests {
 
         let top_header = context.state().unwrap().agent().top_chain_header();
         chain
-            .iter(&top_header)
+            .iter(top_header.as_ref())
             .find(|ref header| *header.entry_address() == entry.address())
             .expect("Couldn't find header in chain for given entry")
     }

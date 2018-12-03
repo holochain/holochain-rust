@@ -43,7 +43,7 @@ pub fn reduce(
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
-        Action::Commit(_) => Some(reduce_add_crud_meta),
+        Action::Commit(_) => Some(reduce_hold_entry),
         Action::Hold(_) => Some(reduce_hold_entry),
         Action::UpdateEntry(_) => Some(reduce_update_entry),
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
@@ -59,7 +59,12 @@ pub(crate) fn reduce_hold_entry(
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Hold);
+
+    let entry = match &action {
+        &Action::Hold(entry) => entry,
+        &Action::Commit((entry, _)) => entry,
+        _ => unreachable!(),
+    };
 
     // Add it to local storage
     let new_store = (*old_store).clone();
@@ -70,21 +75,7 @@ pub(crate) fn reduce_hold_entry(
         println!("dht::reduce_hold_entry() FAILED {:?}", res);
         return None;
     }
-    // Done
-    Some(new_store)
-}
 
-//
-pub(crate) fn reduce_add_crud_meta(
-    _context: Arc<Context>,
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    // Get Action input
-    let action = action_wrapper.action();
-    let (entry, _) = unwrap_to!(action => Action::Commit);
-    // Add crud-status metadata to local storage
-    let new_store = (*old_store).clone();
     // Initialize CRUD status meta
     let meta_storage = &new_store.meta_storage().clone();
     let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
@@ -92,11 +83,12 @@ pub(crate) fn reduce_add_crud_meta(
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         println!(
-            "reduce_add_crud_meta: meta_storage write failed!: {:?}",
+            "reduce_hold_entry: meta_storage write failed!: {:?}",
             res.err().unwrap()
         );
         return None;
     }
+
     // Done
     Some(new_store)
 }

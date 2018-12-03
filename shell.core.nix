@@ -21,6 +21,10 @@ let
   '';
 
   hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test";
+
+  # nix-shell on mac os x:
+  # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
+  frameworks = nixpkgs.darwin.apple_sdk.frameworks;
 in
 with nixpkgs;
 stdenv.mkDerivation rec {
@@ -31,6 +35,15 @@ stdenv.mkDerivation rec {
 
     hc-wasm-build
     hc-test
+
+    # mac os x
+    frameworks.Security
+    frameworks.CoreFoundation
+    frameworks.CoreServices
   ];
 
+  shellHook = ''
+      export PS1="[$name] \[$txtgrn\]\u@\h\[$txtwht\]:\[$bldpur\]\w \[$txtcyn\]\$git_branch\[$txtred\]\$git_dirty \[$bldylw\]\$aws_env\[$txtrst\]\$ "
+      export NIX_LDFLAGS="-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation $NIX_LDFLAGS";
+  '';
 }

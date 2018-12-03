@@ -21,10 +21,12 @@ extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
 pub extern crate holochain_core_types;
-pub extern crate holochain_dna;
+#[macro_use]
+extern crate holochain_core_types_derive;
 pub extern crate holochain_wasm_utils;
 
 pub mod api;
+#[macro_use]
 pub mod entry_definition;
 pub mod error;
 pub mod global_fns;
@@ -36,5 +38,5 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 
 pub mod meta;
 
-pub use api::*;
+pub use crate::api::*;
 pub use holochain_core_types::validation::*;

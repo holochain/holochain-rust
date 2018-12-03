@@ -1,13 +1,15 @@
-use agent::state::AgentState;
-use context::Context;
-use holochain_core_types::{
-    cas::content::Address, entry::Entry, error::HolochainError, links_entry::Link,
-    validation::ValidationPackage,
+use crate::{
+    agent::state::AgentState,
+    context::Context,
+    network::state::NetworkState,
+    nucleus::{
+        state::{NucleusState, ValidationResult},
+        ExecuteZomeFnResponse, ZomeFnCall,
+    },
 };
-use holochain_dna::Dna;
-use nucleus::{
-    state::{NucleusState, ValidationResult},
-    ExecuteZomeFnResponse, ZomeFnCall,
+use holochain_core_types::{
+    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
+    link::Link, validation::ValidationPackage,
 };
 use snowflake;
 use std::{
@@ -107,21 +109,28 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
+
+    InitNetwork((JsonString, String, String)),
+    Publish(Address),
+    Hold(Entry),
 }
 
 /// function signature for action handler functions
 // @TODO merge these into a single signature
 // @see https://github.com/holochain/holochain-rust/issues/194
 pub type AgentReduceFn = ReduceFn<AgentState>;
+pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
 #[cfg(test)]
 pub mod tests {
 
-    use action::{Action, ActionWrapper};
+    use crate::{
+        action::{Action, ActionWrapper},
+        nucleus::tests::test_call_response,
+    };
     use holochain_core_types::entry::{expected_entry_address, test_entry};
-    use nucleus::tests::test_call_response;
     use test_utils::calculate_hash;
 
     /// dummy action

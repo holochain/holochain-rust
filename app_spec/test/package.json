@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "faucet": "0.0.1"
+  },
+  "dependencies": {
+    "json3": "*",
+    "tape": "^4.9.1"
+  },
+  "scripts": {
+    "test": "node test.js"
+  }
+}

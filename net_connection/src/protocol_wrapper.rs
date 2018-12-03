@@ -43,36 +43,119 @@ pub struct PeerData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct SendMessageData {
+pub struct MessageData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "toAddress")]
-    pub to_address: String,
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "toAgentId")]
+    pub to_agent_id: String,
+
+    #[serde(rename = "fromAgentId")]
+    pub from_agent_id: String,
 
     pub data: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct SendResultData {
-    #[serde(rename = "_id")]
-    pub msg_id: String,
+pub struct TrackAppData {
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
 
-    pub data: serde_json::Value,
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct HandleSendData {
+pub struct SuccessResultData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "toAddress")]
-    pub to_address: String,
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
 
-    #[serde(rename = "fromAddress")]
-    pub from_address: String,
+    #[serde(rename = "toAgentId")]
+    pub to_agent_id: String,
 
-    pub data: serde_json::Value,
+    #[serde(rename = "successInfo")]
+    pub success_info: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct FailureResultData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "toAgentId")]
+    pub to_agent_id: String,
+
+    #[serde(rename = "errorInfo")]
+    pub error_info: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct GetDhtData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "fromAgentId")]
+    pub from_agent_id: String,
+
+    pub address: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct DhtData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+
+    pub address: String,
+    pub content: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct GetDhtMetaData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "fromAgentId")]
+    pub from_agent_id: String,
+
+    pub address: String,
+    pub attribute: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct DhtMetaData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+
+    pub address: String,
+    pub attribute: String,
+    pub content: serde_json::Value,
 }
 
 /// High level p2p / network message
@@ -109,19 +192,69 @@ pub enum ProtocolWrapper {
 
     /// [send] send a message to another node on the network
     #[serde(rename = "send")]
-    SendMessage(SendMessageData),
+    SendMessage(MessageData),
 
     /// [recv] recv the response back from a previous `SendMessage`
     #[serde(rename = "sendResult")]
-    SendResult(SendResultData),
+    SendResult(MessageData),
 
     /// [recv] another node has sent us a message
     #[serde(rename = "handleSend")]
-    HandleSend(HandleSendData),
+    HandleSend(MessageData),
 
     /// [send] send our response to a previous `HandleSend`
     #[serde(rename = "handleSendResult")]
-    HandleSendResult(SendResultData),
+    HandleSendResult(MessageData),
+
+    /// [send] send out a "trackApp" request
+    #[serde(rename = "trackApp")]
+    TrackApp(TrackAppData),
+
+    /// [send / recv] report success for a messages with _id parameter
+    #[serde(rename = "successResult")]
+    SuccessResult(SuccessResultData),
+
+    /// [send / recv] for any message with _id parameter to indicate failure
+    #[serde(rename = "failureResult")]
+    FailureResult(FailureResultData),
+
+    /// [send] request data from the dht
+    /// [recv] another node, or the network module itself is requesting data
+    ///        from us... send a GetDhtResult message back
+    #[serde(rename = "getDht")]
+    GetDht(GetDhtData),
+
+    /// [recv] response from requesting dht data from the network
+    /// [send] success response if network is requesting this data of us
+    #[serde(rename = "getDhtResult")]
+    GetDhtResult(DhtData),
+
+    /// [send] publish content to the dht
+    #[serde(rename = "publishDht")]
+    PublishDht(DhtData),
+
+    /// [recv] the network is requesting that we store this data
+    #[serde(rename = "storeDht")]
+    StoreDht(DhtData),
+
+    /// [send] request meta data from the dht
+    /// [recv] another node, or the network module itself is requesting data
+    ///        from us... send a GetDhtResult message back
+    #[serde(rename = "getDhtMeta")]
+    GetDhtMeta(GetDhtMetaData),
+
+    /// [recv] response from requesting meta dht data from the network
+    /// [send] success response if network is requesting this data of us
+    #[serde(rename = "getDhtMetaResult")]
+    GetDhtMetaResult(DhtMetaData),
+
+    /// [send] publish meta content to the dht
+    #[serde(rename = "publishDhtMeta")]
+    PublishDhtMeta(DhtMetaData),
+
+    /// [recv] the network is requesting that we store this meta data
+    #[serde(rename = "storeDhtMeta")]
+    StoreDhtMeta(DhtMetaData),
 }
 
 impl<'a> TryFrom<&'a Protocol> for ProtocolWrapper {
@@ -192,7 +325,8 @@ mod tests {
             "method": "state",
             "state": "test_state"
         }"#,
-        )).unwrap();
+        ))
+        .unwrap();
         if let ProtocolWrapper::State(s) = w {
             assert_eq!("undefined", &s.id);
             assert_eq!(0, s.bindings.len());
@@ -236,16 +370,21 @@ mod tests {
 
     #[test]
     fn it_can_convert_send_message() {
-        test_convert!(ProtocolWrapper::SendMessage(SendMessageData {
+        test_convert!(ProtocolWrapper::SendMessage(MessageData {
+            dna_hash: "test_dna".to_string(),
+            to_agent_id: "test_to".to_string(),
+            from_agent_id: "test_from".to_string(),
             msg_id: "test_id".to_string(),
-            to_address: "test_addr".to_string(),
             data: json!("hello"),
         }));
     }
 
     #[test]
     fn it_can_convert_send_result() {
-        test_convert!(ProtocolWrapper::SendResult(SendResultData {
+        test_convert!(ProtocolWrapper::SendResult(MessageData {
+            dna_hash: "test_dna".to_string(),
+            to_agent_id: "test_to".to_string(),
+            from_agent_id: "test_from".to_string(),
             msg_id: "test_id".to_string(),
             data: json!("hello"),
         }));
@@ -253,20 +392,31 @@ mod tests {
 
     #[test]
     fn it_can_convert_handle_send() {
-        test_convert!(ProtocolWrapper::HandleSend(HandleSendData {
+        test_convert!(ProtocolWrapper::HandleSend(MessageData {
+            dna_hash: "test_dna".to_string(),
+            to_agent_id: "test_to".to_string(),
+            from_agent_id: "test_from".to_string(),
             msg_id: "test_id".to_string(),
-            to_address: "test_addr".to_string(),
-            from_address: "test_addr2".to_string(),
             data: json!("hello"),
         }));
     }
 
     #[test]
     fn it_can_convert_handle_send_result() {
-        test_convert!(ProtocolWrapper::HandleSendResult(SendResultData {
+        test_convert!(ProtocolWrapper::HandleSendResult(MessageData {
+            dna_hash: "test_dna".to_string(),
+            to_agent_id: "test_to".to_string(),
+            from_agent_id: "test_from".to_string(),
             msg_id: "test_id".to_string(),
             data: json!("hello"),
         }));
     }
 
+    #[test]
+    fn it_can_convert_track_app() {
+        test_convert!(ProtocolWrapper::TrackApp(TrackAppData {
+            dna_hash: "test_dna".to_string(),
+            agent_id: "test_to".to_string(),
+        }));
+    }
 }

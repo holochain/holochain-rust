@@ -11,8 +11,13 @@ extern crate holochain_core_types;
 extern crate holochain_net_connection;
 extern crate holochain_net_ipc;
 #[macro_use]
+extern crate lazy_static;
+// macros used in tests
+#[allow(unused_imports)]
+#[macro_use]
 extern crate serde_json;
 
 pub mod error;
 pub mod ipc_net_worker;
+pub mod mock_worker;
 pub mod p2p_network;

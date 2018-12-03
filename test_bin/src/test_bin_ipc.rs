@@ -8,7 +8,7 @@ extern crate serde_json;
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
-    protocol_wrapper::{ConnectData, ProtocolWrapper, SendMessageData, SendResultData},
+    protocol_wrapper::{ConnectData, MessageData, ProtocolWrapper},
     NetResult,
 };
 
@@ -40,6 +40,9 @@ fn exec() -> NetResult<()> {
 
     println!("testing against uri: {}", ipc_uri);
 
+    static DNA_HASH: &'static str = "sandwich";
+    static AGENT_ID: &'static str = "agent-1";
+
     // use a mpsc channel for messaging
     let (sender, receiver) = mpsc::channel::<Protocol>();
 
@@ -55,7 +58,8 @@ fn exec() -> NetResult<()> {
                 "socketType": "zmq",
                 "ipcUri": ipc_uri,
             }
-        }).into(),
+        })
+        .into(),
     )?;
 
     let mut id = "".to_string();
@@ -90,7 +94,8 @@ fn exec() -> NetResult<()> {
     con.send(
         ProtocolWrapper::Connect(ConnectData {
             address: addr.clone(),
-        }).into(),
+        })
+        .into(),
     )?;
 
     // loop waiting for the message
@@ -112,11 +117,14 @@ fn exec() -> NetResult<()> {
 
     // now, let's send a message to ourselves (just for debug / test)
     con.send(
-        ProtocolWrapper::SendMessage(SendMessageData {
+        ProtocolWrapper::SendMessage(MessageData {
+            dna_hash: DNA_HASH.to_string(),
+            to_agent_id: AGENT_ID.to_string(),
+            from_agent_id: AGENT_ID.to_string(),
             msg_id: "unique-id".to_string(),
-            to_address: id.clone(),
             data: json!("test data"),
-        }).into(),
+        })
+        .into(),
     )?;
 
     let handle_data;
@@ -143,10 +151,14 @@ fn exec() -> NetResult<()> {
     // hey, we got a message from ourselves!
     // let's send ourselves a response
     con.send(
-        ProtocolWrapper::HandleSendResult(SendResultData {
+        ProtocolWrapper::HandleSendResult(MessageData {
+            dna_hash: handle_data.dna_hash,
+            to_agent_id: handle_data.from_agent_id,
+            from_agent_id: AGENT_ID.to_string(),
             msg_id: handle_data.msg_id,
             data: json!(format!("echo: {}", handle_data.data)),
-        }).into(),
+        })
+        .into(),
     )?;
 
     // wait for the response to our original message

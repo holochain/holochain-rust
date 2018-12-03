@@ -2,14 +2,18 @@ extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
-extern crate holochain_dna;
+extern crate holochain_net;
+extern crate serde_json;
 extern crate tempfile;
 
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::*;
-use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
-use holochain_core_types::entry::agent::Agent;
-use holochain_dna::Dna;
+use holochain_core::{
+    context::{mock_network_config, Context},
+    logger::SimpleLogger,
+    persister::SimplePersister,
+};
+use holochain_core_types::{agent::AgentId, dna::Dna};
 use std::{
     env,
     sync::{Arc, Mutex, RwLock},
@@ -40,20 +44,25 @@ fn main() {
         usage();
     }
 
-    //let dna = holochain_dna::from_package_file("mydna.hcpkg");
+    //let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
     let dna = Dna::new();
-    let agent = Agent::from(identity.to_string());
+    let agent = AgentId::generate_fake(identity);
+    let file_storage = Arc::new(RwLock::new(
+        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+    ));
     let context = Context::new(
         agent,
         Arc::new(Mutex::new(SimpleLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
         )),
         Arc::new(RwLock::new(
             EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
         )),
-    ).expect("context is supposed to be created");
+        mock_network_config(),
+    )
+    .expect("context is supposed to be created");
     let mut hc = Holochain::new(dna, Arc::new(context)).unwrap();
     println!("Created a new instance with identity: {}", identity);
 

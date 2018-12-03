@@ -1,4 +1,4 @@
-use error::HolochainError;
+use crate::error::HolochainError;
 use std::path::Path;
 
 pub fn validate_canonical_path(dir_path: &str) -> Result<String, HolochainError> {

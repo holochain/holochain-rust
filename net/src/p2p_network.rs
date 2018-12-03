@@ -11,7 +11,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use super::ipc_net_worker::IpcNetWorker;
+use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker};
 
 use serde_json;
 
@@ -34,23 +34,30 @@ impl P2pNetwork {
         let config: serde_json::Value = serde_json::from_str(config.into())?;
 
         // so far, we have only implemented the "ipc" backend type
-        if &config["backend"] == "ipc" {
-            // create a new ipc backend with the passed sub "config" info
-            return Ok(P2pNetwork {
+        match config["backend"].to_string().as_str() {
+            "\"ipc\"" => {
+                // create a new ipc backend with the passed sub "config" info
+                Ok(P2pNetwork {
+                    con: NetConnectionThread::new(
+                        handler,
+                        Box::new(move |h| {
+                            let out: Box<NetWorker> = Box::new(IpcNetWorker::new(
+                                h,
+                                &(config["config"].to_string().into()),
+                            )?);
+                            Ok(out)
+                        }),
+                    )?,
+                })
+            }
+            "\"mock\"" => Ok(P2pNetwork {
                 con: NetConnectionThread::new(
                     handler,
-                    Box::new(move |h| {
-                        let out: Box<NetWorker> = Box::new(IpcNetWorker::new(
-                            h,
-                            &(config["config"].to_string().into()),
-                        )?);
-                        Ok(out)
-                    }),
+                    Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
                 )?,
-            });
+            }),
+            _ => bail!("unknown p2p_network backend: {}", config["backend"]),
         }
-
-        bail!("unknown p2p_network backend: {}", config["backend"]);
     }
 
     /// stop the network module (disconnect any sockets, join any threads, etc)
@@ -69,10 +76,12 @@ mod tests {
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "bad"
-            }).to_string()
-                .into(),
-        ).expect_err("should have thrown")
-            .to_string();
+            })
+            .to_string()
+            .into(),
+        )
+        .expect_err("should have thrown")
+        .to_string();
         assert!(res.contains("backend: \"bad\""), "res: {}", res);
     }
 
@@ -87,8 +96,24 @@ mod tests {
                     "ipcUri": "tcp://127.0.0.1:0",
                     "blockConnect": false
                 }
-            }).into(),
-        ).unwrap();
+            })
+            .into(),
+        )
+        .unwrap();
+        res.send(Protocol::P2pReady).unwrap();
+        res.stop().unwrap();
+    }
+
+    #[test]
+    fn it_should_create_mock() {
+        let mut res = P2pNetwork::new(
+            Box::new(|_r| Ok(())),
+            &json!({
+                "backend": "mock"
+            })
+            .into(),
+        )
+        .unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

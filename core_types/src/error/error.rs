@@ -1,7 +1,9 @@
 use self::HolochainError::*;
-use error::{DnaError, RibosomeErrorCode};
+use crate::{
+    error::{DnaError, RibosomeErrorCode},
+    json::*,
+};
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::*;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -139,12 +141,30 @@ impl From<HolochainError> for String {
     }
 }
 
+impl From<String> for HolochainError {
+    fn from(error: String) -> Self {
+        HolochainError::new(&error)
+    }
+}
+
+impl From<&'static str> for HolochainError {
+    fn from(error: &str) -> Self {
+        HolochainError::new(error)
+    }
+}
+
 /// standard strings for std io errors
 fn reason_for_io_error(error: &IoError) -> String {
     match error.kind() {
         io::ErrorKind::InvalidData => format!("contains invalid data: {}", error),
         io::ErrorKind::PermissionDenied => format!("missing permissions to read: {}", error),
         _ => format!("unexpected error: {}", error),
+    }
+}
+
+impl<T> From<::std::sync::PoisonError<T>> for HolochainError {
+    fn from(error: ::std::sync::PoisonError<T>) -> Self {
+        HolochainError::ErrorGeneric(format!("sync poison error: {}", error))
     }
 }
 
@@ -157,6 +177,18 @@ impl From<IoError> for HolochainError {
 impl From<SerdeError> for HolochainError {
     fn from(error: SerdeError) -> Self {
         HolochainError::SerializationError(error.to_string())
+    }
+}
+
+impl From<base64::DecodeError> for HolochainError {
+    fn from(error: base64::DecodeError) -> Self {
+        HolochainError::SerializationError(error.to_string())
+    }
+}
+
+impl From<reed_solomon::DecoderError> for HolochainError {
+    fn from(error: reed_solomon::DecoderError) -> Self {
+        HolochainError::SerializationError(format!("{:?}", error))
     }
 }
 
@@ -304,7 +336,9 @@ mod tests {
                 kind: error,
                 file: file!().to_string(),
                 line: line!().to_string(),
-            }.to_string(),
+            }
+            .to_string(),
         );
     }
+
 }

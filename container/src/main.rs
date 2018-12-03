@@ -17,7 +17,6 @@
 extern crate clap;
 extern crate holochain_container_api;
 extern crate holochain_core_types;
-#[macro_use]
 extern crate structopt;
 
 use holochain_container_api::{
@@ -36,6 +35,7 @@ struct Opt {
     config: Option<PathBuf>,
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn main() {
     let opt = Opt::from_args();
     let config_path = opt
@@ -51,7 +51,11 @@ fn main() {
                     container.instances.len()
                 );
                 println!("Starting all of them...");
-                container.start_all();
+                container
+                    .start_all_instances()
+                    .expect("Could not start instances!");
+                println!("Starting interfaces...");
+                container.start_all_interfaces();
                 println!("Done.");
                 loop {}
             } else {
@@ -62,6 +66,7 @@ fn main() {
     };
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
@@ -70,6 +75,7 @@ fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
     Container::try_from(&config)
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {
     let mut f = File::open(path)?;
     let mut contents = String::new();

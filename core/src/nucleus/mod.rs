@@ -281,6 +281,7 @@ fn reduce_execute_zome_function(
         }
         Some(ref d) => d,
     };
+
     // Get zome
     let zome = match dna.zomes.get(&fn_call.zome_name) {
         None => {
@@ -296,6 +297,7 @@ fn reduce_execute_zome_function(
         }
         Some(zome) => zome,
     };
+
     // Get capability
     let capability = match zome.capabilities.get(&fn_call.cap_name) {
         None => {

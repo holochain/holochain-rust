@@ -1,5 +1,12 @@
 //! File holding all the structs for handling entry types defined by DNA.
 
+use dna::zome::ZomeEntryTypes;
+use entry::entry_type::EntryType;
+use error::HolochainError;
+use json::JsonString;
+use serde::{ser::SerializeMap, Deserialize, Deserializer, Serializer};
+use std::collections::BTreeMap;
+
 /// Enum for Zome EntryType "sharing" property.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub enum Sharing {
@@ -88,8 +95,35 @@ impl LinkedFrom {
     }
 }
 
+pub fn serialize_entry_types<S>(
+    entry_types: &ZomeEntryTypes,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut map = serializer.serialize_map(Some(entry_types.len()))?;
+    for (k, v) in entry_types {
+        map.serialize_entry(&String::from(k.to_owned()), &v)?;
+    }
+    map.end()
+}
+
+pub fn deserialize_entry_types<'de, D>(deserializer: D) -> Result<ZomeEntryTypes, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let serialized_entry_types: BTreeMap<String, EntryTypeDef> =
+        BTreeMap::deserialize(deserializer)?;
+
+    Ok(serialized_entry_types
+        .into_iter()
+        .map(|(k, v)| (EntryType::from(k), v))
+        .collect())
+}
+
 /// Represents an individual object in the "zome" "entry_types" array.
-#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Hash, DefaultJson)]
 pub struct EntryTypeDef {
     /// A description of this entry type.
     #[serde(default)]

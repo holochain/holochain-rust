@@ -13,7 +13,7 @@ use holochain_cas_implementations::{
 use holochain_container_api::Holochain;
 use holochain_core_types::{
     dna::Dna,
-    agent::Agent,
+    agent::AgentId,
     json::JsonString
 };
 use neon::context::Context;
@@ -40,7 +40,7 @@ declare_types! {
             let agent_name = ctx.argument::<JsString>(0)?.to_string(&mut ctx)?.value();
             let dna_data = ctx.argument::<JsString>(1)?.to_string(&mut ctx)?.value();
 
-            let agent = Agent::generate_fake(&agent_name);
+            let agent = AgentId::generate_fake(&agent_name);
             let file_storage = Arc::new(RwLock::new(
                 FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
             ));
@@ -53,9 +53,7 @@ declare_types! {
                 Arc::new(RwLock::new(EavMemoryStorage::new())),
                 mock_network_config(),
             ).unwrap();
-
             let dna = Dna::try_from(JsonString::from(dna_data)).expect("unable to parse dna data");
-
             Ok(App {
                 instance: Holochain::new(dna, Arc::new(context))
                 .or_else(|error| {
@@ -106,7 +104,6 @@ declare_types! {
             let cap = ctx.argument::<JsString>(1)?.to_string(&mut ctx)?.value();
             let fn_name = ctx.argument::<JsString>(2)?.to_string(&mut ctx)?.value();
             let params = ctx.argument::<JsString>(3)?.to_string(&mut ctx)?.value();
-
             let mut this = ctx.this();
 
             let call_result = {
@@ -116,8 +113,8 @@ declare_types! {
                 app.instance.call(&zome, &cap, &fn_name, &params)
             };
 
-            let res_string = call_result.or_else(|_| {
-                let error_string = ctx.string("unable to call zome function");
+            let res_string = call_result.or_else(|e| {
+                let error_string = ctx.string(format!("unable to call zome function: {:?}", &e));
                 ctx.throw(error_string)
             })?;
 

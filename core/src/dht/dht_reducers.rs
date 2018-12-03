@@ -160,7 +160,7 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_entry, test_sys_entry, Entry, SerializedEntry},
+        entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };
     use std::{
@@ -291,7 +291,7 @@ pub mod tests {
 
         let maybe_json = cas.fetch(&entry.address()).unwrap();
         let result_entry = match maybe_json {
-            Some(content) => SerializedEntry::try_from(content).unwrap().deserialize(),
+            Some(content) => Entry::try_from(content).unwrap(),
             None => panic!("Could not find received entry in CAS"),
         };
 

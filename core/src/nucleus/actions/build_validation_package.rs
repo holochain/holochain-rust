@@ -14,7 +14,7 @@ use futures::{
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
-    entry::{entry_type::EntryType, Entry, SerializedEntry},
+    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
@@ -29,26 +29,43 @@ use std::{
 pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> ValidationPackageFuture {
     let id = snowflake::ProcessUniqueId::new();
 
-    if let EntryType::App(_) = entry.entry_type() {
-        if context
-            .state()
-            .unwrap()
-            .nucleus()
-            .dna()
-            .unwrap()
-            .get_zome_name_for_entry_type(&entry.entry_type().to_string())
-            .is_none()
-        {
+    match entry.entry_type() {
+        EntryType::App(app_entry_type) => {
+            if context
+                .state()
+                .unwrap()
+                .nucleus()
+                .dna()
+                .unwrap()
+                .get_zome_name_for_app_entry_type(&app_entry_type)
+                .is_none()
+            {
+                return ValidationPackageFuture {
+                    context: context.clone(),
+                    key: id,
+                    error: Some(HolochainError::ValidationFailed(format!(
+                        "Unknown app entry type '{}'",
+                        String::from(app_entry_type),
+                    ))),
+                };
+            }
+        }
+
+        EntryType::LinkAdd => {
+            // LinkAdd can always be validated
+        }
+
+        _ => {
             return ValidationPackageFuture {
                 context: context.clone(),
                 key: id,
                 error: Some(HolochainError::ValidationFailed(format!(
-                    "Unknown entry type: '{}'",
-                    String::from(entry.entry_type().to_owned())
+                    "Attempted to validate system entry type {:?}",
+                    entry.entry_type(),
                 ))),
             };
         }
-    }
+    };
 
     {
         let id = id.clone();
@@ -128,7 +145,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
     }
 }
 
-fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
+fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain

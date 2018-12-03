@@ -94,9 +94,9 @@ pub mod tests {
     };
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("Could not create a tempdir for CAS testing");
         (
-            FilesystemStorage::new(dir.path().to_str().unwrap()).unwrap(),
+            FilesystemStorage::new(&dir.path().to_string_lossy()).unwrap(),
             dir,
         )
     }

@@ -7,9 +7,8 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     chain_header::ChainHeader,
-    entry::{entry_type::EntryType, Entry, ToEntry},
+    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
-    link::link_add::LinkAddEntry,
 };
 use holochain_net_connection::{
     net_connection::NetConnection,
@@ -51,8 +50,16 @@ fn publish_link(
     header: &ChainHeader,
 ) -> Result<(), HolochainError> {
     let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
-    let link_add_entry = LinkAddEntry::from_entry(&entry);
-    let link = link_add_entry.link().clone();
+    let link_add = match entry {
+        Entry::LinkAdd(link_add) => link_add,
+        _ => {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Received bad entry type. Expected Entry::LinkAdd received {:?}",
+                entry,
+            )));
+        }
+    };
+    let link = link_add.link().clone();
 
     //let header = maybe_header.unwrap();
     let data = DhtMetaData {

@@ -85,6 +85,7 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
     // create a test folder with useful files
     setup_test_folder(&path, &TEST_DIR_NAME)?;
 
+    // CLI feedback
     println!(
         "{} new Holochain project at: {:?}",
         "Created".green().bold(),

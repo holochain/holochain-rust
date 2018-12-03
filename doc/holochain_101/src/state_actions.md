@@ -129,7 +129,7 @@ instance.state().nucleus().dna()
 and mutated by dispatching an action:
 
 ```rust
-let entry = Entry::new( ... );
+let entry = Entry::App( ... );
 let action_wrapper = ActionWrapper::new(&Action::Commit(entry));
 instance.dispatch(action_wrapper);
 ```

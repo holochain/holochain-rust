@@ -1,4 +1,8 @@
 use crate::{action::ActionWrapper, network::actions::ActionResponse};
+use holochain_core_types::{
+    cas::content::Address,
+    entry::Entry, error::HolochainError,
+};
 use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
 use std::{
@@ -7,6 +11,7 @@ use std::{
 };
 
 type Actions = HashMap<ActionWrapper, ActionResponse>;
+type GetEntryResult = Option<Result<Entry, HolochainError>>;
 
 #[derive(Clone, Debug)]
 pub struct NetworkState {
@@ -17,6 +22,7 @@ pub struct NetworkState {
     pub network: Option<Arc<Mutex<P2pNetwork>>>,
     pub dna_hash: Option<String>,
     pub agent_id: Option<String>,
+    pub get_entry_results: HashMap<Address, GetEntryResult>,
     id: snowflake::ProcessUniqueId,
 }
 
@@ -33,6 +39,7 @@ impl NetworkState {
             network: None,
             dna_hash: None,
             agent_id: None,
+            get_entry_results: HashMap::new(),
             id: snowflake::ProcessUniqueId::new(),
         }
     }

@@ -107,6 +107,8 @@ stdenv.mkDerivation rec {
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
+  # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
+  RUST_LOG = "info";
 
   shellHook = ''
   export PATH=$PATH:~/.cargo/bin;

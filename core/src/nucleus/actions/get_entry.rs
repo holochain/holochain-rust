@@ -182,10 +182,7 @@ pub mod tests {
         let future = super::get_entry(&context, &args);
         let res = block_on(future);
         let entry_result = res.unwrap();
-        assert_eq!(
-            &entry,
-            entry_result.entries.iter().next().unwrap()
-        );
+        assert_eq!(&entry, entry_result.entries.iter().next().unwrap());
     }
 
 }

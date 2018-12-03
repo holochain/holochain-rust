@@ -16,11 +16,11 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
-    // Exit on error
+        // Exit on error
         Err(_) => {
             println!("invoke_get_entry() failed to deserialize: {:?}", args_str);
-        return ribosome_error_code!(ArgumentDeserializationFailed);
-    }
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
     };
     // Create and block on future
     let future = get_entry(&runtime.context, &input);

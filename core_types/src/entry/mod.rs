@@ -1,6 +1,7 @@
 pub mod deletion_entry;
 pub mod entry_type;
 
+use self::deletion_entry::DeletionEntry;
 use agent::{test_agent_id, AgentId};
 use cas::content::{Address, AddressableContent, Content};
 use chain_header::ChainHeader;
@@ -13,7 +14,6 @@ use link::{link_add::LinkAdd, link_list::LinkList, link_remove::LinkRemove};
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
 use std::convert::TryFrom;
-use self::deletion_entry::DeletionEntry;
 
 pub type AppEntryValue = JsonString;
 

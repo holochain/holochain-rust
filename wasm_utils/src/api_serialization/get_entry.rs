@@ -1,7 +1,5 @@
 use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, error::HolochainError,
-    json::*,
-    entry::Entry,
+    cas::content::Address, crud_status::CrudStatus, entry::Entry, error::HolochainError, json::*,
 };
 use std::collections::HashMap;
 

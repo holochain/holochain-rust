@@ -45,8 +45,6 @@ pub fn reduce_get_entry(
         Err(err) => Some(Err(err)),
     };
 
-    println!("ADR: {}", address);
-
     network_state
         .get_entry_results
         .insert(address.clone(), result);

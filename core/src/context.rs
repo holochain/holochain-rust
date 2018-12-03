@@ -2,7 +2,7 @@ use crate::{
     action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, state::State,
 };
 use holochain_core_types::{
-    agent::Agent,
+    agent::AgentId,
     cas::storage::ContentAddressableStorage,
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
@@ -24,7 +24,7 @@ use std::{
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
-    pub agent: Agent,
+    pub agent_id: AgentId,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
@@ -41,7 +41,7 @@ impl Context {
     }
 
     pub fn new(
-        agent: Agent,
+        agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
@@ -51,7 +51,7 @@ impl Context {
         let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
         let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Ok(Context {
-            agent,
+            agent_id,
             logger,
             persister,
             state: None,
@@ -64,7 +64,7 @@ impl Context {
     }
 
     pub fn new_with_channels(
-        agent: Agent,
+        agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: SyncSender<ActionWrapper>,
@@ -74,7 +74,7 @@ impl Context {
         network_config: JsonString,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
-            agent,
+            agent_id,
             logger,
             persister,
             state: None,
@@ -158,7 +158,7 @@ pub mod tests {
         state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::agent::Agent;
+    use holochain_core_types::agent::AgentId;
     use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
@@ -172,7 +172,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut maybe_context = Context::new(
-            Agent::generate_fake("Terence"),
+            AgentId::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
@@ -203,7 +203,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
-            Agent::generate_fake("Terence"),
+            AgentId::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),

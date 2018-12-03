@@ -10,8 +10,8 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        entry::{entry_type::EntryType, ToEntry},
-        link::{link_list::LinkListEntry, Link},
+        entry::{entry_type::EntryType, Entry},
+        link::{link_list::LinkList, Link},
     };
 
     use std::sync::mpsc::channel;
@@ -50,9 +50,9 @@ pub mod tests {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let link = create_example_link();
-        let link_list_entry = LinkListEntry::new(&[link]);
-        let entry = link_list_entry.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(entry));
+        let link_list = LinkList::new(&[link]);
+        let link_list_entry = Entry::LinkList(link_list);
+        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry.clone()));
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
@@ -66,15 +66,15 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::LinkList,);
-                    assert_eq!(entry.content(), link_list_entry.to_entry().content());
+                    assert_eq!(entry.entry_type(), EntryType::LinkList,);
+                    assert_eq!(entry.content(), link_list_entry.content());
                     true
                 }
                 _ => false,
             });
     }
 
-    /// Committing a LinkListEntry to source chain should work
+    /// Committing a LinkList to source chain should work
     #[test]
     fn can_commit_multilink() {
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
@@ -82,9 +82,9 @@ pub mod tests {
         let link_a = create_test_link_a();
         let link_b = create_test_link_b();
         let link_c = create_test_link_c();
-        let link_list_entry = LinkListEntry::new(&[link_a, link_b, link_c]);
-        let entry = link_list_entry.to_entry();
-        let commit_action = ActionWrapper::new(Action::Commit(entry));
+        let link_list = LinkList::new(&[link_a, link_b, link_c]);
+        let link_list_entry = Entry::LinkList(link_list.clone());
+        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry.clone()));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason"));
@@ -99,21 +99,12 @@ pub mod tests {
             .iter()
             .find(|aw| match aw.action() {
                 Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), &EntryType::LinkList,);
-                    assert_eq!(entry.content(), link_list_entry.to_entry().content());
+                    assert_eq!(entry.entry_type(), EntryType::LinkList,);
+                    assert_eq!(entry.content(), link_list_entry.content());
                     true
                 }
                 _ => false,
             });
     }
 
-    /// Committing a LinkListEntry to source chain should work
-    #[test]
-    fn can_round_trip_lle() {
-        let link = create_example_link();
-        let lle = LinkListEntry::new(&[link]);
-        let lle_entry = lle.to_entry();
-        let lle_trip = LinkListEntry::from_entry(&lle_entry);
-        assert_eq!(lle, lle_trip);
-    }
 }

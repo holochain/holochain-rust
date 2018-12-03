@@ -20,7 +20,7 @@ use crate::{
 };
 use holochain_core_types::{
     dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames},
-    entry::SerializedEntry,
+    entry::Entry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
@@ -121,7 +121,7 @@ impl Defn for Callback {
 #[derive(Debug, Serialize, Deserialize, DefaultJson)]
 pub enum CallbackParams {
     Genesis,
-    ValidateCommit(SerializedEntry),
+    ValidateCommit(Entry),
     // @TODO call this from somewhere
     // @see https://github.com/holochain/holochain-rust/issues/201
     Receive,

@@ -8,7 +8,9 @@ extern crate wabt;
 extern crate serde_json;
 
 
-use holochain_core_types::agent::Agent;
+use holochain_core_types::agent::AgentId;
+use holochain_core_types::entry::entry_type::EntryType;
+use holochain_core_types::entry::entry_type::AppEntryType;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::{Context, mock_network_config}, logger::Logger, persister::SimplePersister};
@@ -90,8 +92,8 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     });
 
     let mut entry_types = BTreeMap::new();
-    entry_types.insert(String::from("testEntryType"), test_entry_def);
-    entry_types.insert(String::from("testEntryTypeB"), test_entry_b_def);
+    entry_types.insert(EntryType::App(AppEntryType::from("testEntryType")), test_entry_def);
+    entry_types.insert(EntryType::App(AppEntryType::from("testEntryTypeB")), test_entry_b_def);
 
     let zome = Zome::new(
         "some zome description",
@@ -136,7 +138,7 @@ pub fn create_test_dna_with_cap(
 
     let etypedef = EntryTypeDef::new();
     let mut entry_types = BTreeMap::new();
-    entry_types.insert("testEntryType".to_string(), etypedef);
+    entry_types.insert("testEntryType".into(), etypedef);
     let zome = Zome::new(
         "some zome description",
         &Config::new(),
@@ -181,7 +183,7 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = Agent::generate_fake(agent_name);
+    let agent = AgentId::generate_fake(agent_name);
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
     let logger = test_logger();
     (
@@ -232,7 +234,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
-    let agent = Agent::generate_fake(agent_name);
+    let agent = AgentId::generate_fake(agent_name);
     let logger = test_logger();
 
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));

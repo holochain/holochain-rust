@@ -1,17 +1,15 @@
 /// This file holds everything that represents the "post" entry type.
 
 use hdk::holochain_core_types::{
-    cas::content::Address,
-    dna::zome::entry_types::Sharing,
     error::HolochainError,
+    dna::zome::entry_types::Sharing,
     json::JsonString,
+    cas::content::Address,
 };
-use boolinator::*;
 use hdk::{
-    self,
     entry_definition::ValidatingEntryType,
 };
-use serde_json;
+use boolinator::Boolinator;
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar
@@ -20,10 +18,18 @@ use serde_json;
 /// So this is our normative schema definition:
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 pub struct Post {
-    pub content: String,
-    pub date_created: String,
+    content: String,
+    date_created: String,
 }
 
+impl Post {
+    pub fn new (content: &str, date_created: &str) -> Post {
+        Post {
+            content: content.to_owned(),
+            date_created: date_created.to_owned(),
+        }
+    }
+}
 
 /// This is what creates the full definition of our entry type.
 /// The entry! macro is wrapped in a function so that we can have the content
@@ -37,7 +43,7 @@ pub struct Post {
 pub fn definition() -> ValidatingEntryType {
     entry!(
         name: "post",
-        description: "",
+        description: "blog entry post",
         sharing: Sharing::Public,
         native_type: Post,
 
@@ -45,7 +51,7 @@ pub fn definition() -> ValidatingEntryType {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation: |post: Post, _ctx: hdk::ValidationData| {
+        validation: |post: crate::post::Post, _ctx: hdk::ValidationData| {
             (post.content.len() < 280)
                 .ok_or_else(|| String::from("Content too long"))
         },

@@ -1,11 +1,7 @@
 extern crate serde_json;
 use crate::context::Context;
 use futures::future::{self, FutureObj};
-use holochain_core_types::{
-    cas::content::Address,
-    entry::{Entry, SerializedEntry},
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::{convert::TryInto, sync::Arc};
 
 fn get_entry_from_dht_cas(
@@ -17,7 +13,7 @@ fn get_entry_from_dht_cas(
     let json = (*storage.read().unwrap()).fetch(&address)?;
     let entry: Option<Entry> = json
         .and_then(|js| js.try_into().ok())
-        .map(|s: SerializedEntry| s.into());
+        .map(|s: Entry| s.into());
     Ok(entry)
 }
 

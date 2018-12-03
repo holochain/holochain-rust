@@ -24,7 +24,7 @@ test('get entry address', (t) => {
   const params = {content: "Holo world"}
   const result = app.call("blog", "main", "hash_post", params)
 
-  t.equal(result.address, "QmNndXfXcxqwsnAXdvbnzdZUS7bm4WqimY7w873C3Uttx1")
+  t.equal(result.address, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
 test('create_post', (t) => {
@@ -103,8 +103,6 @@ test('get_post with non-existant hash returns null', (t) => {
   t.same(entry, null)
 })
 
-// this test is flaky!
-// even when we loop and wait sometimes app2 never sees the published entry
 test('scenario test create & publish post -> get from other instance', (t) => {
     t.plan(3)
 
@@ -114,7 +112,7 @@ test('scenario test create & publish post -> get from other instance', (t) => {
     const create_result = app.call("blog", "main", "create_post", params)
 
     t.equal(create_result.address.length, 46)
-    t.equal(create_result.address, "QmNndXfXcxqwsnAXdvbnzdZUS7bm4WqimY7w873C3Uttx1")
+    t.equal(create_result.address, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 
     const post_address = create_result.address
     const params_get = {post_address}

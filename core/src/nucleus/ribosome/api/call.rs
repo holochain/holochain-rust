@@ -184,7 +184,7 @@ pub mod tests {
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
-        agent::Agent,
+        agent::AgentId,
         dna::{zome::capabilities::Capability, Dna},
         error::{DnaError, HolochainError},
         json::JsonString,
@@ -231,7 +231,7 @@ pub mod tests {
         ));
         Arc::new(
             Context::new(
-                Agent::generate_fake("alex"),
+                AgentId::generate_fake("alex"),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 file_storage.clone(),

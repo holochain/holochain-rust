@@ -1,13 +1,11 @@
 extern crate serde_json;
 use crate::context::Context;
 use futures::future::{self, FutureObj};
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
-use std::{convert::TryInto, sync::Arc};
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
     eav::EntityAttributeValue,
-    entry::{Entry, SerializedEntry},
+    entry::Entry,
     error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_entry::{
@@ -116,7 +114,7 @@ pub fn get_entry_rec<'a>(
     let meta = meta.expect("Entry should have crud-status metadata");
     // 3. Add Entry + Meta to GetEntryResult
     entry_result.addresses.push(address.clone());
-    entry_result.entries.push(entry.serialize());
+    entry_result.entries.push(entry);
     entry_result.crud_status.push(meta.0);
     if let Some(new_address) = meta.1 {
         entry_result.crud_links.insert(address, new_address.clone());
@@ -185,7 +183,7 @@ pub mod tests {
         let res = block_on(future);
         let entry_result = res.unwrap();
         assert_eq!(
-            &entry.serialize(),
+            &entry,
             entry_result.entries.iter().next().unwrap()
         );
     }

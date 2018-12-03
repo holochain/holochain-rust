@@ -27,8 +27,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let result = block_on(future);
 
     // Store result in wasm memory
-    let api_result = result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry)));
-    runtime.store_result(api_result)
+    runtime.store_result(result)
 }
 
 #[cfg(test)]
@@ -230,7 +229,7 @@ mod tests {
 
         let mut entry_result = GetEntryResult::new();
         entry_result.addresses.push(test_entry().address());
-        entry_result.entries.push(test_entry().serialize());
+        entry_result.entries.push(test_entry());
         entry_result.crud_status.push(CrudStatus::LIVE);
         assert_eq!(
             JsonString::from(String::from(JsonString::from(

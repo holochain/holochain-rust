@@ -12,7 +12,7 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::{deletion_entry::DeletionEntry, ToEntry},
+    entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
@@ -38,7 +38,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     }
     let deleted_entry_address = try_address.unwrap();
     // Create deletion entry
-    let deletion_entry = DeletionEntry::new(deleted_entry_address.clone()).to_entry();
+    let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
     // Resolve future
     let result: Result<(), HolochainError> = block_on(
         // 1. Build the context needed for validation of the entry

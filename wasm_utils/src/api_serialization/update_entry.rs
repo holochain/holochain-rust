@@ -1,10 +1,11 @@
 use holochain_core_types::{
-    cas::content::Address, entry::SerializedEntry, error::HolochainError, json::*,
+    cas::content::Address, error::HolochainError, json::*,
+    entry::Entry,
 };
 
 /// Struct for input data received when Zome API function update_entry() is invoked
 #[derive(Deserialize, Clone, PartialEq, Debug, Serialize, DefaultJson)]
 pub struct UpdateEntryArgs {
-    pub new_entry: SerializedEntry,
+    pub new_entry: Entry,
     pub address: Address,
 }

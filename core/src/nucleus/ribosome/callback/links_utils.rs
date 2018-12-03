@@ -37,7 +37,7 @@ pub fn get_link_entries(
         )));
     }
     let target = target_result.entries.iter().next().unwrap();
-    Ok((base.deserialize(), target.deserialize()))
+    Ok((base.clone(), target.clone()))
 }
 
 /// This is a "path" in the DNA tree.

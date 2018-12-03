@@ -493,8 +493,8 @@ pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
     if entry_result.crud_status.iter().next().unwrap() != &CrudStatus::LIVE {
         return Ok(None);
     }
-    let entry = entry_result.entries.iter().next().unwrap().deserialize();
-    Ok(Some(entry))
+    let entry = entry_result.entries.iter().next().unwrap();
+    Ok(Some(entry.clone()))
 }
 
 /// Returns the Entry at the exact address specified, whatever its crud-status.
@@ -505,8 +505,8 @@ pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
         return Ok(None);
     }
     assert_eq!(entry_result.entries.len(), 1);
-    let entry = entry_result.entries.iter().next().unwrap().deserialize();
-    Ok(Some(entry))
+    let entry = entry_result.entries.iter().next().unwrap();
+    Ok(Some(entry.clone()))
 }
 
 /// Return a GetEntryResult filled with all the versions of the entry from the version at
@@ -743,10 +743,7 @@ pub fn update_entry(new_entry: Entry, address: Address) -> ZomeApiResult<Address
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let update_args = UpdateEntryArgs {
-        new_entry: new_entry.serialize(),
-        address,
-    };
+    let update_args = UpdateEntryArgs { new_entry, address };
 
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(&mut mem_stack, update_args)?;

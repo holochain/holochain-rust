@@ -3,13 +3,13 @@ use holochain_wasm_utils::{
         get_entry::GetEntryOptions,
     },
     holochain_core_types::{
-        entry::{Entry, SerializedEntry},
+        entry::Entry,
         json::JsonString,
         crud_status::CrudStatus,
     },
 };
 use hdk_test_entry;
-use hdk_test_entry_type;
+use hdk_test_app_entry_type;
 use TestEntryType;
 
 //
@@ -26,7 +26,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     // update it to v2
     hdk::debug("**** update it to v2").ok();
     let entry_v2 =
-        Entry::new(hdk_test_entry_type(), TestEntryType { stuff: "v2".into() });
+        Entry::App(hdk_test_app_entry_type(), JsonString::from(TestEntryType { stuff: "v2".into() }));
     let res = hdk::update_entry(entry_v2.clone(), addr_v1.clone());
     let addr_v2 = res.unwrap();
     // get latest from latest
@@ -52,8 +52,9 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
 
     // update it again from v1
     hdk::debug("**** update it again from v1").ok();
-    let entry_v3 =
-        Entry::new(hdk_test_entry_type(), TestEntryType { stuff: "v3".into() });
+    let entry_v3 = Entry::App(
+        hdk_test_app_entry_type(),
+        JsonString::from(TestEntryType { stuff: "v3".into() }));
     let res = hdk::update_entry(entry_v3.clone(), addr_v1.clone());
     let addr_v3 = res.unwrap();
     // get latest from v1
@@ -68,8 +69,10 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     assert_eq!(entry_res, entry_v3.clone());
 
     // update it again from v3
-    let entry_v4 =
-        Entry::new(hdk_test_entry_type(), TestEntryType { stuff: "v4".into() });
+    let entry_v4 = Entry::App(
+        hdk_test_app_entry_type(),
+        JsonString::from(TestEntryType { stuff: "v4".into() }),
+    );
     let res = hdk::update_entry(entry_v4.clone(), addr_v3.clone());
     let addr_v4 = res.unwrap();
     // get latest from v1
@@ -111,7 +114,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     let res = hdk::get_entry_history(addr_v4.clone());
     let latest = res.unwrap().unwrap();
     assert_eq!(latest.entries.len(), 1);
-    assert_eq!(latest.entries[0], SerializedEntry::from(entry_v4.clone()));
+    assert_eq!(latest.entries[0], entry_v4.clone());
     assert_eq!(latest.addresses[0], addr_v4.clone());
     assert_eq!(latest.crud_status[0], CrudStatus::LIVE);
     assert_eq!(latest.crud_links.len(), 0);
@@ -122,22 +125,22 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     let history = res.unwrap().unwrap();
 
     assert_eq!(history.entries.len(), 4);
-    assert_eq!(history.entries[0], SerializedEntry::from(entry_v1.clone()));
+    assert_eq!(history.entries[0], entry_v1.clone());
     assert_eq!(history.addresses[0], addr_v1.clone());
     assert_eq!(history.crud_status[0], CrudStatus::MODIFIED);
     assert_eq!(history.crud_links[&addr_v1.clone()], addr_v2.clone());
 
-    assert_eq!(history.entries[1], SerializedEntry::from(entry_v2.clone()));
+    assert_eq!(history.entries[1], entry_v2.clone());
     assert_eq!(history.addresses[1], addr_v2.clone());
     assert_eq!(history.crud_status[1], CrudStatus::MODIFIED);
     assert_eq!(history.crud_links[&addr_v2.clone()], addr_v3.clone());
 
-    assert_eq!(history.entries[2], SerializedEntry::from(entry_v3.clone()));
+    assert_eq!(history.entries[2], entry_v3.clone());
     assert_eq!(history.addresses[2], addr_v3.clone());
     assert_eq!(history.crud_status[2], CrudStatus::MODIFIED);
     assert_eq!(history.crud_links[&addr_v3.clone()], addr_v4.clone());
 
-    assert_eq!(history.entries[3], SerializedEntry::from(entry_v4.clone()));
+    assert_eq!(history.entries[3], entry_v4.clone());
     assert_eq!(history.addresses[3], addr_v4.clone());
     assert_eq!(history.crud_status[3], CrudStatus::LIVE);
     assert_eq!(history.crud_links.get(&addr_v4.clone()), None);
@@ -194,8 +197,10 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     assert_eq!(entry_test, entry_v1);
     // Update it to v2
     hdk::debug("**** update it to v2").ok();
-    let entry_v2 =
-        Entry::new(hdk_test_entry_type(), TestEntryType { stuff: "v2".into() });
+    let entry_v2 = Entry::App(
+        hdk_test_app_entry_type(),
+        JsonString::from(TestEntryType { stuff: "v2".into() }),
+    );
     let res = hdk::update_entry(entry_v2.clone(), addr_v1.clone());
     let addr_v2 = res.unwrap();
     // Get v2
@@ -234,12 +239,12 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     let history = res.unwrap().unwrap();
 
     assert_eq!(history.entries.len(), 2);
-    assert_eq!(history.entries[0], SerializedEntry::from(entry_v1.clone()));
+    assert_eq!(history.entries[0], entry_v1.clone());
     assert_eq!(history.addresses[0], addr_v1.clone());
     assert_eq!(history.crud_status[0], CrudStatus::MODIFIED);
     assert_eq!(history.crud_links[&addr_v1.clone()], addr_v2.clone());
 
-    assert_eq!(history.entries[1], SerializedEntry::from(entry_v2.clone()));
+    assert_eq!(history.entries[1], entry_v2.clone());
     assert_eq!(history.addresses[1], addr_v2.clone());
     assert_eq!(history.crud_status[1], CrudStatus::DELETED);
     assert!(history.crud_links.get(&addr_v2.clone()).is_some());

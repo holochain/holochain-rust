@@ -510,7 +510,7 @@ fn can_remove_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"addresses\":[\"QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg\"],\"entries\":[{\"value\":\"{\\\"stuff\\\":\\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}],\"crud_status\":[{\"bits\":4}],\"crud_links\":{\"QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg\":\"Qmeaj27GhRnFSL4fHyboC3gpWtkidd9kZVKcP94NaRCVwH\"}}"
+        JsonString::from("{\"addresses\":[\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\"],\"entries\":[{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]}],\"crud_status\":[{\"bits\":4}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
         ),
     );
 }

@@ -10,7 +10,7 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
-    error::{HcResult, HolochainError},
+    error::HolochainError,
     json::*,
     signature::Signature,
     time::Iso8601,
@@ -70,7 +70,7 @@ impl AgentState {
     pub async fn get_agent<'a>(
         &'a self,
         context: &'a Arc<Context>,
-    ) -> Result<Agent, HolochainError> {
+    ) -> Result<AgentId, HolochainError> {
         let agent_entry_address = self
             .chain()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
@@ -89,14 +89,11 @@ impl AgentState {
                 "Agent entry not found".to_string(),
             ));
         }
-        Ok(Agent::from_entry(
-            &agent_entry_result
-                .entries
-                .iter()
-                .next()
-                .unwrap()
-                .deserialize(),
-        ))
+        let agent_entry = agent_entry_result.entries.iter().next().unwrap().clone();
+        match agent_entry {
+            Entry::AgentId(agent_id) => Ok(agent_id),
+            _ => unreachable!(),
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, entry::SerializedEntry, error::HolochainError,
+    cas::content::Address, crud_status::CrudStatus, error::HolochainError,
     json::*,
+    entry::Entry,
 };
 use std::collections::HashMap;
 
@@ -44,7 +45,7 @@ pub struct GetEntryArgs {
 #[derive(Deserialize, Debug, Serialize, DefaultJson)]
 pub struct GetEntryResult {
     pub addresses: Vec<Address>,
-    pub entries: Vec<SerializedEntry>,
+    pub entries: Vec<Entry>,
     pub crud_status: Vec<CrudStatus>,
     pub crud_links: HashMap<Address, Address>,
 }

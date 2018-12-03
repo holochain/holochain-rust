@@ -10,7 +10,7 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
     eav::EntityAttributeValue,
-    entry::{Entry, SerializedEntry},
+    entry::Entry,
     error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_entry::{
@@ -301,12 +301,12 @@ pub(crate) fn reduce_remove_entry(
     let latest_deleted_address = entry_result.addresses.iter().last().unwrap();
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &old_store.content_storage().clone();
-    let maybe_entry = content_storage
+    let maybe_json_entry = content_storage
         .read()
         .unwrap()
         .fetch(latest_deleted_address)
         .unwrap();
-    if maybe_entry.is_none() {
+    if maybe_json_entry.is_none() {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
@@ -315,8 +315,8 @@ pub(crate) fn reduce_remove_entry(
         );
         return Some(new_store);
     }
-    let ser_entry = SerializedEntry::try_from(maybe_entry.unwrap()).unwrap();
-    let entry = Entry::from(ser_entry);
+    let json_entry = maybe_json_entry.unwrap();
+    let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
         new_store.actions_mut().insert(
@@ -358,7 +358,6 @@ pub(crate) fn reduce_remove_entry(
         );
         return Some(new_store);
     }
-
     // Update crud-status
     let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::DELETED);
     let meta_storage = &new_store.meta_storage().clone();

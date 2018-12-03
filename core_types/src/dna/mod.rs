@@ -654,8 +654,9 @@ pub mod tests {
                 .unwrap(),
             "test zome".to_string()
         );
-        assert!(dna
-            .get_zome_name_for_app_entry_type(&AppEntryType::from("non existant entry type"))
-            .is_none());
+        assert!(
+            dna.get_zome_name_for_app_entry_type(&AppEntryType::from("non existant entry type"))
+                .is_none()
+        );
     }
 }

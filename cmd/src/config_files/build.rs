@@ -1,5 +1,5 @@
-use crate::{error::DefaultResult, util};
 use base64;
+use crate::{error::DefaultResult, util};
 use serde_json;
 use std::{
     collections::HashMap,

@@ -170,13 +170,6 @@ impl IpcNetWorker {
                 .send(ProtocolWrapper::RequestDefaultConfig.into())?;
         }
 
-        /*
-        println!(
-            "GOT STATE UPDATE: state: {}, id: {}, bindings: {:?}",
-            self.state, state.id, state.bindings
-        );
-        */
-
         Ok(())
     }
 

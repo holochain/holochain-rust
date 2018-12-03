@@ -50,7 +50,8 @@ pub fn store_string(
     if len > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
-    return write_in_wasm_memory(stack, bytes, len as u16);
+
+    write_in_wasm_memory(stack, bytes, len as u16)
 }
 
 // Sugar

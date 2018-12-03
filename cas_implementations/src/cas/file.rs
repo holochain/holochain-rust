@@ -50,10 +50,13 @@ impl ContentAddressableStorage for FilesystemStorage {
         // @TODO be more efficient here
         // @see https://github.com/holochain/holochain-rust/issues/248
         create_dir_all(&self.dir_path)?;
-        Ok(write(
+
+        write(
             self.address_to_path(&content.address()),
             content.content().to_string(),
-        )?)
+        )?;
+
+        Ok(())
     }
 
     fn contains(&self, address: &Address) -> Result<bool, HolochainError> {
@@ -91,9 +94,9 @@ pub mod tests {
     };
 
     pub fn test_file_cas() -> (FilesystemStorage, TempDir) {
-        let dir = tempdir().unwrap();
+        let dir = tempdir().expect("Could not create a tempdir for CAS testing");
         (
-            FilesystemStorage::new(dir.path().to_str().unwrap()).unwrap(),
+            FilesystemStorage::new(&dir.path().to_string_lossy()).unwrap(),
             dir,
         )
     }

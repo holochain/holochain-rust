@@ -18,7 +18,7 @@ pub mod tests {
             zome::{capabilities::Capability, entry_types::EntryTypeDef},
             Dna,
         },
-        entry::{entry_type::EntryType, Entry},
+        entry::{entry_type::AppEntryType, Entry},
     };
     use std::sync::Arc;
     use test_utils::*;
@@ -40,22 +40,23 @@ pub mod tests {
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_entry"), EntryTypeDef::new());
+            .insert("package_entry".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_entries"), EntryTypeDef::new());
+            .insert("package_chain_entries".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_headers"), EntryTypeDef::new());
+            .insert("package_chain_headers".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_full"), EntryTypeDef::new());
+            .insert("package_chain_full".into(), EntryTypeDef::new());
+
         dna
     }
 
@@ -69,30 +70,30 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_entry() -> Entry {
-        Entry::new(EntryType::App(String::from("package_entry")), "test value")
+        Entry::App(AppEntryType::from("package_entry"), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_entries() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_entries")),
-            "test value",
+        Entry::App(
+            AppEntryType::from("package_chain_entries"),
+            "test value".into(),
         )
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_headers() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_headers")),
-            "test value",
+        Entry::App(
+            AppEntryType::from("package_chain_headers"),
+            "test value".into(),
         )
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_full() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_full")),
-            "test value",
+        Entry::App(
+            AppEntryType::from("package_chain_full"),
+            "test value".into(),
         )
     }
 

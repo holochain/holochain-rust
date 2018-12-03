@@ -1,54 +1,94 @@
 pub mod entry_type;
 
-use crate::{
-    cas::content::{Address, AddressableContent, Content},
-    entry::entry_type::{
-        test_entry_type, test_entry_type_b, test_sys_entry_type, test_unpublishable_entry_type,
-        EntryType,
-    },
-    error::{error::HcResult, HolochainError},
-    json::{JsonString, RawString, *},
-};
+use agent::{test_agent_id, AgentId};
+use cas::content::{Address, AddressableContent, Content};
+use chain_header::ChainHeader;
+use chain_migrate::ChainMigrate;
+use delete::Delete;
+use dna::Dna;
+use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
+use error::{HcResult, HolochainError};
+use json::{default_to_json, default_try_from_json, JsonString, RawString};
+use link::{link_add::LinkAdd, link_list::LinkList, link_remove::LinkRemove};
+use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
-use std::{
-    convert::{TryFrom, TryInto},
-    ops::Deref,
-};
+use std::convert::TryFrom;
 
-pub type EntryValue = JsonString;
+pub type AppEntryValue = JsonString;
+
+fn serialize_app_entry<S>(
+    app_entry_type: &AppEntryType,
+    app_entry_value: &AppEntryValue,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut state = serializer.serialize_tuple(2)?;
+    state.serialize_element(&app_entry_type.to_string())?;
+    state.serialize_element(&app_entry_value.to_string())?;
+    state.end()
+}
+
+fn deserialize_app_entry<'de, D>(deserializer: D) -> Result<(AppEntryType, AppEntryValue), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    struct SerializedAppEntry(String, String);
+
+    let serialized_app_entry = SerializedAppEntry::deserialize(deserializer)?;
+    Ok((
+        AppEntryType::from(serialized_app_entry.0),
+        AppEntryValue::from(serialized_app_entry.1),
+    ))
+}
 
 /// Structure holding actual data in a source chain "Item"
 /// data is stored as a JsonString
-#[derive(Clone, Debug)]
-pub struct Entry {
-    value: EntryValue,
-    entry_type: EntryType,
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+pub enum Entry {
+    #[serde(serialize_with = "serialize_app_entry")]
+    #[serde(deserialize_with = "deserialize_app_entry")]
+    App(AppEntryType, AppEntryValue),
+
+    Dna(Dna),
+    AgentId(AgentId),
+    Delete(Delete),
+    LinkAdd(LinkAdd),
+    LinkRemove(LinkRemove),
+    LinkList(LinkList),
+    ChainHeader(ChainHeader),
+    ChainMigrate(ChainMigrate),
+}
+
+impl From<Option<Entry>> for JsonString {
+    fn from(maybe_entry: Option<Entry>) -> Self {
+        default_to_json(maybe_entry)
+    }
+}
+
+impl TryFrom<JsonString> for Option<Entry> {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
 }
 
 impl Entry {
-    pub fn new<J: Into<JsonString>>(entry_type: EntryType, value: J) -> Entry {
-        Entry {
-            entry_type,
-            value: value.into(),
+    pub fn entry_type(&self) -> EntryType {
+        match &self {
+            Entry::App(app_entry_type, _) => EntryType::App(app_entry_type.to_owned()),
+            Entry::Dna(_) => EntryType::Dna,
+            Entry::AgentId(_) => EntryType::AgentId,
+            Entry::Delete(_) => EntryType::Delete,
+            Entry::LinkAdd(_) => EntryType::LinkAdd,
+            Entry::LinkRemove(_) => EntryType::LinkRemove,
+            Entry::LinkList(_) => EntryType::LinkList,
+            Entry::ChainHeader(_) => EntryType::ChainHeader,
+            Entry::ChainMigrate(_) => EntryType::ChainMigrate,
         }
     }
-
-    pub fn value(&self) -> &Content {
-        &self.value
-    }
-
-    pub fn entry_type(&self) -> &EntryType {
-        &self.entry_type
-    }
-
-    pub fn serialize(&self) -> SerializedEntry {
-        SerializedEntry::from(self.clone())
-    }
-}
-
-pub trait ToEntry {
-    fn to_entry(&self) -> Entry;
-    fn from_entry(_: &Entry) -> Self;
 }
 
 impl PartialEq for Entry {
@@ -57,93 +97,13 @@ impl PartialEq for Entry {
     }
 }
 
-/// entries are double serialized!
-/// this struct facilitates the outer serialization
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
-pub struct SerializedEntry {
-    value: String,
-    entry_type: String,
-}
-
-impl SerializedEntry {
-    pub fn new(entry_type: &str, value: &str) -> SerializedEntry {
-        SerializedEntry {
-            entry_type: entry_type.to_owned(),
-            value: value.to_owned(),
-        }
-    }
-
-    pub fn value(&self) -> String {
-        self.value.clone()
-    }
-
-    pub fn entry_type(&self) -> String {
-        self.entry_type.clone()
-    }
-
-    pub fn deserialize(&self) -> Entry {
-        Entry::from(self.clone())
-    }
-}
-
-// converting an Entry to SerializedEntry can never fail because it simply converts the fields
-// to strings
-impl From<Entry> for SerializedEntry {
-    fn from(entry: Entry) -> SerializedEntry {
-        SerializedEntry {
-            value: String::from(entry.value()),
-            entry_type: String::from(entry.entry_type().to_owned()),
-        }
-    }
-}
-
-impl From<SerializedEntry> for Entry {
-    fn from(serialized_entry: SerializedEntry) -> Entry {
-        Entry {
-            value: JsonString::from(serialized_entry.value),
-            entry_type: EntryType::from(serialized_entry.entry_type),
-        }
-    }
-}
-
-impl From<Option<SerializedEntry>> for JsonString {
-    fn from(v: Option<SerializedEntry>) -> JsonString {
-        default_to_json(v)
-    }
-}
-
-impl TryFrom<JsonString> for Option<SerializedEntry> {
-    type Error = HolochainError;
-    fn try_from(json_string: JsonString) -> HcResult<Self> {
-        default_try_from_json(json_string)
-    }
-}
-
 impl AddressableContent for Entry {
     fn content(&self) -> Content {
-        self.serialize().content()
+        self.into()
     }
 
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        Ok(SerializedEntry::try_from(content.to_owned())?.into())
-    }
-}
-
-impl AddressableContent for SerializedEntry {
-    fn content(&self) -> Content {
-        self.to_owned().into()
-    }
-
-    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
-        content.to_owned().try_into()
-    }
-}
-
-impl Deref for Entry {
-    type Target = Content;
-
-    fn deref(&self) -> &Self::Target {
-        self.value()
+    fn try_from_content(content: &Content) -> HcResult<Entry> {
+        Entry::try_from(content.to_owned())
     }
 }
 
@@ -154,7 +114,7 @@ pub fn test_entry_value() -> JsonString {
 }
 
 pub fn test_entry_content() -> Content {
-    Content::from(r#"{"value":"\"test entry value\"","entry_type":"testEntryType"}"#)
+    Content::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// dummy entry content, same as test_entry_value()
@@ -174,33 +134,24 @@ pub fn test_entry_value_c() -> JsonString {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry_value() -> JsonString {
-    // looks like a believable hash
-    // sys entries are hashy right?
-    JsonString::from(RawString::from(String::from(test_entry_value().address())))
+pub fn test_sys_entry_value() -> AgentId {
+    test_agent_id()
 }
 
 /// dummy entry
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry() -> Entry {
-    Entry::new(test_entry_type(), test_entry_value())
-}
-
-pub fn test_serialized_entry() -> SerializedEntry {
-    SerializedEntry {
-        value: String::from(test_entry_value()),
-        entry_type: String::from(test_entry_type()),
-    }
+    Entry::App(test_app_entry_type(), test_entry_value())
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {
-    JsonString::from("{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}")
+    JsonString::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// the correct address for test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn expected_entry_address() -> Address {
-    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT".to_string())
+    Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq".to_string())
 }
 
 /// dummy entry, same as test_entry()
@@ -212,24 +163,24 @@ pub fn test_entry_a() -> Entry {
 /// dummy entry, differs from test_entry()
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_b() -> Entry {
-    Entry::new(test_entry_type_b(), test_entry_value_b())
+    Entry::App(test_app_entry_type_b(), test_entry_value_b())
 }
 pub fn test_entry_c() -> Entry {
-    Entry::new(test_entry_type_b(), test_entry_value_c())
+    Entry::App(test_app_entry_type_b(), test_entry_value_c())
 }
 
 /// dummy entry with unique string content
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_unique() -> Entry {
-    Entry::new(
-        test_entry_type(),
-        RawString::from(snowflake::ProcessUniqueId::new().to_string()),
+    Entry::App(
+        test_app_entry_type(),
+        RawString::from(snowflake::ProcessUniqueId::new().to_string()).into(),
     )
 }
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_sys_entry() -> Entry {
-    Entry::new(test_sys_entry_type(), test_sys_entry_value())
+    Entry::AgentId(test_sys_entry_value())
 }
 
 pub fn test_sys_entry_address() -> Address {
@@ -240,10 +191,7 @@ pub fn test_sys_entry_address() -> Address {
 
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_unpublishable_entry() -> Entry {
-    Entry::new(
-        test_unpublishable_entry_type(),
-        test_entry().value().to_owned(),
-    )
+    Entry::Dna(Dna::new())
 }
 
 #[cfg(test)]
@@ -277,26 +225,20 @@ pub mod tests {
     }
 
     #[test]
-    /// show From<Entry> for SerializedEntry
-    fn serialized_entry_from_entry_test() {
-        assert_eq!(test_serialized_entry(), SerializedEntry::from(test_entry()));
-    }
-
-    #[test]
-    /// show From<SerializedEntry> for JsonString
+    /// show From<Entry> for JsonString
     fn json_string_from_entry_test() {
         assert_eq!(
             test_entry().content(),
-            JsonString::from(SerializedEntry::from(test_entry()))
+            JsonString::from(Entry::from(test_entry()))
         );
     }
 
     #[test]
-    /// show From<SerializedEntry> for Entry
-    fn entry_from_string_test() {
+    /// show From<Content> for Entry
+    fn entry_from_content_test() {
         assert_eq!(
             test_entry(),
-            Entry::from(SerializedEntry::try_from(test_serialized_entry().content()).unwrap())
+            Entry::try_from(test_entry().content()).unwrap()
         );
     }
 
@@ -314,33 +256,22 @@ pub mod tests {
     fn json_round_trip() {
         let entry = test_entry();
         let expected = expected_serialized_entry_content();
-        assert_eq!(
-            expected,
-            JsonString::from(SerializedEntry::from(entry.clone()))
-        );
-        assert_eq!(
-            entry,
-            Entry::from(SerializedEntry::try_from(expected.clone()).unwrap())
-        );
-        assert_eq!(entry, Entry::from(SerializedEntry::from(entry.clone())));
+        assert_eq!(expected, JsonString::from(Entry::from(entry.clone())));
+        assert_eq!(entry, Entry::try_from(expected.clone()).unwrap());
+        assert_eq!(entry, Entry::from(entry.clone()));
 
         let sys_entry = test_sys_entry();
         let expected = JsonString::from(format!(
-            "{{\"value\":\"\\\"{}\\\"\",\"entry_type\":\"%agent_id\"}}",
-            String::from(test_sys_entry_address()),
+            "{{\"AgentId\":{{\"nick\":\"{}\",\"key\":\"{}\"}}}}",
+            "bob",
+            "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd",
         ));
-        assert_eq!(
-            expected,
-            JsonString::from(SerializedEntry::from(sys_entry.clone()))
-        );
+        assert_eq!(expected, JsonString::from(Entry::from(sys_entry.clone())));
         assert_eq!(
             &sys_entry,
-            &Entry::from(SerializedEntry::try_from(expected.clone()).unwrap())
+            &Entry::from(Entry::try_from(expected.clone()).unwrap())
         );
-        assert_eq!(
-            &sys_entry,
-            &Entry::from(SerializedEntry::from(sys_entry.clone())),
-        );
+        assert_eq!(&sys_entry, &Entry::from(Entry::from(sys_entry.clone())),);
     }
 
     #[test]

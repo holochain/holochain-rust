@@ -96,6 +96,7 @@ fn inner(
     let (entry, header) = util::entry_with_header(&address, &context)?;
 
     match entry.entry_type() {
+        EntryType::AgentId => publish_entry(network_state, &entry, &header),
         EntryType::App(_) => publish_entry(network_state, &entry, &header),
         EntryType::LinkAdd => publish_entry(network_state, &entry, &header)
             .and_then(|_| publish_link(network_state, &entry, &header)),

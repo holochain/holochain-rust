@@ -297,7 +297,7 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
-        entry::{entry_type::EntryType, ToEntry, test_entry},
+        entry::{entry_type::EntryType, test_entry, ToEntry},
         json::{JsonString, RawString},
     };
 
@@ -602,7 +602,10 @@ pub mod tests {
             .get(&action_wrapper)
             .expect("action and reponse should be added after Get action dispatch");
 
-        assert_eq!(response, &ActionResponse::Commit(Ok(test_entry().address())));
+        assert_eq!(
+            response,
+            &ActionResponse::Commit(Ok(test_entry().address()))
+        );
     }
 
     #[test]

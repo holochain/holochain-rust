@@ -16,11 +16,7 @@ use holochain_core_types::{
     time::Iso8601,
 };
 use serde_json;
-use std::{
-    collections::HashMap,
-    convert::{TryFrom},
-    sync::Arc,
-};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -236,12 +232,9 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;
-    use super::{
-        reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot,
-    };
+    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
     use crate::{
-        action::tests::{test_action_wrapper_commit},
-        agent::chain_store::tests::test_chain_store,
+        action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context,
     };
     use holochain_core_types::{
@@ -252,7 +245,7 @@ pub mod tests {
         json::JsonString,
     };
     use serde_json;
-    use std::{collections::HashMap};
+    use std::collections::HashMap;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -263,7 +256,6 @@ pub mod tests {
     pub fn test_action_response_commit() -> ActionResponse {
         ActionResponse::Commit(Ok(expected_entry_address()))
     }
-
 
     #[test]
     /// smoke test for building a new AgentState

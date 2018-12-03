@@ -5,10 +5,7 @@ use crate::{
     context::Context,
     dht::dht_store::DhtStore,
 };
-use holochain_core_types::{
-    eav::EntityAttributeValue,
-    error::HolochainError,
-};
+use holochain_core_types::{eav::EntityAttributeValue, error::HolochainError};
 use std::sync::Arc;
 
 // A function that might return a mutated DhtStore

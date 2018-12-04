@@ -77,6 +77,7 @@ pub enum Action {
     Commit(Entry),
     /// GetEntry by address
     GetEntry(Address),
+    GetEntryTimeout(Address),
 
     /// link to add
     AddLink(Link),

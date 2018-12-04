@@ -9,7 +9,8 @@ use crate::{
     context::Context,
     network::{
         reducers::{
-            get_entry::reduce_get_entry, handle_get_result::reduce_handle_get_result,
+            get_entry::{reduce_get_entry, reduce_get_entry_timeout},
+            handle_get_result::reduce_handle_get_result,
             init::reduce_init, publish::reduce_publish, respond_get::reduce_respond_get,
         },
         state::NetworkState,
@@ -21,6 +22,7 @@ use std::sync::Arc;
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         Action::GetEntry(_) => Some(reduce_get_entry),
+        Action::GetEntryTimeout(_) => Some(reduce_get_entry_timeout),
         Action::HandleGetResult(_) => Some(reduce_handle_get_result),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),

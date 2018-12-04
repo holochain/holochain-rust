@@ -13,8 +13,8 @@ extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
 use hdk::{
-    error::ZomeApiError,
-    error::ZomeApiResult,
+    holochain_core_types::error::ZomeApiError,
+    holochain_core_types::error::ZomeApiResult,
     globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{
@@ -268,18 +268,19 @@ fn handle_check_call() -> ZomeApiResult<JsonString> {
 }
 
 fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
-    let args = hdk_test_entry();
-    hdk::debug(format!("args = {:?}", args)).ok();
+    #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+    struct CommitEntryInput {
+        entry: Entry,
+    }
 
-    let maybe_address = hdk::call(
+    hdk::call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        args.into(),
-    );
-    hdk::debug(format!("maybe_address = {:?}", maybe_address)).ok();
-
-    maybe_address
+        JsonString::from(CommitEntryInput{
+            entry: hdk_test_entry(),
+        }),
+    )
 }
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]

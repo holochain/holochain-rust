@@ -5,6 +5,7 @@ use std::{
     convert::TryFrom,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
 };
+use crate::error::ZomeApiError;
 
 /// track json serialization with the rust type system!
 /// JsonString wraps a string containing JSON serialized data
@@ -22,6 +23,10 @@ impl JsonString {
     /// e.g. represents None when implementing From<Option<Foo>>
     pub fn null() -> JsonString {
         JsonString::from("null")
+    }
+
+    pub fn empty_object() -> JsonString {
+        JsonString::from("{}")
     }
 
     pub fn is_null(&self) -> bool {
@@ -100,8 +105,59 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
 //     }
 // }
 
-impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
-    fn from(result: Result<T, E>) -> JsonString {
+// impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
+//     fn from(result: Result<T, E>) -> JsonString {
+//         let is_ok = result.is_ok();
+//         let inner_json: JsonString = match result {
+//             Ok(inner) => inner.into(),
+//             Err(inner) => inner.into(),
+//         };
+//         let inner_string = String::from(inner_json);
+//         format!(
+//             "{{\"{}\":\"{}\"}}",
+//             if is_ok { "Ok" } else { "Err" },
+//             inner_string
+//         )
+//         .into()
+//     }
+// }
+
+impl<T: Into<JsonString>> From<Result<T, HolochainError>> for JsonString {
+    fn from(result: Result<T, HolochainError>) -> JsonString {
+        let is_ok = result.is_ok();
+        let inner_json: JsonString = match result {
+            Ok(inner) => inner.into(),
+            Err(inner) => inner.into(),
+        };
+        let inner_string = String::from(inner_json);
+        format!(
+            "{{\"{}\":{}}}",
+            if is_ok { "Ok" } else { "Err" },
+            inner_string
+        )
+        .into()
+    }
+}
+
+impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
+    fn from(result: Result<T, String>) -> JsonString {
+        let is_ok = result.is_ok();
+        let inner_json: JsonString = match result {
+            Ok(inner) => inner.into(),
+            Err(inner) => RawString::from(inner).into(),
+        };
+        let inner_string = String::from(inner_json);
+        format!(
+            "{{\"{}\":{}}}",
+            if is_ok { "Ok" } else { "Err" },
+            inner_string
+        )
+        .into()
+    }
+}
+
+impl<T: Into<JsonString>> From<Result<T, ZomeApiError>> for JsonString {
+    fn from(result: Result<T, ZomeApiError>) -> JsonString {
         let is_ok = result.is_ok();
         let inner_json: JsonString = match result {
             Ok(inner) => inner.into(),

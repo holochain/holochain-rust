@@ -13,7 +13,7 @@ pub fn init_global_memory(encoded_allocation_of_input: u32) {
 }
 
 /// Serialize output as json in WASM memory
-pub fn store_and_return_output<J: TryInto<JsonString>>(jsonable: J) -> u32 {
+pub fn store_and_return_output<J: TryInto<JsonString> + std::fmt::Debug>(jsonable: J) -> u32 {
     unsafe {
         return store_as_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), jsonable) as u32;
     }

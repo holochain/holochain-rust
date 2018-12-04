@@ -1,4 +1,4 @@
-use holochain_core_types::{
+use crate::{
     error::{HolochainError, RibosomeErrorCode},
     json::JsonString,
 };
@@ -85,3 +85,20 @@ impl fmt::Display for ZomeApiError {
 }
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
+
+// impl<T: Into<JsonString>> From<ZomeApiResult<T>> for JsonString {
+//     fn from(result: ZomeApiResult<T>) -> JsonString {
+//         let is_ok = result.is_ok();
+//         let inner_json: JsonString = match result {
+//             Ok(inner) => inner.into(),
+//             Err(inner) => inner.into(),
+//         };
+//         let inner_string = String::from(inner_json);
+//         format!(
+//             "{{\"{}\":{}}}",
+//             if is_ok { "Ok" } else { "Err" },
+//             inner_string
+//         )
+//         .into()
+//     }
+// }

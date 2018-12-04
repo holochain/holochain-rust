@@ -77,13 +77,19 @@ pub fn load_string(encoded_allocation: u32) -> Result<String, RibosomeErrorCode>
 //-------------------------------------------------------------------------------------------------
 
 /// Write a data struct as a json string in wasm memory according to stack state.
-pub fn store_as_json<J: TryInto<JsonString>>(
+pub fn store_as_json<J: TryInto<JsonString> + std::fmt::Debug>(
     stack: &mut SinglePageStack,
     jsonable: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    let j: JsonString = jsonable
-        .try_into()
-        .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
+    println!("store: {:?}", &jsonable);
+    let j: JsonString = match jsonable.try_into() {
+        Ok(j) => j,
+        Err(_) => {
+            // println!("store_as_json deserialization failed {:?}", jsonable);
+            return Err(RibosomeErrorCode::ArgumentDeserializationFailed);
+        },
+    };
+
     let json_bytes = j.into_bytes();
     let json_bytes_len = json_bytes.len() as u32;
     if json_bytes_len > U16_MAX {
@@ -93,7 +99,7 @@ pub fn store_as_json<J: TryInto<JsonString>>(
 }
 
 // Sugar
-pub fn store_as_json_into_encoded_allocation<J: TryInto<JsonString>>(
+pub fn store_as_json_into_encoded_allocation<J: TryInto<JsonString> + std::fmt::Debug>(
     stack: &mut SinglePageStack,
     jsonable: J,
 ) -> i32 {
@@ -134,6 +140,7 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(
 
             Err(match maybe_hc_err {
                 Err(_) => {
+                    println!("load_json_from_raw {:?}", stored_str);
                     HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)
                 }
                 Ok(hc_err) => hc_err.kind,

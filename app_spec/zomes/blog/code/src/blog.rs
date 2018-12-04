@@ -1,4 +1,4 @@
-use hdk::error::ZomeApiError;
+use hdk::holochain_core_types::error::ZomeApiError;
 use hdk::holochain_core_types::error::HolochainError;
 use hdk::{
     self,

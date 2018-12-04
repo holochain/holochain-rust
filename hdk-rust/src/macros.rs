@@ -102,11 +102,11 @@ macro_rules! load_json {
 ///         // "main" is the name of the capability
 ///         // "Public" is the access setting of the capability
 ///         main (Public) {
-///             // the name of this function, "hash_post" is the
+///             // the name of this function, "post_address" is the
 ///             // one to give while performing a `call` method to this function.
 ///             // the name of the handler function must be different than the
 ///             // name of the Zome function.
-///             hash_post: {
+///             post_address: {
 ///                 inputs: |content: String|,
 ///                 outputs: |post: ZomeApiResult<Address>|,
 ///                 handler: handle_post_address

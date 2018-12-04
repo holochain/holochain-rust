@@ -229,6 +229,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     /// test that we get status NotFound on an obviously broken address
     fn test_get_not_found() {
         let wasm = test_get_round_trip_wat();

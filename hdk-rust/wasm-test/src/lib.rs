@@ -34,7 +34,7 @@ use holochain_wasm_utils::{
 use std::convert::TryFrom;
 use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 
-#[derive(Serialize, Deserialize, Debug, Default, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TestEntryType {
     stuff: String,
 }

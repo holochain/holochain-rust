@@ -81,10 +81,9 @@ pub fn store_as_json<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
     jsonable: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    let j: JsonString = match jsonable.try_into() {
-        Ok(j) => j,
-        Err(_) => return Err(RibosomeErrorCode::ArgumentDeserializationFailed),
-    };
+    let j: JsonString = jsonable
+        .try_into()
+        .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
 
     let json_bytes = j.into_bytes();
     let json_bytes_len = json_bytes.len() as u32;
@@ -136,7 +135,6 @@ pub fn load_json_from_raw<'s, T: Deserialize<'s>>(
 
             Err(match maybe_hc_err {
                 Err(_) => {
-                    println!("load_json_from_raw {:?}", stored_str);
                     HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)
                 }
                 Ok(hc_err) => hc_err.kind,

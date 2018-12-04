@@ -122,7 +122,7 @@ core_toolchain: version_rustup install_rustup install_system_libs
 
 # idempotent installation of tools toolchain.  Changes default toolchain to TOOLS_RUST_VERSION.
 .PHONY: tools_toolchain
-core_toolchain: RUST_VERSION=$(TOOLS_RUST_VERSION)
+tools_toolchain: RUST_VERSION=$(TOOLS_RUST_VERSION)
 tools_toolchain: version_rustup install_rustup_tools install_system_libs
 
 # idempotent addition of wasm target in current (default: CORE_RUST_VERSION) toolchain

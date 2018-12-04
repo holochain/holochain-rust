@@ -148,10 +148,12 @@ pub enum ActionResponse {
 }
 
 pub fn create_new_chain_header(entry: &Entry, context: Arc<Context>) -> ChainHeader {
-    let agent_state = context.state()
+    let agent_state = context
+        .state()
         .expect("create_new_chain_header called without state")
         .agent();
-    let agent_address = agent_state.get_agent_address()
+    let agent_address = agent_state
+        .get_agent_address()
         .unwrap_or(context.agent_id.address());
     ChainHeader::new(
         &entry.entry_type(),
@@ -247,8 +249,7 @@ pub mod tests {
     use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
-        instance::tests::test_context,
-        state::State,
+        instance::tests::test_context, state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -292,7 +293,9 @@ pub mod tests {
         let context = test_context("bob");
         let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
         let mut context = test_context("bob");
-        Arc::get_mut(&mut context).unwrap().set_state(Arc::new(RwLock::new(state)));
+        Arc::get_mut(&mut context)
+            .unwrap()
+            .set_state(Arc::new(RwLock::new(state)));
         let action_wrapper = test_action_wrapper_commit();
 
         reduce_commit_entry(context, &mut agent_state, &action_wrapper);

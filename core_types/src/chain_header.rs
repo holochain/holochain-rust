@@ -103,7 +103,9 @@ impl ChainHeader {
         &self.entry_signature
     }
 
-    pub fn sources(&self) -> &Vec<Address> { &self.sources }
+    pub fn sources(&self) -> &Vec<Address> {
+        &self.sources
+    }
 }
 
 impl AddressableContent for ChainHeader {

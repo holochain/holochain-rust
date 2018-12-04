@@ -13,7 +13,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let args_str = runtime.load_json_string_from_args(&args);
     let query = match QueryArgs::try_from(args_str) {
         Ok(input) => input,
-        Err(..) => ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // Get entry_type

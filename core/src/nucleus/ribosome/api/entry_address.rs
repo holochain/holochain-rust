@@ -37,7 +37,7 @@ pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     let args_str = runtime.load_json_string_from_args(&args);
     let entry = match Entry::try_from(args_str) {
         Ok(input) => input,
-        Err(_) => ribosome_error_code!(ArgumentDeserializationFailed),
+        Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // Check if entry_type is valid

@@ -33,12 +33,6 @@ use holochain_wasm_utils::api_serialization::QueryResult;
 use std::sync::{Arc, Mutex};
 use test_utils::*;
 
-#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
-/// dupes wasm_test::EntryStruct;
-struct EntryStruct {
-    stuff: String,
-}
-
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
     capability.cap_type.membrane = Membrane::Public;
@@ -49,6 +43,12 @@ pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
         capability.functions.push(fn_decl);
     }
     capability
+}
+
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
+/// dupes wasm_test::EntryStruct;
+struct EntryStruct {
+    stuff: String,
 }
 
 fn example_valid_entry() -> Entry {

@@ -32,6 +32,7 @@ use holochain_wasm_utils::{
     memory_serialization::*,
 };
 use std::convert::TryFrom;
+use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 
 #[derive(Serialize, Deserialize, Debug, Default, DefaultJson)]
 struct TestEntryType {
@@ -101,86 +102,55 @@ fn handle_commit_validation_package_tester() -> ZomeApiResult<Address> {
 }
 
 fn handle_link_two_entries() -> ZomeApiResult<()> {
-    let entry1_result = hdk::commit_entry(&Entry::App(
+    let entry_1 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry1".into(),
-        },
-    ));
+        }.into(),
+    );
+    hdk::commit_entry(&entry_1)?;
 
-    if entry1_result.is_err() {
-        return entry1_result;
-    }
-
-    let entry2_result = hdk::commit_entry(&Entry::App(
+    let entry_2 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry2".into(),
         }.into(),
-    ));
+    );
 
-    if entry2_result.is_err() {
-        return entry2_result;
-    }
+    hdk::commit_entry(&entry_2)?;
 
-    hdk::link_entries(&entry_1, &entry_2, "test-tag")
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
 }
 
-fn handle_links_roundtrip() -> ZomeApiResult<Vec<Address>> {
-    let entry1_commit_result = hdk::commit_entry(&Entry::App(
+fn handle_links_roundtrip() -> ZomeApiResult<GetLinksResult> {
+    let entry_1 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry1".into(),
-        },
-    ));
-    let entry1_address = match entry1_commit_result {
-        Ok(hash) => hash,
-        Err(e) => return Err(e),
-    };
-    hdk::debug(format!("entry1_address: {:?}", entry1_address)).unwrap();
+        }.into(),
+    );
+    hdk::commit_entry(&entry_1)?;
 
-    let entry2_hash_result = hdk::commit_entry(&Entry::App(
+    let entry_2 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry2".into(),
         }.into(),
-    ));
-    let entry2_address = match entry2_hash_result {
-        Ok(hash) => hash,
-        Err(e) => return Err(e),
-    };
-    hdk::debug(format!("entry2_address: {:?}", entry2_address)).unwrap();
+    );
+    hdk::commit_entry(&entry_2)?;
 
-    let entry3_hash_result = hdk::commit_entry(&Entry::App(
+    let entry_3 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry3".into(),
         }.into(),
-    ));
-    let entry3_address = match entry3_hash_result {
-        Ok(hash) => hash,
-        Err(e) => return Err(e),
-    };
-    hdk::debug(format!("entry3_address: {:?}", entry3_address)).unwrap();
+    );
+    hdk::commit_entry(&entry_3)?;
 
-    let link_1_result = hdk::link_entries(&entry1_address, &entry2_address, "test-tag");
-    let link_1 = match link_1_result {
-        Ok(link) => link,
-        Err(e) => return Err(e),
-    };
-    hdk::debug(format!("link_1: {:?}", link_1)).unwrap();
+    hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
+    hdk::link_entries(&entry_1.address(), &entry_3.address(), "test-tag")?;
 
-    let link_2_result = hdk::link_entries(&entry1_address, &entry3_address, "test-tag");
-    let link_2 = match link_2_result {
-        Ok(link) => link,
-        Err(e) => return Err(e),
-    };
-    hdk::debug(format!("link_2: {:?}", link_2)).unwrap();
-
-    let get_links_result = hdk::get_links(&entry1_address, "test-tag");
-    hdk::debug(format!("{:?}", &get_links_result)).unwrap();
-
-    hdk::get_links(&entry1_address, "test-tag")
+    hdk::get_links(&entry_1.address(), "test-tag")
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
@@ -270,10 +240,10 @@ fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
     if commit_result == entry_address_result {
         entry_address_result
     } else {
-        ZomeApiError::from(format!(
+        Err(ZomeApiError::from(format!(
             "commit result: {:?} hash result: {:?}",
             commit_result, bad_result
-        ))
+        )))
     }
 }
 
@@ -284,14 +254,16 @@ fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
 
 fn handle_check_call() -> ZomeApiResult<JsonString> {
     let empty_dumpty = json!({});
-    hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty)).ok();
+    hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty))?;
+
     let maybe_hash = hdk::call(
         "test_zome",
         "test_cap",
         "check_app_entry_address",
         empty_dumpty.into(),
     );
-    hdk::debug(format!("maybe_hash = {:?}", maybe_hash)).ok();
+    hdk::debug(format!("maybe_hash = {:?}", maybe_hash))?;
+
     maybe_hash
 }
 
@@ -465,13 +437,13 @@ define_zome! {
 
             check_get_entry: {
                 inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<Option<SerializedEntry>>|,
+                outputs: |result: ZomeApiResult<Option<Entry>>|,
                 handler: handle_check_get_entry
             }
 
             check_get_entry_result: {
                 inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<Option<SerializedEntry>>|,
+                outputs: |result: ZomeApiResult<Option<Entry>>|,
                 handler: handle_check_get_entry_result
             }
 

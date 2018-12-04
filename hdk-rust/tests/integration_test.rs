@@ -263,7 +263,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    let expected: ZomeApiResult<Option<SerializedEntry>> = Ok(None);
+    let expected: ZomeApiResult<Option<Entry>> = Ok(None);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad address
@@ -277,7 +277,7 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    let expected: ZomeApiResult<Option<SerializedEntry>> = Ok(None);
+    let expected: ZomeApiResult<Option<Entry>> = Ok(None);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 }
 

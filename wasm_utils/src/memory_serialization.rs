@@ -87,7 +87,7 @@ pub fn store_as_json<J: TryInto<JsonString> + std::fmt::Debug>(
         Err(_) => {
             // println!("store_as_json deserialization failed {:?}", jsonable);
             return Err(RibosomeErrorCode::ArgumentDeserializationFailed);
-        },
+        }
     };
 
     let json_bytes = j.into_bytes();

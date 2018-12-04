@@ -43,7 +43,7 @@ macro_rules! load_json {
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::dna::zome::entry_types::Sharing;
 /// # use boolinator::Boolinator;
-/// # use hdk::holochain_core_types::error::ZomeApiResult;
+/// # use hdk::error::ZomeApiResult;
 /// use holochain_core_types::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.

@@ -13,8 +13,8 @@ extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
 use hdk::{
-    holochain_core_types::error::ZomeApiError,
-    holochain_core_types::error::ZomeApiResult,
+    error::ZomeApiError,
+    error::ZomeApiResult,
     globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{

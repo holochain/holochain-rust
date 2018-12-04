@@ -1,6 +1,6 @@
-use crate::{
+use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
-    json::JsonString,
+    json::{JsonError, JsonString},
 };
 use std::{error::Error, fmt};
 
@@ -13,6 +13,8 @@ pub enum ZomeApiError {
     HashNotFound,
     ValidationFailed(String),
 }
+
+impl JsonError for ZomeApiError {}
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
@@ -46,7 +48,14 @@ impl From<!> for ZomeApiError {
 
 impl From<ZomeApiError> for JsonString {
     fn from(zome_api_error: ZomeApiError) -> JsonString {
-        JsonString::from(json!({ "error": zome_api_error }))
+        #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+        struct ZomeApiErrorJson {
+            error: ZomeApiError,
+        }
+
+        JsonString::from(ZomeApiErrorJson {
+            error: zome_api_error,
+        })
     }
 }
 
@@ -85,20 +94,3 @@ impl fmt::Display for ZomeApiError {
 }
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
-
-// impl<T: Into<JsonString>> From<ZomeApiResult<T>> for JsonString {
-//     fn from(result: ZomeApiResult<T>) -> JsonString {
-//         let is_ok = result.is_ok();
-//         let inner_json: JsonString = match result {
-//             Ok(inner) => inner.into(),
-//             Err(inner) => inner.into(),
-//         };
-//         let inner_string = String::from(inner_json);
-//         format!(
-//             "{{\"{}\":{}}}",
-//             if is_ok { "Ok" } else { "Err" },
-//             inner_string
-//         )
-//         .into()
-//     }
-// }

@@ -1,10 +1,11 @@
 use crate::{
+    error::{ZomeApiError, ZomeApiResult},
     globals::*,
 };
 use holochain_core_types::{
     cas::content::Address,
     entry::Entry,
-    error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult, ZomeApiResult, ZomeApiError},
+    error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -293,7 +294,7 @@ pub fn debug<J: TryInto<JsonString> + std::fmt::Debug>(msg: J) -> ZomeApiResult<
 /// # use hdk::holochain_core_types::hash::HashString;
 /// # use hdk::holochain_core_types::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
-/// # use hdk::holochain_core_types::error::ZomeApiResult;
+/// # use hdk::error::ZomeApiResult;
 /// # use std::convert::TryInto;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.

@@ -16,7 +16,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         Err(..) => {
             println!("invoke_query failed to deserialize args: {:?}", args_str);
             return ribosome_error_code!(ArgumentDeserializationFailed);
-        },
+        }
     };
 
     // Get entry_type

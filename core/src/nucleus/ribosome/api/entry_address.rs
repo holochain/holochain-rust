@@ -40,7 +40,7 @@ pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
         Err(_) => {
             println!("invoke_entry_address failed to deserialize {:?}", args_str);
             return ribosome_error_code!(ArgumentDeserializationFailed);
-        },
+        }
     };
 
     // Check if entry_type is valid

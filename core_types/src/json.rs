@@ -5,7 +5,6 @@ use std::{
     convert::TryFrom,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
 };
-use crate::error::ZomeApiError;
 
 /// track json serialization with the rust type system!
 /// JsonString wraps a string containing JSON serialized data
@@ -99,35 +98,11 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
     }
 }
 
-// impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
-//     fn from(result: Result<T, E>) -> JsonString {
-//         JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
-//     }
-// }
-
-// impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
-//     fn from(result: Result<T, E>) -> JsonString {
-//         let is_ok = result.is_ok();
-//         let inner_json: JsonString = match result {
-//             Ok(inner) => inner.into(),
-//             Err(inner) => inner.into(),
-//         };
-//         let inner_string = String::from(inner_json);
-//         format!(
-//             "{{\"{}\":\"{}\"}}",
-//             if is_ok { "Ok" } else { "Err" },
-//             inner_string
-//         )
-//         .into()
-//     }
-// }
-
 /// signifies type can be converted to JsonString in Err from some Result
 /// can't use std::error::Error for this because String has Error as a reserved future trait
 pub trait JsonError {}
 
 impl JsonError for HolochainError {}
-impl JsonError for ZomeApiError {}
 
 impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {

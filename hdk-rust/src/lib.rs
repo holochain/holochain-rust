@@ -27,6 +27,7 @@ pub extern crate holochain_wasm_utils;
 pub mod api;
 #[macro_use]
 pub mod entry_definition;
+pub mod error;
 pub mod global_fns;
 pub mod globals;
 pub mod init_globals;

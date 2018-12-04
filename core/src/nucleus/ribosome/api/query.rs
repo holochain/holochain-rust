@@ -11,12 +11,9 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let query = match QueryArgs::try_from(args_str.clone()) {
+    let query = match QueryArgs::try_from(args_str) {
         Ok(input) => input,
-        Err(..) => {
-            println!("invoke_query failed to deserialize args: {:?}", args_str);
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
+        Err(..) => ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // Get entry_type

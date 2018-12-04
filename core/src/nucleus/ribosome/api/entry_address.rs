@@ -35,12 +35,9 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
 pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let entry = match Entry::try_from(args_str.clone()) {
+    let entry = match Entry::try_from(args_str) {
         Ok(input) => input,
-        Err(_) => {
-            println!("invoke_entry_address failed to deserialize {:?}", args_str);
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
+        Err(_) => ribosome_error_code!(ArgumentDeserializationFailed),
     };
 
     // Check if entry_type is valid

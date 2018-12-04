@@ -18,7 +18,6 @@ use hdk::error::ZomeApiResult;
 use hdk::holochain_core_types::json::JsonString;
 use hdk::holochain_core_types::entry::Entry;
 use hdk::holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
-// use hdk::holochain_core_types::error::ZomeApiInternalResult;
 
 define_zome! {
     entries: [

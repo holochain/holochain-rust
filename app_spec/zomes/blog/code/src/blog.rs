@@ -13,7 +13,6 @@ use hdk::{
 use hdk::error::ZomeApiResult;
 use hdk::holochain_core_types::cas::content::Address;
 use hdk::holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
-// use std::convert::TryFrom;
 use post::Post;
 
 pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {

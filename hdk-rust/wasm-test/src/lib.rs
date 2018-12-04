@@ -3,7 +3,6 @@
 extern crate hdk;
 extern crate holochain_wasm_utils;
 extern crate serde;
-#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
@@ -253,14 +252,14 @@ fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
 // }
 
 fn handle_check_call() -> ZomeApiResult<JsonString> {
-    let empty_dumpty = json!({});
+    let empty_dumpty = JsonString::empty_object();
     hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty))?;
 
     let maybe_hash = hdk::call(
         "test_zome",
         "test_cap",
         "check_app_entry_address",
-        empty_dumpty.into(),
+        empty_dumpty,
     );
     hdk::debug(format!("maybe_hash = {:?}", maybe_hash))?;
 

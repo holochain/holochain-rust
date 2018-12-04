@@ -147,9 +147,12 @@ pub enum ActionResponse {
     LinkEntries(Result<Entry, HolochainError>),
 }
 
-pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
+pub fn create_new_chain_header(entry: &Entry, context: Arc<Context>) -> ChainHeader {
+    let agent_state = context.state()
+        .expect("create_new_chain_header called without state")
+        .agent();
     let agent_address = agent_state.get_agent_address()
-        .expect("Could not get agent address in create_new_chain_header()");
+        .unwrap_or(context.agent_id.address());
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
@@ -179,13 +182,13 @@ pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> Chain
 /// @TODO Better error handling in the state persister section
 /// https://github.com/holochain/holochain-rust/issues/555
 fn reduce_commit_entry(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     state: &mut AgentState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Commit);
-    let chain_header = create_new_chain_header(&entry, state);
+    let chain_header = create_new_chain_header(&entry, context.clone());
 
     fn response(
         state: &mut AgentState,
@@ -199,11 +202,11 @@ fn reduce_commit_entry(
     }
     let result = response(state, &entry, &chain_header);
     state.top_chain_header = Some(chain_header);
-    let con = _context.clone();
+    let con = context.clone();
 
     #[allow(unused_must_use)]
     con.state().map(|global_state_lock| {
-        let persis_lock = _context.clone().persister.clone();
+        let persis_lock = context.clone().persister.clone();
         let persister = &mut *persis_lock.lock().unwrap();
         persister.save(global_state_lock.clone());
     });

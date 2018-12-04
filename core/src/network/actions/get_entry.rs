@@ -16,8 +16,9 @@ use holochain_core_types::{
 use snowflake;
 use std::{
     pin::{Pin, Unpin},
-    thread::sleep, time::Duration,
     sync::Arc,
+    thread::sleep,
+    time::Duration,
 };
 
 /// GetEntry Action Creator

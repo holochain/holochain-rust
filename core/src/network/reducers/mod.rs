@@ -11,7 +11,9 @@ use crate::{
         reducers::{
             get_entry::{reduce_get_entry, reduce_get_entry_timeout},
             handle_get_result::reduce_handle_get_result,
-            init::reduce_init, publish::reduce_publish, respond_get::reduce_respond_get,
+            init::reduce_init,
+            publish::reduce_publish,
+            respond_get::reduce_respond_get,
         },
         state::NetworkState,
     },

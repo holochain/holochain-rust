@@ -1,9 +1,6 @@
 use boolinator::*;
 use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol_wrapper::{GetDhtData, ProtocolWrapper},
@@ -61,12 +58,8 @@ pub fn reduce_get_entry_timeout(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => crate::action::Action::GetEntryTimeout);
 
-    if network_state
-        .get_entry_results
-        .get(address)
-        .is_none()
-    {
-        return
+    if network_state.get_entry_results.get(address).is_none() {
+        return;
     }
 
     if network_state
@@ -90,9 +83,7 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use holochain_core_types::{
-        error::HolochainError,
-    };
+    use holochain_core_types::error::HolochainError;
     use holochain_net_connection::protocol_wrapper::DhtData;
 
     #[test]
@@ -166,7 +157,6 @@ mod tests {
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
 
-
         let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(entry.address()));
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
@@ -174,7 +164,10 @@ mod tests {
             .get_entry_results
             .get(&entry.address())
             .map(|result| result.clone());
-        assert_eq!(maybe_get_entry_result, Some(Some(Err(HolochainError::Timeout))));
+        assert_eq!(
+            maybe_get_entry_result,
+            Some(Some(Err(HolochainError::Timeout)))
+        );
 
         // test that an existing result does not get overwritten by timeout signal
         let dht_data = DhtData {
@@ -182,7 +175,8 @@ mod tests {
             dna_hash: String::from(""),
             agent_id: String::from(""),
             address: entry.address().to_string(),
-            content: serde_json::from_str(&serde_json::to_string(&Some(entry.clone())).unwrap()).unwrap(),
+            content: serde_json::from_str(&serde_json::to_string(&Some(entry.clone())).unwrap())
+                .unwrap(),
         };
 
         let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));

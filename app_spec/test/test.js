@@ -104,8 +104,6 @@ test('get_post with non-existant hash returns null', (t) => {
   t.same(entry, null)
 })
 
-// this test is flaky!
-// even when we loop and wait sometimes app2 never sees the published entry
 test('scenario test create & publish post -> get from other instance', (t) => {
     t.plan(3)
 

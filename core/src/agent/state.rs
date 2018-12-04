@@ -17,11 +17,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
-use std::{
-    collections::HashMap,
-    convert::{TryFrom, TryInto},
-    sync::Arc,
-};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -224,37 +220,10 @@ fn reduce_commit_entry(
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
 }
 
-/// do a get action against an agent state
-/// intended for use inside the reducer, isolated for unit testing
-fn reduce_get_entry(
-    _context: Arc<Context>,
-    state: &mut AgentState,
-    action_wrapper: &ActionWrapper,
-) {
-    let action = action_wrapper.action();
-    let address = unwrap_to!(action => Action::GetEntry);
-    let storage = &state.chain().content_storage().clone();
-    let json = storage
-        .read()
-        .unwrap()
-        .fetch(&address)
-        .expect("could not fetch from CAS");
-    let result: Option<Entry> = json.and_then(|js| js.try_into().ok());
-
-    // @TODO if the get fails local, do a network get
-    // @see https://github.com/holochain/holochain-rust/issues/167
-
-    state.actions.insert(
-        action_wrapper.to_owned(),
-        ActionResponse::GetEntry(result.to_owned()),
-    );
-}
-
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
-        Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }
 }
@@ -279,12 +248,9 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;
-    use super::{
-        reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState, AgentStateSnapshot,
-    };
+    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
     use crate::{
-        action::tests::{test_action_wrapper_commit, test_action_wrapper_get},
-        agent::chain_store::tests::test_chain_store,
+        action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context,
     };
     use holochain_core_types::{
@@ -295,7 +261,7 @@ pub mod tests {
         json::JsonString,
     };
     use serde_json;
-    use std::{collections::HashMap, sync::Arc};
+    use std::collections::HashMap;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -305,11 +271,6 @@ pub mod tests {
     /// dummy action response for a successful commit as test_entry()
     pub fn test_action_response_commit() -> ActionResponse {
         ActionResponse::Commit(Ok(expected_entry_address()))
-    }
-
-    /// dummy action response for a successful get as test_entry()
-    pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_entry().into()))
     }
 
     #[test]
@@ -336,34 +297,6 @@ pub mod tests {
             state.actions().get(&action_wrapper),
             Some(&test_action_response_commit()),
         );
-    }
-
-    #[test]
-    /// test for reducing get entry
-    fn test_reduce_get_entry() {
-        let mut state = test_agent_state();
-        let context = test_context("foo");
-
-        let aw1 = test_action_wrapper_get();
-        reduce_get_entry(Arc::clone(&context), &mut state, &aw1);
-
-        // nothing has been committed so the get must be None
-        assert_eq!(
-            state.actions().get(&aw1),
-            Some(&ActionResponse::GetEntry(None)),
-        );
-
-        // do a round trip
-        reduce_commit_entry(
-            Arc::clone(&context),
-            &mut state,
-            &test_action_wrapper_commit(),
-        );
-
-        let aw2 = test_action_wrapper_get();
-        reduce_get_entry(Arc::clone(&context), &mut state, &aw2);
-
-        assert_eq!(state.actions().get(&aw2), Some(&test_action_response_get()),);
     }
 
     #[test]

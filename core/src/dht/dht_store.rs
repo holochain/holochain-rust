@@ -1,7 +1,7 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
     cas::{
-        content::{Address, Content},
+        content::{Address, AddressableContent, Content},
         storage::ContentAddressableStorage,
     },
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
@@ -13,18 +13,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-// Placeholder network module
-#[derive(Clone, Debug, PartialEq)]
-pub struct Network {
-    // FIXME
-}
-impl Network {
-    pub fn get(&mut self, _address: &Address) -> Option<Content> {
-        // FIXME
-        None
-    }
-}
-
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
 #[derive(Clone, Debug)]
@@ -32,8 +20,6 @@ pub struct DhtStore {
     // Storages holding local shard data
     content_storage: Arc<RwLock<ContentAddressableStorage>>,
     meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
-    // Placeholder network module
-    network: Network,
 
     actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
@@ -45,8 +31,7 @@ impl PartialEq for DhtStore {
         let meta = &self.meta_storage.clone();
         let other_meta = &other.meta_storage.clone();
 
-        self.network == other.network
-            && self.actions == other.actions
+    self.actions == other.actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
     }
@@ -59,11 +44,9 @@ impl DhtStore {
         content_storage: Arc<RwLock<ContentAddressableStorage>>,
         meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     ) -> Self {
-        let network = Network {};
         DhtStore {
             content_storage,
             meta_storage,
-            network,
             actions: HashMap::new(),
         }
     }
@@ -96,9 +79,6 @@ impl DhtStore {
     }
     pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
         self.meta_storage.clone()
-    }
-    pub(crate) fn network(&self) -> &Network {
-        &self.network
     }
     pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &self.actions

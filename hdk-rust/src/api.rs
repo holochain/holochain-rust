@@ -203,7 +203,7 @@ pub enum BundleOnClose {
 ///
 /// # }
 /// ```
-pub fn debug<J: TryInto<JsonString> + std::fmt::Debug>(msg: J) -> ZomeApiResult<()> {
+pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     let allocation_of_input = store_as_json(&mut mem_stack, msg)?;

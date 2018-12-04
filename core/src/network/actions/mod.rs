@@ -7,5 +7,5 @@ use holochain_core_types::{cas::content::Address, error::HcResult};
 #[derive(Clone, Debug)]
 pub enum ActionResponse {
     Publish(HcResult<Address>),
-    RespondeGet(HcResult<()>),
+    RespondGet(HcResult<()>),
 }

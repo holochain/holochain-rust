@@ -48,7 +48,9 @@ extern crate unwrap;
 //   * applying #[repr(align(...))]
 // However, these should show up when running the systest, which should also be reviewed and updated
 // when upgrading the libsodium version.
+#[cfg_attr(tarpaulin, skip)]
 mod bindgen;
+#[cfg_attr(tarpaulin, skip)]
 mod seeded_rng;
 
 pub use bindgen::*;

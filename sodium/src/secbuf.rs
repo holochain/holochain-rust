@@ -282,4 +282,38 @@ mod tests {
             assert_eq!(b[0], 12);
         }
     }
+
+    #[test]
+    #[should_panic]
+    fn it_should_disallow_bad_align() {
+        SecBuf::with_secure(1);
+    }
+
+    #[test]
+    fn it_should_debug() {
+        let mut b = SecBuf::with_insecure(2);
+        {
+            let mut b = b.write_lock();
+            b[0] = 42;
+            b[1] = 222;
+        }
+        {
+            let b = b.read_lock();
+            assert_eq!("[42, 222]", format!("{:?}", *b));
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_should_panic_on_not_readable() {
+        let b = SecBuf::with_insecure(1);
+        assert_eq!(22, b[0]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_should_panic_on_not_writeable() {
+        let mut b = SecBuf::with_insecure(1);
+        b[0] = 22;
+    }
 }

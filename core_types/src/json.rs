@@ -94,27 +94,28 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
     }
 }
 
-impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
-    fn from(result: Result<T, E>) -> JsonString {
-        JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
-    }
-}
-
-// impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
+// impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
 //     fn from(result: Result<T, E>) -> JsonString {
-//         let is_ok = result.is_ok();
-//         let inner_json: JsonString = match result {
-//             Ok(inner) => inner.into(),
-//             Err(inner) => inner.into(),
-//         };
-//         let inner_string = String::from(inner_json);
-//         format!(
-//             "{{\"{}\":{}}}",
-//             if is_ok { "Ok" } else { "Err" },
-//             inner_string
-//         ).into()
+//         JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
 //     }
 // }
+
+impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
+    fn from(result: Result<T, E>) -> JsonString {
+        let is_ok = result.is_ok();
+        let inner_json: JsonString = match result {
+            Ok(inner) => inner.into(),
+            Err(inner) => inner.into(),
+        };
+        let inner_string = String::from(inner_json);
+        format!(
+            "{{\"{}\":{}}}",
+            if is_ok { "Ok" } else { "Err" },
+            inner_string
+        )
+        .into()
+    }
+}
 
 pub type JsonResult = Result<JsonString, HolochainError>;
 

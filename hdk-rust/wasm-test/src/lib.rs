@@ -461,7 +461,7 @@ define_zome! {
 
             links_roundtrip: {
                 inputs: | |,
-                outputs: |result: ZomeApiResult<Vec<Address>>|,
+                outputs: |result: ZomeApiResult<GetLinksResult>|,
                 handler: handle_links_roundtrip
             }
 

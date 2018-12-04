@@ -15,6 +15,7 @@ extern crate holochain_core_types_derive;
 
 use hdk::error::ZomeApiError;
 use holochain_container_api::*;
+use hdk::error::ZomeApiResult;
 use holochain_core_types::{
     cas::content::Address,
     dna::zome::{
@@ -31,6 +32,7 @@ use holochain_core_types::{
 };
 use std::sync::{Arc, Mutex};
 use test_utils::*;
+use holochain_wasm_utils::api_serialization::QueryResult;
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 /// dupes wasm_test::EntryStruct;
@@ -48,11 +50,6 @@ pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
         capability.functions.push(fn_decl);
     }
     capability
-}
-
-#[derive(DefaultJson, Serialize, Deserialize, Debug)]
-struct EntryStruct {
-    stuff: String,
 }
 
 fn example_valid_entry() -> Entry {
@@ -220,13 +217,13 @@ fn can_get_entry() {
         "check_commit_entry_macro",
         &example_valid_entry_params(),
     );
+    let expected: ZomeApiResult<Address> = Ok(
+        example_valid_entry_address()
+    );
     assert!(result.is_ok(), "\t result = {:?}", result);
-    let expected: ZomeApiResult<Address> = Ok(Address::from(
-        "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg",
-    ));
     assert_eq!(
         result.unwrap(),
-        JsonString::from(example_valid_entry_address()),
+        JsonString::from(expected),
     );
 
     let result = hc.call(
@@ -237,8 +234,9 @@ fn can_get_entry() {
             "entry_address": example_valid_entry_address()
         }))),
     );
+    let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(example_valid_entry()));
+    assert_eq!(result.unwrap(), JsonString::from(expected));
 
     let result = hc.call(
         "test_zome",
@@ -249,8 +247,9 @@ fn can_get_entry() {
         }))),
     );
     println!("\t can_get_entry result = {:?}", result);
+    let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(example_valid_entry()),);
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 
     // test the case with a bad address
     let result = hc.call(
@@ -304,7 +303,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}"),
+        JsonString::from("{\"Err\":{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}}"),
     );
 }
 
@@ -323,13 +322,12 @@ fn has_populated_validation_data() {
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
 
-    let expected: ZomeApiResult<Address> = Ok(Address::from(
-        "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg",
-    ));
+    let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     assert_eq!(
         result.unwrap(),
-        JsonString::from(example_valid_entry_address()),
+        JsonString::from(expected),
     );
+
     let result = hc.call(
         "test_zome",
         "test_cap",
@@ -337,12 +335,11 @@ fn has_populated_validation_data() {
         &example_valid_entry_params(),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
-    let expected: ZomeApiResult<Address> = Ok(Address::from(
-        "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg",
-    ));
+
+    let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     assert_eq!(
         result.unwrap(),
-        JsonString::from(example_valid_entry_address()),
+        JsonString::from(expected),
     );
 
     //
@@ -442,14 +439,16 @@ fn can_check_query() {
         r#"{ "entry_type_name": "testEntryType", "limit": "0" }"#,
     );
     assert!(result.is_ok(), "result = {:?}", result);
-    let expected: ZomeApiResult<Vec<Address>> = Ok(vec![Address::from(
-        "QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx",
-    )]);
+
+    let expected: ZomeApiResult<QueryResult> = Ok(
+        vec![Address::from(
+            "QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ"
+        )]
+    );
+
     assert_eq!(
         result.unwrap(),
-        JsonString::from(vec![Address::from(
-            "QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ",
-        )]),
+        JsonString::from(expected),
     );
 }
 
@@ -459,14 +458,15 @@ fn can_check_app_entry_address() {
 
     let result = hc.call("test_zome", "test_cap", "check_app_entry_address", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
-    let expected: ZomeApiResult<Address> = Ok(Address::from(
-        "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa",
-    ));
+
+    let expected: ZomeApiResult<Address> = Ok(
+        Address::from(
+            "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ"
+        )
+    );
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from(
-            "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ"
-        )),
+        JsonString::from(expected),
     );
 }
 
@@ -489,16 +489,19 @@ fn can_check_call() {
 
     let result = hc.call("test_zome", "test_cap", "check_call", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
+
     let inner_expected: ZomeApiResult<Address> = Ok(Address::from(
-        "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa",
+        "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ"
     ));
-    let expected: ZomeApiResult<ZomeApiInternalResult> =
-        Ok(ZomeApiInternalResult::success(inner_expected));
+    let expected: ZomeApiResult<ZomeApiInternalResult> = Ok(
+        ZomeApiInternalResult::success(
+            inner_expected
+        )
+    );
+
     assert_eq!(
         result.unwrap(),
-        JsonString::from(ZomeApiInternalResult::success(Address::from(
-            "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ"
-        ))),
+        JsonString::from(expected),
     );
 }
 
@@ -509,11 +512,7 @@ fn can_check_call_with_args() {
     let result = hc.call("test_zome", "test_cap", "check_call_with_args", r#"{}"#);
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    let inner_expected: ZomeApiResult<Address> = Ok(Address::from(
-        "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg",
-    ));
-    let expected: ZomeApiResult<ZomeApiInternalResult> =
-        Ok(ZomeApiInternalResult::success(inner_expected));
+
     assert_eq!(
         result.unwrap(),
         JsonString::from(ZomeApiInternalResult::success(Address::from(

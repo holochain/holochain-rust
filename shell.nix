@@ -98,6 +98,12 @@ stdenv.mkDerivation rec {
     hc-fmt-check
 
     zeromq3
+
+    # mac
+    # https://stackoverflow.com/questions/51161225/how-can-i-make-macos-frameworks-available-to-clang-in-a-nix-environment
+    nixpkgs.darwin.apple_sdk.frameworks.Security
+    nixpkgs.darwin.apple_sdk.frameworks.CoreFoundation
+    nixpkgs.darwin.apple_sdk.frameworks.CoreServices
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

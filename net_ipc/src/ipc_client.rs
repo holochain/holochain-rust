@@ -1,7 +1,6 @@
 //! implements a net_connection::NetWorker for messaging with an ipc p2p node
 
-use socket::IpcSocket;
-use util::get_millis;
+use crate::{socket::IpcSocket, util::get_millis};
 
 use std::{thread, time};
 
@@ -70,30 +69,36 @@ impl NetWorker for IpcClient {
 impl IpcClient {
     /// establish a new ipc connection
     /// for now, the api simplicity is worth blocking the thread on connection
-    pub fn new(handler: NetHandler, mut socket: Box<IpcSocket>) -> NetResult<Self> {
-        let start = get_millis();
-        let mut backoff = 1_u64;
+    pub fn new(
+        handler: NetHandler,
+        mut socket: Box<IpcSocket>,
+        block_connect: bool,
+    ) -> NetResult<Self> {
+        if block_connect {
+            let start = get_millis();
+            let mut backoff = 1_u64;
 
-        loop {
-            // wait for any message from server to indicate connect success
-            if socket.poll(0)? {
-                break;
+            loop {
+                // wait for any message from server to indicate connect success
+                if socket.poll(0)? {
+                    break;
+                }
+
+                if get_millis() - start > 3000.0 {
+                    bail!("connection init timeout");
+                }
+
+                let data = Protocol::Ping(PingData { sent: get_millis() });
+                let data: NamedBinaryData = data.into();
+                socket.send(&[SRV_ID, &[], &b"ping".to_vec(), &data.data])?;
+
+                backoff *= 2;
+                if backoff > 500 {
+                    backoff = 500;
+                }
+
+                thread::sleep(time::Duration::from_millis(backoff));
             }
-
-            if get_millis() - start > 3000.0 {
-                bail!("connection init timeout");
-            }
-
-            let data = Protocol::Ping(PingData { sent: get_millis() });
-            let data: NamedBinaryData = data.into();
-            socket.send(&[SRV_ID, &[], &b"ping".to_vec(), &data.data])?;
-
-            backoff *= 2;
-            if backoff > 500 {
-                backoff = 500;
-            }
-
-            thread::sleep(time::Duration::from_millis(backoff));
         }
 
         Ok(Self {
@@ -155,13 +160,14 @@ mod tests {
 
     use std::sync::mpsc;
 
-    use socket::MockIpcSocket;
+    use crate::socket::{make_test_channels, MockIpcSocket};
 
     #[test]
     fn it_ipc_message_flow() {
         let (sender, receiver) = mpsc::channel::<Protocol>();
 
-        let (s, stx, srx) = MockIpcSocket::new_test().unwrap();
+        let (test_struct, stx, srx) = make_test_channels().unwrap();
+        let s = MockIpcSocket::new_test(test_struct).unwrap();
 
         let pong = Protocol::Pong(PongData {
             orig: get_millis() - 4.0,
@@ -179,7 +185,9 @@ mod tests {
                     Ok(())
                 }),
                 s,
-            ).unwrap(),
+                true,
+            )
+            .unwrap(),
         );
 
         cli.tick().unwrap();

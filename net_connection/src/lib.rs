@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![feature(fnbox)]
 
 //! Provides a lightweight concurrency abstraction for holochain
 //! networking / p2p layer
@@ -17,6 +18,8 @@ extern crate serde;
 extern crate serde_bytes;
 #[macro_use]
 extern crate serde_derive;
+// macros only used in tests
+#[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 

@@ -1,18 +1,19 @@
-use action::{Action, ActionWrapper};
-use context::Context;
-use holochain_core_types::error::HolochainError;
-use holochain_dna::zome::capabilities::Membrane;
-use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
-use instance::RECV_DEFAULT_TIMEOUT_MS;
-use nucleus::{
-    get_capability_with_zome_call, launch_zome_fn_call,
-    ribosome::{api::ZomeApiResult, Runtime},
-    state::NucleusState,
-    ZomeFnCall,
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    instance::RECV_DEFAULT_TIMEOUT_MS,
+    nucleus::{
+        get_capability_with_zome_call, launch_zome_fn_call,
+        ribosome::{api::ZomeApiResult, Runtime},
+        state::NucleusState,
+        ZomeFnCall,
+    },
 };
+use holochain_core_types::{dna::zome::capabilities::Membrane, error::HolochainError};
+use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use std::{
     convert::TryFrom,
-    sync::{mpsc::channel, Arc, RwLock},
+    sync::{mpsc::channel, Arc},
 };
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -55,11 +56,11 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
     // Send Action and block
     let (sender, receiver) = channel();
-    ::instance::dispatch_action_with_observer(
+    crate::instance::dispatch_action_with_observer(
         &runtime.context.action_channel,
         &runtime.context.observer_channel,
         action_wrapper.clone(),
-        move |state: &::state::State| {
+        move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
             let maybe_result = state.nucleus().zome_call_result(&zome_call);
             match maybe_result {
@@ -162,28 +163,38 @@ pub mod tests {
     extern crate wabt;
 
     use self::tempfile::tempdir;
-    use super::*;
-    use context::Context;
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::{entry::agent::Agent, error::DnaError, json::JsonString};
-    use holochain_dna::{zome::capabilities::Capability, Dna};
-    use instance::{
-        tests::{test_instance, TestLogger},
-        Observer,
-    };
-    use nucleus::ribosome::{
-        api::{
-            tests::{
-                test_capability, test_function_name, test_parameters, test_zome_api_function_wasm,
-                test_zome_name,
-            },
-            ZomeApiFunction,
+    use crate::{
+        context::{mock_network_config, Context},
+        instance::{
+            tests::{test_instance, TestLogger},
+            Observer, RECV_DEFAULT_TIMEOUT_MS,
         },
-        Defn,
+        nucleus::ribosome::{
+            api::{
+                call::{Action, ActionWrapper, Membrane, ZomeFnCall},
+                tests::{
+                    test_capability, test_function_name, test_parameters,
+                    test_zome_api_function_wasm, test_zome_name,
+                },
+                ZomeApiFunction,
+            },
+            Defn,
+        },
+        persister::SimplePersister,
     };
-    use persister::SimplePersister;
+    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_core_types::{
+        agent::AgentId,
+        dna::{zome::capabilities::Capability, Dna},
+        error::{DnaError, HolochainError},
+        json::JsonString,
+    };
+    use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
-    use std::sync::{mpsc::RecvTimeoutError, Arc, Mutex};
+    use std::sync::{
+        mpsc::{channel, RecvTimeoutError},
+        Arc, Mutex, RwLock,
+    };
     use test_utils::create_test_dna_with_cap;
 
     /// dummy commit args from standard test entry
@@ -215,19 +226,22 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     fn create_context() -> Arc<Context> {
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
         Arc::new(
             Context::new(
-                Agent::from("alex".to_string()),
+                AgentId::generate_fake("alex"),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-                Arc::new(Mutex::new(SimplePersister::new("foo".to_string()))),
-                Arc::new(RwLock::new(
-                    FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-                )),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                file_storage.clone(),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-            ).unwrap(),
+                mock_network_config(),
+            )
+            .unwrap(),
         )
     }
 
@@ -245,7 +259,7 @@ pub mod tests {
         // let instance = Instance::new();
         let instance = test_instance(dna).expect("Could not initialize test instance");
         let (sender, receiver) = channel();
-        let closure = move |state: &::state::State| {
+        let closure = move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
             let opt_res = state.nucleus().zome_call_result(&zome_call);
             match opt_res {

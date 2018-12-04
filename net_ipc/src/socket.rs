@@ -2,8 +2,7 @@
 //! It allows us to easily mock it out for unit tests
 //! as well as manage context with lazy_static!
 
-use context;
-use errors::*;
+use crate::{context, errors::*};
 use std::sync::mpsc;
 use zmq;
 
@@ -68,25 +67,41 @@ impl IpcSocket for ZmqIpcSocket {
     }
 }
 
+/// helper for working with mock sockets
+pub struct TestStruct {
+    control_recv: mpsc::Receiver<Vec<Vec<u8>>>,
+    control_send: mpsc::SyncSender<Vec<Vec<u8>>>,
+}
+
 /// This is a concrete implementation of the IpcSocket trait for use in testing
 pub struct MockIpcSocket {
     resp_queue: Vec<Vec<Vec<u8>>>,
-    recv: mpsc::Receiver<Vec<Vec<u8>>>,
-    send: mpsc::SyncSender<Vec<Vec<u8>>>,
+    channel: TestStruct,
+}
+
+/// helper to create mock socket channels
+pub fn make_test_channels() -> Result<(
+    TestStruct,
+    mpsc::SyncSender<Vec<Vec<u8>>>,
+    mpsc::Receiver<Vec<Vec<u8>>>,
+)> {
+    let (tx_in, rx_in) = mpsc::sync_channel(10);
+    let (tx_out, rx_out) = mpsc::sync_channel(10);
+    Ok((
+        TestStruct {
+            control_recv: rx_in,
+            control_send: tx_out,
+        },
+        tx_in,
+        rx_out,
+    ))
 }
 
 impl MockIpcSocket {
-    pub fn new_test() -> Result<(
-        Box<Self>,
-        mpsc::SyncSender<Vec<Vec<u8>>>,
-        mpsc::Receiver<Vec<Vec<u8>>>,
-    )> {
-        let (tx_in, rx_in) = mpsc::sync_channel(10);
-        let (tx_out, rx_out) = mpsc::sync_channel(10);
+    pub fn new_test(channel: TestStruct) -> Result<Box<Self>> {
         let mut out = MockIpcSocket::new()?;
-        out.recv = rx_in;
-        out.send = tx_out;
-        Ok((out, tx_in, rx_out))
+        out.channel = channel;
+        Ok(out)
     }
 }
 
@@ -95,8 +110,10 @@ impl IpcSocket for MockIpcSocket {
         let (tx, rx) = mpsc::sync_channel(10);
         Ok(Box::new(Self {
             resp_queue: Vec::new(),
-            recv: rx,
-            send: tx,
+            channel: TestStruct {
+                control_recv: rx,
+                control_send: tx,
+            },
         }))
     }
 
@@ -109,7 +126,8 @@ impl IpcSocket for MockIpcSocket {
     }
 
     fn poll(&mut self, _millis: i64) -> Result<bool> {
-        self.recv
+        self.channel
+            .control_recv
             .try_recv()
             .and_then(|r| {
                 self.resp_queue.push(r);
@@ -124,7 +142,7 @@ impl IpcSocket for MockIpcSocket {
         if !self.resp_queue.is_empty() {
             return Ok(self.resp_queue.remove(0));
         }
-        Ok(self.recv.recv()?)
+        Ok(self.channel.control_recv.recv()?)
     }
 
     fn send(&mut self, data: &[&[u8]]) -> Result<()> {
@@ -132,7 +150,7 @@ impl IpcSocket for MockIpcSocket {
         for item in data {
             tmp.push(item.to_vec());
         }
-        self.send.send(tmp)?;
+        self.channel.control_send.send(tmp)?;
         Ok(())
     }
 }
@@ -152,7 +170,8 @@ mod tests {
 
     #[test]
     fn it_mock_cycle() {
-        let (mut c, tx, rx) = MockIpcSocket::new_test().unwrap();
+        let (test_struct, tx, rx) = make_test_channels().unwrap();
+        let mut c = MockIpcSocket::new_test(test_struct).unwrap();
         c.connect("").unwrap();
 
         assert_eq!(false, c.poll(0).unwrap());

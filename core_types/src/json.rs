@@ -1,4 +1,4 @@
-use error::{HcResult, HolochainError};
+use crate::error::{HcResult, HolochainError};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
 use std::{
@@ -151,7 +151,8 @@ pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
     match serde_json::to_string(&v) {
         Ok(s) => Ok(JsonString::from(s)),
         Err(e) => Err(HolochainError::SerializationError(e.to_string())),
-    }.expect(&format!("could not Jsonify: {:?}", v))
+    }
+    .expect(&format!("could not Jsonify: {:?}", v))
 }
 
 /// if all you want to do is implement the default behaviour then use #[derive(DefaultJson)]
@@ -241,8 +242,10 @@ impl TryFrom<JsonString> for RawString {
 
 #[cfg(test)]
 pub mod tests {
-    use error::HolochainError;
-    use json::{JsonString, RawString};
+    use crate::{
+        error::HolochainError,
+        json::{JsonString, RawString},
+    };
     use serde_json;
     use std::convert::TryFrom;
 

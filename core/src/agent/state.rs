@@ -1,28 +1,27 @@
-use action::{Action, ActionWrapper, AgentReduceFn};
-use agent::chain_store::ChainStore;
-use context::Context;
+use crate::{
+    action::{Action, ActionWrapper, AgentReduceFn},
+    agent::chain_store::ChainStore,
+    context::Context,
+    nucleus::actions::get_entry::get_entry,
+    state::State,
+};
 use holochain_core_types::{
+    agent::AgentId,
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
-    entry::{Entry, SerializedEntry},
-    error::HolochainError,
+    entry::{entry_type::EntryType, Entry},
+    error::{HcResult, HolochainError},
     json::*,
-    keys::Keys,
     signature::Signature,
     time::Iso8601,
 };
 use serde_json;
-use std::{
-    collections::HashMap,
-    convert::{TryFrom, TryInto},
-    sync::Arc,
-};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AgentState {
-    keys: Option<Keys>,
     /// every action and the result of that action
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
@@ -35,7 +34,6 @@ impl AgentState {
     /// builds a new, empty AgentState
     pub fn new(chain: ChainStore) -> AgentState {
         AgentState {
-            keys: None,
             actions: HashMap::new(),
             chain,
             top_chain_header: None,
@@ -44,16 +42,10 @@ impl AgentState {
 
     pub fn new_with_top_chain_header(chain: ChainStore, chain_header: ChainHeader) -> AgentState {
         AgentState {
-            keys: None,
             actions: HashMap::new(),
             chain,
             top_chain_header: Some(chain_header),
         }
-    }
-
-    /// getter for a copy of self.keys
-    pub fn keys(&self) -> Option<Keys> {
-        self.keys.clone()
     }
 
     /// getter for a copy of self.actions
@@ -68,6 +60,28 @@ impl AgentState {
 
     pub fn top_chain_header(&self) -> Option<ChainHeader> {
         self.top_chain_header.clone()
+    }
+
+    pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> HcResult<AgentId> {
+        let agent_entry_address = self
+            .chain()
+            .iter_type(&self.top_chain_header, &EntryType::AgentId)
+            .nth(0)
+            .and_then(|chain_header| Some(chain_header.entry_address().clone()))
+            .ok_or(HolochainError::ErrorGeneric(
+                "Agent entry not found".to_string(),
+            ))?;
+
+        let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?
+            .ok_or("Agent entry not found".to_string())?;
+
+        match agent_entry {
+            Entry::AgentId(agent_id) => Ok(agent_id),
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Expected Entry::AgentId found {:?}",
+                agent_entry,
+            ))),
+        }
     }
 }
 
@@ -90,17 +104,30 @@ impl AgentStateSnapshot {
     }
 }
 
+impl TryFrom<State> for AgentStateSnapshot {
+    type Error = HolochainError;
+
+    fn try_from(state: State) -> Result<Self, Self::Error> {
+        let agent = &*(state.agent());
+        let top_chain = agent
+            .top_chain_header()
+            .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
+        Ok(AgentStateSnapshot::new(top_chain))
+    }
+}
+
+pub static AGENT_SNAPSHOT_ADDRESS: &'static str = "AgentState";
 impl AddressableContent for AgentStateSnapshot {
     fn content(&self) -> Content {
         self.to_owned().into()
     }
 
-    fn from_content(content: &Content) -> Self {
-        Self::try_from(content.to_owned()).expect("could not deserialized content")
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Self::try_from(content.to_owned())
     }
 
     fn address(&self) -> Address {
-        "AgentState".into()
+        AGENT_SNAPSHOT_ADDRESS.into()
     }
 }
 
@@ -112,9 +139,9 @@ impl AddressableContent for AgentStateSnapshot {
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
     Commit(Result<Address, HolochainError>),
-    GetEntry(Option<SerializedEntry>),
+    GetEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
-    LinkEntries(Result<SerializedEntry, HolochainError>),
+    LinkEntries(Result<Entry, HolochainError>),
 }
 
 pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
@@ -180,37 +207,10 @@ fn reduce_commit_entry(
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
 }
 
-/// do a get action against an agent state
-/// intended for use inside the reducer, isolated for unit testing
-fn reduce_get_entry(
-    _context: Arc<Context>,
-    state: &mut AgentState,
-    action_wrapper: &ActionWrapper,
-) {
-    let action = action_wrapper.action();
-    let address = unwrap_to!(action => Action::GetEntry);
-    let storage = &state.chain().content_storage().clone();
-    let json = storage
-        .read()
-        .unwrap()
-        .fetch(&address)
-        .expect("could not fetch from CAS");
-    let result: Option<SerializedEntry> = json.and_then(|js| js.try_into().ok());
-
-    // @TODO if the get fails local, do a network get
-    // @see https://github.com/holochain/holochain-rust/issues/167
-
-    state.actions.insert(
-        action_wrapper.to_owned(),
-        ActionResponse::GetEntry(result.to_owned()),
-    );
-}
-
 /// maps incoming action to the correct handler
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
-        Action::GetEntry(_) => Some(reduce_get_entry),
         _ => None,
     }
 }
@@ -235,21 +235,20 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;
-    use super::{
-        reduce_commit_entry, reduce_get_entry, ActionResponse, AgentState, AgentStateSnapshot,
+    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
+    use crate::{
+        action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
+        instance::tests::test_context,
     };
-    use action::tests::{test_action_wrapper_commit, test_action_wrapper_get};
-    use agent::chain_store::tests::test_chain_store;
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        entry::{expected_entry_address, test_entry, SerializedEntry},
+        entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
         json::JsonString,
     };
-    use instance::tests::test_context;
     use serde_json;
-    use std::{collections::HashMap, sync::Arc};
+    use std::collections::HashMap;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -261,21 +260,10 @@ pub mod tests {
         ActionResponse::Commit(Ok(expected_entry_address()))
     }
 
-    /// dummy action response for a successful get as test_entry()
-    pub fn test_action_response_get() -> ActionResponse {
-        ActionResponse::GetEntry(Some(test_entry().into()))
-    }
-
     #[test]
     /// smoke test for building a new AgentState
     fn agent_state_new() {
         test_agent_state();
-    }
-
-    #[test]
-    /// test for the agent state keys getter
-    fn agent_state_keys() {
-        assert_eq!(None, test_agent_state().keys());
     }
 
     #[test]
@@ -296,34 +284,6 @@ pub mod tests {
             state.actions().get(&action_wrapper),
             Some(&test_action_response_commit()),
         );
-    }
-
-    #[test]
-    /// test for reducing get entry
-    fn test_reduce_get_entry() {
-        let mut state = test_agent_state();
-        let context = test_context("foo");
-
-        let aw1 = test_action_wrapper_get();
-        reduce_get_entry(Arc::clone(&context), &mut state, &aw1);
-
-        // nothing has been committed so the get must be None
-        assert_eq!(
-            state.actions().get(&aw1),
-            Some(&ActionResponse::GetEntry(None)),
-        );
-
-        // do a round trip
-        reduce_commit_entry(
-            Arc::clone(&context),
-            &mut state,
-            &test_action_wrapper_commit(),
-        );
-
-        let aw2 = test_action_wrapper_get();
-        reduce_get_entry(Arc::clone(&context), &mut state, &aw2);
-
-        assert_eq!(state.actions().get(&aw2), Some(&test_action_response_get()),);
     }
 
     #[test]
@@ -348,9 +308,9 @@ pub mod tests {
     fn test_get_response_to_json() {
         assert_eq!(
             JsonString::from(
-                "{\"GetEntry\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}"
+                "{\"GetEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
             ),
-            JsonString::from(ActionResponse::GetEntry(Some(SerializedEntry::from(
+            JsonString::from(ActionResponse::GetEntry(Some(Entry::from(
                 test_entry().clone()
             ))))
         );
@@ -389,8 +349,8 @@ pub mod tests {
     #[test]
     fn test_link_entries_response_to_json() {
         assert_eq!(
-            JsonString::from("{\"LinkEntries\":{\"Ok\":{\"value\":\"\\\"test entry value\\\"\",\"entry_type\":\"testEntryType\"}}}"),
-            JsonString::from(ActionResponse::LinkEntries(Ok(SerializedEntry::from(
+            JsonString::from("{\"LinkEntries\":{\"Ok\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}}"),
+            JsonString::from(ActionResponse::LinkEntries(Ok(Entry::from(
                 test_entry(),
             )))),
         );

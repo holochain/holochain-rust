@@ -1,7 +1,10 @@
-use cas::content::{Address, AddressableContent, Content};
-use entry::{test_entry_a, test_entry_b, Entry};
-use error::{HcResult, HolochainError};
-use json::JsonString;
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    entry::{test_entry_a, test_entry_b, Entry},
+    error::{HcResult, HolochainError},
+    json::JsonString,
+};
+use objekt;
 use std::{
     collections::HashSet,
     convert::TryInto,
@@ -46,11 +49,8 @@ impl AddressableContent for EntityAttributeValue {
         self.to_owned().into()
     }
 
-    fn from_content(content: &Content) -> Self {
-        content
-            .to_owned()
-            .try_into()
-            .expect("failed to deserialize EntityAttributeValue from Content")
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        content.to_owned().try_into()
     }
 }
 
@@ -75,15 +75,12 @@ impl EntityAttributeValue {
         self.value.clone()
     }
 
-    // this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
-    pub fn filter_on_eav<T>(eav: T, e: &Option<T>) -> bool
+    /// this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
+    pub fn filter_on_eav<T>(eav: &T, e: Option<&T>) -> bool
     where
         T: PartialOrd,
     {
-        match e {
-            Some(ref a) => &eav == a,
-            None => true,
-        }
+        e.map_or(true, |a| eav == a)
     }
 }
 
@@ -283,14 +280,16 @@ pub fn eav_round_trip_test_runner(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use cas::{
-        content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
-        storage::{
-            test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
+    use crate::{
+        cas::{
+            content::{AddressableContent, AddressableContentTestSuite, ExampleAddressableContent},
+            storage::{
+                test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
+            },
         },
+        eav::EntityAttributeValue,
+        json::RawString,
     };
-    use eav::EntityAttributeValue;
-    use json::RawString;
 
     pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage")
@@ -300,10 +299,12 @@ pub mod tests {
     fn example_eav_round_trip() {
         let eav_storage = test_eav_storage();
         let entity =
-            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("foo")));
+            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("foo")))
+                .unwrap();
         let attribute = "favourite-color".to_string();
         let value =
-            ExampleAddressableContent::from_content(&JsonString::from(RawString::from("blue")));
+            ExampleAddressableContent::try_from_content(&JsonString::from(RawString::from("blue")))
+                .unwrap();
 
         EavTestSuite::test_round_trip(eav_storage, entity, attribute, value)
     }

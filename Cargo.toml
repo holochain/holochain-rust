@@ -1,11 +1,11 @@
 [workspace]
 
 members = [
+  "cmd",
   "container",
   "container_api",
   "core_api_c_binding",
   "core",
-  "dna",
   "dna_c_binding",
   "hdk-rust",
   "net",
@@ -13,4 +13,8 @@ members = [
   "net_ipc",
   "test_bin",
 ]
-exclude = ["test_utils"]
+exclude = [
+  "test_utils",
+  "app_spec",
+  "nodejs_container/native",
+]

@@ -1,62 +1,60 @@
-# Zome API functions
+# Zome API Functions
 
 ## Overview
 
 A Zome API Function is any Holochain core functionality that is exposed as a
-callable function within zome code.
+callable function within Zome code.
 
-Compare this to a Zome Callback Function, which is implemented by the zome code 
+
+Compare this to a Zome Callback Function, which is implemented by the Zome code 
 and called by Holochain.
 
-So, zome functions (functions in the zome code) are called by Holochain, 
+So, Zome functions (functions in the Zome code) are called by Holochain, 
 which can optionally call Zome API Functions, and then finally return a
 value back to Holochain.
 
 ```
 Holochain blocks
-  -> calls zome function
-  -> executes WASM logic compiled from zome language
-  -> zome logic calls zome API function
-    -> Holochain natively executes zome API function
-    -> Holochain returns value to zome function
-  -> zome function returns some value
-  -> Holochain receives final value of zome function
+  -> calls Zome function
+  -> executes WASM logic compiled from Zome language
+  -> Zome logic calls zome API function
+    -> Holochain natively executes Zome API function
+    -> Holochain returns value to Zome function
+  -> Zome function returns some value
+  -> Holochain receives final value of Zome function
 ```
 
 Each Zome API Function has a canonical name used internally by Holochain.
 
 Zome code can be written in any language that compiles to WASM. This means the
-canonical function name and the function name in the zome language might be
-different. The zome language will closely mirror the canonical names, but naming
+canonical function name and the function name in the Zome language might be
+different. The Zome language will closely mirror the canonical names, but naming
 conventions such as capitalisation of the zome language are also respected.
 
 For example, the canonical `verify_signature` might become `verifySignature` in
-JavaScript.
+AssemblyScript.
 
-When a zome API function is called from within zome code a corresponding Rust
-function is called. The Rust function is passed the current zome runtime and the
+When a Zome API function is called from within Zome code a corresponding Rust
+function is called. The Rust function is passed the current Zome runtime and the
 arguments that the zome API function was called with. The Rust function connects
-zome logic to Holochain core functionality and often has side effects. The
-return value of the Rust function is passed back to the zome code as the return
-of the zome API function.
-
-## Reference
-
-Note: Full reference is available in language-specific API Reference documentation.
-(TODO add links)
+Zome logic to Holochain core functionality and often has side effects. The
+return value of the Rust function is passed back to the Zome code as the return
+of the Zome API function.
 
 ### Property
 
 Canonical name: `property`
 
-Returns an application property, which are defined by the app developer in the DNA.
+Returns an application property, which are defined by the developer in the DNA.
 It returns values from the DNA file that you set as properties of your application (e.g. Name, Language, Description, Author, etc.).
 
-### Make Hash
+### Entry Address
 
-Canonical name: `make_hash`
+Canonical name: `entry_address`
 
-TODO
+Returns the address that a given entry will hash into.
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.entry_address.html)
 
 ### Debug
 
@@ -64,49 +62,63 @@ Canonical name: `debug`
 
 Debug sends the passed arguments to the log that was given to the Holochain instance and returns `None`.
 
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.debug.html)
 
 ### Call
 
 Canonical name: `call`
 
-TODO
+Perform a function call to an exposed function from another Zome.
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.call.html)
 
 ### Sign
 
 Canonical name: `sign`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.sign.html)
 
 ### Verify Signature
 
 Canonical name: `verify_signature`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.verify_signature.html)
 
 ### Commit Entry
 
 Canonical name: `commit_entry`
 
-Given an entry type and content, commits an entry to the local source chain.
-On success, returns the hash of the entry.
+Attempts to commit an entry to your local source chain. The entry will have to pass the defined validation rules for that entry type. If the entry type is defined as public, will also publish the entry to the DHT. Returns either an address of the committed entry as a string, or an error.
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.commit_entry.html)
 
 ### Update Entry
 
 Canonical name: `update_entry`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.update_entry.html)
 
 ### Update Agent
 
 Canonical name: `update_agent`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.update_agent.html)
 
 ### Remove Entry
 
 Canonical name: `remove_entry`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.remove_entry.html)
 
 ### Get Entry
 
@@ -122,38 +134,61 @@ Entry lookup is done in the following order:
 Caller can request additional metadata on the entry such as type or sources
 (hashes of the agents that committed the entry).
 
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.get_entry.html)
+
 ### Get Links
 
 Canonical name: `get_links`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.get_links.html)
+
+### Link Entries
+
+Canonical name: `link_entries`
+
+Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a relationship between them, called a `tag`. Later, lists of entries can be looked up by using `get_links`. Entries can only be looked up in the direction from the `base`, which is the first argument, to the `target`, which is the second.
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.link_entries.html)
 
 ### Remove Entry
 
 Canonical name: `remove_entry`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.remove_entry.html)
 
 ### Query
 
 Canonical name: `query`
 
-TODO
+Returns a list of addresses of entries from your local source chain, that match a given type. You can optionally limit the number of results.
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.query.html)
 
 ### Send
 
 Canonical name: `send`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.send.html)
 
 ### Start Bundle
 
 Canonical name: `start_bundle`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.start_bundle.html)
 
 ### Close Bundle
 
 Canonical name: `close_bundle`
 
-TODO
+Not yet available, but you will see updates here:
+
+[LINK](https://holochain.github.io/rust-api/0.0.1/hdk/fn.close_bundle.html)
+

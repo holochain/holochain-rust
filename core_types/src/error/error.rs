@@ -1,7 +1,9 @@
 use self::HolochainError::*;
-use error::{DnaError, RibosomeErrorCode};
+use crate::{
+    error::{DnaError, RibosomeErrorCode},
+    json::*,
+};
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use json::*;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -96,6 +98,7 @@ pub enum HolochainError {
     ValidationFailed(String),
     Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
+    ConfigError(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -127,6 +130,7 @@ impl Error for HolochainError {
             ValidationFailed(fail_msg) => &fail_msg,
             Ribosome(err_code) => err_code.as_str(),
             RibosomeFailed(fail_msg) => &fail_msg,
+            ConfigError(err_msg) => &err_msg,
         }
     }
 }
@@ -134,6 +138,18 @@ impl Error for HolochainError {
 impl From<HolochainError> for String {
     fn from(holochain_error: HolochainError) -> Self {
         holochain_error.to_string()
+    }
+}
+
+impl From<String> for HolochainError {
+    fn from(error: String) -> Self {
+        HolochainError::new(&error)
+    }
+}
+
+impl From<&'static str> for HolochainError {
+    fn from(error: &str) -> Self {
+        HolochainError::new(error)
     }
 }
 
@@ -146,6 +162,12 @@ fn reason_for_io_error(error: &IoError) -> String {
     }
 }
 
+impl<T> From<::std::sync::PoisonError<T>> for HolochainError {
+    fn from(error: ::std::sync::PoisonError<T>) -> Self {
+        HolochainError::ErrorGeneric(format!("sync poison error: {}", error))
+    }
+}
+
 impl From<IoError> for HolochainError {
     fn from(error: IoError) -> Self {
         HolochainError::IoError(reason_for_io_error(&error))
@@ -155,6 +177,18 @@ impl From<IoError> for HolochainError {
 impl From<SerdeError> for HolochainError {
     fn from(error: SerdeError) -> Self {
         HolochainError::SerializationError(error.to_string())
+    }
+}
+
+impl From<base64::DecodeError> for HolochainError {
+    fn from(error: base64::DecodeError) -> Self {
+        HolochainError::SerializationError(error.to_string())
+    }
+}
+
+impl From<reed_solomon::DecoderError> for HolochainError {
+    fn from(error: reed_solomon::DecoderError) -> Self {
+        HolochainError::SerializationError(format!("{:?}", error))
     }
 }
 
@@ -255,6 +289,7 @@ mod tests {
             (HolochainError::NotImplemented, "not implemented"),
             (HolochainError::LoggingError, "logging failed"),
             (HolochainError::DnaMissing, "DNA is missing"),
+            (HolochainError::ConfigError(String::from("foo")), "foo"),
             (
                 HolochainError::Dna(DnaError::ZomeNotFound(String::from("foo"))),
                 "foo",
@@ -301,7 +336,9 @@ mod tests {
                 kind: error,
                 file: file!().to_string(),
                 line: line!().to_string(),
-            }.to_string(),
+            }
+            .to_string(),
         );
     }
+
 }

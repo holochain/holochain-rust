@@ -4,7 +4,7 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
-    entry_type::EntryType,
+    entry::entry_type::EntryType,
 };
 use std::sync::{Arc, RwLock};
 
@@ -52,17 +52,20 @@ impl ChainStore {
     pub fn query(
         &self,
         start_chain_header: &Option<ChainHeader>,
-        entry_type: EntryType,
+        entry_type: &EntryType,
+        start: u32,
         limit: u32,
     ) -> Vec<Address> {
-        let mut result: Vec<Address> = Vec::new();
-        for header in self.iter_type(start_chain_header, &entry_type) {
-            result.push(header.entry_address().clone());
-            if limit != 0 && result.len() as u32 >= limit {
-                break;
-            }
+        let base_iter = self
+            .iter_type(start_chain_header, entry_type)
+            .map(|header| header.entry_address().clone())
+            .skip(start as usize);
+
+        if limit > 0 {
+            base_iter.take(limit as usize).collect()
+        } else {
+            base_iter.collect()
         }
-        result
     }
 }
 
@@ -72,8 +75,6 @@ pub struct ChainStoreIterator {
 }
 
 impl ChainStoreIterator {
-    #[allow(unknown_lints)]
-    #[allow(needless_pass_by_value)]
     pub fn new(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         current: Option<ChainHeader>,
@@ -99,8 +100,15 @@ impl Iterator for ChainStoreIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                storage.read().unwrap().fetch(linked_chain_header_address).expect("failed to fetch from CAS")
-                .map(|content|ChainHeader::from_content(&content))
+                storage
+                    .read()
+                    .unwrap()
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
+                    .map(|content| {
+                        ChainHeader::try_from_content(&content)
+                            .expect("failed to load ChainHeader from Content")
+                    })
             });
         previous
     }
@@ -112,8 +120,6 @@ pub struct ChainStoreTypeIterator {
 }
 
 impl ChainStoreTypeIterator {
-    #[allow(unknown_lints)]
-    #[allow(needless_pass_by_value)]
     pub fn new(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         current: Option<ChainHeader>,
@@ -139,8 +145,13 @@ impl Iterator for ChainStoreTypeIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                (*storage.read().unwrap()).fetch(linked_chain_header_address).expect("failed to fetch from CAS")
-                                          .map(|content|ChainHeader::from_content(&content))
+                (*storage.read().unwrap())
+                    .fetch(linked_chain_header_address)
+                    .expect("failed to fetch from CAS")
+                    .map(|content| {
+                        ChainHeader::try_from_content(&content)
+                            .expect("failed to load ChainHeader from Content")
+                    })
             });
         previous
     }
@@ -150,7 +161,7 @@ impl Iterator for ChainStoreTypeIterator {
 pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use agent::chain_store::ChainStore;
+    use crate::agent::chain_store::ChainStore;
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -314,22 +325,14 @@ pub mod tests {
             .add(&chain_header_c)
             .expect("could not add header to cas");
 
-        let found = chain_store.query(
-            &Some(chain_header_c.clone()),
-            entry.entry_type().to_owned(),
-            0,
-        );
+        let found = chain_store.query(&Some(chain_header_c.clone()), &entry.entry_type(), 0, 0);
         let expected = vec![
             chain_header_c.entry_address().clone(),
             chain_header_b.entry_address().clone(),
         ];
         assert_eq!(expected, found);
 
-        let found = chain_store.query(
-            &Some(chain_header_c.clone()),
-            entry.entry_type().to_owned(),
-            1,
-        );
+        let found = chain_store.query(&Some(chain_header_c.clone()), &entry.entry_type(), 0, 1);
         let expected = vec![chain_header_c.entry_address().clone()];
         assert_eq!(expected, found);
     }

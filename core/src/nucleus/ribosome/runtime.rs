@@ -1,17 +1,19 @@
-use context::Context;
+use crate::{
+    context::Context,
+    nucleus::{
+        ribosome::{
+            api::{ZomeApiFunction, ZomeApiResult},
+            memory::SinglePageManager,
+            Defn,
+        },
+        ZomeFnCall,
+    },
+};
 use holochain_core_types::{
     error::{HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
     json::JsonString,
 };
 use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
-use nucleus::{
-    ribosome::{
-        api::{ZomeApiFunction, ZomeApiResult},
-        memory::SinglePageManager,
-        Defn,
-    },
-    ZomeFnCall,
-};
 use std::sync::Arc;
 use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 
@@ -55,7 +57,8 @@ impl Runtime {
         String::from_utf8(bin_arg)
             // @TODO don't panic in WASM
             // @see https://github.com/holochain/holochain-rust/issues/159
-            .unwrap().into()
+            .unwrap()
+            .into()
     }
 
     /// Store anything that implements Into<JsonString> in wasm memory.

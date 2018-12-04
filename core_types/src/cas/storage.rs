@@ -1,16 +1,18 @@
-use cas::content::{Address, AddressableContent, Content};
-use eav::{EntityAttributeValue, EntityAttributeValueStorage};
-use entry::{test_entry_unique, SerializedEntry};
-use error::HolochainError;
-use json::RawString;
+use crate::{
+    cas::content::{Address, AddressableContent, Content},
+    eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    entry::{test_entry_unique, Entry},
+    error::HolochainError,
+    json::RawString,
+};
+use objekt;
 use std::{
     collections::{HashMap, HashSet},
+    convert::TryFrom,
     fmt::Debug,
     sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
-
-use std::convert::TryFrom;
 use uuid::Uuid;
 
 /// content addressable store (CAS)
@@ -73,7 +75,7 @@ impl ContentAddressableStorage for ExampleContentAddressableStorage {
     }
 
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
-        Ok(self.content.read().unwrap().unthreadable_fetch(address)?)
+        Ok(self.content.read()?.unthreadable_fetch(address)?)
     }
 
     fn get_id(&self) -> Uuid {
@@ -129,7 +131,7 @@ where
     pub fn new(cas: T) -> StorageTestSuite<T> {
         StorageTestSuite {
             cas_clone: cas.clone(),
-            cas: cas,
+            cas,
         }
     }
 
@@ -143,8 +145,10 @@ where
         OtherAddressable: AddressableContent + Clone + PartialEq + Debug,
     {
         // based on associate type we call the right from_content function
-        let addressable_content = Addressable::from_content(&content);
-        let other_addressable_content = OtherAddressable::from_content(&other_content);
+        let addressable_content = Addressable::try_from_content(&content)
+            .expect("could not create AddressableContent from Content");
+        let other_addressable_content = OtherAddressable::try_from_content(&other_content)
+            .expect("could not create AddressableContent from Content");
 
         // do things that would definitely break if cloning would show inconsistent data
         let both_cas = vec![self.cas.clone(), self.cas_clone.clone()];
@@ -221,8 +225,7 @@ where
                 thread_cas
                     .fetch(&thread_entry.address())
                     .expect("could not fetch from cas")
-                    .map(|cas| SerializedEntry::try_from(cas).unwrap())
-                    .map(|cas: SerializedEntry| cas.into())
+                    .map(|content| Entry::try_from(content).unwrap())
             )
         });
 
@@ -307,11 +310,15 @@ impl EavTestSuite {
         let bar_content = Content::from(RawString::from("bar"));
         let baz_content = Content::from(RawString::from("baz"));
 
-        let one = A::from_content(&foo_content);
+        let one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
         // it can reference itself, why not?
-        let many_one = A::from_content(&foo_content);
-        let many_two = A::from_content(&bar_content);
-        let many_three = A::from_content(&baz_content);
+        let many_one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        let many_two = A::try_from_content(&bar_content)
+            .expect("could not create AddressableContent from Content");
+        let many_three = A::try_from_content(&baz_content)
+            .expect("could not create AddressableContent from Content");
         let attribute = "one_to_many".to_string();
 
         let mut expected = HashSet::new();
@@ -322,7 +329,8 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referencing many to show fetch ignores it
-        let two = A::from_content(&foo_content);
+        let two = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -367,12 +375,16 @@ impl EavTestSuite {
         let bar_content = Content::from(RawString::from("bar"));
         let baz_content = Content::from(RawString::from("baz"));
 
-        let one = A::from_content(&foo_content);
+        let one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
 
         // it can reference itself, why not?
-        let many_one = A::from_content(&foo_content);
-        let many_two = A::from_content(&bar_content);
-        let many_three = A::from_content(&baz_content);
+        let many_one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        let many_two = A::try_from_content(&bar_content)
+            .expect("could not create AddressableContent from Content");
+        let many_three = A::try_from_content(&baz_content)
+            .expect("could not create AddressableContent from Content");
         let attribute = "many_to_one".to_string();
 
         let mut expected = HashSet::new();
@@ -383,7 +395,8 @@ impl EavTestSuite {
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
-        let two = A::from_content(&foo_content);
+        let two = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(&EntityAttributeValue::new(
@@ -422,11 +435,13 @@ impl EavTestSuite {
 
 #[cfg(test)]
 pub mod tests {
-    use cas::{
-        content::{ExampleAddressableContent, OtherExampleAddressableContent},
-        storage::{test_content_addressable_storage, StorageTestSuite},
+    use crate::{
+        cas::{
+            content::{ExampleAddressableContent, OtherExampleAddressableContent},
+            storage::{test_content_addressable_storage, StorageTestSuite},
+        },
+        json::{JsonString, RawString},
     };
-    use json::{JsonString, RawString};
 
     /// show that content of different types can round trip through the same storage
     #[test]

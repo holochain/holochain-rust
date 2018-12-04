@@ -5,9 +5,8 @@
 //! See the associated Qt unit tests in the c_binding_tests directory.
 #![feature(try_from)]
 extern crate holochain_core_types;
-extern crate holochain_dna;
 
-use holochain_dna::Dna;
+use holochain_core_types::dna::Dna;
 use std::{
     convert::TryFrom,
     ffi::{CStr, CString},
@@ -52,7 +51,8 @@ pub extern "C" fn holochain_dna_free(ptr: *mut Dna) {
         unsafe {
             Box::from_raw(ptr);
         }
-    }).unwrap_or(());
+    })
+    .unwrap_or(());
 }
 
 #[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
@@ -88,7 +88,8 @@ pub extern "C" fn holochain_dna_string_free(s: *mut c_char) {
         unsafe {
             CString::from_raw(s);
         }
-    }).unwrap_or(());
+    })
+    .unwrap_or(());
 }
 
 /// This macro takes care boilerplate for getting string accessors over ffi.
@@ -130,7 +131,8 @@ macro_rules! _xa_str {
                 };
                 let val = unsafe { CStr::from_ptr(val).to_string_lossy().into_owned() };
                 arg.$prop = val;
-            }).unwrap_or(());
+            })
+            .unwrap_or(());
         }
     };
 }
@@ -219,6 +221,7 @@ pub unsafe extern "C" fn holochain_dna_free_zome_names(string_vec: *mut CStringV
     let _vec = cstring_vec_to_rustvec(string_vec);
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 fn capabilities_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
     let result = dna
         .zomes
@@ -249,6 +252,7 @@ pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
     vec_char_to_cstringvec(capabalities, string_vec);
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 fn fn_names_as_vec(
     dna: &Dna,
     zome_name: &str,
@@ -289,6 +293,7 @@ pub unsafe extern "C" fn holochain_dna_get_function_names(
     vec_char_to_cstringvec(fn_names, string_vec)
 }
 
+#[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
 fn fn_parameters_as_vec(
     dna: &Dna,
     zome_name: &str,
@@ -425,7 +430,8 @@ mod tests {
                     }
                 }
             }"#,
-        )).unwrap();
+        ))
+        .unwrap();
 
         let mut cnames = CStringVec {
             len: 0,

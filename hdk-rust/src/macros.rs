@@ -37,12 +37,11 @@ macro_rules! load_json {
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
 /// # extern crate holochain_core_types_derive;
-/// # extern crate holochain_dna;
 /// # use holochain_core_types::entry::Entry;
-/// # use holochain_core_types::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_dna::zome::entry_types::Sharing;
+/// # use holochain_core_types::dna::zome::entry_types::Sharing;
 /// # use boolinator::Boolinator;
 /// # use hdk::error::ZomeApiResult;
 /// use holochain_core_types::cas::content::Address;
@@ -55,7 +54,7 @@ macro_rules! load_json {
 /// # #[no_mangle]
 /// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_hash_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
 ///
@@ -67,13 +66,13 @@ macro_rules! load_json {
 ///     date_created: String,
 /// }
 ///
-/// fn handle_hash_post(content: String) -> ZomeApiResult<Address> {
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+/// fn handle_post_address(content: String) -> ZomeApiResult<Address> {
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
-///     hdk::hash_entry(&post_entry)
+///     hdk::entry_address(&post_entry)
 /// }
 ///
 /// define_zome! {
@@ -109,8 +108,8 @@ macro_rules! load_json {
 ///             // name of the Zome function.
 ///             hash_post: {
 ///                 inputs: |content: String|,
-///                 outputs: |post_address: ZomeApiResult<Address>|,
-///                 handler: handle_hash_post
+///                 outputs: |post: ZomeApiResult<Address>|,
+///                 handler: handle_post_address
 ///             }
 ///         }
 ///     }
@@ -166,18 +165,18 @@ macro_rules! define_zome {
             }
         }
 
-        use $crate::holochain_dna::zome::capabilities::Capability;
+        use $crate::holochain_core_types::dna::zome::capabilities::Capability;
         use std::collections::HashMap;
 
         #[no_mangle]
         #[allow(unused_imports)]
-        pub fn __list_capabilities() -> HashMap<String, Capability> {
+        pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
 
-            use $crate::holochain_dna::zome::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
-            use std::collections::HashMap;
+            use $crate::holochain_core_types::dna::zome::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
+            use std::collections::BTreeMap;
 
-            let return_value: HashMap<String, Capability> = {
-                let mut cap_map = HashMap::new();
+            let return_value: $crate::holochain_core_types::dna::zome::ZomeCapabilities = {
+                let mut cap_map = BTreeMap::new();
 
                 $(
                     {

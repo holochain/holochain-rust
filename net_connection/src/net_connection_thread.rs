@@ -41,7 +41,7 @@ impl NetConnectionThread {
     }
 
     /// create a new NetConnectionThread instance with given handler / worker
-    pub fn new(handler: NetHandler, mut worker_factory: NetWorkerFactory) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, worker_factory: NetWorkerFactory) -> NetResult<Self> {
         let keep_running = Arc::new(AtomicBool::new(true));
         let keep_running2 = keep_running.clone();
 
@@ -104,8 +104,9 @@ mod tests {
     fn it_can_defaults() {
         let mut con = NetConnectionThread::new(
             Box::new(move |_r| Ok(())),
-            Box::new(|_h| Ok(Box::new(DefWorker))),
-        ).unwrap();
+            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
+        )
+        .unwrap();
 
         con.send("test".into()).unwrap();
         con.stop().unwrap();
@@ -135,8 +136,9 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(Worker { handler: h }))),
-        ).unwrap();
+            Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+        )
+        .unwrap();
 
         con.send("test".into()).unwrap();
 
@@ -166,8 +168,9 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(Worker { handler: h }))),
-        ).unwrap();
+            Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+        )
+        .unwrap();
 
         let res = receiver.recv().unwrap();
 

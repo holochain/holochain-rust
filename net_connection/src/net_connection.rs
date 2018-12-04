@@ -1,5 +1,5 @@
 use super::NetResult;
-use protocol::Protocol;
+use crate::protocol::Protocol;
 
 /// closure for getting Protocol messages from the p2p abstraction system
 pub type NetHandler = Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send>;
@@ -28,7 +28,8 @@ pub trait NetWorker {
 }
 
 /// closure for instantiating a NetWorker
-pub type NetWorkerFactory = Box<FnMut(NetHandler) -> NetResult<Box<NetWorker>> + Send>;
+pub type NetWorkerFactory =
+    Box<::std::boxed::FnBox(NetHandler) -> NetResult<Box<NetWorker>> + Send>;
 
 /// a simple pass-through NetConnection instance
 /// this struct can be use to compose one type of NetWorker into another
@@ -57,7 +58,7 @@ impl NetConnectionRelay {
     }
 
     /// create a new NetConnectionRelay instance with give handler / factory
-    pub fn new(handler: NetHandler, mut worker_factory: NetWorkerFactory) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, worker_factory: NetWorkerFactory) -> NetResult<Self> {
         Ok(NetConnectionRelay {
             worker: worker_factory(handler)?,
         })
@@ -78,8 +79,9 @@ mod tests {
     fn it_can_defaults() {
         let mut con = NetConnectionRelay::new(
             Box::new(move |_r| Ok(())),
-            Box::new(|_h| Ok(Box::new(DefWorker))),
-        ).unwrap();
+            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
+        )
+        .unwrap();
 
         con.send("test".into()).unwrap();
         con.tick().unwrap();
@@ -110,8 +112,9 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(Worker { handler: h }))),
-        ).unwrap();
+            Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+        )
+        .unwrap();
 
         con.send("test".into()).unwrap();
 
@@ -131,8 +134,9 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(Worker { handler: h }))),
-        ).unwrap();
+            Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+        )
+        .unwrap();
 
         con.tick().unwrap();
 

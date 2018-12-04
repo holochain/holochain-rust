@@ -1,4 +1,4 @@
-use nucleus::ribosome::{api::ZomeApiResult, Runtime};
+use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::Debug function code
@@ -19,11 +19,11 @@ pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
 
 #[cfg(test)]
 pub mod tests {
-    use holochain_core_types::json::JsonString;
-    use nucleus::ribosome::{
+    use crate::nucleus::ribosome::{
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
+    use holochain_core_types::json::JsonString;
 
     /// dummy string for testing print zome API function
     pub fn test_debug_string() -> String {

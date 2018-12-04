@@ -2,29 +2,32 @@
 //! ZomeCallbacks are functions in a Zome that are callable by the ribosome.
 
 pub mod genesis;
+pub mod links_utils;
 pub mod receive;
 pub mod validate_entry;
 pub mod validation_package;
 
-use context::Context;
+use crate::{
+    context::Context,
+    nucleus::{
+        ribosome::{
+            self,
+            callback::{genesis::genesis, receive::receive},
+            Defn,
+        },
+        ZomeFnCall,
+    },
+};
 use holochain_core_types::{
-    entry::SerializedEntry,
+    dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames},
+    entry::Entry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
 };
-use holochain_dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames, Dna};
-use nucleus::{
-    ribosome::{
-        self,
-        callback::{genesis::genesis, receive::receive},
-        Defn,
-    },
-    ZomeFnCall,
-};
 use num_traits::FromPrimitive;
 use serde_json;
-use std::{str::FromStr, sync::Arc, thread::sleep, time::Duration};
+use std::{str::FromStr, sync::Arc};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -118,7 +121,7 @@ impl Defn for Callback {
 #[derive(Debug, Serialize, Deserialize, DefaultJson)]
 pub enum CallbackParams {
     Genesis,
-    ValidateCommit(SerializedEntry),
+    ValidateCommit(Entry),
     // @TODO call this from somewhere
     // @see https://github.com/holochain/holochain-rust/issues/201
     Receive,
@@ -152,9 +155,9 @@ impl From<CallbackResult> for JsonString {
 
 impl From<JsonString> for CallbackResult {
     fn from(json_string: JsonString) -> CallbackResult {
-        let try: Result<CallbackResult, serde_json::Error> =
+        let r#try: Result<CallbackResult, serde_json::Error> =
             serde_json::from_str(&String::from(json_string.clone()));
-        match try {
+        match r#try {
             Ok(callback_result) => callback_result,
             Err(_) => CallbackResult::Fail(String::from(json_string)),
         }
@@ -185,50 +188,15 @@ pub(crate) fn run_callback(
         &fc,
         Some(fc.clone().parameters.into_bytes()),
     ) {
-        Ok(call_result) => if call_result.is_null() {
-            CallbackResult::Pass
-        } else {
-            CallbackResult::Fail(call_result.to_string())
-        },
-        Err(_) => CallbackResult::NotImplemented,
-    }
-}
-
-pub fn get_dna(context: &Arc<Context>) -> Option<Dna> {
-    // In the case of genesis we encounter race conditions with regards to setting the DNA.
-    // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
-    // the state, which can result in this code being executed first.
-    // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
-    // TODO: use a future here
-    let mut dna = None;
-    let mut done = false;
-    let mut tries = 0;
-    while !done {
-        {
-            let state = context
-                .state()
-                .expect("Callback called without application state!");
-            dna = state.nucleus().dna();
-        }
-        match dna {
-            Some(_) => done = true,
-            None => {
-                if tries > 10 {
-                    done = true;
-                } else {
-                    sleep(Duration::from_millis(10));
-                    tries += 1;
-                }
+        Ok(call_result) => {
+            if call_result.is_null() {
+                CallbackResult::Pass
+            } else {
+                CallbackResult::Fail(call_result.to_string())
             }
         }
+        Err(_) => CallbackResult::NotImplemented,
     }
-    dna
-}
-
-pub fn get_wasm(context: &Arc<Context>, zome: &str) -> Option<DnaWasm> {
-    let dna = get_dna(context).expect("Callback called without DNA set!");
-    dna.get_wasm_from_zome_name(zome)
-        .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
 }
 
 pub fn call(
@@ -244,7 +212,7 @@ pub fn call(
         params,
     );
 
-    let dna = get_dna(&context).expect("Callback called without DNA set!");
+    let dna = context.get_dna().expect("Callback called without DNA set!");
 
     match dna.get_wasm_from_zome_name(zome) {
         None => CallbackResult::NotImplemented,
@@ -263,8 +231,10 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
     use self::wabt::Wat2Wasm;
-    use instance::{tests::test_instance, Instance};
-    use nucleus::ribosome::{callback::Callback, Defn};
+    use crate::{
+        instance::{tests::test_instance, Instance},
+        nucleus::ribosome::{callback::Callback, Defn},
+    };
     use std::str::FromStr;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime

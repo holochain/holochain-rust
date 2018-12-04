@@ -1,9 +1,9 @@
-use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
-use nucleus::{
+use crate::nucleus::{
     actions::get_entry::get_entry,
     ribosome::{api::ZomeApiResult, Runtime},
 };
+use futures::executor::block_on;
+use holochain_core_types::cas::content::Address;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -28,12 +28,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let future = get_entry(&runtime.context, address);
     let result = block_on(future);
 
-    // runtime.store_result(match result {
-    //     Ok(maybe_entry) => Ok(maybe_entry.and_then(|entry| Some(entry.serialize()))),
-    //     Err(hc_err) => Err(hc_err),
-    // })
-    let api_result =
-        result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry.serialize())));
+    let api_result = result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry)));
     runtime.store_result(api_result)
 }
 
@@ -43,22 +38,24 @@ mod tests {
     extern crate wabt;
 
     use self::wabt::Wat2Wasm;
+    use crate::{
+        instance::tests::{test_context_and_logger, test_instance},
+        nucleus::{
+            ribosome::{
+                self,
+                api::{
+                    commit::tests::test_commit_args_bytes,
+                    tests::{test_capability, test_parameters, test_zome_name},
+                },
+            },
+            ZomeFnCall,
+        },
+    };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         entry::test_entry,
         error::ZomeApiInternalResult,
         json::JsonString,
-    };
-    use instance::tests::{test_context_and_logger, test_instance};
-    use nucleus::{
-        ribosome::{
-            self,
-            api::{
-                commit::tests::test_commit_args_bytes,
-                tests::{test_capability, test_parameters, test_zome_name},
-            },
-        },
-        ZomeFnCall,
     };
     use std::sync::Arc;
 
@@ -195,7 +192,8 @@ mod tests {
             wasm.clone(),
             &commit_call,
             Some(test_commit_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             call_result,
@@ -218,12 +216,13 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_bytes()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             JsonString::from(
                 String::from(JsonString::from(ZomeApiInternalResult::success(
-                    test_entry().serialize()
+                    test_entry()
                 ))) + "\u{0}",
             ),
             call_result,
@@ -231,7 +230,7 @@ mod tests {
     }
 
     #[test]
-    /// test that we get status NotFound on an obviously broken hash
+    /// test that we get status NotFound on an obviously broken address
     fn test_get_not_found() {
         let wasm = test_get_round_trip_wat();
         let dna = test_utils::create_test_dna_with_wasm(
@@ -266,7 +265,8 @@ mod tests {
             wasm.clone(),
             &get_call,
             Some(test_get_args_unknown()),
-        ).expect("test should be callable");
+        )
+        .expect("test should be callable");
 
         assert_eq!(
             JsonString::from(

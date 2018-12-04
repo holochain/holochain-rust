@@ -131,15 +131,17 @@ ensure_wasm_target: core_toolchain
 	rustup target add wasm32-unknown-unknown
 
 # idempotent installation of development tooling; RUST_VERSION defaults to TOOLS_RUST_VERSION
+# Since the default toolchain has been changed (see: tools_toolchain, version_rustup), we can
+# install the component without specifying which toolchain version to use)
 .PHONY: install_rust_tools
 install_rust_tools: tools_toolchain
 	# rust format
-	if ! rustup component list --toolchain $(RUST_VERSION) | grep 'rustfmt-preview.*(installed)'; then \
-		rustup component add --toolchain $(RUST_VERSION) rustfmt-preview; \
+	if ! rustup component list | grep 'rustfmt-preview.*(installed)'; then \
+		rustup component add rustfmt-preview; \
 	fi
 	# clippy
-	if ! rustup component list --toolchain $(RUST_VERSION) | grep 'clippy-preview.*(installed)'; then \
-		rustup component add --toolchain $(RUST_VERSION) clippy-preview; \
+	if ! rustup component list | grep 'clippy-preview.*(installed)'; then \
+		rustup component add clippy-preview; \
 	fi
 
 # idempotent installation of code coverage CI/testing tools
@@ -217,7 +219,7 @@ fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check
 
 clippy: install_rust_tools
-	$(CARGO_TOOLS) clippy -- -A needless_return --A useless_attribute
+	$(CARGO_TOOLS) clippy -- -A clippy::needless_return --A clippy::useless_attribute
 
 fmt: install_rust_tools
 	$(CARGO_TOOLS) fmt

@@ -6,7 +6,7 @@ use std::{error::Error, fmt};
 
 /// Error for DNA developers to use in their zome code.
 /// They do not have to send this error back to Ribosome unless its an InternalError.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,
@@ -43,19 +43,6 @@ impl From<HolochainError> for ZomeApiError {
 impl From<!> for ZomeApiError {
     fn from(_: !) -> Self {
         unreachable!();
-    }
-}
-
-impl From<ZomeApiError> for JsonString {
-    fn from(zome_api_error: ZomeApiError) -> JsonString {
-        #[derive(Serialize, Deserialize, Debug, DefaultJson)]
-        struct ZomeApiErrorJson {
-            error: ZomeApiError,
-        }
-
-        JsonString::from(ZomeApiErrorJson {
-            error: zome_api_error,
-        })
     }
 }
 

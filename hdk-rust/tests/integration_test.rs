@@ -13,7 +13,7 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-use hdk::error::ZomeApiResult;
+use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
@@ -25,7 +25,7 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         AppEntryValue, Entry,
     },
-    error::{HolochainError, ZomeApiInternalResult},
+    error::{CoreError, HolochainError, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };
@@ -297,7 +297,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"Err\":{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}}"),
+        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}"),
     );
 }
 
@@ -402,18 +402,18 @@ fn can_validate_links() {
     // Yep, the zome call is ok but what we got back should be a ValidationFailed error,
     // wrapped in a CoreError, wrapped in a ZomeApiError, wrapped in a Result,
     // serialized to JSON :D
-    // let zome_result: Result<(), ZomeApiError> =
-    //     serde_json::from_str(&result.unwrap().to_string()).unwrap();
-    // assert!(zome_result.is_err());
-    // if let ZomeApiError::Internal(error) = zome_result.err().unwrap() {
-    //     let core_error: CoreError = serde_json::from_str(&error).unwrap();
-    //     assert_eq!(
-    //         core_error.kind,
-    //         HolochainError::ValidationFailed("Target stuff is not longer".to_string()),
-    //     );
-    // } else {
-    //     assert!(false);
-    // }
+    let zome_result: Result<(), ZomeApiError> =
+        serde_json::from_str(&result.unwrap().to_string()).unwrap();
+    assert!(zome_result.is_err());
+    if let ZomeApiError::Internal(error) = zome_result.err().unwrap() {
+        let core_error: CoreError = serde_json::from_str(&error).unwrap();
+        assert_eq!(
+            core_error.kind,
+            HolochainError::ValidationFailed("Target stuff is not longer".to_string()),
+        );
+    } else {
+        assert!(false);
+    }
 }
 
 #[test]

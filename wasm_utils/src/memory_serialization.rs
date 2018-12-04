@@ -77,17 +77,13 @@ pub fn load_string(encoded_allocation: u32) -> Result<String, RibosomeErrorCode>
 //-------------------------------------------------------------------------------------------------
 
 /// Write a data struct as a json string in wasm memory according to stack state.
-pub fn store_as_json<J: TryInto<JsonString> + std::fmt::Debug>(
+pub fn store_as_json<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
     jsonable: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    println!("store: {:?}", &jsonable);
     let j: JsonString = match jsonable.try_into() {
         Ok(j) => j,
-        Err(_) => {
-            // println!("store_as_json deserialization failed {:?}", jsonable);
-            return Err(RibosomeErrorCode::ArgumentDeserializationFailed);
-        }
+        Err(_) => return Err(RibosomeErrorCode::ArgumentDeserializationFailed),
     };
 
     let json_bytes = j.into_bytes();
@@ -99,7 +95,7 @@ pub fn store_as_json<J: TryInto<JsonString> + std::fmt::Debug>(
 }
 
 // Sugar
-pub fn store_as_json_into_encoded_allocation<J: TryInto<JsonString> + std::fmt::Debug>(
+pub fn store_as_json_into_encoded_allocation<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
     jsonable: J,
 ) -> i32 {

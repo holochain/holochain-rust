@@ -51,8 +51,8 @@ test('create_post with bad reply to', (t) => {
   // bad in_reply_to is an error condition
   t.ok(result.Err)
   t.notOk(result.Ok)
-  
-  const error = JSON.parse(result.Err.error.Internal)
+
+  const error = JSON.parse(result.Err.Internal)
   t.deepEqual(error.kind, {ErrorGeneric: "Base for link not found"})
   t.ok(error.file)
   t.equal(error.line, "86")
@@ -70,7 +70,7 @@ test('post max content size 280 characters', (t) => {
   t.ok(result.Err);
   t.notOk(result.Ok)
 
-  const inner = JSON.parse(result.Err.error.Internal)
+  const inner = JSON.parse(result.Err.Internal)
 
   t.ok(inner.file)
   t.deepEqual(inner.kind, {"ValidationFailed": "Content too long"})

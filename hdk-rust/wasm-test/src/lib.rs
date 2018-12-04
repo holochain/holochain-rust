@@ -40,13 +40,13 @@ struct TestEntryType {
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
-struct EntryStruct {
-    stuff: String
+struct CommitOutputStruct {
+    address: String,
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
-struct CommitOutputStruct {
-    address: String,
+struct EntryStruct {
+    stuff: String
 }
 
 #[no_mangle]

@@ -15,9 +15,10 @@ pub mod tests {
 
     #[test]
     fn get_entry_roundtrip() {
-        let dna = create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice").unwrap();
-        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob").unwrap();
+        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        dna.uuid = String::from("get_entry_roundtrip");
+        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
+        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
 
         let entry = test_entry();
         assert!(context1.file_storage.write().unwrap().add(&entry).is_ok());
@@ -32,9 +33,10 @@ pub mod tests {
 
     #[test]
     fn get_non_existant_entry() {
-        let dna = create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice").unwrap();
-        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob").unwrap();
+        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        dna.uuid = String::from("get_non_existant_entry");
+        let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice2").unwrap();
+        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob2").unwrap();
 
         let entry = test_entry();
 
@@ -46,8 +48,9 @@ pub mod tests {
 
     #[test]
     fn get_when_alone() {
-        let dna = create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "bob").unwrap();
+        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        dna.uuid = String::from("get_when_alone");
+        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "bob3").unwrap();
 
         let entry = test_entry();
 

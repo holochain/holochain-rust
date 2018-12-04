@@ -1,4 +1,5 @@
 use crate::{
+    agent::test_agent_id,
     cas::content::{Address, AddressableContent, Content},
     entry::{
         entry_type::{test_entry_type, EntryType},
@@ -24,6 +25,9 @@ pub struct ChainHeader {
     entry_type: EntryType,
     /// Key to the entry of this header
     entry_address: Address,
+    /// Address(es) of the agent(s) that authored and signed this entry.
+    /// Backed by the entry_signature below.
+    sources: Vec<Address>,
     /// agent's cryptographic signature of the entry
     entry_signature: Signature,
     /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
@@ -52,6 +56,7 @@ impl ChainHeader {
     pub fn new(
         entry_type: &EntryType,
         entry_address: &Address,
+        sources: &Vec<Address>,
         entry_signature: &Signature,
         link: &Option<Address>,
         link_same_type: &Option<Address>,
@@ -60,6 +65,7 @@ impl ChainHeader {
         ChainHeader {
             entry_type: entry_type.to_owned(),
             entry_address: entry_address.to_owned(),
+            sources: sources.clone(),
             entry_signature: entry_signature.to_owned(),
             link: link.to_owned(),
             link_same_type: link_same_type.to_owned(),
@@ -96,6 +102,8 @@ impl ChainHeader {
     pub fn entry_signature(&self) -> &Signature {
         &self.entry_signature
     }
+
+    pub fn sources(&self) -> &Vec<Address> { &self.sources }
 }
 
 impl AddressableContent for ChainHeader {
@@ -113,6 +121,7 @@ pub fn test_chain_header() -> ChainHeader {
     ChainHeader::new(
         &test_entry_type(),
         &test_entry().address(),
+        &test_sources(),
         &test_signature(),
         &None,
         &None,
@@ -120,11 +129,15 @@ pub fn test_chain_header() -> ChainHeader {
     )
 }
 
+pub fn test_sources() -> Vec<Address> {
+    vec![test_agent_id().address()]
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::{
         cas::content::{Address, AddressableContent},
-        chain_header::{test_chain_header, ChainHeader},
+        chain_header::{test_chain_header, test_sources, ChainHeader},
         entry::{
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
             test_entry, test_entry_a, test_entry_b,
@@ -143,6 +156,7 @@ pub mod tests {
         ChainHeader::new(
             &test_entry_type_b(),
             &test_entry_b().address(),
+            &test_sources(),
             &test_signature_b(),
             &None,
             &None,
@@ -170,6 +184,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry_a.entry_type(),
                 &entry_a.address(),
+                &test_sources(),
                 &test_signature(),
                 &None,
                 &None,
@@ -178,6 +193,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry_b.entry_type(),
                 &entry_a.address(),
+                &test_sources(),
                 &test_signature(),
                 &None,
                 &None,
@@ -191,6 +207,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
+                &test_sources(),
                 &test_signature(),
                 &None,
                 &None,
@@ -199,6 +216,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
+                &test_sources(),
                 &test_signature(),
                 &Some(test_chain_header().address()),
                 &None,
@@ -236,6 +254,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
+            &test_sources(),
             &test_signature(),
             &Some(chain_header_a.address()),
             &None,
@@ -257,6 +276,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
+            &test_sources(),
             &test_signature_b(),
             &Some(chain_header_a.address()),
             &None,
@@ -266,6 +286,7 @@ pub mod tests {
         let chain_header_c = ChainHeader::new(
             &entry_c.entry_type(),
             &entry_c.address(),
+            &test_sources(),
             &test_signature(),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
@@ -311,6 +332,7 @@ pub mod tests {
             ChainHeader::new(
                 &test_entry_type_a(),
                 &test_entry().address(),
+                &test_sources(),
                 &test_signature(),
                 &None,
                 &None,
@@ -320,6 +342,7 @@ pub mod tests {
             ChainHeader::new(
                 &test_entry_type_b(),
                 &test_entry().address(),
+                &test_sources(),
                 &test_signature(),
                 &None,
                 &None,
@@ -338,6 +361,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
+                &test_sources(),
                 &test_signature(),
                 &Some(test_chain_header().address()),
                 &None,
@@ -356,6 +380,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
+                &test_sources(),
                 &test_signature(),
                 &None,
                 &Some(test_chain_header().address()),

@@ -62,15 +62,18 @@ impl AgentState {
         self.top_chain_header.clone()
     }
 
-    pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> HcResult<AgentId> {
-        let agent_entry_address = self
-            .chain()
+    pub fn get_agent_address(&self) -> HcResult<Address> {
+        self.chain()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
             .ok_or(HolochainError::ErrorGeneric(
                 "Agent entry not found".to_string(),
-            ))?;
+            ))
+    }
+
+    pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> HcResult<AgentId> {
+        let agent_entry_address = self.get_agent_address()?;
 
         let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?
             .ok_or("Agent entry not found".to_string())?;
@@ -145,9 +148,12 @@ pub enum ActionResponse {
 }
 
 pub fn create_new_chain_header(entry: &Entry, agent_state: &AgentState) -> ChainHeader {
+    let agent_address = agent_state.get_agent_address()
+        .expect("Could not get agent address in create_new_chain_header()");
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
+        &vec![agent_address],
         // @TODO signatures
         &Signature::from(""),
         &agent_state

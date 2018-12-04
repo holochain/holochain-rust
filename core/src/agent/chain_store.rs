@@ -165,7 +165,7 @@ pub mod tests {
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::{test_chain_header, ChainHeader},
+        chain_header::{test_chain_header, test_sources, ChainHeader},
         entry::{test_entry, test_entry_b, test_entry_c},
         signature::{test_signature, test_signature_b, test_signature_c},
         time::test_iso_8601,
@@ -189,6 +189,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
+            &test_sources(),
             &test_signature_b(),
             &Some(chain_header_a.address()),
             &None,
@@ -229,6 +230,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
+            &test_sources(),
             &test_signature(),
             &Some(chain_header_a.address()),
             &None,
@@ -239,6 +241,7 @@ pub mod tests {
         let chain_header_c = ChainHeader::new(
             &entry_c.entry_type(),
             &entry_c.address(),
+            &test_sources(),
             &test_signature(),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
@@ -299,6 +302,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
+            &test_sources(),
             &test_signature_b(),
             &Some(chain_header_a.address()),
             &None,
@@ -308,6 +312,7 @@ pub mod tests {
         let chain_header_c = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
+            &test_sources(),
             &test_signature_c(),
             &Some(chain_header_b.address()),
             &Some(chain_header_b.address()),

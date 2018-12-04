@@ -46,7 +46,7 @@ struct CommitOutputStruct {
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
 struct EntryStruct {
-    stuff: String
+    stuff: String,
 }
 
 #[no_mangle]

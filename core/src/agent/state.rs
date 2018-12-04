@@ -248,6 +248,7 @@ pub mod tests {
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context,
+        state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -257,7 +258,10 @@ pub mod tests {
         json::JsonString,
     };
     use serde_json;
-    use std::collections::HashMap;
+    use std::{
+        collections::HashMap,
+        sync::{Arc, RwLock},
+    };
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {
@@ -284,13 +288,17 @@ pub mod tests {
     #[test]
     /// test for reducing commit entry
     fn test_reduce_commit_entry() {
-        let mut state = test_agent_state();
+        let mut agent_state = test_agent_state();
+        let context = test_context("bob");
+        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let mut context = test_context("bob");
+        Arc::get_mut(&mut context).unwrap().set_state(Arc::new(RwLock::new(state)));
         let action_wrapper = test_action_wrapper_commit();
 
-        reduce_commit_entry(test_context("bob"), &mut state, &action_wrapper);
+        reduce_commit_entry(context, &mut agent_state, &action_wrapper);
 
         assert_eq!(
-            state.actions().get(&action_wrapper),
+            agent_state.actions().get(&action_wrapper),
             Some(&test_action_response_commit()),
         );
     }

@@ -57,6 +57,7 @@ pub mod tests {
         let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
+        let context = instance.initialize_context(context);
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
         // Check if LinkEntry is found
         assert_eq!(1, instance.state().history.iter().count());
@@ -90,6 +91,7 @@ pub mod tests {
         let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
+        let context = instance.initialize_context(context);
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
         // Check if LinkEntry is found
         assert_eq!(1, instance.state().history.iter().count());

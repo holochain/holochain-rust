@@ -387,12 +387,12 @@ fn can_roundtrip_links() {
     ]));
     let ordering1: bool = result_string == JsonString::from(expected);
 
-    let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![address_2, address_1]));
+    let expected: Result<GetLinksResult, HolochainError> =
+        Ok(GetLinksResult::new(vec![address_2, address_1]));
     let ordering2: bool = result_string == JsonString::from(expected);
 
     assert!(ordering1 || ordering2, "result = {:?}", result_string);
 }
-
 
 #[test]
 #[cfg(not(windows))]

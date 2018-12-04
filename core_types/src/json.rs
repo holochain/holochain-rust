@@ -122,8 +122,15 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
 //     }
 // }
 
-impl<T: Into<JsonString>> From<Result<T, HolochainError>> for JsonString {
-    fn from(result: Result<T, HolochainError>) -> JsonString {
+/// signifies type can be converted to JsonString in Err from some Result
+/// can't use std::error::Error for this because String has Error as a reserved future trait
+pub trait JsonError {}
+
+impl JsonError for HolochainError {}
+impl JsonError for ZomeApiError {}
+
+impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
+    fn from(result: Result<T, E>) -> JsonString {
         let is_ok = result.is_ok();
         let inner_json: JsonString = match result {
             Ok(inner) => inner.into(),
@@ -144,24 +151,8 @@ impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
         let is_ok = result.is_ok();
         let inner_json: JsonString = match result {
             Ok(inner) => inner.into(),
+            // strings need this special handling c.f. Error
             Err(inner) => RawString::from(inner).into(),
-        };
-        let inner_string = String::from(inner_json);
-        format!(
-            "{{\"{}\":{}}}",
-            if is_ok { "Ok" } else { "Err" },
-            inner_string
-        )
-        .into()
-    }
-}
-
-impl<T: Into<JsonString>> From<Result<T, ZomeApiError>> for JsonString {
-    fn from(result: Result<T, ZomeApiError>) -> JsonString {
-        let is_ok = result.is_ok();
-        let inner_json: JsonString = match result {
-            Ok(inner) => inner.into(),
-            Err(inner) => inner.into(),
         };
         let inner_string = String::from(inner_json);
         format!(

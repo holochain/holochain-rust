@@ -29,7 +29,7 @@ use holochain_core_types::{
     hash::HashString,
     json::JsonString,
 };
-//use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
+use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 use std::sync::{Arc, Mutex};
 use test_utils::*;
 
@@ -362,10 +362,16 @@ fn can_link_entries() {
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
 
-/* This test now fails because handle_links_roundtrip doesn't take into
- account how long it takes for the links to propigate on the network
-the correct test would be to wait for a propigation period
+// This test did fail before but passed locally for me now each of >20 tries on macOS.
+// It can fail because:
+// handle_links_roundtrip doesn't take into
+// account how long it takes for the links to propigate on the network
+// the correct test would be to wait for a propigation period
+//
+// It does fail on windows in the CI so for now I pull it in for all OS except
+// Windows so we have at least some integration link testing.
 #[test]
+#[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance();
     let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
@@ -376,18 +382,18 @@ fn can_roundtrip_links() {
     let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
     println!("can_roundtrip_links result_string: {:?}", result_string);
-    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![
+    let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
         address_1.clone(),
         address_2.clone(),
     ]));
     let ordering1: bool = result_string == JsonString::from(expected);
 
-    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![address_2, address_1]));
+    let expected: Result<GetLinksResult, HolochainError> =
+        Ok(GetLinksResult::new(vec![address_2, address_1]));
     let ordering2: bool = result_string == JsonString::from(expected);
 
     assert!(ordering1 || ordering2, "result = {:?}", result_string);
 }
-*/
 
 #[test]
 #[cfg(not(windows))]

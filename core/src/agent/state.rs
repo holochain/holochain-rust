@@ -160,7 +160,7 @@ pub fn create_new_chain_header(entry: &Entry, context: Arc<Context>) -> ChainHea
         &entry.address(),
         &vec![agent_address],
         // @TODO signatures
-        &Signature::from(""),
+        &vec![Signature::from("")],
         &agent_state
             .top_chain_header
             .clone()

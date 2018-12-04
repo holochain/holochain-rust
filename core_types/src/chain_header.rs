@@ -7,7 +7,7 @@ use crate::{
     },
     error::HolochainError,
     json::JsonString,
-    signature::{test_signature, Signature},
+    signature::{test_signatures, Signature},
     time::{test_iso_8601, Iso8601},
 };
 use std::convert::TryInto;
@@ -26,10 +26,10 @@ pub struct ChainHeader {
     /// Key to the entry of this header
     entry_address: Address,
     /// Address(es) of the agent(s) that authored and signed this entry.
-    /// Backed by the entry_signature below.
+    /// Backed by the entry_signatures below.
     sources: Vec<Address>,
-    /// agent's cryptographic signature of the entry
-    entry_signature: Signature,
+    /// Cryptographic signature of the entry for each source respectively
+    entry_signatures: Vec<Signature>,
     /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
     link: Option<Address>,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
@@ -57,7 +57,7 @@ impl ChainHeader {
         entry_type: &EntryType,
         entry_address: &Address,
         sources: &Vec<Address>,
-        entry_signature: &Signature,
+        entry_signatures: &Vec<Signature>,
         link: &Option<Address>,
         link_same_type: &Option<Address>,
         timestamp: &Iso8601,
@@ -66,7 +66,7 @@ impl ChainHeader {
             entry_type: entry_type.to_owned(),
             entry_address: entry_address.to_owned(),
             sources: sources.clone(),
-            entry_signature: entry_signature.to_owned(),
+            entry_signatures: entry_signatures.to_owned(),
             link: link.to_owned(),
             link_same_type: link_same_type.to_owned(),
             timestamp: timestamp.to_owned(),
@@ -99,8 +99,8 @@ impl ChainHeader {
     }
 
     /// entry_signature getter
-    pub fn entry_signature(&self) -> &Signature {
-        &self.entry_signature
+    pub fn entry_signatures(&self) -> &Vec<Signature> {
+        &self.entry_signatures
     }
 
     pub fn sources(&self) -> &Vec<Address> {
@@ -124,7 +124,7 @@ pub fn test_chain_header() -> ChainHeader {
         &test_entry_type(),
         &test_entry().address(),
         &test_sources(),
-        &test_signature(),
+        &test_signatures(),
         &None,
         &None,
         &test_iso_8601(),
@@ -144,7 +144,7 @@ pub mod tests {
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
             test_entry, test_entry_a, test_entry_b,
         },
-        signature::{test_signature, test_signature_b},
+        signature::{test_signatures, test_signature_b},
         time::test_iso_8601,
     };
 
@@ -159,7 +159,7 @@ pub mod tests {
             &test_entry_type_b(),
             &test_entry_b().address(),
             &test_sources(),
-            &test_signature_b(),
+            &vec![test_signature_b()],
             &None,
             &None,
             &test_iso_8601(),
@@ -187,7 +187,7 @@ pub mod tests {
                 &entry_a.entry_type(),
                 &entry_a.address(),
                 &test_sources(),
-                &test_signature(),
+                &test_signatures(),
                 &None,
                 &None,
                 &test_iso_8601(),
@@ -196,7 +196,7 @@ pub mod tests {
                 &entry_b.entry_type(),
                 &entry_a.address(),
                 &test_sources(),
-                &test_signature(),
+                &test_signatures(),
                 &None,
                 &None,
                 &test_iso_8601(),
@@ -210,7 +210,7 @@ pub mod tests {
                 &entry.entry_type(),
                 &entry.address(),
                 &test_sources(),
-                &test_signature(),
+                &test_signatures(),
                 &None,
                 &None,
                 &test_iso_8601(),
@@ -219,7 +219,7 @@ pub mod tests {
                 &entry.entry_type(),
                 &entry.address(),
                 &test_sources(),
-                &test_signature(),
+                &test_signatures(),
                 &Some(test_chain_header().address()),
                 &None,
                 &test_iso_8601(),
@@ -257,7 +257,7 @@ pub mod tests {
             &entry_b.entry_type(),
             &entry_b.address(),
             &test_sources(),
-            &test_signature(),
+            &test_signatures(),
             &Some(chain_header_a.address()),
             &None,
             &test_iso_8601(),
@@ -279,7 +279,7 @@ pub mod tests {
             &entry_b.entry_type(),
             &entry_b.address(),
             &test_sources(),
-            &test_signature_b(),
+            &vec![test_signature_b()],
             &Some(chain_header_a.address()),
             &None,
             &test_iso_8601(),
@@ -289,7 +289,7 @@ pub mod tests {
             &entry_c.entry_type(),
             &entry_c.address(),
             &test_sources(),
-            &test_signature(),
+            &test_signatures(),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
             &test_iso_8601(),
@@ -306,7 +306,7 @@ pub mod tests {
     #[test]
     /// tests for chain_header.entry_signature()
     fn signature() {
-        assert_eq!(&test_signature(), test_chain_header().entry_signature());
+        assert_eq!(&test_signatures(), test_chain_header().entry_signatures());
     }
 
     #[test]
@@ -335,7 +335,7 @@ pub mod tests {
                 &test_entry_type_a(),
                 &test_entry().address(),
                 &test_sources(),
-                &test_signature(),
+                &test_signatures(),
                 &None,
                 &None,
                 &test_iso_8601(),
@@ -345,7 +345,7 @@ pub mod tests {
                 &test_entry_type_b(),
                 &test_entry().address(),
                 &test_sources(),
-                &test_signature(),
+                &test_signatures(),
                 &None,
                 &None,
                 &test_iso_8601(),
@@ -364,7 +364,7 @@ pub mod tests {
                 &entry.entry_type(),
                 &entry.address(),
                 &test_sources(),
-                &test_signature(),
+                &test_signatures(),
                 &Some(test_chain_header().address()),
                 &None,
                 &test_iso_8601(),
@@ -383,7 +383,7 @@ pub mod tests {
                 &entry.entry_type(),
                 &entry.address(),
                 &test_sources(),
-                &test_signature(),
+                &test_signatures(),
                 &None,
                 &Some(test_chain_header().address()),
                 &test_iso_8601(),

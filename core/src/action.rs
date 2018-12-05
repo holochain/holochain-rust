@@ -1,7 +1,10 @@
 use crate::{
     agent::state::AgentState,
     context::Context,
-    network::state::NetworkState,
+    network::{
+        direct_message::DirectMessage,
+        state::NetworkState
+    },
     nucleus::{
         state::{NucleusState, ValidationResult},
         ExecuteZomeFnResponse, ZomeFnCall,
@@ -117,6 +120,8 @@ pub enum Action {
     Hold(Entry),
     RespondGet((GetDhtData, Option<Entry>)),
     HandleGetResult(DhtData),
+
+    SendDirectMessage((Address, DirectMessage, String)),
 }
 
 /// function signature for action handler functions

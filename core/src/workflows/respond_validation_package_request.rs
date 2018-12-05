@@ -42,6 +42,6 @@ pub async fn respond_validation_package_request(
     };
 
     let direct_message = DirectMessage::ValidationPackage(maybe_validation_package);
-    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((to_agent_id, direct_message, msg_id)));
+    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((to_agent_id, direct_message, msg_id, true)));
     dispatch_action(&context.action_channel, action_wrapper);
 }

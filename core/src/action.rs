@@ -121,7 +121,10 @@ pub enum Action {
     RespondGet((GetDhtData, Option<Entry>)),
     HandleGetResult(DhtData),
 
-    SendDirectMessage((Address, DirectMessage, String)),
+    /// Sends a direct message object to the given address.
+    /// 3rd parameter is the message id
+    /// 4th parameter is true for a response to a previous message, false for a new interaction
+    SendDirectMessage((Address, DirectMessage, String, bool)),
 }
 
 /// function signature for action handler functions

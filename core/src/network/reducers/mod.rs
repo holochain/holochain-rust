@@ -3,6 +3,7 @@ pub mod handle_get_result;
 pub mod init;
 pub mod publish;
 pub mod respond_get;
+pub mod send_direct_message;
 
 use crate::{
     action::{Action, ActionWrapper, NetworkReduceFn},

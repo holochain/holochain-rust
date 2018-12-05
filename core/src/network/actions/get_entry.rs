@@ -13,7 +13,6 @@ use holochain_core_types::{
     entry::Entry,
     error::{HcResult, HolochainError},
 };
-use snowflake;
 use std::{
     pin::{Pin, Unpin},
     sync::Arc,

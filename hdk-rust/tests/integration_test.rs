@@ -373,7 +373,7 @@ fn can_link_entries() {
 #[test]
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_roundtrip_links");
     let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let result_string = result.unwrap();

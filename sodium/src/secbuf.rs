@@ -7,7 +7,9 @@ use super::check_init;
 
 /// a trait for structures that can be used as a backing store for SecBuf
 trait Bufferable {
-    fn new(s: usize) -> Box<Bufferable> where Self: Sized;
+    fn new(s: usize) -> Box<Bufferable>
+    where
+        Self: Sized;
     fn readable(&mut self);
     fn writable(&mut self);
     fn noaccess(&mut self);
@@ -24,19 +26,14 @@ struct RustBuf {
 impl Bufferable for RustBuf {
     fn new(s: usize) -> Box<Bufferable> {
         let b = vec![0; s].into_boxed_slice();
-        Box::new(RustBuf {
-            b
-        })
+        Box::new(RustBuf { b })
     }
 
-    fn readable(&mut self) {
-    }
+    fn readable(&mut self) {}
 
-    fn writable(&mut self) {
-    }
+    fn writable(&mut self) {}
 
-    fn noaccess(&mut self) {
-    }
+    fn noaccess(&mut self) {}
 
     fn ref_(&self) -> &[u8] {
         &self.b
@@ -68,10 +65,7 @@ impl Bufferable for SodiumBuf {
             rust_sodium_sys::sodium_mprotect_noaccess(z);
             z
         };
-        Box::new(SodiumBuf {
-            z,
-            s,
-        })
+        Box::new(SodiumBuf { z, s })
     }
 
     fn readable(&mut self) {
@@ -93,15 +87,11 @@ impl Bufferable for SodiumBuf {
     }
 
     fn ref_(&self) -> &[u8] {
-        unsafe {
-            std::slice::from_raw_parts(self.z as *const u8, self.s)
-        }
+        unsafe { std::slice::from_raw_parts(self.z as *const u8, self.s) }
     }
 
     fn ref_mut(&mut self) -> &mut [u8] {
-        unsafe {
-            std::slice::from_raw_parts_mut(self.z as *mut u8, self.s)
-        }
+        unsafe { std::slice::from_raw_parts_mut(self.z as *mut u8, self.s) }
     }
 }
 

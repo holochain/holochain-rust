@@ -22,7 +22,7 @@ pub fn check_init() {
 macro_rules! rptr {
     ($name: ident) => {
         $name.as_mut_ptr() as *mut libc::c_void
-    }
+    };
 }
 
 pub mod random;

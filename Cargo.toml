@@ -12,6 +12,7 @@ members = [
   "net_connection",
   "net_ipc",
   "test_bin",
+  "app_spec/zomes/blog/code",
 ]
 exclude = [
   "test_utils",

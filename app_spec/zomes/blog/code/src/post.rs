@@ -29,6 +29,14 @@ impl Post {
             date_created: date_created.to_owned(),
         }
     }
+
+    pub fn content(&self) -> String {
+        self.content.clone()
+    }
+
+    pub fn date_created(&self) -> String {
+        self.date_created.clone()
+    }
 }
 
 /// This is what creates the full definition of our entry type.
@@ -69,4 +77,103 @@ pub fn definition() -> ValidatingEntryType {
             )
         ]
     )
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::post::Post;
+    use crate::post::definition;
+    use hdk::holochain_core_types::entry::entry_type::EntryType;
+    use hdk::holochain_core_types::dna::zome::entry_types::EntryTypeDef;
+    use hdk::ValidationData;
+    use hdk::holochain_core_types::entry::Entry;
+    use hdk::holochain_core_types::dna::zome::entry_types::LinkedFrom;
+    use hdk::holochain_wasm_utils::api_serialization::validation::LinkDirection;
+
+    #[test]
+    /// smoke test Post
+    fn post_smoke_test() {
+        let content = "foo";
+        let date_created = "bar";
+        let post = Post::new(content, date_created);
+
+        assert_eq!(
+            content.to_string(),
+            post.content(),
+        );
+
+        assert_eq!(
+            date_created.to_string(),
+            post.date_created(),
+        );
+    }
+
+    #[test]
+    fn post_definition_test() {
+        let mut post_definition = definition();
+
+        let expected_name = EntryType::from("post");
+        assert_eq!(
+            expected_name,
+            post_definition.name.clone(),
+        );
+
+        let expected_definition = EntryTypeDef {
+            description: "blog entry post".to_string(),
+            linked_from: vec![
+                LinkedFrom {
+                    base_type: "%agent_id".to_string(),
+                    tag: "authored_posts".to_string(),
+                }
+            ],
+            ..Default::default()
+        };
+        assert_eq!(
+            expected_definition,
+            post_definition.entry_type_definition.clone(),
+        );
+
+        let expected_validation_package_definition = hdk::ValidationPackageDefinition::ChainFull;
+        assert_eq!(
+            expected_validation_package_definition,
+            (post_definition.package_creator)(),
+        );
+
+        let post_ok = Post::new("foo", "now");
+        assert_eq!(
+            (post_definition.validator)(Entry::from(post_ok), ValidationData::default()),
+            Ok(()),
+        );
+
+        let post_not_ok = Post::new(
+            "Tattooed organic sartorial, tumeric cray truffaut kale chips farm-to-table vaporware seitan brooklyn vegan locavore fam mixtape. Kale chips cold-pressed yuccie kickstarter yr. Fanny pack chambray migas heirloom microdosing blog, palo santo locavore cardigan swag organic. Disrupt pug roof party everyday carry kinfolk brooklyn quinoa. Flannel dreamcatcher yr blog, banjo hella brooklyn taxidermy four loko kickstarter aesthetic glossier biodiesel hot chicken heirloom. Leggings cronut helvetica yuccie meh.",
+            "now",
+        );
+        assert_eq!(
+            (post_definition.validator)(Entry::from(post_not_ok), ValidationData::default()),
+            Err("Content too long".to_string()),
+        );
+
+        let post_definition_link = post_definition.links.first().unwrap();
+
+        let expected_link_base = "%agent_id";
+        assert_eq!(
+            post_definition_link.other_entry_type.to_owned(),
+            expected_link_base,
+        );
+
+        let expected_link_direction = LinkDirection::From;
+        assert_eq!(
+            post_definition_link.link_type.to_owned(),
+            expected_link_direction,
+        );
+
+        let expected_link_tag = "authored_posts";
+        assert_eq!(
+            post_definition_link.tag.to_owned(),
+            expected_link_tag,
+        );
+
+    }
 }

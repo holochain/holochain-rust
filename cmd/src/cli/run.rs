@@ -25,7 +25,7 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
         agent: "hc-run-agent".into(),
         logger: Default::default(),
         storage: StorageConfiguration::Memory,
-        network: "{\"backend\": \"mock\"}".to_string(),
+        network: Some("{\"backend\": \"mock\"}".to_string()),
     };
 
     let interface_config = InterfaceConfiguration {

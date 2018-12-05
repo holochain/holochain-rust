@@ -147,7 +147,7 @@ pub struct InstanceConfiguration {
     pub agent: String,
     pub logger: LoggerConfiguration,
     pub storage: StorageConfiguration,
-    pub network: String,
+    pub network: Option<String>,
 }
 
 /// There might be different kinds of loggers in the future.
@@ -343,7 +343,10 @@ pub mod tests {
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
-        assert_eq!(instance_config.network, "{\"backend\":\"special\"}");
+        assert_eq!(
+            instance_config.network,
+            Some("{\"backend\":\"special\"}".to_string())
+        );
     }
 
     #[test]
@@ -363,7 +366,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    network = ""
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -402,7 +404,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(instance_config.network, "");
+        assert_eq!(instance_config.network, None);
     }
 
     #[test]

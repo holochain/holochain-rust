@@ -237,10 +237,9 @@ fn instantiate_from_config(
                 ))
             })?;
 
-            let network_config = if instance_config.network == "" {
-                instance_config.network
-            } else {
-                default_network_config.to_owned()
+            let network_config = match instance_config.network {
+                None => default_network_config.to_owned(),
+                Some(config) => config,
             }
             .into();
 
@@ -338,7 +337,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    network = ""
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -452,7 +450,7 @@ pub mod tests {
         let io = dispatcher.io;
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"},\"network\":\"{\\\"backend\\\":\\\"mock\\\"}\"}}","id":1}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"},\"network\":null}}","id":1}"#;
 
         assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }

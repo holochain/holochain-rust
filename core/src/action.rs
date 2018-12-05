@@ -8,7 +8,8 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
+    cas::content::Address, chain_header::ChainHeader, dna::Dna, entry::Entry,
+    error::HolochainError, json::JsonString,
     link::Link, validation::ValidationPackage,
 };
 use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData};
@@ -113,6 +114,7 @@ pub enum Action {
     /// 4th parameter is true for a response to a previous message, false for a new interaction
     SendDirectMessage((Address, DirectMessage, String, bool)),
 
+    GetValidationPackage(ChainHeader),
 
     // ----------------
     // Nucleus actions:

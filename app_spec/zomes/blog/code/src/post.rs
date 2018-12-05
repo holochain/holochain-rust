@@ -85,6 +85,7 @@ mod tests {
         holochain_wasm_utils::api_serialization::validation::LinkDirection,
         ValidationData,
     };
+    use std::convert::TryInto;
 
     #[test]
     /// smoke test Post
@@ -126,7 +127,13 @@ mod tests {
 
         let post_ok = Post::new("foo", "now");
         assert_eq!(
-            (post_definition.validator)(Entry::from(post_ok), ValidationData::default()),
+            (post_definition.validator)(
+                Entry::App(
+                    post_definition.name.clone().try_into().unwrap(),
+                    post_ok.into(),
+                ),
+                ValidationData::default()
+            ),
             Ok(()),
         );
 
@@ -135,7 +142,13 @@ mod tests {
             "now",
         );
         assert_eq!(
-            (post_definition.validator)(Entry::from(post_not_ok), ValidationData::default()),
+            (post_definition.validator)(
+                Entry::App(
+                    post_definition.name.clone().try_into().unwrap(),
+                    post_not_ok.into(),
+                ),
+                ValidationData::default()
+            ),
             Err("Content too long".to_string()),
         );
 

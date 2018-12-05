@@ -210,15 +210,6 @@ macro_rules! entry {
                 }
             });
 
-            impl From<$entry_type> for $crate::holochain_core_types::entry::Entry {
-                fn from(e: $entry_type) -> Self {
-                    $crate::holochain_core_types::entry::Entry::App(
-                        $crate::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string()),
-                        $crate::holochain_core_types::entry::AppEntryValue::from(e),
-                    )
-                }
-            }
-
             hdk::entry_definition::ValidatingEntryType {
                 name: hdk::holochain_core_types::entry::entry_type::EntryType::App(hdk::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string())),
                 entry_type_definition: entry_type,

@@ -302,6 +302,24 @@ pub mod tests {
     }
 
     #[test]
+    fn json_result_round_trip_test() {
+        let result: Result<String, HolochainError> =
+            Err(HolochainError::ErrorGeneric("foo".into()));
+
+        assert_eq!(
+            JsonString::from(result),
+            JsonString::from("{\"Err\":{\"ErrorGeneric\":\"foo\"}}"),
+        );
+
+        let result: Result<String, String> = Err(String::from("foo"));
+
+        assert_eq!(
+            JsonString::from(result),
+            JsonString::from("{\"Err\":\"foo\"}"),
+        )
+    }
+
+    #[test]
     /// show From<&str> and From<String> for JsonString
     fn json_from_string_test() {
         assert_eq!(String::from("foo"), String::from(JsonString::from("foo")),);

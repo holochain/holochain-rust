@@ -81,3 +81,20 @@ impl fmt::Display for ZomeApiError {
 }
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
+
+#[cfg(test)]
+mod tests {
+
+    use error::{ZomeApiError, ZomeApiResult};
+    use holochain_core_types::json::JsonString;
+
+    #[test]
+    fn zome_api_result_json_result_round_trip_test() {
+        let result: ZomeApiResult<String> = Err(ZomeApiError::FunctionNotImplemented);
+
+        assert_eq!(
+            JsonString::from(result),
+            JsonString::from("{\"Err\":\"FunctionNotImplemented\"}"),
+        );
+    }
+}

@@ -7,8 +7,8 @@ impl From<&'static str> for Signature {
     }
 }
 
-pub fn test_signature() -> Signature {
-    Signature::from("fake-signature")
+pub fn test_signatures() -> Vec<Signature> {
+    vec![Signature::from("fake-signature")]
 }
 
 pub fn test_signature_b() -> Signature {

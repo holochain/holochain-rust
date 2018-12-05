@@ -35,9 +35,8 @@ use interface_impls;
 /// which takes a `config::Configuration` struct and tries to instantiate all configured instances.
 /// While doing so it has to load DNA files referenced in the configuration.
 /// In order to not bind this code to the assumption that there is a filesystem
-/// and also enable easier testing,
-/// a DnaLoader has to be injected on creation.
-/// This is a closure that returns a Dna object for a given path string.
+/// and also enable easier testing, a DnaLoader ()which is a closure that returns a
+/// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
     pub instances: InstanceMap,
     config: Configuration,
@@ -155,7 +154,6 @@ impl Container {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    #[cfg_attr(tarpaulin, skip)] // This function is mocked in tests
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
         let mut f = File::open(file)?;
         let mut contents = String::new();
@@ -304,6 +302,9 @@ fn create_file_context(
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
+    use tempfile::tempdir;
+    use std::fs::File;
+    use std::io::Write;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
@@ -354,6 +355,43 @@ pub mod tests {
         );
 
         assert_eq!(maybe_holochain.err(), None);
+    }
+
+    #[test]
+    fn test_default_dna_loader() {
+        let tempdir = tempdir().unwrap();
+        let fixture =
+            r#"{
+                "name": "my dna",
+                "description": "",
+                "version": "",
+                "uuid": "00000000-0000-0000-0000-000000000001",
+                "dna_spec_version": "2.0",
+                "properties": {},
+                "zomes": {
+                    "": {
+                        "description": "",
+                        "config": {
+                            "error_handling": "throw-errors"
+                        },
+                        "entry_types": {
+                            "": {
+                                "description": "",
+                                "sharing": "public"
+                            }
+                        }
+                    }
+                }
+            }"#;
+        let file_path = tempdir.path().join("test.dna.json");
+        let mut tmp_file = File::create(file_path.clone()).unwrap();
+        writeln!(tmp_file, "{}",fixture).unwrap();
+        match Container::load_dna(&file_path.into_os_string().into_string().unwrap()) {
+            Ok(dna) => {
+               assert_eq!(dna.name,"my dna");
+            },
+            Err(_) => assert!(false),
+        }
     }
 
     #[test]

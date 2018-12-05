@@ -72,22 +72,51 @@ impl Hash for ActionWrapper {
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Action {
-    /// entry to Commit
-    /// MUST already have passed all callback checks
+    // ----------------
+    // Agent actions:
+    // ----------------
+
+    /// Writes an entry to the source chain.
+    /// Does not validate, assumes entry is valid.
     Commit(Entry),
+
+
+    // -------------
+    // DHT actions:
+    // -------------
+
+    /// Adds an entry to the local DHT shard.
+    /// Does not validate, assumes entry is valid.
+    Hold(Entry),
+
+    /// Adds a link to the local DHT shard's meta/EAV storage
+    /// Does not validate, assumes link is valid.
+    AddLink(Link),
+
+
+    // ----------------
+    // Network actions:
+    // ----------------
+
+    InitNetwork((JsonString, String, String)),
+    Publish(Address),
+
     /// GetEntry by address
     GetEntry(Address),
     GetEntryTimeout(Address),
 
-    /// link to add
-    AddLink(Link),
-    /// get links from entry address and attribute-name
-    //GetLinks(GetLinksArgs),
+    RespondGet((GetDhtData, Option<Entry>)),
+    HandleGetResult(DhtData),
 
-    /// execute a function in a zome WASM
-    ExecuteZomeFunction(ZomeFnCall),
-    /// return the result of a zome WASM function call
-    ReturnZomeFunctionResult(ExecuteZomeFnResponse),
+    /// Sends a direct message object to the given address.
+    /// 3rd parameter is the message id
+    /// 4th parameter is true for a response to a previous message, false for a new interaction
+    SendDirectMessage((Address, DirectMessage, String, bool)),
+
+
+    // ----------------
+    // Nucleus actions:
+    // ----------------
 
     /// initialize an application from a Dna
     /// not the same as genesis
@@ -97,31 +126,28 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
+    /// execute a function in a zome WASM
+    ExecuteZomeFunction(ZomeFnCall),
+
+    /// return the result of a zome WASM function call
+    ReturnZomeFunctionResult(ExecuteZomeFnResponse),
+
     /// Execute a zome function call called by another zome function
     Call(ZomeFnCall),
 
-    /// A validation result that should be stored
+    /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context
     /// and the hash of the entry that was validated
     ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
 
+    /// A validation package was created locally and is reported back
+    /// to be added to the state
     ReturnValidationPackage(
         (
             snowflake::ProcessUniqueId,
             Result<ValidationPackage, HolochainError>,
         ),
     ),
-
-    InitNetwork((JsonString, String, String)),
-    Publish(Address),
-    Hold(Entry),
-    RespondGet((GetDhtData, Option<Entry>)),
-    HandleGetResult(DhtData),
-
-    /// Sends a direct message object to the given address.
-    /// 3rd parameter is the message id
-    /// 4th parameter is true for a response to a previous message, false for a new interaction
-    SendDirectMessage((Address, DirectMessage, String, bool)),
 }
 
 /// function signature for action handler functions

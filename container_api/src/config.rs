@@ -230,7 +230,7 @@ where
 
 #[cfg(test)]
 pub mod tests {
-    use crate::config::{load_configuration, Configuration,};
+    use crate::config::{load_configuration, Configuration};
 
     pub fn example_serialized_network_config() -> String {
         String::from("{\\\"backend\\\":\\\"mock\\\"}")
@@ -289,7 +289,8 @@ pub mod tests {
 
     #[test]
     fn test_load_complete_config() {
-        let toml = &format!(r#"
+        let toml = &format!(
+            r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -327,7 +328,9 @@ pub mod tests {
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
-    "#,"{\\\"backend\\\":\\\"special\\\"}");
+    "#,
+            "{\\\"backend\\\":\\\"special\\\"}"
+        );
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
@@ -342,7 +345,6 @@ pub mod tests {
         let instance_config = instances.get(0).unwrap();
         assert_eq!(instance_config.network, "{\"backend\":\"special\"}");
     }
-
 
     #[test]
     fn test_load_complete_config_default_network() {
@@ -403,10 +405,10 @@ pub mod tests {
         assert_eq!(instance_config.network, "");
     }
 
-
     #[test]
     fn test_inconsistent_config() {
-        let toml = &format!(r#"
+        let toml = &format!(
+            r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -428,7 +430,9 @@ pub mod tests {
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
-    "#,example_serialized_network_config());
+    "#,
+            example_serialized_network_config()
+        );
         let config: Configuration = load_configuration(toml).unwrap();
 
         assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
@@ -436,7 +440,8 @@ pub mod tests {
 
     #[test]
     fn test_inconsistent_config_interface_1() {
-        let toml = &format!(r#"
+        let toml = &format!(
+            r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -466,7 +471,9 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "WRONG INSTANCE ID"
-    "#,example_serialized_network_config());
+    "#,
+            example_serialized_network_config()
+        );
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(
@@ -480,7 +487,8 @@ pub mod tests {
 
     #[test]
     fn test_invalid_toml_1() {
-        let toml = &format!(r#"
+        let toml = &format!(
+            r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -510,7 +518,9 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "app spec instance"
-    "#,example_serialized_network_config());
+    "#,
+            example_serialized_network_config()
+        );
         if let Err(e) = load_configuration::<Configuration>(toml) {
             assert!(
                 true,

@@ -109,7 +109,7 @@ impl Container {
 
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
-    pub fn load_config(&mut self, config: &Configuration, ) -> Result<(), String> {
+    pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
         let _ = config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
         let default_network = DEFAULT_NETWORK_CONFIG.to_string();
@@ -120,7 +120,7 @@ impl Container {
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(&id, config, &mut self.dna_loader,&default_network),
+                    instantiate_from_config(&id, config, &mut self.dna_loader, &default_network),
                 )
             })
             .collect();
@@ -241,15 +241,18 @@ fn instantiate_from_config(
                 instance_config.network
             } else {
                 default_network_config.to_owned()
-            }.into();
+            }
+            .into();
 
             let context: Context = match instance_config.storage {
                 StorageConfiguration::File { path } => {
                     create_file_context(&agent_config.id, &path, network_config)
                         .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
                 }
-                StorageConfiguration::Memory => create_memory_context(&agent_config.id, network_config)
-                    .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string())),
+                StorageConfiguration::Memory => {
+                    create_memory_context(&agent_config.id, network_config)
+                        .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
+                }
             }?;
 
             Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
@@ -310,9 +313,8 @@ fn create_file_context(
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
+    use std::{fs::File, io::Write};
     use tempfile::tempdir;
-    use std::fs::File;
-    use std::io::Write;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
@@ -350,7 +352,8 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "app spec instance"
-    "#.to_string()
+    "#
+        .to_string()
     }
 
     #[test]
@@ -371,8 +374,7 @@ pub mod tests {
     #[test]
     fn test_default_dna_loader() {
         let tempdir = tempdir().unwrap();
-        let fixture =
-            r#"{
+        let fixture = r#"{
                 "name": "my dna",
                 "description": "",
                 "version": "",
@@ -396,11 +398,11 @@ pub mod tests {
             }"#;
         let file_path = tempdir.path().join("test.dna.json");
         let mut tmp_file = File::create(file_path.clone()).unwrap();
-        writeln!(tmp_file, "{}",fixture).unwrap();
+        writeln!(tmp_file, "{}", fixture).unwrap();
         match Container::load_dna(&file_path.into_os_string().into_string().unwrap()) {
             Ok(dna) => {
-               assert_eq!(dna.name,"my dna");
-            },
+                assert_eq!(dna.name, "my dna");
+            }
             Err(_) => assert!(false),
         }
     }

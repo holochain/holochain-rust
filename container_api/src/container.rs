@@ -237,7 +237,10 @@ fn instantiate_from_config(
                 ))
             })?;
 
-            let network_config = instance_config.network.unwrap_or(default_network_config.to_owned()).into();
+            let network_config = instance_config
+                .network
+                .unwrap_or(default_network_config.to_owned())
+                .into();
 
             let context: Context = match instance_config.storage {
                 StorageConfiguration::File { path } => {

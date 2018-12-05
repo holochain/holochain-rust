@@ -167,7 +167,7 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::{test_chain_header, test_sources, ChainHeader},
         entry::{test_entry, test_entry_b, test_entry_c},
-        signature::{test_signatures, test_signature_b, test_signature_c},
+        signature::{test_signature_b, test_signature_c, test_signatures},
         time::test_iso_8601,
     };
     use std::sync::{Arc, RwLock};

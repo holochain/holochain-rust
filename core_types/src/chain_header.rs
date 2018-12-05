@@ -144,7 +144,7 @@ pub mod tests {
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
             test_entry, test_entry_a, test_entry_b,
         },
-        signature::{test_signatures, test_signature_b},
+        signature::{test_signature_b, test_signatures},
         time::test_iso_8601,
     };
 

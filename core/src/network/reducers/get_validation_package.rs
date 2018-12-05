@@ -21,13 +21,13 @@ fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), H
         && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
         .ok_or("Network not initialized".to_string())?;
 
-    let source_address = header.sources.first();
+    let source_address = header.sources().first().expect("A header must have at least one source");
     let direct_message = DirectMessage::RequestValidationPackage(header.entry_address().clone());
 
     let data = MessageData {
         msg_id: "".to_string(),
         dna_hash: network_state.dna_hash.clone().unwrap(),
-        to_agent_id: source_address,
+        to_agent_id: source_address.to_string(),
         from_agent_id: network_state.agent_id.clone().unwrap(),
         data: serde_json::from_str(&serde_json::to_string(&direct_message).unwrap()).unwrap(),
     };

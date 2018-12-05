@@ -12,7 +12,7 @@ hash = "Qm328wyq38924y"
 id = "app spec instance"
 dna = "app spec rust"
 agent = "test agent"
-network = "{\"backend\": \"mock\"}"
+network = ""
 [instances.logger]
 type = "simple"
 file = "app_spec.log"

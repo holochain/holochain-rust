@@ -47,6 +47,8 @@ pub struct Container {
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
+static DEFAULT_NETWORK_CONFIG: &'static str = "{\"backend\":\"mock\"}";
+
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn with_config(config: Configuration) -> Self {
@@ -110,6 +112,7 @@ impl Container {
     pub fn load_config(&mut self, config: &Configuration, ) -> Result<(), String> {
         let _ = config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
+        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
         let id_instance_pairs: Vec<_> = config
             .instance_ids()
             .clone()
@@ -117,7 +120,7 @@ impl Container {
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(&id, config, &mut self.dna_loader),
+                    instantiate_from_config(&id, config, &mut self.dna_loader,&default_network),
                 )
             })
             .collect();
@@ -217,6 +220,7 @@ fn instantiate_from_config(
     id: &String,
     config: &Configuration,
     dna_loader: &mut DnaLoader,
+    default_network_config: &String,
 ) -> Result<Holochain, String> {
     let _ = config.check_consistency()?;
 
@@ -233,12 +237,18 @@ fn instantiate_from_config(
                 ))
             })?;
 
+            let network_config = if instance_config.network == "" {
+                instance_config.network
+            } else {
+                default_network_config.to_owned()
+            }.into();
+
             let context: Context = match instance_config.storage {
                 StorageConfiguration::File { path } => {
-                    create_file_context(&agent_config.id, &path, instance_config.network.into())
+                    create_file_context(&agent_config.id, &path, network_config)
                         .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
                 }
-                StorageConfiguration::Memory => create_memory_context(&agent_config.id, instance_config.network.into())
+                StorageConfiguration::Memory => create_memory_context(&agent_config.id, network_config)
                     .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string())),
             }?;
 
@@ -300,7 +310,6 @@ fn create_file_context(
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
-    use crate::config::tests::example_serialized_network_config;
     use tempfile::tempdir;
     use std::fs::File;
     use std::io::Write;
@@ -312,7 +321,7 @@ pub mod tests {
     }
 
     fn test_toml() -> String {
-        format!(r#"
+        r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -327,7 +336,7 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    network = "{}"
+    network = ""
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -341,17 +350,19 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "app spec instance"
-    "#,example_serialized_network_config())
+    "#.to_string()
     }
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
     fn test_instantiate_from_config() {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
         let maybe_holochain = instantiate_from_config(
             &"app spec instance".to_string(),
             &config,
             &mut test_dna_loader(),
+            &default_network,
         );
 
         assert_eq!(maybe_holochain.err(), None);

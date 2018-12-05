@@ -230,7 +230,7 @@ where
 
 #[cfg(test)]
 pub mod tests {
-    use crate::config::{load_configuration, Configuration, InterfaceDriver, StorageConfiguration};
+    use crate::config::{load_configuration, Configuration,};
 
     pub fn example_serialized_network_config() -> String {
         String::from("{\\\"backend\\\":\\\"mock\\\"}")
@@ -327,8 +327,64 @@ pub mod tests {
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
-    "#,example_serialized_network_config());
-        println!("{}",toml);
+    "#,"{\\\"backend\\\":\\\"special\\\"}");
+
+        let config = load_configuration::<Configuration>(toml).unwrap();
+
+        assert_eq!(config.check_consistency(), Ok(()));
+        let dnas = config.dnas;
+        let dna_config = dnas.get(0).expect("expected at least 1 DNA");
+        assert_eq!(dna_config.id, "app spec rust");
+        assert_eq!(dna_config.file, "app_spec.hcpkg");
+        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+
+        let instances = config.instances;
+        let instance_config = instances.get(0).unwrap();
+        assert_eq!(instance_config.network, "{\"backend\":\"special\"}");
+    }
+
+
+    #[test]
+    fn test_load_complete_config_default_network() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app_spec.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    network = ""
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[interfaces]]
+    id = "app spec websocket interface"
+    [interfaces.driver]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec domainsocket interface"
+    [interfaces.driver]
+    type = "domainsocket"
+    file = "/tmp/holochain.sock"
+    [[interfaces.instances]]
+    id = "app spec instance"
+    "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
@@ -344,35 +400,9 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(instance_config.network, "{\"backend\":\"mock\"}");
-        let logger_config = &instance_config.logger;
-        assert_eq!(logger_config.logger_type, "simple");
-        assert_eq!(logger_config.file, Some(String::from("app_spec.log")));
-        if let StorageConfiguration::File { path } = &instance_config.storage {
-            assert_eq!(path, "app_spec_storage");
-        } else {
-            panic!("Wrong enum type");
-        }
-
-        let interfaces = config.interfaces;
-        let interface_config_0 = interfaces.get(0).unwrap();
-        let interface_config_1 = interfaces.get(1).unwrap();
-        if let InterfaceDriver::Websocket { port } = interface_config_0.driver {
-            assert_eq!(port, 8888);
-        } else {
-            panic!("Wrong enum type");
-        }
-        if let InterfaceDriver::DomainSocket { ref file } = interface_config_1.driver {
-            assert_eq!(file, "/tmp/holochain.sock");
-        } else {
-            panic!("Wrong enum type");
-        }
-        assert_eq!(interface_config_0.admin, false);
-        let instance_ref = interface_config_0.instances.get(0).unwrap();
-        assert_eq!(instance_ref.id, "app spec instance");
-
-        assert_eq!(config.bridges, vec![]);
+        assert_eq!(instance_config.network, "");
     }
+
 
     #[test]
     fn test_inconsistent_config() {

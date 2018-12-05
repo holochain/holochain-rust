@@ -283,7 +283,7 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        action::{tests::test_action_wrapper_get, Action, ActionWrapper},
+        action::{tests::test_action_wrapper_commit, Action, ActionWrapper},
         agent::{
             chain_store::ChainStore,
             state::{ActionResponse, AgentState},
@@ -297,7 +297,7 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::test_chain_header,
         dna::{zome::Zome, Dna},
-        entry::entry_type::EntryType,
+        entry::{entry_type::EntryType, test_entry},
         json::{JsonString, RawString},
     };
 
@@ -573,7 +573,7 @@ pub mod tests {
         let context = test_context("jane");
         let (rx_action, rx_observer) = instance.initialize_channels();
 
-        let action_wrapper = test_action_wrapper_get();
+        let action_wrapper = test_action_wrapper_commit();
         let new_observers = instance.process_action(
             action_wrapper.clone(),
             Vec::new(), // start with no observers
@@ -604,7 +604,10 @@ pub mod tests {
             .get(&action_wrapper)
             .expect("action and reponse should be added after Get action dispatch");
 
-        assert_eq!(response, &ActionResponse::GetEntry(None));
+        assert_eq!(
+            response,
+            &ActionResponse::Commit(Ok(test_entry().address()))
+        );
     }
 
     #[test]

@@ -1,6 +1,4 @@
-use holochain_core_types::{
-    cas::content::Address, validation::ValidationPackage,
-};
+use holochain_core_types::{cas::content::Address, validation::ValidationPackage};
 
 /// These are the different kind of node-to-node messages
 /// that can be send between Holochain nodes.

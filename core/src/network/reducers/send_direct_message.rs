@@ -4,9 +4,7 @@ use crate::{
     context::Context,
     network::{actions::ActionResponse, direct_message::DirectMessage, state::NetworkState},
 };
-use holochain_core_types::{
-    error::HolochainError,
-};
+use holochain_core_types::error::HolochainError;
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol_wrapper::{MessageData, ProtocolWrapper},
@@ -22,7 +20,7 @@ fn inner(
 ) -> Result<(), HolochainError> {
     (network_state.network.is_some()
         && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-        .ok_or("Network not initialized".to_string())?;
+    .ok_or("Network not initialized".to_string())?;
 
     let data = MessageData {
         msg_id,
@@ -57,9 +55,16 @@ pub fn reduce_send_direct_message(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (to_agent_id, direct_message, msg_id, is_response) = unwrap_to!(action => crate::action::Action::SendDirectMessage);
+    let (to_agent_id, direct_message, msg_id, is_response) =
+        unwrap_to!(action => crate::action::Action::SendDirectMessage);
 
-    let result = inner(network_state, to_agent_id.to_string(), direct_message, msg_id.clone(), *is_response);
+    let result = inner(
+        network_state,
+        to_agent_id.to_string(),
+        direct_message,
+        msg_id.clone(),
+        *is_response,
+    );
 
     network_state.actions.insert(
         action_wrapper.clone(),

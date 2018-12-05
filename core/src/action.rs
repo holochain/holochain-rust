@@ -1,10 +1,7 @@
 use crate::{
     agent::state::AgentState,
     context::Context,
-    network::{
-        direct_message::DirectMessage,
-        state::NetworkState
-    },
+    network::{direct_message::DirectMessage, state::NetworkState},
     nucleus::{
         state::{NucleusState, ValidationResult},
         ExecuteZomeFnResponse, ZomeFnCall,

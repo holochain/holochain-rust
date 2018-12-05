@@ -5,8 +5,8 @@ extern crate hdk;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 extern crate boolinator;
+extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
 

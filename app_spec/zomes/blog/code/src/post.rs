@@ -1,15 +1,9 @@
-/// This file holds everything that represents the "post" entry type.
-
-use hdk::holochain_core_types::{
-    error::HolochainError,
-    dna::zome::entry_types::Sharing,
-    json::JsonString,
-    cas::content::Address,
-};
-use hdk::{
-    entry_definition::ValidatingEntryType,
-};
 use boolinator::Boolinator;
+use hdk::entry_definition::ValidatingEntryType;
+/// This file holds everything that represents the "post" entry type.
+use hdk::holochain_core_types::{
+    cas::content::Address, dna::zome::entry_types::Sharing, error::HolochainError, json::JsonString,
+};
 
 /// We declare the structure of our entry type with this Rust struct.
 /// It will be checked automatically by the macro below, similar
@@ -23,7 +17,7 @@ pub struct Post {
 }
 
 impl Post {
-    pub fn new (content: &str, date_created: &str) -> Post {
+    pub fn new(content: &str, date_created: &str) -> Post {
         Post {
             content: content.to_owned(),
             date_created: date_created.to_owned(),
@@ -82,14 +76,15 @@ pub fn definition() -> ValidatingEntryType {
 #[cfg(test)]
 mod tests {
 
-    use crate::post::Post;
-    use crate::post::definition;
-    use hdk::holochain_core_types::entry::entry_type::EntryType;
-    use hdk::holochain_core_types::dna::zome::entry_types::EntryTypeDef;
-    use hdk::ValidationData;
-    use hdk::holochain_core_types::entry::Entry;
-    use hdk::holochain_core_types::dna::zome::entry_types::LinkedFrom;
-    use hdk::holochain_wasm_utils::api_serialization::validation::LinkDirection;
+    use crate::post::{definition, Post};
+    use hdk::{
+        holochain_core_types::{
+            dna::zome::entry_types::{EntryTypeDef, LinkedFrom},
+            entry::{entry_type::EntryType, Entry},
+        },
+        holochain_wasm_utils::api_serialization::validation::LinkDirection,
+        ValidationData,
+    };
 
     #[test]
     /// smoke test Post
@@ -98,15 +93,9 @@ mod tests {
         let date_created = "bar";
         let post = Post::new(content, date_created);
 
-        assert_eq!(
-            content.to_string(),
-            post.content(),
-        );
+        assert_eq!(content.to_string(), post.content(),);
 
-        assert_eq!(
-            date_created.to_string(),
-            post.date_created(),
-        );
+        assert_eq!(date_created.to_string(), post.date_created(),);
     }
 
     #[test]
@@ -114,19 +103,14 @@ mod tests {
         let mut post_definition = definition();
 
         let expected_name = EntryType::from("post");
-        assert_eq!(
-            expected_name,
-            post_definition.name.clone(),
-        );
+        assert_eq!(expected_name, post_definition.name.clone(),);
 
         let expected_definition = EntryTypeDef {
             description: "blog entry post".to_string(),
-            linked_from: vec![
-                LinkedFrom {
-                    base_type: "%agent_id".to_string(),
-                    tag: "authored_posts".to_string(),
-                }
-            ],
+            linked_from: vec![LinkedFrom {
+                base_type: "%agent_id".to_string(),
+                tag: "authored_posts".to_string(),
+            }],
             ..Default::default()
         };
         assert_eq!(
@@ -170,10 +154,6 @@ mod tests {
         );
 
         let expected_link_tag = "authored_posts";
-        assert_eq!(
-            post_definition_link.tag.to_owned(),
-            expected_link_tag,
-        );
-
+        assert_eq!(post_definition_link.tag.to_owned(), expected_link_tag,);
     }
 }

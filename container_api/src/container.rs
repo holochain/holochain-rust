@@ -107,7 +107,7 @@ impl Container {
 
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
-    pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
+    pub fn load_config(&mut self, config: &Configuration, ) -> Result<(), String> {
         let _ = config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
         let id_instance_pairs: Vec<_> = config
@@ -233,14 +233,12 @@ fn instantiate_from_config(
                 ))
             })?;
 
-            let network = json!({"backend": "mock"}).into();
-
             let context: Context = match instance_config.storage {
                 StorageConfiguration::File { path } => {
-                    create_file_context(&agent_config.id, &path, network)
+                    create_file_context(&agent_config.id, &path, instance_config.network.into())
                         .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
                 }
-                StorageConfiguration::Memory => create_memory_context(&agent_config.id, network)
+                StorageConfiguration::Memory => create_memory_context(&agent_config.id, instance_config.network.into())
                     .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string())),
             }?;
 
@@ -302,6 +300,7 @@ fn create_file_context(
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
+    use crate::config::tests::example_serialized_network_config;
     use tempfile::tempdir;
     use std::fs::File;
     use std::io::Write;
@@ -312,8 +311,8 @@ pub mod tests {
         Arc::new(loader)
     }
 
-    fn test_toml<'a>() -> &'a str {
-        r#"
+    fn test_toml() -> String {
+        format!(r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -328,6 +327,7 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
+    network = "{}"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -341,13 +341,13 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "app spec instance"
-    "#
+    "#,example_serialized_network_config())
     }
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
     fn test_instantiate_from_config() {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let maybe_holochain = instantiate_from_config(
             &"app spec instance".to_string(),
             &config,
@@ -396,7 +396,7 @@ pub mod tests {
 
     #[test]
     fn test_container_load_config() {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
@@ -412,7 +412,7 @@ pub mod tests {
 
     #[test]
     fn test_container_try_from_configuration() {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
 
         let maybe_container = Container::try_from(&config);
 
@@ -427,7 +427,7 @@ pub mod tests {
 
     #[test]
     fn test_rpc_info_instances() {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
@@ -439,7 +439,7 @@ pub mod tests {
         let io = dispatcher.io;
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"}}}","id":1}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"},\"network\":\"{\\\"backend\\\":\\\"mock\\\"}\"}}","id":1}"#;
 
         assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }

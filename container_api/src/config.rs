@@ -139,7 +139,7 @@ impl TryFrom<DNAConfiguration> for Dna {
 }
 
 /// An instance combines a DNA with an agent.
-/// Each instance has its own storage and logger configuration.
+/// Each instance has its own network, storage and logger configuration.
 #[derive(Deserialize, Serialize, Clone)]
 pub struct InstanceConfiguration {
     pub id: String,
@@ -147,6 +147,7 @@ pub struct InstanceConfiguration {
     pub agent: String,
     pub logger: LoggerConfiguration,
     pub storage: StorageConfiguration,
+    pub network: String,
 }
 
 /// There might be different kinds of loggers in the future.
@@ -229,8 +230,11 @@ where
 
 #[cfg(test)]
 pub mod tests {
-
     use crate::config::{load_configuration, Configuration, InterfaceDriver, StorageConfiguration};
+
+    pub fn example_serialized_network_config() -> String {
+        String::from("{\\\"backend\\\":\\\"mock\\\"}")
+    }
 
     #[test]
     fn test_agent_load() {
@@ -285,7 +289,7 @@ pub mod tests {
 
     #[test]
     fn test_load_complete_config() {
-        let toml = r#"
+        let toml = &format!(r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -300,6 +304,7 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
+    network = "{}"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -322,8 +327,9 @@ pub mod tests {
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
+    "#,example_serialized_network_config());
+        println!("{}",toml);
 
-    "#;
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(config.check_consistency(), Ok(()));
@@ -338,6 +344,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
+        assert_eq!(instance_config.network, "{\"backend\":\"mock\"}");
         let logger_config = &instance_config.logger;
         assert_eq!(logger_config.logger_type, "simple");
         assert_eq!(logger_config.file, Some(String::from("app_spec.log")));
@@ -369,7 +376,7 @@ pub mod tests {
 
     #[test]
     fn test_inconsistent_config() {
-        let toml = r#"
+        let toml = &format!(r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -384,14 +391,14 @@ pub mod tests {
     id = "app spec instance"
     dna = "WRONG DNA ID"
     agent = "test agent"
+    network = "{}"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
-
-    "#;
+    "#,example_serialized_network_config());
         let config: Configuration = load_configuration(toml).unwrap();
 
         assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
@@ -399,7 +406,7 @@ pub mod tests {
 
     #[test]
     fn test_inconsistent_config_interface_1() {
-        let toml = r#"
+        let toml = &format!(r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -414,6 +421,7 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
+    network = "{}"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -428,8 +436,7 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "WRONG INSTANCE ID"
-
-    "#;
+    "#,example_serialized_network_config());
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(
@@ -443,7 +450,7 @@ pub mod tests {
 
     #[test]
     fn test_invalid_toml_1() {
-        let toml = r#"
+        let toml = &format!(r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -458,6 +465,7 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
+    network = "{}"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -472,8 +480,7 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "app spec instance"
-
-    "#;
+    "#,example_serialized_network_config());
         if let Err(e) = load_configuration::<Configuration>(toml) {
             assert!(
                 true,

@@ -1,6 +1,6 @@
-use crate::nucleus::{
-    actions::get_entry::get_entry,
-    ribosome::{api::ZomeApiResult, Runtime},
+use crate::{
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::get_entry::get_entry,
 };
 use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
@@ -16,11 +16,11 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
-        // Exit on error
+    // Exit on error
         Err(_) => {
             println!("invoke_get_entry() failed to deserialize: {:?}", args_str);
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
+        return ribosome_error_code!(ArgumentDeserializationFailed);
+    }
     };
     // Create and block on future
     let future = get_entry(&runtime.context, &input);
@@ -240,6 +240,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     /// test that we get status NotFound on an obviously broken address
     fn test_get_not_found() {
         let wasm = test_get_round_trip_wat();

@@ -89,7 +89,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
             // (including validtion) is atomic.
             agent::state::create_new_chain_header(
                 &entry,
-                &*context.state().unwrap().agent(),
+                context.clone(),
                 &None,
             ),
         );

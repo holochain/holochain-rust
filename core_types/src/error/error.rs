@@ -99,6 +99,7 @@ pub enum HolochainError {
     Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
     ConfigError(String),
+    Timeout,
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -131,6 +132,7 @@ impl Error for HolochainError {
             Ribosome(err_code) => err_code.as_str(),
             RibosomeFailed(fail_msg) => &fail_msg,
             ConfigError(err_msg) => &err_msg,
+            Timeout => "timeout",
         }
     }
 }
@@ -315,6 +317,7 @@ mod tests {
                 HolochainError::DoesNotHaveCapabilityToken,
                 "Caller does not have Capability to make that call",
             ),
+            (HolochainError::Timeout, "timeout"),
         ] {
             assert_eq!(output, input.description());
         }

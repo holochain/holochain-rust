@@ -617,6 +617,10 @@ where
 }
 ```
 
+Obviously this is a lot of boilerplate, and is really only the tip of the
+iceberg for how complex custom serde implementations can get. Use this for
+surgical implementations along critical path type safety/ergonomics.
+
 #### Skip the attribute
 
 Serde also allows for attributes to be completely skipped during serialization.

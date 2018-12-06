@@ -20,7 +20,7 @@ use hdk::{
 };
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::GetEntryOptions,
+        get_entry::{GetEntryOptions, EntryHistory},
         get_links::GetLinksResult,
     },
     holochain_core_types::dna::zome::entry_types::Sharing,
@@ -92,7 +92,7 @@ fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
     hdk::commit_entry(&entry)
 }
 
-fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<Option<Entry>> {
+fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<EntryHistory> {
     hdk::get_entry_result(entry_address, GetEntryOptions::default())
 }
 
@@ -450,7 +450,7 @@ define_zome! {
 
             check_get_entry_result: {
                 inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<Option<Entry>>|,
+                outputs: |result: ZomeApiResult<EntryHistory>|,
                 handler: handle_check_get_entry_result
             }
 

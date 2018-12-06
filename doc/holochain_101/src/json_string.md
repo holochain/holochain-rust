@@ -767,7 +767,9 @@ let restored_bar: MyBar = foo.bar()?;
 ```
 
 This is how the `ContentAddressableStorage` trait used to work. It would
-"magically" restore the correct `Content` from storage, provided the compiler
-had the type info available at load time. We had to sacrifice this neat trick
-due to other incompatible constraints put on the CAS by the reducer store etc.
-but it should work well in other scenarios :)
+"magically" restore the correct `Content` from storage based on an `Address`
+and type alone, provided the compiler had the type info available at compile
+time.
+
+We had to sacrifice this neat trick due to incompatible constraints put on the
+CAS by the reducer store etc. but it should work well in other scenarios :)

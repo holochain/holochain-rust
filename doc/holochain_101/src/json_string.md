@@ -522,6 +522,9 @@ let foo = Foo::new(bar); // assuming impl Foo::new from above
 The result is still a raw `String` in `Foo` but the validity and consistency of
 the JSON data is enforced across all crates by `JsonString::from(bar)`.
 
+It is even possible to internalise the `JsonString` completely within the `Foo`
+methods using `Into<JsonString>`. This is covered in more detail below.
+
 #### Using serde attributes
 
 Serde allows us to set serialization logic at the field level for structs.

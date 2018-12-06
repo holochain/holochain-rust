@@ -14,7 +14,7 @@ use holochain_net_connection::{
 };
 use std::sync::Arc;
 
-fn inner(
+fn reduce_respond_get_inner(
     network_state: &mut NetworkState,
     get_dht_data: &GetDhtData,
     maybe_entry: &Option<EntryWithMeta>,
@@ -51,9 +51,7 @@ pub fn reduce_respond_get(
 ) {
     let action = action_wrapper.action();
     let (get_dht_data, maybe_entry) = unwrap_to!(action => crate::action::Action::RespondGet);
-
-    let result = inner(network_state, get_dht_data, maybe_entry);
-
+    let result = reduce_respond_get_inner(network_state, get_dht_data, maybe_entry);
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::RespondGet(match result {

@@ -1,5 +1,6 @@
 use crate::{
     agent::actions::{commit::commit_entry, update_entry::update_entry},
+    workflows::get_entry_history::get_entry_history_workflow,
     nucleus::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
@@ -17,6 +18,7 @@ use holochain_core_types::{
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
+use holochain_wasm_utils::api_serialization::get_entry::*;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -39,12 +41,27 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         }
     };
 
-    // Get Current entry Chain Header
+    // Get Current entry's latest version
+    let get_args = GetEntryArgs {
+        address: entry_args.address,
+        options: GetEntryOptions::default(),
+    };
+    let get_entry_history_result = block_on(get_entry_history_workflow(&runtime.context, &get_args));
+    if let Err(err) = get_entry_history_result {
+        return ribosome_error_code!(Unspecified);
+    }
+    let entry_history = get_entry_history_result.unwrap();
+    if entry_history.entries.is_empty() {
+        return ribosome_error_code!(Unspecified);
+    }
+    let latest_entry = entry_history.entries.iter().next().unwrap().clone();
+
+    // Get latest entry's ChainHeader
     let agent_state = &runtime.context.state().unwrap().agent();
     let chain_header_address = agent_state
         .chain()
         .iter(&agent_state.top_chain_header())
-        .find(|header| header.entry_address() == &entry_args.address)
+        .find(|header| header.entry_address() == &latest_entry.address())
         .map(|header| header.address().clone())
         .expect("Modified entry should be in chain");
 
@@ -74,7 +91,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 update_entry(
                     &runtime.context,
                     &runtime.context.action_channel,
-                    entry_args.address.clone(),
+                    latest_entry.address().clone(),
                     new_address,
                 )
             }),

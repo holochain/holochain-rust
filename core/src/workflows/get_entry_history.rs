@@ -1,10 +1,9 @@
 use crate::{context::Context, network, nucleus};
 
-use futures::executor::block_on;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
-    entry::{Entry, EntryWithMeta},
+    entry::EntryWithMeta,
     error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_entry::{
@@ -47,7 +46,7 @@ pub async fn get_entry_history_workflow<'a>(
         let maybe_entry_with_meta = await!(get_entry_with_meta_workflow(context, &address))?;
         // Entry found
         if let Some(entry_with_meta) = maybe_entry_with_meta {
-            println!("\t\t found: {:?}", entry_with_meta);
+            println!("\t <- found");
             // Erase history if request is for latest
             if args.options.status_request == StatusRequestKind::Latest {
                 entry_history = EntryHistory::new();

@@ -10,7 +10,10 @@ pub mod tests {
         instance::tests::test_instance_and_context_by_name, network::actions::get_entry::get_entry,
     };
     use futures::executor::block_on;
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::test_entry,
+        crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
+    };
     use test_utils::*;
 
     #[test]
@@ -20,9 +23,15 @@ pub mod tests {
         let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
         let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
 
+        // Create Entry & crud-status metadata, and store it.
         let entry = test_entry();
-        assert!(context1.file_storage.write().unwrap().add(&entry).is_ok());
+        let result = context1.file_storage.write().unwrap().add(&entry);
+        assert!(result.is_ok());
+        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+        let result = context1.eav_storage.write().unwrap().add_eav(&status_eav);
+        assert!(result.is_ok());
 
+        // Get it.
         let result = block_on(get_entry(&context2, &entry.address()));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();

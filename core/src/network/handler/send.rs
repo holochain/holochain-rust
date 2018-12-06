@@ -69,7 +69,11 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
 
             let initial_message = initial_message.unwrap();
             let address = unwrap_to!(initial_message => DirectMessage::RequestValidationPackage);
+
             let action_wrapper = ActionWrapper::new(Action::HandleGetValidationPackage((address.clone(), maybe_validation_package.clone())));
+            dispatch_action(&context.action_channel, action_wrapper.clone());
+
+            let action_wrapper = ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
             dispatch_action(&context.action_channel, action_wrapper.clone());
         }
     }

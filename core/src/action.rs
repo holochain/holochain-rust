@@ -114,6 +114,8 @@ pub enum Action {
     /// 4th parameter is true for a response to a previous message, false for a new interaction
     SendDirectMessage((Address, DirectMessage, String, bool)),
 
+    ResolveDirectConnection(String),
+
     GetValidationPackage(ChainHeader),
     HandleGetValidationPackage((Address, Option<ValidationPackage>)),
 

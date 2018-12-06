@@ -41,7 +41,7 @@ to appear ;)
 To encourage as many languages as possible we want to keep the minimum
 requirements for interacting with holochain core as minimal as possible.
 
-Currently the two requirements for writing zomes in <your language of choice>:
+Currently the two requirements for writing zomes in `<your favourite language>`:
 
 - Must compile to WASM
 - Must be able to serialize UTF-8 data and allocate to memory read by core

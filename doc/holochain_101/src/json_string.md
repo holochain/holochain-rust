@@ -701,7 +701,7 @@ anything that can be converted to `JsonString`.
 
 This is exactly like using `Into<String>` but for JSON data. An even looser
 option is to only require `TryInto<JsonString>` but this makes little or no
-difference for us.
+difference to us in practise.
 
 An example of this is the `store_as_json` used to pass native Rust typed data
 across the WASM boundary. This is used internally by the `define_zome!` macro

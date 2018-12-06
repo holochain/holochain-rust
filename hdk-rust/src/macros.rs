@@ -43,6 +43,8 @@ macro_rules! load_json {
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::dna::zome::entry_types::Sharing;
 /// # use boolinator::Boolinator;
+/// # use hdk::error::ZomeApiResult;
+/// use holochain_core_types::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -64,16 +66,13 @@ macro_rules! load_json {
 ///     date_created: String,
 /// }
 ///
-/// fn handle_post_address(content: String) -> JsonString {
+/// fn handle_post_address(content: String) -> ZomeApiResult<Address> {
 ///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
 ///         content,
 ///         date_created: "now".into(),
 ///     }.into());
 ///
-///     match hdk::entry_address(&post_entry) {
-///         Ok(address) => address.into(),
-///         Err(hdk_error) => hdk_error.into(),
-///     }
+///     hdk::entry_address(&post_entry)
 /// }
 ///
 /// define_zome! {
@@ -103,13 +102,13 @@ macro_rules! load_json {
 ///         // "main" is the name of the capability
 ///         // "Public" is the access setting of the capability
 ///         main (Public) {
-///             // the name of this function, "hash_post" is the
+///             // the name of this function, "post_address" is the
 ///             // one to give while performing a `call` method to this function.
 ///             // the name of the handler function must be different than the
 ///             // name of the Zome function.
-///             hash_post: {
+///             post_address: {
 ///                 inputs: |content: String|,
-///                 outputs: |post: serde_json::Value|,
+///                 outputs: |post: ZomeApiResult<Address>|,
 ///                 handler: handle_post_address
 ///             }
 ///         }
@@ -224,28 +223,18 @@ macro_rules! define_zome {
                         $($input_param_name : $input_param_type),*
                     }
 
-                    // #[derive(Serialize)]
-                    // struct OutputStruct {
-                    //     $( $output_param_name:ident : $output_param_type:ty ),*
-                    // }
-
                     // Deserialize input
                     let maybe_input = load_json!(encoded_allocation_of_input);
                     let input: InputStruct = maybe_input.unwrap();
 
                     // Macro'd function body
-                    // @TODO trait bound this as Into<JsonString>
-                    // @see https://github.com/holochain/holochain-rust/issues/588
-                    fn execute(params: InputStruct) -> $crate::holochain_wasm_utils::holochain_core_types::json::JsonString {
+                    fn execute (params: InputStruct) -> $( $output_param_type )* {
                         let InputStruct { $($input_param_name),* } = params;
 
                         $handler_path($($input_param_name),*)
                     }
 
-                    // Execute inner function
-                    let output_obj = execute(input);
-
-                    $crate::global_fns::store_and_return_output(output_obj)
+                    $crate::global_fns::store_and_return_output(execute(input))
                 }
             )+
         )*

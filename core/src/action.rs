@@ -99,14 +99,29 @@ pub enum Action {
     // Network actions:
     // ----------------
 
+    /// Create a network proxy instance from the given JSON config.
+    /// 2nd and 3rd parameter are the DNA hash and the agent id
+    /// which are needed to register with the network.
     InitNetwork((JsonString, String, String)),
+
+    /// Makes the network PUT the given entry to the DHT.
+    /// Distinguishes between different entry types and does
+    /// the right thing respectively.
+    /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
     /// GetEntry by address
     GetEntry(Address),
     GetEntryTimeout(Address),
 
+    /// Lets the network module respond to a GET request.
+    /// Triggered from the corresponding workflow after retrieving the
+    /// requested entry from our local DHT shard.
     RespondGet((GetDhtData, Option<Entry>)),
+
+    /// We got a response for our GET request which needs to be
+    /// added to the state.
+    /// Triggered from the network handler.
     HandleGetResult(DhtData),
 
     /// Sends a direct message object to the given address.
@@ -114,9 +129,18 @@ pub enum Action {
     /// 4th parameter is true for a response to a previous message, false for a new interaction
     SendDirectMessage((Address, DirectMessage, String, bool)),
 
+    /// Makes the network module forget about the direct message
+    /// connection with the given ID.
+    /// Triggered when we got an answer to our initial DM.
     ResolveDirectConnection(String),
 
+    /// Makes the network module DM the source of the given entry
+    /// and prepare for receiveing an answer
     GetValidationPackage(ChainHeader),
+
+    /// Updates the state to hold the response that we got for
+    /// our previous request for a validation package.
+    /// Triggered from the network handler when we got the response.
     HandleGetValidationPackage((Address, Option<ValidationPackage>)),
 
 

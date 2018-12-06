@@ -255,7 +255,7 @@ let foo_json = JsonString::from(JsonString::from(foo_a)); // <-- compiler saves 
 and this bug:
 
 ```rust
-let foo_a: Foo = serde_json::from_str(&string_but_not_json)?;
+let foo_a: Foo = serde_json::from_str(&string_but_not_json)?; // <-- runtime error :(
 ```
 
 Because calling `Foo::try_from(String)` is (probably) a compiler error:

@@ -115,6 +115,8 @@ pub enum Action {
     SendDirectMessage((Address, DirectMessage, String, bool)),
 
     GetValidationPackage(ChainHeader),
+    HandleGetValidationPackage((Address, Option<ValidationPackage>)),
+
 
     // ----------------
     // Nucleus actions:

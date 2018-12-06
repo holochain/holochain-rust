@@ -76,7 +76,10 @@ compatibility across all zome languages (see above) across the core/wasm
 boundary. However, the _contents_ of `Entry::App(..)` are treated as an opaque
 UTF-8 string by Holochain core. Naturally the HDK macros we offer provide sugar
 to work with the value of app entries but this is not enforce anywhere within
-core.
+core. Because the Rust serialization round tripping must work across both core
+and the HDK it must work equally well for treating the app entry values as
+opaque in the subconscious and meaningful structs in the conscious. This is
+achieved through a healthy dose of compiler and macro magic.
 
 This means that zome developers can implement their own serialization logic for
 their own data if they wish. Simply by wrapping a zome-serialized app entry

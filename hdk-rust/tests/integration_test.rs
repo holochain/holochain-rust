@@ -33,6 +33,21 @@ use holochain_wasm_utils::api_serialization::{get_links::GetLinksResult, QueryRe
 use std::sync::{Arc, Mutex};
 use test_utils::*;
 
+#[no_mangle]
+pub fn hc_init_globals(_: u32) -> u32 { 0 }
+#[no_mangle]
+pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+#[no_mangle]
+pub fn hc_get_entry(_: u32) -> u32 { 0 }
+#[no_mangle]
+pub fn hc_entry_address(_: u32) -> u32 { 0 }
+#[no_mangle]
+pub fn hc_query(_: u32) -> u32 { 0 }
+#[no_mangle]
+pub fn zome_setup(_: u32) -> u32 { 0 }
+#[no_mangle]
+pub fn __list_capabilities(_: u32) -> u32 { 0 }
+
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
     capability.cap_type.membrane = Membrane::Public;

@@ -4,6 +4,7 @@ pub mod handle_get_result;
 pub mod handle_get_validation_package;
 pub mod init;
 pub mod publish;
+pub mod resolve_direct_connection;
 pub mod respond_get;
 pub mod send_direct_message;
 
@@ -15,10 +16,14 @@ use crate::{
         direct_message::DirectMessage,
         reducers::{
             get_entry::{reduce_get_entry, reduce_get_entry_timeout},
+            get_validation_package::reduce_get_validation_package,
             handle_get_result::reduce_handle_get_result,
+            handle_get_validation_package::reduce_handle_get_validation_package,
             init::reduce_init,
             publish::reduce_publish,
+            resolve_direct_connection::reduce_resolve_direct_connection,
             respond_get::reduce_respond_get,
+            send_direct_message::reduce_send_direct_message,
         },
         state::NetworkState,
     },
@@ -39,10 +44,14 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         Action::GetEntry(_) => Some(reduce_get_entry),
         Action::GetEntryTimeout(_) => Some(reduce_get_entry_timeout),
+        Action::GetValidationPackage(_) => Some(reduce_get_validation_package),
         Action::HandleGetResult(_) => Some(reduce_handle_get_result),
+        Action::HandleGetValidationPackage(_) => Some(reduce_handle_get_validation_package),
         Action::InitNetwork(_) => Some(reduce_init),
         Action::Publish(_) => Some(reduce_publish),
+        Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),
         Action::RespondGet(_) => Some(reduce_respond_get),
+        Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         _ => None,
     }
 }
@@ -93,6 +102,8 @@ pub fn send_message(network_state: &mut NetworkState, to_agent_id: &Address, mes
         from_agent_id: network_state.agent_id.clone().unwrap(),
         data: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
     };
+
+    println!("SEND MESSAGE: {:?}", data);
 
     let _ = send(network_state, ProtocolWrapper::SendMessage(data))?;
 

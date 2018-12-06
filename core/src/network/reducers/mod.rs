@@ -83,10 +83,10 @@ pub fn send(network_state: &mut NetworkState, protocol_wrapper: ProtocolWrapper)
 }
 
 pub fn send_message(network_state: &mut NetworkState, to_agent_id: &Address, message: DirectMessage) -> Result<(), HolochainError> {
-    let id = ProcessUniqueId::new();
+    let id = ProcessUniqueId::new().to_string();
 
     let data = MessageData {
-        msg_id: id.to_string(),
+        msg_id: id.clone(),
         dna_hash: network_state.dna_hash.clone().unwrap(),
         to_agent_id: to_agent_id.to_string(),
         from_agent_id: network_state.agent_id.clone().unwrap(),

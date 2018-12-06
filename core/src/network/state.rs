@@ -41,7 +41,7 @@ pub struct NetworkState {
     pub agent_id: Option<String>,
     pub get_entry_results: HashMap<Address, GetEntryResult>,
     pub get_validation_package_results: HashMap<Address, GetValidationPackageResult>,
-    pub direct_message_connections: HashMap<snowflake::ProcessUniqueId, DirectMessage>,
+    pub direct_message_connections: HashMap<String, DirectMessage>,
     id: snowflake::ProcessUniqueId,
 }
 

@@ -1,11 +1,7 @@
 use crate::{context::Context, network, nucleus};
 
-use futures::executor::block_on;
 use holochain_core_types::{
-    cas::content::Address,
-    crud_status::CrudStatus,
-    entry::{Entry, EntryWithMeta},
-    error::HolochainError,
+    cas::content::Address, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_entry::{
     EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind,
@@ -18,10 +14,8 @@ pub async fn get_entry_with_meta_workflow<'a>(
     address: &'a Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
-    let maybe_entry_with_meta = nucleus::actions::get_entry::get_entry_with_meta(
-        context,
-        address.clone(),
-    )?;
+    let maybe_entry_with_meta =
+        nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
     if maybe_entry_with_meta.is_some() {
         return Ok(maybe_entry_with_meta);
     }

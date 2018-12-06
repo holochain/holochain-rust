@@ -12,9 +12,9 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
 };
-use holochain_wasm_utils::api_serialization::get_entry::{
+/*use holochain_wasm_utils::api_serialization::get_entry::{
     EntryHistory, GetEntryOptions, StatusRequestKind,
-};
+};*/
 use std::{collections::HashSet, convert::TryFrom, sync::Arc};
 
 // A function that might return a mutated DhtStore

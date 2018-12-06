@@ -1,10 +1,6 @@
 use boolinator::*;
 use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
-use holochain_core_types::{
-    cas::content::Address,
-    entry::{Entry, EntryWithMeta},
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::DhtData;
 use std::sync::Arc;
 

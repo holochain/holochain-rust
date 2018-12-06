@@ -11,7 +11,6 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    chain_header::ChainHeader,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,

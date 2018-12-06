@@ -263,16 +263,15 @@ fn can_get_entry() {
     );
     let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
     assert!(result.is_ok(), "\t result = {:?}", result);
-/*<<<<<<< HEAD
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(
-            "{\"addresses\":[\"Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v\"],\"entries\":[{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}],\"crud_status\":[{\"bits\":1}],\"crud_links\":{}}"
-        )
-    );
-=======*/
+    /*<<<<<<< HEAD
+        assert_eq!(
+            result.unwrap(),
+            JsonString::from(
+                "{\"addresses\":[\"Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v\"],\"entries\":[{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}],\"crud_status\":[{\"bits\":1}],\"crud_links\":{}}"
+            )
+        );
+    =======*/
     assert_eq!(result.unwrap(), JsonString::from(expected));
-
 
     let result = hc.call(
         "test_zome",
@@ -298,12 +297,12 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-/* <<<<<<< HEAD
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from("{\"addresses\":[],\"entries\":[],\"crud_status\":[],\"crud_links\":{}}")
-    );
-======= */
+    /* <<<<<<< HEAD
+        assert_eq!(
+            result.unwrap(),
+            JsonString::from("{\"addresses\":[],\"entries\":[],\"crud_status\":[],\"crud_links\":{}}")
+        );
+    ======= */
     let expected: ZomeApiResult<Option<Entry>> = Ok(None);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 

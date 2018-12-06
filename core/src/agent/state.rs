@@ -18,7 +18,6 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
 use std::{collections::HashMap, convert::TryFrom, sync::Arc};
-use futures::executor::block_on;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.

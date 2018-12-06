@@ -1,6 +1,5 @@
 extern crate serde_json;
 use crate::context::Context;
-use futures::future::{self, FutureObj};
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
@@ -8,9 +7,7 @@ use holochain_core_types::{
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
-use holochain_wasm_utils::api_serialization::get_entry::{
-    EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind,
-};
+
 use std::{collections::HashSet, convert::TryInto, sync::Arc};
 
 pub(crate) fn get_entry_from_dht(

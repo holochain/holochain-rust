@@ -8,7 +8,9 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
+    cas::content::Address, dna::Dna,
+    entry::{Entry, EntryWithMeta},
+    error::HolochainError, json::JsonString,
     link::Link, validation::ValidationPackage,
 };
 use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData};
@@ -119,7 +121,7 @@ pub enum Action {
     InitNetwork((JsonString, String, String)),
     Publish(Address),
     Hold(Entry),
-    RespondGet((GetDhtData, Option<Entry>)),
+    RespondGet((GetDhtData, Option<EntryWithMeta>)),
     HandleGetResult(DhtData),
 }
 

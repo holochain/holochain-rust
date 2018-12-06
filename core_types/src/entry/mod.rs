@@ -14,6 +14,7 @@ use link::{link_add::LinkAdd, link_list::LinkList, link_remove::LinkRemove};
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
 use std::convert::TryFrom;
+use crud_status::CrudStatus;
 
 pub type AppEntryValue = JsonString;
 
@@ -107,6 +108,14 @@ impl AddressableContent for Entry {
         Entry::try_from(content.to_owned())
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct EntryWithMeta {
+    pub entry: Entry,
+    pub crud_status: CrudStatus,
+    pub maybe_crud_link: Option<Address>,
+}
+
 
 /// dummy entry value
 #[cfg_attr(tarpaulin, skip)]

@@ -1,6 +1,6 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::get_entry::get_entry,
+    workflows::get_entry_history::get_entry_history_workflow,
 };
 use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
@@ -22,10 +22,8 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     };
-    // Create and block on future
-    let future = get_entry(&runtime.context, &input);
-    let result = block_on(future);
-
+    // Create workflow future and block on it
+    let result = get_entry_history_workflow(&runtime.context, &input);
     // Store result in wasm memory
     runtime.store_result(result)
 }
@@ -227,13 +225,13 @@ mod tests {
         )
         .expect("test should be callable");
 
-        let mut entry_result = GetEntryResult::new();
-        entry_result.addresses.push(test_entry().address());
-        entry_result.entries.push(test_entry());
-        entry_result.crud_status.push(CrudStatus::LIVE);
+        let mut entry_history = EntryHistory::new();
+        entry_history.addresses.push(test_entry().address());
+        entry_history.entries.push(test_entry());
+        entry_history.crud_status.push(CrudStatus::LIVE);
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
-                ZomeApiInternalResult::success(entry_result)
+                ZomeApiInternalResult::success(entry_history)
             ))),
             call_result,
         );
@@ -281,7 +279,7 @@ mod tests {
 
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
-                ZomeApiInternalResult::success(GetEntryResult::new())
+                ZomeApiInternalResult::success(EntryHistory::new())
             ))),
             call_result,
         );

@@ -1,6 +1,5 @@
 use crate::{
     cas::content::Address,
-    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     json::JsonString,
 };
@@ -37,7 +36,7 @@ pub mod tests {
     }
 
     #[test]
-    fn deletion_smoke_test() {
+    fn deletion_entry_smoke_test() {
         assert_eq!(
             test_entry_a().address(),
             test_deletion_entry().deleted_entry_address()

@@ -11,7 +11,7 @@ use holochain_core_types::{
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryArgs, GetEntryOptions, GetEntryResult, StatusRequestKind},
+        get_entry::{GetEntryArgs, GetEntryOptions, EntryHistory, StatusRequestKind},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
@@ -513,10 +513,10 @@ pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
     Ok(Some(entry.clone()))
 }
 
-/// Return a GetEntryResult filled with all the versions of the entry from the version at
+/// Return a GetEntryHistory filled with all the versions of the entry from the version at
 /// the specified address to the latest.
 /// Returns None if no entry exists at the specified address.
-pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<GetEntryResult>> {
+pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<EntryHistory>> {
     let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::All))?;
     if entry_result.entries.is_empty() {
         return Ok(None);
@@ -530,7 +530,7 @@ pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<GetEntryResul
 pub fn get_entry_result(
     address: Address,
     options: GetEntryOptions,
-) -> ZomeApiResult<GetEntryResult> {
+) -> ZomeApiResult<EntryHistory> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();

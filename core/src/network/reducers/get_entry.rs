@@ -46,7 +46,7 @@ pub fn reduce_get_entry(
     };
 
     network_state
-        .get_entry_results
+        .get_entry_with_meta_results
         .insert(address.clone(), result);
 }
 
@@ -58,18 +58,18 @@ pub fn reduce_get_entry_timeout(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => crate::action::Action::GetEntryTimeout);
 
-    if network_state.get_entry_results.get(address).is_none() {
+    if network_state.get_entry_with_meta_results.get(address).is_none() {
         return;
     }
 
     if network_state
-        .get_entry_results
+        .get_entry_with_meta_results
         .get(address)
         .unwrap()
         .is_none()
     {
         network_state
-            .get_entry_results
+            .get_entry_with_meta_results
             .insert(address.clone(), Some(Err(HolochainError::Timeout)));
     }
 }
@@ -97,7 +97,7 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
-            .get_entry_results
+            .get_entry_with_meta_results
             .get(&entry.address())
             .map(|result| result.clone());
         assert_eq!(
@@ -128,7 +128,7 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
-            .get_entry_results
+            .get_entry_with_meta_results
             .get(&entry.address())
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
@@ -152,7 +152,7 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
-            .get_entry_results
+            .get_entry_with_meta_results
             .get(&entry.address())
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
@@ -161,7 +161,7 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
-            .get_entry_results
+            .get_entry_with_meta_results
             .get(&entry.address())
             .map(|result| result.clone());
         assert_eq!(
@@ -183,7 +183,7 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
-            .get_entry_results
+            .get_entry_with_meta_results
             .get(&entry.address())
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(Some(Ok(Some(entry.clone())))));
@@ -194,7 +194,7 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
-            .get_entry_results
+            .get_entry_with_meta_results
             .get(&entry.address())
             .map(|result| result.clone());
 

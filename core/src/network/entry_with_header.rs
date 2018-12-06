@@ -1,4 +1,4 @@
-use crate::{agent::chain_header, context::Context};
+use crate::{agent::find_chain_header, context::Context};
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
 };
@@ -10,8 +10,8 @@ pub struct EntryWithHeader {
     pub header: ChainHeader,
 }
 
-impl From<(Entry, ChainHeader)> for EntryWithHeader {
-    fn from((entry, header): (Entry, ChainHeader)) -> EntryWithHeader {
+impl EntryWithHeader {
+    pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
         EntryWithHeader {
             entry: entry,
             header,
@@ -19,7 +19,7 @@ impl From<(Entry, ChainHeader)> for EntryWithHeader {
     }
 }
 
-pub fn entry_from_cas(address: &Address, context: &Arc<Context>) -> Result<Entry, HolochainError> {
+fn fetch_entry_from_cas(address: &Address, context: &Arc<Context>) -> Result<Entry, HolochainError> {
     let json = context
         .file_storage
         .read()?
@@ -29,12 +29,12 @@ pub fn entry_from_cas(address: &Address, context: &Arc<Context>) -> Result<Entry
     Ok(s.into())
 }
 
-pub fn entry_with_header(
+pub fn fetch_entry_with_header(
     address: &Address,
     context: &Arc<Context>,
-) -> Result<(Entry, ChainHeader), HolochainError> {
-    let entry = entry_from_cas(address, &context)?;
-    let header = chain_header(&entry, &context).ok_or("No header found for entry".to_string())?;
+) -> Result<EntryWithHeader, HolochainError> {
+    let entry = fetch_entry_from_cas(address, &context)?;
+    let header = find_chain_header(&entry, &context).ok_or("No header found for entry".to_string())?;
 
-    Ok((entry, header))
+    Ok(EntryWithHeader::new(entry, header))
 }

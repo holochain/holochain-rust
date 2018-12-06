@@ -4,7 +4,10 @@ use crate::{
     context::Context,
     network::{actions::ActionResponse, state::NetworkState},
 };
-use holochain_core_types::{entry::Entry, error::HolochainError};
+use holochain_core_types::{
+    entry::{Entry, EntryWithMeta},
+    error::HolochainError,
+};
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol_wrapper::{DhtData, GetDhtData, ProtocolWrapper},
@@ -14,7 +17,7 @@ use std::sync::Arc;
 fn inner(
     network_state: &mut NetworkState,
     get_dht_data: &GetDhtData,
-    maybe_entry: &Option<Entry>,
+    maybe_entry: &Option<EntryWithMeta>,
 ) -> Result<(), HolochainError> {
     (network_state.network.is_some()
         && network_state.dna_hash.is_some() & network_state.agent_id.is_some())

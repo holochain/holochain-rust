@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     dht::actions::{add_link::add_link, hold::hold_entry},
     instance::dispatch_action,
-    network::util::EntryWithHeader,
+    network::entry_with_header::EntryWithHeader,
     nucleus,
 };
 use futures::executor::block_on;
@@ -40,13 +40,13 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
             }
             Ok(ProtocolWrapper::GetDht(get_dht_data)) => {
-                let _ = block_on(nucleus::actions::get_entry::get_entry(
+                let _ = block_on(nucleus::actions::get_entry::get_entry_with_meta(
                     &context,
                     Address::from(get_dht_data.address.clone()),
                 ))
-                .map(|maybe_entry| {
+                .map(|maybe_entry_with_meta| {
                     let action_wrapper =
-                        ActionWrapper::new(Action::RespondGet((get_dht_data, maybe_entry)));
+                        ActionWrapper::new(Action::RespondGet((get_dht_data, maybe_entry_with_meta)));
                     dispatch_action(&context.action_channel, action_wrapper.clone());
                 });
             }

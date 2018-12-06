@@ -2,7 +2,8 @@ use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::ChainStore,
     context::Context,
-    nucleus::actions::get_entry::get_entry,
+    //nucleus::actions::get_entry::get_entry_with_meta,
+    workflows::get_entry_history::get_entry_history_workflow,
     state::State,
 };
 use holochain_core_types::{
@@ -10,7 +11,7 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
-    error::HolochainError,
+    error::{HolochainError, HcResult},
     json::*,
     signature::Signature,
     time::Iso8601,
@@ -79,13 +80,13 @@ impl AgentState {
             address: agent_entry_address,
             options: GetEntryOptions::default(),
         };
-        let agent_entry_result = await!(get_entry(context, &entry_args))?;
-        if agent_entry_result.entries.is_empty() {
+        let agent_entry_history = get_entry_history_workflow(context, &entry_args)?;
+        if agent_entry_history.entries.is_empty() {
             return Err(HolochainError::ErrorGeneric(
                 "Agent entry not found".to_string(),
             ));
         }
-        let agent_entry = agent_entry_result.entries.iter().next().unwrap().clone();
+        let agent_entry = agent_entry_history.entries.iter().next().unwrap().clone();
         match agent_entry {
             Entry::AgentId(agent_id) => Ok(agent_id),
             _ => unreachable!(),

@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
-    agent::{self, chain_header},
+    agent::{self, find_chain_header},
     context::Context,
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
@@ -74,7 +74,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
         let id = id.clone();
         let entry = entry.clone();
         let context = context.clone();
-        let entry_header = chain_header(&entry.clone(), &context).unwrap_or(
+        let entry_header = find_chain_header(&entry.clone(), &context).unwrap_or(
             // TODO: make sure that we don't run into race conditions with respect to the chain
             // We need the source chain header as part of the validation package.
             // For an already committed entry (when asked to deliver the validation package to

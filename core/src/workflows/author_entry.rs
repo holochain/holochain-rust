@@ -1,7 +1,7 @@
 use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
-    network::actions::publish::publish_entry,
+    network::actions::publish::publish,
     nucleus::actions::{
         build_validation_package::build_validation_package, validate::validate_entry,
     },
@@ -33,7 +33,7 @@ pub async fn author_entry<'a>(
     // 3. Commit the entry
     await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
     // 4. Publish the valid entry to DHT
-    await!(publish_entry(entry.address(), &context))
+    await!(publish(entry.address(), &context))
 }
 
 #[cfg(test)]

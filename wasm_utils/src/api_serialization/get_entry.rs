@@ -1,9 +1,12 @@
 use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, entry::Entry, error::HolochainError, json::*,
+    cas::content::Address, crud_status::CrudStatus,
+    entry::Entry, error::HolochainError, json::*,
+    entry::EntryWithMeta,
+    cas::content::AddressableContent,
 };
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
 pub enum StatusRequestKind {
     Initial,
     Latest,
@@ -41,20 +44,30 @@ pub struct GetEntryArgs {
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson)]
-pub struct GetEntryResult {
+pub struct EntryHistory {
     pub addresses: Vec<Address>,
     pub entries: Vec<Entry>,
     pub crud_status: Vec<CrudStatus>,
     pub crud_links: HashMap<Address, Address>,
 }
 
-impl GetEntryResult {
+impl EntryHistory {
     pub fn new() -> Self {
-        GetEntryResult {
+        EntryHistory {
             addresses: Vec::new(),
             entries: Vec::new(),
             crud_status: Vec::new(),
             crud_links: HashMap::new(),
+        }
+    }
+
+    pub fn push(&mut self, entry_with_meta: &EntryWithMeta) {
+        let address = entry_with_meta.entry.address();
+        self.addresses.push(address.clone());
+        self.entries.push(entry_with_meta.entry.clone());
+        self.crud_status.push(entry_with_meta.crud_status);
+        if let Some(new_address) = entry_with_meta.maybe_crud_link.clone() {
+            self.crud_links.insert(address, new_address);
         }
     }
 }

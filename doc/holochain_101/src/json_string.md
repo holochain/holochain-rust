@@ -699,7 +699,7 @@ poorly chosen combination of enum variants and tuples.
 As per all the considerations outlined for using `String` directly on `Foo`,
 avoid using `json!` or similar to build up the internal `String` of `Bar`.
 
-## Hiding JsonString with Into<JsonString>
+## Hiding JsonString with `Into<JsonString>`
 
 It is possible in function signatures to simply leave an argument open to
 anything that can be converted to `JsonString`.

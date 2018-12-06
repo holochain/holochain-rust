@@ -66,7 +66,7 @@ not really viable options right now, even if `serde` supports them in Rust.
 
 Holochain often makes a distinction between "app data" and "core data".
 Following the biomimicry theme we sometimes call this "conscious" vs.
-"subconscious" when this data is used in core logic or exposed to zomes.
+"subconscious" when this data is used in zomes or core logic respectively.
 
 The most obvious example of this is the `Entry` enum that has an `Entry::App`
 variant explicitly for app data, and other variants for system logic.

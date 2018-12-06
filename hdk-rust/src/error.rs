@@ -1,18 +1,20 @@
-use holochain_core_types::{
+use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
-    json::JsonString,
+    json::{JsonError, JsonString},
 };
 use std::{error::Error, fmt};
 
 /// Error for DNA developers to use in their zome code.
 /// They do not have to send this error back to Ribosome unless its an InternalError.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,
     HashNotFound,
     ValidationFailed(String),
 }
+
+impl JsonError for ZomeApiError {}
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
@@ -41,12 +43,6 @@ impl From<HolochainError> for ZomeApiError {
 impl From<!> for ZomeApiError {
     fn from(_: !) -> Self {
         unreachable!();
-    }
-}
-
-impl From<ZomeApiError> for JsonString {
-    fn from(zome_api_error: ZomeApiError) -> JsonString {
-        JsonString::from(json!({ "error": zome_api_error }))
     }
 }
 
@@ -85,3 +81,20 @@ impl fmt::Display for ZomeApiError {
 }
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
+
+#[cfg(test)]
+mod tests {
+
+    use error::{ZomeApiError, ZomeApiResult};
+    use holochain_core_types::json::JsonString;
+
+    #[test]
+    fn zome_api_result_json_result_round_trip_test() {
+        let result: ZomeApiResult<String> = Err(ZomeApiError::FunctionNotImplemented);
+
+        assert_eq!(
+            JsonString::from(result),
+            JsonString::from("{\"Err\":\"FunctionNotImplemented\"}"),
+        );
+    }
+}

@@ -247,9 +247,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///
 /// # fn main() {
 ///
-/// fn handle_sum(num1: u32, num2: u32) -> JsonString {
-///     let sum = num1 + num2;
-///     return json!({"sum": format!("{}",sum)}).into();
+/// fn handle_sum(num1: u32, num2: u32) -> u32 {
+///     num1 + num2
 /// }
 ///
 /// define_zome! {
@@ -263,7 +262,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: JsonString|,
+///                 outputs: |sum: u32|,
 ///                 handler: handle_sum
 ///             }
 ///         }
@@ -289,6 +288,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # use hdk::holochain_core_types::hash::HashString;
 /// # use hdk::holochain_core_types::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
+/// # use hdk::error::ZomeApiResult;
+/// # use std::convert::TryInto;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -310,7 +311,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///
 /// # fn main() {
 ///
-/// fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
+/// fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
 ///     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ///     struct SumInput {
 ///         num1: u32,
@@ -320,15 +321,14 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     let maybe_result = hdk::call(
+///     match hdk::call(
 ///         "summer",
 ///         "main",
 ///         "sum",
 ///         call_input.into()
-///     );
-///     match maybe_result {
-///         Ok(result) => result.into(),
-///         Err(hdk_error) => hdk_error.into(),
+///     ) {
+///         Ok(json) => Ok(json.try_into()?),
+///         Err(e) => Err(e),
 ///     }
 /// }
 ///
@@ -343,7 +343,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: JsonString|,
+///                 outputs: |maybe_sum: ZomeApiResult<u32>|,
 ///                 handler: handle_check_sum
 ///             }
 ///         }

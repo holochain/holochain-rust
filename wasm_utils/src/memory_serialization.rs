@@ -84,6 +84,7 @@ pub fn store_as_json<J: TryInto<JsonString>>(
     let j: JsonString = jsonable
         .try_into()
         .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
+
     let json_bytes = j.into_bytes();
     let json_bytes_len = json_bytes.len() as u32;
     if json_bytes_len > U16_MAX {

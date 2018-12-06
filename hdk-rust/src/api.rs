@@ -196,7 +196,7 @@ pub enum BundleOnClose {
 /// # fn main() {
 /// pub fn handle_some_function(content: String) -> JsonString {
 ///     // ...
-///     hdk::debug("write a message to the logs");
+///     let _ = hdk::debug("write a message to the logs")?;
 ///     // ...
 ///     "whatever".into()
 /// }
@@ -253,8 +253,9 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///
 /// # fn main() {
 ///
-/// fn handle_sum(num1: u32, num2: u32) -> u32 {
-///     num1 + num2
+/// fn handle_sum(num1: u32, num2: u32) -> JsonString {
+///     let sum = num1 + num2;
+///     json!({"sum": format!("{}",sum)}).into()
 /// }
 ///
 /// define_zome! {
@@ -268,7 +269,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: u32|,
+///                 outputs: |sum: JsonString|,
 ///                 handler: handle_sum
 ///             }
 ///         }
@@ -313,7 +314,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///
 /// # fn main() {
 ///
-/// fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
+/// fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
 ///     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ///     struct SumInput {
 ///         num1: u32,
@@ -323,15 +324,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     match hdk::call(
-///         "summer",
-///         "main",
-///         "sum",
-///         call_input.into()
-///     ) {
-///         Ok(json) => Ok(json.try_into()?),
-///         Err(e) => Err(e),
-///     }
+///     hdk::call("summer", "main", "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -345,7 +338,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |maybe_sum: ZomeApiResult<u32>|,
+///                 outputs: |sum: ZomeApiResult<JsonString>|,
 ///                 handler: handle_check_sum
 ///             }
 ///         }
@@ -423,17 +416,18 @@ pub fn call<S: Into<String>>(
 ///     date_created: String,
 /// }
 ///
-/// pub fn handle_create_post(content: String) -> JsonString {
+/// pub fn handle_create_post(content: String) -> ZomeApiResult<Address> {
 ///
-///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
-///         content,
-///         date_created: "now".into(),
-///     }.into());
+///    let post_entry = Entry::App(AppEntryType::from("post"),
+///        Post::new(
+///            &content,
+///            "now",
+///        ).into()
+///    );
 ///
-///     match hdk::commit_entry(&post_entry) {
-///         Ok(address) => address.into(),
-///         Err(e) => e.into(),
-///     }
+///    let address = hdk::commit_entry(&post_entry)?;
+///
+///    Ok(address)
 ///
 /// }
 ///
@@ -476,15 +470,12 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::cas::content::Address;
 /// # fn main() {
-/// pub fn handle_get_post(post_address: Address) -> JsonString {
+/// pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
 ///     // get_entry returns a Result<Option<T>, ZomeApiError>
 ///     // where T is the type that you used to commit the entry, in this case a Blog
 ///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
 ///     // Otherwise its a Some(T) or a None
-///     match hdk::get_entry(post_address) {
-///         Ok(maybe_post) => maybe_post.into(),
-///         Err(e) => e.into(),
-///     }
+///     hdk::get_entry(post_address)
 /// }
 /// # }
 /// ```
@@ -551,25 +542,31 @@ pub fn get_entry_result(
 ///     date_created: String,
 /// }
 ///
-/// pub fn handle_link_entries(content: String) -> JsonString {
-///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
-///         content,
-///         date_created: "now".into(),
-///     }.into());
+/// pub fn handle_link_entries(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
 ///
-///     match hdk::commit_entry(&post_entry) {
-///         Ok(post_address) => {
-///              match hdk::link_entries(
-///                 &AGENT_ADDRESS,
-///                 &post_address,
-///                 "authored_posts"
-///             ) {
-///                 Ok(link_address) => post_address.into(),
-///                 Err(e) => e.into(),
-///             }
-///         }
-///         Err(hdk_error) => hdk_error.into(),
+///     let post_entry = Entry::App(AppEntryType::from("post"),
+///         Post::new(
+///             &content,
+///             "now",
+///         ).into()
+///     );
+///
+///     let address = hdk::commit_entry(&post_entry)?;
+///
+///     hdk::link_entries(
+///         &AGENT_ADDRESS,
+///         &address,
+///         "authored_posts",
+///     )?;
+///
+///     if let Some(in_reply_to_address) = in_reply_to {
+///         // return with Err if in_reply_to_address points to missing entry
+///         hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions{})?;
+///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
+///
+///     Ok(address)
+///
 /// }
 /// # }
 /// ```
@@ -642,18 +639,18 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///     date_created: String,
 /// }
 ///
-/// fn handle_post_address(content: String) -> JsonString {
+/// pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
+///     let post_entry = Entry::App(
+///         AppEntryType::from("post"),
+///         AppEntryValue::from(
+///             Post::new(
+///                 &content,
+///                 "now",
+///             ),
+///         )
+///     );
 ///
-///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
-///         content,
-///         date_created: "now".into(),
-///     }.into());
-///
-///     match hdk::entry_address(&post_entry) {
-///         Ok(address) => address.into(),
-///         Err(hdk_error) => hdk_error.into(),
-///     }
-///
+///     hdk::entry_address(&post_entry)
 /// }
 ///
 /// # }
@@ -731,11 +728,8 @@ pub fn remove_entry<S: Into<String>>(_entry: Address, _message: S) -> ZomeApiRes
 /// # use holochain_core_types::cas::content::Address;
 ///
 /// # fn main() {
-/// pub fn handle_posts_by_agent(agent: Address) -> JsonString {
-///     match hdk::get_links(&agent, "authored_posts") {
-///         Ok(result) => result.into(),
-///         Err(hdk_error) => hdk_error.into(),
-///     }
+/// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
+///     hdk::get_links(&agent, "authored_posts")
 /// }
 /// # }
 /// ```
@@ -773,6 +767,19 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 /// Returns a list of entries from your local source chain, that match a given type.
 /// entry_type_name: Specify type of entry to retrieve
 /// limit: Max number of entries to retrieve
+/// # Examples
+/// ```rust
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::cas::content::Address;
+///
+/// # fn main() {
+/// pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
+///     hdk::query("post", 0, 0)
+/// }
+/// # }
+/// ```
 pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<QueryResult> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 

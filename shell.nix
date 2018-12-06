@@ -98,6 +98,10 @@ stdenv.mkDerivation rec {
     hc-fmt-check
 
     zeromq3
+
+    # dev tooling
+    git
+    virtualbox
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

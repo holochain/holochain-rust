@@ -102,8 +102,7 @@ impl Instance {
     }
 
     pub fn establish_signal_channel(&mut self) -> Receiver<Signal> {
-        let (tx_signal, rx_signal) =
-            sync_channel::<Signal>(Self::default_channel_buffer_size());
+        let (tx_signal, rx_signal) = sync_channel::<Signal>(Self::default_channel_buffer_size());
         self.signal_channel = Some(tx_signal);
         println!("INITIALIZED CHANNEL");
         rx_signal
@@ -195,27 +194,27 @@ impl Instance {
     }
 
     fn emit_action_signal(&self, action: Action) {
-        use self::Action::{Commit, AddLink, Publish, InitApplication, Hold};
+        use self::Action::{AddLink, Commit, Hold, InitApplication, Publish};
 
         let fire_away = match action {
             AddLink(_) => true,
             InitApplication(_) => false,
             Hold(ref entry) => match entry {
                 Entry::App(_, _) => true,
-                _ => false
+                _ => false,
             },
             Commit(ref entry) => match entry {
                 Entry::App(_, _) => true,
-                _ => false
+                _ => false,
             },
             Publish(_) => true,
-            _ => true
+            _ => true,
         };
         if fire_away {
             let signal = Signal::Internal(action);
             match self.signal_channel {
                 Some(ref tx) => tx.send(signal).expect("Signal channel is closed"),
-                None => ()
+                None => (),
             }
         }
     }
@@ -316,8 +315,7 @@ pub fn dispatch_action_with_observer<F>(
     };
 
     observer_channel.as_ref().map(|tx| {
-        tx.send(observer)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
+        tx.send(observer).expect(DISPATCH_WITHOUT_CHANNELS);
     });
     dispatch_action(action_channel, action_wrapper);
 }
@@ -327,10 +325,12 @@ pub fn dispatch_action_with_observer<F>(
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &Option<SyncSender<ActionWrapper>>, action_wrapper: ActionWrapper) {
+pub fn dispatch_action(
+    action_channel: &Option<SyncSender<ActionWrapper>>,
+    action_wrapper: ActionWrapper,
+) {
     action_channel.as_ref().map(|tx| {
-        tx.send(action_wrapper)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
+        tx.send(action_wrapper).expect(DISPATCH_WITHOUT_CHANNELS);
     });
 }
 

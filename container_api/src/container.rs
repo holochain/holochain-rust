@@ -10,7 +10,7 @@ use holochain_cas_implementations::{
 };
 use holochain_core::{
     context::Context,
-    signal::{Signal, combine_receivers},
+    signal::{combine_receivers, Signal},
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use tempfile::tempdir;
@@ -339,10 +339,10 @@ pub mod tests {
     extern crate test_utils;
     use super::*;
     use crate::config::load_configuration;
+    use holochain_core_types::cas::content::AddressableContent;
     use std::{fs::File, io::Write, time::Duration};
     use tempfile::tempdir;
     use test_utils::*;
-    use holochain_core_types::cas::content::AddressableContent;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
@@ -469,7 +469,6 @@ pub mod tests {
 
     #[test]
     fn test_rpc_info_instances() {
-
         let container = test_container();
         let interface_config = &container.config.interfaces[0];
         let dispatcher = container.make_dispatcher(&interface_config);
@@ -481,10 +480,9 @@ pub mod tests {
         assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }
 
-
     #[test]
     fn can_receive_action_signals() {
-        use holochain_core::action::Action::{Commit, AddLink, Publish, InitApplication, Hold};
+        use holochain_core::action::Action::{AddLink, Commit, Hold, InitApplication, Publish};
         let wasm = include_bytes!(
             "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
         );
@@ -494,18 +492,23 @@ pub mod tests {
 
         let (mut hc, rx) = Holochain::with_signals(dna.clone(), context).unwrap();
         hc.start().expect("couldn't start");
-        hc.call("test_zome", "test_cap", "commit_test", r#"{}"#).unwrap();
+        hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
+            .unwrap();
 
         let timeout = Duration::from_millis(1000);
 
         'outer: loop {
-            let msg_publish = rx.recv_timeout(timeout).expect("no more signals to receive");
+            let msg_publish = rx
+                .recv_timeout(timeout)
+                .expect("no more signals to receive");
             if let Signal::Internal(Publish(address)) = msg_publish {
                 loop {
-                    let msg_hold = rx.recv_timeout(timeout).expect("no more signals to receive");
+                    let msg_hold = rx
+                        .recv_timeout(timeout)
+                        .expect("no more signals to receive");
                     if let Signal::Internal(Hold(entry)) = msg_hold {
                         assert_eq!(address, entry.address());
-                        break 'outer
+                        break 'outer;
                     }
                 }
             }

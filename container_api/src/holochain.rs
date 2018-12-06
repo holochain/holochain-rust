@@ -60,8 +60,6 @@
 //!
 //!```
 
-use holochain_core::signal::Signal;
-use std::sync::mpsc::Receiver;
 use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::{executor::block_on, TryFutureExt};
 use holochain_core::{
@@ -70,10 +68,11 @@ use holochain_core::{
     network::actions::initialize_network::initialize_network,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
+    signal::Signal,
     state::State,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
-use std::sync::Arc;
+use std::sync::{mpsc::Receiver, Arc};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -90,13 +89,19 @@ impl Holochain {
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 
-    pub fn with_signals(dna: Dna, context: Arc<Context>) -> HolochainResult<(Self, Receiver<Signal>)> {
+    pub fn with_signals(
+        dna: Dna,
+        context: Arc<Context>,
+    ) -> HolochainResult<(Self, Receiver<Signal>)> {
         let (instance, signal_rx) = Instance::with_signals(context.clone());
-        Self::from_dna_and_context_and_instance(dna, context, instance)
-            .map(|hc| (hc, signal_rx))
+        Self::from_dna_and_context_and_instance(dna, context, instance).map(|hc| (hc, signal_rx))
     }
 
-    fn from_dna_and_context_and_instance(dna: Dna, context: Arc<Context>, mut instance: Instance) -> HolochainResult<Self> {
+    fn from_dna_and_context_and_instance(
+        dna: Dna,
+        context: Arc<Context>,
+        mut instance: Instance,
+    ) -> HolochainResult<Self> {
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context.clone());
@@ -199,8 +204,8 @@ mod tests {
     use holochain_core_types::{agent::AgentId, dna::Dna};
 
     use std::{
+        sync::{Arc, Mutex, RwLock},
         time::Duration,
-        sync::{Arc, Mutex, RwLock}
     };
     use tempfile::tempdir;
     use test_utils::{
@@ -431,11 +436,16 @@ mod tests {
     // @TODO this is a first attempt at replacing history.len() tests
     // @see https://github.com/holochain/holochain-rust/issues/195
     fn expect_action<F>(rx: &Receiver<Signal>, f: F) -> ()
-    where F: Fn(Action) -> bool {
+    where
+        F: Fn(Action) -> bool,
+    {
         loop {
-            if let Signal::Internal(action) = rx.recv_timeout(Duration::from_millis(1000)).expect("waited 1 sec, but no signal received") {
+            if let Signal::Internal(action) = rx
+                .recv_timeout(Duration::from_millis(1000))
+                .expect("waited 1 sec, but no signal received")
+            {
                 if f(action) {
-                    break
+                    break;
                 }
             }
         }
@@ -455,8 +465,11 @@ mod tests {
         hc.start().expect("couldn't start");
 
         expect_action(&signal_rx, |action| {
-            if let Action::InitNetwork(_) = action { true }
-            else { false }
+            if let Action::InitNetwork(_) = action {
+                true
+            } else {
+                false
+            }
         });
 
         // Call the exposed wasm function that calls the Commit API function
@@ -471,8 +484,11 @@ mod tests {
         );
 
         expect_action(&signal_rx, |action| {
-            if let Action::Commit(_) = action { true }
-            else { false }
+            if let Action::Commit(_) = action {
+                true
+            } else {
+                false
+            }
         });
     }
 

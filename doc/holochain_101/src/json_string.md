@@ -251,6 +251,18 @@ Because nesting `JsonString::from()` calls is a compiler error:
 let foo_json = JsonString::from(JsonString::from(foo_a)); // <-- compiler saves us :)
 ```
 
+and this bug:
+
+```rust
+let foo_a: Foo = serde_json::from_str(&string_but_not_json)?;
+```
+
+Because calling `Foo::try_from(String)` is (probably) a compiler error:
+
+```rust
+let foo_a = Foo::try_from(string_but_not_json)?; // <-- compiler saves us again :)
+```
+
 Which is great for the majority of data that needs serializing. There are some
 important edge cases that we need to cover with additional techniques/tooling.
 

@@ -1,10 +1,8 @@
 # Serialization and JsonString
 
-## Serialization in Holochain
+## Why serialize anything? Why JSON?
 
-### Why serialize anything? Why JSON?
-
-#### Holochain zomes are written in WASM.
+### Holochain zomes are written in WASM.
 
 WASM only supports working directly with integers and manually allocating
 memory. This means that sharing any data between holochain core and zome
@@ -30,7 +28,7 @@ From the `serde_json` github repository README:
 > fastest C and C++ JSON libraries or even 30% faster for many use cases.
 > Benchmarks live in the serde-rs/json-benchmark repo.
 
-#### Holochain aims to support all WASM languages not just Rust/JS
+### Holochain aims to support all WASM languages not just Rust/JS
 
 The official Holochain HDKs are Rust and AssemblyScript. The Rust HDK will
 always be the most tightly integrated HDK with core simply because Holochain
@@ -64,7 +62,7 @@ there was not even a `JSON.parse()` method in AssemblyScript itself!
 WASM is very promising and very immature, so esoteric serialization options are
 not really options unfortunately, even if `serde` might support them.
 
-#### JSON serialization only pertains to communication with core
+### JSON serialization only pertains to communication with core
 
 Holochain often makes a distinction between "app data" and "core data".
 Following the biomimicry theme we sometimes call this "conscious" vs.
@@ -85,9 +83,9 @@ their own data if they wish. Simply by wrapping a zome-serialized app entry
 value in `"\"...\""` it becomes a string primitive from core's perspective. The
 zome can do anything needed with this, including custom validation logic, etc.
 
-### Serialization through Rust types
+## Serialization through Rust types
 
-#### How Rust serializes: serde from 1000m
+### How Rust serializes: serde from 1000m
 
 The `serde` crate leans heavily on the Rust compiler for serialization round
 tripping.
@@ -137,7 +135,7 @@ Notes:
   - This _definitely can_ fail as the json is just a `String` to the compiler
   - In real code do not `unwrap` this, handle the `Err` carefully!
 
-#### JSON structure, the Rust compiler and you
+### JSON structure, the Rust compiler and you
 
 All this means that our JSON data MUST closely align with the types we define
 for the compiler. There is a lot of flexibility offered by `serde` for tweaking
@@ -175,7 +173,7 @@ That said, we are open to constructive feedback on what this sugar looks like
 and how it works! Ideally zome development is as idiomatic as possible across
 as many languages as possible 🕶
 
-#### Binary data as base64
+### Binary data as base64
 
 We recommend base64 encoding binary data straight into an app entry string that
 you can use in your zome logic directly (see above).
@@ -198,9 +196,9 @@ The performance penalty can be minimal:
 
 https://lemire.me/blog/2018/01/17/ridiculously-fast-base64-encoding-and-decoding/
 
-### JsonString
+## JsonString
 
-#### The problem and our solution
+### The problem and our solution
 
 Sometimes we want to _nest_ serialization (e.g. `hdk::call`) and sometimes we
 want to _wrap_ serialization (e.g. `Entry::App`), sometimes converting to a
@@ -304,7 +302,7 @@ When given a `Result` containing any value that can be turned into a
 `JsonString` (see below), we can _convert_ it first, then _wrap_ it with
 `String::from` + `format!`.
 
-#### String serialization
+### String serialization
 
 Sometimes we _want_ a `String` to be serialized as a JSON string primitive
 rather than simply wrapped in a `JsonString` struct. `JsonString::from` won't
@@ -351,7 +349,7 @@ impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
 If we didn't do this then the `format!` would return invalid JSON data with the
 String error value missing the wrapping double quotes.
 
-#### Implementing `JsonString` for custom types
+### Implementing `JsonString` for custom types
 
 As mentioned above, there are two trait implementations that every struct or
 enum should implement to be compatible with core serialization logic:
@@ -365,7 +363,7 @@ Note that `TryFrom` is currently an unstable Rust feature. To enable it add
 The `TryFrom` trait will need to be added as `use std::convert::TryFrom` to
 each module/zome implementing it for a struct/enum.
 
-##### Boilerplate
+#### Boilerplate
 
 To defer all the logic to standard `serde` defaults with some sensible
 debug logic in the case of an error, there are two utility functions in core,
@@ -390,7 +388,7 @@ impl TryFrom<JsonString> for MyType {
 }
 ```
 
-##### Automatic derive
+#### Automatic derive
 
 The standard boilerplate has been implemented as a derive macro in the
 `holochain_core_types_derive` crate.
@@ -412,7 +410,7 @@ use holochain_core_types::error::HolochainError;
 struct MyType {}
 ```
 
-#### Using JsonString as the property of a struct/enum
+### Using JsonString as the property of a struct/enum
 
 Because `JsonString` cannot _automatically_ be round tripped with `Serialize`
 and `Deserialize`, the following can cause difficulty:
@@ -434,7 +432,7 @@ There are a few approaches here, each with benefits and tradeoffs.
 0. Use a serde attribute to skip `Bar`
 0. Create a "new type" or wrapper/conversion struct
 
-##### Swap `JsonString` with `String`
+#### Swap `JsonString` with `String`
 
 This approach is quick and dirty. Simply change the type of `Bar` to `String`.
 When prototyping or on deadline, this might be the most attractive option ;)
@@ -473,7 +471,7 @@ impl Foo {
 }
 ```
 
-##### Using serde attributes
+#### Using serde attributes
 
 Serde allows us to set serialization logic at the field level for structs.
 
@@ -564,7 +562,7 @@ where
 }
 ```
 
-##### Skip the attribute
+#### Skip the attribute
 
 Serde also allows for attributes to be completely skipped during serialization.
 
@@ -590,7 +588,7 @@ struct Foo {
 }
 ```
 
-##### Wrap/convert to a new type or struct
+#### Wrap/convert to a new type or struct
 
 If it is possible to create a struct that better represents the data, or a new
 type to hold it, then _that_ struct can implement to/try_from `JsonString`.
@@ -639,7 +637,7 @@ duplicated/redundant code over time.
 It is easy to end up with JSON like `{"Foo":{"bar":{"Bar":[".."]}}}` with a
 poorly chosen combination of enum variants and tuples.
 
-### Hiding JsonString with Into<JsonString>
+## Hiding JsonString with Into<JsonString>
 
 It is possible in function signatures to simply leave an argument open to
 anything that can be converted to `JsonString`.

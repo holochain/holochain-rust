@@ -438,7 +438,7 @@ struct Foo {
 ```
 
 The compiler will complain about this because anything deriving `Serialize`
-recursively consist only of values that also implement `Serialize`.
+recursively must consist only of values that also implement `Serialize`.
 
 There are a few approaches here, each with benefits and tradeoffs.
 
@@ -485,6 +485,36 @@ impl Foo {
   }
 }
 ```
+
+Treat `bar` as though it was going to be stored as a `JsonString` right until
+the last moment.
+
+Avoid this:
+
+```rust
+let bar_json = json!({"bar": bar.inner()}).to_string();
+// somwhere later...
+let foo = Foo{bar: bar_json};
+```
+
+Because then _everything_ that needs to use `Foo` must consistently implement
+the manual jsonification logic. This is especially important if `Foo` and/or
+bar is to be used across multiple crates.
+
+Instead, prefer this:
+
+```rust
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct Bar {
+  bar: ..
+}
+
+let bar_json = JsonString::from(Bar{bar: ..});
+let foo = Foo::new(bar); // assuming impl Foo::new from above
+```
+
+The result is still a raw `String` in `Foo` but the validity and consistency of
+the JSON data is enforced across all crates by `JsonString::from(bar)`.
 
 #### Using serde attributes
 
@@ -651,6 +681,9 @@ duplicated/redundant code over time.
 
 It is easy to end up with JSON like `{"Foo":{"bar":{"Bar":[".."]}}}` with a
 poorly chosen combination of enum variants and tuples.
+
+As per all the considerations outlined for using `String` directly on `Foo`,
+avoid using `json!` or similar to build up the internal `String` of `Bar`.
 
 ## Hiding JsonString with Into<JsonString>
 

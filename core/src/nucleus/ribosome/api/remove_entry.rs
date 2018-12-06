@@ -5,6 +5,7 @@ use crate::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
+    workflows::get_entry_history::get_entry_history_workflow,
 };
 use futures::{
     executor::block_on,
@@ -19,6 +20,7 @@ use holochain_core_types::{
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
+use holochain_wasm_utils::api_serialization::get_entry::*;
 
 /// ZomeApiFunction::RemoveEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -37,6 +39,22 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let deleted_entry_address = try_address.unwrap();
+
+    // Get Current entry's latest version
+    let get_args = GetEntryArgs {
+        address: deleted_entry_address,
+        options: GetEntryOptions::default(),
+    };
+    let get_entry_history_result = block_on(get_entry_history_workflow(&runtime.context, &get_args));
+    if let Err(err) = get_entry_history_result {
+        return ribosome_error_code!(Unspecified);
+    }
+    let entry_history = get_entry_history_result.unwrap();
+    if entry_history.entries.is_empty() {
+        return ribosome_error_code!(Unspecified);
+    }
+    let deleted_entry_address = entry_history.entries.iter().next().unwrap().address();
+
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
     // Resolve future

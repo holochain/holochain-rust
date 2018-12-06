@@ -41,7 +41,7 @@ pub async fn get_entry_history_workflow<'a>(
         let maybe_entry_with_meta = await!(get_entry_with_meta_workflow(context, &address))?;
         // Entry found
         if let Some(entry_with_meta) = maybe_entry_with_meta {
-            println!("\t\t found: {:?}", entry_with_meta);
+            println!("\t <- found");
             // Erase history if request is for latest
             if args.options.status_request == StatusRequestKind::Latest {
                 entry_history = EntryHistory::new();

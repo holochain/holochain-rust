@@ -186,6 +186,7 @@ Yes this uses more space than binary data, 33% more to be specific :(
 But there are benefits:
 
 - It is UTF-8 and web (e.g. data URI) friendly
+- Simply wrapped in `"\"..\""` it becomes valid JSON (see `RawString` below)
 - It has wide language support (see above for why this is important)
 - It will be supported by all persistence backends for the forseeable future
   - At least these storage systems require base64 encoded data at some point:

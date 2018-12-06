@@ -1,8 +1,4 @@
-use crate::{
-    cas::content::Address,
-    error::HolochainError,
-    json::JsonString,
-};
+use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 
 //-------------------------------------------------------------------------------------------------
 // LinkAddEntry

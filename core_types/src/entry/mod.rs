@@ -6,6 +6,7 @@ use agent::{test_agent_id, AgentId};
 use cas::content::{Address, AddressableContent, Content};
 use chain_header::ChainHeader;
 use chain_migrate::ChainMigrate;
+use crud_status::CrudStatus;
 use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
 use error::{HcResult, HolochainError};
@@ -14,7 +15,6 @@ use link::{link_add::LinkAdd, link_list::LinkList, link_remove::LinkRemove};
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
 use std::convert::TryFrom;
-use crud_status::CrudStatus;
 
 pub type AppEntryValue = JsonString;
 
@@ -115,7 +115,6 @@ pub struct EntryWithMeta {
     pub crud_status: CrudStatus,
     pub maybe_crud_link: Option<Address>,
 }
-
 
 /// dummy entry value
 #[cfg_attr(tarpaulin, skip)]

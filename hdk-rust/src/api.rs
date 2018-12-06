@@ -11,7 +11,7 @@ use holochain_core_types::{
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryArgs, GetEntryOptions, EntryHistory, StatusRequestKind},
+        get_entry::{EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
@@ -527,10 +527,7 @@ pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<EntryHistory>
 /// Retrieves an entry and its metadata from the local chain or the DHT, by looking it up using
 /// the specified address.
 /// The data returned is configurable with the GetEntryOptions argument.
-pub fn get_entry_result(
-    address: Address,
-    options: GetEntryOptions,
-) -> ZomeApiResult<EntryHistory> {
+pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiResult<EntryHistory> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();

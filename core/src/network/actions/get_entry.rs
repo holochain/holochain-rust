@@ -20,7 +20,6 @@ use std::{
     time::Duration,
 };
 
-
 /// GetEntry Action Creator
 /// This is the network version of get_entry that makes the network module start
 /// a look-up process.

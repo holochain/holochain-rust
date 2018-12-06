@@ -58,7 +58,11 @@ pub fn reduce_get_entry_timeout(
     let action = action_wrapper.action();
     let address = unwrap_to!(action => crate::action::Action::GetEntryTimeout);
 
-    if network_state.get_entry_with_meta_results.get(address).is_none() {
+    if network_state
+        .get_entry_with_meta_results
+        .get(address)
+        .is_none()
+    {
         return;
     }
 

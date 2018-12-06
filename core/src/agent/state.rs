@@ -2,16 +2,15 @@ use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::ChainStore,
     context::Context,
-    //nucleus::actions::get_entry::get_entry_with_meta,
-    workflows::get_entry_history::get_entry_history_workflow,
     state::State,
+    workflows::get_entry_history::get_entry_history_workflow,
 };
 use holochain_core_types::{
     agent::AgentId,
     cas::content::{Address, AddressableContent, Content},
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
-    error::{HolochainError, HcResult},
+    error::{HcResult, HolochainError},
     json::*,
     signature::Signature,
     time::Iso8601,
@@ -154,9 +153,10 @@ pub enum ActionResponse {
 }
 
 pub fn create_new_chain_header(
-entry: &Entry, 
-context: Arc<Context>,
-    crud_link: &Option<Address>) -> ChainHeader {
+    entry: &Entry,
+    context: Arc<Context>,
+    crud_link: &Option<Address>,
+) -> ChainHeader {
     let agent_state = context
         .state()
         .expect("create_new_chain_header called without state")

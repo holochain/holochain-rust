@@ -1,8 +1,8 @@
 pub mod actions;
+pub mod entry_with_header;
 pub mod handler;
 pub mod reducers;
 pub mod state;
-pub mod entry_with_header;
 
 #[cfg(test)]
 pub mod tests {

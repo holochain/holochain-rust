@@ -45,8 +45,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     Address::from(get_dht_data.address.clone()),
                 ))
                 .map(|maybe_entry_with_meta| {
-                    let action_wrapper =
-                        ActionWrapper::new(Action::RespondGet((get_dht_data, maybe_entry_with_meta)));
+                    let action_wrapper = ActionWrapper::new(Action::RespondGet((
+                        get_dht_data,
+                        maybe_entry_with_meta,
+                    )));
                     dispatch_action(&context.action_channel, action_wrapper.clone());
                 });
             }

@@ -9,7 +9,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_entry::{
-    GetEntryArgs, GetEntryOptions, EntryHistory, StatusRequestKind,
+    EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind,
 };
 use std::{collections::HashSet, convert::TryInto, sync::Arc};
 
@@ -93,8 +93,14 @@ pub fn get_entry_with_meta<'a>(
     if let Err(err) = maybe_meta {
         return FutureObj::new(Box::new(future::err(err)));
     }
-    let (crud_status, maybe_crud_link) = maybe_meta.unwrap().expect("Entry should have crud-status metadata");
-    let item = EntryWithMeta { entry, crud_status, maybe_crud_link };
+    let (crud_status, maybe_crud_link) = maybe_meta
+        .unwrap()
+        .expect("Entry should have crud-status metadata");
+    let item = EntryWithMeta {
+        entry,
+        crud_status,
+        maybe_crud_link,
+    };
 
     FutureObj::new(Box::new(future::ok(Some(item))))
 }

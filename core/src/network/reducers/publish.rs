@@ -4,17 +4,17 @@ use crate::{
     context::Context,
     network::{
         actions::ActionResponse,
-        state::NetworkState,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
+        state::NetworkState,
     },
     nucleus::actions::get_entry::get_entry_crud_meta_from_dht,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     chain_header::ChainHeader,
+    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
-    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
 use holochain_net_connection::{
     net_connection::NetConnection,
@@ -45,7 +45,6 @@ fn publish_entry(
         })
         .expect("Network has to be Some because of check above")
 }
-
 
 fn publish_crud_meta(
     network_state: &mut NetworkState,
@@ -82,7 +81,8 @@ fn publish_crud_meta(
         agent_id: network_state.agent_id.clone().unwrap(),
         address: entry_address.to_string(),
         attribute: LINK_NAME.to_string(),
-        content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap()).unwrap(),
+        content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
+            .unwrap(),
     };
     network
         .lock()
@@ -140,37 +140,36 @@ fn inner(
     .ok_or("Network not initialized".to_string())?;
 
     let entry_with_header = fetch_entry_with_header(&address, &context)?;
-    let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address.clone())?.expect("Entry should have crud-status metadata.");
+    let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address.clone())?
+        .expect("Entry should have crud-status metadata.");
 
     match entry_with_header.entry.entry_type() {
-        EntryType::AgentId => {
-            publish_entry(network_state, &entry_with_header)
-                .and_then(|_| publish_crud_meta(network_state,
-                                                entry_with_header.entry.address(),
-                                                crud_status,
-                                                maybe_crud_link,
-                ))
-        },
-        EntryType::App(_) => {
-            publish_entry(network_state, &entry_with_header)
-                .and_then(|_| publish_crud_meta(network_state,
-                                                entry_with_header.entry.address(),
-                                                crud_status,
-                                                maybe_crud_link,
-                ))
-        },
-        EntryType::LinkAdd => {
-            publish_entry(network_state, &entry_with_header)
-                .and_then(|_| publish_link_meta(network_state, &entry_with_header))
-        },
-        EntryType::Deletion => {
-            publish_entry(network_state, &entry_with_header)
-                .and_then(|_| publish_crud_meta(network_state,
-                                                entry_with_header.entry.address(),
-                                                crud_status,
-                                                maybe_crud_link,
-                ))
-        },
+        EntryType::AgentId => publish_entry(network_state, &entry_with_header).and_then(|_| {
+            publish_crud_meta(
+                network_state,
+                entry_with_header.entry.address(),
+                crud_status,
+                maybe_crud_link,
+            )
+        }),
+        EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
+            publish_crud_meta(
+                network_state,
+                entry_with_header.entry.address(),
+                crud_status,
+                maybe_crud_link,
+            )
+        }),
+        EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
+            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
+        EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
+            publish_crud_meta(
+                network_state,
+                entry_with_header.entry.address(),
+                crud_status,
+                maybe_crud_link,
+            )
+        }),
         _ => Err(HolochainError::NotImplemented),
     }
 }

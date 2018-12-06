@@ -87,11 +87,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
-            agent::state::create_new_chain_header(
-                &entry,
-                context.clone(),
-                &None,
-            ),
+            agent::state::create_new_chain_header(&entry, context.clone(), &None),
         );
 
         thread::spawn(move || {

@@ -1,8 +1,4 @@
-use crate::{
-    context::Context,
-    //nucleus::actions::get_entry::get_entry_with_meta,
-    workflows::get_entry_history::get_entry_history_workflow,
-};
+use crate::{context::Context, workflows::get_entry_history::get_entry_history_workflow};
 use futures::executor::block_on;
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},

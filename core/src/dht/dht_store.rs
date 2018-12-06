@@ -31,7 +31,7 @@ impl PartialEq for DhtStore {
         let meta = &self.meta_storage.clone();
         let other_meta = &other.meta_storage.clone();
 
-    self.actions == other.actions
+        self.actions == other.actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
     }

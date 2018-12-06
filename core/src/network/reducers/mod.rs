@@ -1,6 +1,7 @@
 pub mod get_entry;
 pub mod get_validation_package;
 pub mod handle_get_result;
+pub mod handle_get_validation_package;
 pub mod init;
 pub mod publish;
 pub mod respond_get;

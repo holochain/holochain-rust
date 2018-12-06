@@ -511,7 +511,7 @@ fn can_check_call_with_args() {
 
 #[test]
 fn can_remove_entry() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_remove_entry");
     let result = hc.call("test_zome", "test_cap", "remove_entry_ok", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
@@ -523,14 +523,14 @@ fn can_remove_entry() {
 
 #[test]
 fn can_update_entry() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_update_entry");
     let result = hc.call("test_zome", "test_cap", "update_entry_ok", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 }
 
 #[test]
 fn can_remove_modified_entry() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_remove_modified_entry");
     let result = hc.call("test_zome", "test_cap", "remove_modified_entry_ok", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 }

@@ -128,30 +128,30 @@ pub mod tests {
         assert_eq!(Ok(Some(entry.clone())), result);
     }
 
-    #[test]
-    fn get_entry_futures() {
-        let entry = test_entry();
-        let context = test_context_with_state();
-        let args = GetEntryArgs {
-            address: entry.address(),
-            options: GetEntryOptions {
-                status_request: StatusRequestKind::Latest,
-            },
-        };
-        let future = super::get_entry_with_meta(&context, &args);
-        let maybe_entry_history = block_on(future);
-        assert_eq!(0, maybe_entry_history.unwrap().entries.len());
-        let content_storage = &context.state().unwrap().dht().content_storage().clone();
-        (*content_storage.write().unwrap()).add(&entry).unwrap();
-        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
-        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
-        (*meta_storage.write().unwrap())
-            .add_eav(&status_eav)
-            .unwrap();
-        let future = super::get_entry_with_meta(&context, &args);
-        let maybe_entry_history = block_on(future);
-        let entry_history = maybe_entry_history.unwrap();
-        assert_eq!(&entry, entry_history.entries.iter().next().unwrap());
-    }
+//    #[test]
+//    fn get_entry_futures() {
+//        let entry = test_entry();
+//        let context = test_context_with_state();
+//        let args = GetEntryArgs {
+//            address: entry.address(),
+//            options: GetEntryOptions {
+//                status_request: StatusRequestKind::Latest,
+//            },
+//        };
+//        let future = super::get_entry_with_meta(&context, &args);
+//        let maybe_entry_history = block_on(future);
+//        assert_eq!(0, maybe_entry_history.unwrap().entries.len());
+//        let content_storage = &context.state().unwrap().dht().content_storage().clone();
+//        (*content_storage.write().unwrap()).add(&entry).unwrap();
+//        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+//        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
+//        (*meta_storage.write().unwrap())
+//            .add_eav(&status_eav)
+//            .unwrap();
+//        let future = super::get_entry_with_meta(&context, &args);
+//        let maybe_entry_history = block_on(future);
+//        let entry_history = maybe_entry_history.unwrap();
+//        assert_eq!(&entry, entry_history.entries.iter().next().unwrap());
+//    }
 
 }

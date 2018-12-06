@@ -23,12 +23,12 @@ pub mod tests {
         let entry = test_entry();
         assert!(context1.file_storage.write().unwrap().add(&entry).is_ok());
 
-        let result = block_on(get_entry(entry.address(), &context2));
+        let result = block_on(get_entry(&context2, &entry.address()));
         assert!(result.is_ok());
-        let maybe_entry = result.unwrap();
-        assert!(maybe_entry.is_some());
-        let received_entry = maybe_entry.unwrap();
-        assert_eq!(received_entry, entry);
+        let maybe_entry_with_meta = result.unwrap();
+        assert!(maybe_entry_with_meta.is_some());
+        let entry_with_meta = maybe_entry_with_meta.unwrap();
+        assert_eq!(entry_with_meta.entry, entry);
     }
 
     #[test]
@@ -40,10 +40,10 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = block_on(get_entry(entry.address(), &context2));
+        let result = block_on(get_entry(&context2, &entry.address()));
         assert!(result.is_ok());
-        let maybe_entry = result.unwrap();
-        assert!(maybe_entry.is_none());
+        let maybe_entry_with_meta = result.unwrap();
+        assert!(maybe_entry_with_meta.is_none());
     }
 
     #[test]
@@ -54,9 +54,9 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = block_on(get_entry(entry.address(), &context1));
+        let result = block_on(get_entry(&context1, &entry.address()));
         assert!(result.is_ok());
-        let maybe_entry = result.unwrap();
-        assert!(maybe_entry.is_none());
+        let maybe_entry_with_meta = result.unwrap();
+        assert!(maybe_entry_with_meta.is_none());
     }
 }

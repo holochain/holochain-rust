@@ -1,4 +1,10 @@
-use crate::{action::ActionWrapper, network::actions::ActionResponse};
+use crate::{
+    action::ActionWrapper,
+    network::{
+        actions::ActionResponse,
+        direct_message::DirectMessage,
+    }
+};
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError, validation::ValidationPackage};
 use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
@@ -35,6 +41,7 @@ pub struct NetworkState {
     pub agent_id: Option<String>,
     pub get_entry_results: HashMap<Address, GetEntryResult>,
     pub get_validation_package_results: HashMap<Address, GetValidationPackageResult>,
+    pub direct_message_connections: HashMap<snowflake::ProcessUniqueId, DirectMessage>,
     id: snowflake::ProcessUniqueId,
 }
 
@@ -53,6 +60,7 @@ impl NetworkState {
             agent_id: None,
             get_entry_results: HashMap::new(),
             get_validation_package_results: HashMap::new(),
+            direct_message_connections: HashMap::new(),
             id: snowflake::ProcessUniqueId::new(),
         }
     }

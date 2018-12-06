@@ -1,8 +1,8 @@
-use boolinator::*;
 use crate::{
     action::ActionWrapper, context::Context,
     network::{
         direct_message::DirectMessage,
+        reducers::{initialized, send_message},
         state::NetworkState
     },
 };
@@ -10,39 +10,15 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     error::HolochainError,
 };
-use holochain_net_connection::{
-    net_connection::NetConnection,
-    protocol_wrapper::{MessageData, ProtocolWrapper},
-};
 use std::sync::Arc;
 
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-        .ok_or("Network not initialized".to_string())?;
+    initialized(network_state)?;
 
     let source_address = header.sources().first().expect("A header must have at least one source");
     let direct_message = DirectMessage::RequestValidationPackage(header.entry_address().clone());
 
-    let data = MessageData {
-        msg_id: "".to_string(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        to_agent_id: source_address.to_string(),
-        from_agent_id: network_state.agent_id.clone().unwrap(),
-        data: serde_json::from_str(&serde_json::to_string(&direct_message).unwrap()).unwrap(),
-    };
-
-    network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(ProtocolWrapper::SendMessage(data).into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .expect("Network has to be Some because of check above")
+    send_message(network_state, source_address, direct_message)
 }
 
 pub fn reduce_get_validation_package(

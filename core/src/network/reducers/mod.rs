@@ -6,10 +6,12 @@ pub mod publish;
 pub mod respond_get;
 pub mod send_direct_message;
 
+use boolinator::*;
 use crate::{
     action::{Action, ActionWrapper, NetworkReduceFn},
     context::Context,
     network::{
+        direct_message::DirectMessage,
         reducers::{
             get_entry::{reduce_get_entry, reduce_get_entry_timeout},
             handle_get_result::reduce_handle_get_result,
@@ -20,6 +22,15 @@ use crate::{
         state::NetworkState,
     },
 };
+use holochain_core_types::{
+    cas::content::Address,
+    error::HolochainError,
+};
+use holochain_net_connection::{
+    net_connection::NetConnection,
+    protocol_wrapper::{MessageData, ProtocolWrapper},
+};
+use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 
 /// maps incoming action to the correct handler
@@ -49,4 +60,40 @@ pub fn reduce(
         }
         None => old_state,
     }
+}
+
+pub fn initialized(network_state: &NetworkState) -> Result<(), HolochainError> {
+    (network_state.network.is_some()
+        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
+        .ok_or(HolochainError::ErrorGeneric("Network not initialized".to_string()))
+}
+
+pub fn send_message(network_state: &mut NetworkState, to_agent_id: &Address, message: DirectMessage) -> Result<(), HolochainError> {
+    let id = ProcessUniqueId::new();
+
+    let data = MessageData {
+        msg_id: id.to_string(),
+        dna_hash: network_state.dna_hash.clone().unwrap(),
+        to_agent_id: to_agent_id.to_string(),
+        from_agent_id: network_state.agent_id.clone().unwrap(),
+        data: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
+    };
+
+    let _ = network_state
+        .network
+        .as_mut()
+        .map(|network| {
+            network
+                .lock()
+                .unwrap()
+                .send(ProtocolWrapper::SendMessage(data).into())
+                .map_err(|error| HolochainError::IoError(error.to_string()))
+        })
+        .ok_or(HolochainError::ErrorGeneric("Network has to be Some because of check above".to_string()))?;
+
+    network_state
+        .direct_message_connections
+        .insert(id, message);
+
+    Ok(())
 }

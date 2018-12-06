@@ -65,10 +65,10 @@ use futures::{executor::block_on, TryFutureExt};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    network::actions::initialize_network::initialize_network,
     nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
+    workflows::network
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
@@ -90,7 +90,7 @@ impl Holochain {
         let context = instance.initialize_context(context.clone());
         let context2 = context.clone();
         let result = block_on(
-            initialize_application(dna, &context2).and_then(|_| initialize_network(&context)),
+            initialize_application(dna, &context2).and_then(|_| network::initialize(context.clone())),
         );
         match result {
             Ok(_) => {
@@ -115,6 +115,9 @@ impl Holochain {
         // TODO get the network state initialized!!
         let mut instance = Instance::from_state(loaded_state);
         instance.start_action_loop(context.clone());
+        block_on(
+           network::initialize(context.clone()),
+        )?;
         Ok(Holochain {
             instance,
             context: context.clone(),

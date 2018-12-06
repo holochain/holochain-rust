@@ -15,7 +15,7 @@ use std::{
     sync::Arc,
 };
 
-async fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), HolochainError> {
+pub async fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), HolochainError> {
     let state = context
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;

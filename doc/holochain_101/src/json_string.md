@@ -200,6 +200,46 @@ The performance penalty can be minimal:
 
 https://lemire.me/blog/2018/01/17/ridiculously-fast-base64-encoding-and-decoding/
 
+### JSON is lame! Can Holochain support `<my favourite serialization format>`?
+
+Yes... and no...
+
+It depends what you mean by "support".
+
+Right now, most serialization formats are supported in app/zome data simply by
+wrapping the output in double quotes so core sees it as a JSON string literal.
+Holochain core won't try to interpret/mangle any of that data so the zome can
+theoretically do whatever it wants at that point without a performance hit.
+
+In practise, there are some limitations as mentioned in this doc:
+
+- WASM languages tend to have no or limited serialization options
+  - you may need to roll your own parse/stringify logic
+  - seriously... e.g. we pushed our own `JSON.parse` implementation upstream
+    for the AssemblyScript team, that's _JSON parsing in JavaScript_!
+  - don't underestimate how bleeding edge and limited the WASM tooling still is
+- If you don't use JSON you can't use `hdk` macros for that part of your zome
+- Only valid UTF-8 strings are supported (may change in the future)
+
+If you're looking for a way to provide core data in non-JSON format then NO
+that is not supported and won't be in the short-mid term future.
+
+Yes, `serde` supports many serialization options but:
+
+- Not all data in core uses default `serde` serialization logic
+  - e.g. this document explaining non-default serde serialization logic
+- Swapping to a different serializer in serde is not just a matter of passing
+  config to serde
+  - we'd have to centralise/`match` everywhere and swap out `serde_json` for
+    analogies in each other format we'd want to use
+  - even using a `SerialString` instead of `JsonString` (see below) would not
+    clear out every implementation without a lot of work
+- Serde is already quite heavy in compilation/WASM files so we don't want to
+  bloat that more with edge-case serialization needs
+- We don't (yet) have any use-cases showing that JSON is a problem/bottleneck
+- Adding more serialization options would exacerbate non-idiomatic container
+  and HDK data structure mapping issues (see above)
+
 ## JsonString
 
 ### The problem and our solution

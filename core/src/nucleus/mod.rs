@@ -83,8 +83,8 @@ impl EntrySubmission {
 /// Dispatch ExecuteZoneFunction to and block until call has finished.
 pub fn call_zome_and_wait_for_result(
     call: ZomeFnCall,
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
+    action_channel: &Option<SyncSender<ActionWrapper>>,
+    observer_channel: &Option<SyncSender<Observer>>,
 ) -> Result<JsonString, HolochainError> {
     let call_action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
@@ -110,7 +110,7 @@ pub fn call_zome_and_wait_for_result(
 }
 
 /// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
-/// for test only??
+/// for test only?? <-- (apparently not, since it's used in Holochain::call)
 pub fn call_and_wait_for_result(
     call: ZomeFnCall,
     instance: &mut super::instance::Instance,
@@ -234,6 +234,8 @@ pub(crate) fn launch_zome_fn_call(
         // Send ReturnZomeFunctionResult Action
         context
             .action_channel
+            .as_ref()
+            .expect("action channel to be initialized in reducer")
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
                 response,
             )))
@@ -255,7 +257,7 @@ fn reduce_execute_zome_function(
     };
 
     fn dispatch_error_result(
-        action_channel: &SyncSender<ActionWrapper>,
+        action_channel: &Option<SyncSender<ActionWrapper>>,
         fn_call: &ZomeFnCall,
         error: HolochainError,
     ) {
@@ -263,6 +265,8 @@ fn reduce_execute_zome_function(
             ExecuteZomeFnResponse::new(fn_call.clone(), Err(error.clone()));
 
         action_channel
+            .as_ref()
+            .expect("action channel to be initialized in reducer")
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
                 zome_not_found_response,
             )))

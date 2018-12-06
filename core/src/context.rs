@@ -1,5 +1,5 @@
 use crate::{
-    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, state::State,
+    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, signal::Signal, state::State,
 };
 use holochain_core_types::{
     agent::AgentId,
@@ -28,8 +28,9 @@ pub struct Context {
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
-    pub action_channel: SyncSender<ActionWrapper>,
-    pub observer_channel: SyncSender<Observer>,
+    pub action_channel: Option<SyncSender<ActionWrapper>>,
+    pub signal_channel: Option<SyncSender<Signal>>,
+    pub observer_channel: Option<SyncSender<Observer>>,
     pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
@@ -48,15 +49,14 @@ impl Context {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
     ) -> Result<Context, HolochainError> {
-        let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
-        let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Ok(Context {
             agent_id,
             logger,
             persister,
             state: None,
-            action_channel: tx_action,
-            observer_channel: tx_observer,
+            action_channel: None,
+            signal_channel: None,
+            observer_channel: None,
             file_storage: cas,
             eav_storage: eav,
             network_config,
@@ -67,8 +67,9 @@ impl Context {
         agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        action_channel: SyncSender<ActionWrapper>,
-        observer_channel: SyncSender<Observer>,
+        action_channel: Option<SyncSender<ActionWrapper>>,
+        signal_channel: Option<SyncSender<Signal>>,
+        observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
@@ -79,6 +80,7 @@ impl Context {
             persister,
             state: None,
             action_channel,
+            signal_channel,
             observer_channel,
             file_storage: cas,
             eav_storage: eav,

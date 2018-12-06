@@ -60,6 +60,8 @@
 //!
 //!```
 
+use holochain_core::signal::Signal;
+use std::sync::mpsc::Receiver;
 use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::{executor::block_on, TryFutureExt};
 use holochain_core::{
@@ -84,7 +86,17 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
-        let mut instance = Instance::new(context.clone());
+        let instance = Instance::new(context.clone());
+        Self::from_dna_and_context_and_instance(dna, context, instance)
+    }
+
+    pub fn with_signals(dna: Dna, context: Arc<Context>) -> HolochainResult<(Self, Receiver<Signal>)> {
+        let (instance, signal_rx) = Instance::with_signals(context.clone());
+        Self::from_dna_and_context_and_instance(dna, context, instance)
+            .map(|hc| (hc, signal_rx))
+    }
+
+    fn from_dna_and_context_and_instance(dna: Dna, context: Arc<Context>, mut instance: Instance) -> HolochainResult<Self> {
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context.clone());
@@ -164,6 +176,10 @@ impl Holochain {
     pub fn state(&self) -> Result<State, HolochainInstanceError> {
         Ok(self.instance.state().clone())
     }
+
+    pub fn establish_signal_channel(&mut self) -> Receiver<Signal> {
+        self.instance.establish_signal_channel()
+    }
 }
 
 #[cfg(test)]
@@ -175,13 +191,17 @@ mod tests {
     };
     use super::*;
     use holochain_core::{
+        action::{Action, ActionWrapper},
         context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
     use holochain_core_types::{agent::AgentId, dna::Dna};
 
-    use std::sync::{Arc, Mutex, RwLock};
+    use std::{
+        time::Duration,
+        sync::{Arc, Mutex, RwLock}
+    };
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
@@ -408,6 +428,19 @@ mod tests {
         );
     }
 
+    // @TODO this is a first attempt at replacing history.len() tests
+    // @see https://github.com/holochain/holochain-rust/issues/195
+    fn expect_action<F>(rx: &Receiver<Signal>, f: F) -> ()
+    where F: Fn(Action) -> bool {
+        loop {
+            if let Signal::Internal(action) = rx.recv_timeout(Duration::from_millis(1000)).expect("waited 1 sec, but no signal received") {
+                if f(action) {
+                    break
+                }
+            }
+        }
+    }
+
     #[test]
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn can_call_commit() {
@@ -416,13 +449,15 @@ mod tests {
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let (mut hc, signal_rx) = Holochain::with_signals(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
+
+        expect_action(&signal_rx, |action| {
+            if let Action::InitNetwork(_) = action { true }
+            else { false }
+        });
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
@@ -435,10 +470,10 @@ mod tests {
             JsonString::from("{\"Err\":\"Argument deserialization failed\"}")
         );
 
-        // Check in holochain instance's history that the commit event has been processed
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 9);
+        expect_action(&signal_rx, |action| {
+            if let Action::Commit(_) = action { true }
+            else { false }
+        });
     }
 
     #[test]

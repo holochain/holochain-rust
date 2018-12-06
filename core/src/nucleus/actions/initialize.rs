@@ -60,11 +60,12 @@ pub async fn initialize_application(
         // an entry from a Dna object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
         context_clone
-            .action_channel
-            .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
-            )))
-            .expect("Action channel not usable in initialize_application()");
+            .action_channel.as_ref().map(|tx| {
+                tx.send(ActionWrapper::new(Action::ReturnInitializationResult(
+                    Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
+                )))
+                .expect("Action channel not usable in initialize_application()");
+            });
         return Err(HolochainError::new("error committing DNA"));
     }
 
@@ -79,11 +80,12 @@ pub async fn initialize_application(
 
     if agent_id_commit.is_err() {
         context_clone
-            .action_channel
-            .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
-            )))
-            .expect("Action channel not usable in initialize_application()");
+            .action_channel.as_ref().map(|tx| {
+                tx.send(ActionWrapper::new(Action::ReturnInitializationResult(
+                    Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
+                )))
+                .expect("Action channel not usable in initialize_application()");
+            });
         return Err(HolochainError::new("error committing Agent"));
     }
 
@@ -105,11 +107,12 @@ pub async fn initialize_application(
     });
 
     context_clone
-        .action_channel
-        .send(ActionWrapper::new(Action::ReturnInitializationResult(
-            maybe_error,
-        )))
-        .expect("Action channel not usable in initialize_application()");
+        .action_channel.as_ref().map(|tx| {
+            tx.send(ActionWrapper::new(Action::ReturnInitializationResult(
+                maybe_error,
+            )))
+            .expect("Action channel not usable in initialize_application()");
+        });
 
     await!(InitializationFuture {
         context: context.clone(),

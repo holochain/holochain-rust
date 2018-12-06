@@ -1,7 +1,13 @@
-use crate::{action::ActionWrapper, context::Context, state::State};
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    signal::Signal,
+    state::State,
+};
+use holochain_core_types::entry::Entry;
 use std::{
     sync::{
-        mpsc::{sync_channel, Receiver, SyncSender},
+        mpsc::{channel, sync_channel, Receiver, Sender, SyncSender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
@@ -16,8 +22,9 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<State>>,
-    action_channel: SyncSender<ActionWrapper>,
-    observer_channel: SyncSender<Observer>,
+    action_channel: Option<SyncSender<ActionWrapper>>,
+    signal_channel: Option<SyncSender<Signal>>,
+    observer_channel: Option<SyncSender<Observer>>,
 }
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
@@ -34,15 +41,18 @@ impl Instance {
         100
     }
 
-    /// get a clone of the action channel
-    pub fn action_channel(&self) -> SyncSender<ActionWrapper> {
-        self.action_channel.clone()
-    }
+    // TODO: the following two functions are unused, and the members they provide are public anyway.
+    // (Remove?)
 
-    /// get a clone of the observer channel
-    pub fn observer_channel(&self) -> SyncSender<Observer> {
-        self.observer_channel.clone()
-    }
+    /// get a clone of the action channel
+    // pub fn action_channel(&self) -> SyncSender<ActionWrapper> {
+    //     self.action_channel.clone()
+    // }
+
+    // /// get a clone of the observer channel
+    // pub fn observer_channel(&self) -> SyncSender<Observer> {
+    //     self.observer_channel.clone()
+    // }
 
     /// Stack an Action in the Event Queue
     ///
@@ -85,10 +95,18 @@ impl Instance {
             sync_channel::<ActionWrapper>(Self::default_channel_buffer_size());
         let (tx_observer, rx_observer) =
             sync_channel::<Observer>(Self::default_channel_buffer_size());
-        self.action_channel = tx_action.clone();
-        self.observer_channel = tx_observer.clone();
+        self.action_channel = Some(tx_action.clone());
+        self.observer_channel = Some(tx_observer.clone());
 
         (rx_action, rx_observer)
+    }
+
+    pub fn establish_signal_channel(&mut self) -> Receiver<Signal> {
+        let (tx_signal, rx_signal) =
+            sync_channel::<Signal>(Self::default_channel_buffer_size());
+        self.signal_channel = Some(tx_signal);
+        println!("INITIALIZED CHANNEL");
+        rx_signal
     }
 
     pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
@@ -99,7 +117,7 @@ impl Instance {
         Arc::new(sub_context)
     }
 
-    /// Start the Event Loop on a seperate thread
+    /// Start the Event Loop on a separate thread
     pub fn start_action_loop(&mut self, context: Arc<Context>) {
         let (rx_action, rx_observer) = self.initialize_channels();
 
@@ -140,7 +158,7 @@ impl Instance {
                     .expect("owners of the state RwLock shouldn't panic");
 
                 // Create new state by reducing the action on old state
-                new_state = state.reduce(context.clone(), action_wrapper);
+                new_state = state.reduce(context.clone(), action_wrapper.clone());
             }
 
             // Get write lock
@@ -152,6 +170,8 @@ impl Instance {
             // Change the state
             *state = new_state;
         }
+
+        self.emit_action_signal(action_wrapper.action().clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -174,24 +194,60 @@ impl Instance {
         state_observers
     }
 
-    /// Creates a new Instance with disconnected channels.
-    pub fn new(context: Arc<Context>) -> Self {
-        let (tx_action, _) = sync_channel(1);
-        let (tx_observer, _) = sync_channel(1);
-        Instance {
-            state: Arc::new(RwLock::new(State::new(context))),
-            action_channel: tx_action,
-            observer_channel: tx_observer,
+    fn emit_action_signal(&self, action: Action) {
+        use self::Action::{Commit, AddLink, Publish, InitApplication, Hold};
+
+        let fire_away = match action {
+            AddLink(_) => true,
+            InitApplication(_) => false,
+            Hold(ref entry) => match entry {
+                Entry::App(_, _) => true,
+                _ => false
+            },
+            Commit(ref entry) => match entry {
+                Entry::App(_, _) => true,
+                _ => false
+            },
+            Publish(_) => true,
+            _ => true
+        };
+        if fire_away {
+            let signal = Signal::Internal(action);
+            match self.signal_channel {
+                Some(ref tx) => tx.send(signal).expect("Signal channel is closed"),
+                None => ()
+            }
         }
     }
 
+    /// Creates a new Instance with disconnected channels.
+    pub fn new(context: Arc<Context>) -> Self {
+        Instance {
+            state: Arc::new(RwLock::new(State::new(context))),
+            action_channel: None,
+            observer_channel: None,
+            signal_channel: None,
+        }
+    }
+
+    /// Creates a new Instance with disconnected channels.
+    pub fn with_signals(context: Arc<Context>) -> (Self, Receiver<Signal>) {
+        let (signal_tx, signal_rx) = sync_channel(Self::default_channel_buffer_size());
+        let inst = Instance {
+            state: Arc::new(RwLock::new(State::new(context))),
+            action_channel: None,
+            observer_channel: None,
+            signal_channel: Some(signal_tx),
+        };
+        (inst, signal_rx)
+    }
+
     pub fn from_state(state: State) -> Self {
-        let (tx_action, _) = sync_channel(1);
-        let (tx_observer, _) = sync_channel(1);
         Instance {
             state: Arc::new(RwLock::new(state)),
-            action_channel: tx_action,
-            observer_channel: tx_observer,
+            action_channel: None,
+            observer_channel: None,
+            signal_channel: None,
         }
     }
 
@@ -214,8 +270,8 @@ impl Instance {
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_and_wait(
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
+    action_channel: &Option<SyncSender<ActionWrapper>>,
+    observer_channel: &Option<SyncSender<Observer>>,
     action_wrapper: ActionWrapper,
 ) {
     // Create blocking channel
@@ -248,8 +304,8 @@ pub fn dispatch_action_and_wait(
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_with_observer<F>(
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
+    action_channel: &Option<SyncSender<ActionWrapper>>,
+    observer_channel: &Option<SyncSender<Observer>>,
     action_wrapper: ActionWrapper,
     closure: F,
 ) where
@@ -259,9 +315,10 @@ pub fn dispatch_action_with_observer<F>(
         sensor: Box::new(closure),
     };
 
-    observer_channel
-        .send(observer)
+    observer_channel.as_ref().map(|tx| {
+        tx.send(observer)
         .expect(DISPATCH_WITHOUT_CHANNELS);
+    });
     dispatch_action(action_channel, action_wrapper);
 }
 
@@ -270,10 +327,11 @@ pub fn dispatch_action_with_observer<F>(
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
-    action_channel
-        .send(action_wrapper)
+pub fn dispatch_action(action_channel: &Option<SyncSender<ActionWrapper>>, action_wrapper: ActionWrapper) {
+    action_channel.as_ref().map(|tx| {
+        tx.send(action_wrapper)
         .expect(DISPATCH_WITHOUT_CHANNELS);
+    });
 }
 
 #[cfg(test)]

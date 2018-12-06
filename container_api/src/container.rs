@@ -8,7 +8,10 @@ use holochain_cas_implementations::{
     eav::{file::EavFileStorage, memory::EavMemoryStorage},
     path::create_path_if_not_exists,
 };
-use holochain_core::context::Context;
+use holochain_core::{
+    context::Context,
+    signal::{Signal, combine_receivers},
+};
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use tempfile::tempdir;
 
@@ -41,23 +44,33 @@ pub struct Container {
     pub instances: InstanceMap,
     config: Configuration,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
-    pub dna_loader: DnaLoader,
+    dna_loader: DnaLoader,
+    signal_handler: Option<SignalHandler>,
+    signal_thread: Option<thread::JoinHandle<()>>,
 }
 
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
+type SignalHandler = Arc<Box<FnMut(&Signal) -> () + Send>>;
 
 static DEFAULT_NETWORK_CONFIG: &'static str = "{\"backend\":\"mock\"}";
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
-    pub fn with_config(config: Configuration) -> Self {
+    pub fn from_config(config: Configuration) -> Self {
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
+            signal_handler: None,
+            signal_thread: None,
         }
+    }
+
+    fn with_signal_handler(mut self, signal_handler: SignalHandler) -> Self {
+        self.signal_handler = Some(signal_handler);
+        self
     }
 
     pub fn start_all_interfaces(&mut self) {
@@ -74,6 +87,18 @@ impl Container {
             .interface_by_id(&id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
+    }
+
+    fn connect_signal_channels(&mut self) {
+        // let receivers = self.instances.iter().map(|(id, hc)| {
+        //     hc.read().unwrap().establish_signal_channel()
+        // }).collect();
+
+        // self.signal_handler.map(|handler| {
+        //     thread::spawn(move || {
+        //         // listen for all signals from all instances
+        //     })
+        // }).unwrap_or(())
     }
 
     /// Starts all instances
@@ -103,6 +128,7 @@ impl Container {
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
         self.stop_all_instances()?;
+        // TODO: also stop all interfaces
         self.instances = HashMap::new();
         Ok(())
     }
@@ -194,7 +220,7 @@ impl Container {
 impl<'a> TryFrom<&'a Configuration> for Container {
     type Error = HolochainError;
     fn try_from(config: &'a Configuration) -> Result<Self, Self::Error> {
-        let mut container = Container::with_config((*config).clone());
+        let mut container = Container::from_config((*config).clone());
         container
             .load_config(config)
             .map_err(|string| HolochainError::ConfigError(string))?;
@@ -309,10 +335,14 @@ fn create_file_context(
 
 #[cfg(test)]
 pub mod tests {
+    extern crate holochain_core;
+    extern crate test_utils;
     use super::*;
     use crate::config::load_configuration;
-    use std::{fs::File, io::Write};
+    use std::{fs::File, io::Write, time::Duration};
     use tempfile::tempdir;
+    use test_utils::*;
+    use holochain_core_types::cas::content::AddressableContent;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| Ok(Dna::new()))
@@ -323,19 +353,19 @@ pub mod tests {
     fn test_toml() -> String {
         r#"
     [[agents]]
-    id = "test agent"
+    id = "test-agent"
     name = "Holo Tester"
     key_file = "holo_tester.key"
 
     [[dnas]]
-    id = "app spec rust"
+    id = "test-dna"
     file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
     [[instances]]
-    id = "app spec instance"
-    dna = "app spec rust"
-    agent = "test agent"
+    id = "test-instance"
+    dna = "test-dna"
+    agent = "test-agent"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -343,14 +373,22 @@ pub mod tests {
     type = "memory"
 
     [[interfaces]]
-    id = "app spec interface"
+    id = "test-interface"
     [interfaces.driver]
     type = "websocket"
     port = 8888
     [[interfaces.instances]]
-    id = "app spec instance"
+    id = "test-instance"
     "#
         .to_string()
+    }
+
+    fn test_container() -> Container {
+        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let mut container = Container::from_config(config.clone());
+        container.dna_loader = test_dna_loader();
+        container.load_config(&config).unwrap();
+        container
     }
 
     #[test]
@@ -359,7 +397,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let default_network = DEFAULT_NETWORK_CONFIG.to_string();
         let maybe_holochain = instantiate_from_config(
-            &"app spec instance".to_string(),
+            &"test-instance".to_string(),
             &config,
             &mut test_dna_loader(),
             &default_network,
@@ -406,13 +444,7 @@ pub mod tests {
 
     #[test]
     fn test_container_load_config() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-
-        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
-        let mut container = Container::with_config(config.clone());
-        container.dna_loader = test_dna_loader();
-
-        container.load_config(&config).unwrap();
+        let mut container = test_container();
         assert_eq!(container.instances.len(), 1);
 
         container.start_all_instances().unwrap();
@@ -430,27 +462,54 @@ pub mod tests {
         assert_eq!(
             maybe_container.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
+                "Error while trying to create instance \"test-instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
             )
         );
     }
 
     #[test]
     fn test_rpc_info_instances() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
 
-        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
-        let mut container = Container::with_config(config.clone());
-        container.dna_loader = test_dna_loader();
-        container.load_config(&config).unwrap();
-
-        let instance_config = &config.interfaces[0];
-        let dispatcher = container.make_dispatcher(&instance_config);
+        let container = test_container();
+        let interface_config = &container.config.interfaces[0];
+        let dispatcher = container.make_dispatcher(&interface_config);
         let io = dispatcher.io;
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"},\"network\":null}}","id":1}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"{\"test-instance\":{\"id\":\"test-instance\",\"dna\":\"test-dna\",\"agent\":\"test-agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"}}}","id":1}"#;
 
         assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }
+
+
+    #[test]
+    fn can_receive_action_signals() {
+        use holochain_core::action::Action::{Commit, AddLink, Publish, InitApplication, Hold};
+        let wasm = include_bytes!(
+            "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
+        );
+        let capability = create_test_cap_with_fn_name("commit_test");
+        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
+        let context = test_context("alex");
+
+        let (mut hc, rx) = Holochain::with_signals(dna.clone(), context).unwrap();
+        hc.start().expect("couldn't start");
+        hc.call("test_zome", "test_cap", "commit_test", r#"{}"#).unwrap();
+
+        let timeout = Duration::from_millis(1000);
+
+        'outer: loop {
+            let msg_publish = rx.recv_timeout(timeout).expect("no more signals to receive");
+            if let Signal::Internal(Publish(address)) = msg_publish {
+                loop {
+                    let msg_hold = rx.recv_timeout(timeout).expect("no more signals to receive");
+                    if let Signal::Internal(Hold(entry)) = msg_hold {
+                        assert_eq!(address, entry.address());
+                        break 'outer
+                    }
+                }
+            }
+        }
+    }
+
 }

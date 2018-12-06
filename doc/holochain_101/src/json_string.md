@@ -59,8 +59,8 @@ In the end, this is the main reason we chose JSON for communication with core.
 Note that when we started on an AssemblyScript (ostentisbly JavaScript) HDK
 there was not even a `JSON.parse()` method in AssemblyScript itself!
 
-WASM is very promising and very immature, so esoteric serialization options are
-not really options unfortunately, even if `serde` might support them.
+WASM is very promising but very immature so esoteric serialization options are
+not really viable options right now, even if `serde` supports them in Rust.
 
 ### JSON serialization only pertains to communication with core
 

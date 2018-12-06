@@ -99,10 +99,9 @@ extern crate serde;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
 extern crate boolinator;
 extern crate jsonrpc_ws_server;
+extern crate serde_json;
 #[cfg(test)]
 extern crate test_utils;
 extern crate tiny_http;

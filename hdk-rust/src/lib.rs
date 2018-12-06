@@ -12,7 +12,6 @@
 #![feature(try_from)]
 #![feature(never_type)]
 pub extern crate serde;
-#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;

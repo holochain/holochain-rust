@@ -383,8 +383,18 @@ pub mod tests {
                                 "functions": [
                                     {
                                         "name": "test",
-                                        "inputs": [],
-                                        "outputs": []
+                       "inputs" : [
+                            {
+                                "name": "post",
+                                "type": "string"
+                            }
+                        ],
+                        "outputs" : [
+                            {
+                                "name": "hash",
+                                "type": "string"
+                            }
+                        ]
                                     }
                                 ]
                             }

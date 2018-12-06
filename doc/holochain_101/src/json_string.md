@@ -188,7 +188,7 @@ But there are benefits:
 - It is UTF-8 and web (e.g. data URI) friendly
 - It has wide language support (see above for why this is important)
 - It will be supported by all persistence backends for the forseeable future
-  - At least these systems require base64 encoding for data at some point:
+  - At least these storage systems require base64 encoded data at some point:
     - Browser based localStorage
     - MongoDB
     - Elasticsearch

@@ -453,16 +453,22 @@ This approach is quick and dirty. Simply change the type of `Bar` to `String`.
 When prototyping or on deadline, this might be the most attractive option ;)
 
 This will likely cause problems upstream and downstream of what you are doing,
-or may be symptomatic of poorly handled JSON somewhere.
+or may be symptomatic of poorly handled JSON somewhere. This is _roughly_ how
+`Entry` used to work, with a `String` valued `SerializedEntry`and `JsonString`
+valued `Entry` that could be swapped between using a `From` implementation.
 
 Done correctly we can "onboard" values to `Foo` by simply carefully wrapping
 and unwrapping the `String`. Done badly, we reintroduce the possibility for
 invalid wrap/nest/etc. logic to creep in.
 
-This option is not really suitable if we _want_ to double serialize the nested
-JSON data when serializing `Foo`. For an example of where we preserve JSON
-rather than trying to automatically deserialize or wrap it with structs, see
-the return values from `hdk::call` (not using structs, but similar ideas).
+This works best when the fields on `Foo` are private and immutable, exposed
+only through getter/setter/new style methods that internally convert between
+`JsonString` and `String`.
+
+This option is less suitable if we _want_ to double serialize the nested JSON
+data when serializing `Foo`. For an example of where we preserve JSON rather
+than trying to automatically deserialize or wrap it with structs, see the
+return values from `hdk::call` (not using structs, but similar ideas).
 
 Also consider that somebody reading your code might entirely miss the fact that
 `Foo::bar` is JSON data if all they read is the struct definition.
@@ -726,3 +732,36 @@ Unfortunately this doesn't work as well for structs because of the way trait
 bounds work (or don't work) without complex boxing etc. See above for simple
 strategies to cope with nested/wrapped serialization in nested native data
 structures.
+
+This approach can be combined with the "quick and dirty" `Foo` with private
+`String` internals to create a `Foo` that can store _anything_ that round trips
+through `JsonString`:
+
+```rust
+struct Foo {
+  bar: String,
+}
+
+impl Foo {
+  fn new<J: Into<JsonString>> (bar: J) -> Foo {
+    Foo{ bar: String::from(JsonString::from(bar)) }
+  }
+
+  fn bar<T: TryFrom<JsonString>>(&self) -> Result<T, HolochainError> {
+    Ok(JsonString::from(self.bar.clone()).try_into()?)
+  }
+}
+
+// somewhere later..
+// we can build MyBar ad-hoc to send to Foo as long as it implements JsonString
+// we could create MyOtherBar in the same way and send to Foo in the same way
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct MyBar { .. }
+
+let my_bar = MyBar::new(..);
+// auto stores as String via. JsonString internally
+let foo = Foo::new(my_bar);
+// note we must provide the MyBar type at restore time because we destroyed
+// that type info during the serializtion process
+let restored_bar: MyBar = foo.bar()?;
+```

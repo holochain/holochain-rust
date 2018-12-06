@@ -765,3 +765,9 @@ let foo = Foo::new(my_bar);
 // that type info during the serializtion process
 let restored_bar: MyBar = foo.bar()?;
 ```
+
+This is how the `ContentAddressableStorage` trait used to work. It would
+"magically" restore the correct `Content` from storage, provided the compiler
+had the type info available at load time. We had to sacrifice this neat trick
+due to other incompatible constraints put on the CAS by the reducer store etc.
+but it should work well in other scenarios :)

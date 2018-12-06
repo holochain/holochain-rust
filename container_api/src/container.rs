@@ -316,7 +316,6 @@ pub mod tests {
     use tempfile::tempdir;
 
     pub fn test_dna_loader() -> DnaLoader {
-        //let dna = Dna::new();// Dna::try_from(JsonString::from(example_dna_string())).unwrap();
         let loader = Box::new(|_path: &String| {
             Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
         }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;

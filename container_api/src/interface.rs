@@ -144,6 +144,9 @@ pub mod tests {
             None => false,
         });
         let handler = dispatcher.handler();
-        assert_eq!(format!("{:?}",handler),r#"IoHandler(MetaIoHandler { middleware: Noop, compatibility: V2, methods: {"info/instances": <method>, "test_instance//test/test": <method>} })"#.to_string());
+        let result = format!("{:?}",handler).to_string();
+        let ordering1: bool = result == r#"IoHandler(MetaIoHandler { middleware: Noop, compatibility: V2, methods: {"info/instances": <method>, "test_instance//test/test": <method>} })"#;
+        let ordering2: bool = result == r#"IoHandler(MetaIoHandler { middleware: Noop, compatibility: V2, methods: {"test_instance//test/test": <method>, "info/instances": <method>} })"#;
+        assert!(ordering1 || ordering2, "result = {:?}",result);
     }
 }

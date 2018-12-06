@@ -81,17 +81,17 @@ pub(crate) fn get_entry_crud_meta_from_dht(
 pub fn get_entry_with_meta<'a>(
     context: &'a Arc<Context>,
     address: Address,
-) -> FutureObj<'a, Result<Option<EntryWithMeta>, HolochainError>> {
+) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. try to get the entry
     let entry = match get_entry_from_dht(context, address.clone()) {
-        Err(err) => return FutureObj::new(Box::new(future::err(err))),
-        Ok(None) => return FutureObj::new(Box::new(future::ok(None))),
+        Err(err) => return Err(err),
+        Ok(None) => return Ok(None),
         Ok(Some(entry)) => entry,
     };
     // 2. try to get the entry's metadata
     let maybe_meta = get_entry_crud_meta_from_dht(context, address.clone());
     if let Err(err) = maybe_meta {
-        return FutureObj::new(Box::new(future::err(err)));
+        return Err(err);
     }
     let (crud_status, maybe_crud_link) = maybe_meta
         .unwrap()
@@ -101,8 +101,7 @@ pub fn get_entry_with_meta<'a>(
         crud_status,
         maybe_crud_link,
     };
-
-    FutureObj::new(Box::new(future::ok(Some(item))))
+    Ok(Some(item))
 }
 
 #[cfg(test)]
@@ -127,31 +126,4 @@ pub mod tests {
         let result = super::get_entry_from_dht(&context, entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }
-
-    //    #[test]
-    //    fn get_entry_futures() {
-    //        let entry = test_entry();
-    //        let context = test_context_with_state();
-    //        let args = GetEntryArgs {
-    //            address: entry.address(),
-    //            options: GetEntryOptions {
-    //                status_request: StatusRequestKind::Latest,
-    //            },
-    //        };
-    //        let future = super::get_entry_with_meta(&context, &args);
-    //        let maybe_entry_history = block_on(future);
-    //        assert_eq!(0, maybe_entry_history.unwrap().entries.len());
-    //        let content_storage = &context.state().unwrap().dht().content_storage().clone();
-    //        (*content_storage.write().unwrap()).add(&entry).unwrap();
-    //        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
-    //        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
-    //        (*meta_storage.write().unwrap())
-    //            .add_eav(&status_eav)
-    //            .unwrap();
-    //        let future = super::get_entry_with_meta(&context, &args);
-    //        let maybe_entry_history = block_on(future);
-    //        let entry_history = maybe_entry_history.unwrap();
-    //        assert_eq!(&entry, entry_history.entries.iter().next().unwrap());
-    //    }
-
 }

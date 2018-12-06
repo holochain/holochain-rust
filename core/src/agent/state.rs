@@ -18,6 +18,7 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
 use std::{collections::HashMap, convert::TryFrom, sync::Arc};
+use futures::executor::block_on;
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -79,7 +80,7 @@ impl AgentState {
             address: agent_entry_address,
             options: GetEntryOptions::default(),
         };
-        let agent_entry_history = get_entry_history_workflow(context, &entry_args)?;
+        let agent_entry_history = await!(get_entry_history_workflow(context, &entry_args))?;
         if agent_entry_history.entries.is_empty() {
             return Err(HolochainError::ErrorGeneric(
                 "Agent entry not found".to_string(),

@@ -40,10 +40,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
             }
             Ok(ProtocolWrapper::GetDht(get_dht_data)) => {
-                let _ = block_on(nucleus::actions::get_entry::get_entry_with_meta(
+                let _ = nucleus::actions::get_entry::get_entry_with_meta(
                     &context,
                     Address::from(get_dht_data.address.clone()),
-                ))
+                )
                 .map(|maybe_entry_with_meta| {
                     let action_wrapper = ActionWrapper::new(Action::RespondGet((
                         get_dht_data,

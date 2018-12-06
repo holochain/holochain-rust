@@ -45,11 +45,11 @@ pub fn reduce(
 /// Maps incoming action to the correct reducer
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
+        Action::Commit(_) => Some(reduce_add_crud_meta),
         Action::Hold(_) => Some(reduce_hold_entry),
         Action::UpdateEntry(_) => Some(reduce_update_entry),
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
         Action::AddLink(_) => Some(reduce_add_link),
-        //Action::GetLinks(_) => Some(reduce_get_links),
         _ => None,
     }
 }
@@ -63,15 +63,34 @@ pub(crate) fn reduce_hold_entry(
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Hold);
 
+    println!("dht::reduce_hold_entry(): {:?}", entry);
+
     // Add it to local storage
     let new_store = (*old_store).clone();
-    let storage = &new_store.content_storage().clone();
-    let res = (*storage.write().unwrap()).add(entry);
+    let content_storage = &new_store.content_storage().clone();
+    let res = (*content_storage.write().unwrap()).add(entry);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
+        println!("dht::reduce_hold_entry() FAILED {:?}", res);
         return None;
     }
+    println!("dht::reduce_hold_entry(): DONE");
+    // Done
+    Some(new_store)
+}
 
+//
+pub(crate) fn reduce_add_crud_meta(
+    _context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    // Get Action input
+    let action = action_wrapper.action();
+    let (entry, _) = unwrap_to!(action => Action::Commit);
+    // Add crud-status metadata to local storage
+    let new_store = (*old_store).clone();
+    // println!("dht::reduce_add_crud_meta(): {}", entry.address());
     // Initialize CRUD status meta
     let meta_storage = &new_store.meta_storage().clone();
     let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
@@ -79,12 +98,11 @@ pub(crate) fn reduce_hold_entry(
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
         println!(
-            "reduce_hold_entry: meta_storage write failed!: {:?}",
+            "reduce_add_crud_meta: meta_storage write failed!: {:?}",
             res.err().unwrap()
         );
         return None;
     }
-
     // Done
     Some(new_store)
 }

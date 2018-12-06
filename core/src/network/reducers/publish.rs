@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     network::{
         actions::ActionResponse,
-        reducers::initialized,
+        reducers::{initialized, send},
         state::NetworkState,
         util,
     },
@@ -15,7 +15,6 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_net_connection::{
-    net_connection::NetConnection,
     protocol_wrapper::{DhtData, DhtMetaData, ProtocolWrapper},
 };
 use std::sync::Arc;
@@ -27,25 +26,13 @@ fn publish_entry(
 ) -> Result<(), HolochainError> {
     let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
 
-    let data = DhtData {
+    send(network_state, ProtocolWrapper::PublishDht(DhtData {
         msg_id: "?".to_string(),
         dna_hash: network_state.dna_hash.clone().unwrap(),
         agent_id: network_state.agent_id.clone().unwrap(),
         address: entry.address().to_string(),
         content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
-    };
-
-    network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(ProtocolWrapper::PublishDht(data).into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .expect("Network has to be Some because of check above")
+    }))
 }
 
 fn publish_link(
@@ -65,27 +52,14 @@ fn publish_link(
     };
     let link = link_add.link().clone();
 
-    //let header = maybe_header.unwrap();
-    let data = DhtMetaData {
+    send(network_state, ProtocolWrapper::PublishDhtMeta(DhtMetaData {
         msg_id: "?".to_string(),
         dna_hash: network_state.dna_hash.clone().unwrap(),
         agent_id: network_state.agent_id.clone().unwrap(),
         address: link.base().to_string(),
         attribute: String::from("link"),
         content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
-    };
-
-    network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(ProtocolWrapper::PublishDhtMeta(data).into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .expect("Network has to be Some because of check above")
+    }))
 }
 
 fn inner(

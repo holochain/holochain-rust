@@ -1,13 +1,12 @@
 use crate::{
     action::ActionWrapper, context::Context,
     network::{
-        reducers::initialized,
+        reducers::{initialized, send},
         state::NetworkState,
     }
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
-    net_connection::NetConnection,
     protocol_wrapper::{GetDhtData, ProtocolWrapper},
 };
 use std::sync::Arc;
@@ -15,24 +14,12 @@ use std::sync::Arc;
 fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), HolochainError> {
     initialized(network_state)?;
 
-    let data = GetDhtData {
+    send(network_state, ProtocolWrapper::GetDht(GetDhtData {
         msg_id: "?".to_string(),
         dna_hash: network_state.dna_hash.clone().unwrap(),
         from_agent_id: network_state.agent_id.clone().unwrap(),
         address: address.to_string(),
-    };
-
-    network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(ProtocolWrapper::GetDht(data).into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .expect("Network has to be Some because of check above")
+    }))
 }
 
 pub fn reduce_get_entry(

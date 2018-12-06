@@ -68,6 +68,20 @@ pub fn initialized(network_state: &NetworkState) -> Result<(), HolochainError> {
         .ok_or(HolochainError::ErrorGeneric("Network not initialized".to_string()))
 }
 
+pub fn send(network_state: &mut NetworkState, protocol_wrapper: ProtocolWrapper) -> Result<(), HolochainError> {
+    network_state
+        .network
+        .as_mut()
+        .map(|network| {
+            network
+                .lock()
+                .unwrap()
+                .send(protocol_wrapper.into())
+                .map_err(|error| HolochainError::IoError(error.to_string()))
+        })
+        .ok_or(HolochainError::ErrorGeneric("Network has to be Some because of check above".to_string()))?
+}
+
 pub fn send_message(network_state: &mut NetworkState, to_agent_id: &Address, message: DirectMessage) -> Result<(), HolochainError> {
     let id = ProcessUniqueId::new();
 
@@ -79,17 +93,7 @@ pub fn send_message(network_state: &mut NetworkState, to_agent_id: &Address, mes
         data: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
     };
 
-    let _ = network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(ProtocolWrapper::SendMessage(data).into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .ok_or(HolochainError::ErrorGeneric("Network has to be Some because of check above".to_string()))?;
+    let _ = send(network_state, ProtocolWrapper::SendMessage(data))?;
 
     network_state
         .direct_message_connections

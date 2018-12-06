@@ -1,11 +1,10 @@
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{actions::ActionResponse, direct_message::DirectMessage, reducers::initialized, state::NetworkState},
+    network::{direct_message::DirectMessage, reducers::{initialized, send}, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net_connection::{
-    net_connection::NetConnection,
     protocol_wrapper::{MessageData, ProtocolWrapper},
 };
 use std::sync::Arc;
@@ -33,17 +32,7 @@ fn inner(
         ProtocolWrapper::SendMessage(data)
     };
 
-    network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(protocol_object.into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .expect("Network has to be Some because of check above")
+    send(network_state, protocol_object)
 }
 
 pub fn reduce_send_direct_message(
@@ -55,19 +44,11 @@ pub fn reduce_send_direct_message(
     let (to_agent_id, direct_message, msg_id, is_response) =
         unwrap_to!(action => crate::action::Action::SendDirectMessage);
 
-    let result = inner(
+    let _ = inner(
         network_state,
         to_agent_id.to_string(),
         direct_message,
         msg_id.clone(),
         *is_response,
-    );
-
-    network_state.actions.insert(
-        action_wrapper.clone(),
-        ActionResponse::RespondGet(match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(HolochainError::ErrorGeneric(e.to_string())),
-        }),
     );
 }

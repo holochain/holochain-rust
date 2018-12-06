@@ -1,8 +1,7 @@
-use boolinator::*;
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{actions::ActionResponse, state::NetworkState},
+    network::{actions::ActionResponse, reducers::initialized, state::NetworkState},
 };
 use holochain_core_types::{entry::Entry, error::HolochainError};
 use holochain_net_connection::{
@@ -16,9 +15,7 @@ fn inner(
     get_dht_data: &GetDhtData,
     maybe_entry: &Option<Entry>,
 ) -> Result<(), HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-    .ok_or("Network not initialized".to_string())?;
+    initialized(network_state)?;
 
     let data = DhtData {
         msg_id: get_dht_data.msg_id.clone(),

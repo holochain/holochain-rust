@@ -1,8 +1,7 @@
-use boolinator::*;
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{actions::ActionResponse, direct_message::DirectMessage, state::NetworkState},
+    network::{actions::ActionResponse, direct_message::DirectMessage, reducers::initialized, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
 use holochain_net_connection::{
@@ -18,9 +17,7 @@ fn inner(
     msg_id: String,
     is_response: bool,
 ) -> Result<(), HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-    .ok_or("Network not initialized".to_string())?;
+    initialized(network_state)?;
 
     let data = MessageData {
         msg_id,

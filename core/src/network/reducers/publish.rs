@@ -1,8 +1,12 @@
-use boolinator::*;
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{actions::ActionResponse, state::NetworkState, util},
+    network::{
+        actions::ActionResponse,
+        reducers::initialized,
+        state::NetworkState,
+        util,
+    },
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -89,9 +93,7 @@ fn inner(
     network_state: &mut NetworkState,
     address: &Address,
 ) -> Result<(), HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-    .ok_or("Network not initialized".to_string())?;
+    initialized(network_state)?;
 
     let (entry, header) = util::entry_with_header(&address, &context)?;
 

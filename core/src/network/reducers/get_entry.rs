@@ -1,5 +1,10 @@
-use boolinator::*;
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use crate::{
+    action::ActionWrapper, context::Context,
+    network::{
+        reducers::initialized,
+        state::NetworkState,
+    }
+};
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
     net_connection::NetConnection,
@@ -8,9 +13,7 @@ use holochain_net_connection::{
 use std::sync::Arc;
 
 fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-    .ok_or("Network not initialized".to_string())?;
+    initialized(network_state)?;
 
     let data = GetDhtData {
         msg_id: "?".to_string(),

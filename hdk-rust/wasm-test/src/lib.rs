@@ -10,6 +10,8 @@ extern crate boolinator;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
+pub mod handle_crud;
+
 use boolinator::Boolinator;
 use hdk::{
     error::ZomeApiError,
@@ -17,7 +19,10 @@ use hdk::{
     globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{
-    api_serialization::get_entry::GetEntryOptions,
+    api_serialization::{
+        get_entry::{GetEntryOptions, EntryHistory},
+        get_links::GetLinksResult,
+    },
     holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
         cas::content::{Address, AddressableContent},
@@ -31,7 +36,9 @@ use holochain_wasm_utils::{
     memory_serialization::*,
 };
 use std::convert::TryFrom;
-use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
+use handle_crud::{
+    handle_update_entry_ok, handle_remove_entry_ok, handle_remove_modified_entry_ok,
+};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TestEntryType {
@@ -85,8 +92,8 @@ fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
     hdk::commit_entry(&entry)
 }
 
-fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<Option<Entry>> {
-    hdk::get_entry_result(entry_address, GetEntryOptions {})
+fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<EntryHistory> {
+    hdk::get_entry_result(entry_address, GetEntryOptions::default())
 }
 
 fn handle_check_get_entry(entry_address: Address) -> ZomeApiResult<Option<Entry>> {
@@ -443,7 +450,7 @@ define_zome! {
 
             check_get_entry_result: {
                 inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<Option<Entry>>|,
+                outputs: |result: ZomeApiResult<EntryHistory>|,
                 handler: handle_check_get_entry_result
             }
 
@@ -500,6 +507,24 @@ define_zome! {
             //     outputs: |result: JsonString|,
             //     handler: handle_check_sys_entry_address
             // }
+
+            update_entry_ok: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_update_entry_ok
+            }
+
+            remove_entry_ok: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_remove_entry_ok
+            }
+
+            remove_modified_entry_ok: {
+                inputs: | |,
+                outputs: |result: JsonString|,
+                handler: handle_remove_modified_entry_ok
+            }
 
             send_tweet: {
                 inputs: |author: String, content: String|,

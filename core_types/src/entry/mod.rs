@@ -1,10 +1,12 @@
+pub mod deletion_entry;
 pub mod entry_type;
 
+use self::deletion_entry::DeletionEntry;
 use agent::{test_agent_id, AgentId};
 use cas::content::{Address, AddressableContent, Content};
 use chain_header::ChainHeader;
 use chain_migrate::ChainMigrate;
-use delete::Delete;
+use crud_status::CrudStatus;
 use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
 use error::{HcResult, HolochainError};
@@ -54,7 +56,7 @@ pub enum Entry {
 
     Dna(Dna),
     AgentId(AgentId),
-    Delete(Delete),
+    Deletion(DeletionEntry),
     LinkAdd(LinkAdd),
     LinkRemove(LinkRemove),
     LinkList(LinkList),
@@ -81,7 +83,7 @@ impl Entry {
             Entry::App(app_entry_type, _) => EntryType::App(app_entry_type.to_owned()),
             Entry::Dna(_) => EntryType::Dna,
             Entry::AgentId(_) => EntryType::AgentId,
-            Entry::Delete(_) => EntryType::Delete,
+            Entry::Deletion(_) => EntryType::Deletion,
             Entry::LinkAdd(_) => EntryType::LinkAdd,
             Entry::LinkRemove(_) => EntryType::LinkRemove,
             Entry::LinkList(_) => EntryType::LinkList,
@@ -105,6 +107,13 @@ impl AddressableContent for Entry {
     fn try_from_content(content: &Content) -> HcResult<Entry> {
         Entry::try_from(content.to_owned())
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct EntryWithMeta {
+    pub entry: Entry,
+    pub crud_status: CrudStatus,
+    pub maybe_crud_link: Option<Address>,
 }
 
 /// dummy entry value

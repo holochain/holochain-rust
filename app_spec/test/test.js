@@ -114,15 +114,30 @@ test('create/get_post roundtrip', (t) => {
   const post_address = create_post_result.Ok
 
   const params_get = {post_address}
-  const result = app.call("blog", "main", "get_post", params_get)
 
-  const entry = result
-  t.equal(entry.content, content)
+  const check_get_result = function check_get_result (i = 0, get_result) {
+    t.comment('checking get result for the ' + i + 'th time')
+    t.comment("\t -> result = " + get_result + "")
 
-  const entry_value = JSON.parse(result.Ok.App[1])
-  t.comment("get_post() entry_value = " + entry_value + "")
-  t.equal(entry_value.content, content)
-  t.equal(entry_value.date_created, "now")
+    if (get_result) {
+      t.comment(JSON.stringify(get_result))
+      const entry_value = JSON.parse(get_result.Ok.App[1])
+
+      t.equal(entry_value.content, content)
+      t.equal(entry_value.date_created, "now")
+    }
+    else if (i < 50) {
+      setTimeout(function() {
+        check_get_result(
+          ++i,
+          app.call("blog", "main", "get_post", params_get)
+        )
+      }, 100)
+    }
+    else {
+      t.end()
+    }
+  }()
 
 })
 

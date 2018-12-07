@@ -6,7 +6,7 @@ use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
-    error::HolochainError,
+    error::{HcResult,HolochainError},
     json::JsonString,
 };
 use std::{
@@ -34,6 +34,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
 }
+
 
 impl Context {
     pub fn default_channel_buffer_size() -> usize {
@@ -86,7 +87,7 @@ impl Context {
         })
     }
     // helper function to make it easier to call the logger
-    pub fn log(&self, msg: &str) -> Result<(), HolochainError> {
+    pub fn log(&self, msg: &str) -> HcResult<()> {
         let mut logger = self.logger.lock().or(Err(HolochainError::LoggingError))?;
         logger.log(msg.to_string());
         Ok(())
@@ -139,6 +140,24 @@ impl Context {
         dna.get_wasm_from_zome_name(zome)
             .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
     }
+}
+
+
+pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, String)> {
+    let state = context
+        .state()
+        .ok_or("Network::start() could not get application state".to_string())?;
+    let agent_state = state.agent();
+
+    let agent = await!(agent_state.get_agent(&context))?;
+    let agent_id = agent.key;
+
+    let dna = state
+        .nucleus()
+        .dna()
+        .ok_or("Network::start() called without DNA".to_string())?;
+    let dna_hash = base64::encode(&dna.multihash()?);
+    Ok((dna_hash, agent_id))
 }
 
 /// create a test network

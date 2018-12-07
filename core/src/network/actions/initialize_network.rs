@@ -2,37 +2,22 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{Context,get_dna_and_agent},
     instance::dispatch_action,
 };
 use futures::{
     task::{LocalWaker, Poll},
     Future,
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::error::HcResult;
 use std::{
     pin::{Pin, Unpin},
     sync::Arc,
 };
 
-pub async fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), HolochainError> {
-    let state = context
-        .state()
-        .ok_or("Network::start() could not get application state".to_string())?;
-    let agent_state = state.agent();
 
-    let agent = await!(agent_state.get_agent(&context))?;
-    let agent_id = agent.key;
-
-    let dna = state
-        .nucleus()
-        .dna()
-        .ok_or("Network::start() called without DNA".to_string())?;
-    let dna_hash = base64::encode(&dna.multihash()?);
-    Ok((dna_hash, agent_id))
-}
 /// InitNetwork Action Creator
-pub async fn initialize_network(context: &Arc<Context>) -> Result<(), HolochainError> {
+pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     let (dna_hash, agent_id) = await!(get_dna_and_agent(context))?;
     let action_wrapper = ActionWrapper::new(Action::InitNetwork((
         context.network_config.clone(),
@@ -53,7 +38,7 @@ pub struct InitNetworkFuture {
 impl Unpin for InitNetworkFuture {}
 
 impl Future for InitNetworkFuture {
-    type Output = Result<(), HolochainError>;
+    type Output = HcResult<()>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         //

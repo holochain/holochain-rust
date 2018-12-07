@@ -116,9 +116,6 @@ test('create/get_post roundtrip', (t) => {
   const params_get = {post_address}
   const result = app.call("blog", "main", "get_post", params_get)
 
-  const entry = result
-  t.equal(entry.content, content)
-
   const entry_value = JSON.parse(result.Ok.App[1])
   t.comment("get_post() entry_value = " + entry_value + "")
   t.equal(entry_value.content, content)

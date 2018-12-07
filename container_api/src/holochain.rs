@@ -243,6 +243,9 @@ mod tests {
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
         assert_eq!(hc.context.agent_id.nick, "bob".to_string());
+        let network_state = hc.context.state().unwrap().network().clone();
+        assert_eq!(network_state.agent_id.is_some(),true);
+        assert_eq!(network_state.dna_hash.is_some(),true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");

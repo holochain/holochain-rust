@@ -1,8 +1,4 @@
-use crate::{
-    action::ActionWrapper,
-    context::Context,
-    network::state::NetworkState,
-};
+use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::DhtData;
 use std::sync::Arc;

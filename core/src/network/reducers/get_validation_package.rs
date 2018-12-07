@@ -1,11 +1,7 @@
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{
-        direct_message::DirectMessage,
-        reducers::send_message,
-        state::NetworkState,
-    },
+    network::{direct_message::DirectMessage, reducers::send_message, state::NetworkState},
 };
 use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
 use std::sync::Arc;

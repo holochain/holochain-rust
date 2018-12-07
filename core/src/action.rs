@@ -180,6 +180,8 @@ pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
+
+
 #[cfg(test)]
 pub mod tests {
 

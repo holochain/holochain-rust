@@ -70,10 +70,8 @@ impl NetworkState {
     }
 
     pub fn initialized(&self) -> Result<(), HolochainError> {
-        (self.network.is_some()
-            && self.dna_hash.is_some() & self.agent_id.is_some())
-            .ok_or(HolochainError::ErrorGeneric(
-                "Network not initialized".to_string(),
-            ))
+        (self.network.is_some() && self.dna_hash.is_some() & self.agent_id.is_some()).ok_or(
+            HolochainError::ErrorGeneric("Network not initialized".to_string()),
+        )
     }
 }

@@ -1,12 +1,7 @@
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{
-        actions::ActionResponse,
-        reducers::send,
-        state::NetworkState,
-        util,
-    },
+    network::{actions::ActionResponse, reducers::send, state::NetworkState, util},
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},

@@ -1,10 +1,7 @@
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{
-        reducers::send,
-        state::NetworkState,
-    },
+    network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::{GetDhtData, ProtocolWrapper};

@@ -9,9 +9,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::Address,
-    chain_header::ChainHeader,
-    error::HcResult,
+    cas::content::Address, chain_header::ChainHeader, error::HcResult,
     validation::ValidationPackage,
 };
 use std::{

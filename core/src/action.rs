@@ -121,7 +121,7 @@ pub enum Action {
     /// Sends a direct message object to the given address.
     /// 3rd parameter is the message id
     /// 4th parameter is true for a response to a previous message, false for a new interaction
-    SendDirectMessage((Address, DirectMessage, String, bool)),
+    SendDirectMessage(DirectMessageData),
 
     /// Makes the network module forget about the direct message
     /// connection with the given ID.
@@ -180,7 +180,13 @@ pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
-
+#[derive(Clone, PartialEq, Debug)]
+pub struct DirectMessageData {
+    pub address: Address,
+    pub message: DirectMessage,
+    pub msg_id: String,
+    pub is_response: bool,
+}
 
 #[cfg(test)]
 pub mod tests {

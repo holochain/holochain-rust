@@ -1,5 +1,5 @@
 use crate::{
-    action::{Action, ActionWrapper},
+    action::{Action, ActionWrapper, DirectMessageData},
     context::Context,
     instance::dispatch_action,
     network::direct_message::DirectMessage,
@@ -36,11 +36,12 @@ pub async fn respond_validation_package_request(
     };
 
     let direct_message = DirectMessage::ValidationPackage(maybe_validation_package);
-    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((
-        to_agent_id,
-        direct_message,
+    let direct_message_data = DirectMessageData {
+        address: to_agent_id,
+        message: direct_message,
         msg_id,
-        true,
-    )));
+        is_response: true,
+    };
+    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
     dispatch_action(&context.action_channel, action_wrapper);
 }

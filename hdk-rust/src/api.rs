@@ -196,7 +196,7 @@ pub enum BundleOnClose {
 /// # fn main() {
 /// pub fn handle_some_function(content: String) -> JsonString {
 ///     // ...
-///     let _ = hdk::debug("write a message to the logs")?;
+///     hdk::debug("write a message to the logs")?;
 ///     // ...
 ///     "whatever".into()
 /// }

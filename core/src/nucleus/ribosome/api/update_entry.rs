@@ -1,10 +1,10 @@
 use crate::{
     agent::actions::{commit::commit_entry, update_entry::update_entry},
-    workflows::get_entry_history::get_entry_history_workflow,
     nucleus::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
+    workflows::get_entry_history::get_entry_history_workflow,
 };
 use futures::{
     executor::block_on,
@@ -17,8 +17,7 @@ use holochain_core_types::{
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
-use holochain_wasm_utils::api_serialization::UpdateEntryArgs;
-use holochain_wasm_utils::api_serialization::get_entry::*;
+use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -46,7 +45,8 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: entry_args.address,
         options: GetEntryOptions::default(),
     };
-    let get_entry_history_result = block_on(get_entry_history_workflow(&runtime.context, &get_args));
+    let get_entry_history_result =
+        block_on(get_entry_history_workflow(&runtime.context, &get_args));
     if let Err(_err) = get_entry_history_result {
         return ribosome_error_code!(Unspecified);
     }

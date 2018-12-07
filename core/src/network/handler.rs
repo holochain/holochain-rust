@@ -9,8 +9,8 @@ use crate::{
 use futures::executor::block_on;
 use holochain_core_types::{
     cas::content::Address,
-    entry::Entry,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
+    entry::Entry,
 };
 use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolWrapper};
 use std::{convert::TryFrom, sync::Arc};
@@ -34,12 +34,11 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 match dht_meta_data.attribute.as_ref() {
                     "link" => {
                         //println!("create_handler() StoreDhtMeta request received: Link");
-                        let entry_with_header: EntryWithHeader =
-                            serde_json::from_str(
-                                &serde_json::to_string(&dht_meta_data.content)
-                                    .expect("dht_meta_data should be EntryWithHader")
-                            )
-                                .expect("dht_meta_data should be EntryWithHader");
+                        let entry_with_header: EntryWithHeader = serde_json::from_str(
+                            &serde_json::to_string(&dht_meta_data.content)
+                                .expect("dht_meta_data should be EntryWithHader"),
+                        )
+                        .expect("dht_meta_data should be EntryWithHader");
                         let link_add = match entry_with_header.entry_body {
                             Entry::LinkAdd(link_add) => link_add,
                             _ => unreachable!(),
@@ -49,22 +48,20 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     }
                     STATUS_NAME => {
                         //println!("create_handler() StoreDhtMeta {}", STATUS_NAME);
-                        let _crud_status: CrudStatus =
-                            serde_json::from_str(
-                                &serde_json::to_string(&dht_meta_data.content)
-                                    .expect("dht_meta_data should be crud_status")
-                            )
-                                .expect("dht_meta_data should be crud_status");
+                        let _crud_status: CrudStatus = serde_json::from_str(
+                            &serde_json::to_string(&dht_meta_data.content)
+                                .expect("dht_meta_data should be crud_status"),
+                        )
+                        .expect("dht_meta_data should be crud_status");
                         // FIXME: block_on hold crud_status metadata in DHT?
                     }
                     LINK_NAME => {
                         //println!("create_handler() StoreDhtMeta {}", LINK_NAME);
-                        let _crud_link: Address =
-                            serde_json::from_str(
-                                &serde_json::to_string(&dht_meta_data.content)
-                                    .expect("dht_meta_data should be crud_link")
-                            )
-                                .expect("dht_meta_data should be crud_link");
+                        let _crud_link: Address = serde_json::from_str(
+                            &serde_json::to_string(&dht_meta_data.content)
+                                .expect("dht_meta_data should be crud_link"),
+                        )
+                        .expect("dht_meta_data should be crud_link");
                         // FIXME: block_on hold crud_link metadata in DHT?
                     }
                     _ => {}

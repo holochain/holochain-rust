@@ -31,9 +31,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::{
-    get_links::GetLinksResult,
-    get_entry::EntryHistory,
-    QueryResult,
+    get_entry::EntryHistory, get_links::GetLinksResult, QueryResult,
 };
 use std::sync::{Arc, Mutex};
 use test_utils::*;

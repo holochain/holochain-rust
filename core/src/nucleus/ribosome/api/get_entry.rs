@@ -23,7 +23,6 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    println!("invoke_get_entry() blocking...");
     let result = block_on(get_entry_history_workflow(&runtime.context, &input));
     // Store result in wasm memory
     runtime.store_result(result)

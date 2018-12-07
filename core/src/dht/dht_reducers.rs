@@ -12,9 +12,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
 };
-/*use holochain_wasm_utils::api_serialization::get_entry::{
-    EntryHistory, GetEntryOptions, StatusRequestKind,
-};*/
+
 use std::{collections::HashSet, convert::TryFrom, sync::Arc};
 
 // A function that might return a mutated DhtStore
@@ -63,8 +61,6 @@ pub(crate) fn reduce_hold_entry(
     let action = action_wrapper.action();
     let entry = unwrap_to!(action => Action::Hold);
 
-    println!("dht::reduce_hold_entry(): {:?}", entry);
-
     // Add it to local storage
     let new_store = (*old_store).clone();
     let content_storage = &new_store.content_storage().clone();
@@ -74,7 +70,6 @@ pub(crate) fn reduce_hold_entry(
         println!("dht::reduce_hold_entry() FAILED {:?}", res);
         return None;
     }
-    println!("dht::reduce_hold_entry(): DONE");
     // Done
     Some(new_store)
 }
@@ -90,7 +85,6 @@ pub(crate) fn reduce_add_crud_meta(
     let (entry, _) = unwrap_to!(action => Action::Commit);
     // Add crud-status metadata to local storage
     let new_store = (*old_store).clone();
-    // println!("dht::reduce_add_crud_meta(): {}", entry.address());
     // Initialize CRUD status meta
     let meta_storage = &new_store.meta_storage().clone();
     let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
@@ -150,72 +144,6 @@ pub(crate) fn reduce_update_entry(
     let action = action_wrapper.action();
     let (old_address, new_address) = unwrap_to!(action => Action::UpdateEntry);
     let mut new_store = (*old_store).clone();
-    let _content_storage = &old_store.content_storage().clone();
-    //
-    //    // pre-condition: Must already have old_entry in local content_storage
-    //    if !(*content_storage.read().unwrap())
-    //        .contains(&old_address)
-    //        .unwrap()
-    //    {
-    //        new_store.actions_mut().insert(
-    //            action_wrapper.clone(),
-    //            Err(HolochainError::ErrorGeneric(String::from(
-    //                "old_entry is not present in DHT's CAS",
-    //            ))),
-    //        );
-    //        return Some(new_store);
-    //    }
-    //    //  pre-condition: Must already have new_entry in local content_storage
-    //    if !(*content_storage.read().unwrap())
-    //        .contains(&new_address)
-    //        .unwrap()
-    //    {
-    //        new_store.actions_mut().insert(
-    //            action_wrapper.clone(),
-    //            Err(HolochainError::ErrorGeneric(String::from(
-    //                "new_entry is not present in DHT's CAS",
-    //            ))),
-    //        );
-    //        return Some(new_store);
-    //    }
-    //    // pre-condition: old_entry's latest version must have LIVE crud-status
-    //    // get latest entry
-    //    let mut entry_history = EntryHistory::new();
-    //    let res = get_entry_rec(
-    //        &context,
-    //        &mut entry_history,
-    //        old_address.clone(),
-    //        GetEntryOptions::new(StatusRequestKind::Latest),
-    //    );
-    //    if let Err(err) = res {
-    //        new_store
-    //            .actions_mut()
-    //            .insert(action_wrapper.clone(), Err(err));
-    //        return Some(new_store);
-    //    }
-    //    let latest_old_address = entry_history.addresses.iter().last().unwrap();
-    //    // verify its crud-status
-    //    if entry_history.crud_status.iter().last().unwrap() != &CrudStatus::LIVE {
-    //        new_store.actions_mut().insert(
-    //            action_wrapper.clone(),
-    //            Err(HolochainError::ErrorGeneric(String::from(
-    //                "old_entry latest version does not have LIVE crud-status",
-    //            ))),
-    //        );
-    //        return Some(new_store);
-    //    }
-    //    // pre-condition: latest entry must not already have a crud-link
-    //    let maybe_crud_link = entry_history.crud_links.get(latest_old_address);
-    //    if maybe_crud_link.is_some() {
-    //        new_store.actions_mut().insert(
-    //            action_wrapper.clone(),
-    //            Err(HolochainError::ErrorGeneric(String::from(
-    //                "attempted to add a second crud-link to an entry",
-    //            ))),
-    //        );
-    //        return Some(new_store);
-    //    }
-
     // Update crud-status
     let latest_old_address = old_address;
     let meta_storage = &new_store.meta_storage().clone();
@@ -263,23 +191,9 @@ pub(crate) fn reduce_remove_entry(
 fn reduce_remove_entry_inner(
     _context: Arc<Context>,
     new_store: &mut DhtStore,
-    deleted_address: &Address,
+    latest_deleted_address: &Address,
     deletion_address: &Address,
 ) -> Result<Address, HolochainError> {
-    // Get latest entry
-    //    let mut entry_history = EntryHistory::new();
-    //    let res = get_entry_rec(
-    //        &context,
-    //        &mut entry_history,
-    //        deleted_address.clone(),
-    //        GetEntryOptions::new(StatusRequestKind::Latest),
-    //    );
-    //    if let Err(err) = res {
-    //        return Err(err);
-    //    }
-    //let latest_deleted_address = entry_history.addresses.iter().last().unwrap();
-
-    let latest_deleted_address = deleted_address;
     // pre-condition: Must already have entry in local content_storage
     let content_storage = &new_store.content_storage().clone();
     let maybe_json_entry = content_storage

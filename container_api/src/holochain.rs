@@ -92,7 +92,6 @@ impl Holochain {
         let result = block_on(
             initialize_application(dna, &context2).and_then(|_| initialize_network(&context)),
         );
-        println!("Holochain::new() init result = {:?}", result);
         match result {
             Ok(_) => {
                 context.log(&format!("{} instantiated", name))?;

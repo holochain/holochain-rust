@@ -16,7 +16,6 @@ use std::{
 };
 
 async fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), HolochainError> {
-    println!("network::get_dna_and_agent() START");
     let state = context
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
@@ -30,22 +29,18 @@ async fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), H
         .dna()
         .ok_or("Network::start() called without DNA".to_string())?;
     let dna_hash = base64::encode(&dna.multihash()?);
-    println!("network::get_dna_and_agent() END");
     Ok((dna_hash, agent_id))
 }
 /// InitNetwork Action Creator
 pub async fn initialize_network(context: &Arc<Context>) -> Result<(), HolochainError> {
-    println!("initialize_network() START");
     let (dna_hash, agent_id) = await!(get_dna_and_agent(context))?;
     let action_wrapper = ActionWrapper::new(Action::InitNetwork((
         context.network_config.clone(),
         dna_hash,
         agent_id,
     )));
-    println!("initialize_network() dispatch_action()");
     dispatch_action(&context.action_channel, action_wrapper.clone());
 
-    println!("initialize_network() ENDing");
     await!(InitNetworkFuture {
         context: context.clone(),
     })

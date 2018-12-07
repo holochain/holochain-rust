@@ -20,8 +20,6 @@ pub async fn author_entry<'a>(
     maybe_crud_link: Option<Address>,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    println!("author_entry() START");
-    println!("author_entry() build_validation_package...");
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(&entry, &context))?;
     let validation_data = ValidationData {
@@ -31,13 +29,10 @@ pub async fn author_entry<'a>(
         action: EntryAction::Create,
     };
     // 2. Validate the entry
-    println!("author_entry() validate_entry...");
     await!(validate_entry(entry.clone(), validation_data, &context))?;
     // 3. Commit the entry
-    println!("author_entry() commit_entry...");
     await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
     // 4. Publish the valid entry to DHT. This will call Hold to itself
-    println!("author_entry() publish...");
     await!(publish(entry.address(), &context))
 }
 
@@ -58,7 +53,6 @@ pub mod tests {
 
         let entry_address = block_on(author_entry(&test_entry(), None, &context1));
 
-        println!("AUTHOR ENTRY ADDRESS: {:?}", entry_address);
         let entry_address = entry_address.unwrap();
         thread::sleep(time::Duration::from_millis(1000));
 

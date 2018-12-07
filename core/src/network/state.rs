@@ -39,9 +39,19 @@ pub struct NetworkState {
     pub network: Option<Arc<Mutex<P2pNetwork>>>,
     pub dna_hash: Option<String>,
     pub agent_id: Option<String>,
+
+    /// Here we store the results of GET entry processes.
+    /// None means that we are still waiting for a result from the network.
     pub get_entry_results: HashMap<Address, GetEntryResult>,
+
+    /// Here we store the results of get validation package processes.
+    /// None means that we are still waiting for a result from the network.
     pub get_validation_package_results: HashMap<Address, GetValidationPackageResult>,
+
+    /// This stores every open (= waiting for response) node-to-node messages.
+    /// Entries get removed when we receive an answer through Action::ResolveDirectConnection.
     pub direct_message_connections: HashMap<String, DirectMessage>,
+    
     id: snowflake::ProcessUniqueId,
 }
 

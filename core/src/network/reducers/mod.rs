@@ -68,6 +68,8 @@ pub fn reduce(
     }
 }
 
+/// Sends the given ProtocolWrapper over the network using the network proxy instance
+/// that lives in the NetworkState.
 pub fn send(
     network_state: &mut NetworkState,
     protocol_wrapper: ProtocolWrapper,
@@ -83,10 +85,14 @@ pub fn send(
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or(HolochainError::ErrorGeneric(
-            "Network has to be Some because of check above".to_string(),
+            "Network not intialized".to_string(),
         ))?
 }
 
+/// Sends the given DirectMessage to the node given by to_agent_id.
+/// This creates a transient connection as every node-to-node communication follows a
+/// request-response pattern. This function therefore logs the open connection
+/// (expecting a response) in network_state.direct_message_connections.
 pub fn send_message(
     network_state: &mut NetworkState,
     to_agent_id: &Address,

@@ -36,8 +36,9 @@ pub async fn get_validation_package(
     })
 }
 
-/// PublishFuture resolves to ActionResponse
-/// Tracks the state for a response to its ActionWrapper
+/// GetValidationPackageFuture resolves to an Option<ValidationPackage>
+/// which would be None if the source responded with None, indicating that it
+/// is not the source.
 pub struct GetValidationPackageFuture {
     context: Arc<Context>,
     address: Address,

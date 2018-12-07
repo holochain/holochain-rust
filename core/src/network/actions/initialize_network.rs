@@ -31,7 +31,7 @@ async fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), H
     let dna_hash = base64::encode(&dna.multihash()?);
     Ok((dna_hash, agent_id))
 }
-/// InitNetwork Action Creator
+/// Creates a network proxy object and stores DNA and agent hash in the network state.
 pub async fn initialize_network(context: &Arc<Context>) -> Result<(), HolochainError> {
     let (dna_hash, agent_id) = await!(get_dna_and_agent(context))?;
     let action_wrapper = ActionWrapper::new(Action::InitNetwork((

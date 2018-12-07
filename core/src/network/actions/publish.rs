@@ -11,7 +11,7 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    error::{HcResult, HolochainError},
+    error::HcResult,
 };
 use std::{
     pin::{Pin, Unpin},
@@ -46,10 +46,8 @@ impl Future for PublishFuture {
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();
-        if state.network.is_none() || state.dna_hash.is_none() || state.agent_id.is_none() {
-            return Poll::Ready(Err(HolochainError::IoError(
-                "Network not initialized".to_string(),
-            )));
+        if let Err(error) = state.initialized() {
+            return Poll::Ready(Err(error));
         }
         //
         // TODO: connect the waker to state updates for performance reasons

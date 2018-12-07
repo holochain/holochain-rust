@@ -93,6 +93,7 @@ mod tests {
         crud_status::CrudStatus,
     };
     use holochain_net_connection::protocol_wrapper::DhtData;
+    use std::sync::{Arc, RwLock};
 
     #[test]
     pub fn reduce_get_entry_without_network_initialized() {
@@ -144,21 +145,33 @@ mod tests {
 
     #[test]
     pub fn reduce_get_entry_timeout_test() {
-        let context = test_context("alice");
+        let mut context = test_context("alice");
         let store = test_store(context.clone());
+        let store = Arc::new(RwLock::new(store));
+
+        Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork((
             mock_network_config(),
             String::from("abcd"),
             String::from("abcd"),
         )));
-        let store = store.reduce(context.clone(), action_wrapper);
+
+        {
+            let mut new_store = store.write().unwrap();
+            *new_store = new_store.reduce(context.clone(), action_wrapper);
+        }
 
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::GetEntry(entry.address()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        {
+            let mut new_store = store.write().unwrap();
+            *new_store = new_store.reduce(context.clone(), action_wrapper);
+        }
         let maybe_get_entry_result = store
+            .read()
+            .unwrap()
             .network()
             .get_entry_with_meta_results
             .get(&entry.address())
@@ -166,8 +179,13 @@ mod tests {
         assert_eq!(maybe_get_entry_result, Some(None));
 
         let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(entry.address()));
-        let store = store.reduce(context.clone(), action_wrapper);
+        {
+            let mut new_store = store.write().unwrap();
+            *new_store = new_store.reduce(context.clone(), action_wrapper);
+        }
         let maybe_get_entry_result = store
+            .read()
+            .unwrap()
             .network()
             .get_entry_with_meta_results
             .get(&entry.address())
@@ -193,8 +211,13 @@ mod tests {
         };
 
         let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));
-        let store = store.reduce(context.clone(), action_wrapper);
+        {
+            let mut new_store = store.write().unwrap();
+            *new_store = new_store.reduce(context.clone(), action_wrapper);
+        }
         let maybe_entry_with_meta_result = store
+            .read()
+            .unwrap()
             .network()
             .get_entry_with_meta_results
             .get(&entry.address())
@@ -206,8 +229,13 @@ mod tests {
 
         // Ok we got a positive result in the state
         let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(entry.address()));
-        let store = store.reduce(context.clone(), action_wrapper);
+        {
+            let mut new_store = store.write().unwrap();
+            *new_store = new_store.reduce(context.clone(), action_wrapper);
+        }
         let maybe_entry_with_meta_result = store
+            .read()
+            .unwrap()
             .network()
             .get_entry_with_meta_results
             .get(&entry.address())

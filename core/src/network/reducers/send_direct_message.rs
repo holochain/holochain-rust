@@ -22,7 +22,7 @@ fn inner(
     };
 
     let protocol_object = if direct_message_data.is_response {
-        ProtocolWrapper::SendResult(data)
+        ProtocolWrapper::HandleSendResult(data)
     } else {
         ProtocolWrapper::SendMessage(data)
     };

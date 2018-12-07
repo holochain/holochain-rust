@@ -13,6 +13,7 @@ use link::{link_add::LinkAdd, link_list::LinkList, link_remove::LinkRemove};
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;
 use std::convert::TryFrom;
+use multihash::Hash;
 
 pub type AppEntryValue = JsonString;
 
@@ -98,6 +99,13 @@ impl PartialEq for Entry {
 }
 
 impl AddressableContent for Entry {
+    fn address(&self) -> Address {
+        match &self {
+            Entry::AgentId(agent_id) => agent_id.address(),
+            _ => Address::encode_from_str(&String::from(self.content()), Hash::SHA2256),
+        }
+    }
+
     fn content(&self) -> Content {
         self.into()
     }

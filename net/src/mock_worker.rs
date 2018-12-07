@@ -389,7 +389,7 @@ mod tests {
 
         if let ProtocolWrapper::HandleSend(msg) = res {
             cli2.receive(
-                ProtocolWrapper::HandleSendResult(MessageData {
+                ProtocolWrapper::SendResult(MessageData {
                     dna_hash: msg.dna_hash,
                     to_agent_id: msg.from_agent_id,
                     from_agent_id: AGENT_ID_2.to_string(),
@@ -407,7 +407,7 @@ mod tests {
 
         let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SendResult(msg) = res {
+        if let ProtocolWrapper::HandleSendResult(msg) = res {
             assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
         } else {
             panic!("bad msg");

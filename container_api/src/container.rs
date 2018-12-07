@@ -47,7 +47,7 @@ pub struct Container {
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
-static DEFAULT_NETWORK_CONFIG: &'static str = "{\"backend\":\"mock\"}";
+pub static DEFAULT_NETWORK_CONFIG: &'static str = "{\"backend\":\"mock\"}";
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
@@ -216,7 +216,7 @@ fn make_interface(
 
 /// Creates one specific Holochain instance from a given Configuration,
 /// id string and DnaLoader.
-fn instantiate_from_config(
+pub fn instantiate_from_config(
     id: &String,
     config: &Configuration,
     dna_loader: &mut DnaLoader,
@@ -312,15 +312,17 @@ pub mod tests {
     use super::*;
     use crate::config::load_configuration;
     use std::{fs::File, io::Write};
+
     use tempfile::tempdir;
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader = Box::new(|_path: &String| Ok(Dna::new()))
-            as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
+        let loader = Box::new(|_path: &String| {
+            Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
+        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
         Arc::new(loader)
     }
 
-    fn test_toml() -> String {
+    pub fn test_toml() -> String {
         r#"
     [[agents]]
     id = "test agent"
@@ -353,25 +355,8 @@ pub mod tests {
         .to_string()
     }
 
-    #[test]
-    #[cfg_attr(tarpaulin, skip)]
-    fn test_instantiate_from_config() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
-        let maybe_holochain = instantiate_from_config(
-            &"app spec instance".to_string(),
-            &config,
-            &mut test_dna_loader(),
-            &default_network,
-        );
-
-        assert_eq!(maybe_holochain.err(), None);
-    }
-
-    #[test]
-    fn test_default_dna_loader() {
-        let tempdir = tempdir().unwrap();
-        let fixture = r#"{
+    pub fn example_dna_string() -> String {
+        r#"{
                 "name": "my dna",
                 "description": "",
                 "version": "",
@@ -389,13 +374,60 @@ pub mod tests {
                                 "description": "",
                                 "sharing": "public"
                             }
+                        },
+                        "capabilities": {
+                            "test": {
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "functions": [
+                                    {
+                                        "name": "test",
+                       "inputs" : [
+                            {
+                                "name": "post",
+                                "type": "string"
+                            }
+                        ],
+                        "outputs" : [
+                            {
+                                "name": "hash",
+                                "type": "string"
+                            }
+                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "code": {
+                            "code": "AAECAw=="
                         }
                     }
                 }
-            }"#;
+            }"#
+        .to_string()
+    }
+
+    #[test]
+    fn test_instantiate_from_config() {
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
+        let maybe_holochain = instantiate_from_config(
+            &"app spec instance".to_string(),
+            &config,
+            &mut test_dna_loader(),
+            &default_network,
+        );
+
+        assert_eq!(maybe_holochain.err(), None);
+    }
+
+    #[test]
+    fn test_default_dna_loader() {
+        let tempdir = tempdir().unwrap();
         let file_path = tempdir.path().join("test.dna.json");
         let mut tmp_file = File::create(file_path.clone()).unwrap();
-        writeln!(tmp_file, "{}", fixture).unwrap();
+        writeln!(tmp_file, "{}", example_dna_string()).unwrap();
         match Container::load_dna(&file_path.into_os_string().into_string().unwrap()) {
             Ok(dna) => {
                 assert_eq!(dna.name, "my dna");

@@ -1,6 +1,7 @@
 use error::HolochainError;
 use json::JsonString;
 use std::{
+    convert::TryFrom,
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
@@ -55,6 +56,25 @@ pub enum EntryType {
     LinkList,
     ChainHeader,
     ChainMigrate,
+}
+
+impl From<AppEntryType> for EntryType {
+    fn from(app_entry_type: AppEntryType) -> Self {
+        EntryType::App(app_entry_type)
+    }
+}
+
+impl TryFrom<EntryType> for AppEntryType {
+    type Error = HolochainError;
+    fn try_from(entry_type: EntryType) -> Result<Self, Self::Error> {
+        match entry_type {
+            EntryType::App(app_entry_type) => Ok(app_entry_type),
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Attempted to convert {:?} EntryType to an AppEntryType",
+                entry_type
+            ))),
+        }
+    }
 }
 
 impl EntryType {

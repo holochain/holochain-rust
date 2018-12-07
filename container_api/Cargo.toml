@@ -18,7 +18,6 @@ boolinator = "2.4"
 tiny_http = "0.6.0"
 jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" , branch = "td-ws" }
 
-
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
 clap = "2"

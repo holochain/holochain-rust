@@ -36,6 +36,7 @@ pub async fn initialize_application(
     dna: Dna,
     context: &Arc<Context>,
 ) -> Result<NucleusStatus, HolochainError> {
+    println!("initialize_application() START");
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
         return Err(HolochainError::new(
             "Can't trigger initialization: Nucleus status is not New",
@@ -110,6 +111,8 @@ pub async fn initialize_application(
             maybe_error,
         )))
         .expect("Action channel not usable in initialize_application()");
+
+    println!("initialize_application() ENDing");
 
     await!(InitializationFuture {
         context: context.clone(),

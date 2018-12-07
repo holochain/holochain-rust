@@ -1,6 +1,6 @@
 extern crate serde_json;
 use crate::context::Context;
-use futures::future::{self, FutureObj};
+//use futures::future::{self, FutureObj};
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
@@ -8,9 +8,9 @@ use holochain_core_types::{
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
-use holochain_wasm_utils::api_serialization::get_entry::{
-    EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind,
-};
+//use holochain_wasm_utils::api_serialization::get_entry::{
+//    EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind,
+//};
 use std::{collections::HashSet, convert::TryInto, sync::Arc};
 
 pub(crate) fn get_entry_from_dht(
@@ -67,7 +67,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let mut maybe_crud_link = None;
     let link_eavs =
         (*storage.read().unwrap()).fetch_eav(Some(address), Some(LINK_NAME.to_string()), None)?;
-    assert!(link_eavs.len() <= 1);
+    assert!(link_eavs.len() <= 1, "link_eavs.len() = {}", link_eavs.len());
     if link_eavs.len() == 1 {
         maybe_crud_link = Some(link_eavs.iter().next().unwrap().value());
     }
@@ -107,13 +107,13 @@ pub fn get_entry_with_meta<'a>(
 #[cfg(test)]
 pub mod tests {
     use crate::instance::tests::test_context_with_state;
-    use futures::executor::block_on;
+    //use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        crud_status::{create_crud_status_eav, CrudStatus},
+        //crud_status::{create_crud_status_eav, CrudStatus},
         entry::test_entry,
     };
-    use holochain_wasm_utils::api_serialization::get_entry::*;
+    //use holochain_wasm_utils::api_serialization::get_entry::*;
 
     #[test]
     fn get_entry_from_dht_cas() {

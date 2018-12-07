@@ -12,6 +12,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: CommitArgs
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    println!("invoke_commit_app_entry() START");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let entry = match Entry::try_from(args_str.clone()) {
@@ -25,10 +26,11 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> =
         block_on(author_entry(&entry, None, &runtime.context));
+
+    println!("invoke_commit_app_entry() task_result = {:?}", task_result);
 
     runtime.store_result(task_result)
 }

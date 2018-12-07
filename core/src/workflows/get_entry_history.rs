@@ -28,7 +28,6 @@ pub async fn get_entry_history_workflow<'a>(
     context: &'a Arc<Context>,
     args: &'a GetEntryArgs,
 ) -> Result<EntryHistory, HolochainError> {
-    println!("get_entry_history_workflow() START: {:?}", args);
     // Setup
     let mut entry_history = EntryHistory::new();
     let mut maybe_address = Some(args.address.clone());
@@ -36,12 +35,10 @@ pub async fn get_entry_history_workflow<'a>(
     while maybe_address.is_some() {
         let address = maybe_address.unwrap();
         maybe_address = None;
-        println!("\t getting: {}", address);
         // Try to get entry
         let maybe_entry_with_meta = await!(get_entry_with_meta_workflow(context, &address))?;
         // Entry found
         if let Some(entry_with_meta) = maybe_entry_with_meta {
-            println!("\t <- found");
             // Erase history if request is for latest
             if args.options.status_request == StatusRequestKind::Latest {
                 entry_history = EntryHistory::new();
@@ -57,7 +54,6 @@ pub async fn get_entry_history_workflow<'a>(
             }
         }
     }
-    println!("get_entry_history_workflow() END");
     Ok(entry_history)
 }
 

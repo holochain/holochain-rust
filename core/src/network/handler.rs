@@ -20,20 +20,16 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     Box::new(move |message| {
         let message = message.unwrap();
         let protocol_wrapper = ProtocolWrapper::try_from(message);
-        //println!("create_handler() protocol_wrapper = {:?}", protocol_wrapper);
         match protocol_wrapper {
             Ok(ProtocolWrapper::StoreDht(dht_data)) => {
                 let entry_with_header: EntryWithHeader =
                     serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap())
                         .unwrap();
-                //println!("create_handler() hold_entry...");
                 let _ = block_on(hold_entry(&entry_with_header.entry_body, &context.clone()));
             }
             Ok(ProtocolWrapper::StoreDhtMeta(dht_meta_data)) => {
-                //println!("create_handler() StoreDhtMeta request received: {:?}", dht_meta_data);
                 match dht_meta_data.attribute.as_ref() {
                     "link" => {
-                        //println!("create_handler() StoreDhtMeta request received: Link");
                         let entry_with_header: EntryWithHeader = serde_json::from_str(
                             &serde_json::to_string(&dht_meta_data.content)
                                 .expect("dht_meta_data should be EntryWithHader"),
@@ -47,7 +43,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                         let _ = block_on(add_link(&link, &context.clone()));
                     }
                     STATUS_NAME => {
-                        //println!("create_handler() StoreDhtMeta {}", STATUS_NAME);
                         let _crud_status: CrudStatus = serde_json::from_str(
                             &serde_json::to_string(&dht_meta_data.content)
                                 .expect("dht_meta_data should be crud_status"),
@@ -56,7 +51,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                         // FIXME: block_on hold crud_status metadata in DHT?
                     }
                     LINK_NAME => {
-                        //println!("create_handler() StoreDhtMeta {}", LINK_NAME);
                         let _crud_link: Address = serde_json::from_str(
                             &serde_json::to_string(&dht_meta_data.content)
                                 .expect("dht_meta_data should be crud_link"),
@@ -77,7 +71,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                         get_dht_data,
                         maybe_entry_with_meta,
                     )));
-                    // println!("create_handler() dispatch_action = {:?}", action_wrapper);
                     dispatch_action(&context.action_channel, action_wrapper.clone());
                 });
             }

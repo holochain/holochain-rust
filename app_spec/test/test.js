@@ -153,6 +153,6 @@ test('scenario test create & publish post -> get from other instance', async (t)
     const result = await pollFor(
       () => app2.call("blog", "main", "get_post", params_get)
     ).catch(t.fail)
-
-    t.equal(result.content, content)
+    const value = JSON.parse(result.Ok.App[1])
+    t.equal(value.content, content)
 })

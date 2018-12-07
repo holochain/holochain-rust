@@ -11,6 +11,8 @@ pub enum Signal {
     User,
 }
 
+pub type SignalReceiver = Receiver<Signal>;
+
 /// Pass on messages from multiple receivers into a single receiver
 pub fn combine_receivers<T>(rxs: Vec<Receiver<T>>) -> Receiver<T>
 where

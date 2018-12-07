@@ -139,10 +139,7 @@ pub mod tests {
     fn test_new_dispatcher() {
         let (config, instances) = example_config_and_instances();
         let dispatcher = ContainerApiDispatcher::new(&config, instances.clone());
-        assert!(match dispatcher.instances.get("test_instance") {
-            Some(_) => true,
-            None => false,
-        });
+        assert!(dispatcher.instances.get("test_instance").is_some());
         let handler = dispatcher.handler();
         let result = format!("{:?}", handler).to_string();
         let ordering1: bool = result == r#"IoHandler(MetaIoHandler { middleware: Noop, compatibility: V2, methods: {"info/instances": <method>, "test_instance//test/test": <method>} })"#;

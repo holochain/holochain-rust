@@ -1,12 +1,13 @@
 use holochain_core_types::{
     dna::zome::entry_types::EntryTypeDef,
+    entry::{entry_type::EntryType, Entry},
     hash::HashString,
     validation::{ValidationData, ValidationPackageDefinition},
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
-pub type Validator = Box<FnMut(String, ValidationData) -> Result<(), String> + Sync>;
+pub type Validator = Box<FnMut(Entry, ValidationData) -> Result<(), String> + Sync>;
 pub type LinkValidator =
     Box<FnMut(HashString, HashString, ValidationData) -> Result<(), String> + Sync>;
 
@@ -22,7 +23,7 @@ pub type LinkValidator =
 /// should use the [entry! macro](macro.entry.html) for a clean syntax.
 pub struct ValidatingEntryType {
     /// Name of the entry type
-    pub name: String,
+    pub name: EntryType,
     /// All the static aspects of the entry type as
     pub entry_type_definition: EntryTypeDef,
     /// Callback that returns a validation package definition that Holochain reads in order
@@ -82,10 +83,13 @@ pub struct ValidatingLinkDefinition {
 /// The following is a standalone Rust file that exports a function which can be called
 /// to get a `ValidatingEntryType` of a "post".
 /// ```rust
+/// # #![feature(try_from)]
 /// # extern crate boolinator;
 /// # extern crate serde_json;
 /// # #[macro_use]
 /// # extern crate hdk;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
 /// # #[macro_use]
 /// # extern crate serde_derive;
 /// # use boolinator::*;
@@ -93,11 +97,13 @@ pub struct ValidatingLinkDefinition {
 /// # use hdk::holochain_core_types::{
 /// #   cas::content::Address,
 /// #   dna::zome::entry_types::Sharing,
+/// #   json::JsonString,
+/// #   error::HolochainError,
 /// # };
 ///
 /// # fn main() {
 ///
-/// #[derive(Serialize, Deserialize)]
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 /// pub struct Post {
 ///     content: String,
 ///     date_created: String,
@@ -160,7 +166,7 @@ macro_rules! entry {
     ) => (
 
         {
-            let mut entry_type = ::hdk::holochain_core_types::dna::zome::entry_types::EntryTypeDef::new();
+            let mut entry_type = hdk::holochain_core_types::dna::zome::entry_types::EntryTypeDef::new();
             entry_type.description = String::from($description);
             entry_type.sharing = $sharing;
 
@@ -190,23 +196,22 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|raw_entry: String, ctx: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
+            let validator = Box::new(|entry: hdk::holochain_core_types::entry::Entry, ctx: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
                 let $ctx = ctx;
-                match serde_json::from_str(&raw_entry) {
-                    Ok(entry) => {
-                        let entry_struct : $entry_type = entry;
-                        let $entry = entry_struct;
+                match entry {
+                    hdk::holochain_core_types::entry::Entry::App(_, app_entry_value) => {
+                        let entry: $entry_type = ::std::convert::TryInto::try_into(app_entry_value)?;
+                        let $entry = entry;
                         $entry_validation
                     },
-                    Err(_) => {
-                        Err(String::from("Schema validation failed"))
+                    _ => {
+                        Err(String::from("Schema validation failed"))?
                     }
                 }
             });
 
-
-            ::hdk::entry_definition::ValidatingEntryType {
-                name: String::from($name),
+            hdk::entry_definition::ValidatingEntryType {
+                name: hdk::holochain_core_types::entry::entry_type::EntryType::App(hdk::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string())),
                 entry_type_definition: entry_type,
                 package_creator,
                 validator,

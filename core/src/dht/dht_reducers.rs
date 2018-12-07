@@ -5,10 +5,7 @@ use crate::{
     context::Context,
     dht::dht_store::DhtStore,
 };
-use holochain_core_types::{
-    cas::content::AddressableContent, eav::EntityAttributeValue, entry::Entry,
-    error::HolochainError,
-};
+use holochain_core_types::{eav::EntityAttributeValue, error::HolochainError};
 use std::sync::Arc;
 
 // A function that might return a mutated DhtStore
@@ -40,7 +37,6 @@ pub fn reduce(
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Hold(_) => Some(reduce_hold_entry),
-        Action::GetEntry(_) => Some(reduce_get_entry_from_network),
         Action::AddLink(_) => Some(reduce_add_link),
         //Action::GetLinks(_) => Some(reduce_get_links),
         _ => None,
@@ -66,41 +62,6 @@ pub(crate) fn reduce_hold_entry(
     }
     // Done
     Some(new_store)
-}
-
-//
-pub(crate) fn reduce_get_entry_from_network(
-    _context: Arc<Context>,
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    // Get Action's input data
-    let action = action_wrapper.action();
-    let address = unwrap_to!(action => Action::GetEntry);
-    let storage = &old_store.content_storage().clone();
-    // pre-condition check: Look in local storage if it already has it.
-    if (*storage.read().unwrap()).contains(address).unwrap() {
-        // TODO #439 - Log a warning saying this should not happen. Once we have better logging.
-        return None;
-    }
-    // Retrieve it from the network...
-    old_store
-        .network()
-        .clone()
-        .get(address)
-        .and_then(|content| {
-            let entry =
-                Entry::try_from_content(&content).expect("could not load entry from content");
-            let new_store = (*old_store).clone();
-
-            // ...and add it to the local storage
-            let storage = &new_store.content_storage().clone();
-            let res = (*storage.write().unwrap()).add(&entry);
-            match res {
-                Err(_) => None,
-                Ok(()) => Some(new_store),
-            }
-        })
 }
 
 //
@@ -160,7 +121,7 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{test_entry, test_sys_entry, Entry, SerializedEntry},
+        entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };
     use std::{
@@ -291,7 +252,7 @@ pub mod tests {
 
         let maybe_json = cas.fetch(&entry.address()).unwrap();
         let result_entry = match maybe_json {
-            Some(content) => SerializedEntry::try_from(content).unwrap().deserialize(),
+            Some(content) => Entry::try_from(content).unwrap(),
             None => panic!("Could not find received entry in CAS"),
         };
 

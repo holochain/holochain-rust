@@ -1,13 +1,13 @@
 extern crate serde_json;
 use crate::{
-    chain_header::ChainHeader, entry::SerializedEntry, error::HolochainError, hash::HashString,
+    chain_header::ChainHeader, entry::Entry, error::HolochainError, hash::HashString,
     json::JsonString,
 };
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson, Default)]
 pub struct ValidationPackage {
     pub chain_header: Option<ChainHeader>,
-    pub source_chain_entries: Option<Vec<SerializedEntry>>,
+    pub source_chain_entries: Option<Vec<Entry>>,
     pub source_chain_headers: Option<Vec<ChainHeader>>,
     pub custom: Option<String>,
 }
@@ -35,7 +35,7 @@ pub enum ValidationPackageDefinition {
 /// This structs carries information contextual for the process
 /// of validating an entry of link and is passed in to the according
 /// callbacks.
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default)]
 pub struct ValidationData {
     /// The validation package is data from the entry's/link's
     /// source agent that is needed to determine the validity
@@ -61,11 +61,23 @@ pub enum EntryLifecycle {
     Meta,
 }
 
+impl Default for EntryLifecycle {
+    fn default() -> Self {
+        EntryLifecycle::Chain
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EntryAction {
     Commit,
     Modify,
     Delete,
+}
+
+impl Default for EntryAction {
+    fn default() -> Self {
+        EntryAction::Commit
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

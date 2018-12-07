@@ -12,7 +12,6 @@
 #![feature(try_from)]
 #![feature(never_type)]
 pub extern crate serde;
-#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
@@ -21,9 +20,12 @@ extern crate bitflags;
 #[macro_use]
 extern crate lazy_static;
 pub extern crate holochain_core_types;
+#[macro_use]
+extern crate holochain_core_types_derive;
 pub extern crate holochain_wasm_utils;
 
 pub mod api;
+#[macro_use]
 pub mod entry_definition;
 pub mod error;
 pub mod global_fns;

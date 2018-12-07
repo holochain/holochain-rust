@@ -152,13 +152,13 @@ _cmd_deploy_template: &_cmd_deploy_template
 
 jobs:
   include:
-    - name: "Holochain tests [code coverage temporarily deactivated]"
+    - name: "Holochain tests & code coverage"
       <<: *_trusty_nodejs
       <<: *_cargo_cache_template
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
       sudo: true
-      script: make test
+      script: make code_coverage
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 
@@ -178,7 +178,7 @@ jobs:
         - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
         - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
         # Build & test All
-        - cargo test --all 
+        - cargo test --all
 
     - name: "C binding tests"
       <<: *_trusty_bash

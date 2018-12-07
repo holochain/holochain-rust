@@ -1,6 +1,6 @@
-use crate::nucleus::{
-    actions::get_entry::get_entry,
-    ribosome::{api::ZomeApiResult, Runtime},
+use crate::{
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::get_entry::get_entry,
 };
 use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
@@ -25,15 +25,9 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     }
     let address = try_address.unwrap();
 
-    let future = get_entry(&runtime.context, address);
-    let result = block_on(future);
+    let result = block_on(get_entry(&runtime.context, &address));
 
-    // runtime.store_result(match result {
-    //     Ok(maybe_entry) => Ok(maybe_entry.and_then(|entry| Some(entry.serialize()))),
-    //     Err(hc_err) => Err(hc_err),
-    // })
-    let api_result =
-        result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry.serialize())));
+    let api_result = result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry)));
     runtime.store_result(api_result)
 }
 
@@ -227,7 +221,7 @@ mod tests {
         assert_eq!(
             JsonString::from(
                 String::from(JsonString::from(ZomeApiInternalResult::success(
-                    test_entry().serialize()
+                    test_entry()
                 ))) + "\u{0}",
             ),
             call_result,
@@ -235,6 +229,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     /// test that we get status NotFound on an obviously broken address
     fn test_get_not_found() {
         let wasm = test_get_round_trip_wat();

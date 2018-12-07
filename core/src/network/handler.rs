@@ -1,10 +1,13 @@
 use crate::{
+    action::{Action, ActionWrapper},
     context::Context,
     dht::actions::{add_link::add_link, hold::hold_entry},
+    instance::dispatch_action,
     network::util::EntryWithHeader,
+    nucleus,
 };
 use futures::executor::block_on;
-use holochain_core_types::{entry::ToEntry, link::link_add::LinkAddEntry};
+use holochain_core_types::{cas::content::Address, entry::Entry};
 use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolWrapper};
 use std::{convert::TryFrom, sync::Arc};
 
@@ -18,10 +21,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 let entry_with_header: EntryWithHeader =
                     serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap())
                         .unwrap();
-                let _ = block_on(hold_entry(
-                    &entry_with_header.entry.deserialize(),
-                    &context.clone(),
-                ));
+                let _ = block_on(hold_entry(&entry_with_header.entry, &context.clone()));
             }
             Ok(ProtocolWrapper::StoreDhtMeta(dht_meta_data)) => {
                 let entry_with_header: EntryWithHeader =
@@ -29,13 +29,30 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                         .unwrap();
                 match dht_meta_data.attribute.as_ref() {
                     "link" => {
-                        let link_add_entry =
-                            LinkAddEntry::from_entry(&entry_with_header.entry.deserialize());
-                        let link = link_add_entry.link().clone();
+                        let link_add = match entry_with_header.entry {
+                            Entry::LinkAdd(link_add) => link_add,
+                            _ => unreachable!(),
+                        };
+                        let link = link_add.link().clone();
                         let _ = block_on(add_link(&link, &context.clone()));
                     }
                     _ => {}
                 }
+            }
+            Ok(ProtocolWrapper::GetDht(get_dht_data)) => {
+                let _ = block_on(nucleus::actions::get_entry::get_entry(
+                    &context,
+                    Address::from(get_dht_data.address.clone()),
+                ))
+                .map(|maybe_entry| {
+                    let action_wrapper =
+                        ActionWrapper::new(Action::RespondGet((get_dht_data, maybe_entry)));
+                    dispatch_action(&context.action_channel, action_wrapper.clone());
+                });
+            }
+            Ok(ProtocolWrapper::GetDhtResult(dht_data)) => {
+                let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));
+                dispatch_action(&context.action_channel, action_wrapper.clone());
             }
             _ => {}
         }

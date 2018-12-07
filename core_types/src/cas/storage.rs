@@ -1,19 +1,18 @@
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
-    entry::{test_entry_unique, SerializedEntry},
+    entry::{test_entry_unique, Entry},
     error::HolochainError,
     json::RawString,
 };
 use objekt;
 use std::{
     collections::{HashMap, HashSet},
+    convert::TryFrom,
     fmt::Debug,
     sync::{mpsc::channel, Arc, RwLock},
     thread,
 };
-
-use std::convert::TryFrom;
 use uuid::Uuid;
 
 /// content addressable store (CAS)
@@ -226,8 +225,7 @@ where
                 thread_cas
                     .fetch(&thread_entry.address())
                     .expect("could not fetch from cas")
-                    .map(|cas| SerializedEntry::try_from(cas).unwrap())
-                    .map(|cas: SerializedEntry| cas.into())
+                    .map(|content| Entry::try_from(content).unwrap())
             )
         });
 

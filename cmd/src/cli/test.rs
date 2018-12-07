@@ -40,6 +40,7 @@ pub fn test(
     // npm install, if no node_modules yet
     let node_modules_path = tests_path.join("node_modules");
     if !node_modules_path.exists() {
+        // CLI feedback
         println!("{}", "Installing node_modules".green().bold());
         util::run_cmd(
             tests_path.clone(),
@@ -49,6 +50,7 @@ pub fn test(
     }
 
     // execute the built test file using node
+    // CLI feedback
     println!("{} tests in {}", "Running".green().bold(), testfile,);
     util::run_cmd(
         path.to_path_buf(),

@@ -27,11 +27,35 @@ let
   ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
   '';
 
+  hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
+  ''
+  rm -rf ~/.cargo/registry;
+  rm -rf ~/.cargo/git;
+  '';
+
   hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test --all --exclude hc";
 
-  hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container" "cd nodejs_container && yarn install --ignore-scripts && node ./publish.js";
+  hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
+  ''
+  . ./scripts/build_nodejs_container.sh;
+  '';
+
+  hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin" "if ! cargo --list | grep --quiet tarpaulin; then cargo install cargo-tarpaulin; fi;";
+  hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
+
   hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
+  hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
+  hc-build-and-test-all = nixpkgs.writeShellScriptBin "hc-build-and-test-all"
+  ''
+  hc-fmt-check && \
+  hc-wasm-build && \
+  hc-test && \
+  hc-install-cmd && \
+  # hc-test-cmd && \
+  hc-install-node-container && \
+  hc-test-app-spec;
+  '';
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
@@ -41,6 +65,12 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
+    # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
+    binutils gcc gnumake openssl pkgconfig
+    carnix
+
+    unixtools.watch
+
     cmake
     python
     pkgconfig
@@ -50,21 +80,32 @@ stdenv.mkDerivation rec {
     nodejs-8_13
     yarn
 
+    hc-flush-cargo-registry
+
     hc-wasm-build
     hc-test
+
+    hc-install-tarpaulin
+    hc-tarpaulin
 
     hc-install-node-container
     hc-install-cmd
     hc-test-cmd
+    hc-test-app-spec
+    hc-build-and-test-all
 
     hc-fmt
     hc-fmt-check
 
     zeromq3
+
+    # dev tooling
+    git
+    virtualbox
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
-  RUSTFLAGS = "-D warnings";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
 
   shellHook = ''
   export PATH=$PATH:~/.cargo/bin;

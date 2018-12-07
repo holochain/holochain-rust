@@ -25,6 +25,7 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
         agent: "hc-run-agent".into(),
         logger: Default::default(),
         storage: StorageConfiguration::Memory,
+        network: Some("{\"backend\": \"mock\"}".to_string()),
     };
 
     let interface_config = InterfaceConfiguration {
@@ -48,7 +49,7 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
 
     container
         .load_config(&base_config)
-        .or_else(|err| Err(format_err!("{}", err)))?;
+        .map_err(|err| format_err!("{}", err))?;
 
     container.start_all_interfaces();
     container.start_all_instances()?;
@@ -62,14 +63,15 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
     let mut rl = rustyline::Editor::<()>::new();
 
     loop {
-        let readline = rl.readline(">> ")?;
+        let readline = rl.readline("hc> ")?;
 
         match readline.as_str() {
             "exit" => break,
-            _ => println!(
+            other if !other.is_empty() => eprintln!(
                 "command {:?} not recognized. Available commands are: exit",
-                readline
+                other
             ),
+            _ => continue,
         }
     }
 

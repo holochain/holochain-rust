@@ -3,7 +3,7 @@ use holochain_core_types::{
     self,
     cas::content::AddressableContent,
     dna::Dna,
-    entry::{entry_type::EntryType, Entry, SerializedEntry},
+    entry::{entry_type::EntryType, Entry},
 };
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -35,7 +35,7 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
 pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let serialized_entry = match SerializedEntry::try_from(args_str) {
+    let entry = match Entry::try_from(args_str) {
         Ok(input) => input,
         Err(_) => return ribosome_error_code!(ArgumentDeserializationFailed),
     };
@@ -48,11 +48,11 @@ pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
         .nucleus()
         .dna()
         .expect("Should have DNA");
-    let maybe_entry_type = get_entry_type(&dna, &serialized_entry.entry_type());
+    let maybe_entry_type = get_entry_type(&dna, &entry.entry_type().to_string());
     if let Err(err) = maybe_entry_type {
         return Ok(err);
     }
-    let entry = Entry::from(serialized_entry);
+    let entry = Entry::from(entry);
 
     // Return result
     runtime.store_result(Ok(entry.address()))

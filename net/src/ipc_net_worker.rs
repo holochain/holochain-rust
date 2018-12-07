@@ -108,6 +108,10 @@ impl IpcNetWorker {
         if config["socketType"] != "zmq" {
             bail!("unexpected socketType: {}", config["socketType"]);
         }
+        let mut block_connect = false;
+        if let Some(b) = config["blockConnect"].as_bool() {
+            block_connect = b;
+        }
         if let None = config["ipcUri"].as_str() {
             if config["spawn"].is_object() {
                 let s = config["spawn"].as_object().unwrap();
@@ -131,6 +135,7 @@ impl IpcNetWorker {
                             .collect(),
                         s["workDir"].as_str().unwrap().to_string(),
                         env,
+                        block_connect,
                     );
                 } else {
                     bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
@@ -139,10 +144,6 @@ impl IpcNetWorker {
             bail!("config.ipcUri is required");
         }
         let uri = config["ipcUri"].as_str().unwrap().to_string();
-        let mut block_connect = false;
-        if let Some(b) = config["blockConnect"].as_bool() {
-            block_connect = b;
-        }
         IpcNetWorker::priv_new(
             handler,
             Box::new(move |h| {
@@ -164,6 +165,7 @@ impl IpcNetWorker {
         args: Vec<String>,
         work_dir: String,
         env: HashMap<String, String>,
+        block_connect: bool,
     ) -> NetResult<Self> {
         let mut proc = std::process::Command::new(cmd);
         proc.stdout(std::process::Stdio::piped());
@@ -201,6 +203,10 @@ impl IpcNetWorker {
                 } else {
                     std::thread::sleep(std::time::Duration::from_millis(10));
                 }
+
+                if !block_connect {
+                    break;
+                }
             }
         } else {
             bail!("pipe fail");
@@ -216,7 +222,7 @@ impl IpcNetWorker {
             Box::new(move |h| {
                 let mut socket = ZmqIpcSocket::new()?;
                 socket.connect(&ipc_binding)?;
-                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, true)?);
+                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
                 Ok(out)
             }),
             Some(Box::new(move || {
@@ -315,6 +321,29 @@ mod tests {
             .into(),
         )
         .unwrap();
+    }
+
+    #[test]
+    fn it_ipc_networker_spawn() {
+        if let Err(e) = IpcNetWorker::new(
+            Box::new(|_r| Ok(())),
+            &json!({
+                "socketType": "zmq",
+                "spawn": {
+                    "cmd": "cargo",
+                    "args": [],
+                    "workDir": ".",
+                    "env": {}
+                },
+                "blockConnect": false
+            })
+            .into(),
+        ) {
+            let e = format!("{:?}", e);
+            assert!(e.contains("Invalid argument"), "res: {}", e);
+        } else {
+            panic!("expected error");
+        }
     }
 
     #[test]

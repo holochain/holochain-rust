@@ -45,7 +45,7 @@ pub fn test(
         util::run_cmd(
             tests_path.clone(),
             "npm".to_string(),
-            vec!["install".to_string(), "--silent".to_string()],
+            &["install", "--silent"],
         )?;
     }
 
@@ -55,7 +55,7 @@ pub fn test(
     util::run_cmd(
         path.to_path_buf(),
         "node".to_string(),
-        vec![testfile.to_string()],
+        &[testfile.to_string().as_str()],
     )?;
 
     Ok(())

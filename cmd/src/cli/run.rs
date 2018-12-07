@@ -12,7 +12,7 @@ const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 /// Starts a small container with the current application running
-pub fn run(package: bool, port: u16) -> DefaultResult<()> {
+pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
     if package {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
@@ -28,16 +28,22 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
         hash: "Qm328wyq38924ybogus".into(),
     };
 
-    fs::create_dir_all(LOCAL_STORAGE_PATH)?;
+    let storage = if persist {
+        fs::create_dir_all(LOCAL_STORAGE_PATH)?;
+
+        StorageConfiguration::File {
+            path: LOCAL_STORAGE_PATH.into(),
+        }
+    } else {
+        StorageConfiguration::Memory
+    };
 
     let instance_config = InstanceConfiguration {
         id: INSTANCE_CONFIG_ID.into(),
         dna: DNA_CONFIG_ID.into(),
         agent: AGENT_CONFIG_ID.into(),
         logger: Default::default(),
-        storage: StorageConfiguration::File {
-            path: LOCAL_STORAGE_PATH.into(),
-        },
+        storage,
         network: Some("{\"backend\": \"mock\"}".to_string()),
     };
 

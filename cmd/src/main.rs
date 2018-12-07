@@ -83,10 +83,7 @@ enum Cli {
             parse(from_os_str)
         )]
         zome: PathBuf,
-        #[structopt(
-            help = "The language of the generated zome",
-            default_value = "rust"
-        )]
+        #[structopt(help = "The language of the generated zome", default_value = "rust")]
         language: String,
     },
     #[structopt(
@@ -108,6 +105,8 @@ enum Cli {
             help = "Automatically package project before running"
         )]
         package: bool,
+        #[structopt(long, help = "Save generated data to file system")]
+        persist: bool,
     },
     #[structopt(
         name = "test",
@@ -127,11 +126,7 @@ enum Cli {
             help = "The path of the file to test, defaults to 'test/dist/bundle.js'"
         )]
         testfile: Option<String>,
-        #[structopt(
-            long = "skip-package",
-            short = "s",
-            help = "Skip packaging DNA"
-        )]
+        #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
     },
 }
@@ -159,9 +154,11 @@ fn run() -> HolochainResult<()> {
         Cli::Generate { zome, language } => {
             cli::generate(&zome, &language).map_err(|err| HolochainError::Default(err))?
         }
-        Cli::Run { package, port } => {
-            cli::run(package, port).map_err(|err| HolochainError::Default(err))?
-        }
+        Cli::Run {
+            package,
+            port,
+            persist,
+        } => cli::run(package, port, persist).map_err(|err| HolochainError::Default(err))?,
         Cli::Test {
             dir,
             testfile,

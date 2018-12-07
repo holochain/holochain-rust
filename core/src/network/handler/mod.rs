@@ -28,7 +28,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
             Ok(ProtocolWrapper::HandleSend(message_data)) => {
                 handle_send(message_data, context.clone())
             }
-            Ok(ProtocolWrapper::SendResult(message_data)) => {
+            Ok(ProtocolWrapper::HandleSendResult(message_data)) => {
                 handle_send_result(message_data, context.clone())
             }
             _ => {}

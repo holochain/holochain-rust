@@ -65,7 +65,7 @@ impl MockSingleton {
                 ProtocolWrapper::SendMessage(msg) => {
                     self.priv_handle_send(&msg)?;
                 }
-                ProtocolWrapper::HandleSendResult(msg) => {
+                ProtocolWrapper::SendResult(msg) => {
                     self.priv_handle_send_result(&msg)?;
                 }
                 ProtocolWrapper::SuccessResult(msg) => {
@@ -145,7 +145,7 @@ impl MockSingleton {
         self.priv_send_one(
             &msg.dna_hash,
             &msg.to_agent_id,
-            ProtocolWrapper::SendResult(msg.clone()).into(),
+            ProtocolWrapper::HandleSendResult(msg.clone()).into(),
         )?;
         Ok(())
     }

@@ -196,26 +196,25 @@ impl Instance {
 
     fn emit_action_signal(&self, action: Action) {
         use self::Action::{Commit, AddLink, Publish, InitApplication, Hold};
-
-        let fire_away = match action {
-            AddLink(_) => true,
-            InitApplication(_) => false,
-            Hold(ref entry) => match entry {
-                Entry::App(_, _) => true,
-                _ => false
-            },
-            Commit(ref entry) => match entry {
-                Entry::App(_, _) => true,
-                _ => false
-            },
-            Publish(_) => true,
-            _ => true
-        };
-        if fire_away {
-            let signal = Signal::Internal(action);
-            match self.signal_channel {
-                Some(ref tx) => tx.send(signal).expect("Signal channel is closed"),
-                None => ()
+        if let Some(ref tx) = self.signal_channel {
+            let fire_away = match action {
+                AddLink(_) => true,
+                InitApplication(_) => false,
+                Hold(ref entry) => match entry {
+                    Entry::App(_, _) => true,
+                    _ => false
+                },
+                Commit(ref entry) => match entry {
+                    Entry::App(_, _) => true,
+                    _ => false
+                },
+                Publish(_) => true,
+                _ => true
+            };
+            if fire_away {
+                let signal = Signal::Internal(action);
+                // @TODO: once logging is implemented, kick out a warning for SendErrors
+                tx.send(signal).unwrap_or(());
             }
         }
     }

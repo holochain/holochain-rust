@@ -76,7 +76,7 @@ pub enum EntryAction {
 
 impl Default for EntryAction {
     fn default() -> Self {
-        EntryAction::Commit
+        EntryAction::Create
     }
 }
 

@@ -102,7 +102,8 @@ impl Instance {
     }
 
     pub fn establish_signal_channel(&mut self) -> Receiver<Signal> {
-        let (tx_signal, rx_signal) = sync_channel::<Signal>(Self::default_channel_buffer_size());
+        let (tx_signal, rx_signal) =
+            sync_channel::<Signal>(Self::default_channel_buffer_size());
         self.signal_channel = Some(tx_signal);
         println!("INITIALIZED CHANNEL");
         rx_signal
@@ -194,27 +195,27 @@ impl Instance {
     }
 
     fn emit_action_signal(&self, action: Action) {
-        use self::Action::{AddLink, Commit, Hold, InitApplication, Publish};
+        use self::Action::{Commit, AddLink, Publish, InitApplication, Hold};
 
         let fire_away = match action {
             AddLink(_) => true,
             InitApplication(_) => false,
             Hold(ref entry) => match entry {
                 Entry::App(_, _) => true,
-                _ => false,
+                _ => false
             },
             Commit(ref entry) => match entry {
                 Entry::App(_, _) => true,
-                _ => false,
+                _ => false
             },
             Publish(_) => true,
-            _ => true,
+            _ => true
         };
         if fire_away {
             let signal = Signal::Internal(action);
             match self.signal_channel {
                 Some(ref tx) => tx.send(signal).expect("Signal channel is closed"),
-                None => (),
+                None => ()
             }
         }
     }
@@ -315,7 +316,8 @@ pub fn dispatch_action_with_observer<F>(
     };
 
     observer_channel.as_ref().map(|tx| {
-        tx.send(observer).expect(DISPATCH_WITHOUT_CHANNELS);
+        tx.send(observer)
+        .expect(DISPATCH_WITHOUT_CHANNELS);
     });
     dispatch_action(action_channel, action_wrapper);
 }
@@ -325,12 +327,10 @@ pub fn dispatch_action_with_observer<F>(
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(
-    action_channel: &Option<SyncSender<ActionWrapper>>,
-    action_wrapper: ActionWrapper,
-) {
+pub fn dispatch_action(action_channel: &Option<SyncSender<ActionWrapper>>, action_wrapper: ActionWrapper) {
     action_channel.as_ref().map(|tx| {
-        tx.send(action_wrapper).expect(DISPATCH_WITHOUT_CHANNELS);
+        tx.send(action_wrapper)
+        .expect(DISPATCH_WITHOUT_CHANNELS);
     });
 }
 
@@ -454,8 +454,9 @@ pub mod tests {
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                action_channel.clone(),
-                observer_channel.clone(),
+                Some(action_channel.clone()),
+                None,
+                Some(observer_channel.clone()),
                 file_storage.clone(),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
@@ -628,7 +629,7 @@ pub mod tests {
     pub fn can_process_action() {
         let mut instance = Instance::new(test_context("jason"));
 
-        let context = instance.initialize_context(test_context("jane"));
+        let context = test_context("jane");
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
@@ -823,7 +824,6 @@ pub mod tests {
         let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        let context = instance.initialize_context(context);
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
@@ -854,7 +854,6 @@ pub mod tests {
         let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        let context = instance.initialize_context(context);
         instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found

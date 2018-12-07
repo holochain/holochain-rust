@@ -13,7 +13,7 @@ use holochain_core_types::entry::entry_type::EntryType;
 use holochain_core_types::entry::entry_type::AppEntryType;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::{error::HolochainResult, Holochain};
-use holochain_core::{context::{Context, mock_network_config}, logger::Logger, persister::SimplePersister};
+use holochain_core::{action::{Action}, context::{Context, mock_network_config}, logger::Logger, persister::SimplePersister, signal::Signal};
 use holochain_core_types::json::JsonString;
 use holochain_core_types::dna::{
     wasm::DnaWasm,
@@ -31,7 +31,8 @@ use std::{
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{Arc, Mutex,RwLock},
+    sync::{Arc, Mutex, RwLock, mpsc::{Receiver, RecvTimeoutError}},
+    time::Duration,
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
@@ -248,4 +249,23 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             mock_network_config(),
         ).unwrap(),
     )
+}
+
+
+// @TODO this is a first attempt at replacing history.len() tests
+// @see https://github.com/holochain/holochain-rust/issues/195
+pub fn expect_action<F>(rx: &Receiver<Signal>, f: F) -> Result<Action, RecvTimeoutError>
+where
+    F: Fn(&Action) -> bool,
+{
+    loop {
+        match rx.recv_timeout(Duration::from_millis(1000))? {
+            Signal::Internal(action) => {
+                if f(&action) {
+                    return Ok(action)
+                }
+            },
+            _ => continue
+        }
+    }
 }

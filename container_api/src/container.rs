@@ -339,6 +339,7 @@ pub mod tests {
     extern crate test_utils;
     use super::*;
     use crate::config::load_configuration;
+    use holochain_core::action::Action::{Hold, Publish};
     use holochain_core_types::cas::content::AddressableContent;
     use std::{fs::File, io::Write, time::Duration};
     use tempfile::tempdir;
@@ -384,7 +385,7 @@ pub mod tests {
     }
 
     fn test_container() -> Container {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
         container.load_config(&config).unwrap();
@@ -481,8 +482,7 @@ pub mod tests {
     }
 
     #[test]
-    fn can_receive_action_signals() {
-        use holochain_core::action::Action::{AddLink, Commit, Hold, InitApplication, Publish};
+    fn can_receive_action_signals_single_instance() {
         let wasm = include_bytes!(
             "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
         );
@@ -514,5 +514,7 @@ pub mod tests {
             }
         }
     }
+
+
 
 }

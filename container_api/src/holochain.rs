@@ -196,7 +196,7 @@ mod tests {
     };
     use super::*;
     use holochain_core::{
-        action::{Action, ActionWrapper},
+        action::{Action},
         context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
@@ -211,6 +211,7 @@ mod tests {
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, hc_setup_and_call_zome_fn,
+        expect_action,
     };
 
     // TODO: TestLogger duplicated in test_utils because:
@@ -433,24 +434,6 @@ mod tests {
         );
     }
 
-    // @TODO this is a first attempt at replacing history.len() tests
-    // @see https://github.com/holochain/holochain-rust/issues/195
-    fn expect_action<F>(rx: &Receiver<Signal>, f: F) -> ()
-    where
-        F: Fn(Action) -> bool,
-    {
-        loop {
-            if let Signal::Internal(action) = rx
-                .recv_timeout(Duration::from_millis(1000))
-                .expect("waited 1 sec, but no signal received")
-            {
-                if f(action) {
-                    break;
-                }
-            }
-        }
-    }
-
     #[test]
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn can_call_commit() {
@@ -470,7 +453,7 @@ mod tests {
             } else {
                 false
             }
-        });
+        }).unwrap();
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
@@ -489,7 +472,7 @@ mod tests {
             } else {
                 false
             }
-        });
+        }).unwrap();
     }
 
     #[test]

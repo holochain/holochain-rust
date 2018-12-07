@@ -9,7 +9,7 @@ extern crate tempfile;
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
-    protocol_wrapper::{ConnectData, ProtocolWrapper},
+    protocol_wrapper::{ConnectData, TrackAppData, ProtocolWrapper},
     NetResult,
 };
 
@@ -129,6 +129,10 @@ fn is_peer_connected(data: &ProtocolWrapper) -> bool {
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn exec() -> NetResult<()> {
+    static DNA_HASH: &'static str = "TEST_DNA_HASH";
+    static AGENT_1: &'static str = "1_TEST_AGENT_1";
+    static AGENT_2: &'static str = "2_TEST_AGENT_2";
+
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() != 2 {
@@ -150,21 +154,22 @@ fn exec() -> NetResult<()> {
     let node1_state = node1.wait(Box::new(is_state))?;
     let node2_state = node2.wait(Box::new(is_state))?;
 
-    let node1_id = {
-        if let ProtocolWrapper::State(s) = node1_state {
-            s.id
-        } else {
-            unimplemented!()
-        }
-    };
+    let node1_id;
+    let node2_id;
+    let node2_binding;
 
-    let node2_binding = {
-        if let ProtocolWrapper::State(s) = node2_state {
-            s.bindings[0].clone()
-        } else {
-            unimplemented!()
-        }
-    };
+    if let ProtocolWrapper::State(s) = node1_state {
+        node1_id = s.id;
+    } else {
+        unimplemented!()
+    }
+
+    if let ProtocolWrapper::State(s) = node2_state {
+        node2_id = s.id;
+        node2_binding = s.bindings[0].clone();
+    } else {
+        unimplemented!()
+    }
 
     println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
 
@@ -180,6 +185,27 @@ fn exec() -> NetResult<()> {
 
     let connect_result_2 = node2.wait(Box::new(is_peer_connected))?;
     println!("got connect result 2: {:?}", connect_result_2);
+
+    node1.con.send(
+        ProtocolWrapper::TrackApp(TrackAppData {
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_1.to_string(),
+        })
+        .into(),
+    )?;
+
+    node2.con.send(
+        ProtocolWrapper::TrackApp(TrackAppData {
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_2.to_string(),
+        })
+        .into(),
+    )?;
+
+    for i in (0..10).rev() {
+        println!("tick... {}", i);
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+    }
 
     node1.drop();
     node2.drop();

@@ -1,18 +1,17 @@
-use hdk::holochain_core_types::error::HolochainError;
 use hdk::{
     self,
-    holochain_wasm_utils::api_serialization::get_entry::{
-        GetEntryOptions,
+    error::ZomeApiResult,
+    holochain_core_types::{
+        cas::content::Address,
+        entry::{entry_type::AppEntryType, AppEntryValue, Entry},
+        error::HolochainError,
+        json::JsonString,
     },
-    holochain_core_types::json::JsonString,
-    holochain_core_types::entry::Entry,
-    holochain_core_types::entry::AppEntryValue,
-    holochain_core_types::entry::entry_type::AppEntryType,
+    holochain_wasm_utils::api_serialization::{
+        get_entry::GetEntryOptions, get_links::GetLinksResult,
+    },
     AGENT_ADDRESS,
 };
-use hdk::error::ZomeApiResult;
-use hdk::holochain_core_types::cas::content::Address;
-use hdk::holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 use post::Post;
 
 pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
@@ -32,42 +31,28 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     let post_entry = Entry::App(
         AppEntryType::from("post"),
-        AppEntryValue::from(
-            Post::new(
-                &content,
-                "now",
-            ),
-        )
+        AppEntryValue::from(Post::new(&content, "now")),
     );
-
     hdk::entry_address(&post_entry)
 }
 
 pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
-
-    let post_entry = Entry::App(AppEntryType::from("post"),
-        Post::new(
-            &content,
-            "now",
-        ).into()
+    let post_entry = Entry::App(
+        AppEntryType::from("post"),
+        Post::new(&content, "now").into(),
     );
 
     let address = hdk::commit_entry(&post_entry)?;
 
-    hdk::link_entries(
-        &AGENT_ADDRESS,
-        &address,
-        "authored_posts",
-    )?;
+    hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
-        hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions{})?;
+        hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions {})?;
         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
     }
 
     Ok(address)
-
 }
 
 pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {

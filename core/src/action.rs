@@ -11,6 +11,7 @@ use holochain_core_types::{
     cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
     link::Link, validation::ValidationPackage,
 };
+use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -76,6 +77,7 @@ pub enum Action {
     Commit(Entry),
     /// GetEntry by address
     GetEntry(Address),
+    GetEntryTimeout(Address),
 
     /// link to add
     AddLink(Link),
@@ -113,6 +115,8 @@ pub enum Action {
     InitNetwork((JsonString, String, String)),
     Publish(Address),
     Hold(Entry),
+    RespondGet((GetDhtData, Option<Entry>)),
+    HandleGetResult(DhtData),
 }
 
 /// function signature for action handler functions

@@ -4,10 +4,7 @@ use crate::{
     context::Context,
     network::{actions::ActionResponse, state::NetworkState},
 };
-use holochain_core_types::{
-    entry::{Entry, EntryWithMeta},
-    error::HolochainError,
-};
+use holochain_core_types::{entry::EntryWithMeta, error::HolochainError};
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol_wrapper::{DhtData, GetDhtData, ProtocolWrapper},

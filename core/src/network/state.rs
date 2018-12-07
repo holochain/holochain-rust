@@ -1,9 +1,5 @@
 use crate::{action::ActionWrapper, network::actions::ActionResponse};
-use holochain_core_types::{
-    cas::content::Address,
-    entry::{Entry, EntryWithMeta},
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HolochainError};
 use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
 use std::{

@@ -10,7 +10,7 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, EntryWithMeta},
+    entry::EntryWithMeta,
     error::{HcResult, HolochainError},
 };
 use std::{

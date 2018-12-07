@@ -18,9 +18,9 @@ use holochain_core_types::{
     hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
+use holochain_wasm_utils::api_serialization::get_entry::*;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
-use holochain_wasm_utils::api_serialization::get_entry::*;
 
 /// ZomeApiFunction::RemoveEntry function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -45,8 +45,9 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: deleted_entry_address,
         options: GetEntryOptions::default(),
     };
-    let get_entry_history_result = block_on(get_entry_history_workflow(&runtime.context, &get_args));
-    if let Err(err) = get_entry_history_result {
+    let get_entry_history_result =
+        block_on(get_entry_history_workflow(&runtime.context, &get_args));
+    if let Err(_err) = get_entry_history_result {
         return ribosome_error_code!(Unspecified);
     }
     let entry_history = get_entry_history_result.unwrap();

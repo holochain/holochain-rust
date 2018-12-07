@@ -1,12 +1,14 @@
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{actions::ActionResponse, reducers::{initialized, send}, state::NetworkState},
+    network::{
+        actions::ActionResponse,
+        reducers::{initialized, send},
+        state::NetworkState,
+    },
 };
 use holochain_core_types::{entry::Entry, error::HolochainError};
-use holochain_net_connection::{
-    protocol_wrapper::{DhtData, GetDhtData, ProtocolWrapper},
-};
+use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData, ProtocolWrapper};
 use std::sync::Arc;
 
 fn inner(
@@ -16,13 +18,16 @@ fn inner(
 ) -> Result<(), HolochainError> {
     initialized(network_state)?;
 
-    send(network_state, ProtocolWrapper::GetDhtResult(DhtData {
-        msg_id: get_dht_data.msg_id.clone(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        agent_id: get_dht_data.from_agent_id.clone(),
-        address: get_dht_data.address.clone(),
-        content: serde_json::from_str(&serde_json::to_string(&maybe_entry).unwrap()).unwrap(),
-    }))
+    send(
+        network_state,
+        ProtocolWrapper::GetDhtResult(DhtData {
+            msg_id: get_dht_data.msg_id.clone(),
+            dna_hash: network_state.dna_hash.clone().unwrap(),
+            agent_id: get_dht_data.from_agent_id.clone(),
+            address: get_dht_data.address.clone(),
+            content: serde_json::from_str(&serde_json::to_string(&maybe_entry).unwrap()).unwrap(),
+        }),
+    )
 }
 
 pub fn reduce_respond_get(

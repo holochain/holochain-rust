@@ -9,8 +9,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, dna::Dna, entry::Entry,
-    error::HolochainError, json::JsonString,
-    link::Link, validation::ValidationPackage,
+    error::HolochainError, json::JsonString, link::Link, validation::ValidationPackage,
 };
 use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData};
 use snowflake;
@@ -76,16 +75,13 @@ pub enum Action {
     // ----------------
     // Agent actions:
     // ----------------
-
     /// Writes an entry to the source chain.
     /// Does not validate, assumes entry is valid.
     Commit(Entry),
 
-
     // -------------
     // DHT actions:
     // -------------
-
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.
     Hold(Entry),
@@ -94,11 +90,9 @@ pub enum Action {
     /// Does not validate, assumes link is valid.
     AddLink(Link),
 
-
     // ----------------
     // Network actions:
     // ----------------
-
     /// Create a network proxy instance from the given JSON config.
     /// 2nd and 3rd parameter are the DNA hash and the agent id
     /// which are needed to register with the network.
@@ -143,11 +137,9 @@ pub enum Action {
     /// Triggered from the network handler when we got the response.
     HandleGetValidationPackage((Address, Option<ValidationPackage>)),
 
-
     // ----------------
     // Nucleus actions:
     // ----------------
-
     /// initialize an application from a Dna
     /// not the same as genesis
     /// may call genesis internally

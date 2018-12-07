@@ -1,9 +1,4 @@
-use crate::{
-    action::ActionWrapper, context::Context,
-    network::{
-        state::NetworkState,
-    }
-};
+use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
 use std::sync::Arc;
 
 pub fn reduce_resolve_direct_connection(
@@ -14,7 +9,5 @@ pub fn reduce_resolve_direct_connection(
     let action = action_wrapper.action();
     let id = unwrap_to!(action => crate::action::Action::ResolveDirectConnection);
 
-    network_state
-        .direct_message_connections
-        .remove(id);
+    network_state.direct_message_connections.remove(id);
 }

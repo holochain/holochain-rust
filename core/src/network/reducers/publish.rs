@@ -14,9 +14,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::{
-    protocol_wrapper::{DhtData, DhtMetaData, ProtocolWrapper},
-};
+use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData, ProtocolWrapper};
 use std::sync::Arc;
 
 fn publish_entry(
@@ -26,13 +24,17 @@ fn publish_entry(
 ) -> Result<(), HolochainError> {
     let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
 
-    send(network_state, ProtocolWrapper::PublishDht(DhtData {
-        msg_id: "?".to_string(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        agent_id: network_state.agent_id.clone().unwrap(),
-        address: entry.address().to_string(),
-        content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
-    }))
+    send(
+        network_state,
+        ProtocolWrapper::PublishDht(DhtData {
+            msg_id: "?".to_string(),
+            dna_hash: network_state.dna_hash.clone().unwrap(),
+            agent_id: network_state.agent_id.clone().unwrap(),
+            address: entry.address().to_string(),
+            content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
+                .unwrap(),
+        }),
+    )
 }
 
 fn publish_link(
@@ -52,14 +54,18 @@ fn publish_link(
     };
     let link = link_add.link().clone();
 
-    send(network_state, ProtocolWrapper::PublishDhtMeta(DhtMetaData {
-        msg_id: "?".to_string(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        agent_id: network_state.agent_id.clone().unwrap(),
-        address: link.base().to_string(),
-        attribute: String::from("link"),
-        content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
-    }))
+    send(
+        network_state,
+        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+            msg_id: "?".to_string(),
+            dna_hash: network_state.dna_hash.clone().unwrap(),
+            agent_id: network_state.agent_id.clone().unwrap(),
+            address: link.base().to_string(),
+            attribute: String::from("link"),
+            content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
+                .unwrap(),
+        }),
+    )
 }
 
 fn inner(

@@ -1,12 +1,14 @@
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{direct_message::DirectMessage, reducers::{initialized, send}, state::NetworkState},
+    network::{
+        direct_message::DirectMessage,
+        reducers::{initialized, send},
+        state::NetworkState,
+    },
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net_connection::{
-    protocol_wrapper::{MessageData, ProtocolWrapper},
-};
+use holochain_net_connection::protocol_wrapper::{MessageData, ProtocolWrapper};
 use std::sync::Arc;
 
 fn inner(

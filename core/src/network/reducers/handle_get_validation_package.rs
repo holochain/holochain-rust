@@ -1,9 +1,4 @@
-use crate::{
-    action::ActionWrapper, context::Context,
-    network::{
-        state::NetworkState,
-    }
-};
+use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
 use std::sync::Arc;
 
 pub fn reduce_handle_get_validation_package(
@@ -12,7 +7,8 @@ pub fn reduce_handle_get_validation_package(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (address, maybe_validation_package) = unwrap_to!(action => crate::action::Action::HandleGetValidationPackage);
+    let (address, maybe_validation_package) =
+        unwrap_to!(action => crate::action::Action::HandleGetValidationPackage);
 
     network_state
         .get_validation_package_results

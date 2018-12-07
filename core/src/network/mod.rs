@@ -9,10 +9,7 @@ mod util;
 pub mod tests {
     use crate::{
         instance::tests::test_instance_and_context_by_name,
-        network::actions::{
-            get_entry::get_entry,
-            get_validation_package::get_validation_package,
-        },
+        network::actions::{get_entry::get_entry, get_validation_package::get_validation_package},
         workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
@@ -66,11 +63,9 @@ pub mod tests {
         assert!(maybe_entry.is_none());
     }
 
-
     #[test]
     fn get_validation_package_roundtrip() {
-        let wat=
-        r#"
+        let wat = r#"
 (module
 
     (memory 1)
@@ -137,21 +132,19 @@ pub mod tests {
 )
                 "#;
 
-
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
         dna.uuid = String::from("get_validation_package_roundtrip");
         let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
 
         let entry = test_entry();
-        block_on(author_entry(&entry, &context1))
-            .expect("Could not author entry");
-        
+        block_on(author_entry(&entry, &context1)).expect("Could not author entry");
+
         let agent1_state = context1.state().unwrap().agent();
-        let header = agent1_state.chain()
+        let header = agent1_state
+            .chain()
             .iter_type(&agent1_state.top_chain_header(), &entry.entry_type())
             .find(|h| h.entry_address() == &entry.address())
             .expect("There must be a header in the author's source chain after commit");
-
 
         let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
         let result = block_on(get_validation_package(header.clone(), &context2));

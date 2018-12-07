@@ -7,19 +7,12 @@ use crate::{
 };
 use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
-use std::{
-    sync::Arc,
-    thread,
-};
+use std::{sync::Arc, thread};
 
 use holochain_net_connection::protocol_wrapper::MessageData;
 
 fn log<T: Into<String>>(context: &Arc<Context>, msg: T) {
-    context
-        .logger
-        .lock()
-        .unwrap()
-        .log(msg.into());
+    context.logger.lock().unwrap().log(msg.into());
 }
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
@@ -46,7 +39,7 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
         }
         DirectMessage::ValidationPackage(_) => log(
             &context,
-            "Got DirectMessage::ValidationPackage as initial message. This should not happen."
+            "Got DirectMessage::ValidationPackage as initial message. This should not happen.",
         ),
     }
 }
@@ -57,7 +50,8 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
     let response: DirectMessage =
         serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
 
-    let initial_message = context.state()
+    let initial_message = context
+        .state()
         .unwrap()
         .network()
         .as_ref()
@@ -69,7 +63,7 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
         DirectMessage::Custom(_) => log(&context, "DirectMessage::Custom not implemented"),
         DirectMessage::RequestValidationPackage(_) => log(
             &context,
-            "Got DirectMessage::RequestValidationPackage as a response. This should not happen."
+            "Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
         ),
         DirectMessage::ValidationPackage(maybe_validation_package) => {
             if initial_message.is_none() {
@@ -80,10 +74,14 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
             let initial_message = initial_message.unwrap();
             let address = unwrap_to!(initial_message => DirectMessage::RequestValidationPackage);
 
-            let action_wrapper = ActionWrapper::new(Action::HandleGetValidationPackage((address.clone(), maybe_validation_package.clone())));
+            let action_wrapper = ActionWrapper::new(Action::HandleGetValidationPackage((
+                address.clone(),
+                maybe_validation_package.clone(),
+            )));
             dispatch_action(&context.action_channel, action_wrapper.clone());
 
-            let action_wrapper = ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
+            let action_wrapper =
+                ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
             dispatch_action(&context.action_channel, action_wrapper.clone());
         }
     }

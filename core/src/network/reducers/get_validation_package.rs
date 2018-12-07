@@ -1,21 +1,22 @@
 use crate::{
-    action::ActionWrapper, context::Context,
+    action::ActionWrapper,
+    context::Context,
     network::{
         direct_message::DirectMessage,
         reducers::{initialized, send_message},
-        state::NetworkState
+        state::NetworkState,
     },
 };
-use holochain_core_types::{
-    chain_header::ChainHeader,
-    error::HolochainError,
-};
+use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
 use std::sync::Arc;
 
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
     initialized(network_state)?;
 
-    let source_address = header.sources().first().expect("A header must have at least one source");
+    let source_address = header
+        .sources()
+        .first()
+        .expect("A header must have at least one source");
     let direct_message = DirectMessage::RequestValidationPackage(header.entry_address().clone());
 
     send_message(network_state, source_address, direct_message)

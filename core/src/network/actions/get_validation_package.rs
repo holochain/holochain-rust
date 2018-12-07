@@ -25,8 +25,11 @@ use std::{
 ///
 /// Returns a future that resolves to Option<ValidationPackage> (or HolochainError).
 /// If that is None this means that we couldn't get a validation package from the source.
-pub async fn get_validation_package(header: ChainHeader, context: &Arc<Context>) -> HcResult<Option<ValidationPackage>> {
-    let entry_address= header.entry_address().clone();
+pub async fn get_validation_package(
+    header: ChainHeader,
+    context: &Arc<Context>,
+) -> HcResult<Option<ValidationPackage>> {
+    let entry_address = header.entry_address().clone();
     let action_wrapper = ActionWrapper::new(Action::GetValidationPackage(header));
     dispatch_action(&context.action_channel, action_wrapper.clone());
     await!(GetValidationPackageFuture {

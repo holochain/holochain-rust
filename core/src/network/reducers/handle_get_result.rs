@@ -1,9 +1,7 @@
 use crate::{
-    action::ActionWrapper, context::Context,
-    network::{
-        reducers::initialized,
-        state::NetworkState,
-    }
+    action::ActionWrapper,
+    context::Context,
+    network::{reducers::initialized, state::NetworkState},
 };
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::DhtData;

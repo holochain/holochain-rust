@@ -28,10 +28,7 @@ use crate::{
         state::NetworkState,
     },
 };
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol_wrapper::{MessageData, ProtocolWrapper},
@@ -75,10 +72,15 @@ pub fn reduce(
 pub fn initialized(network_state: &NetworkState) -> Result<(), HolochainError> {
     (network_state.network.is_some()
         && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-        .ok_or(HolochainError::ErrorGeneric("Network not initialized".to_string()))
+    .ok_or(HolochainError::ErrorGeneric(
+        "Network not initialized".to_string(),
+    ))
 }
 
-pub fn send(network_state: &mut NetworkState, protocol_wrapper: ProtocolWrapper) -> Result<(), HolochainError> {
+pub fn send(
+    network_state: &mut NetworkState,
+    protocol_wrapper: ProtocolWrapper,
+) -> Result<(), HolochainError> {
     network_state
         .network
         .as_mut()
@@ -89,10 +91,16 @@ pub fn send(network_state: &mut NetworkState, protocol_wrapper: ProtocolWrapper)
                 .send(protocol_wrapper.into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
-        .ok_or(HolochainError::ErrorGeneric("Network has to be Some because of check above".to_string()))?
+        .ok_or(HolochainError::ErrorGeneric(
+            "Network has to be Some because of check above".to_string(),
+        ))?
 }
 
-pub fn send_message(network_state: &mut NetworkState, to_agent_id: &Address, message: DirectMessage) -> Result<(), HolochainError> {
+pub fn send_message(
+    network_state: &mut NetworkState,
+    to_agent_id: &Address,
+    message: DirectMessage,
+) -> Result<(), HolochainError> {
     let id = ProcessUniqueId::new().to_string();
 
     let data = MessageData {
@@ -107,9 +115,7 @@ pub fn send_message(network_state: &mut NetworkState, to_agent_id: &Address, mes
 
     let _ = send(network_state, ProtocolWrapper::SendMessage(data))?;
 
-    network_state
-        .direct_message_connections
-        .insert(id, message);
+    network_state.direct_message_connections.insert(id, message);
 
     Ok(())
 }

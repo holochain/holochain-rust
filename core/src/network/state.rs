@@ -1,11 +1,10 @@
 use crate::{
     action::ActionWrapper,
-    network::{
-        actions::ActionResponse,
-        direct_message::DirectMessage,
-    }
+    network::{actions::ActionResponse, direct_message::DirectMessage},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError, validation::ValidationPackage};
+use holochain_core_types::{
+    cas::content::Address, entry::Entry, error::HolochainError, validation::ValidationPackage,
+};
 use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
 use std::{

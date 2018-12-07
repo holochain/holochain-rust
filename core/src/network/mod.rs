@@ -12,7 +12,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent, entry::test_entry,
-        crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
+        crud_status::{create_crud_status_eav, CrudStatus},
     };
     use test_utils::*;
 

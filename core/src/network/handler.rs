@@ -49,7 +49,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     }
                     STATUS_NAME => {
                         //println!("create_handler() StoreDhtMeta {}", STATUS_NAME);
-                        let crud_status: CrudStatus =
+                        let _crud_status: CrudStatus =
                             serde_json::from_str(
                                 &serde_json::to_string(&dht_meta_data.content)
                                     .expect("dht_meta_data should be crud_status")
@@ -59,7 +59,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     }
                     LINK_NAME => {
                         //println!("create_handler() StoreDhtMeta {}", LINK_NAME);
-                        let crud_link: Address =
+                        let _crud_link: Address =
                             serde_json::from_str(
                                 &serde_json::to_string(&dht_meta_data.content)
                                     .expect("dht_meta_data should be crud_link")

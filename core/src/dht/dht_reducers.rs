@@ -142,7 +142,7 @@ pub(crate) fn reduce_add_link(
 
 //
 pub(crate) fn reduce_update_entry(
-    context: Arc<Context>,
+    _context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -150,7 +150,7 @@ pub(crate) fn reduce_update_entry(
     let action = action_wrapper.action();
     let (old_address, new_address) = unwrap_to!(action => Action::UpdateEntry);
     let mut new_store = (*old_store).clone();
-    let content_storage = &old_store.content_storage().clone();
+    let _content_storage = &old_store.content_storage().clone();
     //
     //    // pre-condition: Must already have old_entry in local content_storage
     //    if !(*content_storage.read().unwrap())
@@ -261,7 +261,7 @@ pub(crate) fn reduce_remove_entry(
 
 //
 fn reduce_remove_entry_inner(
-    context: Arc<Context>,
+    _context: Arc<Context>,
     new_store: &mut DhtStore,
     deleted_address: &Address,
     deletion_address: &Address,

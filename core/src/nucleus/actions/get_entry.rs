@@ -104,13 +104,10 @@ pub fn get_entry_with_meta<'a>(
 #[cfg(test)]
 pub mod tests {
     use crate::instance::tests::test_context_with_state;
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        crud_status::{create_crud_status_eav, CrudStatus},
         entry::test_entry,
     };
-    use holochain_wasm_utils::api_serialization::get_entry::*;
 
     #[test]
     fn get_entry_from_dht_cas() {

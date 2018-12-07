@@ -4,7 +4,7 @@ use holochain_core_types::{
     cas::content::Address, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_entry::{
-    EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind,
+    EntryHistory, GetEntryArgs, StatusRequestKind,
 };
 use std::sync::Arc;
 

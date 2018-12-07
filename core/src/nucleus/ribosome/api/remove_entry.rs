@@ -46,7 +46,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         options: GetEntryOptions::default(),
     };
     let get_entry_history_result = block_on(get_entry_history_workflow(&runtime.context, &get_args));
-    if let Err(err) = get_entry_history_result {
+    if let Err(_err) = get_entry_history_result {
         return ribosome_error_code!(Unspecified);
     }
     let entry_history = get_entry_history_result.unwrap();

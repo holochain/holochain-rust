@@ -44,11 +44,13 @@ pub fn reduce_send_direct_message(
     let (to_agent_id, direct_message, msg_id, is_response) =
         unwrap_to!(action => crate::action::Action::SendDirectMessage);
 
-    let _ = inner(
+    if let Err(error) = inner(
         network_state,
         to_agent_id.to_string(),
         direct_message,
         msg_id.clone(),
         *is_response,
-    );
+    ) {
+        println!("Error sending direct message: {:?}", error);
+    }
 }

@@ -18,7 +18,8 @@ fn inner(
         dna_hash: network_state.dna_hash.clone().unwrap(),
         to_agent_id: direct_message_data.address.to_string(),
         from_agent_id: network_state.agent_id.clone().unwrap(),
-        data: serde_json::from_str(&serde_json::to_string(&direct_message_data.message).unwrap()).unwrap(),
+        data: serde_json::from_str(&serde_json::to_string(&direct_message_data.message).unwrap())
+            .unwrap(),
     };
 
     let protocol_object = if direct_message_data.is_response {

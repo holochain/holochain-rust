@@ -51,7 +51,7 @@ pub struct NetworkState {
     /// This stores every open (= waiting for response) node-to-node messages.
     /// Entries get removed when we receive an answer through Action::ResolveDirectConnection.
     pub direct_message_connections: HashMap<String, DirectMessage>,
-    
+
     id: snowflake::ProcessUniqueId,
 }
 

@@ -142,12 +142,10 @@ pub mod tests {
         dna.uuid = String::from("get_validation_package_roundtrip");
         let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
 
-        println!("AGENT 1 address: {}", context1.agent_id.address());
-
         let entry = test_entry();
         block_on(author_entry(&entry, &context1))
             .expect("Could not author entry");
-
+        
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state.chain()
             .iter_type(&agent1_state.top_chain_header(), &entry.entry_type())
@@ -156,9 +154,12 @@ pub mod tests {
 
 
         let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
-        let result = block_on(get_validation_package(header, &context2));
+        let result = block_on(get_validation_package(header.clone(), &context2));
 
         assert!(result.is_ok());
-        println!("{:?}", result.unwrap());
+        let maybe_validation_package = result.unwrap();
+        assert!(maybe_validation_package.is_some());
+        let validation_package = maybe_validation_package.unwrap();
+        assert_eq!(validation_package.chain_header, Some(header));
     }
 }

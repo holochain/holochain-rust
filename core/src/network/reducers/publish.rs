@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     network::{
         actions::ActionResponse,
-        reducers::{initialized, send},
+        reducers::send,
         state::NetworkState,
         util,
     },
@@ -73,7 +73,7 @@ fn inner(
     network_state: &mut NetworkState,
     address: &Address,
 ) -> Result<(), HolochainError> {
-    initialized(network_state)?;
+    network_state.initialized()?;
 
     let (entry, header) = util::entry_with_header(&address, &context)?;
 

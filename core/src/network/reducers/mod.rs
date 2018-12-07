@@ -8,7 +8,6 @@ pub mod resolve_direct_connection;
 pub mod respond_get;
 pub mod send_direct_message;
 
-use boolinator::*;
 use crate::{
     action::{Action, ActionWrapper, NetworkReduceFn},
     context::Context,
@@ -67,14 +66,6 @@ pub fn reduce(
         }
         None => old_state,
     }
-}
-
-pub fn initialized(network_state: &NetworkState) -> Result<(), HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-    .ok_or(HolochainError::ErrorGeneric(
-        "Network not initialized".to_string(),
-    ))
 }
 
 pub fn send(

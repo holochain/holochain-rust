@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     network::{
         direct_message::DirectMessage,
-        reducers::{initialized, send_message},
+        reducers::send_message,
         state::NetworkState,
     },
 };
@@ -11,7 +11,7 @@ use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
 use std::sync::Arc;
 
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
-    initialized(network_state)?;
+    network_state.initialized()?;
 
     let source_address = header
         .sources()

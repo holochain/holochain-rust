@@ -1,7 +1,7 @@
 use crate::{
     action::ActionWrapper,
     context::Context,
-    network::{reducers::initialized, state::NetworkState},
+    network::state::NetworkState,
 };
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::DhtData;
@@ -11,7 +11,7 @@ fn inner(
     network_state: &mut NetworkState,
     dht_data: &DhtData,
 ) -> Result<Option<Entry>, HolochainError> {
-    initialized(network_state)?;
+    network_state.initialized()?;
 
     let entry: Option<Entry> =
         serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap())?;

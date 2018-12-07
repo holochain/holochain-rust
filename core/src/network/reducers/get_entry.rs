@@ -2,7 +2,7 @@ use crate::{
     action::ActionWrapper,
     context::Context,
     network::{
-        reducers::{initialized, send},
+        reducers::send,
         state::NetworkState,
     },
 };
@@ -11,7 +11,7 @@ use holochain_net_connection::protocol_wrapper::{GetDhtData, ProtocolWrapper};
 use std::sync::Arc;
 
 fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), HolochainError> {
-    initialized(network_state)?;
+    network_state.initialized()?;
 
     send(
         network_state,

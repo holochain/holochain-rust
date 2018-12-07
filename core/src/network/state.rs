@@ -1,3 +1,4 @@
+use boolinator::*;
 use crate::{
     action::ActionWrapper,
     network::{actions::ActionResponse, direct_message::DirectMessage},
@@ -66,5 +67,13 @@ impl NetworkState {
 
     pub fn actions(&self) -> Actions {
         self.actions.clone()
+    }
+
+    pub fn initialized(&self) -> Result<(), HolochainError> {
+        (self.network.is_some()
+            && self.dna_hash.is_some() & self.agent_id.is_some())
+            .ok_or(HolochainError::ErrorGeneric(
+                "Network not initialized".to_string(),
+            ))
     }
 }

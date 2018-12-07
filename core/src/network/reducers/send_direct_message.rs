@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     network::{
         direct_message::DirectMessage,
-        reducers::{initialized, send},
+        reducers::send,
         state::NetworkState,
     },
 };
@@ -18,7 +18,7 @@ fn inner(
     msg_id: String,
     is_response: bool,
 ) -> Result<(), HolochainError> {
-    initialized(network_state)?;
+    network_state.initialized()?;
 
     let data = MessageData {
         msg_id,

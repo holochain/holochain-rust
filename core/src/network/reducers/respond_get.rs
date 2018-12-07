@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     network::{
         actions::ActionResponse,
-        reducers::{initialized, send},
+        reducers::send,
         state::NetworkState,
     },
 };
@@ -16,7 +16,7 @@ fn inner(
     get_dht_data: &GetDhtData,
     maybe_entry: &Option<Entry>,
 ) -> Result<(), HolochainError> {
-    initialized(network_state)?;
+    network_state.initialized()?;
 
     send(
         network_state,

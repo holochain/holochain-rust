@@ -88,9 +88,7 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::{
-        error::HolochainError,
-        entry::EntryWithMeta,
-        crud_status::CrudStatus,
+        crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
     };
     use holochain_net_connection::protocol_wrapper::DhtData;
     use std::sync::{Arc, RwLock};
@@ -206,8 +204,10 @@ mod tests {
             dna_hash: String::from(""),
             agent_id: String::from(""),
             address: entry.address().to_string(),
-            content: serde_json::from_str(&serde_json::to_string(&Some(entry_with_meta.clone())).unwrap())
-                .unwrap(),
+            content: serde_json::from_str(
+                &serde_json::to_string(&Some(entry_with_meta.clone())).unwrap(),
+            )
+            .unwrap(),
         };
 
         let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));

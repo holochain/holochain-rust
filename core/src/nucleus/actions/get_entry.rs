@@ -64,7 +64,11 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let mut maybe_crud_link = None;
     let link_eavs =
         (*storage.read().unwrap()).fetch_eav(Some(address), Some(LINK_NAME.to_string()), None)?;
-    assert!(link_eavs.len() <= 1, "link_eavs.len() = {}", link_eavs.len());
+    assert!(
+        link_eavs.len() <= 1,
+        "link_eavs.len() = {}",
+        link_eavs.len()
+    );
     if link_eavs.len() == 1 {
         maybe_crud_link = Some(link_eavs.iter().next().unwrap().value());
     }

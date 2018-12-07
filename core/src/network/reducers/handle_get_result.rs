@@ -13,8 +13,10 @@ fn inner(
     .ok_or("Network not initialized".to_string())?;
 
     let res = serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap());
-    if let Err(err) = res {
-        return Err(HolochainError::ErrorGeneric("Failed to deserialize EntryWithMeta from HandleGetResult action argument".to_string()));
+    if let Err(_) = res {
+        return Err(HolochainError::ErrorGeneric(
+            "Failed to deserialize EntryWithMeta from HandleGetResult action argument".to_string(),
+        ));
     }
     Ok(res.unwrap())
 }

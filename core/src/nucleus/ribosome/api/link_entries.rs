@@ -12,9 +12,6 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: LinkEntriesArgs
 pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-
-    println!("invoke_link_entries() START");
-
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match LinkEntriesArgs::try_from(args_str.clone()) {
@@ -36,8 +33,6 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Wait for future to be resolved
     let result: Result<(), HolochainError> =
         block_on(author_entry(&entry, None, &runtime.context)).map(|_| ());
-
-    println!("invoke_link_entries() result = {:?}", result);
 
     runtime.store_result(result)
 }

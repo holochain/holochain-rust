@@ -5,8 +5,12 @@ use crate::{
     network::direct_message::DirectMessage,
     workflows::respond_validation_package_request::respond_validation_package_request,
 };
+use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    thread,
+};
 
 use holochain_net_connection::protocol_wrapper::MessageData;
 
@@ -27,12 +31,18 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
     match message {
         DirectMessage::Custom(_) => log(&context, "DirectMessage::Custom not implemented"),
         DirectMessage::RequestValidationPackage(address) => {
-            respond_validation_package_request(
-                Address::from(message_data.from_agent_id),
-                message_data.msg_id,
-                address,
-                context.clone(),
-            );
+            // Async functions only get executed when they are polled.
+            // I don't want to wait for this workflow to finish here as it would block the
+            // network thread, so I use block_on to poll the async function but do that in
+            // another thread:
+            thread::spawn(move || {
+                block_on(respond_validation_package_request(
+                    Address::from(message_data.from_agent_id),
+                    message_data.msg_id,
+                    address,
+                    context.clone(),
+                ));
+            });
         }
         DirectMessage::ValidationPackage(_) => log(
             &context,

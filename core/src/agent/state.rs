@@ -2,8 +2,8 @@ use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::ChainStore,
     context::Context,
-    nucleus::actions::get_entry::get_entry,
     state::State,
+    workflows::get_entry_history::get_entry_history_workflow,
 };
 use holochain_core_types::{
     agent::AgentId,
@@ -15,6 +15,7 @@ use holochain_core_types::{
     signature::Signature,
     time::Iso8601,
 };
+use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
 use std::{collections::HashMap, convert::TryFrom, sync::Arc};
 
@@ -74,16 +75,20 @@ impl AgentState {
 
     pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> HcResult<AgentId> {
         let agent_entry_address = self.get_agent_address()?;
-
-        let agent_entry = await!(get_entry(context, agent_entry_address.clone()))?
-            .ok_or("Agent entry not found".to_string())?;
-
+        let entry_args = GetEntryArgs {
+            address: agent_entry_address,
+            options: GetEntryOptions::default(),
+        };
+        let agent_entry_history = await!(get_entry_history_workflow(context, &entry_args))?;
+        if agent_entry_history.entries.is_empty() {
+            return Err(HolochainError::ErrorGeneric(
+                "Agent entry not found".to_string(),
+            ));
+        }
+        let agent_entry = agent_entry_history.entries.iter().next().unwrap().clone();
         match agent_entry {
             Entry::AgentId(agent_id) => Ok(agent_id),
-            _ => Err(HolochainError::ErrorGeneric(format!(
-                "Expected Entry::AgentId found {:?}",
-                agent_entry,
-            ))),
+            _ => unreachable!(),
         }
     }
 }
@@ -147,7 +152,11 @@ pub enum ActionResponse {
     LinkEntries(Result<Entry, HolochainError>),
 }
 
-pub fn create_new_chain_header(entry: &Entry, context: Arc<Context>) -> ChainHeader {
+pub fn create_new_chain_header(
+    entry: &Entry,
+    context: Arc<Context>,
+    crud_link: &Option<Address>,
+) -> ChainHeader {
     let agent_state = context
         .state()
         .expect("create_new_chain_header called without state")
@@ -170,6 +179,7 @@ pub fn create_new_chain_header(entry: &Entry, context: Arc<Context>) -> ChainHea
             .iter_type(&agent_state.top_chain_header, &entry.entry_type())
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
+        crud_link,
         // @TODO timestamp
         &Iso8601::from(""),
     )
@@ -189,8 +199,8 @@ fn reduce_commit_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let entry = unwrap_to!(action => Action::Commit);
-    let chain_header = create_new_chain_header(&entry, context.clone());
+    let (entry, maybe_crud_link) = unwrap_to!(action => Action::Commit);
+    let chain_header = create_new_chain_header(&entry, context.clone(), &maybe_crud_link);
 
     fn response(
         state: &mut AgentState,

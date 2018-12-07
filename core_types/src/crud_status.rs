@@ -1,6 +1,8 @@
 use crate::{
-    cas::content::{AddressableContent, Content},
+    cas::content::{Address, AddressableContent, Content},
+    eav::EntityAttributeValue,
     error::error::HolochainError,
+    hash::HashString,
     json::JsonString,
 };
 use std::convert::TryInto;
@@ -9,6 +11,18 @@ use std::convert::TryInto;
 // @see https://github.com/holochain/holochain-rust/issues/143
 pub const STATUS_NAME: &str = "crud-status";
 pub const LINK_NAME: &str = "crud-link";
+
+pub fn create_crud_status_eav(address: &Address, status: CrudStatus) -> EntityAttributeValue {
+    EntityAttributeValue::new(
+        address,
+        &STATUS_NAME.to_string(),
+        &HashString::from(String::from(status)),
+    )
+}
+
+pub fn create_crud_link_eav(from: &Address, to: &Address) -> EntityAttributeValue {
+    EntityAttributeValue::new(from, &LINK_NAME.to_string(), to)
+}
 
 bitflags! {
     #[derive(Default, Serialize, Deserialize, DefaultJson)]

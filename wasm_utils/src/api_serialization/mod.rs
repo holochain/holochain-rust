@@ -13,7 +13,8 @@ pub mod get_entry;
 pub mod get_links;
 pub mod link_entries;
 pub mod query;
+mod update_entry;
 pub mod validation;
 mod zome_api_globals;
 
-pub use self::{call::*, query::*, zome_api_globals::*};
+pub use self::{call::*, query::*, update_entry::*, zome_api_globals::*};

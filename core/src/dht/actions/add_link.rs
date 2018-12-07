@@ -50,8 +50,8 @@ impl Future for AddLinkFuture {
         //
         lw.wake();
         if let Some(state) = self.context.state() {
-            match state.dht().add_link_actions().get(&self.action) {
-                Some(Ok(())) => Poll::Ready(Ok(())),
+            match state.dht().actions().get(&self.action) {
+                Some(Ok(_)) => Poll::Ready(Ok(())),
                 Some(Err(e)) => Poll::Ready(Err(e.clone())),
                 None => Poll::Pending,
             }

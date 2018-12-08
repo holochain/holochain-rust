@@ -132,9 +132,8 @@ pub enum Action {
     /// Triggered from the network handler.
     HandleGetResult(DhtData),
 
-    /// Sends a direct message object to the given address.
-    /// 3rd parameter is the message id
-    /// 4th parameter is true for a response to a previous message, false for a new interaction
+    /// Makes the network module send a direct (node-to-node) message
+    /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
     SendDirectMessage(DirectMessageData),
 
     /// Makes the network module forget about the direct message
@@ -194,11 +193,22 @@ pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
+/// Everything the network module needs to know in order to send a
+/// direct message.
 #[derive(Clone, PartialEq, Debug)]
 pub struct DirectMessageData {
+    /// The address of the node to send a message to
     pub address: Address,
+
+    /// The message itself
     pub message: DirectMessage,
+
+    /// A unique message ID that is used to identify the response and attribute
+    /// it to the right context
     pub msg_id: String,
+
+    /// Should be true if we are responding to a previous message with this message.
+    /// msg_id should then be the same as the in the message that we received.
     pub is_response: bool,
 }
 

@@ -1,35 +1,24 @@
-use boolinator::*;
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
-use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::{
-    net_connection::NetConnection,
-    protocol_wrapper::{GetDhtData, ProtocolWrapper},
+use crate::{
+    action::ActionWrapper,
+    context::Context,
+    network::{reducers::send, state::NetworkState},
 };
+use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_net_connection::protocol_wrapper::{GetDhtData, ProtocolWrapper};
 use std::sync::Arc;
 
 fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-    .ok_or("Network not initialized".to_string())?;
+    network_state.initialized()?;
 
-    let data = GetDhtData {
-        msg_id: "?".to_string(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        from_agent_id: network_state.agent_id.clone().unwrap(),
-        address: address.to_string(),
-    };
-
-    network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(ProtocolWrapper::GetDht(data).into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .expect("Network has to be Some because of check above")
+    send(
+        network_state,
+        ProtocolWrapper::GetDht(GetDhtData {
+            msg_id: "?".to_string(),
+            dna_hash: network_state.dna_hash.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
+            address: address.to_string(),
+        }),
+    )
 }
 
 pub fn reduce_get_entry(
@@ -82,7 +71,7 @@ pub fn reduce_get_entry_timeout(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper},
+        action::{Action, ActionWrapper, NetworkSettings},
         context::mock_network_config,
         instance::tests::test_context,
         state::test_store,
@@ -122,11 +111,11 @@ mod tests {
         let context = test_context("alice");
         let store = test_store(context.clone());
 
-        let action_wrapper = ActionWrapper::new(Action::InitNetwork((
-            mock_network_config(),
-            String::from("abcd"),
-            String::from("abcd"),
-        )));
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
+            config: mock_network_config(),
+            dna_hash: String::from("abcd"),
+            agent_id: String::from("abcd"),
+        }));
         let store = store.reduce(context.clone(), action_wrapper);
 
         let entry = test_entry();
@@ -149,11 +138,11 @@ mod tests {
 
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
-        let action_wrapper = ActionWrapper::new(Action::InitNetwork((
-            mock_network_config(),
-            String::from("abcd"),
-            String::from("abcd"),
-        )));
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
+            config: mock_network_config(),
+            dna_hash: String::from("abcd"),
+            agent_id: String::from("abcd"),
+        }));
 
         {
             let mut new_store = store.write().unwrap();

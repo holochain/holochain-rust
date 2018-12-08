@@ -12,6 +12,7 @@ use crate::{
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
+    json::JsonString,
     validation::ValidationPackageDefinition,
 };
 use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
@@ -91,6 +92,7 @@ pub fn get_validation_package_definition(
                 Some(call.parameters.into_bytes()),
             )?
         }
+        EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),
         _ => Err(HolochainError::NotImplemented)?,
     };
 

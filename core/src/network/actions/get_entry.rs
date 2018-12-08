@@ -8,7 +8,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::Entry, error::HcResult};
+use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HcResult};
 use std::{
     pin::{Pin, Unpin},
     sync::Arc,
@@ -21,7 +21,10 @@ use std::{
 /// a look-up process.
 ///
 /// Returns a future that resolves to an ActionResponse.
-pub async fn get_entry(address: Address, context: &Arc<Context>) -> HcResult<Option<Entry>> {
+pub async fn get_entry<'a>(
+    context: &'a Arc<Context>,
+    address: &'a Address,
+) -> HcResult<Option<EntryWithMeta>> {
     let action_wrapper = ActionWrapper::new(Action::GetEntry(address.clone()));
     dispatch_action(&context.action_channel, action_wrapper.clone());
     async {
@@ -31,7 +34,7 @@ pub async fn get_entry(address: Address, context: &Arc<Context>) -> HcResult<Opt
     };
     await!(GetEntryFuture {
         context: context.clone(),
-        address,
+        address: address.clone(),
     })
 }
 
@@ -45,7 +48,7 @@ pub struct GetEntryFuture {
 impl Unpin for GetEntryFuture {}
 
 impl Future for GetEntryFuture {
-    type Output = HcResult<Option<Entry>>;
+    type Output = HcResult<Option<EntryWithMeta>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();
@@ -57,7 +60,7 @@ impl Future for GetEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        match state.get_entry_results.get(&self.address) {
+        match state.get_entry_with_meta_results.get(&self.address) {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,
         }

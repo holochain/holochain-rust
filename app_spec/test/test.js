@@ -18,7 +18,7 @@ test('call', (t) => {
   t.equal(result.Ok.value, JSON.stringify({"sum":"4"}))
 })
 
-test('get entry address', (t) => {
+test('hash_post', (t) => {
   t.plan(1)
 
   const params = {content: "Holo world"}
@@ -117,8 +117,10 @@ test('create/get_post roundtrip', (t) => {
   const result = app.call("blog", "main", "get_post", params_get)
 
   const entry_value = JSON.parse(result.Ok.App[1])
+  t.comment("get_post() entry_value = " + entry_value + "")
   t.equal(entry_value.content, content)
   t.equal(entry_value.date_created, "now")
+
 })
 
 test('get_post with non-existant address returns null', (t) => {
@@ -142,15 +144,21 @@ test('scenario test create & publish post -> get from other instance', (t) => {
     const in_reply_to = null
     const params = {content, in_reply_to}
     const create_result = app.call("blog", "main", "create_post", params)
+    t.comment("create_result = " + create_result.address + "")
+
+    const content2 = "post 2"
+    const params2 = {content2, in_reply_to}
+    const create_result2 = app2.call("blog", "main", "create_post", params2)
+    t.comment("create_result2 = " + create_result2.address + "")
 
     t.equal(create_result.Ok.length, 46)
     t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 
     const post_address = create_result.Ok
     const params_get = {post_address}
-
     const check_get_result = function check_get_result (i = 0, get_result) {
       t.comment('checking get result for the ' + i + 'th time')
+      t.comment("\t -> result = " + get_result + "")
 
       if (get_result) {
         t.comment(JSON.stringify(get_result))

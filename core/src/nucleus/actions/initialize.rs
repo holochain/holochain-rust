@@ -53,7 +53,7 @@ pub async fn initialize_application(
 
     // Commit DNA to chain
     let dna_entry = Entry::Dna(dna.clone());
-    let dna_commit = await!(commit_entry(dna_entry, &context_clone));
+    let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
         // Let initialization fail if DNA could not be committed.
         // Currently this cannot happen since ToEntry for Dna always creates
@@ -70,7 +70,7 @@ pub async fn initialize_application(
 
     // Commit AgentId to chain
     let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
-    let agent_id_commit = await!(commit_entry(agent_id_entry, &context_clone,));
+    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone,));
 
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates

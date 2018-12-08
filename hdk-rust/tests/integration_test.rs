@@ -16,7 +16,8 @@ extern crate holochain_core_types_derive;
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_container_api::*;
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::{Address, AddressableContent},
+    crud_status::CrudStatus,
     dna::zome::{
         capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::{EntryTypeDef, LinksTo},
@@ -29,7 +30,9 @@ use holochain_core_types::{
     hash::HashString,
     json::JsonString,
 };
-use holochain_wasm_utils::api_serialization::{get_links::GetLinksResult, QueryResult};
+use holochain_wasm_utils::api_serialization::{
+    get_entry::EntryHistory, get_links::GetLinksResult, QueryResult,
+};
 use std::sync::{Arc, Mutex};
 use test_utils::*;
 
@@ -51,6 +54,14 @@ pub fn hc_entry_address(_: u32) -> u32 {
 }
 #[no_mangle]
 pub fn hc_query(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn hc_update_entry(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn hc_remove_entry(_: u32) -> u32 {
     0
 }
 #[no_mangle]
@@ -89,6 +100,15 @@ fn example_valid_entry() -> Entry {
     )
 }
 
+fn example_valid_entry_history() -> EntryHistory {
+    let entry = example_valid_entry();
+    let mut entry_history = EntryHistory::new();
+    entry_history.addresses.push(entry.address());
+    entry_history.entries.push(entry);
+    entry_history.crud_status.push(CrudStatus::LIVE);
+    entry_history
+}
+
 fn example_valid_entry_params() -> String {
     format!(
         "{{\"entry\":{}}}",
@@ -120,6 +140,9 @@ fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<T
         "check_sys_entry_address",
         "check_call",
         "check_call_with_args",
+        "update_entry_ok",
+        "remove_entry_ok",
+        "remove_modified_entry_ok",
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
     dna.uuid = uuid.into();
@@ -258,7 +281,7 @@ fn can_get_entry() {
             "entry_address": example_valid_entry_address()
         }))),
     );
-    let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
+    let expected: ZomeApiResult<EntryHistory> = Ok(example_valid_entry_history());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
@@ -286,7 +309,9 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    let expected: ZomeApiResult<Option<Entry>> = Ok(None);
+
+    let empty_entry_history = EntryHistory::new();
+    let expected: ZomeApiResult<EntryHistory> = Ok(empty_entry_history);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad address
@@ -533,4 +558,30 @@ fn can_check_call_with_args() {
         Ok(ZomeApiInternalResult::success(expected_inner));
 
     assert_eq!(result.unwrap(), JsonString::from(expected),);
+}
+
+#[test]
+fn can_remove_entry() {
+    let (mut hc, _) = start_holochain_instance("can_remove_entry");
+    let result = hc.call("test_zome", "test_cap", "remove_entry_ok", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from("{\"addresses\":[\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\"],\"entries\":[{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]}],\"crud_status\":[{\"bits\":4}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
+        ),
+    );
+}
+
+#[test]
+fn can_update_entry() {
+    let (mut hc, _) = start_holochain_instance("can_update_entry");
+    let result = hc.call("test_zome", "test_cap", "update_entry_ok", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+}
+
+#[test]
+fn can_remove_modified_entry() {
+    let (mut hc, _) = start_holochain_instance("can_remove_modified_entry");
+    let result = hc.call("test_zome", "test_cap", "remove_modified_entry_ok", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
 }

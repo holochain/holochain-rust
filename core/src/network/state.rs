@@ -4,7 +4,8 @@ use crate::{
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
 use holochain_core_types::{
-    cas::content::Address, entry::Entry, error::HolochainError, validation::ValidationPackage,
+    cas::content::Address, entry::EntryWithMeta, error::HolochainError,
+    validation::ValidationPackage,
 };
 use holochain_net::p2p_network::P2pNetwork;
 use snowflake;
@@ -19,8 +20,8 @@ type Actions = HashMap<ActionWrapper, ActionResponse>;
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
 /// Some(Ok(None)): no problem but also no entry -> it does not exist
-/// Some(Ok(Some(entry))): we have it
-type GetEntryResult = Option<Result<Option<Entry>, HolochainError>>;
+/// Some(Ok(Some(entry_with_meta))): we have it
+type GetEntryWithMetaResult = Option<Result<Option<EntryWithMeta>, HolochainError>>;
 
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network
@@ -42,7 +43,7 @@ pub struct NetworkState {
 
     /// Here we store the results of GET entry processes.
     /// None means that we are still waiting for a result from the network.
-    pub get_entry_results: HashMap<Address, GetEntryResult>,
+    pub get_entry_with_meta_results: HashMap<Address, GetEntryWithMetaResult>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
@@ -68,9 +69,11 @@ impl NetworkState {
             network: None,
             dna_hash: None,
             agent_id: None,
-            get_entry_results: HashMap::new(),
+
+            get_entry_with_meta_results: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
+
             id: snowflake::ProcessUniqueId::new(),
         }
     }

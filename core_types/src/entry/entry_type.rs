@@ -50,7 +50,7 @@ pub enum EntryType {
 
     Dna,
     AgentId,
-    Delete,
+    Deletion,
     LinkAdd,
     LinkRemove,
     LinkList,
@@ -130,7 +130,7 @@ impl FromStr for EntryType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             sys_prefix!("agent_id") => EntryType::AgentId,
-            sys_prefix!("delete") => EntryType::Delete,
+            sys_prefix!("deletion") => EntryType::Deletion,
             sys_prefix!("dna") => EntryType::Dna,
             sys_prefix!("chain_header") => EntryType::ChainHeader,
             sys_prefix!("link_add") => EntryType::LinkAdd,
@@ -147,7 +147,7 @@ impl From<EntryType> for String {
         String::from(match entry_type {
             EntryType::App(ref app_entry_type) => &app_entry_type.0,
             EntryType::AgentId => sys_prefix!("agent_id"),
-            EntryType::Delete => sys_prefix!("delete"),
+            EntryType::Deletion => sys_prefix!("deletion"),
             EntryType::Dna => sys_prefix!("dna"),
             EntryType::ChainHeader => sys_prefix!("chain_header"),
             EntryType::LinkAdd => sys_prefix!("link_add"),
@@ -215,7 +215,7 @@ pub mod tests {
             EntryType::App(AppEntryType::from("foo")),
             EntryType::Dna,
             EntryType::AgentId,
-            EntryType::Delete,
+            EntryType::Deletion,
             EntryType::LinkAdd,
             EntryType::LinkRemove,
             EntryType::LinkList,
@@ -251,7 +251,7 @@ pub mod tests {
         for (type_str, variant) in vec![
             (sys_prefix!("dna"), EntryType::Dna),
             (sys_prefix!("agent_id"), EntryType::AgentId),
-            (sys_prefix!("delete"), EntryType::Delete),
+            (sys_prefix!("deletion"), EntryType::Deletion),
             (sys_prefix!("link_add"), EntryType::LinkAdd),
             (sys_prefix!("link_remove"), EntryType::LinkRemove),
             (sys_prefix!("link_list"), EntryType::LinkList),

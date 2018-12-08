@@ -8,8 +8,14 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, chain_header::ChainHeader, dna::Dna, entry::Entry,
-    error::HolochainError, json::JsonString, link::Link, validation::ValidationPackage,
+    cas::content::Address,
+    chain_header::ChainHeader,
+    dna::Dna,
+    entry::{Entry, EntryWithMeta},
+    error::HolochainError,
+    json::JsonString,
+    link::Link,
+    validation::ValidationPackage,
 };
 use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData};
 use snowflake;
@@ -77,7 +83,7 @@ pub enum Action {
     // ----------------
     /// Writes an entry to the source chain.
     /// Does not validate, assumes entry is valid.
-    Commit(Entry),
+    Commit((Entry, Option<Address>)),
 
     // -------------
     // DHT actions:
@@ -106,12 +112,20 @@ pub enum Action {
 
     /// GetEntry by address
     GetEntry(Address),
+    ///
+    UpdateEntry((Address, Address)),
+    ///
+    RemoveEntry((Address, Address)),
+    ///
     GetEntryTimeout(Address),
 
     /// Lets the network module respond to a GET request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
-    RespondGet((GetDhtData, Option<Entry>)),
+    RespondGet((GetDhtData, Option<EntryWithMeta>)),
+
+    /// get links from entry address and attribute-name
+    //GetLinks(GetLinksArgs),
 
     /// We got a response for our GET request which needs to be
     /// added to the state.
@@ -210,7 +224,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry()))
+        ActionWrapper::new(Action::Commit((test_entry(), None)))
     }
 
     /// dummy action for a get of test_hash()

@@ -1,9 +1,9 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::get_entry::get_entry,
+    workflows::get_entry_history::get_entry_history_workflow,
 };
 use futures::executor::block_on;
-use holochain_core_types::cas::content::Address;
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -14,21 +14,18 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let try_address = Address::try_from(args_str.clone());
-    // Exit on error
-    if try_address.is_err() {
-        println!(
-            "invoke_get_entry failed to deserialize Address: {:?}",
-            args_str
-        );
-        return ribosome_error_code!(ArgumentDeserializationFailed);
-    }
-    let address = try_address.unwrap();
-
-    let result = block_on(get_entry(&runtime.context, &address));
-
-    let api_result = result.map(|maybe_entry| maybe_entry.and_then(|entry| Some(entry)));
-    runtime.store_result(api_result)
+    let input = match GetEntryArgs::try_from(args_str.clone()) {
+        Ok(input) => input,
+        // Exit on error
+        Err(_) => {
+            println!("invoke_get_entry() failed to deserialize: {:?}", args_str);
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
+    // Create workflow future and block on it
+    let result = block_on(get_entry_history_workflow(&runtime.context, &input));
+    // Store result in wasm memory
+    runtime.store_result(result)
 }
 
 #[cfg(test)]
@@ -52,20 +49,30 @@ mod tests {
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        crud_status::CrudStatus,
         entry::test_entry,
         error::ZomeApiInternalResult,
         json::JsonString,
     };
+    use holochain_wasm_utils::api_serialization::get_entry::*;
     use std::sync::Arc;
 
     /// dummy get args from standard test entry
     pub fn test_get_args_bytes() -> Vec<u8> {
-        JsonString::from(test_entry().address()).into_bytes()
+        let entry_args = GetEntryArgs {
+            address: test_entry().address(),
+            options: GetEntryOptions::new(StatusRequestKind::Latest),
+        };
+        JsonString::from(entry_args).into_bytes()
     }
 
     /// dummy get args from standard test entry
     pub fn test_get_args_unknown() -> Vec<u8> {
-        JsonString::from(Address::from("xxxxxxxxx")).into_bytes()
+        let entry_args = GetEntryArgs {
+            address: Address::from("xxxxxxxxx"),
+            options: GetEntryOptions::new(StatusRequestKind::Latest),
+        };
+        JsonString::from(entry_args).into_bytes()
     }
 
     /// wat string that exports both get and a commit dispatches so we can test a round trip
@@ -218,12 +225,14 @@ mod tests {
         )
         .expect("test should be callable");
 
+        let mut entry_history = EntryHistory::new();
+        entry_history.addresses.push(test_entry().address());
+        entry_history.entries.push(test_entry());
+        entry_history.crud_status.push(CrudStatus::LIVE);
         assert_eq!(
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(
-                    test_entry()
-                ))) + "\u{0}",
-            ),
+            JsonString::from(String::from(JsonString::from(
+                ZomeApiInternalResult::success(entry_history)
+            ))),
             call_result,
         );
     }
@@ -269,9 +278,9 @@ mod tests {
         .expect("test should be callable");
 
         assert_eq!(
-            JsonString::from(
-                String::from(JsonString::from(ZomeApiInternalResult::success(None))) + "\u{0}"
-            ),
+            JsonString::from(String::from(JsonString::from(
+                ZomeApiInternalResult::success(EntryHistory::new())
+            ))),
             call_result,
         );
     }

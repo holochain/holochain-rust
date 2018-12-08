@@ -69,19 +69,19 @@ impl Default for EntryLifecycle {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EntryAction {
-    Commit,
+    Create,
     Modify,
     Delete,
 }
 
 impl Default for EntryAction {
     fn default() -> Self {
-        EntryAction::Commit
+        EntryAction::Create
     }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum LinkAction {
-    Commit,
+    Create,
     Delete,
 }

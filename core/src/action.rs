@@ -99,10 +99,8 @@ pub enum Action {
     // ----------------
     // Network actions:
     // ----------------
-    /// Create a network proxy instance from the given JSON config.
-    /// 2nd and 3rd parameter are the DNA hash and the agent id
-    /// which are needed to register with the network.
-    InitNetwork((JsonString, String, String)),
+    /// Create a network proxy instance from the given [NetworkSettings](struct.NetworkSettings.html)
+    InitNetwork(NetworkSettings),
 
     /// Makes the network PUT the given entry to the DHT.
     /// Distinguishes between different entry types and does
@@ -210,6 +208,22 @@ pub struct DirectMessageData {
     /// Should be true if we are responding to a previous message with this message.
     /// msg_id should then be the same as the in the message that we received.
     pub is_response: bool,
+}
+
+/// Everything the network needs to initialize
+#[derive(Clone, PartialEq, Debug)]
+pub struct NetworkSettings {
+    /// JSON config that gets passed to [P2pNetwork](struct.P2pNetwork.html)
+    /// determines how to connect to the network module.
+    pub config: JsonString,
+
+    /// DNA hash is needed so the network module knows which network to
+    /// connect us to.
+    pub dna_hash: String,
+
+    /// The network module needs to know who we are.
+    /// This is this agent's address.
+    pub agent_id: String,
 }
 
 #[cfg(test)]

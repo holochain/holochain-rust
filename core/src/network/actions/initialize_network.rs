@@ -1,7 +1,7 @@
 extern crate futures;
 extern crate serde_json;
 use crate::{
-    action::{Action, ActionWrapper},
+    action::{Action, ActionWrapper, NetworkSettings},
     context::Context,
     instance::dispatch_action,
 };
@@ -34,11 +34,12 @@ async fn get_dna_and_agent(context: &Arc<Context>) -> Result<(String, String), H
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
 pub async fn initialize_network(context: &Arc<Context>) -> Result<(), HolochainError> {
     let (dna_hash, agent_id) = await!(get_dna_and_agent(context))?;
-    let action_wrapper = ActionWrapper::new(Action::InitNetwork((
-        context.network_config.clone(),
+    let network_settings = NetworkSettings {
+        config: context.network_config.clone(),
         dna_hash,
         agent_id,
-    )));
+    };
+    let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(&context.action_channel, action_wrapper.clone());
 
     await!(InitNetworkFuture {

@@ -71,7 +71,7 @@ pub fn reduce_get_entry_timeout(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper},
+        action::{Action, ActionWrapper, NetworkSettings},
         context::mock_network_config,
         instance::tests::test_context,
         state::test_store,
@@ -111,11 +111,11 @@ mod tests {
         let context = test_context("alice");
         let store = test_store(context.clone());
 
-        let action_wrapper = ActionWrapper::new(Action::InitNetwork((
-            mock_network_config(),
-            String::from("abcd"),
-            String::from("abcd"),
-        )));
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
+            config: mock_network_config(),
+            dna_hash: String::from("abcd"),
+            agent_id: String::from("abcd"),
+        }));
         let store = store.reduce(context.clone(), action_wrapper);
 
         let entry = test_entry();
@@ -138,11 +138,11 @@ mod tests {
 
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
-        let action_wrapper = ActionWrapper::new(Action::InitNetwork((
-            mock_network_config(),
-            String::from("abcd"),
-            String::from("abcd"),
-        )));
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
+            config: mock_network_config(),
+            dna_hash: String::from("abcd"),
+            agent_id: String::from("abcd"),
+        }));
 
         {
             let mut new_store = store.write().unwrap();

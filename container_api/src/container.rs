@@ -91,11 +91,9 @@ impl Container {
 
     fn spawn_signal_thread(&self, signal_rx: SignalReceiver) -> thread::JoinHandle<()> {
         // let handler = self.signal_handler.expect("no signal handler was set!");
-        thread::spawn(move || {
-            loop {
-                let sig = signal_rx.recv().expect("signal channel was closed");
-                println!("signal received:\n{:?}\n\n", sig);
-            }
+        thread::spawn(move || loop {
+            let sig = signal_rx.recv().expect("signal channel was closed");
+            println!("signal received:\n{:?}\n\n", sig);
         })
     }
 
@@ -147,7 +145,7 @@ impl Container {
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(&id, config, &mut self.dna_loader, &default_network)
+                    instantiate_from_config(&id, config, &mut self.dna_loader, &default_network),
                 )
             })
             .filter_map(|(id, maybe_pair)| match maybe_pair {
@@ -393,21 +391,6 @@ pub mod tests {
         container
     }
 
-    #[test]
-    #[cfg_attr(tarpaulin, skip)]
-    fn test_instantiate_from_config() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
-        let maybe_holochain = instantiate_from_config(
-            &"test-instance".to_string(),
-            &config,
-            &mut test_dna_loader(),
-            &default_network,
-        );
-
-        assert_eq!(maybe_holochain.err(), None);
-    }
-
     pub fn example_dna_string() -> String {
         r#"{
                 "name": "my dna",
@@ -560,7 +543,5 @@ pub mod tests {
             }
         }
     }
-
-
 
 }

@@ -23,7 +23,7 @@ use std::{
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an ActionResponse.
-pub async fn publish_entry(address: Address, context: &Arc<Context>) -> HcResult<Address> {
+pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::Publish(address));
     dispatch_action(&context.action_channel(), action_wrapper.clone());
     await!(PublishFuture {

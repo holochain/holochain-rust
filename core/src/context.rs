@@ -11,10 +11,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use std::{
-    sync::{
-        mpsc::{sync_channel, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
     time::Duration,
 };
@@ -144,15 +141,21 @@ impl Context {
     }
 
     pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
-        self.action_channel.as_ref().expect("Action channel not initialized")
+        self.action_channel
+            .as_ref()
+            .expect("Action channel not initialized")
     }
 
     pub fn signal_channel(&self) -> &SyncSender<Signal> {
-        self.signal_channel.as_ref().expect("Signal channel not initialized")
+        self.signal_channel
+            .as_ref()
+            .expect("Signal channel not initialized")
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {
-        self.observer_channel.as_ref().expect("Observer channel not initialized")
+        self.observer_channel
+            .as_ref()
+            .expect("Observer channel not initialized")
     }
 }
 

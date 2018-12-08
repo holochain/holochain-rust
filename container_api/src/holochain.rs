@@ -199,7 +199,7 @@ mod tests {
     };
     use super::*;
     use holochain_core::{
-        action::{Action},
+        action::Action,
         context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
@@ -213,8 +213,7 @@ mod tests {
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
-        create_wasm_from_file, hc_setup_and_call_zome_fn,
-        expect_action,
+        create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
 
     // TODO: TestLogger duplicated in test_utils because:
@@ -456,7 +455,8 @@ mod tests {
             } else {
                 false
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
@@ -475,7 +475,8 @@ mod tests {
             } else {
                 false
             }
-        }).unwrap();
+        })
+        .unwrap();
     }
 
     #[test]

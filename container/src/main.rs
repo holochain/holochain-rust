@@ -59,8 +59,14 @@ fn main() {
                 println!("Done.");
                 if let Some(hc) = container.instances.get("app spec instance 1") {
                     println!("Making fake call");
-                    hc.write().unwrap()
-                        .call("blog", "main", "create_post", r#"{"content": "blah", "in_reply_to": "blah"}"#)
+                    hc.write()
+                        .unwrap()
+                        .call(
+                            "blog",
+                            "main",
+                            "create_post",
+                            r#"{"content": "blah", "in_reply_to": "blah"}"#,
+                        )
                         .unwrap();
                 }
                 loop {}

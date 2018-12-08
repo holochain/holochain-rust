@@ -7,7 +7,7 @@ use crate::{
 use holochain_core_types::entry::Entry;
 use std::{
     sync::{
-        mpsc::{channel, sync_channel, Receiver, Sender, SyncSender},
+        mpsc::{sync_channel, Receiver, SyncSender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
@@ -42,15 +42,21 @@ impl Instance {
     }
 
     pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
-        self.action_channel.as_ref().expect("Action channel not initialized")
+        self.action_channel
+            .as_ref()
+            .expect("Action channel not initialized")
     }
 
     pub fn signal_channel(&self) -> &SyncSender<Signal> {
-        self.signal_channel.as_ref().expect("Signal channel not initialized")
+        self.signal_channel
+            .as_ref()
+            .expect("Signal channel not initialized")
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {
-        self.observer_channel.as_ref().expect("Observer channel not initialized")
+        self.observer_channel
+            .as_ref()
+            .expect("Observer channel not initialized")
     }
 
     /// Stack an Action in the Event Queue
@@ -68,7 +74,11 @@ impl Instance {
     ///
     /// Panics if called before `start_action_loop`.
     pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
-        dispatch_action_and_wait(&self.action_channel(), &self.observer_channel(), action_wrapper);
+        dispatch_action_and_wait(
+            &self.action_channel(),
+            &self.observer_channel(),
+            action_wrapper,
+        );
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
@@ -78,7 +88,7 @@ impl Instance {
     /// Panics if called before `start_action_loop`.
     pub fn dispatch_with_observer<F>(&mut self, action_wrapper: ActionWrapper, closure: F)
     where
-        F: 'static + FnMut(&State) -> bool + Send
+        F: 'static + FnMut(&State) -> bool + Send,
     {
         dispatch_action_with_observer(
             &self.action_channel(),
@@ -101,8 +111,7 @@ impl Instance {
     }
 
     pub fn establish_signal_channel(&mut self) -> Receiver<Signal> {
-        let (tx_signal, rx_signal) =
-            sync_channel::<Signal>(Self::default_channel_buffer_size());
+        let (tx_signal, rx_signal) = sync_channel::<Signal>(Self::default_channel_buffer_size());
         self.signal_channel = Some(tx_signal);
         println!("INITIALIZED CHANNEL");
         rx_signal
@@ -145,7 +154,6 @@ impl Instance {
         rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,
     ) -> Vec<Observer> {
-
         // Mutate state
         {
             let new_state: State;
@@ -195,21 +203,21 @@ impl Instance {
     }
 
     fn emit_action_signal(&self, action: Action) {
-        use self::Action::{Commit, AddLink, Publish, InitApplication, Hold};
+        use self::Action::{AddLink, Commit, Hold, InitApplication, Publish};
         if let Some(ref tx) = self.signal_channel {
             let fire_away = match action {
                 AddLink(_) => true,
                 InitApplication(_) => false,
                 Hold(ref entry) => match entry {
                     Entry::App(_, _) => true,
-                    _ => false
+                    _ => false,
                 },
-                Commit(ref entry) => match entry {
+                Commit((ref entry, _)) => match entry {
                     Entry::App(_, _) => true,
-                    _ => false
+                    _ => false,
                 },
                 Publish(_) => true,
-                _ => true
+                _ => true,
             };
             if fire_away {
                 let signal = Signal::Internal(action);
@@ -577,7 +585,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
+                Action::Commit((entry, _)) => {
                     assert!(
                         entry.entry_type() == EntryType::AgentId
                             || entry.entry_type() == EntryType::Dna
@@ -815,7 +823,7 @@ pub mod tests {
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let dna_entry = Entry::Dna(dna);
-        let commit_action = ActionWrapper::new(Action::Commit(dna_entry.clone()));
+        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason"));
@@ -830,7 +838,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
+                Action::Commit((entry, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::Dna);
                     assert_eq!(entry.content(), dna_entry.content());
                     true
@@ -845,7 +853,7 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
         let agent_entry = Entry::AgentId(context.agent_id.clone());
-        let commit_agent_action = ActionWrapper::new(Action::Commit(agent_entry.clone()));
+        let commit_agent_action = ActionWrapper::new(Action::Commit((agent_entry.clone(), None)));
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason"));
@@ -860,8 +868,8 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
-                    assert_eq!(entry.entry_type(), EntryType::AgentId,);
+                Action::Commit((entry, _)) => {
+                    assert_eq!(entry.entry_type(), EntryType::AgentId);
                     assert_eq!(entry.content(), agent_entry.content());
                     true
                 }

@@ -81,7 +81,6 @@ pub fn store_as_json<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
     jsonable: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-
     println!("store_as_json tracer: 1");
     let j: JsonString = jsonable
         .try_into()

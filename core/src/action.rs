@@ -8,8 +8,13 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
-    link::Link, validation::ValidationPackage,
+    cas::content::Address,
+    dna::Dna,
+    entry::{Entry, EntryWithMeta},
+    error::HolochainError,
+    json::JsonString,
+    link::Link,
+    validation::ValidationPackage,
 };
 use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData};
 use snowflake;
@@ -74,11 +79,15 @@ impl Hash for ActionWrapper {
 pub enum Action {
     /// entry to Commit
     /// MUST already have passed all callback checks
-    Commit(Entry),
+    Commit((Entry, Option<Address>)),
     /// GetEntry by address
     GetEntry(Address),
+    ///
+    UpdateEntry((Address, Address)),
+    ///
+    RemoveEntry((Address, Address)),
+    ///
     GetEntryTimeout(Address),
-
     /// link to add
     AddLink(Link),
     /// get links from entry address and attribute-name
@@ -115,7 +124,7 @@ pub enum Action {
     InitNetwork((JsonString, String, String)),
     Publish(Address),
     Hold(Entry),
-    RespondGet((GetDhtData, Option<Entry>)),
+    RespondGet((GetDhtData, Option<EntryWithMeta>)),
     HandleGetResult(DhtData),
 }
 
@@ -149,7 +158,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry()))
+        ActionWrapper::new(Action::Commit((test_entry(), None)))
     }
 
     /// dummy action for a get of test_hash()

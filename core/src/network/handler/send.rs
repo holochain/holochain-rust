@@ -11,10 +11,6 @@ use std::{sync::Arc, thread};
 
 use holochain_net_connection::protocol_wrapper::MessageData;
 
-fn log<T: Into<String>>(context: &Arc<Context>, msg: T) {
-    context.logger.lock().unwrap().log(msg.into());
-}
-
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
 pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
@@ -22,7 +18,7 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
         serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
 
     match message {
-        DirectMessage::Custom(_) => log(&context, "DirectMessage::Custom not implemented"),
+        DirectMessage::Custom(_) => context.log("DirectMessage::Custom not implemented"),
         DirectMessage::RequestValidationPackage(address) => {
             // Async functions only get executed when they are polled.
             // I don't want to wait for this workflow to finish here as it would block the
@@ -37,11 +33,10 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
                 ));
             });
         }
-        DirectMessage::ValidationPackage(_) => log(
-            &context,
+        DirectMessage::ValidationPackage(_) => context.log(
             "Got DirectMessage::ValidationPackage as initial message. This should not happen.",
         ),
-    }
+    };
 }
 
 /// We got a ProtocolWrapper::SendResult, this means somebody has responded to our message
@@ -60,14 +55,13 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
         .cloned();
 
     match response {
-        DirectMessage::Custom(_) => log(&context, "DirectMessage::Custom not implemented"),
-        DirectMessage::RequestValidationPackage(_) => log(
-            &context,
+        DirectMessage::Custom(_) => context.log("DirectMessage::Custom not implemented"),
+        DirectMessage::RequestValidationPackage(_) => context.log(
             "Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
         ),
         DirectMessage::ValidationPackage(maybe_validation_package) => {
             if initial_message.is_none() {
-                log(&context, "Received a validation package but could not find message ID in history. Not able to process.");
+                context.log("Received a validation package but could not find message ID in history. Not able to process.");
                 return;
             }
 
@@ -84,5 +78,5 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
             dispatch_action(&context.action_channel, action_wrapper.clone());
         }
-    }
+    };
 }

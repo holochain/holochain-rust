@@ -32,13 +32,13 @@ fn inner(
 }
 
 pub fn reduce_send_direct_message(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let dm_data = unwrap_to!(action => crate::action::Action::SendDirectMessage);
     if let Err(error) = inner(network_state, dm_data) {
-        println!("Error sending direct message: {:?}", error);
+        context.log(format!("Error sending direct message: {:?}", error));
     }
 }

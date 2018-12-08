@@ -376,6 +376,7 @@ pub fn call<S: Into<String>>(
         },
     )?;
 
+    println!("Did we make it here???");
     // Call WASMI-able commit
     let encoded_allocation_of_result: u32;
     unsafe {
@@ -389,6 +390,7 @@ pub fn call<S: Into<String>>(
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
+    println!("How about here???");
     // Done
     Ok(result.into())
 }

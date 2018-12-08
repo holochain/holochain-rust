@@ -124,14 +124,21 @@ pub fn call_and_wait_for_result(
             sender
                 .send(result.clone())
                 .expect("local channel to be open");
+            println!("NB: this rarely happens");
             true
         } else {
+            println!("Q: What is the meaning of this branch?");
+            println!("-- It happens whenever zome_call_result returns None, but what does that mean?");
+            println!("-- is it supposed to turn into a Some later and get revisited? Seems like it doesn't.");
             false
         }
     });
 
+    println!("call_and_wait_for_result hypothesis: 7");
     // Block until we got that result through the channel:
-    receiver.recv().expect("local channel to work")
+    let x = receiver.recv().expect("local channel to work");
+    println!("call_and_wait_for_result hypothesis: 8");
+    x
 }
 
 pub type ZomeFnResult = HcResult<JsonString>;
@@ -244,7 +251,7 @@ pub(crate) fn launch_zome_fn_call(
 }
 
 /// Reduce ExecuteZomeFunction Action
-/// Execute an exposed Zome function in a seperate thread and send the result in
+/// Execute an exposed Zome function in a separate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
 fn reduce_execute_zome_function(
     context: Arc<Context>,

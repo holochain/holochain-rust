@@ -77,16 +77,20 @@ impl ContainerApiDispatcher {
                                 );
                                 let hc_lock_inner = hc_lock.clone();
                                 self.io.add_method(&method_name, move |params| {
+                                    println!("ws tracer: 1");
                                     let mut hc = hc_lock_inner.write().unwrap();
+                                    println!("ws tracer: 2");
                                     let params_string =
                                         serde_json::to_string(&params).map_err(|e| {
                                             jsonrpc_core::Error::invalid_params(e.to_string())
                                         })?;
+                                    println!("ws tracer: 3");
                                     let response = hc
                                         .call(&zome_name, &cap_name, &func_name, &params_string)
                                         .map_err(|e| {
                                             jsonrpc_core::Error::invalid_params(e.to_string())
                                         })?;
+                                    println!("ws tracer: 4");
                                     Ok(Value::String(response.to_string()))
                                 })
                             }

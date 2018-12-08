@@ -94,7 +94,7 @@ impl Container {
         thread::spawn(move || {
             loop {
                 let sig = signal_rx.recv().expect("signal channel was closed");
-                println!("signal: {:?}", sig);
+                println!("signal received:\n{:?}\n\n", sig);
             }
         })
     }

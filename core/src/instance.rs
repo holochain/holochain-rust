@@ -145,6 +145,7 @@ impl Instance {
         rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,
     ) -> Vec<Observer> {
+
         // Mutate state
         {
             let new_state: State;
@@ -262,7 +263,7 @@ impl Instance {
     }
 }*/
 
-/// Send Action to Instance's Event Queue and block until is has been processed.
+/// Send Action to Instance's Event Queue and block until it has been processed.
 ///
 /// # Panics
 ///

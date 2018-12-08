@@ -1,5 +1,6 @@
 const test = require('tape');
 const Container = require('../../nodejs_container');
+const {pollFor} = require('./util');
 
 const app = Container.instanceFromNameAndDna("bob", "dist/app_spec.hcpkg")
 app.start()
@@ -137,8 +138,8 @@ test('get_post with non-existant address returns null', (t) => {
   t.same(entry, null)
 })
 
-test('scenario test create & publish post -> get from other instance', (t) => {
-    t.plan(4)
+test('scenario test create & publish post -> get from other instance', async (t) => {
+    t.plan(3)
 
     const content = "Holo world"
     const in_reply_to = null
@@ -156,28 +157,10 @@ test('scenario test create & publish post -> get from other instance', (t) => {
 
     const post_address = create_result.Ok
     const params_get = {post_address}
-    const check_get_result = function check_get_result (i = 0, get_result) {
-      t.comment('checking get result for the ' + i + 'th time')
-      t.comment("\t -> result = " + get_result + "")
 
-      if (get_result) {
-        t.comment(JSON.stringify(get_result))
-        const entry_value = JSON.parse(get_result.Ok.App[1])
-
-        t.equal(entry_value.content, content)
-        t.equal(entry_value.date_created, "now")
-      }
-      else if (i < 50) {
-        setTimeout(function() {
-          check_get_result(
-            ++i,
-            app2.call("blog", "main", "get_post", params_get)
-          )
-        }, 100)
-      }
-      else {
-        t.end()
-      }
-    }()
-
+    const result = await pollFor(
+      () => app2.call("blog", "main", "get_post", params_get)
+    ).catch(t.fail)
+    const value = JSON.parse(result.Ok.App[1])
+    t.equal(value.content, content)
 })

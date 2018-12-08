@@ -25,10 +25,9 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> =
-        block_on(author_entry(&entry, &runtime.context));
+        block_on(author_entry(&entry, None, &runtime.context));
 
     runtime.store_result(task_result)
 }

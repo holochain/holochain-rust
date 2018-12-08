@@ -101,7 +101,7 @@ pub mod tests {
     pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
         let chain = context.state().unwrap().agent().chain();
 
-        let commit_result = block_on(commit_entry(entry.clone(), &context.clone()));
+        let commit_result = block_on(commit_entry(entry.clone(), None, &context.clone()));
         assert!(commit_result.is_ok());
 
         let top_header = context.state().unwrap().agent().top_chain_header();

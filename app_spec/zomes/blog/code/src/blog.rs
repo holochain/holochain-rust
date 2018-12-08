@@ -48,7 +48,7 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
-        hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions {})?;
+        hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions::default())?;
         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
     }
 

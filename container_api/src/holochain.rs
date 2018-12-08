@@ -94,7 +94,7 @@ impl Holochain {
         );
         match result {
             Ok(_) => {
-                context.log(&format!("{} instantiated", name))?;
+                context.log(format!("{} instantiated", name));
                 let hc = Holochain {
                     instance,
                     context,

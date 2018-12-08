@@ -56,8 +56,12 @@ serialization format that can round trip through as many languages as possible.
 
 In the end, this is the main reason we chose JSON for communication with core.
 
-Note that when we started on an AssemblyScript (ostentisbly JavaScript) HDK
-there was not even a `JSON.parse()` method in AssemblyScript itself!
+Note that at the time of writing, the AssemblyScript (ostentisbly JavaScript)
+WASM implementation does not even provide a native `JSON.parse()` method!
+To do something as apparently simple as serialize JSON in JavaScript we have
+had to implement a custom JSON parser. At least JSON (naturally) maps very well
+to JavaScript native data, other serialization/language combinations are even
+further from maturity.
 
 WASM is very promising but very immature so esoteric serialization options are
 not really viable options right now, even if `serde` supports them in Rust.
@@ -75,9 +79,9 @@ The `Entry` enum itself is serialized via JSON so that is has maximal
 compatibility across all zome languages (see above) across the core/wasm
 boundary. However, the _contents_ of `Entry::App(..)` are treated as an opaque
 UTF-8 string by Holochain core. Naturally the HDK macros we offer provide sugar
-to work with the value of app entries but this is not enforce anywhere within
+to work with the value of app entries but this is not enforced anywhere within
 core. Because the Rust serialization round tripping must work across both core
-and the HDK it must work equally well for treating the app entry values as
+and the HDK it must work equally well while treating the app entry values as
 opaque in the subconscious and meaningful structs in the conscious. This is
 achieved through a healthy dose of compiler and macro magic.
 
@@ -85,6 +89,7 @@ This means that zome developers can implement their own serialization logic for
 their own data if they wish. Simply by wrapping a zome-serialized app entry
 value in `"\"...\""` it becomes a string primitive from core's perspective. The
 zome can do anything needed with this, including custom validation logic, etc.
+The `RawString` type handles this automatically with `JsonString` (see below).
 
 ## Serialization through Rust types
 
@@ -117,7 +122,7 @@ let foo_json = json!({"foo": foo.inner()});
 
 Notes:
 
-- We no longer have an `unwrap` to deal with
+- We no longer have an `unwrap` so there is slightly less boilerplate to type
 - We have a lot of direct control over the structure of our output JSON
 - For better or worse we avoid what the compiler says about `Serialize` on `Foo`
 - We must now manually ensure that `"{\"foo\":...}"` is handled _everywhere_
@@ -164,6 +169,7 @@ As the JSON structure comes from the Rust compiler, we have two options:
 
 - Force serde to output JSON that follows the conventions of another language
 - Force containers/HDKs to provide sugar to map between Rust/XXX idioms
+- Force developers to work with a very leaky abstraction over the Rust compiler
 
 As the first option requires a lot of boilerplate and isn't interoperable
 across all languages anyway (e.g. kebab case, snake case, etc.) we currently
@@ -218,6 +224,7 @@ In practise, there are some limitations as mentioned in this doc:
   - seriously... e.g. we pushed our own `JSON.parse` implementation upstream
     for the AssemblyScript team, that's _JSON parsing in JavaScript_!
   - don't underestimate how bleeding edge and limited the WASM tooling still is
+    - to work directly with WASM you must be prepared to bleed
 - If you don't use JSON you can't use `hdk` macros for that part of your zome
 - Only valid UTF-8 strings are supported (may change in the future)
 
@@ -231,11 +238,12 @@ Yes, `serde` supports many serialization options but:
 - Swapping to a different serializer in serde is not just a matter of passing
   config to serde
   - we'd have to centralise/`match` everywhere and swap out `serde_json` for
-    analogies in each other format we'd want to use
+    analogous crates in each other format we'd want to use
   - even using a `SerialString` instead of `JsonString` (see below) would not
     clear out every implementation without a lot of work
 - Serde is already quite heavy in compilation/WASM files so we don't want to
   bloat that more with edge-case serialization needs
+  - every new format is a new crate
 - We don't (yet) have any use-cases showing that JSON is a problem/bottleneck
 - Adding more serialization options would exacerbate non-idiomatic container
   and HDK data structure mapping issues (see above)
@@ -304,6 +312,28 @@ Because calling `Foo::try_from(String)` is (probably) a compiler error:
 let foo_a = Foo::try_from(string_but_not_json)?; // <-- compiler saves us again :)
 ```
 
+and this bug:
+
+```rust
+type Foo = Result<String, String>;
+let foo_json_a = json!({"Err": some_error.description()}); // <-- good key `Err`
+// somewhere else... maybe a different crate or old crate version...
+let foo_json_b = json!({"error": some_error.description()}); // <-- bad key `error` :/
+
+let foo: Foo = serde_json::from(&foo_json_a)?; // <-- works, key matches variant name
+let foo: Foo = serde_json::from(&foo_json_b)?; // <-- runtime error! :(
+```
+
+Because the structure of the JSON data is defined centrally at compile time:
+
+```rust
+// Result<Into<JsonString>, Into<JsonString>> is implemented for you by HC core
+let foo_json_a = JsonString::from(Err(some_error.description()));
+// only one way to do things, automatically consistent across all crates
+// doing anything different is a compiler issue
+let foo_json_b = JsonString::from(Err(some_error.description()));
+```
+
 Which is great for the majority of data that needs serializing. There are some
 important edge cases that we need to cover with additional techniques/tooling.
 
@@ -354,6 +384,18 @@ impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> fo
 }
 ```
 
+Which looks like this:
+
+```rust
+let result: Result<String, HolochainError> =
+    Err(HolochainError::ErrorGeneric("foo".into()));
+
+assert_eq!(
+    JsonString::from(result),
+    JsonString::from("{\"Err\":{\"ErrorGeneric\":\"foo\"}}"),
+);
+```
+
 When given a `Result` containing any value that can be turned into a
 `JsonString` (see below), we can _convert_ it first, then _wrap_ it with
 `String::from` + `format!`.
@@ -402,8 +444,29 @@ impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
 }
 ```
 
+Which looks like this:
+
+```rust
+let result: Result<String, String> = Err(String::from("foo"));
+
+assert_eq!(
+    JsonString::from(result),
+    JsonString::from("{\"Err\":\"foo\"}"),
+)
+```
+
 If we didn't do this then the `format!` would return invalid JSON data with the
 String error value missing the wrapping double quotes.
+
+`RawString` is useful when working with types that have a `.to_string()` method
+or similar where the returned string is _not_ valid JSON.
+
+Examples of when `RawString` could be useful:
+
+- Error descriptions that return plain text in a string
+- Base64 encoded binary data
+- Enum variants with custom string representations
+- "Black boxing" JSON data that Rust should not attempt to parse
 
 ### Implementing `JsonString` for custom types
 
@@ -415,6 +478,9 @@ enum should implement to be compatible with core serialization logic:
 
 Note that `TryFrom` is currently an unstable Rust feature. To enable it add
 `!#[feature(try_from)]` to your crate/zome.
+
+Based on discussions in the Rust community issue queues/forums, we expect this
+feature to eventually stabilise and no longer require feature flags to use.
 
 The `TryFrom` trait will need to be added as `use std::convert::TryFrom` to
 each module/zome implementing it for a struct/enum.
@@ -577,7 +643,6 @@ in the HDK but potentially opaque string primitives (see above) we simply alias
 
 The `Entry` enum needs to be serialized for many reasons in different contexts,
 including for system entries that zome logic never handles directly.
-
 
 It looks something like this (at the time of writing):
 
@@ -810,7 +875,7 @@ let my_bar = MyBar::new(..);
 // auto stores as String via. JsonString internally
 let foo = Foo::new(my_bar);
 // note we must provide the MyBar type at restore time because we destroyed
-// that type info during the serializtion process
+// that type info during the serialization process
 let restored_bar: MyBar = foo.bar()?;
 ```
 

@@ -47,12 +47,12 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 .map(|maybe_entry| {
                     let action_wrapper =
                         ActionWrapper::new(Action::RespondGet((get_dht_data, maybe_entry)));
-                    dispatch_action(&context.action_channel, action_wrapper.clone());
+                    dispatch_action(&context.action_channel(), action_wrapper.clone());
                 });
             }
             Ok(ProtocolWrapper::GetDhtResult(dht_data)) => {
                 let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));
-                dispatch_action(&context.action_channel, action_wrapper.clone());
+                dispatch_action(&context.action_channel(), action_wrapper.clone());
             }
             _ => {}
         }

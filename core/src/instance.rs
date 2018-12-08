@@ -41,18 +41,17 @@ impl Instance {
         100
     }
 
-    // TODO: the following two functions are unused, and the members they provide are public anyway.
-    // (Remove?)
+    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+        self.action_channel.as_ref().expect("Action channel not initialized")
+    }
 
-    /// get a clone of the action channel
-    // pub fn action_channel(&self) -> SyncSender<ActionWrapper> {
-    //     self.action_channel.clone()
-    // }
+    pub fn signal_channel(&self) -> &SyncSender<Signal> {
+        self.signal_channel.as_ref().expect("Signal channel not initialized")
+    }
 
-    // /// get a clone of the observer channel
-    // pub fn observer_channel(&self) -> SyncSender<Observer> {
-    //     self.observer_channel.clone()
-    // }
+    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+        self.observer_channel.as_ref().expect("Observer channel not initialized")
+    }
 
     /// Stack an Action in the Event Queue
     ///
@@ -60,7 +59,7 @@ impl Instance {
     ///
     /// Panics if called before `start_action_loop`.
     pub fn dispatch(&mut self, action_wrapper: ActionWrapper) {
-        dispatch_action(&self.action_channel, action_wrapper)
+        dispatch_action(&self.action_channel(), action_wrapper)
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
@@ -69,7 +68,7 @@ impl Instance {
     ///
     /// Panics if called before `start_action_loop`.
     pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
-        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action_wrapper);
+        dispatch_action_and_wait(&self.action_channel(), &self.observer_channel(), action_wrapper);
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
@@ -79,11 +78,11 @@ impl Instance {
     /// Panics if called before `start_action_loop`.
     pub fn dispatch_with_observer<F>(&mut self, action_wrapper: ActionWrapper, closure: F)
     where
-        F: 'static + FnMut(&State) -> bool + Send,
+        F: 'static + FnMut(&State) -> bool + Send
     {
         dispatch_action_with_observer(
-            &self.action_channel,
-            &self.observer_channel,
+            &self.action_channel(),
+            &self.observer_channel(),
             action_wrapper,
             closure,
         )
@@ -269,8 +268,8 @@ impl Instance {
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_and_wait(
-    action_channel: &Option<SyncSender<ActionWrapper>>,
-    observer_channel: &Option<SyncSender<Observer>>,
+    action_channel: &SyncSender<ActionWrapper>,
+    observer_channel: &SyncSender<Observer>,
     action_wrapper: ActionWrapper,
 ) {
     // Create blocking channel
@@ -303,8 +302,8 @@ pub fn dispatch_action_and_wait(
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_with_observer<F>(
-    action_channel: &Option<SyncSender<ActionWrapper>>,
-    observer_channel: &Option<SyncSender<Observer>>,
+    action_channel: &SyncSender<ActionWrapper>,
+    observer_channel: &SyncSender<Observer>,
     action_wrapper: ActionWrapper,
     closure: F,
 ) where
@@ -314,10 +313,9 @@ pub fn dispatch_action_with_observer<F>(
         sensor: Box::new(closure),
     };
 
-    observer_channel.as_ref().map(|tx| {
-        tx.send(observer)
+    observer_channel
+        .send(observer)
         .expect(DISPATCH_WITHOUT_CHANNELS);
-    });
     dispatch_action(action_channel, action_wrapper);
 }
 
@@ -326,11 +324,10 @@ pub fn dispatch_action_with_observer<F>(
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &Option<SyncSender<ActionWrapper>>, action_wrapper: ActionWrapper) {
-    action_channel.as_ref().map(|tx| {
-        tx.send(action_wrapper)
+pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrapper: ActionWrapper) {
+    action_channel
+        .send(action_wrapper)
         .expect(DISPATCH_WITHOUT_CHANNELS);
-    });
 }
 
 #[cfg(test)]

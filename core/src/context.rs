@@ -142,6 +142,18 @@ impl Context {
         dna.get_wasm_from_zome_name(zome)
             .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
     }
+
+    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+        self.action_channel.as_ref().expect("Action channel not initialized")
+    }
+
+    pub fn signal_channel(&self) -> &SyncSender<Signal> {
+        self.signal_channel.as_ref().expect("Signal channel not initialized")
+    }
+
+    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+        self.observer_channel.as_ref().expect("Observer channel not initialized")
+    }
 }
 
 /// create a test network

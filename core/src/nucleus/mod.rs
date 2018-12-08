@@ -83,8 +83,8 @@ impl EntrySubmission {
 /// Dispatch ExecuteZoneFunction to and block until call has finished.
 pub fn call_zome_and_wait_for_result(
     call: ZomeFnCall,
-    action_channel: &Option<SyncSender<ActionWrapper>>,
-    observer_channel: &Option<SyncSender<Observer>>,
+    action_channel: &SyncSender<ActionWrapper>,
+    observer_channel: &SyncSender<Observer>,
 ) -> Result<JsonString, HolochainError> {
     let call_action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
@@ -257,7 +257,7 @@ fn reduce_execute_zome_function(
     };
 
     fn dispatch_error_result(
-        action_channel: &Option<SyncSender<ActionWrapper>>,
+        action_channel: &SyncSender<ActionWrapper>,
         fn_call: &ZomeFnCall,
         error: HolochainError,
     ) {
@@ -265,8 +265,6 @@ fn reduce_execute_zome_function(
             ExecuteZomeFnResponse::new(fn_call.clone(), Err(error.clone()));
 
         action_channel
-            .as_ref()
-            .expect("action channel to be initialized in reducer")
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
                 zome_not_found_response,
             )))
@@ -277,7 +275,7 @@ fn reduce_execute_zome_function(
     let dna = match state.dna {
         None => {
             dispatch_error_result(
-                &context.action_channel,
+                &context.action_channel(),
                 &fn_call,
                 HolochainError::DnaMissing,
             );
@@ -290,7 +288,7 @@ fn reduce_execute_zome_function(
     let zome = match dna.zomes.get(&fn_call.zome_name) {
         None => {
             dispatch_error_result(
-                &context.action_channel,
+                &context.action_channel(),
                 &fn_call,
                 HolochainError::Dna(DnaError::ZomeNotFound(format!(
                     "Zome '{}' not found",
@@ -306,7 +304,7 @@ fn reduce_execute_zome_function(
     let capability = match zome.capabilities.get(&fn_call.cap_name) {
         None => {
             dispatch_error_result(
-                &context.action_channel,
+                &context.action_channel(),
                 &fn_call,
                 HolochainError::Dna(DnaError::CapabilityNotFound(format!(
                     "Capability '{}' not found in Zome '{}'",
@@ -325,7 +323,7 @@ fn reduce_execute_zome_function(
         .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name);
     if maybe_fn.is_none() {
         dispatch_error_result(
-            &context.action_channel,
+            &context.action_channel(),
             &fn_call,
             HolochainError::Dna(DnaError::ZomeFunctionNotFound(format!(
                 "Zome function '{}' not found",

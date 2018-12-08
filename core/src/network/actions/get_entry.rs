@@ -27,11 +27,11 @@ use std::{
 /// Returns a future that resolves to an ActionResponse.
 pub async fn get_entry(address: Address, context: &Arc<Context>) -> HcResult<Option<Entry>> {
     let action_wrapper = ActionWrapper::new(Action::GetEntry(address.clone()));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(&context.action_channel(), action_wrapper.clone());
     async {
         sleep(Duration::from_secs(60));
         let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(address.clone()));
-        dispatch_action(&context.action_channel, action_wrapper.clone());
+        dispatch_action(&context.action_channel(), action_wrapper.clone());
     };
     await!(GetEntryFuture {
         context: context.clone(),

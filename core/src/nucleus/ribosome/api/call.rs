@@ -57,8 +57,8 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // Send Action and block
     let (sender, receiver) = channel();
     crate::instance::dispatch_action_with_observer(
-        &runtime.context.action_channel,
-        &runtime.context.observer_channel,
+        &runtime.context.action_channel(),
+        &runtime.context.observer_channel(),
         action_wrapper.clone(),
         move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result

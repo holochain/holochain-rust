@@ -39,7 +39,7 @@ pub async fn initialize_network(context: &Arc<Context>) -> Result<(), HolochainE
         dna_hash,
         agent_id,
     )));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(&context.action_channel(), action_wrapper.clone());
 
     await!(InitNetworkFuture {
         context: context.clone(),

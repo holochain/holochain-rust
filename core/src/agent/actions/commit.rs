@@ -23,7 +23,7 @@ use std::{
 /// Returns a future that resolves to an ActionResponse.
 pub async fn commit_entry(entry: Entry, context: &Arc<Context>) -> Result<Address, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::Commit(entry));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(&context.action_channel(), action_wrapper.clone());
     await!(CommitFuture {
         context: context.clone(),
         action: action_wrapper,

@@ -1,7 +1,7 @@
 use holochain_core_types::{cas::content::Address, validation::ValidationPackage};
 
-/// These are the different kind of node-to-node messages
-/// that can be send between Holochain nodes.
+/// These are the different kinds of (low-level, i.e. non-app)
+/// node-to-node messages that can be send between Holochain nodes.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum DirectMessage {
     /// A custom direct message is something that gets triggered

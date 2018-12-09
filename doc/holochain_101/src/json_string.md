@@ -884,5 +884,5 @@ This is how the `ContentAddressableStorage` trait used to work. It would
 and type alone, provided the compiler had the type info available at compile
 time.
 
-We had to sacrifice this neat trick due to incompatible constraints put on the
-CAS by the reducer store etc. but it should work well in other scenarios :)
+We had to sacrifice this neat trick due to incompatible constraints from the
+type system elsewhereon the CAS, but it should work well in most scenarios :)

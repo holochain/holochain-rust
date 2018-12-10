@@ -48,7 +48,6 @@ pub mod tests {
     };
     use futures::executor::block_on;
     use holochain_core_types::entry::test_entry;
-    use std::{thread, time};
     use test_utils::*;
 
     #[test]

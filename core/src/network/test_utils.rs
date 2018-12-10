@@ -1,9 +1,6 @@
 use crate::{
     context::Context,
-    instance::{
-        Instance,
-        tests::test_context,
-    },
+    instance::{tests::test_context, Instance},
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
     nucleus::actions::initialize::initialize_application,
 };
@@ -26,7 +23,10 @@ pub fn test_instance_with_spoofed_dna(
     block_on(
         async {
             await!(initialize_application(dna.clone(), &context))?;
-            await!(initialize_network_with_spoofed_dna(spoofed_dna_hash, &context))
+            await!(initialize_network_with_spoofed_dna(
+                spoofed_dna_hash,
+                &context
+            ))
         },
     )?;
 
@@ -43,7 +43,7 @@ pub fn test_instance_with_spoofed_dna(
 }
 
 pub fn test_wat_always_valid() -> String {
-r#"
+    r#"
 (module
 
     (memory 1)
@@ -108,11 +108,12 @@ r#"
         (i32.const 0)
     )
 )
-                "#.to_string()
+                "#
+    .to_string()
 }
 
-pub fn test_wat_always_invalid() -> String{
-r#"
+pub fn test_wat_always_invalid() -> String {
+    r#"
 (module
 
     (memory 1)
@@ -197,5 +198,6 @@ r#"
         (i32.const 0)
     )
 )
-                "#.to_string()
+                "#
+    .to_string()
 }

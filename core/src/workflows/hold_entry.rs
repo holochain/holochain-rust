@@ -1,8 +1,9 @@
 use crate::{
     context::Context,
     dht::actions::hold::hold_entry,
-    network::actions::get_validation_package::get_validation_package,
-    network::entry_with_header::EntryWithHeader,
+    network::{
+        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
+    },
     nucleus::actions::validate::validate_entry,
 };
 
@@ -17,11 +18,12 @@ pub async fn hold_entry_workflow<'a>(
     entry_with_header: &'a EntryWithHeader,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
-    let EntryWithHeader{entry, header} = &entry_with_header;
+    let EntryWithHeader { entry, header } = &entry_with_header;
 
     // 1. Get validation package from source
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
-    let validation_package = maybe_validation_package.ok_or("Could not get validation package from source".to_string())?;
+    let validation_package = maybe_validation_package
+        .ok_or("Could not get validation package from source".to_string())?;
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -38,14 +40,11 @@ pub async fn hold_entry_workflow<'a>(
     await!(hold_entry(entry, &context))
 }
 
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::{
-        nucleus::actions::tests::*,
-        network::test_utils::*,
-        workflows::author_entry::author_entry,
+        network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
     use holochain_core_types::entry::test_entry;
@@ -61,9 +60,11 @@ pub mod tests {
     /// hold_entry_workflow is then expected to fail in its validation step
     fn test_reject_invalid_entry_on_hold_workflow() {
         // Hacked DNA that regards everything as valid
-        let hacked_dna = create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_valid()));
+        let hacked_dna =
+            create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_valid()));
         // Original DNA that regards nothing as valid
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
+        let mut dna =
+            create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
         dna.uuid = String::from("test_reject_invalid_entry_on_hold_workflow");
 
         // Hash of the original DNA
@@ -78,7 +79,8 @@ pub mod tests {
 
         // Get header which we need to trigger hold_entry_workflow
         let agent1_state = context1.state().unwrap().agent();
-        let header = agent1_state.get_header_for_entry(&entry)
+        let header = agent1_state
+            .get_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
         let entry_with_header = EntryWithHeader { entry, header };
 

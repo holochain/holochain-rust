@@ -52,8 +52,7 @@ pub mod tests {
         let (_instance1, context1) = instance_by_name("jill", dna.clone());
         let (_instance2, context2) = instance_by_name("jack", dna);
 
-        let entry_address = block_on(author_entry(&test_entry(), None, &context1))
-            .unwrap();
+        let entry_address = block_on(author_entry(&test_entry(), None, &context1)).unwrap();
 
         let mut json: Option<JsonString> = None;
         let mut tries = 0;
@@ -71,7 +70,6 @@ pub mod tests {
                 thread::sleep(time::Duration::from_millis(500));
             }
         }
-
 
         let x: String = json.unwrap().to_string();
         assert_eq!(

@@ -1,8 +1,6 @@
 use crate::{
-    context::Context,
-    dht::actions::add_link::add_link,
-    network::entry_with_header::EntryWithHeader,
-    workflows::hold_entry::hold_entry_workflow,
+    context::Context, dht::actions::add_link::add_link,
+    network::entry_with_header::EntryWithHeader, workflows::hold_entry::hold_entry_workflow,
 };
 use futures::executor::block_on;
 use holochain_core_types::{
@@ -11,10 +9,7 @@ use holochain_core_types::{
     entry::Entry,
 };
 use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData};
-use std::{
-    sync::Arc,
-    thread,
-};
+use std::{sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry.
 pub fn handle_store_dht(dht_data: DhtData, context: Arc<Context>) {

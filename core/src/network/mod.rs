@@ -15,7 +15,6 @@ pub mod tests {
             actions::{get_entry::get_entry, get_validation_package::get_validation_package},
             test_utils::test_wat_always_valid,
         },
-
         workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
@@ -92,7 +91,8 @@ pub mod tests {
         block_on(author_entry(&entry, None, &context1)).expect("Could not author entry");
 
         let agent1_state = context1.state().unwrap().agent();
-        let header = agent1_state.get_header_for_entry(&entry)
+        let header = agent1_state
+            .get_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
 
         let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();

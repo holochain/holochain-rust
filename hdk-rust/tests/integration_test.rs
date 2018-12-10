@@ -35,7 +35,8 @@ use holochain_wasm_utils::api_serialization::{
 };
 use std::{
     sync::{Arc, Mutex},
-    thread, time::Duration,
+    thread,
+    time::Duration,
 };
 use test_utils::*;
 
@@ -426,7 +427,8 @@ fn can_roundtrip_links() {
 
     // Create links
     let result = hc.call("test_zome", "test_cap", "links_roundtrip_create", r#"{}"#);
-    let maybe_address: Result<Address, String> = serde_json::from_str(&String::from(result.unwrap())).unwrap();
+    let maybe_address: Result<Address, String> =
+        serde_json::from_str(&String::from(result.unwrap())).unwrap();
     let address = maybe_address.unwrap();
 
     // Polling loop because the links have to get pushed over the mock network and then validated
@@ -440,13 +442,21 @@ fn can_roundtrip_links() {
         tries = tries + 1;
 
         // Now get_links on the base and expect both to be there
-        let result = hc.call("test_zome", "test_cap", "links_roundtrip_get", &format!(r#"{{"address": "{}"}}"#, address));
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+            "links_roundtrip_get",
+            &format!(r#"{{"address": "{}"}}"#, address),
+        );
         assert!(result.is_ok(), "result = {:?}", result);
         result_string = result.unwrap();
         let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
         let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
-        println!("can_roundtrip_links result_string - try {}: {:?}", tries, result_string);
+        println!(
+            "can_roundtrip_links result_string - try {}: {:?}",
+            tries, result_string
+        );
         let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
             address_1.clone(),
             address_2.clone(),

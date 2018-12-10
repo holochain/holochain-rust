@@ -22,7 +22,9 @@ pub async fn hold_link_workflow<'a>(
 
     let link_add = match entry {
         Entry::LinkAdd(link_add) => link_add,
-        _ => Err(HolochainError::ErrorGeneric("hold_link_workflow expects entry to be an Entry::LinkAdd".to_string()))?,
+        _ => Err(HolochainError::ErrorGeneric(
+            "hold_link_workflow expects entry to be an Entry::LinkAdd".to_string(),
+        ))?,
     };
     let link = link_add.link().clone();
 

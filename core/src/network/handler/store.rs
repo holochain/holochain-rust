@@ -1,10 +1,7 @@
 use crate::{
     context::Context,
     network::entry_with_header::EntryWithHeader,
-    workflows::{
-        hold_entry::hold_entry_workflow,
-        hold_link::hold_link_workflow,
-    },
+    workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
 use futures::executor::block_on;
 use holochain_core_types::{

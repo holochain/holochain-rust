@@ -1,4 +1,3 @@
-use boolinator::*;
 use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
 use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::DhtData;
@@ -8,9 +7,7 @@ fn inner(
     network_state: &mut NetworkState,
     dht_data: &DhtData,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-    .ok_or("Network not initialized".to_string())?;
+    network_state.initialized()?;
 
     let res = serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap());
     if let Err(_) = res {

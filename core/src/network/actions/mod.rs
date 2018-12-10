@@ -1,4 +1,5 @@
 pub mod get_entry;
+pub mod get_validation_package;
 pub mod initialize_network;
 pub mod publish;
 

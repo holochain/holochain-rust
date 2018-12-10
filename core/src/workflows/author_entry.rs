@@ -53,21 +53,25 @@ pub mod tests {
         let (_instance2, context2) = instance_by_name("jack", dna);
 
         let entry_address = block_on(author_entry(&test_entry(), None, &context1)).unwrap();
+        thread::sleep(time::Duration::from_millis(500));
 
         let mut json: Option<JsonString> = None;
         let mut tries = 0;
-        while json.is_none() && tries < 200 {
-            let state = &context2.state().unwrap();
-            json = state
-                .dht()
-                .content_storage()
-                .read()
-                .unwrap()
-                .fetch(&entry_address)
-                .expect("could not fetch from CAS");
+        while json.is_none() && tries < 120 {
+            tries = tries + 1;
+            {
+                let state = &context2.state().unwrap();
+                json = state
+                    .dht()
+                    .content_storage()
+                    .read()
+                    .unwrap()
+                    .fetch(&entry_address)
+                    .expect("could not fetch from CAS");
+            }
+            println!("Try {}: {:?}", tries, json);
             if json.is_none() {
-                tries = tries + 1;
-                thread::sleep(time::Duration::from_millis(500));
+                thread::sleep(time::Duration::from_millis(1000));
             }
         }
 

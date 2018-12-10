@@ -128,7 +128,7 @@ impl IpcNetWorker {
                             .as_array()
                             .unwrap()
                             .iter()
-                            .map(|i| i.to_string())
+                            .map(|i| i.as_str().unwrap_or("").to_string())
                             .collect(),
                         s["workDir"].as_str().unwrap().to_string(),
                         env,
@@ -169,6 +169,9 @@ impl IpcNetWorker {
         proc.args(&args);
         proc.envs(&env);
         proc.current_dir(work_dir);
+
+        println!("SPAWN ({:?})", proc);
+
         let mut proc = proc.spawn()?;
 
         let re_ready = regex::Regex::new("#IPC-READY#")?;

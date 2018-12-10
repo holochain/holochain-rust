@@ -39,7 +39,11 @@ pub struct ConnectData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct PeerData {
-    pub id: String,
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]

@@ -1,10 +1,10 @@
-use boolinator::*;
 use crate::{
     action::ActionWrapper,
     context::Context,
     network::{
         actions::ActionResponse,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
+        reducers::send,
         state::NetworkState,
     },
     nucleus::actions::get_entry::get_entry_crud_meta_from_dht,
@@ -15,34 +15,26 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::{
-    net_connection::NetConnection,
-    protocol_wrapper::{DhtData, DhtMetaData, ProtocolWrapper},
-};
+use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData, ProtocolWrapper};
 use std::sync::Arc;
 
 fn publish_entry(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-    let data = DhtData {
-        msg_id: "?".to_string(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        agent_id: network_state.agent_id.clone().unwrap(),
-        address: entry_with_header.entry_body.address().to_string(),
-        content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
-    };
-    network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(ProtocolWrapper::PublishDht(data).into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .expect("Network has to be Some because of check above")
+    //let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
+
+    send(
+        network_state,
+        ProtocolWrapper::PublishDht(DhtData {
+            msg_id: "?".to_string(),
+            dna_hash: network_state.dna_hash.clone().unwrap(),
+            agent_id: network_state.agent_id.clone().unwrap(),
+            address: entry_with_header.entry_body.address().to_string(),
+            content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
+                .unwrap(),
+        }),
+    )
 }
 
 fn publish_crud_meta(
@@ -51,44 +43,35 @@ fn publish_crud_meta(
     crud_status: CrudStatus,
     crud_link: Option<Address>,
 ) -> Result<(), HolochainError> {
-    let network = network_state
-        .network
-        .as_mut()
-        .expect("Should have network state-slice");
     // publish crud-status
-    let data = DhtMetaData {
-        msg_id: "?".to_string(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        agent_id: network_state.agent_id.clone().unwrap(),
-        address: entry_address.to_string(),
-        attribute: STATUS_NAME.to_string(),
-        content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
-    };
-    network
-        .lock()
-        .unwrap()
-        .send(ProtocolWrapper::PublishDhtMeta(data).into())
-        .map_err(|error| HolochainError::IoError(error.to_string()))
-        .expect("Network has to be Some because of check above");
+    send(
+        network_state,
+        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+            msg_id: "?".to_string(),
+            dna_hash: network_state.dna_hash.clone().unwrap(),
+            agent_id: network_state.agent_id.clone().unwrap(),
+            address: entry_address.to_string(),
+            attribute: STATUS_NAME.to_string(),
+            content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
+        }),
+    )?;
+
     // publish crud-link if there is one
     if crud_link.is_none() {
         return Ok(());
     }
-    let data = DhtMetaData {
-        msg_id: "?".to_string(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        agent_id: network_state.agent_id.clone().unwrap(),
-        address: entry_address.to_string(),
-        attribute: LINK_NAME.to_string(),
-        content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
-            .unwrap(),
-    };
-    network
-        .lock()
-        .unwrap()
-        .send(ProtocolWrapper::PublishDhtMeta(data).into())
-        .map_err(|error| HolochainError::IoError(error.to_string()))
-        .expect("Network has to be Some because of check above");
+    send(
+        network_state,
+        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+            msg_id: "?".to_string(),
+            dna_hash: network_state.dna_hash.clone().unwrap(),
+            agent_id: network_state.agent_id.clone().unwrap(),
+            address: entry_address.to_string(),
+            attribute: LINK_NAME.to_string(),
+            content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
+                .unwrap(),
+        }),
+    )?;
     Ok(())
 }
 
@@ -107,26 +90,18 @@ fn publish_link_meta(
     };
     let link = link_add_entry.link().clone();
 
-    let data = DhtMetaData {
-        msg_id: "?".to_string(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
-        agent_id: network_state.agent_id.clone().unwrap(),
-        address: link.base().to_string(),
-        attribute: String::from("link"),
-        content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap()).unwrap(),
-    };
-
-    network_state
-        .network
-        .as_mut()
-        .map(|network| {
-            network
-                .lock()
-                .unwrap()
-                .send(ProtocolWrapper::PublishDhtMeta(data).into())
-                .map_err(|error| HolochainError::IoError(error.to_string()))
-        })
-        .expect("Network has to be Some because of check above")
+    send(
+        network_state,
+        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+            msg_id: "?".to_string(),
+            dna_hash: network_state.dna_hash.clone().unwrap(),
+            agent_id: network_state.agent_id.clone().unwrap(),
+            address: link.base().to_string(),
+            attribute: String::from("link"),
+            content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
+                .unwrap(),
+        }),
+    )
 }
 
 fn reduce_publish_inner(
@@ -134,9 +109,7 @@ fn reduce_publish_inner(
     network_state: &mut NetworkState,
     address: &Address,
 ) -> Result<(), HolochainError> {
-    (network_state.network.is_some()
-        && network_state.dna_hash.is_some() & network_state.agent_id.is_some())
-    .ok_or("Network not initialized".to_string())?;
+    network_state.initialized()?;
 
     let entry_with_header = fetch_entry_with_header(&address, &context)?;
     let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address.clone())?

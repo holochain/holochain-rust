@@ -15,10 +15,8 @@ use std::{sync::Arc, thread};
 pub fn handle_store_dht(dht_data: DhtData, context: Arc<Context>) {
     let entry_with_header: EntryWithHeader =
         serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap()).unwrap();
-    println!("handle_store_dht");
     thread::spawn(move || {
         let result = block_on(hold_entry_workflow(&entry_with_header, &context.clone()));
-        println!("result: {:?}", result);
     });
 }
 

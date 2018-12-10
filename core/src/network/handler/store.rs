@@ -16,7 +16,7 @@ use std::sync::Arc;
 pub fn handle_store_dht(dht_data: DhtData, context: Arc<Context>) {
     let entry_with_header: EntryWithHeader =
         serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap()).unwrap();
-    let _ = block_on(hold_entry(&entry_with_header.entry_body, &context.clone()));
+    let _ = block_on(hold_entry(&entry_with_header.entry, &context.clone()));
 }
 
 /// The network requests us to store meta information (links/CRUD/etc) for an
@@ -29,7 +29,7 @@ pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) 
                     .expect("dht_meta_data should be EntryWithHader"),
             )
             .expect("dht_meta_data should be EntryWithHader");
-            let link_add = match entry_with_header.entry_body {
+            let link_add = match entry_with_header.entry {
                 Entry::LinkAdd(link_add) => link_add,
                 _ => unreachable!(),
             };

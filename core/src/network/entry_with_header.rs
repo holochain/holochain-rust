@@ -6,14 +6,14 @@ use std::{convert::TryInto, sync::Arc};
 
 #[derive(Serialize, Deserialize)]
 pub struct EntryWithHeader {
-    pub entry_body: Entry,
+    pub entry: Entry,
     pub header: ChainHeader,
 }
 
 impl EntryWithHeader {
     pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
         EntryWithHeader {
-            entry_body: entry,
+            entry: entry,
             header,
         }
     }

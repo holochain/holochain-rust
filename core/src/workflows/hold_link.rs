@@ -55,16 +55,16 @@ pub mod tests {
         network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
-    use holochain_core_types::entry::test_entry;
+    use holochain_core_types::{entry::test_entry, link::link_add::LinkAdd};
     use test_utils::*;
 
     #[test]
-    /// Test that an invalid entry will be rejected by this workflow.
+    /// Test that an invalid link will be rejected by this workflow.
     ///
     /// This test simulates an attack where a node is changing its local copy of the DNA to
     /// allow otherwise invalid entries while spoofing the unmodified dna_hash.
     ///
-    /// hold_entry_workflow is then expected to fail in its validation step
+    /// hold_link_workflow is then expected to fail in its validation step
     fn test_reject_invalid_entry_on_hold_workflow() {
         // Hacked DNA that regards everything as valid
         let hacked_dna =
@@ -82,14 +82,22 @@ pub mod tests {
 
         // Commit entry on attackers node
         let entry = test_entry();
-        let _entry_address = block_on(author_entry(&entry, None, &context1)).unwrap();
+        let entry_address = block_on(author_entry(&entry, None, &context1)).unwrap();
+
+        let link_add = LinkAdd::new(&entry_address, &entry_address, "test-tag");
+        let link_entry = Entry::LinkAdd(link_add);
+
+        let _ = block_on(author_entry(&link_entry, None, &context1)).unwrap();
 
         // Get header which we need to trigger hold_entry_workflow
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state
-            .get_header_for_entry(&entry)
+            .get_header_for_entry(&link_entry)
             .expect("There must be a header in the author's source chain after commit");
-        let entry_with_header = EntryWithHeader { entry, header };
+        let entry_with_header = EntryWithHeader {
+            entry: link_entry,
+            header,
+        };
 
         // Call hold_entry_workflow on victim DHT node
         let result = block_on(hold_link_workflow(&entry_with_header, &context2));

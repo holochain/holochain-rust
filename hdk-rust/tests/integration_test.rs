@@ -33,7 +33,10 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::{
     get_entry::EntryHistory, get_links::GetLinksResult, QueryResult,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    thread, time::Duration,
+};
 use test_utils::*;
 
 #[no_mangle]
@@ -133,7 +136,8 @@ fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<T
         "send_tweet",
         "commit_validation_package_tester",
         "link_two_entries",
-        "links_roundtrip",
+        "links_roundtrip_create",
+        "links_roundtrip_get",
         "link_validation",
         "check_query",
         "check_app_entry_address",
@@ -428,10 +432,19 @@ fn can_link_entries() {
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links");
-    let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
+
+    // Create links
+    let result = hc.call("test_zome", "test_cap", "links_roundtrip_create", r#"{}"#);
+    let maybe_address: Result<Address, String> = serde_json::from_str(&String::from(result.unwrap())).unwrap();
+    let address = maybe_address.unwrap();
+
+    // Wait for links to be validated and propagated
+    thread::sleep(Duration::from_millis(1500));
+    
+    // Now get_links on the base and expect both to be there
+    let result = hc.call("test_zome", "test_cap", "links_roundtrip_get", &format!(r#"{{"address": "{}"}}"#, address));
     assert!(result.is_ok(), "result = {:?}", result);
     let result_string = result.unwrap();
-
     let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
     let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 

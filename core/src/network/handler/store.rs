@@ -1,7 +1,8 @@
 use crate::{
     context::Context,
-    dht::actions::{add_link::add_link, hold::hold_entry},
+    dht::actions::add_link::add_link,
     network::entry_with_header::EntryWithHeader,
+    workflows::hold_entry::hold_entry_workflow,
 };
 use futures::executor::block_on;
 use holochain_core_types::{
@@ -10,13 +11,20 @@ use holochain_core_types::{
     entry::Entry,
 };
 use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData};
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    thread,
+};
 
 /// The network requests us to store (i.e. hold) the given entry.
 pub fn handle_store_dht(dht_data: DhtData, context: Arc<Context>) {
     let entry_with_header: EntryWithHeader =
         serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap()).unwrap();
-    let _ = block_on(hold_entry(&entry_with_header.entry, &context.clone()));
+    println!("handle_store_dht");
+    thread::spawn(move || {
+        let result = block_on(hold_entry_workflow(&entry_with_header, &context.clone()));
+        println!("result: {:?}", result);
+    });
 }
 
 /// The network requests us to store meta information (links/CRUD/etc) for an

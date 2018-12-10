@@ -49,19 +49,21 @@ lint: fmt_check clippy
 export PATH := $(HOME)/.cargo/bin:$(PATH)
 RUST_VERSION = $(CORE_RUST_VERSION)
 .PHONY: version_rustup
+
 version_rustup:
 	@if which rustup; then \
 	    echo "\033[0;93m## Current Rust version installed (need: '$(RUST_VERSION)'): ##\033[0m"; \
-	    if ! rustup show 2>/dev/null | grep -qe "$(RUST_VERSION).*(default)"; then \
-	        rustup show; \
-		echo "\033[0;93m## Change current Rust version to '$(RUST_VERSION)' ##\033[0m"; \
-	        [ -t 1 ] && [[ "$(CI)" == "" ]] && read -p "Continue? (Y/n) " yes; \
-	        if [[ "$${yes:0:1}" != "n" ]] && [[ "$${yes:0:1}" != "N" ]]; then \
-	            echo "\033[0;93m## Selecting Rust version '$(RUST_VERSION)'... ##\033[0m"; \
-	            rustup default $(RUST_VERSION); \
-	        fi; \
+	    if ! rustup override list 2>/dev/null | grep "^$(PWD)\s*$(RUST_VERSION)"; then \
+		rustup show; rustup override list; \
+		echo "\033[0;93m## Change $(PWD) Rust version override to '$(RUST_VERSION)' ##\033[0m"; \
+		[ -t 1 ] && [ -t 0 ] && [[ "$(CI)" == "" ]] && read -p "Continue? (Y/n) " yes; \
+		if [[ "$${yes:0:1}" != "n" ]] && [[ "$${yes:0:1}" != "N" ]]; then \
+		    echo "\033[0;93m## Selecting Rust version '$(RUST_VERSION)'... ##\033[0m"; \
+		    rustup override set $(RUST_VERSION); \
+		fi; \
 	    fi; \
 	fi
+
 
 # Actual installation of Rust $(RUST_VERSION) via curl
 .PHONY: curl_rustup
@@ -171,6 +173,11 @@ test: test_holochain test_cmd test_app_spec c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
 	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+
+# Execute cargo tests matching %
+# Eg. make test-stacked will run "cargo test stacked"
+test-%: build_holochain
+	RUSTFLAGS="-D warnings" $(CARGO) test $* -- --nocapture
 
 test_cmd: build_cmd
 	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test

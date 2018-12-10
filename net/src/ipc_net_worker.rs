@@ -108,10 +108,7 @@ impl IpcNetWorker {
         if config["socketType"] != "zmq" {
             bail!("unexpected socketType: {}", config["socketType"]);
         }
-        let mut block_connect = true;
-        if let Some(b) = config["blockConnect"].as_bool() {
-            block_connect = b;
-        }
+        let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
         if let None = config["ipcUri"].as_str() {
             if config["spawn"].is_object() {
                 let s = config["spawn"].as_object().unwrap();

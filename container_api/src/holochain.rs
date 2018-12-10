@@ -113,11 +113,11 @@ impl Holochain {
             .unwrap_or(State::new(context.clone()));
         // TODO get the network state initialized!!
         let mut instance = Instance::from_state(loaded_state.clone());
-        instance.start_action_loop(context.clone());
-
         let mut sub_context = (*context).clone();
         sub_context.set_state(Arc::new(RwLock::new(loaded_state.clone())));
         let new_context = Arc::new(sub_context);
+        
+        instance.start_action_loop(new_context.clone());
         block_on(
            network::initialize(new_context.clone()),
         )?;
@@ -184,8 +184,9 @@ mod tests {
         context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
+        agent::{chain_store::ChainStore,state::AgentState}
     };
-    use holochain_core_types::{agent::AgentId, dna::Dna};
+    use holochain_core_types::{agent::AgentId, dna::Dna,chain_header::test_chain_header};
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
@@ -230,32 +231,31 @@ mod tests {
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context_with_path(agent_name: &str) -> (Arc<Context>, String) {
-        let temp_dir = tempdir().unwrap();
-        let path = temp_dir.path().to_str().unwrap(); 
-        let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(path).expect("Could not create file system storage"),
-        ));
-        let logger = test_utils::test_logger();
-        (
-            Arc::new(
-                Context::new(
-                    agent,
-                    logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                    file_storage.clone(),
-                    Arc::new(RwLock::new(
-                        EavFileStorage::new(
-                            tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        )
-                        .unwrap(),
-                    )),
-                    mock_network_config(),
-                )
-                .unwrap(),
-            ),
-            path.to_string(),
+        let tempdir = tempdir().unwrap();
+        let path = tempdir.path().to_str().unwrap();
+        
+        let file_system =
+            FilesystemStorage::new(path).unwrap();
+        let cas = Arc::new(RwLock::new(file_system.clone()));
+        let mut context = Context::new(
+            AgentId::generate_fake(agent_name),
+            test_utils::test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
+            cas.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(path.to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
         )
+        .unwrap();
+        let chain_store = ChainStore::new(cas.clone());
+        let chain_header = test_chain_header();
+        let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
+        let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
+        let global_state = Arc::new(RwLock::new(state));
+        context.set_state(global_state.clone());
+        (Arc::new(context),path.to_string())
     }
 
     fn example_api_wasm_path() -> String {
@@ -287,14 +287,18 @@ mod tests {
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
     }
 
+
     #[test]
     fn can_load() {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
         let (context, path) = test_context_with_path("bob");
         let hc = Holochain::new(dna.clone(), context.clone()).unwrap();
-        let (context_load, path) = test_context_with_path("bob");
-        let result = Holochain::load(path,context_load.clone());
+        let con = context.clone();
+        let mut persister = &mut *con.persister.lock().unwrap();
+        let persist_con = context.clone();
+        persister.save(persist_con.state().unwrap().clone());
+        let result = Holochain::load(path,context.clone());
        // assert!(result.is_ok());
         let loaded_holo = result.unwrap();
         println!("loaded");

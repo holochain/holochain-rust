@@ -57,18 +57,6 @@ fn main() {
                 println!("Starting interfaces...");
                 container.start_all_interfaces();
                 println!("Done.");
-                if let Some(hc) = container.instances.get("app spec instance 1") {
-                    println!("Making fake call");
-                    hc.write()
-                        .unwrap()
-                        .call(
-                            "blog",
-                            "main",
-                            "create_post",
-                            r#"{"content": "blah", "in_reply_to": "blah"}"#,
-                        )
-                        .unwrap();
-                }
                 loop {}
             } else {
                 println!("No instance started, bailing...");
@@ -84,7 +72,11 @@ fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
     config
         .check_consistency()
         .map_err(|string| HolochainError::ConfigError(string))?;
-    Container::try_from(&config)
+    let mut container = Container::from_config(config).with_signal_handler(|sig| {
+        println!("We are in business... {:?}", sig);
+    });
+    container.load_config()?;
+    Ok(container)
 }
 
 #[cfg_attr(tarpaulin, skip)]

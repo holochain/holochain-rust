@@ -51,7 +51,7 @@ pub struct Container {
 
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
-type SignalHandler = Arc<Box<FnMut(&Signal) -> () + Send + Sync>>;
+type SignalHandler = Arc<Box<Fn(&Signal) -> () + Send + Sync>>;
 
 pub static DEFAULT_NETWORK_CONFIG: &'static str = "{\"backend\":\"mock\"}";
 
@@ -68,8 +68,11 @@ impl Container {
         }
     }
 
-    fn with_signal_handler(mut self, signal_handler: SignalHandler) -> Self {
-        self.signal_handler = Some(signal_handler);
+    pub fn with_signal_handler<F>(mut self, signal_handler: F) -> Self
+    where
+        F: Fn(&Signal) -> () + Send + Sync + 'static,
+    {
+        self.signal_handler = Some(Arc::new(Box::new(signal_handler)));
         self
     }
 
@@ -89,12 +92,16 @@ impl Container {
             .and_then(|config| self.start_interface(&config))
     }
 
-    fn spawn_signal_thread(&self, signal_rx: SignalReceiver) -> thread::JoinHandle<()> {
-        // let handler = self.signal_handler.expect("no signal handler was set!");
-        thread::spawn(move || loop {
-            let sig = signal_rx.recv().expect("signal channel was closed");
-            println!("signal received:\n{:?}\n\n", sig);
-        })
+    fn spawn_signal_thread(&mut self, signal_rx: SignalReceiver) -> () {
+        if let Some(handler) = self.signal_handler.clone() {
+            let signal_thread = thread::spawn(move || loop {
+                let sig = signal_rx.recv().expect("signal channel was closed");
+                handler(&sig);
+            });
+            self.signal_thread = Some(signal_thread);
+        } else {
+            println!("Warning: no signal handler was set!");
+        }
     }
 
     /// Starts all instances
@@ -131,9 +138,13 @@ impl Container {
 
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
-    pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
-        let _ = config.check_consistency()?;
+    /// @TODO: clean up the container creation process to prevent loading config before proper setup,
+    ///        especially regarding the signal handler.
+    ///        (see https://github.com/holochain/holochain-rust/issues/739)
+    pub fn load_config(&mut self) -> Result<(), String> {
+        let _ = self.config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
+        let config = self.config.clone();
         let default_network = DEFAULT_NETWORK_CONFIG.to_string();
         let mut instances = HashMap::new();
         let mut signal_rxs = Vec::new();
@@ -145,7 +156,7 @@ impl Container {
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(&id, config, &mut self.dna_loader, &default_network),
+                    instantiate_from_config(&id, &config, &mut self.dna_loader, &default_network),
                 )
             })
             .filter_map(|(id, maybe_pair)| match maybe_pair {
@@ -164,7 +175,7 @@ impl Container {
         if errors.len() == 0 {
             self.instances = instances;
             let signal_rx = combine_receivers(signal_rxs);
-            self.signal_thread = Some(self.spawn_signal_thread(signal_rx));
+            self.spawn_signal_thread(signal_rx);
             Ok(())
         } else {
             Err(errors.iter().nth(0).unwrap().clone())
@@ -220,7 +231,7 @@ impl<'a> TryFrom<&'a Configuration> for Container {
     fn try_from(config: &'a Configuration) -> Result<Self, Self::Error> {
         let mut container = Container::from_config((*config).clone());
         container
-            .load_config(config)
+            .load_config()
             .map_err(|string| HolochainError::ConfigError(string))?;
         Ok(container)
     }
@@ -387,7 +398,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
-        container.load_config(&config).unwrap();
+        container.load_config().unwrap();
         container
     }
 

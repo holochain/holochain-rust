@@ -127,6 +127,7 @@ pub fn call_and_wait_for_result(
             println!("NB: this rarely happens");
             true
         } else {
+            // @TODO: Use futures for this, and in case this should probably have a timeout
             println!("Q: What is the meaning of this branch?");
             println!("-- It happens whenever zome_call_result returns None, but what does that mean?");
             println!("-- is it supposed to turn into a Some later and get revisited? Seems like it doesn't.");

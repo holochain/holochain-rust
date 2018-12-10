@@ -48,7 +48,7 @@ pub fn run(package: bool, port: u16) -> DefaultResult<()> {
     let mut container = Container::from_config(base_config.clone());
 
     container
-        .load_config(&base_config)
+        .load_config()
         .map_err(|err| format_err!("{}", err))?;
 
     container.start_all_interfaces();

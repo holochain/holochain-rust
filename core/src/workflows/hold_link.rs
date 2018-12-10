@@ -65,14 +65,14 @@ pub mod tests {
     /// allow otherwise invalid entries while spoofing the unmodified dna_hash.
     ///
     /// hold_link_workflow is then expected to fail in its validation step
-    fn test_reject_invalid_entry_on_hold_workflow() {
+    fn test_reject_invalid_link_on_hold_workflow() {
         // Hacked DNA that regards everything as valid
         let hacked_dna =
             create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_valid()));
         // Original DNA that regards nothing as valid
         let mut dna =
             create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
-        dna.uuid = String::from("test_reject_invalid_entry_on_hold_workflow");
+        dna.uuid = String::from("test_reject_invalid_link_on_hold_workflow");
 
         // Hash of the original DNA
         let dna_hash = base64::encode(&dna.multihash().unwrap());

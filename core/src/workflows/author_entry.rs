@@ -56,7 +56,7 @@ pub mod tests {
 
         let mut json: Option<JsonString> = None;
         let mut tries = 0;
-        while json.is_none() && tries < 10 {
+        while json.is_none() && tries < 200 {
             let state = &context2.state().unwrap();
             json = state
                 .dht()

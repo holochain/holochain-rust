@@ -151,7 +151,7 @@ If we take Zome code in Rust as an example, you will need Rust and Cargo set up 
 ```shell
 $ rustup toolchain install nightly
 $ rustup target add wasm32-unknown-unknown --toolchain nightly # adds WASM as a compilation target
-$ rustup default nightly # switch to the nightly rust toolchain as your default
+$ rustup override set nightly # switch to the nightly rust toolchain for the current project directory
 ```
 
 Once that's done, you should be able to run commands like `cargo build --target=wasm32-unknown-unknown` and have it work.
@@ -186,6 +186,10 @@ hc test --testfile test/test.js
 where `test/test.js` is the path of the file.
 
 You have the flexibility to write tests in quite a variety of ways, open to you to explore.
+
+## Running your application
+For the purpose of *testing* APIs or prototyping user interfaces, you can run your DNA using `hc run`.
+This will start the application and open a WebSocket on port `8888` or any other port specified by the `-p`/`--port` option. The `-b`/`--package` flag will build your DNA before running it. By default, none of the data your application is putting on the SourceChain. To persist data onto the file system, use the `--persist` flag.
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.

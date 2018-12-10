@@ -10,7 +10,7 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
-pub fn chain_header(entry: &Entry, context: &Arc<Context>) -> Option<ChainHeader> {
+pub fn find_chain_header(entry: &Entry, context: &Arc<Context>) -> Option<ChainHeader> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain

@@ -16,21 +16,21 @@ pub fn reduce_init(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (_, dna_hash, agent_id) = unwrap_to!(action => Action::InitNetwork);
-    let mut network = P2pNetwork::new(create_handler(&context), &context.network_config).unwrap();
+    let network_settings = unwrap_to!(action => Action::InitNetwork);
+    let mut network = P2pNetwork::new(create_handler(&context), &network_settings.config).unwrap();
 
     let _ = network
         .send(
             ProtocolWrapper::TrackApp(TrackAppData {
-                dna_hash: dna_hash.clone(),
-                agent_id: agent_id.clone(),
+                dna_hash: network_settings.dna_hash.clone(),
+                agent_id: network_settings.agent_id.clone(),
             })
             .into(),
         )
         .and_then(|_| {
             state.network = Some(Arc::new(Mutex::new(network)));
-            state.dna_hash = Some(dna_hash.clone());
-            state.agent_id = Some(agent_id.clone());
+            state.dna_hash = Some(network_settings.dna_hash.clone());
+            state.agent_id = Some(network_settings.agent_id.clone());
             Ok(())
         });
 }

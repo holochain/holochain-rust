@@ -25,7 +25,7 @@ use std::{
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
 pub fn add_link(link: &Link, context: &Arc<Context>) -> AddLinkFuture {
     let action_wrapper = ActionWrapper::new(Action::AddLink(link.clone()));
-    dispatch_action(&context.action_channel(), action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
 
     AddLinkFuture {
         context: context.clone(),

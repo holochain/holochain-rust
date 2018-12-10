@@ -38,41 +38,58 @@ pub async fn hold_entry_workflow<'a>(
     await!(hold_entry(entry, &context))
 }
 
-/*
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::nucleus::actions::tests::*;
+    use crate::{
+        nucleus::actions::tests::*,
+        network::test_utils::*,
+        workflows::author_entry::author_entry,
+    };
     use futures::executor::block_on;
     use holochain_core_types::entry::test_entry;
     use std::{thread, time};
+    use test_utils::*;
 
     #[test]
-    /// test that a commit will publish and entry to the dht of a connected instance via the mock network
-    fn test_commit_with_dht_publish() {
-        let dna = test_dna();
-        let (_instance1, context1) = instance_by_name("jill", dna.clone());
+    /// Test that an invalid entry will be rejected by this workflow.
+    ///
+    /// This test simulates an attack where a node is changing its local copy of the DNA to
+    /// allow otherwise invalid entries while spoofing the unmodified dna_hash.
+    ///
+    /// hold_entry_workflow is then expected to fail in its validation step
+    fn test_reject_invalid_entry_on_hold_workflow() {
+        // Hacked DNA that regards everything as valid
+        let hacked_dna = create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_valid()));
+        // Original DNA that regards nothing as valid
+        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
+        dna.uuid = String::from("test_reject_invalid_entry_on_hold_workflow");
+
+        // Hash of the original DNA
+        let dna_hash = base64::encode(&dna.multihash().unwrap());
+
+        let (_, context1) = test_instance_with_spoofed_dna(hacked_dna, dna_hash, "alice").unwrap();
         let (_instance2, context2) = instance_by_name("jack", dna);
 
-        let entry_address = block_on(author_entry(&test_entry(), None, &context1));
+        // Commit entry on attackers node
+        let entry = test_entry();
+        let _entry_address = block_on(author_entry(&entry, None, &context1)).unwrap();
 
-        let entry_address = entry_address.unwrap();
-        thread::sleep(time::Duration::from_millis(1000));
+        // Get header which we need to trigger hold_entry_workflow
+        let agent1_state = context1.state().unwrap().agent();
+        let header = agent1_state.get_header_for_entry(&entry)
+            .expect("There must be a header in the author's source chain after commit");
+        let entry_with_header = EntryWithHeader { entry, header };
 
-        let state = &context2.state().unwrap();
-        let json = state
-            .dht()
-            .content_storage()
-            .read()
-            .unwrap()
-            .fetch(&entry_address)
-            .expect("could not fetch from CAS");
+        // Call hold_entry_workflow on victim DHT node
+        let result = block_on(hold_entry_workflow(&entry_with_header, &context2));
 
-        let x: String = json.unwrap().to_string();
+        // ... and expect validation to fail with message defined in test WAT:
+        assert!(result.is_err());
         assert_eq!(
-            x,
-            "{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}".to_string(),
+            result.err().unwrap(),
+            HolochainError::ValidationFailed(String::from("FAIL wat")),
         );
     }
 }
-*/

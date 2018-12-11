@@ -18,7 +18,7 @@ fn reduce_respond_get_inner(
         network_state,
         ProtocolWrapper::GetDhtResult(DhtData {
             msg_id: get_dht_data.msg_id.clone(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: get_dht_data.from_agent_id.clone(),
             address: get_dht_data.address.clone(),
             content: serde_json::from_str(&serde_json::to_string(&maybe_entry).unwrap()).unwrap(),

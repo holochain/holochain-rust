@@ -1,5 +1,5 @@
 use crate::{
-    agent::test_agent_id,
+    agent::{test_sources, Sources},
     cas::content::{Address, AddressableContent, Content},
     entry::{
         entry_type::{test_entry_type, EntryType},
@@ -7,7 +7,7 @@ use crate::{
     },
     error::HolochainError,
     json::JsonString,
-    signature::{test_signatures, Signature},
+    signature::{test_signatures, Signatures},
     time::{test_iso_8601, Iso8601},
 };
 use std::convert::TryInto;
@@ -27,9 +27,9 @@ pub struct ChainHeader {
     entry_address: Address,
     /// Address(es) of the agent(s) that authored and signed this entry.
     /// Backed by the entry_signatures below.
-    sources: Vec<Address>,
+    sources: Sources,
     /// Cryptographic signature of the entry for each source respectively
-    entry_signatures: Vec<Signature>,
+    entry_signatures: Signatures,
     /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
     link: Option<Address>,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
@@ -58,8 +58,8 @@ impl ChainHeader {
     pub fn new(
         entry_type: &EntryType,
         entry_address: &Address,
-        sources: &Vec<Address>,
-        entry_signatures: &Vec<Signature>,
+        sources: &Sources,
+        entry_signatures: &Signatures,
         link: &Option<Address>,
         link_same_type: &Option<Address>,
         link_crud: &Option<Address>,
@@ -108,11 +108,11 @@ impl ChainHeader {
     }
 
     /// entry_signature getter
-    pub fn entry_signatures(&self) -> &Vec<Signature> {
+    pub fn entry_signatures(&self) -> &Signatures {
         &self.entry_signatures
     }
 
-    pub fn sources(&self) -> &Vec<Address> {
+    pub fn sources(&self) -> &Sources {
         &self.sources
     }
 }
@@ -139,10 +139,6 @@ pub fn test_chain_header() -> ChainHeader {
         &None,
         &test_iso_8601(),
     )
-}
-
-pub fn test_sources() -> Vec<Address> {
-    vec![test_agent_id().address()]
 }
 
 #[cfg(test)]

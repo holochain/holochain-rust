@@ -87,7 +87,7 @@ When writing Zome code, it is common to need to reference aspects of the context
 
 This is done by calling `hc_init_globals` with an input value of 0. The result of calling the function is a 32 bit integer which represents the memory location of a serialized JSON object containing all the app global values. Fetch the result from memory, and deserialize the result back into an object. If appropriate, set those values as exports for the Development Kit. For example, in Rust, values become accessible in Zomes using `hdk::APP_NAME`. It's recommended to use all capital letters for the export of the constants, but as they are returned as keys on an object from `hc_init_globals` they are in lower case. The object has the following values:
 - dna_name
-- dna_hash
+- dna_address
 - agent_id_str
 - agent_address
 - agent_initial_hash

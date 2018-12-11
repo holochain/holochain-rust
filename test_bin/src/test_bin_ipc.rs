@@ -1,10 +1,12 @@
 #![feature(try_from)]
 
+extern crate holochain_core_types;
 extern crate holochain_net;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
 
+use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
@@ -40,8 +42,13 @@ fn exec() -> NetResult<()> {
 
     println!("testing against uri: {}", ipc_uri);
 
-    static DNA_HASH: &'static str = "sandwich";
-    static AGENT_ID: &'static str = "agent-1";
+    fn test_dna_address() -> Address {
+        "sandwich".into()
+    }
+
+    fn test_agent_id() -> String {
+        "agent-1".into()
+    }
 
     // use a mpsc channel for messaging
     let (sender, receiver) = mpsc::channel::<Protocol>();
@@ -118,9 +125,9 @@ fn exec() -> NetResult<()> {
     // now, let's send a message to ourselves (just for debug / test)
     con.send(
         ProtocolWrapper::SendMessage(MessageData {
-            dna_hash: DNA_HASH.to_string(),
-            to_agent_id: AGENT_ID.to_string(),
-            from_agent_id: AGENT_ID.to_string(),
+            dna_address: test_dna_address(),
+            to_agent_id: test_agent_id(),
+            from_agent_id: test_agent_id(),
             msg_id: "unique-id".to_string(),
             data: json!("test data"),
         })
@@ -152,9 +159,9 @@ fn exec() -> NetResult<()> {
     // let's send ourselves a response
     con.send(
         ProtocolWrapper::HandleSendResult(MessageData {
-            dna_hash: handle_data.dna_hash,
+            dna_address: handle_data.dna_address,
             to_agent_id: handle_data.from_agent_id,
-            from_agent_id: AGENT_ID.to_string(),
+            from_agent_id: test_agent_id(),
             msg_id: handle_data.msg_id,
             data: json!(format!("echo: {}", handle_data.data)),
         })

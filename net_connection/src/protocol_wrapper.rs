@@ -5,7 +5,7 @@
 use serde_json;
 
 use failure::Error;
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
 use std::convert::TryFrom;
 
 use super::protocol::Protocol;
@@ -47,8 +47,8 @@ pub struct MessageData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "dnaHash")]
-    pub dna_hash: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
 
     #[serde(rename = "toAgentId")]
     pub to_agent_id: String,
@@ -61,8 +61,8 @@ pub struct MessageData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct TrackAppData {
-    #[serde(rename = "dnaHash")]
-    pub dna_hash: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
 
     #[serde(rename = "agentId")]
     pub agent_id: String,
@@ -73,8 +73,8 @@ pub struct SuccessResultData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "dnaHash")]
-    pub dna_hash: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
 
     #[serde(rename = "toAgentId")]
     pub to_agent_id: String,
@@ -88,8 +88,8 @@ pub struct FailureResultData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "dnaHash")]
-    pub dna_hash: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
 
     #[serde(rename = "toAgentId")]
     pub to_agent_id: String,
@@ -103,8 +103,8 @@ pub struct GetDhtData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "dnaHash")]
-    pub dna_hash: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
 
     #[serde(rename = "fromAgentId")]
     pub from_agent_id: String,
@@ -117,8 +117,8 @@ pub struct DhtData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "dnaHash")]
-    pub dna_hash: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
 
     #[serde(rename = "agentId")]
     pub agent_id: String,
@@ -132,8 +132,8 @@ pub struct GetDhtMetaData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "dnaHash")]
-    pub dna_hash: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
 
     #[serde(rename = "fromAgentId")]
     pub from_agent_id: String,
@@ -147,8 +147,8 @@ pub struct DhtMetaData {
     #[serde(rename = "_id")]
     pub msg_id: String,
 
-    #[serde(rename = "dnaHash")]
-    pub dna_hash: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
 
     #[serde(rename = "agentId")]
     pub agent_id: String,
@@ -371,7 +371,7 @@ mod tests {
     #[test]
     fn it_can_convert_send_message() {
         test_convert!(ProtocolWrapper::SendMessage(MessageData {
-            dna_hash: "test_dna".to_string(),
+            dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
             msg_id: "test_id".to_string(),
@@ -382,7 +382,7 @@ mod tests {
     #[test]
     fn it_can_convert_send_result() {
         test_convert!(ProtocolWrapper::SendResult(MessageData {
-            dna_hash: "test_dna".to_string(),
+            dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
             msg_id: "test_id".to_string(),
@@ -393,7 +393,7 @@ mod tests {
     #[test]
     fn it_can_convert_handle_send() {
         test_convert!(ProtocolWrapper::HandleSend(MessageData {
-            dna_hash: "test_dna".to_string(),
+            dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
             msg_id: "test_id".to_string(),
@@ -404,7 +404,7 @@ mod tests {
     #[test]
     fn it_can_convert_handle_send_result() {
         test_convert!(ProtocolWrapper::HandleSendResult(MessageData {
-            dna_hash: "test_dna".to_string(),
+            dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
             msg_id: "test_id".to_string(),
@@ -415,7 +415,7 @@ mod tests {
     #[test]
     fn it_can_convert_track_app() {
         test_convert!(ProtocolWrapper::TrackApp(TrackAppData {
-            dna_hash: "test_dna".to_string(),
+            dna_address: "test_dna".into(),
             agent_id: "test_to".to_string(),
         }));
     }

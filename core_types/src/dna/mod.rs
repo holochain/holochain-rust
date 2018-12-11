@@ -33,10 +33,12 @@ use crate::{
     json::JsonString,
 };
 use entry::entry_type::AppEntryType;
-use multihash;
+// use multihash;
+use crate::cas::content::{AddressableContent, Content};
 use serde_json::{self, Value};
 use std::{
     collections::BTreeMap,
+    convert::TryFrom,
     hash::{Hash, Hasher},
 };
 use uuid::Uuid;
@@ -215,10 +217,20 @@ impl Dna {
         None
     }
 
-    pub fn multihash(&self) -> Result<Vec<u8>, HolochainError> {
-        let s = String::from(JsonString::from(self.to_owned()));
-        multihash::encode(multihash::Hash::SHA2256, &s.into_bytes())
-            .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
+    // pub fn multihash(&self) -> Result<Vec<u8>, HolochainError> {
+    //     let s = String::from(JsonString::from(self.to_owned()));
+    //     multihash::encode(multihash::Hash::SHA2256, &s.into_bytes())
+    //         .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
+    // }
+}
+
+impl AddressableContent for Dna {
+    fn content(&self) -> Content {
+        Content::from(self.to_owned())
+    }
+
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(Dna::try_from(content.to_owned())?)
     }
 }
 
@@ -236,6 +248,18 @@ impl PartialEq for Dna {
     }
 }
 
+pub fn test_dna_uuid() -> String {
+    "0fb94e28-46c4-42f4-849d-41f31da512f7".to_string()
+}
+
+pub fn test_dna() -> Dna {
+    // fix the UUID to ensure deterministic tests
+    Dna {
+        uuid: test_dna_uuid(),
+        ..Default::default()
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -244,10 +268,6 @@ pub mod tests {
     use std::convert::TryFrom;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
-
-    pub fn test_dna() -> Dna {
-        Dna::new()
-    }
 
     #[test]
     fn get_entry_type_def_test() {

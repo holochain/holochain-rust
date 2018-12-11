@@ -164,8 +164,9 @@ pub mod tests {
     use crate::agent::chain_store::ChainStore;
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
+        agent::test_sources,
         cas::content::AddressableContent,
-        chain_header::{test_chain_header, test_sources, ChainHeader},
+        chain_header::{test_chain_header, ChainHeader},
         entry::{test_entry, test_entry_b, test_entry_c},
         signature::{test_signature_b, test_signature_c, test_signatures},
         time::test_iso_8601,

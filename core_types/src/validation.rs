@@ -1,6 +1,6 @@
 extern crate serde_json;
 use crate::{
-    chain_header::ChainHeader, entry::Entry, error::HolochainError, hash::HashString,
+    agent::Sources, chain_header::ChainHeader, entry::Entry, error::HolochainError,
     json::JsonString,
 };
 
@@ -46,7 +46,7 @@ pub struct ValidationData {
     /// [link!](macro.link.html) macros.
     pub package: ValidationPackage,
     /// The list of authors that have signed this entry.
-    pub sources: Vec<HashString>,
+    pub sources: Sources,
     /// In which lifecycle of the entry creation are we running
     /// this validation callback?
     pub lifecycle: EntryLifecycle,

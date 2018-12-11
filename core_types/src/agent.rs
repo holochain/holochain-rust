@@ -122,6 +122,9 @@ impl AddressableContent for AgentId {
     }
 }
 
+// the Addresses of sources that could author/sign something
+pub type Sources = Vec<Address>;
+
 pub static GOOD_ID: &'static str =
     "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd";
 pub static BAD_ID: &'static str =
@@ -129,6 +132,10 @@ pub static BAD_ID: &'static str =
 
 pub fn test_agent_id() -> AgentId {
     AgentId::new("bob", &KeyBuffer::with_corrected(BAD_ID).unwrap())
+}
+
+pub fn test_sources() -> Sources {
+    vec![test_agent_id().address()]
 }
 
 #[cfg(test)]

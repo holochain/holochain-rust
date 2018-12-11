@@ -24,7 +24,7 @@ use holochain_container_api::{
     container::Container,
 };
 use holochain_core_types::error::HolochainError;
-use std::{convert::TryFrom, fs::File, io::prelude::*, path::PathBuf};
+use std::{fs::File, io::prelude::*, path::PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -73,7 +73,7 @@ fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
         .check_consistency()
         .map_err(|string| HolochainError::ConfigError(string))?;
     let mut container = Container::from_config(config).with_signal_handler(|sig| {
-        println!("We are in business... {:?}", sig);
+        println!("WE GET SIGNAL:\n{:?}", sig);
     });
     container.load_config()?;
     Ok(container)

@@ -81,23 +81,16 @@ pub fn store_as_json<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
     jsonable: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-    println!("store_as_json tracer: 1");
     let j: JsonString = jsonable
         .try_into()
         .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
-    println!("store_as_json tracer: 2");
 
     let json_bytes = j.into_bytes();
-    println!("store_as_json tracer: 3");
     let json_bytes_len = json_bytes.len() as u32;
-    println!("store_as_json tracer: 4");
     if json_bytes_len > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
-    println!("store_as_json tracer: 5");
-    let x = write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16);
-    println!("store_as_json tracer: 6");
-    x
+    write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16)
 }
 
 // Sugar

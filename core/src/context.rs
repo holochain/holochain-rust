@@ -144,6 +144,11 @@ impl Context {
             .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
     }
 
+    // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
+    // rather than Option<SyncSenders>, but these would be initialized by default to broken channels
+    // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
+    // that potential failure mode.
+    // @see https://github.com/holochain/holochain-rust/issues/739
     pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
         self.action_channel
             .as_ref()

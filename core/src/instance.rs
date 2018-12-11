@@ -41,6 +41,11 @@ impl Instance {
         100
     }
 
+    // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
+    // rather than Option<SyncSenders>, but these would be initialized by default to broken channels
+    // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
+    // that potential failure mode.
+    // @see https://github.com/holochain/holochain-rust/issues/739
     pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
         self.action_channel
             .as_ref()
@@ -65,7 +70,7 @@ impl Instance {
     ///
     /// Panics if called before `start_action_loop`.
     pub fn dispatch(&mut self, action_wrapper: ActionWrapper) {
-        dispatch_action(&self.action_channel(), action_wrapper)
+        dispatch_action(self.action_channel(), action_wrapper)
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
@@ -75,8 +80,8 @@ impl Instance {
     /// Panics if called before `start_action_loop`.
     pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
         dispatch_action_and_wait(
-            &self.action_channel(),
-            &self.observer_channel(),
+            self.action_channel(),
+            self.observer_channel(),
             action_wrapper,
         );
     }
@@ -91,8 +96,8 @@ impl Instance {
         F: 'static + FnMut(&State) -> bool + Send,
     {
         dispatch_action_with_observer(
-            &self.action_channel(),
-            &self.observer_channel(),
+            self.action_channel(),
+            self.observer_channel(),
             action_wrapper,
             closure,
         )
@@ -108,13 +113,6 @@ impl Instance {
         self.observer_channel = Some(tx_observer.clone());
 
         (rx_action, rx_observer)
-    }
-
-    pub fn establish_signal_channel(&mut self) -> Receiver<Signal> {
-        let (tx_signal, rx_signal) = sync_channel::<Signal>(Self::default_channel_buffer_size());
-        self.signal_channel = Some(tx_signal);
-        println!("INITIALIZED CHANNEL");
-        rx_signal
     }
 
     pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
@@ -179,7 +177,7 @@ impl Instance {
             *state = new_state;
         }
 
-        self.emit_action_signal(action_wrapper.action().clone());
+        self.maybe_emit_action_signal(action_wrapper.action().clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -202,7 +200,9 @@ impl Instance {
         state_observers
     }
 
-    fn emit_action_signal(&self, action: Action) {
+    /// Given an `Action` that is being processed, decide whether or not it should be
+    /// emitted as a `Signal::Internal`, and if so, send it
+    fn maybe_emit_action_signal(&self, action: Action) {
         use self::Action::{AddLink, Commit, Hold, InitApplication, Publish};
         if let Some(ref tx) = self.signal_channel {
             let fire_away = match action {
@@ -227,7 +227,7 @@ impl Instance {
         }
     }
 
-    /// Creates a new Instance with disconnected channels.
+    /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
         Instance {
             state: Arc::new(RwLock::new(State::new(context))),
@@ -237,7 +237,7 @@ impl Instance {
         }
     }
 
-    /// Creates a new Instance with disconnected channels.
+    /// Creates a new Instance with only the signal channel set up.
     pub fn with_signals(context: Arc<Context>) -> (Self, Receiver<Signal>) {
         let (signal_tx, signal_rx) = sync_channel(Self::default_channel_buffer_size());
         let inst = Instance {

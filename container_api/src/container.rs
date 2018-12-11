@@ -131,7 +131,7 @@ impl Container {
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
         self.stop_all_instances()?;
-        // TODO: also stop all interfaces
+        // @TODO: also stop all interfaces
         self.instances = HashMap::new();
         Ok(())
     }
@@ -174,6 +174,8 @@ impl Container {
 
         if errors.len() == 0 {
             self.instances = instances;
+            // @NB: if the Instance constructor ever changes such that it can accept a SyncSender rather than
+            // spitting out a Receiver, we can just clone that Sender instead of gathering the receivers
             let signal_rx = combine_receivers(signal_rxs);
             self.spawn_signal_thread(signal_rx);
             Ok(())

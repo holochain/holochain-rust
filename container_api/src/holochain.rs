@@ -165,13 +165,10 @@ impl Holochain {
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
-        println!("call hypothesis: 1");
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-        println!("call hypothesis: 2");
         let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, String::from(params));
-        println!("call hypothesis: 3");
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 
@@ -183,10 +180,6 @@ impl Holochain {
     /// return
     pub fn state(&self) -> Result<State, HolochainInstanceError> {
         Ok(self.instance.state().clone())
-    }
-
-    pub fn establish_signal_channel(&mut self) -> Receiver<Signal> {
-        self.instance.establish_signal_channel()
     }
 }
 

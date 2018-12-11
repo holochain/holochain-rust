@@ -14,6 +14,7 @@ use holochain_wasm_utils::{
         get_entry::{EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
+        send::SendArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
@@ -881,9 +882,39 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
     }
 }
 
-/// Not Yet Available
-pub fn send(_to: Address, _message: String) -> ZomeApiResult<String> {
-    Err(ZomeApiError::FunctionNotImplemented)
+/// Sends a node-to-node message to the given agent.
+/// This works in conjunction with the `receive` callback that has to be defined in the
+/// [define_zome!](macro.defineZome.html) macro.
+///
+/// This functions blocks and returns the result returned by the `receive` callback on
+/// the other side.
+pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
+    let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
+
+    // Put args in struct and serialize into memory
+    let allocation_of_input = store_as_json(
+        &mut mem_stack,
+        SendArgs {
+            to_agent,
+            payload,
+        },
+    )?;
+
+    let encoded_allocation_of_result: u32 =
+        unsafe { hc_send(allocation_of_input.encode() as u32) };
+
+    // Deserialize complex result stored in memory
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    // Free result & input allocations
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+    // Done
+    if result.ok {
+        Ok(String::from(result.value))
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available

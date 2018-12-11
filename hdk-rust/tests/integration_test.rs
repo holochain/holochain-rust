@@ -120,7 +120,7 @@ fn example_valid_entry_address() -> Address {
     Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }
 
-fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<TestLogger>>) {
+fn start_holochain_instance<T: Into<String>>(uuid: T, agent_name: T) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
     let wasm =
         create_wasm_from_file("wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm");
@@ -143,6 +143,7 @@ fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<T
         "update_entry_ok",
         "remove_entry_ok",
         "remove_modified_entry_ok",
+        "send_message",
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
     dna.uuid = uuid.into();
@@ -179,7 +180,7 @@ fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<T
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
-    let (context, test_logger) = test_context_and_logger("alex");
+    let (context, test_logger) = test_context_and_logger(&agent_name.into());
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
 
@@ -190,7 +191,7 @@ fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<T
 
 #[test]
 fn can_use_globals() {
-    let (mut hc, _) = start_holochain_instance("can_use_globals");
+    let (mut hc, _) = start_holochain_instance("can_use_globals", "alice");
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
     assert_eq!(
@@ -205,7 +206,7 @@ fn can_use_globals() {
 
 #[test]
 fn can_commit_entry() {
-    let (mut hc, _) = start_holochain_instance("can_commit_entry");
+    let (mut hc, _) = start_holochain_instance("can_commit_entry","alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
@@ -223,7 +224,7 @@ fn can_commit_entry() {
 }
 #[test]
 fn can_commit_entry_macro() {
-    let (mut hc, _) = start_holochain_instance("can_commit_entry_macro");
+    let (mut hc, _) = start_holochain_instance("can_commit_entry_macro", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
@@ -241,7 +242,7 @@ fn can_commit_entry_macro() {
 
 #[test]
 fn can_round_trip() {
-    let (mut hc, test_logger) = start_holochain_instance("can_round_trip");
+    let (mut hc, test_logger) = start_holochain_instance("can_round_trip", "alice");
     let result = hc.call(
         "test_zome",
         "test_cap",
@@ -261,7 +262,7 @@ fn can_round_trip() {
 #[test]
 #[cfg(not(windows))]
 fn can_get_entry() {
-    let (mut hc, _) = start_holochain_instance("can_get_entry");
+    let (mut hc, _) = start_holochain_instance("can_get_entry", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
@@ -332,7 +333,7 @@ fn can_get_entry() {
 #[test]
 #[cfg(not(windows))] // TODO does not work on windows because of different seperator
 fn can_invalidate_invalid_commit() {
-    let (mut hc, _) = start_holochain_instance("can_invalidate_invalid_commit");
+    let (mut hc, _) = start_holochain_instance("can_invalidate_invalid_commit", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
@@ -358,7 +359,7 @@ fn can_invalidate_invalid_commit() {
 
 #[test]
 fn has_populated_validation_data() {
-    let (mut hc, _) = start_holochain_instance("has_populated_validation_data");
+    let (mut hc, _) = start_holochain_instance("has_populated_validation_data", "alice");
 
     //
     // Add two entries to chain to have something to check ValidationData on
@@ -409,7 +410,7 @@ fn has_populated_validation_data() {
 
 #[test]
 fn can_link_entries() {
-    let (mut hc, _) = start_holochain_instance("can_link_entries");
+    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
 
     let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
@@ -427,7 +428,7 @@ fn can_link_entries() {
 #[test]
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
-    let (mut hc, _) = start_holochain_instance("can_roundtrip_links");
+    let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
     let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let result_string = result.unwrap();
@@ -452,7 +453,7 @@ fn can_roundtrip_links() {
 #[test]
 #[cfg(not(windows))]
 fn can_validate_links() {
-    let (mut hc, _) = start_holochain_instance("can_validate_links");
+    let (mut hc, _) = start_holochain_instance("can_validate_links", "alice");
     let params_ok = r#"{"stuff1": "a", "stuff2": "aa"}"#;
     let result = hc.call("test_zome", "test_cap", "link_validation", params_ok);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -479,7 +480,7 @@ fn can_validate_links() {
 
 #[test]
 fn can_check_query() {
-    let (mut hc, _) = start_holochain_instance("can_check_query");
+    let (mut hc, _) = start_holochain_instance("can_check_query", "alice");
 
     let result = hc.call(
         "test_zome",
@@ -498,7 +499,7 @@ fn can_check_query() {
 
 #[test]
 fn can_check_app_entry_address() {
-    let (mut hc, _) = start_holochain_instance("can_check_app_entry_address");
+    let (mut hc, _) = start_holochain_instance("can_check_app_entry_address", "alice");
 
     let result = hc.call("test_zome", "test_cap", "check_app_entry_address", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -511,7 +512,7 @@ fn can_check_app_entry_address() {
 
 #[test]
 fn can_check_sys_entry_address() {
-    let (mut hc, _) = start_holochain_instance("can_check_sys_entry_address");
+    let (mut hc, _) = start_holochain_instance("can_check_sys_entry_address", "alice");
 
     let _result = hc.call("test_zome", "test_cap", "check_sys_entry_address", r#"{}"#);
     // TODO
@@ -524,7 +525,7 @@ fn can_check_sys_entry_address() {
 
 #[test]
 fn can_check_call() {
-    let (mut hc, _) = start_holochain_instance("can_check_call");
+    let (mut hc, _) = start_holochain_instance("can_check_call", "alice");
 
     let result = hc.call("test_zome", "test_cap", "check_call", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -540,7 +541,7 @@ fn can_check_call() {
 
 #[test]
 fn can_check_call_with_args() {
-    let (mut hc, _) = start_holochain_instance("can_check_call_with_args");
+    let (mut hc, _) = start_holochain_instance("can_check_call_with_args", "alice");
 
     let result = hc.call(
         "test_zome",
@@ -562,7 +563,7 @@ fn can_check_call_with_args() {
 
 #[test]
 fn can_remove_entry() {
-    let (mut hc, _) = start_holochain_instance("can_remove_entry");
+    let (mut hc, _) = start_holochain_instance("can_remove_entry", "alice");
     let result = hc.call("test_zome", "test_cap", "remove_entry_ok", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
@@ -574,14 +575,33 @@ fn can_remove_entry() {
 
 #[test]
 fn can_update_entry() {
-    let (mut hc, _) = start_holochain_instance("can_update_entry");
+    let (mut hc, _) = start_holochain_instance("can_update_entry", "alice");
     let result = hc.call("test_zome", "test_cap", "update_entry_ok", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 }
 
 #[test]
 fn can_remove_modified_entry() {
-    let (mut hc, _) = start_holochain_instance("can_remove_modified_entry");
+    let (mut hc, _) = start_holochain_instance("can_remove_modified_entry", "alice");
     let result = hc.call("test_zome", "test_cap", "remove_modified_entry_ok", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 }
+
+#[test]
+fn can_send_and_receive() {
+    let (mut hc, _) = start_holochain_instance("can_remove_modified_entry", "alice");
+    let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+    let agent_id = result.unwrap().to_string();
+    println!("agent_id: {}", &agent_id);
+
+    let (mut hc2, _) = start_holochain_instance("can_remove_modified_entry", "bob");
+    let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
+    println!("params: {}", &params);
+    let result = hc2.call("test_zome", "test_cap", "send_message", &params);
+    assert!(result.is_ok(), "result = {:?}", result);
+    let response = result.unwrap().to_string();
+
+    assert_eq!(response, "Received: TEST");
+}
+

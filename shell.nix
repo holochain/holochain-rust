@@ -110,6 +110,8 @@ stdenv.mkDerivation rec {
   RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
 
   shellHook = ''
-  export PATH=$PATH:~/.cargo/bin;
+      export PATH=$PATH:~/.cargo/bin;
+      export PS1="[$name] \[$txtgrn\]\u@\h\[$txtwht\]:\[$bldpur\]\w \[$txtcyn\]\$git_branch\[$txtred\]\$git_dirty \[$bldylw\]\$aws_env\[$txtrst\]\$ ";
+      export NIX_LDFLAGS="-F${frameworks.CoreFoundation}/Library/Frameworks -framework CoreFoundation $NIX_LDFLAGS";
   '';
 }

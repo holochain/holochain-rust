@@ -20,3 +20,11 @@ impl GetLinksResult {
         &self.addresses
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GetLinksLoadElement<T> {
+    pub address: Address,
+    pub entry: T
+}
+
+pub type GetLinksLoadResult<T> = Vec<GetLinksLoadElement<T>>;

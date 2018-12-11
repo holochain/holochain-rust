@@ -531,6 +531,11 @@ define_zome! {
                 outputs: |response: TweetResponse|,
                 handler: handle_send_tweet
             }
+
+            check_get_links_and_load: {
+                inputs: ||,
+                outputs: |result: ZomeApiResult<GetLinksLoadResult>|
+            }
         }
     }
 }

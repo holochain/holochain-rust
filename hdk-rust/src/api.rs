@@ -13,7 +13,7 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind},
-        get_links::{GetLinksArgs, GetLinksResult},
+        get_links::{GetLinksArgs, GetLinksResult, GetLinksLoadElement, GetLinksLoadResult},
         link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
@@ -171,15 +171,6 @@ pub enum BundleOnClose {
     Commit,
     Discard,
 }
-
-// Response for calls to get_links_and_load
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GetLinksLoadElement<T> {
-    pub address: HashString,
-    pub entry: T
-}
-
-pub type GetLinksLoadResult<T> = Vec<GetLinksLoadElement<T>>;
 
 //--------------------------------------------------------------------------------------------------
 // API FUNCTIONS

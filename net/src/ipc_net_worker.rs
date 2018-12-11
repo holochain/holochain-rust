@@ -110,17 +110,18 @@ impl IpcNetWorker {
         }
         let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
         if let None = config["ipcUri"].as_str() {
-            if config["spawn"].is_object() {
-                let s = config["spawn"].as_object().unwrap();
+            if let Some(s) = config["spawn"].as_object() {
                 if s["cmd"].is_string()
                     && s["args"].is_array()
                     && s["workDir"].is_string()
                     && s["env"].is_object()
                 {
-                    let mut env = HashMap::new();
-                    for (k, v) in s["env"].as_object().unwrap().iter() {
-                        env.insert(k.to_string(), v.as_str().unwrap().to_string());
-                    }
+                    let env: HashMap<String, String> = s["env"]
+                        .as_object()
+                        .unwrap()
+                        .iter()
+                        .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
+                        .collect();
                     return IpcNetWorker::priv_spawn(
                         handler,
                         s["cmd"].as_str().unwrap().to_string(),
@@ -164,24 +165,35 @@ impl IpcNetWorker {
         env: HashMap<String, String>,
         block_connect: bool,
     ) -> NetResult<Self> {
-        let mut proc = std::process::Command::new(cmd);
-        proc.stdout(std::process::Stdio::piped());
-        proc.args(&args);
-        proc.envs(&env);
-        proc.current_dir(work_dir);
+        let mut child = std::process::Command::new(cmd);
 
-        println!("SPAWN ({:?})", proc);
+        child
+            .stdout(std::process::Stdio::piped())
+            .args(&args)
+            .envs(&env)
+            .current_dir(work_dir);
 
-        let mut proc = proc.spawn()?;
+        println!("SPAWN ({:?})", child);
 
-        let re_ready = regex::Regex::new("#IPC-READY#")?;
+        let mut child = child.spawn()?;
+
+        // transport info (zmq uri) for connecting to the ipc socket
         let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
+
+        // transport info (multiaddr) for any p2p interface bindings
         let re_p2p = regex::Regex::new("(?m)^#P2P-BINDING#:(.+)$")?;
 
-        let mut ipc_binding = "".to_string();
+        // the child process is ready for connections
+        let re_ready = regex::Regex::new("#IPC-READY#")?;
+
+        let mut ipc_binding = String::new();
         let mut p2p_bindings: Vec<String> = Vec::new();
 
-        if let Some(ref mut stdout) = proc.stdout {
+        // we need to know when our child process is ready for IPC connections
+        // it will run some startup algorithms, and then output some binding
+        // info on stdout and finally a `#IPC-READY#` message.
+        // collect the binding info, and proceed when `#IPC-READY#`
+        if let Some(ref mut stdout) = child.stdout {
             let mut data: Vec<u8> = Vec::new();
             loop {
                 let mut buf: [u8; 4096] = [0; 4096];
@@ -213,7 +225,7 @@ impl IpcNetWorker {
         }
 
         // close the pipe since we can never read from it again...
-        proc.stdout = None;
+        child.stdout = None;
 
         println!("READY! {} {:?}", ipc_binding, p2p_bindings);
 
@@ -226,7 +238,7 @@ impl IpcNetWorker {
                 Ok(out)
             }),
             Some(Box::new(move || {
-                proc.kill().unwrap();
+                child.kill().unwrap();
             })),
         )
     }

@@ -72,7 +72,7 @@ impl SpawnResult {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn drop(self) {
+    pub fn stop(self) {
         self.con.stop().unwrap();
     }
 }
@@ -345,8 +345,8 @@ fn exec() -> NetResult<()> {
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 
-    node1.drop();
-    node2.drop();
+    node1.stop();
+    node2.stop();
 
     Ok(())
 }

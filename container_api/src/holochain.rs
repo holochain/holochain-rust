@@ -199,10 +199,7 @@ mod tests {
     };
     use holochain_core_types::{agent::AgentId, dna::Dna};
 
-    use std::{
-        sync::{Arc, Mutex, RwLock},
-        time::Duration,
-    };
+    use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,

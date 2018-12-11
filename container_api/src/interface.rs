@@ -123,8 +123,8 @@ pub mod tests {
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let holochain = instantiate_from_config(
-            &"app spec instance".to_string(),
+        let (holochain, _rx) = instantiate_from_config(
+            &"test-instance".to_string(),
             &config,
             &mut test_dna_loader(),
             &DEFAULT_NETWORK_CONFIG.to_string(),

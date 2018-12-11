@@ -13,32 +13,32 @@ extern crate holochain_core_types_derive;
 pub mod handle_crud;
 
 use boolinator::Boolinator;
+use handle_crud::{
+    handle_remove_entry_ok, handle_remove_modified_entry_ok, handle_update_entry_ok,
+};
 use hdk::{
-    error::ZomeApiError,
-    error::ZomeApiResult,
+    error::{ZomeApiError, ZomeApiResult},
     globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryOptions, EntryHistory},
+        get_entry::{EntryHistory, GetEntryOptions},
         get_links::GetLinksResult,
     },
-    holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        entry::{Entry, entry_type::EntryType},
+        dna::zome::entry_types::Sharing,
+        entry::{
+            entry_type::{AppEntryType, EntryType},
+            AppEntryValue, Entry,
+        },
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},
-        entry::AppEntryValue,
-        entry::entry_type::AppEntryType,
     },
     memory_allocation::*,
     memory_serialization::*,
 };
 use std::convert::TryFrom;
-use handle_crud::{
-    handle_update_entry_ok, handle_remove_entry_ok, handle_remove_modified_entry_ok,
-};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TestEntryType {
@@ -112,7 +112,8 @@ fn handle_link_two_entries() -> ZomeApiResult<()> {
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry1".into(),
-        }.into(),
+        }
+        .into(),
     );
     hdk::commit_entry(&entry_1)?;
 
@@ -120,7 +121,8 @@ fn handle_link_two_entries() -> ZomeApiResult<()> {
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry2".into(),
-        }.into(),
+        }
+        .into(),
     );
 
     hdk::commit_entry(&entry_2)?;
@@ -133,7 +135,8 @@ fn handle_links_roundtrip() -> ZomeApiResult<GetLinksResult> {
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry1".into(),
-        }.into(),
+        }
+        .into(),
     );
     hdk::commit_entry(&entry_1)?;
 
@@ -141,7 +144,8 @@ fn handle_links_roundtrip() -> ZomeApiResult<GetLinksResult> {
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry2".into(),
-        }.into(),
+        }
+        .into(),
     );
     hdk::commit_entry(&entry_2)?;
 
@@ -149,7 +153,8 @@ fn handle_links_roundtrip() -> ZomeApiResult<GetLinksResult> {
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry3".into(),
-        }.into(),
+        }
+        .into(),
     );
     hdk::commit_entry(&entry_3)?;
 
@@ -190,8 +195,10 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry1".into(),
-        }.into(),
-    )).unwrap();
+        }
+        .into(),
+    ))
+    .unwrap();
     let addresses = hdk::query("testEntryType", 0, 1).unwrap();
 
     if !addresses.len() == 1 {
@@ -203,14 +210,18 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry2".into(),
-        }.into(),
-    )).unwrap();
+        }
+        .into(),
+    ))
+    .unwrap();
     let _ = hdk::commit_entry(&Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry3".into(),
-        }.into(),
-    )).unwrap();
+        }
+        .into(),
+    ))
+    .unwrap();
 
     let addresses = hdk::query("testEntryType", 0, 0).unwrap();
 
@@ -235,7 +246,8 @@ fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
     }
 
     // Check bad entry type name
-    let bad_result = hdk::entry_address(&Entry::App(AppEntryType::from("bad"), entry_value.clone()));
+    let bad_result =
+        hdk::entry_address(&Entry::App(AppEntryType::from("bad"), entry_value.clone()));
     if !bad_result.is_err() {
         return bad_result.into();
     }
@@ -283,7 +295,7 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        JsonString::from(CommitEntryInput{
+        JsonString::from(CommitEntryInput {
             entry: hdk_test_entry(),
         }),
     )
@@ -304,19 +316,19 @@ fn handle_send_tweet(author: String, content: String) -> TweetResponse {
 
 fn handle_link_validation(stuff1: String, stuff2: String) -> JsonString {
     let app_entry_type = AppEntryType::from("link_validator");
-    let entry_value1 = JsonString::from(TestEntryType {
-        stuff: stuff1,
-    });
-    let entry_value2 = JsonString::from(TestEntryType {
-        stuff: stuff2,
-    });
+    let entry_value1 = JsonString::from(TestEntryType { stuff: stuff1 });
+    let entry_value2 = JsonString::from(TestEntryType { stuff: stuff2 });
     let entry1 = Entry::App(app_entry_type.clone(), entry_value1.clone());
     let entry2 = Entry::App(app_entry_type.clone(), entry_value2.clone());
 
     let _ = hdk::commit_entry(&entry1);
     let _ = hdk::commit_entry(&entry2);
 
-    JsonString::from(hdk::link_entries(&entry1.address(), &entry2.address(), "longer"))
+    JsonString::from(hdk::link_entries(
+        &entry1.address(),
+        &entry2.address(),
+        "longer",
+    ))
 }
 
 fn hdk_test_app_entry_type() -> AppEntryType {
@@ -326,7 +338,8 @@ fn hdk_test_app_entry_type() -> AppEntryType {
 fn hdk_test_entry_value() -> AppEntryValue {
     TestEntryType {
         stuff: "non fail".into(),
-    }.into()
+    }
+    .into()
 }
 
 fn hdk_test_entry() -> Entry {

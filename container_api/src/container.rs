@@ -351,7 +351,7 @@ pub mod tests {
 
     use holochain_core::action::Action::{Hold, Publish};
     use holochain_core_types::cas::content::AddressableContent;
-    use std::{fs::File, io::Write, time::Duration};
+    use std::{fs::File, io::Write};
 
     use tempfile::tempdir;
     use test_utils;
@@ -518,7 +518,7 @@ pub mod tests {
         let io = dispatcher.io;
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = r#"{"jsonrpc":"2.0","result":"{\"test-instance\":{\"id\":\"test-instance\",\"dna\":\"test-dna\",\"agent\":\"test-agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"}}}","id":1}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"{\"test-instance\":{\"id\":\"test-instance\",\"dna\":\"test-dna\",\"agent\":\"test-agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"},\"network\":null}}","id":1}"#;
 
         assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }
@@ -537,17 +537,12 @@ pub mod tests {
         hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
             .unwrap();
 
-        let timeout = Duration::from_millis(1000);
-
         'outer: loop {
-            let msg_publish = rx
-                .recv_timeout(timeout)
-                .expect("no more signals to receive");
+            let msg_publish = rx.try_recv().expect("no more signals to receive (outer)");
+            println!("here's what: {:?}", msg_publish);
             if let Signal::Internal(Publish(address)) = msg_publish {
                 loop {
-                    let msg_hold = rx
-                        .recv_timeout(timeout)
-                        .expect("no more signals to receive");
+                    let msg_hold = rx.try_recv().expect("no more signals to receive (inner)");
                     if let Signal::Internal(Hold(entry)) = msg_hold {
                         assert_eq!(address, entry.address());
                         break 'outer;

@@ -892,16 +892,9 @@ pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(
-        &mut mem_stack,
-        SendArgs {
-            to_agent,
-            payload,
-        },
-    )?;
+    let allocation_of_input = store_as_json(&mut mem_stack, SendArgs { to_agent, payload })?;
 
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_send(allocation_of_input.encode() as u32) };
+    let encoded_allocation_of_result: u32 = unsafe { hc_send(allocation_of_input.encode() as u32) };
 
     // Deserialize complex result stored in memory
     let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;

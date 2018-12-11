@@ -2,17 +2,14 @@ use crate::{
     context::Context,
     nucleus::{
         ribosome::{
+            self,
             callback::{Callback, CallbackParams, CallbackResult},
             Defn,
-            self,
         },
         ZomeFnCall,
     },
 };
-use holochain_core_types::{
-    error::HolochainError,
-    json::JsonString,
-};
+use holochain_core_types::{error::HolochainError, json::JsonString};
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -24,7 +21,6 @@ pub fn receive(
     // we ignore params for genesis
     params: &CallbackParams,
 ) -> CallbackResult {
-
     let params = match params {
         CallbackParams::Receive(payload) => payload,
         _ => return CallbackResult::NotImplemented,
@@ -45,7 +41,7 @@ pub fn receive(
     }
     let wasm = maybe_wasm.unwrap();
     if wasm.code.is_empty() {
-        return CallbackResult::NotImplemented
+        return CallbackResult::NotImplemented;
     }
 
     match ribosome::run_dna(

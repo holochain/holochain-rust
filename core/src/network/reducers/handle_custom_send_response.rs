@@ -7,8 +7,7 @@ pub fn reduce_handle_custom_send_response(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (msg_id, response) =
-        unwrap_to!(action => crate::action::Action::HandleCustomSendResponse);
+    let (msg_id, response) = unwrap_to!(action => crate::action::Action::HandleCustomSendResponse);
 
     network_state
         .custom_direct_message_replys

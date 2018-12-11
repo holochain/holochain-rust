@@ -3,10 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
-    nucleus::ribosome::callback::{
-        CallbackParams, CallbackResult,
-        receive::receive,
-    },
+    nucleus::ribosome::callback::{receive::receive, CallbackParams, CallbackResult},
 };
 
 use holochain_core_types::{cas::content::Address, error::HolochainError};
@@ -18,10 +15,13 @@ pub async fn handle_custom_direct_message(
     custom_direct_message: CustomDirectMessage,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-
-    println!("Received custom direct message: {:?}", custom_direct_message);
+    println!(
+        "Received custom direct message: {:?}",
+        custom_direct_message
+    );
     let zome = custom_direct_message.zome.clone();
-    let payload = custom_direct_message.payload
+    let payload = custom_direct_message
+        .payload
         .map_err(|error| format!("Got error in initial custom direct message: {}", error))?;
 
     let result = receive(context.clone(), &zome, &CallbackParams::Receive(payload));

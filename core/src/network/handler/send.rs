@@ -3,8 +3,10 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::DirectMessage,
-    workflows::respond_validation_package_request::respond_validation_package_request,
-    workflows::handle_custom_direct_message::handle_custom_direct_message
+    workflows::{
+        handle_custom_direct_message::handle_custom_direct_message,
+        respond_validation_package_request::respond_validation_package_request,
+    },
 };
 use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
@@ -82,7 +84,7 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
             let action_wrapper =
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
             dispatch_action(&context.action_channel, action_wrapper.clone());
-        },
+        }
         DirectMessage::RequestValidationPackage(_) => context.log(
             "Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
         ),

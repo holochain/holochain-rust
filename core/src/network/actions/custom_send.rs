@@ -9,14 +9,12 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::Address,
-};
+use holochain_core_types::cas::content::Address;
+use snowflake::ProcessUniqueId;
 use std::{
     pin::{Pin, Unpin},
     sync::Arc,
 };
-use snowflake::ProcessUniqueId;
 
 /// GetValidationPackage Action Creator
 /// This triggers the network module to retrieve the validation package for the

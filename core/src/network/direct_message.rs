@@ -1,8 +1,5 @@
 use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-    json::JsonString,
-    validation::ValidationPackage
+    cas::content::Address, error::HolochainError, json::JsonString, validation::ValidationPackage,
 };
 
 /// This is direct message that got created by the zome code through hdk::send().
@@ -14,7 +11,7 @@ pub struct CustomDirectMessage {
 
     /// The payload that the zome sends.
     /// This is a result to enable the receive handler to return an error
-    pub payload: Result<String, String>
+    pub payload: Result<String, String>,
 }
 
 /// These are the different kinds of (low-level, i.e. non-app)

@@ -1,8 +1,5 @@
 use crate::{
-    network::{
-        actions::custom_send::custom_send,
-        direct_message::CustomDirectMessage,
-    },
+    network::{actions::custom_send::custom_send, direct_message::CustomDirectMessage},
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use futures::executor::block_on;

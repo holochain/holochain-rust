@@ -120,7 +120,10 @@ fn example_valid_entry_address() -> Address {
     Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
 }
 
-fn start_holochain_instance<T: Into<String>>(uuid: T, agent_name: T) -> (Holochain, Arc<Mutex<TestLogger>>) {
+fn start_holochain_instance<T: Into<String>>(
+    uuid: T,
+    agent_name: T,
+) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
     let wasm =
         create_wasm_from_file("wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm");
@@ -206,7 +209,7 @@ fn can_use_globals() {
 
 #[test]
 fn can_commit_entry() {
-    let (mut hc, _) = start_holochain_instance("can_commit_entry","alice");
+    let (mut hc, _) = start_holochain_instance("can_commit_entry", "alice");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
@@ -602,4 +605,3 @@ fn can_send_and_receive() {
 
     assert_eq!(response, "Received: TEST");
 }
-

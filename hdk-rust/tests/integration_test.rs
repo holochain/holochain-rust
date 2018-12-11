@@ -143,6 +143,7 @@ fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<T
         "update_entry_ok",
         "remove_entry_ok",
         "remove_modified_entry_ok",
+        "check_get_links_and_load"
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
     dna.uuid = uuid.into();
@@ -583,5 +584,12 @@ fn can_update_entry() {
 fn can_remove_modified_entry() {
     let (mut hc, _) = start_holochain_instance("can_remove_modified_entry");
     let result = hc.call("test_zome", "test_cap", "remove_modified_entry_ok", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+}
+
+#[test]
+fn can_call_get_links_load() {
+    let (mut hc, _) = start_holochain_instance("can_call_get_links_load");
+    let result = hc.call("test_zome", "test_cap", "check_get_links_and_load", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
 }

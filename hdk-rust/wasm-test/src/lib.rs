@@ -21,7 +21,7 @@ use hdk::{
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryOptions, EntryHistory},
-        get_links::GetLinksResult,
+        get_links::{GetLinksResult, GetLinksLoadResult},
     },
     holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
@@ -289,6 +289,18 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
     )
 }
 
+fn handle_check_get_links_and_load() -> ZomeApiResult<GetLinksLoadResult<Entry>> {
+    handle_link_two_entries()?;
+    let entry_1 = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry1".into(),
+        }.into(),
+    );
+    let entry_1_address = hdk::entry_address(&entry_1)?; 
+    hdk::get_links_and_load(&entry_1_address, "test-tag")
+}
+
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TweetResponse {
     first: String,
@@ -533,8 +545,9 @@ define_zome! {
             }
 
             check_get_links_and_load: {
-                inputs: ||,
-                outputs: |result: ZomeApiResult<GetLinksLoadResult>|
+                inputs: | |,
+                outputs: |result: ZomeApiResult<GetLinksLoadResult<Entry>>|,
+                handler: handle_check_get_links_and_load
             }
         }
     }

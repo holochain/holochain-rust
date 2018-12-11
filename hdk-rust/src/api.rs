@@ -925,8 +925,8 @@ pub fn get_links_and_load<S: Into<String>>(
 
 /// Similar to get_links_and_load but also handles converting the response to a given native type.
 /// Only linked entries that can be successfully converted are returned. This means if a link contains a variety of entry
-/// types `get_links_and_load_type` will filter out only the entries that can be converted successfully.
-pub fn get_links_and_load_type<
+/// types `get_links_and_load_as` will filter out only the entries that can be converted successfully.
+pub fn get_links_and_load_as<
     S: Into<String>,
     R: TryFrom<AppEntryValue>
 >(

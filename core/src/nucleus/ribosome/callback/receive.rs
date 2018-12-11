@@ -25,11 +25,16 @@ pub fn receive(
     params: &CallbackParams,
 ) -> CallbackResult {
 
+    let params = match params {
+        CallbackParams::Receive(payload) => payload,
+        _ => return CallbackResult::NotImplemented,
+    };
+
     let zome_call = ZomeFnCall::new(
         zome,
         "no capability since this is a callback",
         &Callback::Receive.as_str().to_string(),
-        params,
+        params.clone(),
     );
 
     let dna = context.get_dna().expect("Callback called without DNA set!");

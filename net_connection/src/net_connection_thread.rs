@@ -32,7 +32,7 @@ impl NetConnectionThread {
     /// stop (join) the worker thread
     pub fn stop(self) -> NetResult<()> {
         self.keep_running.store(false, Ordering::Relaxed);
-        if let Err(_) = self.thread.join() {
+        if self.thread.join().is_err() {
             bail!("NetConnectionThread failed to join on stop() call");
         }
         if let Some(done) = self.done {

@@ -60,7 +60,7 @@ impl SpawnResult {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn drop(self) {
+    pub fn stop(self) {
         self.con.stop().unwrap();
     }
 }
@@ -181,8 +181,8 @@ fn exec() -> NetResult<()> {
     let connect_result_2 = node2.wait(Box::new(is_peer_connected))?;
     println!("got connect result 2: {:?}", connect_result_2);
 
-    node1.drop();
-    node2.drop();
+    node1.stop();
+    node2.stop();
 
     Ok(())
 }

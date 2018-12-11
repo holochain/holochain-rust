@@ -180,15 +180,14 @@ pub enum BundleOnClose {
 /// ```rust
 /// # #[macro_use]
 /// # extern crate hdk;
-/// # extern crate holochain_core_types;
-/// # use holochain_core_types::json::JsonString;
+/// # use hdk::error::ZomeApiResult;
 ///
 /// # fn main() {
-/// pub fn handle_some_function(content: String) -> JsonString {
+/// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
 ///     // ...
-///     hdk::debug("write a message to the logs")?;
+///     hdk::debug("write a message to the logs");
 ///     // ...
-///     "whatever".into()
+///     Ok(())
 /// }
 ///
 /// # }
@@ -398,10 +397,12 @@ pub fn call<S: Into<String>>(
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
 /// # extern crate holochain_core_types_derive;
+/// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
+/// # use holochain_core_types::cas::content::Address;
 ///
 /// # #[no_mangle]
 /// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
@@ -417,10 +418,10 @@ pub fn call<S: Into<String>>(
 /// pub fn handle_create_post(content: String) -> ZomeApiResult<Address> {
 ///
 ///    let post_entry = Entry::App(AppEntryType::from("post"),
-///        Post::new(
-///            &content,
-///            "now",
-///        ).into()
+///        Post {
+///            content: content,
+///            date_created: "now".to_string(),
+///        }.into()
 ///    );
 ///
 ///    let address = hdk::commit_entry(&post_entry)?;
@@ -467,6 +468,8 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # use hdk::error::ZomeApiResult;
+/// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::cas::content::Address;
 /// # fn main() {
@@ -567,6 +570,9 @@ pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiRe
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::cas::content::Address;
 /// # use hdk::AGENT_ADDRESS;
+/// # use hdk::error::ZomeApiResult;
+/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
+/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::StatusRequestKind;
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -578,10 +584,10 @@ pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiRe
 /// pub fn handle_link_entries(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
 ///
 ///     let post_entry = Entry::App(AppEntryType::from("post"),
-///         Post::new(
-///             &content,
-///             "now",
-///         ).into()
+///         Post {
+///             content: content,
+///             date_created: "now".to_string(),
+///         }.into()
 ///     );
 ///
 ///     let address = hdk::commit_entry(&post_entry)?;
@@ -594,7 +600,7 @@ pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiRe
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions{})?;
+///         hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions { status_request: StatusRequestKind::All })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///
@@ -660,10 +666,13 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # extern crate holochain_core_types;
 /// # #[macro_use]
 /// # extern crate holochain_core_types_derive;
+/// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
+/// # use holochain_core_types::entry::AppEntryValue;
 /// # use holochain_core_types::entry::Entry;
+/// # use holochain_core_types::cas::content::Address;
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -676,10 +685,10 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///     let post_entry = Entry::App(
 ///         AppEntryType::from("post"),
 ///         AppEntryValue::from(
-///             Post::new(
-///                 &content,
-///                 "now",
-///             ),
+///             Post {
+///                 content: content,
+///                 date_created: "now".to_string(),
+///             },
 ///         )
 ///     );
 ///
@@ -802,8 +811,11 @@ pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # extern crate holochain_wasm_utils;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::cas::content::Address;
+/// # use hdk::error::ZomeApiResult;
+/// # use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
 ///
 /// # fn main() {
 /// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
@@ -849,6 +861,7 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::cas::content::Address;
 ///

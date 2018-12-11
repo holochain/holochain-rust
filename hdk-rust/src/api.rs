@@ -882,7 +882,7 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
 }
 
 /// Not Yet Available
-pub fn send(_to: Address, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
+pub fn send(_to: Address, _message: String) -> ZomeApiResult<String> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 

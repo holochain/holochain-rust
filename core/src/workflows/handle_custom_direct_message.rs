@@ -30,8 +30,6 @@ pub async fn handle_custom_direct_message(
         _ => Err("Error calling receive callback".to_string()),
     };
 
-    println!("Response: {:?}", response);
-
     let custom_direct_message = CustomDirectMessage {
         zome,
         payload: response,

@@ -10,7 +10,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
-    cas::content::Address, error::HcResult,
+    cas::content::Address,
 };
 use std::{
     pin::{Pin, Unpin},
@@ -28,7 +28,7 @@ pub async fn custom_send(
     to_agent: Address,
     custom_direct_message: CustomDirectMessage,
     context: &Arc<Context>,
-) -> HcResult<CustomDirectMessage> {
+) -> Result<String, String> {
     let id = ProcessUniqueId::new().to_string();
     let direct_message = DirectMessage::Custom(custom_direct_message);
     let direct_message_data = DirectMessageData {
@@ -57,12 +57,12 @@ pub struct SendResponseFuture {
 impl Unpin for SendResponseFuture {}
 
 impl Future for SendResponseFuture {
-    type Output = HcResult<CustomDirectMessage>;
+    type Output = Result<String, String>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();
         if let Err(error) = state.initialized() {
-            return Poll::Ready(Err(error));
+            return Poll::Ready(Err(error.to_string()));
         }
         //
         // TODO: connect the waker to state updates for performance reasons

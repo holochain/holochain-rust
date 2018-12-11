@@ -145,8 +145,13 @@ pub enum Action {
 
     /// Updates the state to hold the response that we got for
     /// our previous request for a validation package.
-    /// Triggered from the network handler when we got the response.
+    /// Triggered from the network handler when we get the response.
     HandleGetValidationPackage((Address, Option<ValidationPackage>)),
+
+    /// Updates the state to hold the response that we got for
+    /// our previous custom direct message.
+    /// /// Triggered from the network handler when we get the response.
+    HandleCustomSendResponse((String, Result<String, String>)),
 
     // ----------------
     // Nucleus actions:

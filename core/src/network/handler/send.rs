@@ -67,7 +67,22 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
         .cloned();
 
     match response {
-        DirectMessage::Custom(_) => context.log("DirectMessage::Custom not implemented"),
+        DirectMessage::Custom(custom_direct_message) => {
+            if initial_message.is_none() {
+                context.log("Received a custom direct message response but could not find message ID in history. Not able to process.");
+                return;
+            }
+
+            let action_wrapper = ActionWrapper::new(Action::HandleCustomSendResponse((
+                message_data.msg_id.clone(),
+                custom_direct_message.payload,
+            )));
+            dispatch_action(&context.action_channel, action_wrapper.clone());
+
+            let action_wrapper =
+                ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
+            dispatch_action(&context.action_channel, action_wrapper.clone());
+        },
         DirectMessage::RequestValidationPackage(_) => context.log(
             "Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
         ),

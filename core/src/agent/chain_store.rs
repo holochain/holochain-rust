@@ -1,4 +1,4 @@
-use globset::{ GlobBuilder, GlobSetBuilder };
+use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent},
@@ -111,17 +111,16 @@ impl ChainStore {
                 // literally.
                 let mut builder = GlobSetBuilder::new();
                 for name in rest {
-                    builder.add( match GlobBuilder::new( name )
-                                 .literal_separator( true )
-                                 .build() {
-                                     Ok(pat) => pat,
-                                     Err(_) => return Err(UnknownEntryType),
-                                 } );
+                    builder.add(
+                        GlobBuilder::new( name )
+                            .literal_separator( true )
+                            .build()
+                            .map_err(|_| UnknownEntryType)?
+                    );
                 };
-                let globset = match builder.build() {
-                    Ok(set) => set,
-                    Err(_) => return Err(UnknownEntryType),
-                };
+                let globset = builder
+                    .build()
+                    .map_err(|_| UnknownEntryType)?;
                 let base_iter = self
                     .iter(start_chain_header)
                     .filter(|header|
@@ -676,7 +675,7 @@ pub mod tests {
 
         let glob = match Glob::new( "*.rs" ) {
             Ok(pat) => pat.compile_matcher(),
-            Err(_) => { panic!( "Couldn't craete new Glob" ) }
+            Err(_) => panic!( "Couldn't craete new Glob" ),
         };
         assert!(glob.is_match( "foo.rs" ));
         assert!(glob.is_match( "foo/bar.rs" )); // separators not specially handled

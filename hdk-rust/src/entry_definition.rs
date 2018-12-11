@@ -210,7 +210,6 @@ macro_rules! entry {
                 }
             });
 
-
             hdk::entry_definition::ValidatingEntryType {
                 name: hdk::holochain_core_types::entry::entry_type::EntryType::App(hdk::holochain_core_types::entry::entry_type::AppEntryType::from($name.to_string())),
                 entry_type_definition: entry_type,

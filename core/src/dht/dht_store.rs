@@ -18,7 +18,7 @@ pub struct DhtStore {
     content_storage: Arc<RwLock<ContentAddressableStorage>>,
     meta_storage: Arc<RwLock<EntityAttributeValueStorage>>,
 
-    add_link_actions: HashMap<ActionWrapper, Result<(), HolochainError>>,
+    actions: HashMap<ActionWrapper, Result<Address, HolochainError>>,
 }
 
 impl PartialEq for DhtStore {
@@ -28,7 +28,7 @@ impl PartialEq for DhtStore {
         let meta = &self.meta_storage.clone();
         let other_meta = &other.meta_storage.clone();
 
-        self.add_link_actions == other.add_link_actions
+        self.actions == other.actions
             && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
             && *meta.read().unwrap() == *other_meta.read().unwrap()
     }
@@ -44,7 +44,7 @@ impl DhtStore {
         DhtStore {
             content_storage,
             meta_storage,
-            add_link_actions: HashMap::new(),
+            actions: HashMap::new(),
         }
     }
 
@@ -77,12 +77,12 @@ impl DhtStore {
     pub(crate) fn meta_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
         self.meta_storage.clone()
     }
-    pub fn add_link_actions(&self) -> &HashMap<ActionWrapper, Result<(), HolochainError>> {
-        &self.add_link_actions
+    pub fn actions(&self) -> &HashMap<ActionWrapper, Result<Address, HolochainError>> {
+        &self.actions
     }
-    pub(crate) fn add_link_actions_mut(
+    pub(crate) fn actions_mut(
         &mut self,
-    ) -> &mut HashMap<ActionWrapper, Result<(), HolochainError>> {
-        &mut self.add_link_actions
+    ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
+        &mut self.actions
     }
 }

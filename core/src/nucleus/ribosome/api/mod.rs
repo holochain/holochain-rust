@@ -10,13 +10,16 @@ pub mod get_links;
 pub mod init_globals;
 pub mod link_entries;
 pub mod query;
+pub mod remove_entry;
+pub mod update_entry;
 
 use crate::nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
-        link_entries::invoke_link_entries, query::invoke_query,
+        link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
+        update_entry::invoke_update_entry,
     },
     runtime::Runtime,
     Defn,
@@ -63,6 +66,9 @@ pub enum ZomeApiFunction {
     /// get_entry(address: Address) -> Entry
     GetAppEntry,
 
+    UpdateEntry,
+    RemoveEntry,
+
     /// Init Zome API Globals
     /// hc_init_globals() -> InitGlobalsOutput
     InitGlobals,
@@ -89,6 +95,8 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::Debug => "hc_debug",
             ZomeApiFunction::CommitAppEntry => "hc_commit_entry",
             ZomeApiFunction::GetAppEntry => "hc_get_entry",
+            ZomeApiFunction::UpdateEntry => "hc_update_entry",
+            ZomeApiFunction::RemoveEntry => "hc_remove_entry",
             ZomeApiFunction::InitGlobals => "hc_init_globals",
             ZomeApiFunction::Call => "hc_call",
             ZomeApiFunction::LinkEntries => "hc_link_entries",
@@ -124,6 +132,8 @@ impl FromStr for ZomeApiFunction {
             "hc_debug" => Ok(ZomeApiFunction::Debug),
             "hc_commit_entry" => Ok(ZomeApiFunction::CommitAppEntry),
             "hc_get_entry" => Ok(ZomeApiFunction::GetAppEntry),
+            "hc_update_entry" => Ok(ZomeApiFunction::UpdateEntry),
+            "hc_remove_entry" => Ok(ZomeApiFunction::RemoveEntry),
             "hc_init_globals" => Ok(ZomeApiFunction::InitGlobals),
             "hc_call" => Ok(ZomeApiFunction::Call),
             "hc_link_entries" => Ok(ZomeApiFunction::LinkEntries),
@@ -153,6 +163,8 @@ impl ZomeApiFunction {
             ZomeApiFunction::Debug => invoke_debug,
             ZomeApiFunction::CommitAppEntry => invoke_commit_app_entry,
             ZomeApiFunction::GetAppEntry => invoke_get_entry,
+            ZomeApiFunction::UpdateEntry => invoke_update_entry,
+            ZomeApiFunction::RemoveEntry => invoke_remove_entry,
             ZomeApiFunction::InitGlobals => invoke_init_globals,
             ZomeApiFunction::Call => invoke_call,
             ZomeApiFunction::LinkEntries => invoke_link_entries,
@@ -403,6 +415,8 @@ pub mod tests {
             ("hc_debug", ZomeApiFunction::Debug),
             ("hc_commit_entry", ZomeApiFunction::CommitAppEntry),
             ("hc_get_entry", ZomeApiFunction::GetAppEntry),
+            ("hc_update_entry", ZomeApiFunction::UpdateEntry),
+            ("hc_remove_entry", ZomeApiFunction::RemoveEntry),
             ("hc_init_globals", ZomeApiFunction::InitGlobals),
             ("hc_call", ZomeApiFunction::Call),
             ("hc_link_entries", ZomeApiFunction::LinkEntries),
@@ -429,6 +443,8 @@ pub mod tests {
             (ZomeApiFunction::Debug, "hc_debug"),
             (ZomeApiFunction::CommitAppEntry, "hc_commit_entry"),
             (ZomeApiFunction::GetAppEntry, "hc_get_entry"),
+            (ZomeApiFunction::UpdateEntry, "hc_update_entry"),
+            (ZomeApiFunction::RemoveEntry, "hc_remove_entry"),
             (ZomeApiFunction::InitGlobals, "hc_init_globals"),
             (ZomeApiFunction::Call, "hc_call"),
             (ZomeApiFunction::LinkEntries, "hc_link_entries"),
@@ -446,12 +462,14 @@ pub mod tests {
             ("hc_debug", 2),
             ("hc_commit_entry", 3),
             ("hc_get_entry", 4),
-            ("hc_init_globals", 5),
-            ("hc_call", 6),
-            ("hc_link_entries", 7),
-            ("hc_get_links", 8),
-            ("hc_query", 9),
-            ("hc_entry_address", 10),
+            ("hc_update_entry", 5),
+            ("hc_remove_entry", 6),
+            ("hc_init_globals", 7),
+            ("hc_call", 8),
+            ("hc_link_entries", 9),
+            ("hc_get_links", 10),
+            ("hc_query", 11),
+            ("hc_entry_address", 12),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -463,12 +481,14 @@ pub mod tests {
             (2, ZomeApiFunction::Debug),
             (3, ZomeApiFunction::CommitAppEntry),
             (4, ZomeApiFunction::GetAppEntry),
-            (5, ZomeApiFunction::InitGlobals),
-            (6, ZomeApiFunction::Call),
-            (7, ZomeApiFunction::LinkEntries),
-            (8, ZomeApiFunction::GetLinks),
-            (9, ZomeApiFunction::Query),
-            (10, ZomeApiFunction::EntryAddress),
+            (5, ZomeApiFunction::UpdateEntry),
+            (6, ZomeApiFunction::RemoveEntry),
+            (7, ZomeApiFunction::InitGlobals),
+            (8, ZomeApiFunction::Call),
+            (9, ZomeApiFunction::LinkEntries),
+            (10, ZomeApiFunction::GetLinks),
+            (11, ZomeApiFunction::Query),
+            (12, ZomeApiFunction::EntryAddress),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

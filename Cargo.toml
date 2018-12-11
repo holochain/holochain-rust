@@ -11,10 +11,16 @@ members = [
   "net",
   "net_connection",
   "net_ipc",
+  "sodium",
   "test_bin",
+#  "app_spec/zomes/blog/code",
 ]
 exclude = [
   "test_utils",
   "app_spec",
   "nodejs_container/native",
+  "rust_sodium-sys",
 ]
+
+[patch.crates-io]
+rust_sodium-sys = { path = "./rust_sodium-sys" }

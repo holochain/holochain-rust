@@ -10,8 +10,6 @@ pub fn reduce_handle_custom_send_response(
     let (msg_id, response) =
         unwrap_to!(action => crate::action::Action::HandleCustomSendResponse);
 
-    println!("reducer: {:?} {:?}", msg_id, response);
-
     network_state
         .custom_direct_message_replys
         .insert(msg_id.clone(), response.clone());

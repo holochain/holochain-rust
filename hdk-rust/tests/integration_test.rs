@@ -593,11 +593,9 @@ fn can_send_and_receive() {
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let agent_id = result.unwrap().to_string();
-    println!("agent_id: {}", &agent_id);
 
     let (mut hc2, _) = start_holochain_instance("can_remove_modified_entry", "bob");
     let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
-    println!("params: {}", &params);
     let result = hc2.call("test_zome", "test_cap", "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
     let response = result.unwrap().to_string();

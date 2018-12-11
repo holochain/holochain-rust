@@ -1,3 +1,4 @@
+#![feature(try_from)]
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
@@ -5,25 +6,72 @@ extern crate tempfile;
 extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 extern crate hdk;
 extern crate holochain_wasm_utils;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
-use hdk::error::ZomeApiError;
+use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_container_api::*;
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::{Address, AddressableContent},
+    crud_status::CrudStatus,
     dna::zome::{
         capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::{EntryTypeDef, LinksTo},
     },
-    entry::{entry_type::test_entry_type, Entry, SerializedEntry},
-    error::{CoreError, HcResult, HolochainError, ZomeApiInternalResult},
+    entry::{
+        entry_type::{test_app_entry_type, AppEntryType, EntryType},
+        AppEntryValue, Entry,
+    },
+    error::{CoreError, HolochainError, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };
-use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
+use holochain_wasm_utils::api_serialization::{
+    get_entry::EntryHistory, get_links::GetLinksResult, QueryResult,
+};
 use std::sync::{Arc, Mutex};
 use test_utils::*;
+
+#[no_mangle]
+pub fn hc_init_globals(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn hc_commit_entry(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn hc_get_entry(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn hc_entry_address(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn hc_query(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn hc_update_entry(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn hc_remove_entry(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn zome_setup(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
+pub fn __list_capabilities(_: u32) -> u32 {
+    0
+}
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     let mut capability = Capability::new();
@@ -37,7 +85,42 @@ pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
     capability
 }
 
-fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
+#[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
+/// dupes wasm_test::EntryStruct;
+struct EntryStruct {
+    stuff: String,
+}
+
+fn example_valid_entry() -> Entry {
+    Entry::App(
+        AppEntryType::from(test_app_entry_type()),
+        AppEntryValue::from(EntryStruct {
+            stuff: "non fail".into(),
+        }),
+    )
+}
+
+fn example_valid_entry_history() -> EntryHistory {
+    let entry = example_valid_entry();
+    let mut entry_history = EntryHistory::new();
+    entry_history.addresses.push(entry.address());
+    entry_history.entries.push(entry);
+    entry_history.crud_status.push(CrudStatus::LIVE);
+    entry_history
+}
+
+fn example_valid_entry_params() -> String {
+    format!(
+        "{{\"entry\":{}}}",
+        String::from(JsonString::from(example_valid_entry())),
+    )
+}
+
+fn example_valid_entry_address() -> Address {
+    Address::from("QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd")
+}
+
+fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
     let wasm =
         create_wasm_from_file("wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm");
@@ -57,8 +140,12 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
         "check_sys_entry_address",
         "check_call",
         "check_call_with_args",
+        "update_entry_ok",
+        "remove_entry_ok",
+        "remove_modified_entry_ok",
     ]);
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
+    dna.uuid = uuid.into();
 
     // TODO: construct test DNA using the auto-generated JSON feature
     // The code below is fragile!
@@ -69,11 +156,13 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
     {
         let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
         entry_types.insert(
-            String::from("validation_package_tester"),
+            EntryType::from("validation_package_tester"),
             EntryTypeDef::new(),
         );
 
-        let test_entry_type = &mut entry_types.get_mut("testEntryType").unwrap();
+        let test_entry_type = &mut entry_types
+            .get_mut(&EntryType::from("testEntryType"))
+            .unwrap();
         test_entry_type.links_to.push(LinksTo {
             target_type: String::from("testEntryType"),
             tag: String::from("test-tag"),
@@ -87,7 +176,7 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
             target_type: String::from("link_validator"),
             tag: String::from("longer"),
         });
-        entry_types.insert(String::from("link_validator"), link_validator);
+        entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
     let (context, test_logger) = test_context_and_logger("alex");
@@ -101,13 +190,13 @@ fn start_holochain_instance() -> (Holochain, Arc<Mutex<TestLogger>>) {
 
 #[test]
 fn can_use_globals() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_use_globals");
     // Call the exposed wasm function that calls the debug API function for printing all GLOBALS
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
     assert_eq!(
         result.clone(),
         Ok(JsonString::from(HashString::from(
-            "QmU92yJa32rGJYcgDwhxAeBtpHeK7wjLEqZ1bWnDZKTRB8"
+            "alex--------------------------------------------------------------------------------ADO_"
         ))),
         "result = {:?}",
         result
@@ -116,48 +205,43 @@ fn can_use_globals() {
 
 #[test]
 fn can_commit_entry() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_commit_entry");
 
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+        &String::from(JsonString::from(example_valid_entry())),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(Address::from(
-            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
-        )),
+        JsonString::from(example_valid_entry_address()),
     );
 }
 #[test]
 fn can_commit_entry_macro() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_commit_entry_macro");
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        // this works because the macro names the args the same as the SerializedEntry fields
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+        &example_valid_entry_params(),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(Address::from(
-            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
-        )),
-    );
+    let expected: ZomeApiResult<Address> = Ok(Address::from(
+        "QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd",
+    ));
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 
 #[test]
 fn can_round_trip() {
-    let (mut hc, test_logger) = start_holochain_instance();
+    let (mut hc, test_logger) = start_holochain_instance("can_round_trip");
     let result = hc.call(
         "test_zome",
         "test_cap",
@@ -177,54 +261,42 @@ fn can_round_trip() {
 #[test]
 #[cfg(not(windows))]
 fn can_get_entry() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_get_entry");
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\": \"non fail\"}" }"#,
+        &example_valid_entry_params(),
     );
+    let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(Address::from(
-            "Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v"
-        )),
-    );
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry_result",
-        &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
-                ))),
+        &String::from(JsonString::from(json!({
+            "entry_address": example_valid_entry_address()
+        }))),
     );
+    let expected: ZomeApiResult<EntryHistory> = Ok(example_valid_entry_history());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(
-            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
-        )
-    );
+    assert_eq!(result.unwrap(), JsonString::from(expected));
 
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_get_entry",
-        &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("Qmf7HGMHTZSb4zPB2wvrJnkgmURJ9VuTnEi4xG6QguB36v")}
-                ))),
+        &String::from(JsonString::from(json!({
+            "entry_address": example_valid_entry_address()
+        }))),
     );
     println!("\t can_get_entry result = {:?}", result);
+    let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(
-            "{\"value\":\"{\\\"stuff\\\": \\\"non fail\\\"}\",\"entry_type\":\"testEntryType\"}"
-        )
-    );
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 
     // test the case with a bad address
     let result = hc.call(
@@ -232,12 +304,15 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry_result",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
-                ))),
+            {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+        ))),
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::null());
+
+    let empty_entry_history = EntryHistory::new();
+    let expected: ZomeApiResult<EntryHistory> = Ok(empty_entry_history);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad address
     let result = hc.call(
@@ -245,39 +320,45 @@ fn can_get_entry() {
         "test_cap",
         "check_get_entry",
         &String::from(JsonString::from(json!(
-                    {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
-                ))),
+            {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
+        ))),
     );
     println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::null());
+    let expected: ZomeApiResult<Option<Entry>> = Ok(None);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
 }
 
 #[test]
 #[cfg(not(windows))] // TODO does not work on windows because of different seperator
 fn can_invalidate_invalid_commit() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_invalidate_invalid_commit");
     // Call the exposed wasm function that calls the Commit API function
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        &String::from(JsonString::from(SerializedEntry::from(Entry::new(
-            test_entry_type(),
-            JsonString::from("{\"stuff\":\"FAIL\"}"),
-        )))),
+        &json!({"entry":
+            Entry::App(
+                AppEntryType::from(test_app_entry_type()),
+                AppEntryValue::from(EntryStruct {
+                    stuff: "FAIL".into(),
+                }),
+            )
+        })
+        .to_string(),
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"error\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}"),
+        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}"),
     );
 }
 
 #[test]
 fn has_populated_validation_data() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("has_populated_validation_data");
 
     //
     // Add two entries to chain to have something to check ValidationData on
@@ -286,28 +367,23 @@ fn has_populated_validation_data() {
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\":\"non fail\"}" }"#,
+        &example_valid_entry_params(),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(Address::from(
-            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
-        )),
-    );
+
+    let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
+
     let result = hc.call(
         "test_zome",
         "test_cap",
         "check_commit_entry_macro",
-        r#"{ "entry_type": "testEntryType", "value": "{\"stuff\":\"non fail\"}" }"#,
+        &example_valid_entry_params(),
     );
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(Address::from(
-            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
-        )),
-    );
+
+    let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 
     //
     // Expect the commit in this zome function to fail with a serialized ValidationData struct
@@ -333,31 +409,41 @@ fn has_populated_validation_data() {
 
 #[test]
 fn can_link_entries() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_link_entries");
 
     let result = hc.call("test_zome", "test_cap", "link_two_entries", r#"{}"#);
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
 
+// This test did fail before but passed locally for me now each of >20 tries on macOS.
+// It can fail because:
+// handle_links_roundtrip doesn't take into
+// account how long it takes for the links to propigate on the network
+// the correct test would be to wait for a propigation period
+//
+// It does fail on windows in the CI so for now I pull it in for all OS except
+// Windows so we have at least some integration link testing.
 #[test]
+#[cfg(not(windows))]
 fn can_roundtrip_links() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_roundtrip_links");
     let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let result_string = result.unwrap();
 
+    let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
+    let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
+
     println!("can_roundtrip_links result_string: {:?}", result_string);
-    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![
-        Address::from("QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx"),
-        Address::from("QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3"),
+    let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
+        address_1.clone(),
+        address_2.clone(),
     ]));
     let ordering1: bool = result_string == JsonString::from(expected);
 
-    let expected: HcResult<GetLinksResult> = Ok(GetLinksResult::new(vec![
-        Address::from("QmQbe8uWt8fjE9wRfqnh42Eqj22tHYH6aqfzL7orazQpu3"),
-        Address::from("QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx"),
-    ]));
+    let expected: Result<GetLinksResult, HolochainError> =
+        Ok(GetLinksResult::new(vec![address_2, address_1]));
     let ordering2: bool = result_string == JsonString::from(expected);
 
     assert!(ordering1 || ordering2, "result = {:?}", result_string);
@@ -366,7 +452,7 @@ fn can_roundtrip_links() {
 #[test]
 #[cfg(not(windows))]
 fn can_validate_links() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_validate_links");
     let params_ok = r#"{"stuff1": "a", "stuff2": "aa"}"#;
     let result = hc.call("test_zome", "test_cap", "link_validation", params_ok);
     assert!(result.is_ok(), "result = {:?}", result);
@@ -393,7 +479,7 @@ fn can_validate_links() {
 
 #[test]
 fn can_check_query() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_check_query");
 
     let result = hc.call(
         "test_zome",
@@ -402,31 +488,30 @@ fn can_check_query() {
         r#"{ "entry_type_name": "testEntryType", "limit": "0" }"#,
     );
     assert!(result.is_ok(), "result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(vec![Address::from(
-            "QmNgyf5AVG6596qpx83uyPKHU3yehwHFFUNscJzvRfTpVx",
-        )]),
-    );
+
+    let expected: ZomeApiResult<QueryResult> = Ok(vec![Address::from(
+        "QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ",
+    )]);
+
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 
 #[test]
 fn can_check_app_entry_address() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_check_app_entry_address");
 
     let result = hc.call("test_zome", "test_cap", "check_app_entry_address", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(Address::from(
-            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
-        )),
-    );
+
+    let expected: ZomeApiResult<Address> = Ok(Address::from(
+        "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ",
+    ));
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 
 #[test]
 fn can_check_sys_entry_address() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_check_sys_entry_address");
 
     let _result = hc.call("test_zome", "test_cap", "check_sys_entry_address", r#"{}"#);
     // TODO
@@ -439,29 +524,64 @@ fn can_check_sys_entry_address() {
 
 #[test]
 fn can_check_call() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_check_call");
 
     let result = hc.call("test_zome", "test_cap", "check_call", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
-    assert_eq!(
-        result.unwrap(),
-        JsonString::from(ZomeApiInternalResult::success(Address::from(
-            "QmbagHKV6kU89Z4FzQGMHpCYMxpR8WPxnse6KMArQ2wPJa"
-        ))),
-    );
+
+    let inner_expected: ZomeApiResult<Address> = Ok(Address::from(
+        "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ",
+    ));
+    let expected: ZomeApiResult<ZomeApiInternalResult> =
+        Ok(ZomeApiInternalResult::success(inner_expected));
+
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 
 #[test]
 fn can_check_call_with_args() {
-    let (mut hc, _) = start_holochain_instance();
+    let (mut hc, _) = start_holochain_instance("can_check_call_with_args");
 
-    let result = hc.call("test_zome", "test_cap", "check_call_with_args", r#"{}"#);
+    let result = hc.call(
+        "test_zome",
+        "test_cap",
+        "check_call_with_args",
+        &String::from(JsonString::empty_object()),
+    );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
+
+    let expected_inner: ZomeApiResult<Address> = Ok(Address::from(
+        "QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd",
+    ));
+    let expected: ZomeApiResult<ZomeApiInternalResult> =
+        Ok(ZomeApiInternalResult::success(expected_inner));
+
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
+}
+
+#[test]
+fn can_remove_entry() {
+    let (mut hc, _) = start_holochain_instance("can_remove_entry");
+    let result = hc.call("test_zome", "test_cap", "remove_entry_ok", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(ZomeApiInternalResult::success(Address::from(
-            "QmSxw5mUkFfc2W95GK2xaNYRp4a8ZXxY8o7mPMDJv9pvJg"
-        ))),
+        JsonString::from("{\"addresses\":[\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\"],\"entries\":[{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]}],\"crud_status\":[{\"bits\":4}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
+        ),
     );
+}
+
+#[test]
+fn can_update_entry() {
+    let (mut hc, _) = start_holochain_instance("can_update_entry");
+    let result = hc.call("test_zome", "test_cap", "update_entry_ok", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+}
+
+#[test]
+fn can_remove_modified_entry() {
+    let (mut hc, _) = start_holochain_instance("can_remove_modified_entry");
+    let result = hc.call("test_zome", "test_cap", "remove_modified_entry_ok", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
 }

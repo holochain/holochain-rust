@@ -4,16 +4,17 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    entry::{Entry, SerializedEntry},
+    crud_status::CrudStatus,
+    entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::GetEntryOptions,
+        get_entry::{EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind},
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
-        QueryArgs, QueryResult, ZomeFnCallArgs,
+        QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
         hash::HashString,
@@ -96,17 +97,6 @@ impl From<AGENT_LATEST_HASH> for JsonString {
 //--------------------------------------------------------------------------------------------------
 // SYSTEM CONSTS
 //--------------------------------------------------------------------------------------------------
-
-// HC.Status
-// WARNING keep in sync with CRUDStatus
-bitflags! {
-  pub struct EntryStatus: u8 {
-    const LIVE     = 1 << 0;
-    const REJECTED = 1 << 1;
-    const DELETED  = 1 << 2;
-    const MODIFIED = 1 << 3;
-  }
-}
 
 // HC.GetMask
 bitflags! {
@@ -241,13 +231,24 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # #[no_mangle]
 /// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
 /// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///
-/// fn handle_sum(num1: u32, num2: u32) -> JsonString {
-///     let sum = num1 + num2;
-///     return json!({"sum": format!("{}",sum)}).into();
+/// fn handle_sum(num1: u32, num2: u32) -> u32 {
+///     num1 + num2
 /// }
 ///
 /// define_zome! {
@@ -261,7 +262,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: JsonString|,
+///                 outputs: |sum: u32|,
 ///                 handler: handle_sum
 ///             }
 ///         }
@@ -287,6 +288,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # use hdk::holochain_core_types::hash::HashString;
 /// # use hdk::holochain_core_types::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
+/// # use hdk::error::ZomeApiResult;
+/// # use std::convert::TryInto;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -301,10 +304,14 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # pub fn hc_query(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///
-/// fn handle_check_sum(num1: u32, num2: u32) -> JsonString {
+/// fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
 ///     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ///     struct SumInput {
 ///         num1: u32,
@@ -314,15 +321,14 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     let maybe_result = hdk::call(
+///     match hdk::call(
 ///         "summer",
 ///         "main",
 ///         "sum",
 ///         call_input.into()
-///     );
-///     match maybe_result {
-///         Ok(result) => result.into(),
-///         Err(hdk_error) => hdk_error.into(),
+///     ) {
+///         Ok(json) => Ok(json.try_into()?),
+///         Err(e) => Err(e),
 ///     }
 /// }
 ///
@@ -337,7 +343,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         main (Public) {
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
-///                 outputs: |sum: JsonString|,
+///                 outputs: |maybe_sum: ZomeApiResult<u32>|,
 ///                 handler: handle_check_sum
 ///             }
 ///         }
@@ -401,8 +407,12 @@ pub fn call<S: Into<String>>(
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
+///
+/// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+///
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -413,10 +423,10 @@ pub fn call<S: Into<String>>(
 ///
 /// pub fn handle_create_post(content: String) -> JsonString {
 ///
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::commit_entry(&post_entry) {
 ///         Ok(address) => address.into(),
@@ -433,7 +443,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
 
     // Call Ribosome's commit_entry()
     let encoded_allocation_of_result: u32;
@@ -455,8 +465,10 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
     }
 }
 
-/// Retrieves an entry from the local chain or the DHT, by looking it up using
-/// its address.
+/// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
+/// the specified address.
+/// Returns None if no entry exists at the specified address or
+/// if the entry's crud-status is not LIVE.
 /// # Examples
 /// ```rust
 /// # extern crate hdk;
@@ -470,29 +482,61 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 ///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
 ///     // Otherwise its a Some(T) or a None
 ///     match hdk::get_entry(post_address) {
-///         Ok(maybe_post) => maybe_post.and_then(|entry| Some(entry.serialize())).into(),
+///         Ok(maybe_post) => maybe_post.into(),
 ///         Err(e) => e.into(),
 ///     }
 /// }
 /// # }
 /// ```
 pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
-    Ok(get_entry_result(address, GetEntryOptions {})?
-        .and_then(|serialized_entry| Some(serialized_entry.deserialize())))
+    let entry_result = get_entry_result(address, GetEntryOptions::default())?;
+    if entry_result.entries.is_empty() {
+        return Ok(None);
+    }
+    assert_eq!(entry_result.entries.len(), 1);
+    if entry_result.crud_status.iter().next().unwrap() != &CrudStatus::LIVE {
+        return Ok(None);
+    }
+    let entry = entry_result.entries.iter().next().unwrap();
+    Ok(Some(entry.clone()))
 }
 
-/// Retrieves an entry and meta data from the local chain or the DHT, by looking it up using
-/// its address, and a the full options to specify exactly what data to return
-pub fn get_entry_result(
-    address: Address,
-    _options: GetEntryOptions,
-) -> ZomeApiResult<Option<SerializedEntry>> {
+/// Returns the Entry at the exact address specified, whatever its crud-status.
+/// Returns None if no entry exists at the specified address.
+pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
+    let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::Initial))?;
+    if entry_result.entries.is_empty() {
+        return Ok(None);
+    }
+    assert_eq!(entry_result.entries.len(), 1);
+    let entry = entry_result.entries.iter().next().unwrap();
+    Ok(Some(entry.clone()))
+}
+
+/// Return a GetEntryHistory filled with all the versions of the entry from the version at
+/// the specified address to the latest.
+/// Returns None if no entry exists at the specified address.
+pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<EntryHistory>> {
+    let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::All))?;
+    if entry_result.entries.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(entry_result))
+}
+
+/// Retrieves an entry and its metadata from the local chain or the DHT, by looking it up using
+/// the specified address.
+/// The data returned is configurable with the GetEntryOptions argument.
+pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiResult<EntryHistory> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
+
+    let entry_args = GetEntryArgs { address, options };
+
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, address)?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry_args)?;
 
     // Call WASMI-able get_entry
     let encoded_allocation_of_result: u32;
@@ -528,7 +572,7 @@ pub fn get_entry_result(
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::cas::content::Address;
 /// # use hdk::AGENT_ADDRESS;
@@ -541,10 +585,10 @@ pub fn get_entry_result(
 /// }
 ///
 /// pub fn handle_link_entries(content: String) -> JsonString {
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post{
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::commit_entry(&post_entry) {
 ///         Ok(post_address) => {
@@ -621,7 +665,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # extern crate holochain_core_types_derive;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::entry::entry_type::EntryType;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # fn main() {
 ///
@@ -633,10 +677,10 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///
 /// fn handle_post_address(content: String) -> JsonString {
 ///
-///     let post_entry = Entry::new(EntryType::App("post".into()), Post {
+///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
 ///         content,
 ///         date_created: "now".into(),
-///     });
+///     }.into());
 ///
 ///     match hdk::entry_address(&post_entry) {
 ///         Ok(address) => address.into(),
@@ -653,7 +697,7 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
         mem_stack = G_MEM_STACK.unwrap();
     }
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, entry.serialize())?;
+    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
 
     let encoded_allocation_of_result: u32;
     unsafe {
@@ -688,14 +732,39 @@ pub fn verify_signature<S: Into<String>>(
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
-pub fn update_entry<S: Into<String>>(
-    _entry_type: S,
-    _entry: Entry,
-    _replaces: Address,
-) -> ZomeApiResult<Address> {
-    // FIXME
-    Err(ZomeApiError::FunctionNotImplemented)
+/// Commit an entry to your local source chain that "updates" a previous entry, meaning when getting
+/// the previous entry, the updated entry will be returned.
+/// `update_entry` sets the previous entry's status metadata to `Modified` and adds the updated
+/// entry's address in the previous entry's metadata.
+/// The updated entry will hold the previous entry's address in its header,
+/// which will be used by validation routes.
+pub fn update_entry(new_entry: Entry, address: Address) -> ZomeApiResult<Address> {
+    let mut mem_stack: SinglePageStack;
+    unsafe {
+        mem_stack = G_MEM_STACK.unwrap();
+    }
+
+    let update_args = UpdateEntryArgs { new_entry, address };
+
+    // Put args in struct and serialize into memory
+    let allocation_of_input = store_as_json(&mut mem_stack, update_args)?;
+
+    // Call Ribosome
+    let encoded_allocation_of_result: u32;
+    unsafe {
+        encoded_allocation_of_result = hc_update_entry(allocation_of_input.encode() as u32);
+    }
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    // Free result & input allocations
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+    // Done
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available
@@ -703,9 +772,29 @@ pub fn update_agent() -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
-pub fn remove_entry<S: Into<String>>(_entry: Address, _message: S) -> ZomeApiResult<Address> {
-    Err(ZomeApiError::FunctionNotImplemented)
+/// Commit a DeletionEntry to your local source chain that marks an entry as 'deleted' by setting
+/// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
+/// metadata, which will be used by validation routes.
+pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
+    let mut mem_stack: SinglePageStack;
+    unsafe {
+        mem_stack = G_MEM_STACK.unwrap();
+    }
+    // Put args in struct and serialize into memory
+    let allocation_of_input = store_as_json(&mut mem_stack, address)?;
+
+    // Call WASMI-able get_entry
+    let encoded_allocation_of_result: u32;
+    unsafe {
+        encoded_allocation_of_result = hc_remove_entry(allocation_of_input.encode() as u32);
+    }
+    let res = check_for_ribosome_error(encoded_allocation_of_result);
+    // Free result & input allocations
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+    // Done
+    res
 }
 
 /// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
@@ -811,7 +900,7 @@ pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
 // Helpers
 //--------------------------------------------------------------------------------------------------
 
-pub fn check_for_ribosome_error(encoded_allocation: u32) -> Result<(), ZomeApiError> {
+pub fn check_for_ribosome_error(encoded_allocation: u32) -> ZomeApiResult<()> {
     // Check for error from Ribosome
     let rib_result = decode_encoded_allocation(encoded_allocation);
     match rib_result {

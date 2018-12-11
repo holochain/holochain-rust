@@ -75,8 +75,6 @@ pub struct ChainStoreIterator {
 }
 
 impl ChainStoreIterator {
-    #[allow(unknown_lints)]
-    #[allow(needless_pass_by_value)]
     pub fn new(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         current: Option<ChainHeader>,
@@ -122,8 +120,6 @@ pub struct ChainStoreTypeIterator {
 }
 
 impl ChainStoreTypeIterator {
-    #[allow(unknown_lints)]
-    #[allow(needless_pass_by_value)]
     pub fn new(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         current: Option<ChainHeader>,
@@ -169,9 +165,9 @@ pub mod tests {
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::{test_chain_header, ChainHeader},
+        chain_header::{test_chain_header, test_sources, ChainHeader},
         entry::{test_entry, test_entry_b, test_entry_c},
-        signature::{test_signature, test_signature_b, test_signature_c},
+        signature::{test_signature_b, test_signature_c, test_signatures},
         time::test_iso_8601,
     };
     use std::sync::{Arc, RwLock};
@@ -193,8 +189,10 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_signature_b(),
+            &test_sources(),
+            &vec![test_signature_b()],
             &Some(chain_header_a.address()),
+            &None,
             &None,
             &test_iso_8601(),
         );
@@ -233,8 +231,10 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
-            &test_signature(),
+            &test_sources(),
+            &test_signatures(),
             &Some(chain_header_a.address()),
+            &None,
             &None,
             &test_iso_8601(),
         );
@@ -243,9 +243,11 @@ pub mod tests {
         let chain_header_c = ChainHeader::new(
             &entry_c.entry_type(),
             &entry_c.address(),
-            &test_signature(),
+            &test_sources(),
+            &test_signatures(),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
+            &None,
             &test_iso_8601(),
         );
 
@@ -303,8 +305,10 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_signature_b(),
+            &test_sources(),
+            &vec![test_signature_b()],
             &Some(chain_header_a.address()),
+            &None,
             &None,
             &test_iso_8601(),
         );
@@ -312,9 +316,11 @@ pub mod tests {
         let chain_header_c = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_signature_c(),
+            &test_sources(),
+            &vec![test_signature_c()],
             &Some(chain_header_b.address()),
             &Some(chain_header_b.address()),
+            &None,
             &test_iso_8601(),
         );
 
@@ -329,14 +335,14 @@ pub mod tests {
             .add(&chain_header_c)
             .expect("could not add header to cas");
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type(), 0, 0);
+        let found = chain_store.query(&Some(chain_header_c.clone()), &entry.entry_type(), 0, 0);
         let expected = vec![
             chain_header_c.entry_address().clone(),
             chain_header_b.entry_address().clone(),
         ];
         assert_eq!(expected, found);
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), entry.entry_type(), 0, 1);
+        let found = chain_store.query(&Some(chain_header_c.clone()), &entry.entry_type(), 0, 1);
         let expected = vec![chain_header_c.entry_address().clone()];
         assert_eq!(expected, found);
     }

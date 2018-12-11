@@ -52,7 +52,7 @@ Commit this.
 
 Push it to github.
 
-Create a tag on github of the format `holochain-nodejsY.Y.Y` where `Y.Y.Y` is the version number of the tag. This is really important, as only a tag with this format will trigger release builds to happen. This is configured in the .travis.yml file.
+Create a tag on github of the format `holochain-nodejs-vY.Y.Y` where `Y.Y.Y` is the version number of the tag. This is really important, as only a tag with this format will trigger release builds to happen. This is configured in the .travis.yml file.
 
 This will cause the CI to build for all platforms, and upload the binaries to github releases.
 

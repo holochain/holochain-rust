@@ -27,7 +27,8 @@ pub fn run_dna(
     parameters: Option<Vec<u8>>,
 ) -> ZomeFnResult {
     // Create wasm module from wasm binary
-    let module = wasmi::Module::from_buffer(wasm).expect("wasm binary should be valid");
+    let module =
+        wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))?;
 
     // invoke_index and resolve_func work together to enable callable host functions
     // within WASM modules, which is how the core API functions
@@ -167,12 +168,9 @@ pub fn run_dna(
         }
     };
     // Log & done
-    runtime
-        .context
-        .log(&format!(
-            "Zome Function '{}' returned: {}",
-            zome_call.fn_name, return_log_msg,
-        ))
-        .expect("Logger should work");
+    runtime.context.log(format!(
+        "Zome Function '{}' returned: {}",
+        zome_call.fn_name, return_log_msg,
+    ));
     return return_result;
 }

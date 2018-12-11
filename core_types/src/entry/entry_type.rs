@@ -1,4 +1,7 @@
+use error::HolochainError;
+use json::JsonString;
 use std::{
+    convert::TryFrom,
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
@@ -10,19 +13,68 @@ macro_rules! sys_prefix {
     };
 }
 
+#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize, PartialOrd, Ord, Eq)]
+pub struct AppEntryType(String);
+
+impl From<&'static str> for AppEntryType {
+    fn from(s: &str) -> Self {
+        AppEntryType(s.to_string())
+    }
+}
+
+impl From<String> for AppEntryType {
+    fn from(s: String) -> Self {
+        AppEntryType(s)
+    }
+}
+
+impl From<AppEntryType> for String {
+    fn from(app_entry_type: AppEntryType) -> Self {
+        app_entry_type.0.clone()
+    }
+}
+
+impl ToString for AppEntryType {
+    fn to_string(&self) -> String {
+        String::from(self.to_owned())
+    }
+}
+
 // Enum for listing all System Entry Types
 // Variant `Data` is for user defined entry types
-#[derive(Debug, Clone, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, PartialEq, Hash, Serialize, Deserialize, DefaultJson, PartialOrd, Ord, Eq,
+)]
 pub enum EntryType {
-    App(String),
+    App(AppEntryType),
+
     Dna,
     AgentId,
-    Delete,
+    Deletion,
     LinkAdd,
     LinkRemove,
     LinkList,
     ChainHeader,
     ChainMigrate,
+}
+
+impl From<AppEntryType> for EntryType {
+    fn from(app_entry_type: AppEntryType) -> Self {
+        EntryType::App(app_entry_type)
+    }
+}
+
+impl TryFrom<EntryType> for AppEntryType {
+    type Error = HolochainError;
+    fn try_from(entry_type: EntryType) -> Result<Self, Self::Error> {
+        match entry_type {
+            EntryType::App(app_entry_type) => Ok(app_entry_type),
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Attempted to convert {:?} EntryType to an AppEntryType",
+                entry_type
+            ))),
+        }
+    }
 }
 
 impl EntryType {
@@ -37,7 +89,29 @@ impl EntryType {
     }
 
     pub fn can_publish(&self) -> bool {
-        *self != EntryType::Dna
+        /*
+                let dna = context
+            .state()
+            .expect("context must have a State.")
+            .nucleus()
+            .dna()
+            .expect("context.state must hold DNA in order to commit an app entry.");
+        let maybe_def = dna.get_entry_type_def(&entry.entry_type().to_string());
+        if maybe_def.is_none() {
+            // TODO #439 - Log the error. Once we have better logging.
+            return None;
+        }
+        let entry_type_def = maybe_def.unwrap();
+        
+        // app entry type must be publishable
+        if !entry_type_def.sharing.clone().can_publish() {
+            return None;
+        }
+            */
+        match self {
+            EntryType::Dna => false,
+            _ => true,
+        }
     }
 
     /// Checks entry_type_name is valid
@@ -54,26 +128,26 @@ impl FromStr for EntryType {
     type Err = usize;
     // Note: Function always return Ok()
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            sys_prefix!("agent_id") => Ok(EntryType::AgentId),
-            sys_prefix!("delete") => Ok(EntryType::Delete),
-            sys_prefix!("dna") => Ok(EntryType::Dna),
-            sys_prefix!("chain_header") => Ok(EntryType::ChainHeader),
-            sys_prefix!("link_add") => Ok(EntryType::LinkAdd),
-            sys_prefix!("link_remove") => Ok(EntryType::LinkRemove),
-            sys_prefix!("link_list") => Ok(EntryType::LinkList),
-            sys_prefix!("chain_migrate") => Ok(EntryType::ChainMigrate),
-            _ => Ok(EntryType::App(s.to_string())),
-        }
+        Ok(match s {
+            sys_prefix!("agent_id") => EntryType::AgentId,
+            sys_prefix!("deletion") => EntryType::Deletion,
+            sys_prefix!("dna") => EntryType::Dna,
+            sys_prefix!("chain_header") => EntryType::ChainHeader,
+            sys_prefix!("link_add") => EntryType::LinkAdd,
+            sys_prefix!("link_remove") => EntryType::LinkRemove,
+            sys_prefix!("link_list") => EntryType::LinkList,
+            sys_prefix!("chain_migrate") => EntryType::ChainMigrate,
+            _ => EntryType::App(AppEntryType(s.into())),
+        })
     }
 }
 
 impl From<EntryType> for String {
     fn from(entry_type: EntryType) -> String {
         String::from(match entry_type {
-            EntryType::App(ref s) => s,
+            EntryType::App(ref app_entry_type) => &app_entry_type.0,
             EntryType::AgentId => sys_prefix!("agent_id"),
-            EntryType::Delete => sys_prefix!("delete"),
+            EntryType::Deletion => sys_prefix!("deletion"),
             EntryType::Dna => sys_prefix!("dna"),
             EntryType::ChainHeader => sys_prefix!("chain_header"),
             EntryType::LinkAdd => sys_prefix!("link_add"),
@@ -104,30 +178,32 @@ impl Display for EntryType {
 
 /// dummy entry type
 #[cfg_attr(tarpaulin, skip)]
+pub fn test_app_entry_type() -> AppEntryType {
+    AppEntryType::from("testEntryType")
+}
+
 pub fn test_entry_type() -> EntryType {
-    EntryType::App(String::from("testEntryType"))
+    EntryType::App(test_app_entry_type())
 }
 
 /// dummy entry type, same as test_type()
 #[cfg_attr(tarpaulin, skip)]
+pub fn test_app_entry_type_a() -> AppEntryType {
+    test_app_entry_type()
+}
+
 pub fn test_entry_type_a() -> EntryType {
-    test_entry_type()
+    EntryType::App(test_app_entry_type_a())
 }
 
 /// dummy entry type, differs from test_type()
 #[cfg_attr(tarpaulin, skip)]
+pub fn test_app_entry_type_b() -> AppEntryType {
+    AppEntryType::from("testEntryTypeB")
+}
+
 pub fn test_entry_type_b() -> EntryType {
-    EntryType::App(String::from("testEntryTypeB"))
-}
-
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_sys_entry_type() -> EntryType {
-    EntryType::AgentId
-}
-
-#[cfg_attr(tarpaulin, skip)]
-pub fn test_unpublishable_entry_type() -> EntryType {
-    EntryType::Dna
+    EntryType::App(test_app_entry_type_b())
 }
 
 #[cfg(test)]
@@ -136,10 +212,10 @@ pub mod tests {
 
     pub fn test_types() -> Vec<EntryType> {
         vec![
-            EntryType::App(String::from("foo")),
+            EntryType::App(AppEntryType::from("foo")),
             EntryType::Dna,
             EntryType::AgentId,
-            EntryType::Delete,
+            EntryType::Deletion,
             EntryType::LinkAdd,
             EntryType::LinkRemove,
             EntryType::LinkList,
@@ -150,8 +226,8 @@ pub mod tests {
 
     #[test]
     fn entry_type_kind() {
-        assert!(EntryType::App(String::new()).is_app());
-        assert!(!EntryType::App(String::new()).is_sys());
+        assert!(EntryType::App(AppEntryType::from("")).is_app());
+        assert!(!EntryType::App(AppEntryType::from("")).is_sys());
         assert!(EntryType::AgentId.is_sys());
         assert!(!EntryType::AgentId.is_app());
     }
@@ -175,7 +251,7 @@ pub mod tests {
         for (type_str, variant) in vec![
             (sys_prefix!("dna"), EntryType::Dna),
             (sys_prefix!("agent_id"), EntryType::AgentId),
-            (sys_prefix!("delete"), EntryType::Delete),
+            (sys_prefix!("deletion"), EntryType::Deletion),
             (sys_prefix!("link_add"), EntryType::LinkAdd),
             (sys_prefix!("link_remove"), EntryType::LinkRemove),
             (sys_prefix!("link_list"), EntryType::LinkList),

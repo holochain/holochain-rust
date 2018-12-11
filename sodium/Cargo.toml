@@ -1,0 +1,10 @@
+[package]
+name = "holochain_sodium"
+version = "0.1.0"
+authors = ["neonphog <neonphog@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+lazy_static = "1.2.0"
+libc = "~0.2.40"
+rust_sodium-sys = "0.10.2"

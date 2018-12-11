@@ -7,17 +7,25 @@ use std::{
     sync::Arc,
 };
 
-use holochain_core_types::error::{HcResult,HolochainError};
+use holochain_core_types::{error::{HcResult,HolochainError},dna::Dna};
+use futures::executor::block_on;
+use crate::nucleus::actions::initialize::initialize_application;
 
 
-pub async fn initialize(context:Arc<Context>) -> HcResult<()>
+pub async fn initialize(dna:Option<Dna>,context:Arc<Context>) -> HcResult<()>
 {
-    let (agent_id,dna_id) = await!(get_dna_and_agent(&context))?;
-
-    match (!agent_id.is_empty(),!dna_id.is_empty())
+    
+    match await!(get_dna_and_agent(&context))
     {
-        (true,true) =>{Ok(await!(initialize_network::initialize_network(&context))?)},
-        (true,false) =>{Err(HolochainError::DnaMissing)},
-        (_,_) =>{Ok(())}
-    }
+        Ok(_) =>{
+            println!("get dna");
+            ()
+        },
+        Err(_) =>{
+            println!("initialize application");
+            await!(initialize_application(Dna::new(), &context)).unwrap();
+        }
+    };
+    await!(initialize_network::initialize_network(&context))?;
+    Ok(())
 }

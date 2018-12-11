@@ -26,7 +26,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     // update it to v2
     hdk::debug("**** update it to v2").ok();
     let entry_v2 =
-        Entry::App(hdk_test_app_entry_type(), JsonString::from(TestEntryType { stuff: "v2".into() }));
+        Entry::App(hdk_test_app_entry_type(), TestEntryType { stuff: "v2".into() }.into());
     let res = hdk::update_entry(entry_v2.clone(), addr_v1.clone());
     let addr_v2 = res.unwrap();
     // get latest from latest
@@ -54,7 +54,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     hdk::debug("**** update it again from v1").ok();
     let entry_v3 = Entry::App(
         hdk_test_app_entry_type(),
-        JsonString::from(TestEntryType { stuff: "v3".into() }));
+        TestEntryType { stuff: "v3".into() }.into());
     let res = hdk::update_entry(entry_v3.clone(), addr_v1.clone());
     let addr_v3 = res.unwrap();
     // get latest from v1
@@ -71,7 +71,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     // update it again from v3
     let entry_v4 = Entry::App(
         hdk_test_app_entry_type(),
-        JsonString::from(TestEntryType { stuff: "v4".into() }),
+        TestEntryType { stuff: "v4".into() }.into(),
     );
     let res = hdk::update_entry(entry_v4.clone(), addr_v3.clone());
     let addr_v4 = res.unwrap();
@@ -199,7 +199,7 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     hdk::debug("**** update it to v2").ok();
     let entry_v2 = Entry::App(
         hdk_test_app_entry_type(),
-        JsonString::from(TestEntryType { stuff: "v2".into() }),
+        TestEntryType { stuff: "v2".into() }.into(),
     );
     let res = hdk::update_entry(entry_v2.clone(), addr_v1.clone());
     let addr_v2 = res.unwrap();

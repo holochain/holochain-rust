@@ -71,7 +71,7 @@ macro_rules! load_json {
 /// }
 ///
 /// fn handle_post_address(content: String) -> ZomeApiResult<Address> {
-///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
+///     let post_entry = Entry::App("post".into(), Post {
 ///         content,
 ///         date_created: "now".into(),
 ///     }.into());

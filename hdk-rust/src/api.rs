@@ -423,7 +423,7 @@ pub fn call<S: Into<String>>(
 ///
 /// pub fn handle_create_post(content: String) -> JsonString {
 ///
-///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
+///     let post_entry = Entry::App("post".into(), Post{
 ///         content,
 ///         date_created: "now".into(),
 ///     }.into());
@@ -585,7 +585,7 @@ pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiRe
 /// }
 ///
 /// pub fn handle_link_entries(content: String) -> JsonString {
-///     let post_entry = Entry::App(AppEntryType::from("post"), Post{
+///     let post_entry = Entry::App("post".into(), Post{
 ///         content,
 ///         date_created: "now".into(),
 ///     }.into());
@@ -677,7 +677,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 ///
 /// fn handle_post_address(content: String) -> JsonString {
 ///
-///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
+///     let post_entry = Entry::App("post".into(), Post {
 ///         content,
 ///         date_created: "now".into(),
 ///     }.into());

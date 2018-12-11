@@ -94,7 +94,7 @@ pub mod tests {
         for i in 0..3 {
             let entry = Entry::App(
                 test_app_entry_type(),
-                JsonString::from(format!("entry{} value", i)),
+                format!("entry{} value", i).into(),
             );
             let address = block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");

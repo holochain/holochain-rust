@@ -2,6 +2,7 @@ use crate::{
     error::{ZomeApiError, ZomeApiResult},
     globals::*,
 };
+use std::convert::TryFrom;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
@@ -19,6 +20,7 @@ use holochain_wasm_utils::{
     holochain_core_types::{
         hash::HashString,
         json::{JsonString, RawString},
+        entry::AppEntryValue,
     },
     memory_allocation::*,
     memory_serialization::*,
@@ -169,6 +171,15 @@ pub enum BundleOnClose {
     Commit,
     Discard,
 }
+
+// Response for calls to get_links_and_load
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GetLinksLoadElement<T> {
+    pub address: HashString,
+    pub entry: T
+}
+
+pub type GetLinksLoadResult<T> = Vec<GetLinksLoadElement<T>>;
 
 //--------------------------------------------------------------------------------------------------
 // API FUNCTIONS
@@ -894,6 +905,68 @@ pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiR
 /// Not Yet Available
 pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
+}
+
+/// Identical signature to get_links but also returns the entries that the links point to. The response is a 
+/// `GetLinksLoadResult<Entry>` which contains an `address` and `entry` field.
+/// This function does not care what type the entries are and can return a collection of 
+/// entries with different types
+pub fn get_links_and_load<S: Into<String>>(
+    base: &HashString,
+    tag: S
+) -> ZomeApiResult<GetLinksLoadResult<Entry>>  {
+    let get_links_result = get_links(base, tag)?;
+
+    Ok(get_links_result.addresses()
+    .iter()
+    .map(|address| {
+        get_entry(address.to_owned())
+        .map(|entry: Option<Entry>| {
+            GetLinksLoadElement{
+                address: address.to_owned(),
+                entry: entry.unwrap()
+            }
+        })
+    })
+    .filter_map(Result::ok)
+    .collect())
+}
+
+/// Similar to get_links_and_load but also handles converting the response to a given native type.
+/// Only linked entries that can be successfully converted are returned. This means if a link contains a variety of entry
+/// types `get_links_and_load_type` will filter out only the entries that can be converted successfully.
+pub fn get_links_and_load_type<
+    S: Into<String>,
+    R: TryFrom<AppEntryValue>
+>(
+    base: &HashString,
+    tag: S
+) -> ZomeApiResult<GetLinksLoadResult<R>> {
+    let link_load_results = get_links_and_load(base, tag)?;
+
+    Ok(link_load_results
+    .iter()
+    .map(|get_links_result| {
+
+        match get_links_result.entry.clone() {
+            Entry::App(_, entry_value) => {
+                let entry = R::try_from(entry_value)
+                .map_err(|_| ZomeApiError::Internal(
+                    "Could not convert get_links result to requested type".to_string())
+                )?;
+
+                Ok(GetLinksLoadElement::<R>{
+                    entry: entry, 
+                    address: get_links_result.address.clone()
+                })
+            },
+            _ => Err(ZomeApiError::Internal(
+                "get_links did not return an app entry".to_string())
+            )
+        }
+    })
+    .filter_map(Result::ok)
+    .collect())
 }
 
 //--------------------------------------------------------------------------------------------------

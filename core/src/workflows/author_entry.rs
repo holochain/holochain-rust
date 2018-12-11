@@ -45,6 +45,7 @@ pub mod tests {
     use std::{thread, time};
 
     #[test]
+    #[cfg(not(windows))]
     /// test that a commit will publish and entry to the dht of a connected instance via the mock network
     fn test_commit_with_dht_publish() {
         let mut dna = test_dna();

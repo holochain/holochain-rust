@@ -12,10 +12,7 @@ pub struct EntryWithHeader {
 
 impl EntryWithHeader {
     pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
-        EntryWithHeader {
-            entry: entry,
-            header,
-        }
+        EntryWithHeader { entry, header }
     }
 }
 

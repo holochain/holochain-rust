@@ -92,10 +92,7 @@ pub mod tests {
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::App(
-                test_app_entry_type(),
-                format!("entry{} value", i).into(),
-            );
+            let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
             let address = block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");
             entry_addresses.push(address);

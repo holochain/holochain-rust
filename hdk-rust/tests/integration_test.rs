@@ -96,7 +96,8 @@ fn example_valid_entry() -> Entry {
         test_app_entry_type().into(),
         EntryStruct {
             stuff: "non fail".into(),
-        }.into(),
+        }
+        .into(),
     )
 }
 

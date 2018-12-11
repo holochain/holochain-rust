@@ -18,8 +18,8 @@ pub mod tests {
             zome::{capabilities::Capability, entry_types::EntryTypeDef},
             Dna,
         },
-        json::RawString,
         entry::Entry,
+        json::RawString,
     };
     use std::sync::Arc;
     use test_utils::*;
@@ -76,26 +76,17 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_entries() -> Entry {
-        Entry::App(
-            "package_chain_entries".into(),
-            "test value".into(),
-        )
+        Entry::App("package_chain_entries".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_headers() -> Entry {
-        Entry::App(
-            "package_chain_headers".into(),
-            "test value".into(),
-        )
+        Entry::App("package_chain_headers".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_full() -> Entry {
-        Entry::App(
-            "package_chain_full".into(),
-            "test value".into(),
-        )
+        Entry::App("package_chain_full".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]

@@ -1,6 +1,6 @@
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::GetEntryOptions,
+        get_entry::{GetEntryOptions, StatusRequestKind},
     },
     holochain_core_types::{
         entry::Entry,
@@ -177,8 +177,10 @@ pub fn handle_remove_entry_ok() -> JsonString {
     let res = hdk::remove_entry(addr_v1.clone());
     assert!(res.is_err());
     // Get entry_result
-    match hdk::get_entry_result(addr_v1, GetEntryOptions::default()) {
-        Ok(result) => result.into(),
+    let res = hdk::get_entry_result(addr_v1, GetEntryOptions::new(StatusRequestKind::All,false,false,false));
+    hdk::debug(format!("**** get_entry_result: {:?}",res)).ok();
+    match res {
+        Ok(result) => result.history.unwrap().into(),
         Err(e) => e.into(),
     }
 }
@@ -206,6 +208,7 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     // Get v2
     hdk::debug("**** get v2").ok();
     let res = hdk::get_entry(addr_v1.clone());
+    hdk::debug(format!("**** get_entry_result: {:?}",res)).ok();
     let entry_test = res.unwrap().unwrap();
     assert_eq!(entry_test, entry_v2);
     // Delete it

@@ -16,7 +16,7 @@ extern crate holochain_core_types_derive;
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_container_api::*;
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    cas::content::Address,
     crud_status::CrudStatus,
     dna::zome::{
         capabilities::{Capability, FnDeclaration, Membrane},
@@ -24,14 +24,14 @@ use holochain_core_types::{
     },
     entry::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
-        AppEntryValue, Entry,
+        AppEntryValue, Entry, EntryWithMeta,
     },
     error::{CoreError, HolochainError, ZomeApiInternalResult},
     hash::HashString,
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::{
-    get_entry::EntryHistory, get_links::GetLinksResult, QueryResult,
+    get_entry::GetEntryResult, get_links::GetLinksResult, QueryResult,
 };
 use std::sync::{Arc, Mutex};
 use test_utils::*;
@@ -100,13 +100,15 @@ fn example_valid_entry() -> Entry {
     )
 }
 
-fn example_valid_entry_history() -> EntryHistory {
+fn example_valid_entry_result() -> GetEntryResult {
+    let mut entry_result = GetEntryResult::new();
     let entry = example_valid_entry();
-    let mut entry_history = EntryHistory::new();
-    entry_history.addresses.push(entry.address());
-    entry_history.entries.push(entry);
-    entry_history.crud_status.push(CrudStatus::LIVE);
-    entry_history
+    entry_result.push(&EntryWithMeta {
+        entry: entry,
+        crud_status: CrudStatus::LIVE,
+        maybe_crud_link: None,
+    });
+    entry_result
 }
 
 fn example_valid_entry_params() -> String {
@@ -281,7 +283,7 @@ fn can_get_entry() {
             "entry_address": example_valid_entry_address()
         }))),
     );
-    let expected: ZomeApiResult<EntryHistory> = Ok(example_valid_entry_history());
+    let expected: ZomeApiResult<GetEntryResult> = Ok(example_valid_entry_result());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
@@ -310,8 +312,8 @@ fn can_get_entry() {
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
 
-    let empty_entry_history = EntryHistory::new();
-    let expected: ZomeApiResult<EntryHistory> = Ok(empty_entry_history);
+    let empty_entry_result = GetEntryResult::new();
+    let expected: ZomeApiResult<GetEntryResult> = Ok(empty_entry_result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad address

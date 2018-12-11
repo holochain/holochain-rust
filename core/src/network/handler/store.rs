@@ -28,7 +28,7 @@ pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) 
                 &serde_json::to_string(&dht_meta_data.content)
                     .expect("dht_meta_data should be EntryWithHader"),
             )
-            .expect("dht_meta_data should be EntryWithHader");
+            .expect("dht_meta_data should be EntryWithHeader");
             let link_add = match entry_with_header.entry_body {
                 Entry::LinkAdd(link_add) => link_add,
                 _ => unreachable!(),

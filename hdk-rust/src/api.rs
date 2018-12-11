@@ -4,14 +4,15 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    crud_status::CrudStatus,
     entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind},
+        get_entry::{
+            EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, StatusRequestKind,
+        },
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
@@ -490,44 +491,40 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// ```
 pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(address, GetEntryOptions::default())?;
-    if entry_result.entries.is_empty() {
+    if !entry_result.found() {
         return Ok(None);
     }
-    assert_eq!(entry_result.entries.len(), 1);
-    if entry_result.crud_status.iter().next().unwrap() != &CrudStatus::LIVE {
-        return Ok(None);
-    }
-    let entry = entry_result.entries.iter().next().unwrap();
-    Ok(Some(entry.clone()))
+    Ok(entry_result.latest())
 }
 
 /// Returns the Entry at the exact address specified, whatever its crud-status.
 /// Returns None if no entry exists at the specified address.
 pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
-    let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::Initial))?;
-    if entry_result.entries.is_empty() {
-        return Ok(None);
-    }
-    assert_eq!(entry_result.entries.len(), 1);
-    let entry = entry_result.entries.iter().next().unwrap();
-    Ok(Some(entry.clone()))
+    let entry_result = get_entry_result(
+        address,
+        GetEntryOptions::new(StatusRequestKind::Initial, true, false, false),
+    )?;
+    Ok(entry_result.latest())
 }
 
-/// Return a GetEntryHistory filled with all the versions of the entry from the version at
+/// Return an EntryHistory filled with all the versions of the entry from the version at
 /// the specified address to the latest.
 /// Returns None if no entry exists at the specified address.
 pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<EntryHistory>> {
-    let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::All))?;
-    if entry_result.entries.is_empty() {
-        return Ok(None);
-    }
-    Ok(Some(entry_result))
+    let entry_result = get_entry_result(
+        address,
+        GetEntryOptions::new(StatusRequestKind::All, true, false, false),
+    )?;
+    Ok(entry_result.history)
 }
 
 /// Retrieves an entry and its metadata from the local chain or the DHT, by looking it up using
 /// the specified address.
 /// The data returned is configurable with the GetEntryOptions argument.
-pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiResult<EntryHistory> {
+pub fn get_entry_result(
+    address: Address,
+    options: GetEntryOptions,
+) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();

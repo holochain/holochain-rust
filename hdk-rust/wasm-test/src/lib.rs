@@ -436,7 +436,7 @@ define_zome! {
     genesis: || { Ok(()) }
 
     receive: |payload| {
-        Ok(format!("Received: {}", payload))
+        format!("Received: {}", payload)
     }
 
     functions: {

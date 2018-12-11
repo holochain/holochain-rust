@@ -195,7 +195,7 @@ macro_rules! define_zome {
                 // Deserialize input
                 let input = load_string!(encoded_allocation_of_input).unwrap();
 
-                fn execute(payload: String) -> Result<String, String> {
+                fn execute(payload: String) -> String {
                     let $receive_param = payload;
                     $receive_expr
                 }

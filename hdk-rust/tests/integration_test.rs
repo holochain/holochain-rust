@@ -422,6 +422,7 @@ fn can_link_entries() {
 }
 
 #[test]
+#[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links");
 

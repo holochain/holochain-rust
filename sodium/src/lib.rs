@@ -25,6 +25,12 @@ macro_rules! rptr {
     };
 }
 
+/// make invoking ffi functions taking SecBuf references more readable
+macro_rules! rptrc {
+    ($name: ident) => {
+        $name.as_mut_ptr() as *mut libc::c_uchar
+    };
+}
 pub mod random;
 pub mod secbuf;
 pub mod util;

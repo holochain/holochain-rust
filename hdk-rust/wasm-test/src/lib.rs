@@ -130,7 +130,7 @@ fn handle_link_two_entries() -> ZomeApiResult<()> {
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
 }
 
-fn handle_links_roundtrip() -> ZomeApiResult<GetLinksResult> {
+fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
@@ -160,8 +160,11 @@ fn handle_links_roundtrip() -> ZomeApiResult<GetLinksResult> {
 
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
     hdk::link_entries(&entry_1.address(), &entry_3.address(), "test-tag")?;
+    Ok(entry_1.address())
+}
 
-    hdk::get_links(&entry_1.address(), "test-tag")
+fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult>{
+    hdk::get_links(&address, "test-tag")
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
@@ -479,10 +482,16 @@ define_zome! {
                 handler: handle_link_two_entries
             }
 
-            links_roundtrip: {
+            links_roundtrip_create: {
                 inputs: | |,
+                outputs: |result: ZomeApiResult<Address>|,
+                handler: handle_links_roundtrip_create
+            }
+
+            links_roundtrip_get: {
+                inputs: |address: Address|,
                 outputs: |result: ZomeApiResult<GetLinksResult>|,
-                handler: handle_links_roundtrip
+                handler: handle_links_roundtrip_get
             }
 
             link_validation: {

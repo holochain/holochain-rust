@@ -405,6 +405,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn auto_compilation() {
         let tmp = gen_dir();
 

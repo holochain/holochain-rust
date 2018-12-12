@@ -9,6 +9,7 @@ use holochain_cas_implementations::{
     path::create_path_if_not_exists,
 };
 use holochain_core::{
+    action::Action,
     context::Context,
     signal::{combine_receivers, Signal, SignalReceiver},
 };
@@ -290,8 +291,19 @@ pub fn instantiate_from_config(
                 }
             }?;
 
-            Holochain::with_signals(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+            Holochain::with_signals(dna, Arc::new(context), signal_filter)
+                .map_err(|hc_err| hc_err.to_string())
         })
+}
+
+/// This function defines which Actions to filter out for internal signals
+fn signal_filter(action: &Action) -> bool {
+    use self::Action::InitApplication;
+
+    match action {
+        InitApplication(_) => false,
+        _ => true,
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -532,7 +544,7 @@ pub mod tests {
         let dna = test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
         let context = test_utils::test_context("alex");
 
-        let (mut hc, rx) = Holochain::with_signals(dna.clone(), context).unwrap();
+        let (mut hc, rx) = Holochain::with_signals(dna.clone(), context, |_| true).unwrap();
         hc.start().expect("couldn't start");
         hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
             .unwrap();

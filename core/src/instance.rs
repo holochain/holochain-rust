@@ -4,7 +4,6 @@ use crate::{
     signal::Signal,
     state::State,
 };
-use holochain_core_types::entry::Entry;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -25,6 +24,7 @@ pub struct Instance {
     action_channel: Option<SyncSender<ActionWrapper>>,
     signal_channel: Option<SyncSender<Signal>>,
     observer_channel: Option<SyncSender<Observer>>,
+    signal_filter: Arc<Box<Fn(&Action) -> bool + Send + Sync>>,
 }
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
@@ -203,26 +203,11 @@ impl Instance {
     /// Given an `Action` that is being processed, decide whether or not it should be
     /// emitted as a `Signal::Internal`, and if so, send it
     fn maybe_emit_action_signal(&self, action: Action) {
-        use self::Action::{AddLink, Commit, Hold, InitApplication, Publish};
         if let Some(ref tx) = self.signal_channel {
-            let fire_away = match action {
-                AddLink(_) => true,
-                InitApplication(_) => false,
-                Hold(ref entry) => match entry {
-                    Entry::App(_, _) => true,
-                    _ => false,
-                },
-                Commit((ref entry, _)) => match entry {
-                    Entry::App(_, _) => true,
-                    _ => false,
-                },
-                Publish(_) => true,
-                _ => true,
-            };
-            if fire_away {
+            if (self.signal_filter)(&action) {
                 let signal = Signal::Internal(action);
+                tx.send(signal).unwrap_or(())
                 // @TODO: once logging is implemented, kick out a warning for SendErrors
-                tx.send(signal).unwrap_or(());
             }
         }
     }
@@ -234,17 +219,22 @@ impl Instance {
             action_channel: None,
             observer_channel: None,
             signal_channel: None,
+            signal_filter: Arc::new(Box::new(|_| false)),
         }
     }
 
     /// Creates a new Instance with only the signal channel set up.
-    pub fn with_signals(context: Arc<Context>) -> (Self, Receiver<Signal>) {
+    pub fn with_signals<F>(context: Arc<Context>, func: F) -> (Self, Receiver<Signal>)
+    where
+        F: Fn(&Action) -> bool + 'static + Send + Sync,
+    {
         let (signal_tx, signal_rx) = sync_channel(Self::default_channel_buffer_size());
         let inst = Instance {
             state: Arc::new(RwLock::new(State::new(context))),
             action_channel: None,
             observer_channel: None,
             signal_channel: Some(signal_tx),
+            signal_filter: Arc::new(Box::new(func)),
         };
         (inst, signal_rx)
     }
@@ -255,6 +245,7 @@ impl Instance {
             action_channel: None,
             observer_channel: None,
             signal_channel: None,
+            signal_filter: Arc::new(Box::new(|_| false)),
         }
     }
 

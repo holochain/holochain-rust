@@ -63,6 +63,7 @@
 use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::{executor::block_on, TryFutureExt};
 use holochain_core::{
+    action::Action,
     context::Context,
     instance::Instance,
     network::actions::initialize_network::initialize_network,
@@ -89,11 +90,18 @@ impl Holochain {
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 
-    pub fn with_signals(
+    /// Create a new Holochain instance with a signal channel, specifying a
+    /// predicate closure to define which Actions should result in signals being emitted.
+    /// Caller takes ownership of the Receiver for the signal channel.
+    pub fn with_signals<F>(
         dna: Dna,
         context: Arc<Context>,
-    ) -> HolochainResult<(Self, Receiver<Signal>)> {
-        let (instance, signal_rx) = Instance::with_signals(context.clone());
+        signal_filter_func: F,
+    ) -> HolochainResult<(Self, Receiver<Signal>)>
+    where
+        F: Fn(&Action) -> bool + 'static + Send + Sync,
+    {
+        let (instance, signal_rx) = Instance::with_signals(context.clone(), signal_filter_func);
         Self::from_dna_and_context_and_instance(dna, context, instance).map(|hc| (hc, signal_rx))
     }
 
@@ -434,7 +442,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
-        let (mut hc, signal_rx) = Holochain::with_signals(dna.clone(), context).unwrap();
+        let (mut hc, signal_rx) = Holochain::with_signals(dna.clone(), context, |_| true).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");

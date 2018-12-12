@@ -1,5 +1,5 @@
 use crate::{
-    dna::{capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
+    dna::{bridges::{Bridge, BridgePresence}, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
@@ -53,6 +53,9 @@ pub struct Dna {
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
     pub zomes: BTreeMap<String, zome::Zome>,
+
+    /// A list of bridges to other DNAs that this DNA can use or depends on.
+    pub bridges: Option<Vec<Bridge>>,
 }
 
 impl Default for Dna {
@@ -66,6 +69,7 @@ impl Default for Dna {
             dna_spec_version: String::from("2.0"),
             properties: empty_object(),
             zomes: BTreeMap::new(),
+            bridges: None,
         }
     }
 }
@@ -191,6 +195,22 @@ impl Dna {
         let s = String::from(JsonString::from(self.to_owned()));
         multihash::encode(multihash::Hash::SHA2256, &s.into_bytes())
             .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
+    }
+
+    pub fn get_required_bridges(&self) -> Vec<Bridge> {
+        match self.bridges {
+            None => Vec::new(),
+            Some(ref bridges) => bridges
+                .iter()
+                .filter(|bridge| {
+                    match bridge {
+                        Bridge::Address(b) => b.presence == BridgePresence::Required,
+                        Bridge::Trait(b) => b.presence == BridgePresence::Required,
+                    }
+                })
+                .cloned()
+                .collect()
+        }
     }
 }
 

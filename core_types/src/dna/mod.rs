@@ -23,6 +23,7 @@
 //! assert_eq!(name, dna2.name);
 //! ```
 
+pub mod bridges;
 pub mod capabilities;
 pub mod dna;
 pub mod entry_types;
@@ -36,7 +37,9 @@ pub mod tests {
     use super::*;
     extern crate base64;
     use crate::{
+        cas::content::Address,
         dna::{
+            bridges::{Bridge, AddressBridge, TraitBridge, BridgePresence},
             entry_types::EntryTypeDef,
             zome::tests::test_zome,
         },
@@ -137,7 +140,8 @@ pub mod tests {
                             "code": "AAECAw=="
                         }
                     }
-                }
+                },
+                "bridges": null
             }"#,
         )
         .replace(char::is_whitespace, "");
@@ -459,6 +463,80 @@ pub mod tests {
         assert!(
             dna.get_zome_name_for_app_entry_type(&AppEntryType::from("non existant entry type"))
                 .is_none()
+        );
+    }
+
+    #[test]
+    fn test_get_required_bridges() {
+        let dna = Dna::try_from(JsonString::from(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": {
+                    "test zome": {
+                        "name": "test zome",
+                        "description": "test",
+                        "config": {},
+                        "capabilities": {
+                            "test capability": {
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "fn_declarations": []
+                            }
+                        },
+                        "entry_types": {
+                            "test type": {
+                                "description": "",
+                                "sharing": "public"
+                            }
+                        },
+                        "code": {
+                            "code": ""
+                        }
+                    }
+                },
+                "bridges": [
+                    {
+                        "presence": "Required",
+                        "handle": "DPKI",
+                        "dna_address": "Qmabcdef1234567890"
+                    },
+                    {
+                        "presence": "Optional",
+                        "handle": "Vault",
+                        "library_trait": "org.holochain.alpha.personal-data-handler"
+                    },
+                    {
+                        "presence": "Required",
+                        "handle": "HCHC",
+                        "library_trait": "org.holochain.alpha.dna-repository"
+                    }
+                ]
+            }"#,
+        ))
+            .unwrap();
+
+        assert_eq!(
+            dna.get_required_bridges(),
+            vec![
+                Bridge::Address(AddressBridge{
+                    presence: BridgePresence::Required,
+                    handle: String::from("DPKI"),
+                    dna_address: Address::from("Qmabcdef1234567890"),
+                }),
+                Bridge::Trait(TraitBridge{
+                    presence: BridgePresence::Required,
+                    handle: String::from("HCHC"),
+                    library_trait: String::from("org.holochain.alpha.dna-repository"),
+                }),
+            ]
         );
     }
 }

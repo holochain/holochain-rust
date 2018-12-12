@@ -596,7 +596,7 @@ fn can_remove_modified_entry() {
 
 #[test]
 fn can_send_and_receive() {
-    let (mut hc, _) = start_holochain_instance("can_remove_modified_entry", "alice");
+    let (mut hc, _) = start_holochain_instance("can_send_and_receive", "alice");
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
     assert!(result.is_ok(), "result = {:?}", result);
     let agent_id = result.unwrap().to_string();

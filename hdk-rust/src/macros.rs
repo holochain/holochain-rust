@@ -41,7 +41,7 @@ macro_rules! load_json {
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::dna::zome::entry_types::Sharing;
+/// # use holochain_core_types::dna::entry_types::Sharing;
 /// # use boolinator::Boolinator;
 /// # use hdk::error::ZomeApiResult;
 /// use holochain_core_types::cas::content::Address;
@@ -169,14 +169,14 @@ macro_rules! define_zome {
             }
         }
 
-        use $crate::holochain_core_types::dna::zome::capabilities::Capability;
+        use $crate::holochain_core_types::dna::capabilities::Capability;
         use std::collections::HashMap;
 
         #[no_mangle]
         #[allow(unused_imports)]
         pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
 
-            use $crate::holochain_core_types::dna::zome::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
+            use $crate::holochain_core_types::dna::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
             use std::collections::BTreeMap;
 
             let return_value: $crate::holochain_core_types::dna::zome::ZomeCapabilities = {

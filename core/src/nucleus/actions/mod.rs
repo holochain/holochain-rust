@@ -15,7 +15,7 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::ChainHeader,
         dna::{
-            zome::{capabilities::Capability, entry_types::EntryTypeDef},
+            capabilities::Capability, entry_types::EntryTypeDef,
             Dna,
         },
         entry::{entry_type::AppEntryType, Entry},

@@ -14,7 +14,7 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    dna::{wasm::DnaWasm, zome::capabilities::Capability, Dna},
+    dna::{wasm::DnaWasm, capabilities::Capability, Dna},
     error::{DnaError, HcResult, HolochainError},
     json::JsonString,
 };

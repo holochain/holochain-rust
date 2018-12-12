@@ -24,7 +24,7 @@ use crate::nucleus::ribosome::{
     runtime::Runtime,
     Defn,
 };
-use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_core_types::dna::capabilities::ReservedCapabilityNames;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 
@@ -192,7 +192,7 @@ pub mod tests {
     };
     use std::{str::FromStr, sync::Arc};
 
-    use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
+    use holochain_core_types::dna::capabilities::ReservedCapabilityNames;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument

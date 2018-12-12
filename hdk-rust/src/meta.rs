@@ -1,8 +1,8 @@
 use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::{
-    dna::zome::{
+    dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
-        ZomeCapabilities, ZomeEntryTypes,
+        zome::{ZomeCapabilities, ZomeEntryTypes},
     },
     entry::entry_type::{AppEntryType, EntryType},
     error::HolochainError,
@@ -237,7 +237,10 @@ pub mod tests {
     use crate as hdk;
     use crate::ValidationPackageDefinition;
     use holochain_core_types::{
-        dna::zome::{entry_types::Sharing, ZomeCapabilities},
+        dna::{
+            entry_types::Sharing,
+            zome::ZomeCapabilities,
+        },
         error::HolochainError,
         json::JsonString,
     };

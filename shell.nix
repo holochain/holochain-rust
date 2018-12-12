@@ -19,7 +19,7 @@ let
   });
 
   # wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
-  wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
+  wasmBuild = path: "cargo build --target ${wasmTarget} --manifest-path ${path}";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
   ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
@@ -116,7 +116,7 @@ stdenv.mkDerivation rec {
   RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no";
   CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
-  /* RUST_LOG = "info"; */
+  RUST_LOG = "info";
 
   shellHook = ''
   export PATH=$PATH:~/.cargo/bin;

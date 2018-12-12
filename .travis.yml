@@ -169,8 +169,8 @@ jobs:
         - export TMPDIR=$TRAVIS_TMPDIR
         - printenv
         - df -h
-        - du -hs $TRAVIS_BUILD_DIR/target/*
-        # - nix-shell --pure --run hc-wasm-build --max-jobs auto --cores 0 |& pastebinit
+        # - du -hs $TRAVIS_BUILD_DIR/target/*
+        # - nix-shell --pure --run "hc-wasm-build --max-jobs auto --cores 0 |& pastebinit"
         # - nix-shell --pure --run hc-install-tarpaulin --max-jobs auto --cores 0
         # - nix-shell --pure --run hc-install-cmd
       before_cache:

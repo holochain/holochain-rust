@@ -76,6 +76,7 @@ stdenv.mkDerivation rec {
     # python36Packages.zerobin
     # haskellPackages.pb
     pastebinit
+    qdirstat
 
     unixtools.watch
 

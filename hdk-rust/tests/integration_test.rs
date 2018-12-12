@@ -200,7 +200,7 @@ fn can_use_globals() {
     assert_eq!(
         result.clone(),
         Ok(JsonString::from(HashString::from(
-            "alex--------------------------------------------------------------------------------ADO_"
+            "alice-------------------------------------------------------------------------------ACsF"
         ))),
         "result = {:?}",
         result

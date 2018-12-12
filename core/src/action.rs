@@ -134,6 +134,10 @@ pub enum Action {
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
     SendDirectMessage(DirectMessageData),
 
+    /// Makes the direct message connection with the given ID timeout by adding an
+    /// Err(HolochainError::Timeout) to NetworkState::custom_direct_message_replys.
+    SendDirectMessageTimeout(String),
+
     /// Makes the network module forget about the direct message
     /// connection with the given ID.
     /// Triggered when we got an answer to our initial DM.

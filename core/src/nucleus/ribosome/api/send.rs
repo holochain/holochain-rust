@@ -3,7 +3,6 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use futures::executor::block_on;
-use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::send::SendArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -25,8 +24,7 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         zome: runtime.zome_call.zome_name.clone(),
     };
 
-    let result = block_on(custom_send(args.to_agent, message, &runtime.context))
-        .map_err(|error| HolochainError::ErrorGeneric(error));
+    let result = block_on(custom_send(args.to_agent, message, &runtime.context));
 
     runtime.store_result(result)
 }

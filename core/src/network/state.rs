@@ -53,7 +53,7 @@ pub struct NetworkState {
     /// Entries get removed when we receive an answer through Action::ResolveDirectConnection.
     pub direct_message_connections: HashMap<String, DirectMessage>,
 
-    pub custom_direct_message_replys: HashMap<String, Result<String, String>>,
+    pub custom_direct_message_replys: HashMap<String, Result<String, HolochainError>>,
 
     id: snowflake::ProcessUniqueId,
 }

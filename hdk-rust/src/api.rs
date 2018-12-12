@@ -17,7 +17,7 @@ use holochain_wasm_utils::{
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
         send::SendArgs,
-        QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
+        QueryArgs, QueryArgsNames, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
         hash::HashString,
@@ -871,7 +871,7 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 /// }
 /// # }
 /// ```
-pub fn query(entry_type_names: Vec<String>, start: u32, limit: u32) -> ZomeApiResult<QueryResult> {
+pub fn query(entry_type_names: QueryArgsNames, start: u32, limit: u32) -> ZomeApiResult<QueryResult> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory

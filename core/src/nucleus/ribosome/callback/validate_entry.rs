@@ -54,6 +54,10 @@ pub fn validate_entry(
             context,
         )?),
 
+        // Deletion entries are not validated currently and always valid
+        // TODO: Specify how Deletion can be commited to chain.
+        EntryType::Deletion => Ok(CallbackResult::Pass),
+
         _ => Ok(CallbackResult::NotImplemented),
     }
 }
@@ -68,7 +72,7 @@ fn validate_link_entry(
         _ => {
             return Err(HolochainError::ValidationFailed(
                 "Could not extract link_add from entry".into(),
-            ))
+            ));
         }
     };
     let link = link_add.link().clone();

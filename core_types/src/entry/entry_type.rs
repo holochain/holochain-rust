@@ -1,6 +1,7 @@
 use error::HolochainError;
 use json::JsonString;
 use std::{
+    convert::TryFrom,
     fmt::{Display, Formatter, Result as FmtResult},
     str::FromStr,
 };
@@ -49,12 +50,31 @@ pub enum EntryType {
 
     Dna,
     AgentId,
-    Delete,
+    Deletion,
     LinkAdd,
     LinkRemove,
     LinkList,
     ChainHeader,
     ChainMigrate,
+}
+
+impl From<AppEntryType> for EntryType {
+    fn from(app_entry_type: AppEntryType) -> Self {
+        EntryType::App(app_entry_type)
+    }
+}
+
+impl TryFrom<EntryType> for AppEntryType {
+    type Error = HolochainError;
+    fn try_from(entry_type: EntryType) -> Result<Self, Self::Error> {
+        match entry_type {
+            EntryType::App(app_entry_type) => Ok(app_entry_type),
+            _ => Err(HolochainError::ErrorGeneric(format!(
+                "Attempted to convert {:?} EntryType to an AppEntryType",
+                entry_type
+            ))),
+        }
+    }
 }
 
 impl EntryType {
@@ -110,7 +130,7 @@ impl FromStr for EntryType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             sys_prefix!("agent_id") => EntryType::AgentId,
-            sys_prefix!("delete") => EntryType::Delete,
+            sys_prefix!("deletion") => EntryType::Deletion,
             sys_prefix!("dna") => EntryType::Dna,
             sys_prefix!("chain_header") => EntryType::ChainHeader,
             sys_prefix!("link_add") => EntryType::LinkAdd,
@@ -127,7 +147,7 @@ impl From<EntryType> for String {
         String::from(match entry_type {
             EntryType::App(ref app_entry_type) => &app_entry_type.0,
             EntryType::AgentId => sys_prefix!("agent_id"),
-            EntryType::Delete => sys_prefix!("delete"),
+            EntryType::Deletion => sys_prefix!("deletion"),
             EntryType::Dna => sys_prefix!("dna"),
             EntryType::ChainHeader => sys_prefix!("chain_header"),
             EntryType::LinkAdd => sys_prefix!("link_add"),
@@ -195,7 +215,7 @@ pub mod tests {
             EntryType::App(AppEntryType::from("foo")),
             EntryType::Dna,
             EntryType::AgentId,
-            EntryType::Delete,
+            EntryType::Deletion,
             EntryType::LinkAdd,
             EntryType::LinkRemove,
             EntryType::LinkList,
@@ -231,7 +251,7 @@ pub mod tests {
         for (type_str, variant) in vec![
             (sys_prefix!("dna"), EntryType::Dna),
             (sys_prefix!("agent_id"), EntryType::AgentId),
-            (sys_prefix!("delete"), EntryType::Delete),
+            (sys_prefix!("deletion"), EntryType::Deletion),
             (sys_prefix!("link_add"), EntryType::LinkAdd),
             (sys_prefix!("link_remove"), EntryType::LinkRemove),
             (sys_prefix!("link_list"), EntryType::LinkList),

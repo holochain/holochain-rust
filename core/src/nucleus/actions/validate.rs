@@ -57,7 +57,11 @@ pub fn validate_entry<'a>(
         }
 
         EntryType::LinkAdd => {
-            // LinkAdd can always be valiated
+            // LinkAdd can always be validated
+        }
+
+        EntryType::Deletion => {
+            // FIXME
         }
 
         _ => {
@@ -66,7 +70,7 @@ pub fn validate_entry<'a>(
                     "Attempted to validate system entry type {:?}",
                     entry.entry_type(),
                 ),
-            ))))
+            ))));
         }
     }
 

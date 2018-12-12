@@ -109,21 +109,21 @@ where
     map.end()
 }
 
-pub fn deserialize_entry_types<'de, D>(deserializer: D) -> Result<(ZomeEntryTypes), D::Error>
+pub fn deserialize_entry_types<'de, D>(deserializer: D) -> Result<ZomeEntryTypes, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let serialized_entry_types = BTreeMap::<String, EntryTypeDef>::deserialize(deserializer)?;
+    let serialized_entry_types: BTreeMap<String, EntryTypeDef> =
+        BTreeMap::deserialize(deserializer)?;
 
-    let mut map = BTreeMap::new();
-    for (k, v) in serialized_entry_types {
-        map.insert(EntryType::from(k), v);
-    }
-    Ok(map)
+    Ok(serialized_entry_types
+        .into_iter()
+        .map(|(k, v)| (EntryType::from(k), v))
+        .collect())
 }
 
 /// Represents an individual object in the "zome" "entry_types" array.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash, DefaultJson)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq, Hash, DefaultJson)]
 pub struct EntryTypeDef {
     /// A description of this entry type.
     #[serde(default)]
@@ -140,18 +140,6 @@ pub struct EntryTypeDef {
     /// An array of link definitions for links pointing to entries of this type
     #[serde(default)]
     pub linked_from: Vec<LinkedFrom>,
-}
-
-impl Default for EntryTypeDef {
-    /// Provide defaults for a "zome"s "entry_types" object.
-    fn default() -> Self {
-        EntryTypeDef {
-            description: String::new(),
-            sharing: Sharing::Public,
-            links_to: Vec::new(),
-            linked_from: Vec::new(),
-        }
-    }
 }
 
 impl EntryTypeDef {

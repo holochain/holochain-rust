@@ -458,7 +458,7 @@ pub mod tests {
             (ZomeApiFunction::GetLinks, "hc_get_links"),
             (ZomeApiFunction::Query, "hc_query"),
             (ZomeApiFunction::EntryAddress, "hc_entry_address"),
-            (ZomeApiFunction::EntryAddress, "hc_send"),
+            (ZomeApiFunction::Send, "hc_send"),
         ] {
             assert_eq!(output, input.as_str());
         }

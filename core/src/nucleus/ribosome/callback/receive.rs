@@ -86,7 +86,7 @@ pub mod tests {
     }
 
     #[test]
-    fn pass_test() {
+    fn implemented_with_null() {
         let zome = "test_zome";
         let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0)
             .expect("Test callback instance could not be initialized");
@@ -94,21 +94,6 @@ pub mod tests {
 
         let result = receive(context, zome, &CallbackParams::Receive(String::from("")));
 
-        assert_eq!(CallbackResult::Pass, result);
+        assert_eq!(CallbackResult::ReceiveResult(String::from("null")), result);
     }
-
-    #[test]
-    fn fail_test() {
-        let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 1)
-            .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
-
-        let result = receive(context, zome, &CallbackParams::Receive(String::from("")));
-
-        // @TODO how to get fail strings back out?
-        // @see https://github.com/holochain/holochain-rust/issues/205
-        assert_eq!(CallbackResult::Fail("\"".to_string()), result);
-    }
-
 }

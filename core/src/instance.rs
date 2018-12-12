@@ -99,7 +99,6 @@ impl Instance {
         Arc::new(sub_context)
     }
 
-
     /// Start the Event Loop on a seperate thread
     pub fn start_action_loop(&mut self, context: Arc<Context>) {
         let (rx_action, rx_observer) = self.initialize_channels();

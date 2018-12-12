@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
-    context::{Context,get_dna_and_agent},
+    context::{get_dna_and_agent, Context},
     instance::dispatch_action,
 };
 use futures::{
@@ -14,7 +14,6 @@ use std::{
     pin::{Pin, Unpin},
     sync::Arc,
 };
-
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {

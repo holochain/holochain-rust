@@ -6,7 +6,7 @@ use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
-    error::{HcResult,HolochainError},
+    error::{HcResult, HolochainError},
     json::JsonString,
 };
 use std::{
@@ -34,7 +34,6 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
 }
-
 
 impl Context {
     pub fn default_channel_buffer_size() -> usize {
@@ -145,7 +144,6 @@ impl Context {
             .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
     }
 }
-
 
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, String)> {
     let state = context

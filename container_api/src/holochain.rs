@@ -61,14 +61,14 @@
 //!```
 
 use crate::error::{HolochainInstanceError, HolochainResult};
-use futures::{executor::block_on};
+use futures::executor::block_on;
 use holochain_core::{
     context::Context,
     instance::Instance,
     nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
-    workflows::network
+    workflows::network,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
@@ -87,9 +87,7 @@ impl Holochain {
         let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
-        let result = block_on(
-           network::initialize(&instance,Some(dna),context.clone())
-        );
+        let result = block_on(network::initialize(&instance, Some(dna), context.clone()));
         match result {
             Ok(new_context) => {
                 context.log(format!("{} instantiated", name));
@@ -110,11 +108,9 @@ impl Holochain {
             .load(context.clone())?
             .unwrap_or(State::new(context.clone()));
         // TODO get the network state initialized!!
-        let mut instance = Instance::from_state(loaded_state.clone());   
+        let mut instance = Instance::from_state(loaded_state.clone());
         instance.start_action_loop(context.clone());
-        let new_context = block_on(
-           network::initialize(&instance,None,context.clone()),
-        )?;
+        let new_context = block_on(network::initialize(&instance, None, context.clone()))?;
         Ok(Holochain {
             instance,
             context: new_context.clone(),
@@ -175,12 +171,12 @@ mod tests {
     };
     use super::*;
     use holochain_core::{
+        agent::{chain_store::ChainStore, state::AgentState},
         context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
-        agent::{chain_store::ChainStore,state::AgentState}
     };
-    use holochain_core_types::{agent::AgentId, dna::Dna,chain_header::test_chain_header};
+    use holochain_core_types::{agent::AgentId, chain_header::test_chain_header, dna::Dna};
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
@@ -189,7 +185,7 @@ mod tests {
         create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
 
-    use std::{fs::File,io::prelude::*,path::MAIN_SEPARATOR};
+    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -229,19 +225,15 @@ mod tests {
     fn test_context_with_path(agent_name: &str) -> (Arc<Context>, String) {
         let tempdir = tempdir().unwrap();
         let path = tempdir.path().to_str().unwrap();
-        
-        let file_system =
-            FilesystemStorage::new(path).unwrap();
+
+        let file_system = FilesystemStorage::new(path).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
             AgentId::generate_fake(agent_name),
             test_utils::test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(path.to_string())
-                    .unwrap(),
-            )),
+            Arc::new(RwLock::new(EavFileStorage::new(path.to_string()).unwrap())),
             mock_network_config(),
         )
         .unwrap();
@@ -251,7 +243,7 @@ mod tests {
         let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
         let global_state = Arc::new(RwLock::new(state));
         context.set_state(global_state.clone());
-        (Arc::new(context),path.to_string())
+        (Arc::new(context), path.to_string())
     }
 
     fn example_api_wasm_path() -> String {
@@ -274,18 +266,17 @@ mod tests {
         assert!(!hc.active);
         assert_eq!(hc.context.agent_id.nick, "bob".to_string());
         let network_state = hc.context.state().unwrap().network().clone();
-        assert_eq!(network_state.agent_id.is_some(),true);
-        assert_eq!(network_state.dna_hash.is_some(),true);
+        assert_eq!(network_state.agent_id.is_some(), true);
+        assert_eq!(network_state.dna_hash.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
     }
 
-    fn write_agent_state_to_file() -> String
-    {
+    fn write_agent_state_to_file() -> String {
         let tempdir = tempdir().unwrap();
         let path = tempdir.path().to_str().unwrap();
-        let tempfile = vec![path,"Agentstate.txt"].join(&*MAIN_SEPARATOR.to_string());
+        let tempfile = vec![path, "Agentstate.txt"].join(&*MAIN_SEPARATOR.to_string());
         let mut file = File::create(tempfile).unwrap();
         file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
         path.to_string()
@@ -294,14 +285,14 @@ mod tests {
     fn can_load() {
         let path = write_agent_state_to_file();
         let (context, _) = test_context("bob");
-        let result = Holochain::load(path,context.clone());
+        let result = Holochain::load(path, context.clone());
         assert!(result.is_ok());
         let loaded_holo = result.unwrap();
         assert!(!loaded_holo.active);
         assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
         let network_state = loaded_holo.context.state().unwrap().network().clone();
-        assert_eq!(network_state.agent_id.is_some(),true);
-        assert_eq!(network_state.dna_hash.is_some(),true);
+        assert_eq!(network_state.agent_id.is_some(), true);
+        assert_eq!(network_state.dna_hash.is_some(), true);
         assert!(loaded_holo.instance.state().nucleus().has_initialized());
     }
 

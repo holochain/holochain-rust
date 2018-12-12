@@ -61,17 +61,17 @@
 //!```
 
 use crate::error::{HolochainInstanceError, HolochainResult};
-use futures::{executor::block_on, TryFutureExt};
+use futures::{executor::block_on};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
+    nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
     workflows::network
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
-use std::sync::{Arc,RwLock};
+use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {

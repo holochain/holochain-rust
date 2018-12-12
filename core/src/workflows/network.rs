@@ -7,8 +7,8 @@ use std::{
     sync::Arc,
 };
 
-use holochain_core_types::{error::{HcResult,HolochainError},dna::Dna};
-use futures::{executor::block_on,TryFutureExt,FutureExt};
+use holochain_core_types::{error::HcResult,dna::Dna};
+use futures::TryFutureExt;
 use crate::{nucleus::actions::initialize::initialize_application,instance::Instance};
 
 

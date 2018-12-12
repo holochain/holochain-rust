@@ -265,9 +265,7 @@ mod tests {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
         let (context, test_logger) = test_context("bob");
-        println!("new");
         let result = Holochain::new(dna.clone(), context.clone());
-        println!("result");
         assert!(result.is_ok());
         let hc = result.unwrap();
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
@@ -287,10 +285,7 @@ mod tests {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
         let (context, path) = test_context_with_path("bob");
-        let con = context.clone();
-        let mut persister = &mut *con.persister.lock().unwrap();
-        let persist_con = context.clone();
-        persister.save(persist_con.state().unwrap().clone());
+        Holochain::new(dna.clone(), context.clone()).unwrap();
         let result = Holochain::load(path,context.clone());
         assert!(result.is_ok());
         let loaded_holo = result.unwrap();

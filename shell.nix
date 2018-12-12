@@ -19,7 +19,7 @@ let
   });
 
   # wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
-  wasmBuild = path: "cargo build --target ${wasmTarget} --manifest-path ${path}";
+  wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
   ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
@@ -27,6 +27,7 @@ let
   ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
   ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
   '';
+
 
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
@@ -111,7 +112,8 @@ stdenv.mkDerivation rec {
   /* builder = "${hc-fmt}/bin/hc-fmt"; */
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
-  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
+  # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no";
   CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
   /* RUST_LOG = "info"; */

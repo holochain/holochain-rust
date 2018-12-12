@@ -165,7 +165,7 @@ pub struct DhtMetaData {
 /// High level p2p / network message
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(tag = "method")]
-pub enum ProtocolWrapper {
+pub enum P2pProtocol {
     /// [send] request the current state from the p2p module
     #[serde(rename = "requestState")]
     RequestState,
@@ -261,11 +261,11 @@ pub enum ProtocolWrapper {
     StoreDhtMeta(DhtMetaData),
 }
 
-impl<'a> TryFrom<&'a Protocol> for ProtocolWrapper {
+impl<'a> TryFrom<&'a Protocol> for P2pProtocol {
     type Error = Error;
     fn try_from(p: &Protocol) -> Result<Self, Error> {
         if let Protocol::Json(json) = p {
-            match ProtocolWrapper::try_from(json) {
+            match P2pProtocol::try_from(json) {
                 Ok(w) => {
                     return Ok(w);
                 }
@@ -276,21 +276,21 @@ impl<'a> TryFrom<&'a Protocol> for ProtocolWrapper {
     }
 }
 
-impl TryFrom<Protocol> for ProtocolWrapper {
+impl TryFrom<Protocol> for P2pProtocol {
     type Error = Error;
     fn try_from(p: Protocol) -> Result<Self, Error> {
-        ProtocolWrapper::try_from(&p)
+        P2pProtocol::try_from(&p)
     }
 }
 
-impl<'a> From<&'a ProtocolWrapper> for Protocol {
-    fn from(w: &ProtocolWrapper) -> Self {
+impl<'a> From<&'a P2pProtocol> for Protocol {
+    fn from(w: &P2pProtocol) -> Self {
         Protocol::Json(JsonString::from(w))
     }
 }
 
-impl From<ProtocolWrapper> for Protocol {
-    fn from(w: ProtocolWrapper) -> Self {
+impl From<P2pProtocol> for Protocol {
+    fn from(w: P2pProtocol) -> Self {
         Protocol::from(&w)
     }
 }
@@ -324,14 +324,14 @@ mod tests {
 
     #[test]
     fn it_can_convert_funky_state() {
-        let w = ProtocolWrapper::try_from(JsonString::from(
+        let w = P2pProtocol::try_from(JsonString::from(
             r#"{
             "method": "state",
             "state": "test_state"
         }"#,
         ))
         .unwrap();
-        if let ProtocolWrapper::State(s) = w {
+        if let P2pProtocol::State(s) = w {
             assert_eq!("undefined", &s.id);
             assert_eq!(0, s.bindings.len());
         } else {

@@ -13,7 +13,7 @@ use holochain_net_connection::{
         NetConnection, NetConnectionRelay, NetHandler, NetShutdown, NetWorker, NetWorkerFactory,
     },
     protocol::Protocol,
-    protocol_wrapper::{ConfigData, ProtocolWrapper, StateData},
+    protocol_wrapper::{ConfigData, P2pProtocol, StateData},
     NetResult,
 };
 
@@ -63,12 +63,12 @@ impl NetWorker for IpcNetWorker {
         if let Ok(data) = self.ipc_relay_receiver.try_recv() {
             did_something = true;
 
-            if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
+            if let Ok(wrap) = P2pProtocol::try_from(&data) {
                 match wrap {
-                    ProtocolWrapper::State(s) => {
+                    P2pProtocol::State(s) => {
                         self.priv_handle_state(s)?;
                     }
-                    ProtocolWrapper::DefaultConfig(c) => {
+                    P2pProtocol::DefaultConfig(c) => {
                         self.priv_handle_default_config(c)?;
                     }
                     _ => (),
@@ -276,7 +276,7 @@ impl IpcNetWorker {
         let now = get_timestamp_in_ms();
 
         if now - self.last_state_date > 500.0 {
-            self.ipc_relay.send(ProtocolWrapper::RequestState.into())?;
+            self.ipc_relay.send(P2pProtocol::RequestState.into())?;
             self.last_state_date = now;
         }
 
@@ -289,7 +289,7 @@ impl IpcNetWorker {
 
         if &self.state == "need_config" {
             self.ipc_relay
-                .send(ProtocolWrapper::RequestDefaultConfig.into())?;
+                .send(P2pProtocol::RequestDefaultConfig.into())?;
         }
 
         Ok(())
@@ -300,7 +300,7 @@ impl IpcNetWorker {
     fn priv_handle_default_config(&mut self, config: ConfigData) -> NetResult<()> {
         if &self.state == "need_config" {
             self.ipc_relay.send(
-                ProtocolWrapper::SetConfig(ConfigData {
+                P2pProtocol::SetConfig(ConfigData {
                     config: config.config,
                 })
                 .into(),

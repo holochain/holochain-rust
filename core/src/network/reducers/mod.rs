@@ -30,7 +30,7 @@ use crate::{
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
     net_connection::NetConnection,
-    protocol_wrapper::{MessageData, ProtocolWrapper},
+    protocol_wrapper::{MessageData, P2pProtocol},
 };
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
@@ -72,7 +72,7 @@ pub fn reduce(
 /// that lives in the NetworkState.
 pub fn send(
     network_state: &mut NetworkState,
-    protocol_wrapper: ProtocolWrapper,
+    protocol_wrapper: P2pProtocol,
 ) -> Result<(), HolochainError> {
     network_state
         .network
@@ -110,7 +110,7 @@ pub fn send_message(
 
     println!("SEND MESSAGE: {:?}", data);
 
-    let _ = send(network_state, ProtocolWrapper::SendMessage(data))?;
+    let _ = send(network_state, P2pProtocol::SendMessage(data))?;
 
     network_state.direct_message_connections.insert(id, message);
 

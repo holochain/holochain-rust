@@ -11,12 +11,12 @@ use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
         ConnectData, DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, MessageData,
-        ProtocolWrapper, TrackAppData,
+        P2pProtocol, TrackAppData,
     },
     NetResult,
 };
 
-use holochain_net::p2p_network::P2pNetwork;
+use holochain_net::p2p_network::P2pNetworkNode;
 
 use std::{convert::TryFrom, sync::mpsc};
 
@@ -27,18 +27,20 @@ fn usage() {
     std::process::exit(1);
 }
 
-struct SpawnResult {
-    pub dir_ref: tempfile::TempDir,
+struct IpcNode {
+    pub temp_dir_ref: tempfile::TempDir,
     pub dir: String,
-    pub con: P2pNetwork,
+    pub p2p_node: P2pNetworkNode,
     pub receiver: mpsc::Receiver<Protocol>,
 }
 
-impl SpawnResult {
+impl IpcNode {
+
+    // See if there is a message to receive
     #[cfg_attr(tarpaulin, skip)]
-    pub fn try_recv(&mut self) -> NetResult<ProtocolWrapper> {
+    pub fn try_recv(&mut self) -> NetResult<P2pProtocol> {
         let data = self.receiver.try_recv()?;
-        match ProtocolWrapper::try_from(&data) {
+        match P2pProtocol::try_from(&data) {
             Ok(r) => Ok(r),
             Err(e) => {
                 let s = format!("{:?}", e);
@@ -50,18 +52,19 @@ impl SpawnResult {
         }
     }
 
+    // Wait for a message corresponding to predicate
     #[cfg_attr(tarpaulin, skip)]
     pub fn wait(
         &mut self,
-        predicate: Box<dyn Fn(&ProtocolWrapper) -> bool>,
-    ) -> NetResult<ProtocolWrapper> {
+        predicate: Box<dyn Fn(&P2pProtocol) -> bool>,
+    ) -> NetResult<P2pProtocol> {
         loop {
             let mut did_something = false;
 
-            if let Ok(r) = self.try_recv() {
+            if let Ok(p2p_msg) = self.try_recv() {
                 did_something = true;
-                if predicate(&r) {
-                    return Ok(r);
+                if predicate(&p2p_msg) {
+                    return Ok(p2p_msg);
                 }
             }
 
@@ -71,20 +74,22 @@ impl SpawnResult {
         }
     }
 
+    // Stop node
     #[cfg_attr(tarpaulin, skip)]
     pub fn stop(self) {
-        self.con.stop().unwrap();
+        self.p2p_node.stop().unwrap();
     }
 }
 
+// Spawn an IPC node that uses n3h and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn spawn_connection(n3h_path: &str) -> NetResult<SpawnResult> {
+fn spawn_connection(n3h_path: &str) -> NetResult<IpcNode> {
     let dir_ref = tempfile::tempdir()?;
     let dir = dir_ref.path().to_string_lossy().to_string();
 
     let (sender, receiver) = mpsc::channel::<Protocol>();
 
-    let con = P2pNetwork::new(
+    let p2p_node = P2pNetworkNode::new(
         Box::new(move |r| {
             sender.send(r?)?;
             Ok(())
@@ -110,10 +115,10 @@ fn spawn_connection(n3h_path: &str) -> NetResult<SpawnResult> {
         .into(),
     )?;
 
-    Ok(SpawnResult {
-        dir_ref,
+    Ok(IpcNode {
+        temp_dir_ref: dir_ref,
         dir,
-        con,
+        p2p_node,
         receiver,
     })
 }
@@ -146,83 +151,80 @@ fn exec() -> NetResult<()> {
     static AGENT_1: &'static str = "1_TEST_AGENT_1";
     static AGENT_2: &'static str = "2_TEST_AGENT_2";
 
+    // Check args
     let args: Vec<String> = std::env::args().collect();
-
     if args.len() != 2 {
         usage();
     }
-
     let n3h_path = args[1].clone();
-
     if n3h_path == "" {
         usage();
     }
 
+    // Create two nodes
     let mut node1 = spawn_connection(&n3h_path)?;
     let mut node2 = spawn_connection(&n3h_path)?;
-
     println!("node1 path: {}", node1.dir);
     println!("node2 path: {}", node2.dir);
 
-    let node1_state = node1.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
-    let node2_state = node2.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
+    // Get each node's current state
+    let node1_state = node1.wait(Box::new(one_is!(P2pProtocol::State(_))))?;
+    let node2_state = node2.wait(Box::new(one_is!(P2pProtocol::State(_))))?;
 
+    // get node IDs from their state
     let node1_id;
     let node2_id;
     let node2_binding;
-
-    one_let!(ProtocolWrapper::State(s) = node1_state {
+    one_let!(P2pProtocol::State(s) = node1_state {
         node1_id = s.id
     });
-
-    one_let!(ProtocolWrapper::State(s) = node2_state {
+    one_let!(P2pProtocol::State(s) = node2_state {
         node2_id = s.id;
         node2_binding = s.bindings[0].clone();
     });
 
-    node1.con.send(
-        ProtocolWrapper::TrackApp(TrackAppData {
+    // Send TrackApp message on both nodes
+    node1.p2p_node.send(
+        P2pProtocol::TrackApp(TrackAppData {
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
         })
         .into(),
     )?;
-    let connect_result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    let connect_result_1 = node1.wait(Box::new(one_is!(P2pProtocol::PeerConnected(_))))?;
     println!("self connected result 1: {:?}", connect_result_1);
-
-    node2.con.send(
-        ProtocolWrapper::TrackApp(TrackAppData {
+    node2.p2p_node.send(
+        P2pProtocol::TrackApp(TrackAppData {
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_2.to_string(),
         })
         .into(),
     )?;
-    let connect_result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    let connect_result_2 = node2.wait(Box::new(one_is!(P2pProtocol::PeerConnected(_))))?;
     println!("self connected result 2: {:?}", connect_result_2);
 
+    // Connect nodes between them
     println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
-
-    node1.con.send(
-        ProtocolWrapper::Connect(ConnectData {
+    node1.p2p_node.send(
+        P2pProtocol::Connect(ConnectData {
             address: node2_binding,
         })
         .into(),
     )?;
-
-    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    let result_1 = node1.wait(Box::new(one_is!(P2pProtocol::PeerConnected(_))))?;
     println!("got connect result 1: {:?}", result_1);
-    one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
+    one_let!(P2pProtocol::PeerConnected(d) = result_1 {
         assert_eq!(d.agent_id, AGENT_2);
     });
-
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::PeerConnected(_))))?;
     println!("got connect result 2: {:?}", result_2);
-    one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
+    one_let!(P2pProtocol::PeerConnected(d) = result_2 {
         assert_eq!(d.agent_id, AGENT_1);
     });
 
-    node1.con.send(
-        ProtocolWrapper::SendMessage(MessageData {
+    // Send a generic message
+    node1.p2p_node.send(
+        P2pProtocol::SendMessage(MessageData {
             msg_id: "test".to_string(),
             dna_hash: DNA_HASH.to_string(),
             to_agent_id: AGENT_2.to_string(),
@@ -231,12 +233,11 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
+    // Check if node2 received it
+    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::HandleSend(_))))?;
     println!("got handle send 2: {:?}", result_2);
-
-    node2.con.send(
-        ProtocolWrapper::HandleSendResult(MessageData {
+    node2.p2p_node.send(
+        P2pProtocol::HandleSendResult(MessageData {
             msg_id: "test".to_string(),
             dna_hash: DNA_HASH.to_string(),
             to_agent_id: AGENT_1.to_string(),
@@ -245,12 +246,12 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-
-    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
+    let result_1 = node1.wait(Box::new(one_is!(P2pProtocol::SendResult(_))))?;
     println!("got send result 1: {:?}", result_1);
 
-    node1.con.send(
-        ProtocolWrapper::PublishDht(DhtData {
+    // Send store DHT data
+    node1.p2p_node.send(
+        P2pProtocol::PublishDht(DhtData {
             msg_id: "testPub".to_string(),
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -259,15 +260,15 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-
-    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
+    // Check if both nodes received it
+    let result_1 = node1.wait(Box::new(one_is!(P2pProtocol::StoreDht(_))))?;
     println!("got store result 1: {:?}", result_1);
-
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::StoreDht(_))))?;
     println!("got store result 2: {:?}", result_2);
 
-    node2.con.send(
-        ProtocolWrapper::GetDht(GetDhtData {
+    // Send get DHT data
+    node2.p2p_node.send(
+        P2pProtocol::GetDht(GetDhtData {
             msg_id: "testGet".to_string(),
             dna_hash: DNA_HASH.to_string(),
             from_agent_id: AGENT_2.to_string(),
@@ -275,12 +276,12 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDht(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::GetDht(_))))?;
     println!("got dht get: {:?}", result_2);
 
-    node2.con.send(
-        ProtocolWrapper::GetDhtResult(DhtData {
+    // Send get DHT data result
+    node2.p2p_node.send(
+        P2pProtocol::GetDhtResult(DhtData {
             msg_id: "testGetResult".to_string(),
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -289,12 +290,12 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtResult(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::GetDhtResult(_))))?;
     println!("got dht get result: {:?}", result_2);
 
-    node1.con.send(
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+    // Send store DHT metadata
+    node1.p2p_node.send(
+        P2pProtocol::PublishDhtMeta(DhtMetaData {
             msg_id: "testPubMeta".to_string(),
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -304,15 +305,15 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-
-    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
+    // Check if both nodes received it
+    let result_1 = node1.wait(Box::new(one_is!(P2pProtocol::StoreDhtMeta(_))))?;
     println!("got store meta result 1: {:?}", result_1);
-
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::StoreDhtMeta(_))))?;
     println!("got store meta result 2: {:?}", result_2);
 
-    node2.con.send(
-        ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
+    // Send get DHT metadata
+    node2.p2p_node.send(
+        P2pProtocol::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
             dna_hash: DNA_HASH.to_string(),
             from_agent_id: AGENT_2.to_string(),
@@ -321,12 +322,12 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMeta(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::GetDhtMeta(_))))?;
     println!("got dht get: {:?}", result_2);
 
-    node2.con.send(
-        ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
+    // Send get DHT metadata result
+    node2.p2p_node.send(
+        P2pProtocol::GetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -336,18 +337,20 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::GetDhtMetaResult(_))))?;
     println!("got dht get result: {:?}", result_2);
 
+    // Wait a bit before closing
     for i in (0..4).rev() {
         println!("tick... {}", i);
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 
+    // Kill nodes
     node1.stop();
     node2.stop();
 
+    // Done
     Ok(())
 }
 

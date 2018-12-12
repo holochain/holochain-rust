@@ -7,7 +7,7 @@ use holochain_core_types::{
     cas::content::Address, entry::EntryWithMeta, error::HolochainError,
     validation::ValidationPackage,
 };
-use holochain_net::p2p_network::P2pNetwork;
+use holochain_net::p2p_network::P2pNetworkNode;
 use snowflake;
 use std::{
     collections::HashMap,
@@ -37,7 +37,7 @@ pub struct NetworkState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub actions: Actions,
-    pub network: Option<Arc<Mutex<P2pNetwork>>>,
+    pub network: Option<Arc<Mutex<P2pNetworkNode>>>,
     pub dna_hash: Option<String>,
     pub agent_id: Option<String>,
 

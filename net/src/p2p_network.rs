@@ -21,25 +21,25 @@ use serde_json;
 
 
 /// The p2p network instance
-pub struct P2pNetwork {
+pub struct P2pNetworkNode {
     connection: NetConnectionThread,
     config: P2pConfig,
 }
 
-impl std::fmt::Debug for P2pNetwork {
+impl std::fmt::Debug for P2pNetworkNode {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "P2pNetwork {{}}")
     }
 }
 
-impl NetConnection for P2pNetwork {
+impl NetConnection for P2pNetworkNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         self.connection.send(data)
     }
 }
 
-impl P2pNetwork {
+impl P2pNetworkNode {
     /// create a new p2p network instance, given message handler and config json
     pub fn new(handler: NetHandler, config_json: &JsonString) -> NetResult<Self> {
         // Create Config struct
@@ -70,7 +70,7 @@ impl P2pNetwork {
             },
             _ => bail!("unknown p2p_network backend: {}", config["backend"]),
         };
-        Ok(P2pNetwork {
+        Ok(P2pNetworkNode {
             connection,
             config: P2pConfig { backend_kind: P2pBackendKind::MOCK, backend_config: config_json.clone()},
     })
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn it_should_fail_bad_backend_type() {
-        if let Err(e) = P2pNetwork::new(
+        if let Err(e) = P2pNetworkNode::new(
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "bad"
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn it_should_create_zmq_socket() {
-        let mut res = P2pNetwork::new(
+        let mut res = P2pNetworkNode::new(
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "ipc",
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn it_should_create_mock() {
-        let mut res = P2pNetwork::new(
+        let mut res = P2pNetworkNode::new(
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "mock"

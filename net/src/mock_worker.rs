@@ -5,7 +5,7 @@ use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
         DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData,
-        ProtocolWrapper,
+        P2pProtocol,
     },
     NetResult,
 };
@@ -60,44 +60,44 @@ impl MockSingleton {
 
     /// process a message
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
-        if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
+        if let Ok(wrap) = P2pProtocol::try_from(&data) {
             match wrap {
-                ProtocolWrapper::SendMessage(msg) => {
+                P2pProtocol::SendMessage(msg) => {
                     self.priv_handle_send(&msg)?;
                 }
-                ProtocolWrapper::HandleSendResult(msg) => {
+                P2pProtocol::HandleSendResult(msg) => {
                     self.priv_handle_send_result(&msg)?;
                 }
-                ProtocolWrapper::SuccessResult(msg) => {
+                P2pProtocol::SuccessResult(msg) => {
                     self.priv_send_one(
                         &msg.dna_hash,
                         &msg.to_agent_id,
-                        ProtocolWrapper::SuccessResult(msg.clone()).into(),
+                        P2pProtocol::SuccessResult(msg.clone()).into(),
                     )?;
                 }
-                ProtocolWrapper::FailureResult(msg) => {
+                P2pProtocol::FailureResult(msg) => {
                     self.priv_send_one(
                         &msg.dna_hash,
                         &msg.to_agent_id,
-                        ProtocolWrapper::FailureResult(msg.clone()).into(),
+                        P2pProtocol::FailureResult(msg.clone()).into(),
                     )?;
                 }
-                ProtocolWrapper::GetDht(msg) => {
+                P2pProtocol::GetDht(msg) => {
                     self.priv_handle_get_dht(&msg)?;
                 }
-                ProtocolWrapper::GetDhtResult(msg) => {
+                P2pProtocol::GetDhtResult(msg) => {
                     self.priv_handle_get_dht_result(&msg)?;
                 }
-                ProtocolWrapper::PublishDht(msg) => {
+                P2pProtocol::PublishDht(msg) => {
                     self.priv_handle_publish_dht(&msg)?;
                 }
-                ProtocolWrapper::GetDhtMeta(msg) => {
+                P2pProtocol::GetDhtMeta(msg) => {
                     self.priv_handle_get_dht_meta(&msg)?;
                 }
-                ProtocolWrapper::GetDhtMetaResult(msg) => {
+                P2pProtocol::GetDhtMetaResult(msg) => {
                     self.priv_handle_get_dht_meta_result(&msg)?;
                 }
-                ProtocolWrapper::PublishDhtMeta(msg) => {
+                P2pProtocol::PublishDhtMeta(msg) => {
                     self.priv_handle_publish_dht_meta(&msg)?;
                 }
                 _ => (),
@@ -133,7 +133,7 @@ impl MockSingleton {
         self.priv_send_one(
             &msg.dna_hash,
             &msg.to_agent_id,
-            ProtocolWrapper::HandleSend(msg.clone()).into(),
+            P2pProtocol::HandleSend(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -145,7 +145,7 @@ impl MockSingleton {
         self.priv_send_one(
             &msg.dna_hash,
             &msg.to_agent_id,
-            ProtocolWrapper::SendResult(msg.clone()).into(),
+            P2pProtocol::SendResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -158,7 +158,7 @@ impl MockSingleton {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
-                    r.send(ProtocolWrapper::GetDht(msg.clone()).into())?;
+                    r.send(P2pProtocol::GetDht(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -168,7 +168,7 @@ impl MockSingleton {
         self.priv_send_one(
             &msg.dna_hash,
             &msg.from_agent_id,
-            ProtocolWrapper::FailureResult(FailureResultData {
+            P2pProtocol::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
                 dna_hash: msg.dna_hash.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
@@ -185,14 +185,14 @@ impl MockSingleton {
         self.priv_send_one(
             &msg.dna_hash,
             &msg.agent_id,
-            ProtocolWrapper::GetDhtResult(msg.clone()).into(),
+            P2pProtocol::GetDhtResult(msg.clone()).into(),
         )?;
         Ok(())
     }
 
     /// on publish meta, we send store requests to all nodes connected on this dna
     fn priv_handle_publish_dht(&mut self, msg: &DhtData) -> NetResult<()> {
-        self.priv_send_all(&msg.dna_hash, ProtocolWrapper::StoreDht(msg.clone()).into())?;
+        self.priv_send_all(&msg.dna_hash, P2pProtocol::StoreDht(msg.clone()).into())?;
         Ok(())
     }
 
@@ -204,7 +204,7 @@ impl MockSingleton {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
-                    r.send(ProtocolWrapper::GetDhtMeta(msg.clone()).into())?;
+                    r.send(P2pProtocol::GetDhtMeta(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -214,7 +214,7 @@ impl MockSingleton {
         self.priv_send_one(
             &msg.dna_hash,
             &msg.from_agent_id,
-            ProtocolWrapper::FailureResult(FailureResultData {
+            P2pProtocol::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
                 dna_hash: msg.dna_hash.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
@@ -231,7 +231,7 @@ impl MockSingleton {
         self.priv_send_one(
             &msg.dna_hash,
             &msg.agent_id,
-            ProtocolWrapper::GetDhtMetaResult(msg.clone()).into(),
+            P2pProtocol::GetDhtMetaResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -240,7 +240,7 @@ impl MockSingleton {
     fn priv_handle_publish_dht_meta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_hash,
-            ProtocolWrapper::StoreDhtMeta(msg.clone()).into(),
+            P2pProtocol::StoreDhtMeta(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -276,8 +276,8 @@ impl NetWorker for MockWorker {
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         let mut mock = get_mock()?;
 
-        if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
-            if let ProtocolWrapper::TrackApp(app) = wrap {
+        if let Ok(wrap) = P2pProtocol::try_from(&data) {
+            if let P2pProtocol::TrackApp(app) = wrap {
                 let (tx, rx) = mpsc::channel();
                 self.mock_msgs.push(rx);
                 mock.register(&app.dna_hash, &app.agent_id, tx)?;
@@ -340,7 +340,7 @@ mod tests {
         );
 
         cli1.receive(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            P2pProtocol::TrackApp(TrackAppData {
                 dna_hash: DNA_HASH.to_string(),
                 agent_id: AGENT_ID_1.to_string(),
             })
@@ -361,7 +361,7 @@ mod tests {
         );
 
         cli2.receive(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            P2pProtocol::TrackApp(TrackAppData {
                 dna_hash: DNA_HASH.to_string(),
                 agent_id: AGENT_ID_2.to_string(),
             })
@@ -372,7 +372,7 @@ mod tests {
         // -- node 2 node / send / receive -- //
 
         cli1.receive(
-            ProtocolWrapper::SendMessage(MessageData {
+            P2pProtocol::SendMessage(MessageData {
                 dna_hash: DNA_HASH.to_string(),
                 to_agent_id: AGENT_ID_2.to_string(),
                 from_agent_id: AGENT_ID_1.to_string(),
@@ -385,11 +385,11 @@ mod tests {
 
         cli2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = P2pProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::HandleSend(msg) = res {
+        if let P2pProtocol::HandleSend(msg) = res {
             cli2.receive(
-                ProtocolWrapper::HandleSendResult(MessageData {
+                P2pProtocol::HandleSendResult(MessageData {
                     dna_hash: msg.dna_hash,
                     to_agent_id: msg.from_agent_id,
                     from_agent_id: AGENT_ID_2.to_string(),
@@ -405,9 +405,9 @@ mod tests {
 
         cli1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = P2pProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SendResult(msg) = res {
+        if let P2pProtocol::SendResult(msg) = res {
             assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
         } else {
             panic!("bad msg");
@@ -416,7 +416,7 @@ mod tests {
         // -- dht get -- //
 
         cli2.receive(
-            ProtocolWrapper::GetDht(GetDhtData {
+            P2pProtocol::GetDht(GetDhtData {
                 msg_id: "yada".to_string(),
                 dna_hash: DNA_HASH.to_string(),
                 from_agent_id: AGENT_ID_2.to_string(),
@@ -428,11 +428,11 @@ mod tests {
 
         cli1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = P2pProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDht(msg) = res {
+        if let P2pProtocol::GetDht(msg) = res {
             cli1.receive(
-                ProtocolWrapper::GetDhtResult(DhtData {
+                P2pProtocol::GetDhtResult(DhtData {
                     msg_id: msg.msg_id.clone(),
                     dna_hash: msg.dna_hash.clone(),
                     agent_id: msg.from_agent_id.clone(),
@@ -448,9 +448,9 @@ mod tests {
 
         cli2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = P2pProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtResult(msg) = res {
+        if let P2pProtocol::GetDhtResult(msg) = res {
             assert_eq!("\"data-for: hello\"".to_string(), msg.content.to_string());
         } else {
             panic!("bad msg");
@@ -459,7 +459,7 @@ mod tests {
         // -- dht publish / store -- //
 
         cli2.receive(
-            ProtocolWrapper::PublishDht(DhtData {
+            P2pProtocol::PublishDht(DhtData {
                 msg_id: "yada".to_string(),
                 dna_hash: DNA_HASH.to_string(),
                 agent_id: AGENT_ID_2.to_string(),
@@ -473,14 +473,14 @@ mod tests {
         cli1.tick().unwrap();
         cli2.tick().unwrap();
 
-        let res1 = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        let res2 = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res1 = P2pProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res2 = P2pProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         assert_eq!(res1, res2);
 
-        if let ProtocolWrapper::StoreDht(msg) = res1 {
+        if let P2pProtocol::StoreDht(msg) = res1 {
             cli1.receive(
-                ProtocolWrapper::SuccessResult(SuccessResultData {
+                P2pProtocol::SuccessResult(SuccessResultData {
                     msg_id: msg.msg_id.clone(),
                     dna_hash: msg.dna_hash.clone(),
                     to_agent_id: msg.agent_id.clone(),
@@ -494,9 +494,9 @@ mod tests {
         }
 
         cli2.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = P2pProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SuccessResult(msg) = res {
+        if let P2pProtocol::SuccessResult(msg) = res {
             assert_eq!("\"signature here\"", &msg.success_info.to_string())
         } else {
             panic!("bad msg");
@@ -505,7 +505,7 @@ mod tests {
         // -- dht meta get -- //
 
         cli2.receive(
-            ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
+            P2pProtocol::GetDhtMeta(GetDhtMetaData {
                 msg_id: "yada".to_string(),
                 dna_hash: DNA_HASH.to_string(),
                 from_agent_id: AGENT_ID_2.to_string(),
@@ -518,11 +518,11 @@ mod tests {
 
         cli1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = P2pProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtMeta(msg) = res {
+        if let P2pProtocol::GetDhtMeta(msg) = res {
             cli1.receive(
-                ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
+                P2pProtocol::GetDhtMetaResult(DhtMetaData {
                     msg_id: msg.msg_id.clone(),
                     dna_hash: msg.dna_hash.clone(),
                     agent_id: msg.from_agent_id.clone(),
@@ -539,9 +539,9 @@ mod tests {
 
         cli2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = P2pProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtMetaResult(msg) = res {
+        if let P2pProtocol::GetDhtMetaResult(msg) = res {
             assert_eq!(
                 "\"meta-data-for: hello\"".to_string(),
                 msg.content.to_string()
@@ -553,7 +553,7 @@ mod tests {
         // -- dht meta publish / store -- //
 
         cli2.receive(
-            ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+            P2pProtocol::PublishDhtMeta(DhtMetaData {
                 msg_id: "yada".to_string(),
                 dna_hash: DNA_HASH.to_string(),
                 agent_id: AGENT_ID_2.to_string(),
@@ -568,14 +568,14 @@ mod tests {
         cli1.tick().unwrap();
         cli2.tick().unwrap();
 
-        let res1 = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        let res2 = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res1 = P2pProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res2 = P2pProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         assert_eq!(res1, res2);
 
-        if let ProtocolWrapper::StoreDhtMeta(msg) = res1 {
+        if let P2pProtocol::StoreDhtMeta(msg) = res1 {
             cli1.receive(
-                ProtocolWrapper::SuccessResult(SuccessResultData {
+                P2pProtocol::SuccessResult(SuccessResultData {
                     msg_id: msg.msg_id.clone(),
                     dna_hash: msg.dna_hash.clone(),
                     to_agent_id: msg.agent_id.clone(),
@@ -589,9 +589,9 @@ mod tests {
         }
 
         cli2.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = P2pProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SuccessResult(msg) = res {
+        if let P2pProtocol::SuccessResult(msg) = res {
             assert_eq!("\"signature here\"", &msg.success_info.to_string())
         } else {
             panic!("bad msg");

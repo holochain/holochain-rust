@@ -8,11 +8,11 @@ extern crate serde_json;
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
-    protocol_wrapper::{MessageData, ProtocolWrapper, TrackAppData},
+    protocol_wrapper::{MessageData, P2pProtocol, TrackAppData},
     NetResult,
 };
 
-use holochain_net::p2p_network::P2pNetwork;
+use holochain_net::p2p_network::P2pNetworkNode;
 
 use std::{convert::TryFrom, sync::mpsc};
 
@@ -36,7 +36,7 @@ fn exec() -> NetResult<()> {
     let (sender1, receiver1) = mpsc::channel::<Protocol>();
 
     // create a new ipc P2pNetwork instance
-    let mut con1 = P2pNetwork::new(
+    let mut con1 = P2pNetworkNode::new(
         Box::new(move |r| {
             sender1.send(r?)?;
             Ok(())
@@ -49,7 +49,7 @@ fn exec() -> NetResult<()> {
 
     let (sender2, receiver2) = mpsc::channel::<Protocol>();
 
-    let mut con2 = P2pNetwork::new(
+    let mut con2 = P2pNetworkNode::new(
         Box::new(move |r| {
             sender2.send(r?)?;
             Ok(())
@@ -61,7 +61,7 @@ fn exec() -> NetResult<()> {
     )?;
 
     con1.send(
-        ProtocolWrapper::TrackApp(TrackAppData {
+        P2pProtocol::TrackApp(TrackAppData {
             dna_hash: "sandwich".to_string(),
             agent_id: "node-1".to_string(),
         })
@@ -69,7 +69,7 @@ fn exec() -> NetResult<()> {
     )?;
 
     con2.send(
-        ProtocolWrapper::TrackApp(TrackAppData {
+        P2pProtocol::TrackApp(TrackAppData {
             dna_hash: "sandwich".to_string(),
             agent_id: "node-2".to_string(),
         })
@@ -77,7 +77,7 @@ fn exec() -> NetResult<()> {
     )?;
 
     con1.send(
-        ProtocolWrapper::SendMessage(MessageData {
+        P2pProtocol::SendMessage(MessageData {
             dna_hash: "sandwich".to_string(),
             to_agent_id: "node-2".to_string(),
             from_agent_id: "node-1".to_string(),
@@ -87,12 +87,12 @@ fn exec() -> NetResult<()> {
         .into(),
     )?;
 
-    let res = ProtocolWrapper::try_from(receiver2.recv()?)?;
+    let res = P2pProtocol::try_from(receiver2.recv()?)?;
     println!("got: {:?}", res);
 
-    if let ProtocolWrapper::HandleSend(msg) = res {
+    if let P2pProtocol::HandleSend(msg) = res {
         con2.send(
-            ProtocolWrapper::HandleSendResult(MessageData {
+            P2pProtocol::HandleSendResult(MessageData {
                 dna_hash: "sandwich".to_string(),
                 to_agent_id: "node-1".to_string(),
                 from_agent_id: "node-2".to_string(),
@@ -105,10 +105,10 @@ fn exec() -> NetResult<()> {
         panic!("bad msg");
     }
 
-    let res = ProtocolWrapper::try_from(receiver1.recv()?)?;
+    let res = P2pProtocol::try_from(receiver1.recv()?)?;
     println!("got: {:?}", res);
 
-    if let ProtocolWrapper::SendResult(msg) = res {
+    if let P2pProtocol::SendResult(msg) = res {
         assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
     } else {
         panic!("bad msg");

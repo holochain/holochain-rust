@@ -3,10 +3,10 @@ use crate::{
     context::Context,
     network::{handler::create_handler, state::NetworkState},
 };
-use holochain_net::p2p_network::P2pNetwork;
+use holochain_net::p2p_network::P2pNetworkNode;
 use holochain_net_connection::{
     net_connection::NetConnection,
-    protocol_wrapper::{ProtocolWrapper, TrackAppData},
+    protocol_wrapper::{P2pProtocol, TrackAppData},
 };
 use std::sync::{Arc, Mutex};
 
@@ -17,11 +17,11 @@ pub fn reduce_init(
 ) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
-    let mut network = P2pNetwork::new(create_handler(&context), &network_settings.config).unwrap();
+    let mut network = P2pNetworkNode::new(create_handler(&context), &network_settings.config).unwrap();
 
     let _ = network
         .send(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            P2pProtocol::TrackApp(TrackAppData {
                 dna_hash: network_settings.dna_hash.clone(),
                 agent_id: network_settings.agent_id.clone(),
             })

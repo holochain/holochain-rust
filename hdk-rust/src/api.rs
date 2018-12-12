@@ -245,6 +245,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///
@@ -309,6 +311,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///

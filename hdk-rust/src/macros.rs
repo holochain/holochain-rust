@@ -73,6 +73,8 @@ macro_rules! load_string {
 /// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///

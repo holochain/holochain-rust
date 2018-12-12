@@ -52,8 +52,6 @@ pub struct SinglePageAllocation {
     length: u16,
 }
 
-#[allow(unknown_lints)]
-#[allow(cast_lossless)]
 impl SinglePageAllocation {
     pub fn new(offset: u16, length: u16) -> Result<Self, RibosomeErrorCode> {
         if (offset as u32 + length as u32) > U16_MAX {

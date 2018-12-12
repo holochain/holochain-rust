@@ -18,6 +18,7 @@ bitflags = "1.0"
 objekt="0.1.1"
 holochain_core_types_derive = { path = "../core_types_derive" }
 uuid = { version = "0.7", features = ["v4"] }
+regex="1.1.0"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

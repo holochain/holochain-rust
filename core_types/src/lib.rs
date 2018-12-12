@@ -27,6 +27,7 @@ extern crate snowflake;
 extern crate bitflags;
 #[macro_use]
 extern crate holochain_core_types_derive;
+extern crate regex;
 
 extern crate uuid;
 

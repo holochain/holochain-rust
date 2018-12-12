@@ -1,7 +1,7 @@
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     eav::EntityAttributeValue,
-    error::error::HolochainError,
+    error::error::{HcResult, HolochainError},
     hash::HashString,
     json::JsonString,
 };
@@ -12,7 +12,10 @@ use std::convert::TryInto;
 pub const STATUS_NAME: &str = "crud-status";
 pub const LINK_NAME: &str = "crud-link";
 
-pub fn create_crud_status_eav(address: &Address, status: CrudStatus) -> EntityAttributeValue {
+pub fn create_crud_status_eav(
+    address: &Address,
+    status: CrudStatus,
+) -> HcResult<EntityAttributeValue> {
     EntityAttributeValue::new(
         address,
         &STATUS_NAME.to_string(),
@@ -20,7 +23,7 @@ pub fn create_crud_status_eav(address: &Address, status: CrudStatus) -> EntityAt
     )
 }
 
-pub fn create_crud_link_eav(from: &Address, to: &Address) -> EntityAttributeValue {
+pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValue> {
     EntityAttributeValue::new(from, &LINK_NAME.to_string(), to)
 }
 

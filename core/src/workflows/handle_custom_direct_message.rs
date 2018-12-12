@@ -15,10 +15,6 @@ pub async fn handle_custom_direct_message(
     custom_direct_message: CustomDirectMessage,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    println!(
-        "Received custom direct message: {:?}",
-        custom_direct_message
-    );
     let zome = custom_direct_message.zome.clone();
     let payload = custom_direct_message
         .payload

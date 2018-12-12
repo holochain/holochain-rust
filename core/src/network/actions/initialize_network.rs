@@ -36,7 +36,7 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
 pub async fn initialize_network_with_spoofed_dna(
     dna_hash: String,
     context: &Arc<Context>,
-) -> Result<(), HolochainError> {
+) -> HcResult<()> {
     let (_, agent_id) = await!(get_dna_and_agent(context))?;
     let network_settings = NetworkSettings {
         config: context.network_config.clone(),

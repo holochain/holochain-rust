@@ -89,6 +89,12 @@ impl AgentState {
             _ => unreachable!(),
         }
     }
+
+    pub fn get_header_for_entry(&self, entry: &Entry) -> Option<ChainHeader> {
+        self.chain()
+            .iter_type(&self.top_chain_header(), &entry.entry_type())
+            .find(|h| h.entry_address() == &entry.address())
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]

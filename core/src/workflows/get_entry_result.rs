@@ -29,8 +29,9 @@ pub async fn get_entry_result_workflow<'a>(
     args: &'a GetEntryArgs,
 ) -> Result<GetEntryResult, HolochainError> {
     // Setup
-    let mut entry_result = GetEntryResult::new();
+    let mut entry_result = GetEntryResult::new(args.options.status_request.clone(), None);
     let mut maybe_address = Some(args.address.clone());
+
     // Accumulate entry history in a loop unless only request initial.
     while maybe_address.is_some() {
         let address = maybe_address.unwrap();
@@ -41,14 +42,13 @@ pub async fn get_entry_result_workflow<'a>(
         if let Some(entry_with_meta) = maybe_entry_with_meta {
             // Erase history if request is for latest
             if args.options.status_request == StatusRequestKind::Latest {
-                entry_result.history = None;
-                entry_result.found = false;
                 if entry_with_meta.crud_status == CrudStatus::DELETED {
+                    entry_result.clear();
                     break;
                 }
             }
 
-            // Add entry to history
+            // Add entry
             entry_result.push(&entry_with_meta);
 
             if args.options.status_request == StatusRequestKind::Initial {

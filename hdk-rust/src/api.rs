@@ -11,7 +11,8 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{
-            EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, StatusRequestKind,
+            EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
+            StatusRequestKind,
         },
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
@@ -515,7 +516,13 @@ pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<EntryHistory>
         address,
         GetEntryOptions::new(StatusRequestKind::All, true, false, false),
     )?;
-    Ok(entry_result.history)
+    if !entry_result.found() {
+        return Ok(None);
+    }
+    match entry_result.result {
+        GetEntryResultType::All(history) => Ok(Some(history)),
+        _ => Err(ZomeApiError::from("shouldn't happen".to_string())),
+    }
 }
 
 /// Retrieves an entry and its metadata from the local chain or the DHT, by looking it up using

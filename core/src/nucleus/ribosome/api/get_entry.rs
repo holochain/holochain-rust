@@ -225,12 +225,14 @@ mod tests {
         )
         .expect("test should be callable");
 
-        let mut entry_result = GetEntryResult::new();
-        entry_result.push(&EntryWithMeta {
-            entry: test_entry(),
-            crud_status: CrudStatus::LIVE,
-            maybe_crud_link: None,
-        });
+        let entry_result = GetEntryResult::new(
+            StatusRequestKind::Latest,
+            Some(&EntryWithMeta {
+                entry: test_entry(),
+                crud_status: CrudStatus::LIVE,
+                maybe_crud_link: None,
+            }),
+        );
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
                 ZomeApiInternalResult::success(entry_result)
@@ -281,7 +283,10 @@ mod tests {
 
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
-                ZomeApiInternalResult::success(GetEntryResult::new())
+                ZomeApiInternalResult::success(GetEntryResult::new(
+                    StatusRequestKind::Latest,
+                    None
+                ))
             ))),
             call_result,
         );

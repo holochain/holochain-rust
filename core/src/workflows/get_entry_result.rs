@@ -28,6 +28,11 @@ pub async fn get_entry_result_workflow<'a>(
     context: &'a Arc<Context>,
     args: &'a GetEntryArgs,
 ) -> Result<GetEntryResult, HolochainError> {
+    if args.options.sources || args.options.header {
+        return Err(HolochainError::ErrorGeneric(
+            "sources and header option not implemented".to_string(),
+        ));
+    }
     // Setup
     let mut entry_result = GetEntryResult::new(args.options.status_request.clone(), None);
     let mut maybe_address = Some(args.address.clone());

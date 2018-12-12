@@ -32,6 +32,25 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     })
 }
 
+#[cfg(test)]
+pub async fn initialize_network_with_spoofed_dna(
+    dna_hash: String,
+    context: &Arc<Context>,
+) -> Result<(), HolochainError> {
+    let (_, agent_id) = await!(get_dna_and_agent(context))?;
+    let network_settings = NetworkSettings {
+        config: context.network_config.clone(),
+        dna_hash,
+        agent_id,
+    };
+    let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
+    dispatch_action(&context.action_channel, action_wrapper.clone());
+
+    await!(InitNetworkFuture {
+        context: context.clone(),
+    })
+}
+
 pub struct InitNetworkFuture {
     context: Arc<Context>,
 }

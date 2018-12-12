@@ -27,13 +27,13 @@ pub mod wasm;
 pub mod zome;
 
 use crate::{
+    cas::content::{AddressableContent, Content},
     dna::zome::{capabilities::Capability, entry_types::EntryTypeDef},
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
 };
 use entry::entry_type::AppEntryType;
-use crate::cas::content::{AddressableContent, Content};
 use serde_json::{self, Value};
 use std::{
     collections::BTreeMap,
@@ -215,7 +215,6 @@ impl Dna {
         }
         None
     }
-
 }
 
 impl AddressableContent for Dna {
@@ -258,9 +257,8 @@ pub fn test_dna() -> Dna {
 pub mod tests {
     use super::*;
     extern crate base64;
-    use crate::dna::zome::tests::test_zome;
+    use crate::{cas::content::Address, dna::zome::tests::test_zome};
     use std::convert::TryFrom;
-    use crate::cas::content::Address;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
 
@@ -278,10 +276,7 @@ pub mod tests {
             dna.content(),
         );
 
-        assert_eq!(
-            &dna,
-            &Dna::try_from(dna.content()).unwrap(),
-        );
+        assert_eq!(&dna, &Dna::try_from(dna.content()).unwrap(),);
     }
 
     #[test]

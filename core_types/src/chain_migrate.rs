@@ -87,11 +87,10 @@ pub fn test_chain_migrate() -> ChainMigrate {
 mod test {
 
     use crate::{
-        chain_migrate::{test_chain_migrate, ChainMigrate, MigrateType},
+        chain_migrate::{test_chain_migrate, test_migrate_type, ChainMigrate, MigrateType},
         json::JsonString,
     };
     use std::convert::TryFrom;
-    use crate::chain_migrate::test_migrate_type;
 
     #[test]
     fn smoke_test() {

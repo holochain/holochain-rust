@@ -78,7 +78,7 @@ pub(crate) fn reduce_hold_entry(
 
     // Initialize CRUD status meta
     let meta_storage = &new_store.meta_storage().clone();
-    let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+    let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
     let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
@@ -139,7 +139,7 @@ pub(crate) fn reduce_update_entry(
     // Update crud-status
     let latest_old_address = old_address;
     let meta_storage = &new_store.meta_storage().clone();
-    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::MODIFIED);
+    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::Modified);
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
     if let Err(err) = res {
         new_store
@@ -223,15 +223,15 @@ fn reduce_remove_entry_inner(
     // For now checks if crud-status other than LIVE are present
     let status_eavs = status_eavs
         .iter()
-        .filter(|e| CrudStatus::from(String::from(e.value())) != CrudStatus::LIVE)
+        .filter(|e| CrudStatus::from(String::from(e.value())) != CrudStatus::Live)
         .collect::<HashSet<&EntityAttributeValue>>();
     if !status_eavs.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(
-            "entry_status != CrudStatus::LIVE",
+            "entry_status != CrudStatus::Live",
         )));
     }
     // Update crud-status
-    let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::DELETED);
+    let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
     let meta_storage = &new_store.meta_storage().clone();
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
     if let Err(err) = res {

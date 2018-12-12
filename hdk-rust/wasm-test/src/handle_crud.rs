@@ -116,7 +116,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     assert_eq!(latest.entries.len(), 1);
     assert_eq!(latest.entries[0], entry_v4.clone());
     assert_eq!(latest.addresses[0], addr_v4.clone());
-    assert_eq!(latest.crud_status[0], CrudStatus::LIVE);
+    assert_eq!(latest.crud_status[0], CrudStatus::Live);
     assert_eq!(latest.crud_links.len(), 0);
 
     // get history from initial
@@ -127,22 +127,22 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     assert_eq!(history.entries.len(), 4);
     assert_eq!(history.entries[0], entry_v1.clone());
     assert_eq!(history.addresses[0], addr_v1.clone());
-    assert_eq!(history.crud_status[0], CrudStatus::MODIFIED);
+    assert_eq!(history.crud_status[0], CrudStatus::Modified);
     assert_eq!(history.crud_links[&addr_v1.clone()], addr_v2.clone());
 
     assert_eq!(history.entries[1], entry_v2.clone());
     assert_eq!(history.addresses[1], addr_v2.clone());
-    assert_eq!(history.crud_status[1], CrudStatus::MODIFIED);
+    assert_eq!(history.crud_status[1], CrudStatus::Modified);
     assert_eq!(history.crud_links[&addr_v2.clone()], addr_v3.clone());
 
     assert_eq!(history.entries[2], entry_v3.clone());
     assert_eq!(history.addresses[2], addr_v3.clone());
-    assert_eq!(history.crud_status[2], CrudStatus::MODIFIED);
+    assert_eq!(history.crud_status[2], CrudStatus::Modified);
     assert_eq!(history.crud_links[&addr_v3.clone()], addr_v4.clone());
 
     assert_eq!(history.entries[3], entry_v4.clone());
     assert_eq!(history.addresses[3], addr_v4.clone());
-    assert_eq!(history.crud_status[3], CrudStatus::LIVE);
+    assert_eq!(history.crud_status[3], CrudStatus::Live);
     assert_eq!(history.crud_links.get(&addr_v4.clone()), None);
 
     JsonString::from(history)
@@ -241,12 +241,12 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     assert_eq!(history.entries.len(), 2);
     assert_eq!(history.entries[0], entry_v1.clone());
     assert_eq!(history.addresses[0], addr_v1.clone());
-    assert_eq!(history.crud_status[0], CrudStatus::MODIFIED);
+    assert_eq!(history.crud_status[0], CrudStatus::Modified);
     assert_eq!(history.crud_links[&addr_v1.clone()], addr_v2.clone());
 
     assert_eq!(history.entries[1], entry_v2.clone());
     assert_eq!(history.addresses[1], addr_v2.clone());
-    assert_eq!(history.crud_status[1], CrudStatus::DELETED);
+    assert_eq!(history.crud_status[1], CrudStatus::Deleted);
     assert!(history.crud_links.get(&addr_v2.clone()).is_some());
 
     JsonString::from(history)

@@ -29,17 +29,17 @@ pub fn create_crud_link_eav(from: &Address, to: &Address) -> EntityAttributeValu
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, DefaultJson)]
 #[serde(rename_all = "lowercase")]
 pub enum CrudStatus {
-    LIVE,
-    REJECTED,
-    DELETED,
-    MODIFIED,
+    Live,
+    Rejected,
+    Deleted,
+    Modified,
     /// CRDT resolution in progress
-    LOCKED,
+    Locked,
 }
 
 impl Default for CrudStatus {
     fn default() -> CrudStatus {
-        CrudStatus::LIVE
+        CrudStatus::Live
     }
 }
 
@@ -92,7 +92,7 @@ mod tests {
         .unwrap();
         let attribute = String::from("favourite-badge");
         let value_content: Content =
-            CrudStatus::try_from_content(&JsonString::from(CrudStatus::REJECTED))
+            CrudStatus::try_from_content(&JsonString::from(CrudStatus::Rejected))
                 .unwrap()
                 .content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
@@ -103,28 +103,28 @@ mod tests {
     fn addressable_content_test() {
         // from_content()
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::LIVE),
-            CrudStatus::LIVE,
+            JsonString::from(CrudStatus::Live),
+            CrudStatus::Live,
             Address::from("QmXEyo1EepSNCmZjPzGATr8BF3GMYAKKSXbWJN9QS95jLx"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::REJECTED),
-            CrudStatus::REJECTED,
+            JsonString::from(CrudStatus::Rejected),
+            CrudStatus::Rejected,
             Address::from("QmcifaUPPN6BBmpjakau1DGx9nFb9YhoS7fZjPHwFLoRuw"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::DELETED),
-            CrudStatus::DELETED,
+            JsonString::from(CrudStatus::Deleted),
+            CrudStatus::Deleted,
             Address::from("QmVKAvoNaU3jrKEvPK9tc6ovJWozxS9CVuNfWB4sbbYwR9"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::MODIFIED),
-            CrudStatus::MODIFIED,
+            JsonString::from(CrudStatus::Modified),
+            CrudStatus::Modified,
             Address::from("QmbJmMc19gp8jNAoHSk5qY5H6LUF9qp9LTSKWFZojToAEz"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::LOCKED),
-            CrudStatus::LOCKED,
+            JsonString::from(CrudStatus::Locked),
+            CrudStatus::Locked,
             Address::from("QmUjxgPiP7wxpowjWD9t7FLrGgnNmNA1FUGHVY3BrEnKe3"),
         );
     }
@@ -133,11 +133,11 @@ mod tests {
     /// show CAS round trip
     fn cas_round_trip_test() {
         let crud_statuses = vec![
-            CrudStatus::LIVE,
-            CrudStatus::REJECTED,
-            CrudStatus::DELETED,
-            CrudStatus::MODIFIED,
-            CrudStatus::LOCKED,
+            CrudStatus::Live,
+            CrudStatus::Rejected,
+            CrudStatus::Deleted,
+            CrudStatus::Modified,
+            CrudStatus::Locked,
         ];
         AddressableContentTestSuite::addressable_content_round_trip::<
             CrudStatus,

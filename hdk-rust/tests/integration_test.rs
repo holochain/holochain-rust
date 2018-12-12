@@ -105,7 +105,7 @@ fn example_valid_entry_history() -> EntryHistory {
     let mut entry_history = EntryHistory::new();
     entry_history.addresses.push(entry.address());
     entry_history.entries.push(entry);
-    entry_history.crud_status.push(CrudStatus::LIVE);
+    entry_history.crud_status.push(CrudStatus::Live);
     entry_history
 }
 

@@ -5,7 +5,7 @@ use holochain_core_types::{
 /// This is direct message that got created by the zome code through hdk::send().
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, DefaultJson)]
 pub struct CustomDirectMessage {
-    /// We have to track which zome as send the message so we can call the
+    /// We have to track which zome sent the message so we can call the
     /// receive callback of the same zome on the receiving side.
     pub zome: String,
 

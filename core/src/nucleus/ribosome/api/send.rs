@@ -8,9 +8,9 @@ use holochain_wasm_utils::api_serialization::send::SendArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
-/// ZomeApiFunction::CommitAppEntry function code
+/// ZomeApiFunction::Send function code
 /// args: [0] encoded MemoryAllocation as u32
-/// Expected complex argument: CommitArgs
+/// Expected complex argument: SendArgs
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args

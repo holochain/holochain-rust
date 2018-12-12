@@ -21,7 +21,7 @@ use std::{
     time::Duration,
 };
 
-/// SendDiretMessage Action Creator for custom (=app) messages
+/// SendDirectMessage Action Creator for custom (=app) messages
 /// This triggers the network module to open a synchronous node-to-node connection
 /// by sending the given CustomDirectMessage and preparing to receive a response.
 pub async fn custom_send(

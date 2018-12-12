@@ -86,11 +86,15 @@ impl Context {
             network_config,
         })
     }
+
     // helper function to make it easier to call the logger
-    pub fn log(&self, msg: &str) -> HcResult<()> {
-        let mut logger = self.logger.lock().or(Err(HolochainError::LoggingError))?;
-        logger.log(msg.to_string());
-        Ok(())
+    pub fn log<T: Into<String>>(&self, msg: T) {
+        let mut logger = self
+            .logger
+            .lock()
+            .or(Err(HolochainError::LoggingError))
+            .expect("Logger should work");;
+        logger.log(msg.into());
     }
 
     pub fn set_state(&mut self, state: Arc<RwLock<State>>) {

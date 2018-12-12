@@ -5,19 +5,19 @@ extern crate hdk;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 extern crate boolinator;
+extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
 pub mod blog;
 pub mod post;
 
-use hdk::holochain_core_types::cas::content::Address;
-use hdk::error::ZomeApiResult;
-use hdk::holochain_core_types::json::JsonString;
-use hdk::holochain_core_types::entry::Entry;
-use hdk::holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
+use hdk::{
+    error::ZomeApiResult,
+    holochain_core_types::{cas::content::Address, entry::Entry, json::JsonString},
+    holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
+};
 
 define_zome! {
     entries: [
@@ -32,7 +32,7 @@ define_zome! {
         main (Public) {
             check_sum: {
                 inputs: |num1: u32, num2: u32|,
-                outputs: |post: ZomeApiResult<JsonString>|,
+                outputs: |sum: ZomeApiResult<JsonString>|,
                 handler: blog::handle_check_sum
             }
 

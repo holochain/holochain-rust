@@ -52,7 +52,7 @@ pub mod tests {
         let link = create_example_link();
         let link_list = LinkList::new(&[link]);
         let link_list_entry = Entry::LinkList(link_list);
-        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry.clone()));
+        let commit_action = ActionWrapper::new(Action::Commit((link_list_entry.clone(), None)));
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
@@ -66,7 +66,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
+                Action::Commit((entry, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::LinkList,);
                     assert_eq!(entry.content(), link_list_entry.content());
                     true
@@ -85,7 +85,7 @@ pub mod tests {
         let link_c = create_test_link_c();
         let link_list = LinkList::new(&[link_a, link_b, link_c]);
         let link_list_entry = Entry::LinkList(link_list.clone());
-        let commit_action = ActionWrapper::new(Action::Commit(link_list_entry.clone()));
+        let commit_action = ActionWrapper::new(Action::Commit((link_list_entry.clone(), None)));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason"));
@@ -100,7 +100,7 @@ pub mod tests {
             .history
             .iter()
             .find(|aw| match aw.action() {
-                Action::Commit(entry) => {
+                Action::Commit((entry, _)) => {
                     assert_eq!(entry.entry_type(), EntryType::LinkList,);
                     assert_eq!(entry.content(), link_list_entry.content());
                     true

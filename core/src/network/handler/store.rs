@@ -1,12 +1,12 @@
 use crate::{
-    context::Context, dht::actions::add_link::add_link,
-    network::entry_with_header::EntryWithHeader, workflows::hold_entry::hold_entry_workflow,
+    context::Context,
+    network::entry_with_header::EntryWithHeader,
+    workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
 use futures::executor::block_on;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    entry::Entry,
 };
 use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData};
 use std::{sync::Arc, thread};
@@ -33,12 +33,12 @@ pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) 
                     .expect("dht_meta_data should be EntryWithHader"),
             )
             .expect("dht_meta_data should be EntryWithHader");
-            let link_add = match entry_with_header.entry {
-                Entry::LinkAdd(link_add) => link_add,
-                _ => unreachable!(),
-            };
-            let link = link_add.link().clone();
-            let _ = block_on(add_link(&link, &context.clone()));
+            thread::spawn(move || {
+                match block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
+                    Err(error) => context.log(error),
+                    _ => (),
+                }
+            });
         }
         STATUS_NAME => {
             let _crud_status: CrudStatus = serde_json::from_str(

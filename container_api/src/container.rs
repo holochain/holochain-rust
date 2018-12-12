@@ -13,8 +13,7 @@ use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use tempfile::tempdir;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
-use holochain_core_types::agent::Agent;
-use holochain_net::p2p_network::P2pNetwork;
+use holochain_core_types::agent::AgentId;
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -36,9 +35,8 @@ use interface_impls;
 /// which takes a `config::Configuration` struct and tries to instantiate all configured instances.
 /// While doing so it has to load DNA files referenced in the configuration.
 /// In order to not bind this code to the assumption that there is a filesystem
-/// and also enable easier testing,
-/// a DnaLoader has to be injected on creation.
-/// This is a closure that returns a Dna object for a given path string.
+/// and also enable easier testing, a DnaLoader ()which is a closure that returns a
+/// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
     pub instances: InstanceMap,
     config: Configuration,
@@ -48,6 +46,8 @@ pub struct Container {
 
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
+
+pub static DEFAULT_NETWORK_CONFIG: &'static str = "{\"backend\":\"mock\"}";
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
@@ -112,6 +112,7 @@ impl Container {
     pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
         let _ = config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
+        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
         let id_instance_pairs: Vec<_> = config
             .instance_ids()
             .clone()
@@ -119,7 +120,7 @@ impl Container {
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(&id, config, &mut self.dna_loader),
+                    instantiate_from_config(&id, config, &mut self.dna_loader, &default_network),
                 )
             })
             .collect();
@@ -156,7 +157,6 @@ impl Container {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    #[cfg_attr(tarpaulin, skip)] // This function is mocked in tests
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
         let mut f = File::open(file)?;
         let mut contents = String::new();
@@ -216,10 +216,11 @@ fn make_interface(
 
 /// Creates one specific Holochain instance from a given Configuration,
 /// id string and DnaLoader.
-fn instantiate_from_config(
+pub fn instantiate_from_config(
     id: &String,
     config: &Configuration,
     dna_loader: &mut DnaLoader,
+    default_network_config: &String,
 ) -> Result<Holochain, String> {
     let _ = config.check_consistency()?;
 
@@ -236,22 +237,20 @@ fn instantiate_from_config(
                 ))
             })?;
 
-            let network = P2pNetwork::new(
-                Box::new(|_r| Ok(())),
-                &json!({
-                    "backend": "mock"
-                })
-                .into(),
-            )
-            .unwrap();
+            let network_config = instance_config
+                .network
+                .unwrap_or(default_network_config.to_owned())
+                .into();
 
             let context: Context = match instance_config.storage {
                 StorageConfiguration::File { path } => {
-                    create_file_context(&agent_config.id, &path, network)
+                    create_file_context(&agent_config.id, &path, network_config)
                         .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
                 }
-                StorageConfiguration::Memory => create_memory_context(&agent_config.id, network)
-                    .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string())),
+                StorageConfiguration::Memory => {
+                    create_memory_context(&agent_config.id, network_config)
+                        .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
+                }
             }?;
 
             Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
@@ -265,8 +264,11 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
-fn create_memory_context(_: &String, network: P2pNetwork) -> Result<Context, HolochainError> {
-    let agent = Agent::generate_fake("c+bob");
+fn create_memory_context(
+    _: &String,
+    network_config: JsonString,
+) -> Result<Context, HolochainError> {
+    let agent = AgentId::generate_fake("c+bob");
     let tempdir = tempdir().unwrap();
     let file_storage = Arc::new(RwLock::new(
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
@@ -278,16 +280,16 @@ fn create_memory_context(_: &String, network: P2pNetwork) -> Result<Context, Hol
         Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(MemoryStorage::new())),
         Arc::new(RwLock::new(EavMemoryStorage::new())),
-        Arc::new(Mutex::new(network)),
+        network_config,
     )
 }
 
 fn create_file_context(
     _: &String,
     path: &String,
-    network: P2pNetwork,
+    network_config: JsonString,
 ) -> Result<Context, HolochainError> {
-    let agent = Agent::generate_fake("c+bob");
+    let agent = AgentId::generate_fake("c+bob");
     let cas_path = format!("{}/cas", path);
     let eav_path = format!("{}/eav", path);
     create_path_if_not_exists(&cas_path)?;
@@ -301,7 +303,7 @@ fn create_file_context(
         Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         file_storage.clone(),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
-        Arc::new(Mutex::new(network)),
+        network_config,
     )
 }
 
@@ -309,14 +311,18 @@ fn create_file_context(
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
+    use std::{fs::File, io::Write};
+
+    use tempfile::tempdir;
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader = Box::new(|_path: &String| Ok(Dna::new()))
-            as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
+        let loader = Box::new(|_path: &String| {
+            Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
+        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
         Arc::new(loader)
     }
 
-    fn test_toml<'a>() -> &'a str {
+    pub fn test_toml() -> String {
         r#"
     [[agents]]
     id = "test agent"
@@ -336,8 +342,7 @@ pub mod tests {
     type = "simple"
     file = "app_spec.log"
     [instances.storage]
-    type = "file"
-    path = "tmp-storage"
+    type = "memory"
 
     [[interfaces]]
     id = "app spec interface"
@@ -347,31 +352,93 @@ pub mod tests {
     [[interfaces.instances]]
     id = "app spec instance"
     "#
+        .to_string()
     }
 
-    //#[test]
-    // TODO
-    // Deactivating this test because tests running in parallel creating Holochain instances
-    // currently fail with:
-    // "Error creating context: Failed to create actor in system: Failed to create actor.
-    // Cause: An actor at the same path already exists"
-    // This needs to be fixed in another PR.
-    // #[cfg_attr(tarpaulin, skip)]
-    // fn test_instantiate_from_config() {
-    //     let config = load_configuration::<Configuration>(test_toml()).unwrap();
-    //     let maybe_holochain = instantiate_from_config(
-    //         &"app spec instance".to_string(),
-    //         &config,
-    //         &mut test_dna_loader(),
-    //     );
-    //
-    //     assert_eq!(maybe_holochain.err(), None);
-    // }
+    pub fn example_dna_string() -> String {
+        r#"{
+                "name": "my dna",
+                "description": "",
+                "version": "",
+                "uuid": "00000000-0000-0000-0000-000000000001",
+                "dna_spec_version": "2.0",
+                "properties": {},
+                "zomes": {
+                    "": {
+                        "description": "",
+                        "config": {
+                            "error_handling": "throw-errors"
+                        },
+                        "entry_types": {
+                            "": {
+                                "description": "",
+                                "sharing": "public"
+                            }
+                        },
+                        "capabilities": {
+                            "test": {
+                                "capability": {
+                                    "membrane": "public"
+                                },
+                                "functions": [
+                                    {
+                                        "name": "test",
+                       "inputs" : [
+                            {
+                                "name": "post",
+                                "type": "string"
+                            }
+                        ],
+                        "outputs" : [
+                            {
+                                "name": "hash",
+                                "type": "string"
+                            }
+                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        "code": {
+                            "code": "AAECAw=="
+                        }
+                    }
+                }
+            }"#
+        .to_string()
+    }
 
-    /* disabling these tests for DevCamp
+    #[test]
+    fn test_instantiate_from_config() {
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
+        let maybe_holochain = instantiate_from_config(
+            &"app spec instance".to_string(),
+            &config,
+            &mut test_dna_loader(),
+            &default_network,
+        );
+
+        assert_eq!(maybe_holochain.err(), None);
+    }
+
+    #[test]
+    fn test_default_dna_loader() {
+        let tempdir = tempdir().unwrap();
+        let file_path = tempdir.path().join("test.dna.json");
+        let mut tmp_file = File::create(file_path.clone()).unwrap();
+        writeln!(tmp_file, "{}", example_dna_string()).unwrap();
+        match Container::load_dna(&file_path.into_os_string().into_string().unwrap()) {
+            Ok(dna) => {
+                assert_eq!(dna.name, "my dna");
+            }
+            Err(_) => assert!(false),
+        }
+    }
+
     #[test]
     fn test_container_load_config() {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
@@ -387,7 +454,7 @@ pub mod tests {
 
     #[test]
     fn test_container_try_from_configuration() {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
 
         let maybe_container = Container::try_from(&config);
 
@@ -402,7 +469,7 @@ pub mod tests {
 
     #[test]
     fn test_rpc_info_instances() {
-        let config = load_configuration::<Configuration>(test_toml()).unwrap();
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
 
         // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
         let mut container = Container::with_config(config.clone());
@@ -414,9 +481,8 @@ pub mod tests {
         let io = dispatcher.io;
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"file\",\"path\":\"tmp-storage\"}}}","id":1}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"},\"network\":null}}","id":1}"#;
 
         assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
     }
-*/
 }

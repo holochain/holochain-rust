@@ -1,5 +1,9 @@
 use holochain_core::{
-    context::Context as HolochainContext, logger::Logger, persister::SimplePersister,
+    context::{
+        Context as HolochainContext,
+        mock_network_config,
+    },
+    logger::Logger, persister::SimplePersister,
 };
 use holochain_cas_implementations::{
     cas::file::FilesystemStorage,
@@ -7,10 +11,9 @@ use holochain_cas_implementations::{
     eav::memory::EavMemoryStorage
 };
 use holochain_container_api::Holochain;
-use holochain_net::p2p_network::P2pNetwork;
 use holochain_core_types::{
     dna::Dna,
-    agent::Agent,
+    agent::AgentId,
     json::JsonString
 };
 use neon::context::Context;
@@ -28,15 +31,6 @@ impl Logger for NullLogger {
 
 pub struct App {
     instance: Holochain,
-    hash: String,
-}
-
-impl App {
-
-    pub fn hash(&self) -> String {
-        self.hash.clone()
-    }
-
 }
 
 declare_types! {
@@ -46,16 +40,10 @@ declare_types! {
             let agent_name = ctx.argument::<JsString>(0)?.to_string(&mut ctx)?.value();
             let dna_data = ctx.argument::<JsString>(1)?.to_string(&mut ctx)?.value();
 
-            let agent = Agent::generate_fake(&agent_name);
+            let agent = AgentId::generate_fake(&agent_name);
             let file_storage = Arc::new(RwLock::new(
                 FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
             ));
-            let mock_net = Arc::new(Mutex::new(P2pNetwork::new(
-                Box::new(|_r| Ok(())),
-                &json!({
-                    "backend": "mock"
-                }).into(),
-            ).unwrap()));
 
             let context = HolochainContext::new(
                 agent,
@@ -63,18 +51,15 @@ declare_types! {
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 Arc::new(RwLock::new(MemoryStorage::new())),
                 Arc::new(RwLock::new(EavMemoryStorage::new())),
-                mock_net,
+                mock_network_config(),
             ).unwrap();
-
             let dna = Dna::try_from(JsonString::from(dna_data)).expect("unable to parse dna data");
-
             Ok(App {
                 instance: Holochain::new(dna, Arc::new(context))
                 .or_else(|error| {
                     let error_string = ctx.string(format!("Unable to instantiate DNA with error: {}", error));
                     ctx.throw(error_string)
                 })?,
-                hash: "ab83bae71f53b18d7ea8db36193baf48bf82aff392aab4".into(),
             })
         }
 
@@ -119,7 +104,6 @@ declare_types! {
             let cap = ctx.argument::<JsString>(1)?.to_string(&mut ctx)?.value();
             let fn_name = ctx.argument::<JsString>(2)?.to_string(&mut ctx)?.value();
             let params = ctx.argument::<JsString>(3)?.to_string(&mut ctx)?.value();
-
             let mut this = ctx.this();
 
             let call_result = {
@@ -129,8 +113,8 @@ declare_types! {
                 app.instance.call(&zome, &cap, &fn_name, &params)
             };
 
-            let res_string = call_result.or_else(|_| {
-                let error_string = ctx.string("unable to call zome function");
+            let res_string = call_result.or_else(|e| {
+                let error_string = ctx.string(format!("unable to call zome function: {:?}", &e));
                 ctx.throw(error_string)
             })?;
 

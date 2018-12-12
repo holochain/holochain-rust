@@ -1,22 +1,9 @@
 use crate::{
-    agent::actions::commit::*,
-    dht::actions::add_link::*,
-    nucleus::{
-        actions::{build_validation_package::*, validate::*},
-        ribosome::{api::ZomeApiResult, Runtime},
-    },
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::author_entry::author_entry,
 };
-use futures::{
-    executor::block_on,
-    future::{self, TryFutureExt},
-};
-use holochain_core_types::{
-    cas::content::Address,
-    entry::ToEntry,
-    error::HolochainError,
-    link::link_add::LinkAddEntry,
-    validation::{EntryAction, EntryLifecycle, ValidationData},
-};
+use futures::executor::block_on;
+use holochain_core_types::{entry::Entry, error::HolochainError, link::link_add::LinkAdd};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -40,37 +27,12 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     };
 
     let link = input.to_link();
-    let link_add_entry = LinkAddEntry::from_link(&link);
-    let entry = link_add_entry.to_entry();
+    let link_add = LinkAdd::from_link(&link);
+    let entry = Entry::LinkAdd(link_add);
 
     // Wait for future to be resolved
-    let result: Result<(), HolochainError> = block_on(
-        // 1. Build the context needed for validation of the entry
-        build_validation_package(&link_add_entry.to_entry(), &runtime.context)
-            .and_then(|validation_package| {
-                future::ready(Ok(ValidationData {
-                    package: validation_package,
-                    sources: vec![Address::from("<insert your agent key here>")],
-                    lifecycle: EntryLifecycle::Chain,
-                    action: EntryAction::Commit,
-                }))
-            })
-            // 2. Validate the entry
-            .and_then(|validation_data| {
-                validate_entry(entry.clone(), validation_data, &runtime.context)
-            })
-            // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| {
-                commit_entry(
-                    entry.clone(),
-                    &runtime.context.action_channel,
-                    &runtime.context,
-                )
-            })
-            // 4. Add link to the DHT's meta system so it can actually be retrieved
-            //    when looked-up via the base
-            .and_then(|_| add_link(&input.to_link(), &runtime.context)),
-    );
+    let result: Result<(), HolochainError> =
+        block_on(author_entry(&entry, None, &runtime.context)).map(|_| ());
 
     runtime.store_result(result)
 }
@@ -95,7 +57,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{entry_type::EntryType, test_entry, Entry},
+        entry::{entry_type::AppEntryType, test_entry, AppEntryValue, Entry},
         error::{CoreError, ZomeApiInternalResult},
         json::JsonString,
     };
@@ -104,7 +66,10 @@ pub mod tests {
     use std::{convert::TryFrom, sync::Arc};
 
     pub fn test_entry_b() -> Entry {
-        Entry::new(EntryType::App(String::from("testEntryTypeB")), "test")
+        Entry::App(
+            AppEntryType::from("testEntryTypeB"),
+            AppEntryValue::from("test"),
+        )
     }
 
     /// dummy link_entries args from standard test entry
@@ -137,7 +102,7 @@ pub mod tests {
 
     /// dummy commit args from standard test entry
     pub fn test_commit_args_bytes() -> Vec<u8> {
-        JsonString::from(test_entry().serialize()).into_bytes()
+        JsonString::from(test_entry()).into_bytes()
     }
 
     fn create_test_instance() -> (Instance, Arc<Context>) {
@@ -157,6 +122,7 @@ pub mod tests {
 
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
+    #[cfg(not(windows))]
     fn errors_if_base_is_not_present_test() {
         let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),
@@ -174,12 +140,8 @@ pub mod tests {
     fn returns_ok_if_base_is_present() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(
-            test_entry(),
-            &context.action_channel.clone(),
-            &context,
-        ))
-        .expect("Could not commit entry for testing");
+        block_on(commit_entry(test_entry(), None, &context))
+            .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -201,12 +163,8 @@ pub mod tests {
     fn errors_with_wrong_tag() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(
-            test_entry(),
-            &context.action_channel.clone(),
-            &context,
-        ))
-        .expect("Could not commit entry for testing");
+        block_on(commit_entry(test_entry(), None, &context))
+            .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),
@@ -227,19 +185,11 @@ pub mod tests {
     fn works_with_linked_from_defined_link() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(
-            test_entry(),
-            &context.action_channel.clone(),
-            &context,
-        ))
-        .expect("Could not commit entry for testing");
+        block_on(commit_entry(test_entry(), None, &context))
+            .expect("Could not commit entry for testing");
 
-        block_on(commit_entry(
-            test_entry_b(),
-            &context.action_channel.clone(),
-            &context,
-        ))
-        .expect("Could not commit entry for testing");
+        block_on(commit_entry(test_entry_b(), None, &context))
+            .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
             &context.get_dna().unwrap().name.to_string(),

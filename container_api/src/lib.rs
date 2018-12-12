@@ -1,7 +1,9 @@
 //! let file_system = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
 //!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
 //!     file_system.clone(),
-#![feature(try_from)]
+
+#![feature(try_from, async_await, await_macro)]
+
 /// Holochain Container API
 ///
 /// This crate is a library that provides types and functions that help with building
@@ -97,10 +99,9 @@ extern crate serde;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
 extern crate boolinator;
 extern crate jsonrpc_ws_server;
+extern crate serde_json;
 #[cfg(test)]
 extern crate test_utils;
 extern crate tiny_http;

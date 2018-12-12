@@ -12,7 +12,7 @@ use futures::{
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::{
     pin::{Pin, Unpin},
-    sync::{mpsc::SyncSender, Arc},
+    sync::Arc,
 };
 //use core::mem::PinMut;
 
@@ -21,17 +21,17 @@ use std::{
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an ActionResponse.
-pub fn commit_entry(
+pub async fn commit_entry(
     entry: Entry,
-    action_channel: &SyncSender<ActionWrapper>,
+    maybe_crud_link: Option<Address>,
     context: &Arc<Context>,
-) -> CommitFuture {
-    let action_wrapper = ActionWrapper::new(Action::Commit(entry));
-    dispatch_action(action_channel, action_wrapper.clone());
-    CommitFuture {
+) -> Result<Address, HolochainError> {
+    let action_wrapper = ActionWrapper::new(Action::Commit((entry, maybe_crud_link)));
+    dispatch_action(&context.action_channel, action_wrapper.clone());
+    await!(CommitFuture {
         context: context.clone(),
         action: action_wrapper,
-    }
+    })
 }
 
 /// CommitFuture resolves to ActionResponse

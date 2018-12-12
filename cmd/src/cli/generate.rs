@@ -26,7 +26,7 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
 
     let file_name = util::file_name_string(&zome_name)?;
 
-    let zome_config_json = json!{
+    let zome_config_json = json! {
         {
             "description": format!("The {} App", file_name)
         }
@@ -81,6 +81,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn can_generate_scaffolds() {
         let tmp = gen_dir();
 

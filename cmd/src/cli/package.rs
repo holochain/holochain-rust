@@ -54,6 +54,7 @@ impl Packager {
 
         serde_json::to_writer_pretty(&out_file, &Value::from(dir_obj_bundle))?;
 
+        // CLI feedback
         println!("{} bundle file at {:?}", "Created".green().bold(), output);
 
         Ok(())
@@ -146,6 +147,7 @@ impl Packager {
                     // What we get back is a JSON string with all the entry types and zome functions
                     // defined in that WASM code, constructed through our Rust macros define_zome!
                     // and entry!.
+
                     let call_result = ribosome::run_dna(
                         "HC",
                         context,
@@ -153,6 +155,7 @@ impl Packager {
                         &ZomeFnCall::new("", "", "__hdk_get_json_definition", ""),
                         Some("{}".as_bytes().to_vec()),
                     )?;
+
                     let json_from_wasm: Map<String, Value> =
                         serde_json::from_str(&call_result.to_string())?;
 
@@ -302,6 +305,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn package_and_unpack_isolated() {
         const DEFAULT_BUNDLE_FILE_NAME: &str = "bundle.json";
 
@@ -351,6 +355,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     /// A test ensuring that packaging and unpacking a project results in the very same project
     fn package_reverse() {
         const DEFAULT_BUNDLE_FILE_NAME: &str = "bundle.json";
@@ -402,6 +407,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn auto_compilation() {
         let tmp = gen_dir();
 

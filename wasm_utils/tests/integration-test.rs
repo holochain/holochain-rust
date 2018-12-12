@@ -128,7 +128,7 @@ fn call_load_json_err_test() {
     type TestResult = Result<TestStruct, HolochainError>;
 
     let try_result = call_zome_function_with_hc("test_load_json_err");
-    println!("{:?}", try_result);
+
     match try_result {
         Ok(result) => {
             let test_result: TestResult = default_try_from_json(result).unwrap();

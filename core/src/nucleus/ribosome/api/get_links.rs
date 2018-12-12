@@ -57,7 +57,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::Address,
-        entry::{entry_type::test_entry_type, Entry},
+        entry::{entry_type::test_app_entry_type, Entry},
         json::JsonString,
         link::Link,
     };
@@ -92,16 +92,12 @@ pub mod tests {
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
-            let entry = Entry::new(
-                test_entry_type(),
+            let entry = Entry::App(
+                test_app_entry_type(),
                 JsonString::from(format!("entry{} value", i)),
             );
-            let address = block_on(commit_entry(
-                entry,
-                &initialized_context.action_channel.clone(),
-                &initialized_context,
-            ))
-            .expect("Could not commit entry for testing");
+            let address = block_on(commit_entry(entry, None, &initialized_context))
+                .expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }
 

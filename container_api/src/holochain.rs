@@ -87,17 +87,15 @@ impl Holochain {
         let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
-        let context = instance.initialize_context(context.clone());
-        let context2 = context.clone();
         let result = block_on(
-            initialize_application(dna, &context2).and_then(|_| network::initialize(context.clone())),
+           network::initialize(&instance,Some(dna),context.clone())
         );
         match result {
-            Ok(_) => {
+            Ok(new_context) => {
                 context.log(&format!("{} instantiated", name))?;
                 let hc = Holochain {
                     instance,
-                    context,
+                    context: new_context.clone(),
                     active: false,
                 };
                 Ok(hc)
@@ -112,14 +110,10 @@ impl Holochain {
             .load(context.clone())?
             .unwrap_or(State::new(context.clone()));
         // TODO get the network state initialized!!
-        let mut instance = Instance::from_state(loaded_state.clone());
-        let mut sub_context = (*context).clone();
-        sub_context.set_state(Arc::new(RwLock::new(loaded_state.clone())));
-        let new_context = Arc::new(sub_context);
-        
-        instance.start_action_loop(new_context.clone());
-        block_on(
-           network::initialize(new_context.clone()),
+        let mut instance = Instance::from_state(loaded_state.clone());   
+        instance.start_action_loop(context.clone());
+        let new_context = block_on(
+           network::initialize(&instance,None,context.clone()),
         )?;
         Ok(Holochain {
             instance,
@@ -271,11 +265,11 @@ mod tests {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
         let (context, test_logger) = test_context("bob");
+        println!("new");
         let result = Holochain::new(dna.clone(), context.clone());
-
+        println!("result");
         assert!(result.is_ok());
         let hc = result.unwrap();
-        
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
         assert_eq!(hc.context.agent_id.nick, "bob".to_string());
@@ -293,25 +287,18 @@ mod tests {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
         let (context, path) = test_context_with_path("bob");
-        let hc = Holochain::new(dna.clone(), context.clone()).unwrap();
         let con = context.clone();
         let mut persister = &mut *con.persister.lock().unwrap();
         let persist_con = context.clone();
         persister.save(persist_con.state().unwrap().clone());
         let result = Holochain::load(path,context.clone());
-       // assert!(result.is_ok());
+        assert!(result.is_ok());
         let loaded_holo = result.unwrap();
-        println!("loaded");
-        assert_eq!(loaded_holo.instance.state().nucleus().dna(), Some(dna));
-        println!("instance");
         assert!(!loaded_holo.active);
-        println!("active");
         assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
         let network_state = loaded_holo.context.state().unwrap().network().clone();
         assert_eq!(network_state.agent_id.is_some(),true);
-        println!("agent id");
         assert_eq!(network_state.dna_hash.is_some(),true);
-        println!("dna hash");
         assert!(loaded_holo.instance.state().nucleus().has_initialized());
     }
 

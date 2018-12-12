@@ -189,6 +189,8 @@ mod tests {
         create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
 
+    use std::{fs::File,io::prelude::*,path::MAIN_SEPARATOR};
+
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
@@ -279,13 +281,19 @@ mod tests {
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
     }
 
-
+    fn write_agent_state_to_file() -> String
+    {
+        let tempdir = tempdir().unwrap();
+        let path = tempdir.path().to_str().unwrap();
+        let tempfile = vec![path,"Agentstate.txt"].join(&*MAIN_SEPARATOR.to_string());
+        let mut file = File::create(tempfile).unwrap();
+        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
+        path.to_string()
+    }
     #[test]
     fn can_load() {
-        let mut dna = Dna::new();
-        dna.name = "TestApp".to_string();
-        let (context, path) = test_context_with_path("bob");
-        Holochain::new(dna.clone(), context.clone()).unwrap();
+        let path = write_agent_state_to_file();
+        let (context, _) = test_context("bob");
         let result = Holochain::load(path,context.clone());
         assert!(result.is_ok());
         let loaded_holo = result.unwrap();

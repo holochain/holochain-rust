@@ -11,13 +11,19 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker};
+use super::{
+    ipc_net_worker::IpcNetWorker,
+    mock_worker::MockWorker,
+    p2p_config::*,
+};
 
 use serde_json;
 
+
 /// The p2p network instance
 pub struct P2pNetwork {
-    con: NetConnectionThread,
+    connection: NetConnectionThread,
+    config: P2pConfig,
 }
 
 impl std::fmt::Debug for P2pNetwork {
@@ -29,47 +35,50 @@ impl std::fmt::Debug for P2pNetwork {
 impl NetConnection for P2pNetwork {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        self.con.send(data)
+        self.connection.send(data)
     }
 }
 
 impl P2pNetwork {
     /// create a new p2p network instance, given message handler and config json
-    pub fn new(handler: NetHandler, config: &JsonString) -> NetResult<Self> {
-        let config: serde_json::Value = serde_json::from_str(config.into())?;
+    pub fn new(handler: NetHandler, config_json: &JsonString) -> NetResult<Self> {
+        // Create Config struct
+        let config: serde_json::Value = serde_json::from_str(config_json.into())?;
 
         // so far, we have only implemented the "ipc" backend type
-        match config["backend"].to_string().as_str() {
+        let connection = match config["backend"].to_string().as_str() {
             "\"ipc\"" => {
                 // create a new ipc backend with the passed sub "config" info
-                Ok(P2pNetwork {
-                    con: NetConnectionThread::new(
-                        handler,
-                        Box::new(move |h| {
-                            let out: Box<NetWorker> = Box::new(IpcNetWorker::new(
-                                h,
-                                &(config["config"].to_string().into()),
-                            )?);
-                            Ok(out)
-                        }),
-                        None,
-                    )?,
-                })
+                NetConnectionThread::new(
+                    handler,
+                    Box::new(move |h| {
+                        let out: Box<NetWorker> = Box::new(IpcNetWorker::new(
+                            h,
+                            &(config["config"].to_string().into()),
+                        )?);
+                        Ok(out)
+                    }),
+                    None,
+                )?
             }
-            "\"mock\"" => Ok(P2pNetwork {
-                con: NetConnectionThread::new(
+            "\"mock\"" => {
+                 NetConnectionThread::new(
                     handler,
                     Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
                     None,
-                )?,
-            }),
+                )?
+            },
             _ => bail!("unknown p2p_network backend: {}", config["backend"]),
-        }
+        };
+        Ok(P2pNetwork {
+            connection,
+            config: P2pConfig { backend_kind: P2pBackendKind::MOCK, backend_config: config_json.clone()},
+    })
     }
 
     /// stop the network module (disconnect any sockets, join any threads, etc)
     pub fn stop(self) -> NetResult<()> {
-        self.con.stop()
+        self.connection.stop()
     }
 }
 

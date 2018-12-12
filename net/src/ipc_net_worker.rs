@@ -5,7 +5,7 @@ use holochain_core_types::json::JsonString;
 use holochain_net_ipc::{
     ipc_client::IpcClient,
     socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
-    util::get_millis,
+    util::get_timestamp_in_ms,
 };
 
 use holochain_net_connection::{
@@ -17,9 +17,10 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use std::{convert::TryFrom, sync::mpsc};
-
-use std::{collections::HashMap, io::Read};
+use std::{
+    convert::TryFrom, sync::mpsc,
+    collections::HashMap, io::Read,
+};
 
 use serde_json;
 
@@ -28,12 +29,9 @@ pub struct IpcNetWorker {
     handler: NetHandler,
     ipc_relay: NetConnectionRelay,
     ipc_relay_receiver: mpsc::Receiver<Protocol>,
-
     is_ready: bool,
-
     state: String,
-
-    last_state_millis: f64,
+    last_state_date: f64,
 }
 
 impl NetWorker for IpcNetWorker {
@@ -163,19 +161,19 @@ impl IpcNetWorker {
         args: Vec<String>,
         work_dir: String,
         env: HashMap<String, String>,
-        block_connect: bool,
+        can_block_on_connect: bool,
     ) -> NetResult<Self> {
-        let mut child = std::process::Command::new(cmd);
+        let mut child_process = std::process::Command::new(cmd);
 
-        child
+        child_process
             .stdout(std::process::Stdio::piped())
             .args(&args)
             .envs(&env)
             .current_dir(work_dir);
 
-        println!("SPAWN ({:?})", child);
+        println!("SPAWN ({:?})", child_process);
 
-        let mut child = child.spawn()?;
+        let mut child_process = child_process.spawn()?;
 
         // transport info (zmq uri) for connecting to the ipc socket
         let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
@@ -193,7 +191,7 @@ impl IpcNetWorker {
         // it will run some startup algorithms, and then output some binding
         // info on stdout and finally a `#IPC-READY#` message.
         // collect the binding info, and proceed when `#IPC-READY#`
-        if let Some(ref mut stdout) = child.stdout {
+        if let Some(ref mut stdout) = child_process.stdout {
             let mut data: Vec<u8> = Vec::new();
             loop {
                 let mut buf: [u8; 4096] = [0; 4096];
@@ -216,7 +214,7 @@ impl IpcNetWorker {
                     std::thread::sleep(std::time::Duration::from_millis(10));
                 }
 
-                if !block_connect {
+                if !can_block_on_connect {
                     break;
                 }
             }
@@ -225,7 +223,7 @@ impl IpcNetWorker {
         }
 
         // close the pipe since we can never read from it again...
-        child.stdout = None;
+        child_process.stdout = None;
 
         println!("READY! {} {:?}", ipc_binding, p2p_bindings);
 
@@ -234,11 +232,11 @@ impl IpcNetWorker {
             Box::new(move |h| {
                 let mut socket = ZmqIpcSocket::new()?;
                 socket.connect(&ipc_binding)?;
-                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
+                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, can_block_on_connect)?);
                 Ok(out)
             }),
             Some(Box::new(move || {
-                child.kill().unwrap();
+                child_process.kill().unwrap();
             })),
         )
     }
@@ -269,17 +267,17 @@ impl IpcNetWorker {
 
             state: "undefined".to_string(),
 
-            last_state_millis: 0.0_f64,
+            last_state_date: 0.0_f64,
         })
     }
 
     /// send a ping twice per second
     fn priv_check_init(&mut self) -> NetResult<()> {
-        let now = get_millis();
+        let now = get_timestamp_in_ms();
 
-        if now - self.last_state_millis > 500.0 {
+        if now - self.last_state_date > 500.0 {
             self.ipc_relay.send(ProtocolWrapper::RequestState.into())?;
-            self.last_state_millis = now;
+            self.last_state_date = now;
         }
 
         Ok(())
@@ -364,8 +362,8 @@ mod tests {
         let (test_struct, test_send, test_recv) = make_test_channels().unwrap();
 
         let pong = Protocol::Pong(PongData {
-            orig: get_millis() - 4.0,
-            recv: get_millis() - 2.0,
+            orig: get_timestamp_in_ms() - 4.0,
+            recv: get_timestamp_in_ms() - 2.0,
         });
         let data: NamedBinaryData = (&pong).into();
         test_send

@@ -365,12 +365,12 @@ mod tests {
         }));
     }
 
-    #[test]
-    fn it_can_convert_peer_connected() {
-        test_convert!(ProtocolWrapper::PeerConnected(PeerData {
-            id: "test".to_string(),
-        }));
-    }
+//    #[test]
+//    fn it_can_convert_peer_connected() {
+//        test_convert!(ProtocolWrapper::PeerConnected(PeerData {
+//            id: "test".to_string(),
+//        }));
+//    }
 
     #[test]
     fn it_can_convert_send_message() {

@@ -54,37 +54,26 @@ pub fn reduce_send_direct_message_timeout(
     let action = action_wrapper.action();
     let id = unwrap_to!(action => crate::action::Action::SendDirectMessageTimeout);
 
-    if network_state
-        .custom_direct_message_replys
-        .get(id)
-        .is_some()
-        {
-            return;
-        }
-
+    if network_state.custom_direct_message_replys.get(id).is_some() {
+        return;
+    }
 
     network_state
         .custom_direct_message_replys
         .insert(id.clone(), Err(HolochainError::Timeout));
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, NetworkSettings, DirectMessageData},
+        action::{Action, ActionWrapper, DirectMessageData, NetworkSettings},
         context::mock_network_config,
         instance::tests::test_context,
         network::direct_message::{CustomDirectMessage, DirectMessage},
         state::test_store,
     };
-    use holochain_core_types::{
-        cas::content::Address,
-        error::HolochainError,
-    };
+    use holochain_core_types::{cas::content::Address, error::HolochainError};
     use std::sync::{Arc, RwLock};
 
     #[test]
@@ -144,9 +133,6 @@ mod tests {
             .custom_direct_message_replys
             .get(&msg_id.clone())
             .cloned();
-        assert_eq!(
-            maybe_reply,
-            Some(Err(HolochainError::Timeout))
-        );
+        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
     }
 }

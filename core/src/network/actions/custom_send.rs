@@ -9,10 +9,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, error::HolochainError};
 use snowflake::ProcessUniqueId;
 use std::{
     pin::{Pin, Unpin},

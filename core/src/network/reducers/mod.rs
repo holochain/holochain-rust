@@ -24,7 +24,7 @@ use crate::{
             publish::reduce_publish,
             resolve_direct_connection::reduce_resolve_direct_connection,
             respond_get::reduce_respond_get,
-            send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout}
+            send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
         },
         state::NetworkState,
     },

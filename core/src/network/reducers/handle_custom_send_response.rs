@@ -10,7 +10,10 @@ pub fn reduce_handle_custom_send_response(
     let action = action_wrapper.action();
     let (msg_id, response) = unwrap_to!(action => crate::action::Action::HandleCustomSendResponse);
 
-    network_state
-        .custom_direct_message_replys
-        .insert(msg_id.clone(), response.clone().map_err(|error| HolochainError::ErrorGeneric(error)));
+    network_state.custom_direct_message_replys.insert(
+        msg_id.clone(),
+        response
+            .clone()
+            .map_err(|error| HolochainError::ErrorGeneric(error)),
+    );
 }

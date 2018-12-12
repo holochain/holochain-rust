@@ -83,7 +83,10 @@ enum Cli {
             parse(from_os_str)
         )]
         zome: PathBuf,
-        #[structopt(help = "The language of the generated zome", default_value = "rust")]
+        #[structopt(
+            help = "The language of the generated zome",
+            default_value = "rust"
+        )]
         language: String,
     },
     #[structopt(
@@ -128,7 +131,11 @@ enum Cli {
             help = "The path of the file to test"
         )]
         testfile: String,
-        #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
+        #[structopt(
+            long = "skip-package",
+            short = "s",
+            help = "Skip packaging DNA"
+        )]
         skip_build: bool,
     },
 }

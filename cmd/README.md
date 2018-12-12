@@ -189,7 +189,7 @@ You have the flexibility to write tests in quite a variety of ways, open to you 
 
 ## Running your application
 For the purpose of *testing* APIs or prototyping user interfaces, you can run your DNA using `hc run`.
-This will start the application and open a WebSocket on port `8888` or any other port specified by the `-p`/`--port` option. The `-b`/`--package` flag will build your DNA before running it. By default, none of the data your application is putting on the SourceChain. To persist data onto the file system, use the `--persist` flag.
+This will start the application and open a WebSocket on port `8888` or any other port specified by the `-p`/`--port` option. The `-b`/`--package` flag will build your DNA before running it. By default, none of the data your application is putting on the source chain gets persisted. To persist data onto the file system, use the `--persist` flag.
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.

@@ -305,6 +305,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn package_and_unpack_isolated() {
         const DEFAULT_BUNDLE_FILE_NAME: &str = "bundle.json";
 
@@ -354,6 +355,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     /// A test ensuring that packaging and unpacking a project results in the very same project
     fn package_reverse() {
         const DEFAULT_BUNDLE_FILE_NAME: &str = "bundle.json";
@@ -405,6 +407,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn auto_compilation() {
         let tmp = gen_dir();
 

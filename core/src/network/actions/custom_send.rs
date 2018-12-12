@@ -16,12 +16,9 @@ use std::{
     sync::Arc,
 };
 
-/// GetValidationPackage Action Creator
-/// This triggers the network module to retrieve the validation package for the
-/// entry given by the header.
-///
-/// Returns a future that resolves to Option<ValidationPackage> (or HolochainError).
-/// If that is None this means that we couldn't get a validation package from the source.
+/// SendDiretMessage Action Creator for custom (=app) messages
+/// This triggers the network module to open a synchronous node-to-node connection
+/// by sending the given CustomDirectMessage and preparing to receive a response.
 pub async fn custom_send(
     to_agent: Address,
     custom_direct_message: CustomDirectMessage,
@@ -44,9 +41,7 @@ pub async fn custom_send(
     })
 }
 
-/// GetValidationPackageFuture resolves to an Option<ValidationPackage>
-/// which would be None if the source responded with None, indicating that it
-/// is not the source.
+/// SendResponseFuture waits for a result to show up in NetworkState::custom_direct_message_replys
 pub struct SendResponseFuture {
     context: Arc<Context>,
     id: String,

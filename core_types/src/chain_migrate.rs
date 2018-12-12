@@ -91,6 +91,13 @@ mod test {
         json::JsonString,
     };
     use std::convert::TryFrom;
+    use crate::chain_migrate::test_migrate_type;
+
+    #[test]
+    fn smoke_test() {
+        test_migrate_type();
+        test_chain_migrate();
+    }
 
     #[test]
     fn json_round_trip_test() {

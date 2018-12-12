@@ -260,8 +260,29 @@ pub mod tests {
     extern crate base64;
     use crate::dna::zome::tests::test_zome;
     use std::convert::TryFrom;
+    use crate::cas::content::Address;
 
     static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
+
+    #[test]
+    fn addressable_content_test() {
+        let dna = test_dna();
+
+        assert_eq!(
+            Address::from("Qmc6FxqxTni2hNx44MV47JgUrWTNvmyV9MR4B3Der7WBAJ"),
+            dna.address(),
+        );
+
+        assert_eq!(
+            Content::from("{\"name\":\"\",\"description\":\"\",\"version\":\"\",\"uuid\":\"0fb94e28-46c4-42f4-849d-41f31da512f7\",\"dna_spec_version\":\"2.0\",\"properties\":{},\"zomes\":{}}"),
+            dna.content(),
+        );
+
+        assert_eq!(
+            &dna,
+            &Dna::try_from(dna.content()).unwrap(),
+        );
+    }
 
     #[test]
     fn get_entry_type_def_test() {

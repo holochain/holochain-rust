@@ -234,9 +234,7 @@ pub(crate) fn launch_zome_fn_call(
         let response = ExecuteZomeFnResponse::new(zome_call.clone(), call_result);
         // Send ReturnZomeFunctionResult Action
         context
-            .action_channel
-            .as_ref()
-            .expect("action channel to be initialized in reducer")
+            .action_channel()
             .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
                 response,
             )))

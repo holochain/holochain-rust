@@ -132,9 +132,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                 });
 
             context
-                .action_channel
-                .as_ref()
-                .expect("action channel to be initialized in reducer")
+                .action_channel()
                 .send(ActionWrapper::new(Action::ReturnValidationPackage((
                     id,
                     maybe_validation_package,

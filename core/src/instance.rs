@@ -633,8 +633,7 @@ pub mod tests {
     /// are sent on the passed channels.
     pub fn can_process_action() {
         let mut instance = Instance::new(test_context("jason"));
-
-        let context = test_context("jane");
+        let context = instance.initialize_context(test_context("jane"));
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
@@ -827,6 +826,7 @@ pub mod tests {
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason"));
+        let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
@@ -859,6 +859,7 @@ pub mod tests {
         let instance = Instance::new(test_context("jason"));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
+        let context = instance.initialize_context(context);
         instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found

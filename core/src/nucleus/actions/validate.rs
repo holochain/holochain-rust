@@ -100,9 +100,7 @@ pub fn validate_entry<'a>(
             };
 
             context
-                .action_channel
-                .as_ref()
-                .expect("action channel to be initialized in reducer")
+                .action_channel()
                 .send(ActionWrapper::new(Action::ReturnValidationResult((
                     (id, address),
                     result,

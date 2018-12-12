@@ -122,6 +122,7 @@ pub mod tests {
 
     #[test]
     /// test that we can round trip bytes through a commit action and get the result from WASM
+    #[cfg(not(windows))]
     fn errors_if_base_is_not_present_test() {
         let (call_result, _) = test_zome_api_function(
             ZomeApiFunction::LinkEntries.as_str(),

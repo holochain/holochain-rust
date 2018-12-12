@@ -65,6 +65,10 @@ pub fn hc_remove_entry(_: u32) -> u32 {
     0
 }
 #[no_mangle]
+pub fn hc_send(_: u32) -> u32 {
+    0
+}
+#[no_mangle]
 pub fn zome_setup(_: u32) -> u32 {
     0
 }

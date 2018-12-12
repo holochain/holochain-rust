@@ -28,4 +28,4 @@ rm -rf ./target/debug/deps/hc*
 rm -rf ./target/debug/incremental/*
 
 # heavy wasms
-rm -rm ./core/src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/debug/deps/libholochain*
+rm -rf ./core/src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/debug/deps/libholochain*

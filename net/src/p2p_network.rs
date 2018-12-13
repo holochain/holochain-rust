@@ -17,25 +17,25 @@ use super::{
 
 
 /// The p2p network instance
-pub struct P2pNetworkNode {
+pub struct P2pNetwork {
     connection: NetConnectionThread,
     // config: P2pConfig,
 }
 
-impl std::fmt::Debug for P2pNetworkNode {
+impl std::fmt::Debug for P2pNetwork {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "P2pNetwork {{}}")
     }
 }
 
-impl NetConnection for P2pNetworkNode {
+impl NetConnection for P2pNetwork {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         self.connection.send(data)
     }
 }
 
-impl P2pNetworkNode {
+impl P2pNetwork {
     /// create a new p2p network instance, given message handler and config json
     pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
@@ -65,7 +65,7 @@ impl P2pNetworkNode {
                 )?
             },
         };
-        Ok(P2pNetworkNode { connection })
+        Ok(P2pNetwork { connection })
     }
 
     /// stop the network module (disconnect any sockets, join any threads, etc)
@@ -88,7 +88,7 @@ mod tests {
                 "blockConnect": false
             }"#,
         );
-        let mut res = P2pNetworkNode::new(
+        let mut res = P2pNetwork::new(
             Box::new(|_r| Ok(())),
             &p2p_config,
         )
@@ -99,7 +99,7 @@ mod tests {
 
     #[test]
     fn it_should_create_mock() {
-        let mut res = P2pNetworkNode::new(
+        let mut res = P2pNetwork::new(
             Box::new(|_r| Ok(())),
             &P2pConfig::default_mock(),
         )

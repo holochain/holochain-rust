@@ -12,7 +12,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use holochain_net::p2p_network::P2pNetworkNode;
+use holochain_net::p2p_network::P2pNetwork;
 use holochain_net::p2p_config::P2pConfig;
 
 use std::{convert::TryFrom, sync::mpsc};
@@ -37,7 +37,7 @@ fn exec() -> NetResult<()> {
     let (sender1, receiver1) = mpsc::channel::<Protocol>();
 
     // create a new ipc P2pNetwork instance
-    let mut con1 = P2pNetworkNode::new(
+    let mut con1 = P2pNetwork::new(
         Box::new(move |r| {
             sender1.send(r?)?;
             Ok(())
@@ -47,7 +47,7 @@ fn exec() -> NetResult<()> {
 
     let (sender2, receiver2) = mpsc::channel::<Protocol>();
 
-    let mut con2 = P2pNetworkNode::new(
+    let mut con2 = P2pNetwork::new(
         Box::new(move |r| {
             sender2.send(r?)?;
             Ok(())

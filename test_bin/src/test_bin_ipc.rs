@@ -18,7 +18,7 @@ use holochain_net_connection::{
 };
 
 use holochain_net::{
-    p2p_network::P2pNetworkNode,
+    p2p_network::P2pNetwork,
     p2p_config::*,
 };
 
@@ -34,7 +34,7 @@ fn usage() {
 struct IpcNode {
     pub temp_dir_ref: tempfile::TempDir,
     pub dir: String,
-    pub p2p_node: P2pNetworkNode,
+    pub p2p_node: P2pNetwork,
     pub receiver: mpsc::Receiver<Protocol>,
 }
 
@@ -144,7 +144,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
         }
     };
 
-    let p2p_node = P2pNetworkNode::new(
+    let p2p_node = P2pNetwork::new(
         Box::new(move |r| {
             sender.send(r?)?;
             Ok(())

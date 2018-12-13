@@ -11,7 +11,7 @@
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::*;
-//! use holochain_net::p2p_network::P2pNetworkNode;
+//! use holochain_net::p2p_network::P2pNetwork;
 //! use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
 //! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;

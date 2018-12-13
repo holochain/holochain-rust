@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     network::{handler::create_handler, state::NetworkState},
 };
-use holochain_net::p2p_network::P2pNetworkNode;
+use holochain_net::p2p_network::P2pNetwork;
 use holochain_net::p2p_config::P2pConfig;
 use holochain_net_connection::{
     net_connection::NetConnection,
@@ -21,7 +21,7 @@ pub fn reduce_init(
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let p2p_config = P2pConfig::from_str(&network_settings.config.to_string())
         .expect("network settings failed to deserialize");
-    let mut network = P2pNetworkNode::new(create_handler(&context), &p2p_config).unwrap();
+    let mut network = P2pNetwork::new(create_handler(&context), &p2p_config).unwrap();
 
     let _ = network
         .send(

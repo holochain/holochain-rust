@@ -16,7 +16,7 @@ extern crate holochain_core_types_derive;
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_container_api::*;
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent},
+    cas::content::Address,
     crud_status::CrudStatus,
     dna::{
         capabilities::{Capability, FnDeclaration, Membrane},
@@ -24,14 +24,16 @@ use holochain_core_types::{
     },
     entry::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
-        AppEntryValue, Entry,
+        AppEntryValue, Entry, EntryWithMeta,
     },
     error::{CoreError, HolochainError},
     hash::HashString,
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::{
-    get_entry::EntryHistory, get_links::GetLinksResult, QueryResult,
+    get_entry::{GetEntryResult, StatusRequestKind},
+    get_links::GetLinksResult,
+    QueryResult,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -108,13 +110,16 @@ fn example_valid_entry() -> Entry {
     )
 }
 
-fn example_valid_entry_history() -> EntryHistory {
+fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
-    let mut entry_history = EntryHistory::new();
-    entry_history.addresses.push(entry.address());
-    entry_history.entries.push(entry);
-    entry_history.crud_status.push(CrudStatus::Live);
-    entry_history
+    GetEntryResult::new(
+        StatusRequestKind::Latest,
+        Some(&EntryWithMeta {
+            entry: entry,
+            crud_status: CrudStatus::Live,
+            maybe_crud_link: None,
+        }),
+    )
 }
 
 fn example_valid_entry_params() -> String {
@@ -294,7 +299,7 @@ fn can_get_entry() {
             "entry_address": example_valid_entry_address()
         }))),
     );
-    let expected: ZomeApiResult<EntryHistory> = Ok(example_valid_entry_history());
+    let expected: ZomeApiResult<GetEntryResult> = Ok(example_valid_entry_result());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
@@ -323,8 +328,8 @@ fn can_get_entry() {
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
 
-    let empty_entry_history = EntryHistory::new();
-    let expected: ZomeApiResult<EntryHistory> = Ok(empty_entry_history);
+    let empty_entry_result = GetEntryResult::new(StatusRequestKind::Latest, None);
+    let expected: ZomeApiResult<GetEntryResult> = Ok(empty_entry_result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad address
@@ -605,7 +610,7 @@ fn can_remove_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"addresses\":[\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\"],\"entries\":[{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]}],\"crud_status\":[\"deleted\"],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
+        JsonString::from("{\"items\":[{\"meta\":{\"address\":\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\",\"entry_type\":{\"App\":\"testEntryType\"},\"crud_status\":\"deleted\"},\"entry\":{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]}}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
         ),
     );
 }

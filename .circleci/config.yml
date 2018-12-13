@@ -2,12 +2,9 @@ version: 2
 jobs:
   build:
     docker:
-      - image: debian:stretch
+      - image: nixorg/nix:circleci
     steps:
       - checkout
       - run:
-          name: Greeting
-          command: echo Hello, world.
-      - run:
-          name: Print the Current Time
-          command: date
+          name: fmt check
+          command: nix-shell --run hc-fmt-check

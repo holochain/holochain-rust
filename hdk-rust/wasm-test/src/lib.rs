@@ -20,7 +20,7 @@ use hdk::{
 };
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryOptions, EntryHistory},
+        get_entry::{GetEntryOptions, GetEntryResult},
         get_links::GetLinksResult,
     },
     holochain_core_types::dna::zome::entry_types::Sharing,
@@ -92,7 +92,7 @@ fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
     hdk::commit_entry(&entry)
 }
 
-fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<EntryHistory> {
+fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<GetEntryResult> {
     hdk::get_entry_result(entry_address, GetEntryOptions::default())
 }
 
@@ -336,6 +336,13 @@ fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
+fn handle_send_message(to_agent: Address, message: String) -> String {
+    match hdk::send(to_agent, message) {
+        Ok(response) => response,
+        Err(error) => error.to_string(),
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -431,6 +438,10 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
+    receive: |payload| {
+        format!("Received: {}", payload)
+    }
+
     functions: {
         test (Public) {
             check_global: {
@@ -453,7 +464,7 @@ define_zome! {
 
             check_get_entry_result: {
                 inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<EntryHistory>|,
+                outputs: |result: ZomeApiResult<GetEntryResult>|,
                 handler: handle_check_get_entry_result
             }
 
@@ -539,6 +550,12 @@ define_zome! {
                 inputs: |author: String, content: String|,
                 outputs: |response: TweetResponse|,
                 handler: handle_send_tweet
+            }
+
+            send_message: {
+                inputs: |to_agent: Address, message: String|,
+                outputs: |response: String|,
+                handler: handle_send_message
             }
         }
     }

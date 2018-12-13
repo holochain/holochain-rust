@@ -19,7 +19,7 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    dna::{wasm::DnaWasm, capabilities::ReservedCapabilityNames},
+    dna::{capabilities::ReservedCapabilityNames, wasm::DnaWasm},
     entry::Entry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},

@@ -5,7 +5,7 @@ use crate::{
 };
 use dna::{
     capabilities,
-    entry_types::{deserialize_entry_types, self, serialize_entry_types, EntryTypeDef},
+    entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef},
 };
 use std::collections::BTreeMap;
 
@@ -135,7 +135,7 @@ pub mod tests {
                 "capabilities": {}
             }"#,
         )
-            .unwrap();
+        .unwrap();
 
         let mut zome = Zome::default();
         zome.description = String::from("test");

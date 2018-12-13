@@ -14,10 +14,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::ChainHeader,
-        dna::{
-            capabilities::Capability, entry_types::EntryTypeDef,
-            Dna,
-        },
+        dna::{capabilities::Capability, entry_types::EntryTypeDef, Dna},
         entry::{entry_type::AppEntryType, Entry},
     };
     use std::sync::Arc;

@@ -36,11 +36,8 @@ pub mod tests {
     use super::*;
     extern crate base64;
     use crate::{
-        dna::{
-            entry_types::EntryTypeDef,
-            zome::tests::test_zome,
-        },
-        entry::entry_type::{EntryType, AppEntryType},
+        dna::{entry_types::EntryTypeDef, zome::tests::test_zome},
+        entry::entry_type::{AppEntryType, EntryType},
         json::JsonString,
     };
     use std::convert::TryFrom;

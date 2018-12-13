@@ -237,10 +237,7 @@ pub mod tests {
     use crate as hdk;
     use crate::ValidationPackageDefinition;
     use holochain_core_types::{
-        dna::{
-            entry_types::Sharing,
-            zome::ZomeCapabilities,
-        },
+        dna::{entry_types::Sharing, zome::ZomeCapabilities},
         error::HolochainError,
         json::JsonString,
     };

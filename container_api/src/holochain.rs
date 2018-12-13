@@ -87,7 +87,11 @@ impl Holochain {
         let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
-        let result = block_on(application::initialize(&instance, Some(dna), context.clone()));
+        let result = block_on(application::initialize(
+            &instance,
+            Some(dna),
+            context.clone(),
+        ));
         match result {
             Ok(new_context) => {
                 context.log(format!("{} instantiated", name));

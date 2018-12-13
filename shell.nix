@@ -77,7 +77,6 @@ stdenv.mkDerivation rec {
     # haskellPackages.pb
     pastebinit
     qdirstat
-    docker
 
     unixtools.watch
 
@@ -111,7 +110,8 @@ stdenv.mkDerivation rec {
 
     # dev tooling
     git
-    virtualbox
+    docker
+    circleci-cli
   ];
 
   /* builder = "${hc-fmt}/bin/hc-fmt"; */

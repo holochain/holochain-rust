@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: nixorg/nix:circleci
+      - image: holochain/circle:latest
     steps:
       - restore_cache:
           keys:

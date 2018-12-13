@@ -26,7 +26,7 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, AppEntryType, EntryType},
         AppEntryValue, Entry,
     },
-    error::{CoreError, HolochainError, ZomeApiInternalResult},
+    error::{CoreError, HolochainError},
     hash::HashString,
     json::JsonString,
 };

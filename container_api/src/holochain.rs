@@ -221,34 +221,6 @@ mod tests {
         )
     }
 
-    // TODO: TestLogger duplicated in test_utils because:
-    //  use holochain_core::{instance::tests::TestLogger};
-    // doesn't work.
-    // @see https://github.com/holochain/holochain-rust/issues/185
-    fn test_context_with_path(agent_name: &str) -> (Arc<Context>, String) {
-        let tempdir = tempdir().unwrap();
-        let path = tempdir.path().to_str().unwrap();
-
-        let file_system = FilesystemStorage::new(path).unwrap();
-        let cas = Arc::new(RwLock::new(file_system.clone()));
-        let mut context = Context::new(
-            AgentId::generate_fake(agent_name),
-            test_utils::test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
-            cas.clone(),
-            Arc::new(RwLock::new(EavFileStorage::new(path.to_string()).unwrap())),
-            mock_network_config(),
-        )
-        .unwrap();
-        let chain_store = ChainStore::new(cas.clone());
-        let chain_header = test_chain_header();
-        let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
-        let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
-        let global_state = Arc::new(RwLock::new(state));
-        context.set_state(global_state.clone());
-        (Arc::new(context), path.to_string())
-    }
-
     fn example_api_wasm_path() -> String {
         "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm".into()
     }

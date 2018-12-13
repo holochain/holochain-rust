@@ -5,6 +5,8 @@ jobs:
       - image: nixorg/nix:circleci
     steps:
       - checkout
+      - nix-channel --add https://nixos.org/channels/nixpkgs-unstable
+      - nix-channel --update
       - run:
           name: fmt check
           command: nix-shell --run hc-fmt-check

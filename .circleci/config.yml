@@ -8,7 +8,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - rust
+            - rust-{{ checksum "Cargo.toml"}}
 
       - run:
           name: fmt check
@@ -23,7 +23,7 @@ jobs:
           command: nix-shell --run ci-app-spec
 
       - save_cache:
-          key: rust
+          key: rust-{{ checksum "Cargo.toml" }}
           paths:
             - "~/.cargo"
             - "./target"

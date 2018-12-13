@@ -57,7 +57,7 @@ pub mod tests {
     use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        entry::{entry_type::AppEntryType, test_entry, AppEntryValue, Entry},
+        entry::{test_entry, Entry},
         error::{CoreError, ZomeApiInternalResult},
         json::JsonString,
     };
@@ -66,10 +66,7 @@ pub mod tests {
     use std::{convert::TryFrom, sync::Arc};
 
     pub fn test_entry_b() -> Entry {
-        Entry::App(
-            AppEntryType::from("testEntryTypeB"),
-            AppEntryValue::from("test"),
-        )
+        Entry::App("testEntryTypeB".into(), "test".into())
     }
 
     /// dummy link_entries args from standard test entry

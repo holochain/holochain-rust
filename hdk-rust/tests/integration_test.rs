@@ -23,8 +23,8 @@ use holochain_core_types::{
         entry_types::{EntryTypeDef, LinksTo},
     },
     entry::{
-        entry_type::{test_app_entry_type, AppEntryType, EntryType},
-        AppEntryValue, Entry, EntryWithMeta,
+        entry_type::{test_app_entry_type, EntryType},
+        Entry, EntryWithMeta,
     },
     error::{CoreError, HolochainError},
     hash::HashString,
@@ -103,10 +103,11 @@ struct EntryStruct {
 
 fn example_valid_entry() -> Entry {
     Entry::App(
-        AppEntryType::from(test_app_entry_type()),
-        AppEntryValue::from(EntryStruct {
+        test_app_entry_type().into(),
+        EntryStruct {
             stuff: "non fail".into(),
-        }),
+        }
+        .into(),
     )
 }
 
@@ -358,10 +359,10 @@ fn can_invalidate_invalid_commit() {
         "check_commit_entry_macro",
         &json!({"entry":
             Entry::App(
-                AppEntryType::from(test_app_entry_type()),
-                AppEntryValue::from(EntryStruct {
+                test_app_entry_type().into(),
+                EntryStruct {
                     stuff: "FAIL".into(),
-                }),
+                }.into(),
             )
         })
         .to_string(),

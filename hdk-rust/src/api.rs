@@ -424,12 +424,10 @@ pub fn call<S: Into<String>>(
 ///
 /// pub fn handle_create_post(content: String) -> ZomeApiResult<Address> {
 ///
-///    let post_entry = Entry::App(AppEntryType::from("post"),
-///        Post {
-///            content: content,
-///            date_created: "now".to_string(),
-///        }.into()
-///    );
+///     let post_entry = Entry::App("post".into(), Post{
+///         content,
+///         date_created: "now".into(),
+///     }.into());
 ///
 ///    let address = hdk::commit_entry(&post_entry)?;
 ///
@@ -592,12 +590,10 @@ pub fn get_entry_result(
 ///
 /// pub fn handle_link_entries(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
 ///
-///     let post_entry = Entry::App(AppEntryType::from("post"),
-///         Post {
-///             content: content,
-///             date_created: "now".to_string(),
-///         }.into()
-///     );
+///     let post_entry = Entry::App("post".into(), Post{
+///             content,
+///             date_created: "now".into(),
+///     }.into());
 ///
 ///     let address = hdk::commit_entry(&post_entry)?;
 ///
@@ -691,15 +687,10 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// }
 ///
 /// pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
-///     let post_entry = Entry::App(
-///         AppEntryType::from("post"),
-///         AppEntryValue::from(
-///             Post {
-///                 content: content,
-///                 date_created: "now".to_string(),
-///             },
-///         )
-///     );
+///     let post_entry = Entry::App("post".into(), Post {
+///         content,
+///         date_created: "now".into(),
+///     }.into());
 ///
 ///     hdk::entry_address(&post_entry)
 /// }

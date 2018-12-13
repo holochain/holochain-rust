@@ -18,8 +18,8 @@ static SRV_ID: &'static [u8] = &[0x24, 0x24, 0x24, 0x24];
 pub struct IpcClient {
     handler: NetHandler,
     socket: Box<IpcSocket>,
-    last_recv_date: f64,
-    last_send_date: f64,
+    last_recv_millis: f64,
+    last_send_millis: f64,
 }
 
 impl NetWorker for IpcClient {
@@ -53,11 +53,11 @@ impl NetWorker for IpcClient {
 
         let now = get_millis();
 
-        if now - self.last_recv_date > 2000.0 {
+        if now - self.last_recv_millis > 2000.0 {
             bail!("ipc connection timeout");
         }
 
-        if now - self.last_send_date > 500.0 {
+        if now - self.last_send_millis > 500.0 {
             self.priv_ping()?;
             did_something = true;
         }
@@ -104,8 +104,8 @@ impl IpcClient {
         Ok(Self {
             handler,
             socket,
-            last_recv_date: get_millis(),
-            last_send_date: 0.0,
+            last_recv_millis: get_millis(),
+            last_send_millis: 0.0,
         })
     }
 
@@ -124,7 +124,7 @@ impl IpcClient {
         }
 
         // we got a message, update our timeout counter
-        self.last_recv_date = get_millis();
+        self.last_recv_millis = get_millis();
 
         let msg = NamedBinaryData {
             name: res[2].to_vec(),
@@ -148,7 +148,7 @@ impl IpcClient {
         self.socket.send(&[SRV_ID, &[], &data.name, &data.data])?;
 
         // sent message, update our ping timer
-        self.last_send_date = get_millis();
+        self.last_send_millis = get_millis();
 
         Ok(())
     }

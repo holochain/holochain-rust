@@ -25,7 +25,6 @@ pub fn create_crud_link_eav(from: &Address, to: &Address) -> EntityAttributeValu
 }
 
 /// the CRUD status of a Pair is stored as EntryMeta in the hash table, NOT in the entry itself
-/// statuses are represented as bitflags so we can easily build masks for filtering lookups
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, DefaultJson)]
 #[serde(rename_all = "lowercase")]
 pub enum CrudStatus {

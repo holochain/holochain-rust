@@ -113,11 +113,12 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     hdk::debug("**** get history from latest").ok();
     let res = hdk::get_entry_history(addr_v4.clone());
     let latest = res.unwrap().unwrap();
+
     assert_eq!(latest.items.len(), 1);
     let item = &latest.items[0];
     assert_eq!(item.entry.clone().unwrap(), entry_v4.clone());
     assert_eq!(item.meta.clone().unwrap().address, addr_v4.clone());
-    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::LIVE);
+    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::Live);
     assert_eq!(latest.crud_links.len(), 0);
 
     // get history from initial
@@ -125,29 +126,30 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     let res = hdk::get_entry_history(addr_v1.clone());
     let history = res.unwrap().unwrap();
 
+
     assert_eq!(history.items.len(), 4);
     let item = &history.items[0];
     assert_eq!(item.entry.clone().unwrap(), entry_v1.clone());
     assert_eq!(item.meta.clone().unwrap().address, addr_v1.clone());
-    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::MODIFIED);
+    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::Modified);
     assert_eq!(history.crud_links[&addr_v1.clone()], addr_v2.clone());
 
     let item = &history.items[1];
     assert_eq!(item.entry.clone().unwrap(), entry_v2.clone());
     assert_eq!(item.meta.clone().unwrap().address, addr_v2.clone());
-    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::MODIFIED);
+    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::Modified);
     assert_eq!(history.crud_links[&addr_v2.clone()], addr_v3.clone());
 
     let item = &history.items[2];
     assert_eq!(item.entry.clone().unwrap(), entry_v3.clone());
     assert_eq!(item.meta.clone().unwrap().address, addr_v3.clone());
-    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::MODIFIED);
+    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::Modified);
     assert_eq!(history.crud_links[&addr_v3.clone()], addr_v4.clone());
 
     let item = &history.items[3];
     assert_eq!(item.entry.clone().unwrap(), entry_v4.clone());
     assert_eq!(item.meta.clone().unwrap().address, addr_v4.clone());
-    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::LIVE);
+    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::Live);
     assert_eq!(history.crud_links.get(&addr_v4.clone()), None);
 
     // get result from initial latest only
@@ -263,13 +265,13 @@ pub fn handle_remove_modified_entry_ok() -> JsonString {
     let item = &(history.clone()).items[0];
     assert_eq!(item.entry.clone().unwrap(), entry_v1.clone());
     assert_eq!(item.meta.clone().unwrap().address, addr_v1.clone());
-    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::MODIFIED);
+    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::Modified);
     assert_eq!(history.crud_links[&addr_v1.clone()], addr_v2.clone());
 
     let item = &(history.clone()).items[1];
     assert_eq!(item.entry.clone().unwrap(), entry_v2.clone());
     assert_eq!(item.meta.clone().unwrap().address, addr_v2.clone());
-    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::DELETED);
+    assert_eq!(item.meta.clone().unwrap().crud_status, CrudStatus::Deleted);
     assert!(history.crud_links.get(&addr_v2.clone()).is_some());
 
     JsonString::from(history)

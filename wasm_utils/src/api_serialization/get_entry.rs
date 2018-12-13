@@ -220,7 +220,7 @@ mod tests {
         assert_eq!(result.latest(), None);
         result.push(&EntryWithMeta {
             entry: test_entry(),
-            crud_status: CrudStatus::LIVE,
+            crud_status: CrudStatus::Live,
             maybe_crud_link: None,
         });
         assert!(result.found());
@@ -233,12 +233,12 @@ mod tests {
         assert_eq!(result.latest(), None);
         result.push(&EntryWithMeta {
             entry: test_entry_a(),
-            crud_status: CrudStatus::MODIFIED,
+            crud_status: CrudStatus::Modified,
             maybe_crud_link: None,
         });
         result.push(&EntryWithMeta {
             entry: test_entry_b(),
-            crud_status: CrudStatus::LIVE,
+            crud_status: CrudStatus::Live,
             maybe_crud_link: None,
         });
         assert!(result.found());
@@ -250,7 +250,7 @@ mod tests {
         let mut result = GetEntryResult::new(StatusRequestKind::All, None);
         result.push(&EntryWithMeta {
             entry: test_entry(),
-            crud_status: CrudStatus::LIVE,
+            crud_status: CrudStatus::Live,
             maybe_crud_link: None,
         });
         assert!(result.found());
@@ -260,7 +260,7 @@ mod tests {
         result = GetEntryResult::new(StatusRequestKind::Initial, None);
         result.push(&EntryWithMeta {
             entry: test_entry(),
-            crud_status: CrudStatus::LIVE,
+            crud_status: CrudStatus::Live,
             maybe_crud_link: None,
         });
         assert!(result.found());

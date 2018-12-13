@@ -229,7 +229,7 @@ pub mod tests {
             StatusRequestKind::Latest,
             Some(&EntryWithMeta {
                 entry: test_entry(),
-                crud_status: CrudStatus::LIVE,
+                crud_status: CrudStatus::Live,
                 maybe_crud_link: None,
             }),
         );

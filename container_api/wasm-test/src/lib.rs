@@ -14,8 +14,6 @@ use holochain_core_types::{
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 use std::convert::TryInto;
 use holochain_core_types::entry::Entry;
-use holochain_core_types::entry::entry_type::AppEntryType;
-use holochain_core_types::entry::AppEntryValue;
 
 //-------------------------------------------------------------------------------------------------
 // HC DEBUG Function Call
@@ -114,7 +112,10 @@ fn hdk_commit(
     entry_value: &str,
 ) -> Result<Address, String> {
     // Put args in struct and serialize into memory
-    let entry = Entry::App(AppEntryType::from(entry_type_name.to_string()), AppEntryValue::from(entry_value.to_string()));
+    let entry = Entry::App(
+        entry_type_name.to_owned().into(),
+        entry_value.to_owned().into(),
+    );
     let allocation_of_input = store_as_json(mem_stack, JsonString::from(entry))?;
 
     // Call WASMI-able commit

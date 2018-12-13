@@ -1,5 +1,10 @@
 use crate::{
-    dna::{bridges::{Bridge, BridgePresence}, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
+    dna::{
+        bridges::{Bridge, BridgePresence},
+        capabilities::Capability,
+        entry_types::EntryTypeDef,
+        wasm, zome,
+    },
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
@@ -202,14 +207,12 @@ impl Dna {
             None => Vec::new(),
             Some(ref bridges) => bridges
                 .iter()
-                .filter(|bridge| {
-                    match bridge {
-                        Bridge::Address(b) => b.presence == BridgePresence::Required,
-                        Bridge::Trait(b) => b.presence == BridgePresence::Required,
-                    }
+                .filter(|bridge| match bridge {
+                    Bridge::Address(b) => b.presence == BridgePresence::Required,
+                    Bridge::Trait(b) => b.presence == BridgePresence::Required,
                 })
                 .cloned()
-                .collect()
+                .collect(),
         }
     }
 }

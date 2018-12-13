@@ -39,7 +39,7 @@ pub mod tests {
     use crate::{
         cas::content::Address,
         dna::{
-            bridges::{Bridge, AddressBridge, TraitBridge, BridgePresence},
+            bridges::{AddressBridge, Bridge, BridgePresence, TraitBridge},
             entry_types::EntryTypeDef,
             zome::tests::test_zome,
         },
@@ -520,17 +520,17 @@ pub mod tests {
                 ]
             }"#,
         ))
-            .unwrap();
+        .unwrap();
 
         assert_eq!(
             dna.get_required_bridges(),
             vec![
-                Bridge::Address(AddressBridge{
+                Bridge::Address(AddressBridge {
                     presence: BridgePresence::Required,
                     handle: String::from("DPKI"),
                     dna_address: Address::from("Qmabcdef1234567890"),
                 }),
-                Bridge::Trait(TraitBridge{
+                Bridge::Trait(TraitBridge {
                     presence: BridgePresence::Required,
                     handle: String::from("HCHC"),
                     library_trait: String::from("org.holochain.alpha.dna-repository"),

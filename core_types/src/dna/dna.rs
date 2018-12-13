@@ -166,9 +166,9 @@ impl Dna {
             for (zome_entry_type_name, _) in &zome.entry_types {
                 if *zome_entry_type_name
                     == EntryType::App(AppEntryType::from(entry_type_name.to_string()))
-                    {
-                        return Some(zome_name.clone());
-                    }
+                {
+                    return Some(zome_name.clone());
+                }
             }
         }
         None
@@ -183,9 +183,9 @@ impl Dna {
             for (zome_entry_type_name, entry_type_def) in &zome.entry_types {
                 if *zome_entry_type_name
                     == EntryType::App(AppEntryType::from(entry_type_name.to_string()))
-                    {
-                        return Some(entry_type_def);
-                    }
+                {
+                    return Some(entry_type_def);
+                }
             }
         }
         None

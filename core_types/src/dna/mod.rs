@@ -43,7 +43,7 @@ pub mod tests {
             entry_types::EntryTypeDef,
             zome::tests::test_zome,
         },
-        entry::entry_type::{EntryType, AppEntryType},
+        entry::entry_type::{AppEntryType, EntryType},
         json::JsonString,
     };
     use std::convert::TryFrom;
@@ -460,10 +460,9 @@ pub mod tests {
                 .unwrap(),
             "test zome".to_string()
         );
-        assert!(
-            dna.get_zome_name_for_app_entry_type(&AppEntryType::from("non existant entry type"))
-                .is_none()
-        );
+        assert!(dna
+            .get_zome_name_for_app_entry_type(&AppEntryType::from("non existant entry type"))
+            .is_none());
     }
 
     #[test]

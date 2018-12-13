@@ -83,10 +83,7 @@ enum Cli {
             parse(from_os_str)
         )]
         zome: PathBuf,
-        #[structopt(
-            help = "The language of the generated zome",
-            default_value = "rust"
-        )]
+        #[structopt(help = "The language of the generated zome", default_value = "rust")]
         language: String,
     },
     #[structopt(

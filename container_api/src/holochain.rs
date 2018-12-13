@@ -68,7 +68,7 @@ use holochain_core::{
     nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
-    workflows::network,
+    workflows::application,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
@@ -87,7 +87,7 @@ impl Holochain {
         let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
-        let result = block_on(network::initialize(&instance, Some(dna), context.clone()));
+        let result = block_on(application::initialize(&instance, Some(dna), context.clone()));
         match result {
             Ok(new_context) => {
                 context.log(format!("{} instantiated", name));
@@ -110,7 +110,7 @@ impl Holochain {
         // TODO get the network state initialized!!
         let mut instance = Instance::from_state(loaded_state.clone());
         instance.start_action_loop(context.clone());
-        let new_context = block_on(network::initialize(&instance, None, context.clone()))?;
+        let new_context = block_on(application::initialize(&instance, None, context.clone()))?;
         Ok(Holochain {
             instance,
             context: new_context.clone(),

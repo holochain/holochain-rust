@@ -21,6 +21,7 @@
 //!        cas::file::FilesystemStorage, eav::file::EavFileStorage,
 //! };
 //! use tempfile::tempdir;
+//! use holochain_core::context::mock_network_config;
 //!
 //! // instantiate a new holochain instance
 //!
@@ -37,7 +38,7 @@
 //!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
 //!     file_storage.clone(),
 //!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
-//!     JsonString::from("{\"backend_end\": \"MOCK\"}"),
+//!     mock_network_config(),
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!

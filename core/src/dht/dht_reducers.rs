@@ -13,7 +13,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use std::{collections::HashSet, convert::TryFrom, sync::Arc};
+use std::{collections::HashSet, convert::TryFrom, str::FromStr, sync::Arc};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -223,7 +223,7 @@ fn reduce_remove_entry_inner(
     // For now checks if crud-status other than LIVE are present
     let status_eavs = status_eavs
         .iter()
-        .filter(|e| CrudStatus::from(String::from(e.value())) != CrudStatus::Live)
+        .filter(|e| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))
         .collect::<HashSet<&EntityAttributeValue>>();
     if !status_eavs.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(

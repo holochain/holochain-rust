@@ -5,7 +5,7 @@ use crate::{
     hash::HashString,
     json::JsonString,
 };
-use std::convert::TryInto;
+use std::{convert::TryInto, str::FromStr};
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
@@ -50,11 +50,16 @@ impl From<CrudStatus> for String {
     }
 }
 
-impl From<String> for CrudStatus {
-    fn from(s: String) -> CrudStatus {
-        let str_gulp: String = format!("{:?}", s);
+impl FromStr for CrudStatus {
+    type Err = &'static str;
 
-        serde_json::from_str(str_gulp.as_ref()).expect("failed to deserialize into CrudStatus enum")
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let quoted_string = format!("{:?}", s);
+
+        let res = serde_json::from_str(quoted_string.as_ref())
+            .map_err(|_| "failed to deserialize CrudStatus enum")?;
+
+        Ok(res)
     }
 }
 

@@ -8,7 +8,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use std::{collections::HashSet, convert::TryInto, sync::Arc};
+use std::{collections::HashSet, convert::TryInto, str::FromStr, sync::Arc};
 
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
@@ -43,7 +43,9 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     // For now look for crud-status by life-cycle order: DELETED, MODIFIED, LIVE
     let has_deleted = status_eavs
         .iter()
-        .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::Deleted)
+        .filter(|e| {
+            CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
+        })
         .collect::<HashSet<&EntityAttributeValue>>()
         .len()
         > 0;
@@ -52,7 +54,9 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     } else {
         let has_modified = status_eavs
             .iter()
-            .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::Modified)
+            .filter(|e| {
+                CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
+            })
             .collect::<HashSet<&EntityAttributeValue>>()
             .len()
             > 0;

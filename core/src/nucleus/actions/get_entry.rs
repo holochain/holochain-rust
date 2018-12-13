@@ -8,7 +8,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use std::{collections::HashSet, convert::TryInto, sync::Arc};
+use std::{collections::HashSet, convert::TryInto, str::FromStr, sync::Arc};
 
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
@@ -38,26 +38,30 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     if status_eavs.len() == 0 {
         return Ok(None);
     }
-    let mut crud_status = CrudStatus::LIVE;
+    let mut crud_status = CrudStatus::Live;
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
-    // For now look for crud-status by life-cycle order: DELETED, MODIFIED, LIVE
+    // For now look for crud-status by life-cycle order: Deleted, Modified, Live
     let has_deleted = status_eavs
         .iter()
-        .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::DELETED)
+        .filter(|e| {
+            CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
+        })
         .collect::<HashSet<&EntityAttributeValue>>()
         .len()
         > 0;
     if has_deleted {
-        crud_status = CrudStatus::DELETED;
+        crud_status = CrudStatus::Deleted;
     } else {
         let has_modified = status_eavs
             .iter()
-            .filter(|e| CrudStatus::from(String::from(e.value())) == CrudStatus::MODIFIED)
+            .filter(|e| {
+                CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
+            })
             .collect::<HashSet<&EntityAttributeValue>>()
             .len()
             > 0;
         if has_modified {
-            crud_status = CrudStatus::MODIFIED;
+            crud_status = CrudStatus::Modified;
         }
     }
     // Get crud-link

@@ -81,6 +81,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn can_generate_scaffolds() {
         let tmp = gen_dir();
 

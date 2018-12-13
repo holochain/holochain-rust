@@ -19,12 +19,8 @@ jobs:
           command: nix-shell --run hc-fmt-check
 
       - run:
-          name: wasm build
-          command: nix-shell --run hc-wasm-build
-
-      - run:
-          name: run tests
-          command: nix-shell --run hc-test
+          name: wasm build and test
+          command: nix-shell --run "hc-wasm-build && hc-test"
 
       - save_cache:
           key: nix

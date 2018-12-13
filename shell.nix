@@ -111,6 +111,7 @@ stdenv.mkDerivation rec {
     # dev tooling
     git
     docker
+    circleci-cli
   ];
 
   /* builder = "${hc-fmt}/bin/hc-fmt"; */

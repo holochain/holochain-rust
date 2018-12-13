@@ -174,12 +174,11 @@ mod tests {
     };
     use super::*;
     use holochain_core::{
-        agent::{chain_store::ChainStore, state::AgentState},
         context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
     };
-    use holochain_core_types::{agent::AgentId, chain_header::test_chain_header, dna::Dna};
+    use holochain_core_types::{agent::AgentId, dna::Dna};
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;

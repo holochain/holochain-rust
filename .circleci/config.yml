@@ -1,0 +1,41 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: holochain/holochain-rust:circle
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            # todo: keys for each target
+            - rust-{{ checksum "Cargo.toml" }}
+
+      - run:
+          name: fmt check
+          command: nix-shell --run hc-fmt-check
+
+      - run:
+          name: code coverage tests and push
+          command: nix-shell --run ci-codecov
+
+      - run:
+          name: app spec tests
+          command: nix-shell --run ci-app-spec
+
+
+      - save_cache:
+          key: rust-{{ checksum "Cargo.toml" }}
+          paths:
+            - "~/.cargo"
+            - "./target"
+            - "./app_spec/zomes/blog/code/target"
+            - "./app_spec/zomes/summer/code/target"
+            - "./nodejs_container/native/target"
+            - "./container_api/wasm-test/target"
+            - "./core/src/nucleus/ribosome/target"
+            - "./core/src/nucleus/wasm-test/target"
+            - "./core/src/nucleus/actions/wasm-test/target"
+            - "./wasm_utils/wasm-test/integration-test/target"
+            - "./hdk-rust/wasm-test/target"
+            - "./test_utils/target"

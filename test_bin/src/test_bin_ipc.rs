@@ -1,5 +1,6 @@
 #![feature(try_from)]
 
+extern crate holochain_core_types;
 extern crate holochain_net;
 extern crate holochain_net_connection;
 #[macro_use]
@@ -11,12 +12,15 @@ use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
         ConnectData, DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, MessageData,
-        P2pProtocol, TrackAppData,
+        ProtocolWrapper, TrackAppData,
     },
     NetResult,
 };
 
-use holochain_net::p2p_network::P2pNetworkNode;
+use holochain_net::{
+    p2p_network::P2pNetworkNode,
+    p2p_config::*,
+};
 
 use std::{convert::TryFrom, sync::mpsc};
 
@@ -38,9 +42,9 @@ impl IpcNode {
 
     // See if there is a message to receive
     #[cfg_attr(tarpaulin, skip)]
-    pub fn try_recv(&mut self) -> NetResult<P2pProtocol> {
+    pub fn try_recv(&mut self) -> NetResult<ProtocolWrapper> {
         let data = self.receiver.try_recv()?;
-        match P2pProtocol::try_from(&data) {
+        match ProtocolWrapper::try_from(&data) {
             Ok(r) => Ok(r),
             Err(e) => {
                 let s = format!("{:?}", e);
@@ -56,8 +60,8 @@ impl IpcNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn wait(
         &mut self,
-        predicate: Box<dyn Fn(&P2pProtocol) -> bool>,
-    ) -> NetResult<P2pProtocol> {
+        predicate: Box<dyn Fn(&ProtocolWrapper) -> bool>,
+    ) -> NetResult<ProtocolWrapper> {
         loop {
             let mut did_something = false;
 
@@ -83,36 +87,69 @@ impl IpcNode {
 
 // Spawn an IPC node that uses n3h and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn spawn_connection(n3h_path: &str) -> NetResult<IpcNode> {
+fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
     let dir_ref = tempfile::tempdir()?;
     let dir = dir_ref.path().to_string_lossy().to_string();
 
     let (sender, receiver) = mpsc::channel::<Protocol>();
+
+    let p2p_config: P2pConfig = match maybe_config_filepath {
+        Some(filepath) => {
+            // Get config from file
+            let p2p_config = P2pConfig::from_file(filepath);
+
+            // complement missing fields
+            serde_json::from_value(json!({
+              "backend_kind": String::from(p2p_config.backend_kind),
+              "backend_config":
+              {
+                  "socketType": p2p_config.backend_config["socketType"],
+                  "spawn":
+                  {
+                      "cmd": p2p_config.backend_config["spawn"]["cmd"],
+                      "args": [
+                          format!("{}/packages/n3h/bin/n3h", n3h_path)
+                      ],
+                      "workDir": dir.clone(),
+                      "env": {
+                          "N3H_HACK_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_HACK_MODE"],
+                          "N3H_WORK_DIR": dir.clone(),
+                          "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
+                        }
+                    },
+              }})).unwrap()
+
+        }
+        None => {
+            // use default config
+            serde_json::from_value(json!({
+              "backend_kind": "IPC",
+              "backend_config":
+              {
+                  "socketType": "zmq",
+                  "spawn":
+                  {
+                      "cmd": "node",
+                      "args": [
+                          format!("{}/packages/n3h/bin/n3h", n3h_path)
+                      ],
+                      "workDir": dir.clone(),
+                      "env": {
+                          "N3H_HACK_MODE": "1",
+                          "N3H_WORK_DIR": dir.clone(),
+                          "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+                        }
+                    },
+              }})).unwrap()
+        }
+    };
 
     let p2p_node = P2pNetworkNode::new(
         Box::new(move |r| {
             sender.send(r?)?;
             Ok(())
         }),
-        &json!({
-            "backend": "ipc",
-            "config": {
-                "socketType": "zmq",
-                "spawn": {
-                    "cmd": "node",
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
-                    "workDir": dir.clone(),
-                    "env": {
-                        "N3H_HACK_MODE": "1",
-                        "N3H_WORK_DIR": dir.clone(),
-                        "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
-                    }
-                },
-            }
-        })
-        .into(),
+        &p2p_config,
     )?;
 
     Ok(IpcNode {
@@ -162,69 +199,72 @@ fn exec() -> NetResult<()> {
     }
 
     // Create two nodes
-    let mut node1 = spawn_connection(&n3h_path)?;
-    let mut node2 = spawn_connection(&n3h_path)?;
+    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"))?;
+    let mut node2 = spawn_connection(&n3h_path, None)?;
     println!("node1 path: {}", node1.dir);
     println!("node2 path: {}", node2.dir);
 
     // Get each node's current state
-    let node1_state = node1.wait(Box::new(one_is!(P2pProtocol::State(_))))?;
-    let node2_state = node2.wait(Box::new(one_is!(P2pProtocol::State(_))))?;
+    let node1_state = node1.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
+    let node2_state = node2.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
 
     // get node IDs from their state
     let node1_id;
     let node2_id;
     let node2_binding;
-    one_let!(P2pProtocol::State(s) = node1_state {
-        node1_id = s.id
+    one_let!(ProtocolWrapper::State(state) = node1_state {
+        node1_id = state.id
     });
-    one_let!(P2pProtocol::State(s) = node2_state {
-        node2_id = s.id;
-        node2_binding = s.bindings[0].clone();
+    one_let!(ProtocolWrapper::State(state) = node2_state {
+        node2_id = state.id;
+        node2_binding = state.bindings[0].clone();
     });
+
+    println!("node1_id: {:?}", node1_id);
+    println!("node2_id: {:?}", node2_id);
 
     // Send TrackApp message on both nodes
     node1.p2p_node.send(
-        P2pProtocol::TrackApp(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
         })
         .into(),
     )?;
-    let connect_result_1 = node1.wait(Box::new(one_is!(P2pProtocol::PeerConnected(_))))?;
+    let connect_result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     println!("self connected result 1: {:?}", connect_result_1);
     node2.p2p_node.send(
-        P2pProtocol::TrackApp(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_2.to_string(),
         })
         .into(),
     )?;
-    let connect_result_2 = node2.wait(Box::new(one_is!(P2pProtocol::PeerConnected(_))))?;
+    let connect_result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     println!("self connected result 2: {:?}", connect_result_2);
 
     // Connect nodes between them
     println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
     node1.p2p_node.send(
-        P2pProtocol::Connect(ConnectData {
+        ProtocolWrapper::Connect(ConnectData {
             address: node2_binding,
         })
         .into(),
     )?;
-    let result_1 = node1.wait(Box::new(one_is!(P2pProtocol::PeerConnected(_))))?;
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     println!("got connect result 1: {:?}", result_1);
-    one_let!(P2pProtocol::PeerConnected(d) = result_1 {
+    one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
         assert_eq!(d.agent_id, AGENT_2);
     });
-    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::PeerConnected(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     println!("got connect result 2: {:?}", result_2);
-    one_let!(P2pProtocol::PeerConnected(d) = result_2 {
+    one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
         assert_eq!(d.agent_id, AGENT_1);
     });
 
     // Send a generic message
     node1.p2p_node.send(
-        P2pProtocol::SendMessage(MessageData {
+        ProtocolWrapper::SendMessage(MessageData {
             msg_id: "test".to_string(),
             dna_hash: DNA_HASH.to_string(),
             to_agent_id: AGENT_2.to_string(),
@@ -234,10 +274,10 @@ fn exec() -> NetResult<()> {
         .into(),
     )?;
     // Check if node2 received it
-    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::HandleSend(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
     println!("got handle send 2: {:?}", result_2);
     node2.p2p_node.send(
-        P2pProtocol::HandleSendResult(MessageData {
+        ProtocolWrapper::HandleSendResult(MessageData {
             msg_id: "test".to_string(),
             dna_hash: DNA_HASH.to_string(),
             to_agent_id: AGENT_1.to_string(),
@@ -246,12 +286,12 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-    let result_1 = node1.wait(Box::new(one_is!(P2pProtocol::SendResult(_))))?;
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
     println!("got send result 1: {:?}", result_1);
 
     // Send store DHT data
     node1.p2p_node.send(
-        P2pProtocol::PublishDht(DhtData {
+        ProtocolWrapper::PublishDht(DhtData {
             msg_id: "testPub".to_string(),
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -261,14 +301,14 @@ fn exec() -> NetResult<()> {
         .into(),
     )?;
     // Check if both nodes received it
-    let result_1 = node1.wait(Box::new(one_is!(P2pProtocol::StoreDht(_))))?;
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
     println!("got store result 1: {:?}", result_1);
-    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::StoreDht(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
     println!("got store result 2: {:?}", result_2);
 
     // Send get DHT data
     node2.p2p_node.send(
-        P2pProtocol::GetDht(GetDhtData {
+        ProtocolWrapper::GetDht(GetDhtData {
             msg_id: "testGet".to_string(),
             dna_hash: DNA_HASH.to_string(),
             from_agent_id: AGENT_2.to_string(),
@@ -276,12 +316,12 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::GetDht(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDht(_))))?;
     println!("got dht get: {:?}", result_2);
 
     // Send get DHT data result
     node2.p2p_node.send(
-        P2pProtocol::GetDhtResult(DhtData {
+        ProtocolWrapper::GetDhtResult(DhtData {
             msg_id: "testGetResult".to_string(),
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -290,12 +330,12 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::GetDhtResult(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtResult(_))))?;
     println!("got dht get result: {:?}", result_2);
 
     // Send store DHT metadata
     node1.p2p_node.send(
-        P2pProtocol::PublishDhtMeta(DhtMetaData {
+        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
             msg_id: "testPubMeta".to_string(),
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -306,14 +346,14 @@ fn exec() -> NetResult<()> {
         .into(),
     )?;
     // Check if both nodes received it
-    let result_1 = node1.wait(Box::new(one_is!(P2pProtocol::StoreDhtMeta(_))))?;
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
     println!("got store meta result 1: {:?}", result_1);
-    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::StoreDhtMeta(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
     println!("got store meta result 2: {:?}", result_2);
 
     // Send get DHT metadata
     node2.p2p_node.send(
-        P2pProtocol::GetDhtMeta(GetDhtMetaData {
+        ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
             dna_hash: DNA_HASH.to_string(),
             from_agent_id: AGENT_2.to_string(),
@@ -322,12 +362,12 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::GetDhtMeta(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMeta(_))))?;
     println!("got dht get: {:?}", result_2);
 
     // Send get DHT metadata result
     node2.p2p_node.send(
-        P2pProtocol::GetDhtMetaResult(DhtMetaData {
+        ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -337,7 +377,7 @@ fn exec() -> NetResult<()> {
         })
         .into(),
     )?;
-    let result_2 = node2.wait(Box::new(one_is!(P2pProtocol::GetDhtMetaResult(_))))?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
     println!("got dht get result: {:?}", result_2);
 
     // Wait a bit before closing

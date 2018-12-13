@@ -231,9 +231,10 @@ where
 #[cfg(test)]
 pub mod tests {
     use crate::config::{load_configuration, Configuration};
+    use holochain_core::context::mock_network_config;
 
     pub fn example_serialized_network_config() -> String {
-        String::from("{\\\"backend\\\":\\\"mock\\\"}")
+        String::from(mock_network_config())
     }
 
     #[test]
@@ -329,7 +330,7 @@ pub mod tests {
     [[interfaces.instances]]
     id = "app spec instance"
     "#,
-            "{\\\"backend\\\":\\\"special\\\"}"
+            "{\\\"backend_kind\\\":\\\"special\\\"}"
         );
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -345,7 +346,7 @@ pub mod tests {
         let instance_config = instances.get(0).unwrap();
         assert_eq!(
             instance_config.network,
-            Some("{\"backend\":\"special\"}".to_string())
+            Some("{\"backend_kind\":\"special\"}".to_string())
         );
     }
 
@@ -409,7 +410,7 @@ pub mod tests {
 
     #[test]
     fn test_inconsistent_config() {
-        let toml = &format!(
+        let toml =
             r#"
     [[agents]]
     id = "test agent"
@@ -425,24 +426,23 @@ pub mod tests {
     id = "app spec instance"
     dna = "WRONG DNA ID"
     agent = "test agent"
-    network = "{}"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
-    "#,
-            example_serialized_network_config()
-        );
-        let config: Configuration = load_configuration(toml).unwrap();
+
+    "#;
+
+        let config: Configuration = load_configuration(toml).expect("Failed to load config from toml string");
 
         assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
     }
 
     #[test]
     fn test_inconsistent_config_interface_1() {
-        let toml = &format!(
+        let toml =
             r#"
     [[agents]]
     id = "test agent"
@@ -458,7 +458,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    network = "{}"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -473,9 +472,8 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "WRONG INSTANCE ID"
-    "#,
-            example_serialized_network_config()
-        );
+    "#;
+
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(

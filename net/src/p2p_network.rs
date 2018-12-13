@@ -2,8 +2,6 @@
 //! P2pNetwork instances take a json configuration string
 //! and at load-time instantiate the configured "backend"
 
-use holochain_core_types::json::JsonString;
-
 use holochain_net_connection::{
     net_connection::{NetConnection, NetHandler, NetWorker},
     net_connection_thread::NetConnectionThread,
@@ -17,13 +15,11 @@ use super::{
     p2p_config::*,
 };
 
-use serde_json;
-
 
 /// The p2p network instance
 pub struct P2pNetworkNode {
     connection: NetConnectionThread,
-    config: P2pConfig,
+    // config: P2pConfig,
 }
 
 impl std::fmt::Debug for P2pNetworkNode {
@@ -41,39 +37,35 @@ impl NetConnection for P2pNetworkNode {
 
 impl P2pNetworkNode {
     /// create a new p2p network instance, given message handler and config json
-    pub fn new(handler: NetHandler, config_json: &JsonString) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
-        let config: serde_json::Value = serde_json::from_str(config_json.into())?;
-
+        //let config: P2pConfig = serde_json::from_str(config_json.into())?;
+        let network_config = config.backend_config.to_string().into();
         // so far, we have only implemented the "ipc" backend type
-        let connection = match config["backend"].to_string().as_str() {
-            "\"ipc\"" => {
+        let connection = match config.backend_kind {
+            P2pBackendKind::IPC => {
                 // create a new ipc backend with the passed sub "config" info
                 NetConnectionThread::new(
                     handler,
                     Box::new(move |h| {
                         let out: Box<NetWorker> = Box::new(IpcNetWorker::new(
                             h,
-                            &(config["config"].to_string().into()),
+                            &network_config,
                         )?);
                         Ok(out)
                     }),
                     None,
                 )?
             }
-            "\"mock\"" => {
+            P2pBackendKind::MOCK => {
                  NetConnectionThread::new(
                     handler,
                     Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
                     None,
                 )?
             },
-            _ => bail!("unknown p2p_network backend: {}", config["backend"]),
         };
-        Ok(P2pNetworkNode {
-            connection,
-            config: P2pConfig { backend_kind: P2pBackendKind::MOCK, backend_config: config_json.clone()},
-    })
+        Ok(P2pNetworkNode { connection })
     }
 
     /// stop the network module (disconnect any sockets, join any threads, etc)
@@ -87,35 +79,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_should_fail_bad_backend_type() {
-        if let Err(e) = P2pNetworkNode::new(
-            Box::new(|_r| Ok(())),
-            &json!({
-                "backend": "bad"
-            })
-            .to_string()
-            .into(),
-        ) {
-            let e = format!("{:?}", e);
-            assert!(e.contains("backend: \\\"bad\\\""), "res: {}", e);
-        } else {
-            panic!("should have thrown");
-        }
-    }
-
-    #[test]
     fn it_should_create_zmq_socket() {
+        let p2p_config = P2pConfig::new(
+            P2pBackendKind::IPC,
+            r#"{
+                "socketType": "zmq",
+                "ipcUri": "tcp://127.0.0.1:0",
+                "blockConnect": false
+            }"#,
+        );
         let mut res = P2pNetworkNode::new(
             Box::new(|_r| Ok(())),
-            &json!({
-                "backend": "ipc",
-                "config": {
-                    "socketType": "zmq",
-                    "ipcUri": "tcp://127.0.0.1:0",
-                    "blockConnect": false
-                }
-            })
-            .into(),
+            &p2p_config,
         )
         .unwrap();
         res.send(Protocol::P2pReady).unwrap();
@@ -126,10 +101,7 @@ mod tests {
     fn it_should_create_mock() {
         let mut res = P2pNetworkNode::new(
             Box::new(|_r| Ok(())),
-            &json!({
-                "backend": "mock"
-            })
-            .into(),
+            &P2pConfig::default_mock(),
         )
         .unwrap();
         res.send(Protocol::P2pReady).unwrap();

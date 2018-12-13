@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net_connection::protocol_wrapper::{MessageData, P2pProtocol};
+use holochain_net_connection::protocol_wrapper::{MessageData, ProtocolWrapper};
 use std::sync::Arc;
 
 fn inner(
@@ -23,9 +23,9 @@ fn inner(
     };
 
     let protocol_object = if direct_message_data.is_response {
-        P2pProtocol::HandleSendResult(data)
+        ProtocolWrapper::HandleSendResult(data)
     } else {
-        P2pProtocol::SendMessage(data)
+        ProtocolWrapper::SendMessage(data)
     };
 
     send(network_state, protocol_object)

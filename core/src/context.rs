@@ -17,6 +17,7 @@ use std::{
     thread::sleep,
     time::Duration,
 };
+use holochain_net::p2p_config::P2pConfig;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -148,7 +149,7 @@ impl Context {
 /// create a test network
 #[cfg_attr(tarpaulin, skip)]
 pub fn mock_network_config() -> JsonString {
-    json!({"backend": "mock"}).into()
+    JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)
 }
 
 #[cfg(test)]

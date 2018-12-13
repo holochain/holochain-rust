@@ -6,13 +6,9 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - nix
+            - rust
 
       - checkout
-
-      - run:
-          name: cat shell.nix
-          command: cat shell.nix
 
       - run:
           name: fmt check
@@ -23,6 +19,17 @@ jobs:
           command: nix-shell --run "hc-wasm-build && hc-test"
 
       - save_cache:
-          key: nix
+          key: rust
           paths:
-            - "/nix"
+            - "~/.cargo"
+            - "./target"
+            - "./app_spec/zomes/blog/code/target"
+            - "./app_spec/zomes/summer/code/target"
+            - "./nodejs_container/native/target"
+            - "./container_api/wasm-test/target"
+            - "./core/src/nucleus/ribosome/target"
+            - "./core/src/nucleus/wasm-test/target"
+            - "./core/src/nucleus/actions/wasm-test/target"
+            - "./wasm_utils/wasm-test/integration-test/target"
+            - "./hdk-rust/wasm-test/target"
+            - "./test_utils/target"

@@ -1,7 +1,7 @@
-target
 .git
 docker
 
+target
 app_spec/zomes/blog/code/target
 app_spec/zomes/summer/code/target
 nodejs_container/native/target

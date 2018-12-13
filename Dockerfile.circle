@@ -1,5 +1,18 @@
 FROM nixorg/nix:circleci
 ENV NIX_PATH nixpkgs=https://github.com/NixOS/nixpkgs/archive/47f008676fe3b77b9c8edda54db621a0dc16dd8e.tar.gz
+
+WORKDIR ~
+
+# warm nix
+# this is slow so we don't want to redo it if possible so we run a no-op
+
 COPY shell.nix shell.nix
-# warm the nix store
+RUN nix-shell --run "echo 1" --show-trace --max-jobs 4 --cores 0
+
+# warm rust compilation
+# this needs the repo to be copied in
+COPY . .
 RUN nix-shell --run install-tarpaulin --show-trace --max-jobs 4 --cores 0
+RUN nix-shell --run hc-wasm-build --show-trace --max-jobs 4 --cores 0
+RUN nix-shell --run hc-install-cmd  --show-trace --max-jobs 4 --cores 0
+RUN nix-shell --run hc-install-node-container --show-trace --max-jobs 4 --cores 0

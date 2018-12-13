@@ -109,7 +109,7 @@ impl IpcNetWorker {
             bail!("unexpected socketType: {}", config["socketType"]);
         }
         let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
-        if let None = config["ipcUri"].as_str() {
+        if config["ipcUri"].as_str().is_none() {
             if let Some(s) = config["spawn"].as_object() {
                 if s["cmd"].is_string()
                     && s["args"].is_array()

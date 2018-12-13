@@ -537,24 +537,35 @@ pub mod tests {
 
     #[test]
     fn can_receive_action_signals_single_instance() {
+        use holochain_core::action::Action;
+        use std::time::Duration;
         let wasm = include_bytes!(
             "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
         );
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
         let dna = test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
         let context = test_utils::test_context("alex");
+        let timeout = 1000;
 
-        let (mut hc, rx) = Holochain::with_signals(dna.clone(), context, |_| true).unwrap();
+        let (mut hc, rx) =
+            Holochain::with_signals(dna.clone(), context, move |action| match action {
+                Action::InitApplication(_) => false,
+                _ => true,
+            })
+            .unwrap();
         hc.start().expect("couldn't start");
         hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
             .unwrap();
 
         'outer: loop {
-            let msg_publish = rx.try_recv().expect("no more signals to receive (outer)");
-            println!("here's what: {:?}", msg_publish);
+            let msg_publish = rx
+                .recv_timeout(Duration::from_millis(timeout))
+                .expect("no more signals to receive (outer)");
             if let Signal::Internal(Publish(address)) = msg_publish {
                 loop {
-                    let msg_hold = rx.try_recv().expect("no more signals to receive (inner)");
+                    let msg_hold = rx
+                        .recv_timeout(Duration::from_millis(timeout))
+                        .expect("no more signals to receive (inner)");
                     if let Signal::Internal(Hold(entry)) = msg_hold {
                         assert_eq!(address, entry.address());
                         break 'outer;

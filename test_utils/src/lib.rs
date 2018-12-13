@@ -38,6 +38,7 @@ use std::{
     hash::{Hash, Hasher},
     io::prelude::*,
     sync::{mpsc::Receiver, Arc, Mutex, RwLock},
+    time::Duration,
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
@@ -280,8 +281,12 @@ pub fn expect_action<F>(rx: &Receiver<Signal>, f: F) -> Result<Action, String>
 where
     F: Fn(&Action) -> bool,
 {
+    let timeout = 1000;
     loop {
-        match rx.try_recv().map_err(|e| e.to_string())? {
+        match rx
+            .recv_timeout(Duration::from_millis(timeout))
+            .map_err(|e| e.to_string())?
+        {
             Signal::Internal(action) => {
                 if f(&action) {
                     return Ok(action);

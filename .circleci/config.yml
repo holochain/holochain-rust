@@ -4,11 +4,11 @@ jobs:
     docker:
       - image: holochain/holochain-rust:circle
     steps:
+      - checkout
+
       - restore_cache:
           keys:
             - rust
-
-      - checkout
 
       - run:
           name: fmt check

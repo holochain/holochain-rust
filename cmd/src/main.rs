@@ -128,11 +128,7 @@ enum Cli {
             help = "The path of the file to test"
         )]
         testfile: String,
-        #[structopt(
-            long = "skip-package",
-            short = "s",
-            help = "Skip packaging DNA"
-        )]
+        #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
     },
 }

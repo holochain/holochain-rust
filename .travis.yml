@@ -180,45 +180,47 @@ jobs:
         # Build & test All
         - cargo test --all
 
-    - name: "C binding tests"
-      <<: *_trusty_bash
+#    - name: "C binding tests"
+#      <<: *_trusty_bash
       # sudo is needed for codecov, && system library install which makes things 20-50s slower
       # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
+#      sudo: true
       # manually cache as we manually install rustup
       # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
+#      cache:
+#        timeout: 1000
+#        directories:
+#          - $HOME/.cargo
           # faster to build this than manage a cache for the target
           # - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script:
-        - make test_c_ci
-      before_cache:
-        - rm -rf $HOME/.cargo/registry/index
+#      install:
+#        - export PATH=$HOME/.cargo/bin:$PATH
+#      script:
+#        - make test_c_ci
+#      before_cache:
+#        - rm -rf $HOME/.cargo/registry/index
 
-    - name: "Lint (fmt & _clippy)"
+    - name: "Lint (fmt & _clippy) + C binding"
       <<: *_trusty_bash
       <<: *_cargo_cache_template
       script:
         - make fmt_check
+        - make test_c_ci
         # @see #431
         # - make clippy
 
-    - name: "Command-line tools"
+    - name: "Command-line tools + App-spec"
       <<: *_trusty_nodejs
       <<: *_cargo_cache_template
       script:
         - make test_cmd
-
-    - name: "App-spec"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      script:
         - make test_app_spec
+
+#    - name: "App-spec"
+#      <<: *_trusty_nodejs
+#      <<: *_cargo_cache_template
+#      script:
+#        - make test_app_spec
 
     - name: "Nodejs Container Test"
       <<: *_trusty_nodejs

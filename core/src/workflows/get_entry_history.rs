@@ -47,7 +47,7 @@ pub async fn get_entry_history_workflow<'a>(
             entry_history.push(&entry_with_meta);
             // Follow crud-link if possible
             if entry_with_meta.maybe_crud_link.is_some()
-                && entry_with_meta.crud_status != CrudStatus::DELETED
+                && entry_with_meta.crud_status != CrudStatus::Deleted
                 && args.options.status_request != StatusRequestKind::Initial
             {
                 maybe_address = Some(entry_with_meta.maybe_crud_link.unwrap());
@@ -82,7 +82,7 @@ pub async fn get_entry_history_workflow<'a>(
 ////        assert_eq!(0, maybe_entry_history.unwrap().entries.len());
 ////        let content_storage = &context.state().unwrap().dht().content_storage().clone();
 ////        (*content_storage.write().unwrap()).add(&entry).unwrap();
-////        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+////        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
 ////        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
 ////        (*meta_storage.write().unwrap())
 ////            .add_eav(&status_eav)

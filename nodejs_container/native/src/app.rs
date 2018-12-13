@@ -1,26 +1,23 @@
-use holochain_core::{
-    context::{
-        Context as HolochainContext,
-        mock_network_config,
-    },
-    logger::Logger, persister::SimplePersister,
-};
 use holochain_cas_implementations::{
-    cas::file::FilesystemStorage,
-    cas::memory::MemoryStorage,
-    eav::memory::EavMemoryStorage
+    cas::{file::FilesystemStorage, memory::MemoryStorage},
+    eav::memory::EavMemoryStorage,
 };
 use holochain_container_api::Holochain;
-use holochain_core_types::{
-    dna::Dna,
-    agent::AgentId,
-    json::JsonString
+use holochain_core::{
+    context::{mock_network_config, Context as HolochainContext},
+    logger::Logger,
+    persister::SimplePersister,
 };
-use neon::context::Context;
-use neon::prelude::*;
-use std::sync::{Arc, Mutex, RwLock};
+use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
+use neon::{context::Context, prelude::*};
+use std::{
+    convert::TryFrom,
+    path::PathBuf,
+    sync::{Arc, Mutex, RwLock},
+};
 use tempfile::tempdir;
-use std::convert::TryFrom;
+
+use crate::config::*;
 
 #[derive(Clone, Debug)]
 struct NullLogger {}
@@ -33,7 +30,64 @@ pub struct App {
     instance: Holochain,
 }
 
+pub struct HcTest {}
+
 declare_types! {
+
+    pub class JsHcTest for HcTest {
+
+        init(mut cx) {
+            Ok(HcTest {})
+        }
+
+        method agent(mut cx) {
+            let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+            let obj = AgentData { name };
+            Ok(neon_serde::to_value(&mut cx, &obj)?)
+        }
+
+        method dna(mut cx) {
+            let path = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+            let path = PathBuf::from(path);
+            let obj = DnaData { path };
+            Ok(neon_serde::to_value(&mut cx, &obj)?)
+        }
+
+        method instance(mut cx) {
+            let agent = AgentData { name: "test-agent".into() };
+            let dna = DnaData { path: PathBuf::from("test-dna") };
+            let obj = InstanceData { agent, dna };
+            Ok(neon_serde::to_value(&mut cx, &obj)?)
+        }
+
+        method scenario(mut cx) {
+            let mut i = 0;
+            // let mut instances = Vec::new();
+            while let Some(arg) = cx.argument_opt(i) {
+                println!("got some args to handle");
+                i += 1;
+            };
+            Ok(neon::types::JsNull::new().as_value(&mut cx))
+        }
+    }
+
+    pub class JsScenarioConfig for ScenarioConfig {
+        init(mut cx) {
+            let instances = cx.argument::<JsArray>(0)?
+                .to_vec(&mut cx)?
+                .into_iter()
+                .map(|v| neon_serde::from_value(&mut cx, v).expect("scenario() argument deserialization failed"))
+                .collect();
+            Ok(ScenarioConfig(instances))
+        }
+
+        // method run(mut cx) {
+        //     let mut this = ctx.this();
+        //     let func = cx.argument::<JsFunction>(0)?;
+        //     func.call(&mut cx, this, args);
+        // }
+    }
+
     pub class JsApp for App {
         init(mut ctx) {
             let tempdir = tempdir().unwrap();
@@ -124,4 +178,8 @@ declare_types! {
     }
 }
 
-register_module!(mut ctx, { ctx.export_class::<JsApp>("HolochainApp") });
+register_module!(mut ctx, {
+    ctx.export_class::<JsApp>("HolochainApp")?;
+    ctx.export_class::<JsHcTest>("HcTest")?;
+    Ok(())
+});

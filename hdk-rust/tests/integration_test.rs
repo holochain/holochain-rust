@@ -35,7 +35,11 @@ use holochain_wasm_utils::api_serialization::{
     get_links::GetLinksResult,
     QueryResult,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 use test_utils::*;
 
 #[no_mangle]
@@ -138,7 +142,8 @@ fn start_holochain_instance<T: Into<String>>(uuid: T) -> (Holochain, Arc<Mutex<T
         "send_tweet",
         "commit_validation_package_tester",
         "link_two_entries",
-        "links_roundtrip",
+        "links_roundtrip_create",
+        "links_roundtrip_get",
         "link_validation",
         "check_query",
         "check_app_entry_address",
@@ -421,37 +426,61 @@ fn can_link_entries() {
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
 
-// This test did fail before but passed locally for me now each of >20 tries on macOS.
-// It can fail because:
-// handle_links_roundtrip doesn't take into
-// account how long it takes for the links to propigate on the network
-// the correct test would be to wait for a propigation period
-//
-// It does fail on windows in the CI so for now I pull it in for all OS except
-// Windows so we have at least some integration link testing.
 #[test]
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links");
-    let result = hc.call("test_zome", "test_cap", "links_roundtrip", r#"{}"#);
-    assert!(result.is_ok(), "result = {:?}", result);
-    let result_string = result.unwrap();
 
-    let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
-    let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
+    // Create links
+    let result = hc.call("test_zome", "test_cap", "links_roundtrip_create", r#"{}"#);
+    let maybe_address: Result<Address, String> =
+        serde_json::from_str(&String::from(result.unwrap())).unwrap();
+    let address = maybe_address.unwrap();
 
-    println!("can_roundtrip_links result_string: {:?}", result_string);
-    let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
-        address_1.clone(),
-        address_2.clone(),
-    ]));
-    let ordering1: bool = result_string == JsonString::from(expected);
+    // Polling loop because the links have to get pushed over the mock network and then validated
+    // which includes requesting a validation package and receiving it over the mock network.
+    // All of that happens asynchronously and takes longer depending on computing resources
+    // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
+    let mut both_links_present = false;
+    let mut tries = 0;
+    let mut result_string = JsonString::from("");
+    while !both_links_present && tries < 10 {
+        tries = tries + 1;
 
-    let expected: Result<GetLinksResult, HolochainError> =
-        Ok(GetLinksResult::new(vec![address_2, address_1]));
-    let ordering2: bool = result_string == JsonString::from(expected);
+        // Now get_links on the base and expect both to be there
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+            "links_roundtrip_get",
+            &format!(r#"{{"address": "{}"}}"#, address),
+        );
+        assert!(result.is_ok(), "result = {:?}", result);
+        result_string = result.unwrap();
+        let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
+        let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
-    assert!(ordering1 || ordering2, "result = {:?}", result_string);
+        println!(
+            "can_roundtrip_links result_string - try {}: {:?}",
+            tries, result_string
+        );
+        let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
+            address_1.clone(),
+            address_2.clone(),
+        ]));
+        let ordering1: bool = result_string == JsonString::from(expected);
+
+        let expected: Result<GetLinksResult, HolochainError> =
+            Ok(GetLinksResult::new(vec![address_2, address_1]));
+        let ordering2: bool = result_string == JsonString::from(expected);
+
+        both_links_present = ordering1 || ordering2;
+        if !both_links_present {
+            // Wait for links to be validated and propagated
+            thread::sleep(Duration::from_millis(500));
+        }
+    }
+
+    assert!(both_links_present, "result = {:?}", result_string);
 }
 
 #[test]

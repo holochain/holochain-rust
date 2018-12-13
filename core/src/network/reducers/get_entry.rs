@@ -185,7 +185,7 @@ mod tests {
         // test that an existing result does not get overwritten by timeout signal
         let entry_with_meta = EntryWithMeta {
             entry: entry.clone(),
-            crud_status: CrudStatus::LIVE,
+            crud_status: CrudStatus::Live,
             maybe_crud_link: None,
         };
         let dht_data = DhtData {

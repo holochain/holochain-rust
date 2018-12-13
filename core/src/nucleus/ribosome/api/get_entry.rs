@@ -228,7 +228,7 @@ pub mod tests {
         let mut entry_history = EntryHistory::new();
         entry_history.addresses.push(test_entry().address());
         entry_history.entries.push(test_entry());
-        entry_history.crud_status.push(CrudStatus::LIVE);
+        entry_history.crud_status.push(CrudStatus::Live);
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
                 ZomeApiInternalResult::success(entry_history)

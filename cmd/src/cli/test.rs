@@ -1,5 +1,5 @@
-use colored::*;
 use crate::{cli::package, error::DefaultResult, util};
+use colored::*;
 use std::{fs, path::PathBuf};
 
 pub const TEST_DIR_NAME: &str = "test";
@@ -45,7 +45,7 @@ pub fn test(
         util::run_cmd(
             tests_path.clone(),
             "npm".to_string(),
-            vec!["install".to_string(), "--silent".to_string()],
+            &["install", "--silent"],
         )?;
     }
 
@@ -55,7 +55,7 @@ pub fn test(
     util::run_cmd(
         path.to_path_buf(),
         "node".to_string(),
-        vec![testfile.to_string()],
+        &[testfile.to_string().as_str()],
     )?;
 
     Ok(())
@@ -64,8 +64,8 @@ pub fn test(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use assert_cmd::prelude::*;
     use crate::cli::package;
+    use assert_cmd::prelude::*;
     use std::process::Command;
     use tempfile::{Builder, TempDir};
 
@@ -95,19 +95,15 @@ pub mod tests {
             .unwrap_or_else(|e| panic!("test call failed: {}", e));
 
         // check success of packaging step
-        assert!(
-            temp_dir_path_buf
-                .join(&DIST_DIR_NAME)
-                .join(package::DEFAULT_BUNDLE_FILE_NAME)
-                .exists()
-        );
+        assert!(temp_dir_path_buf
+            .join(&DIST_DIR_NAME)
+            .join(package::DEFAULT_BUNDLE_FILE_NAME)
+            .exists());
         // check success of npm install step
-        assert!(
-            temp_dir_path_buf
-                .join(&TEST_DIR_NAME)
-                .join("node_modules")
-                .exists()
-        );
+        assert!(temp_dir_path_buf
+            .join(&TEST_DIR_NAME)
+            .join("node_modules")
+            .exists());
     }
 
     #[test]

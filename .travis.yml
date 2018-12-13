@@ -152,16 +152,6 @@ _cmd_deploy_template: &_cmd_deploy_template
 
 jobs:
   include:
-    - name: "Holochain tests & code coverage"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-      script: make code_coverage
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-
     - name: "windows build & test all"
       <<: *_windows_template
       env:
@@ -200,25 +190,11 @@ jobs:
       before_cache:
         - rm -rf $HOME/.cargo/registry/index
 
-    - name: "Lint (fmt & _clippy)"
-      <<: *_trusty_bash
-      <<: *_cargo_cache_template
-      script:
-        - make fmt_check
-        # @see #431
-        # - make clippy
-
     - name: "Command-line tools"
       <<: *_trusty_nodejs
       <<: *_cargo_cache_template
       script:
         - make test_cmd
-
-    - name: "App-spec"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      script:
-        - make test_app_spec
 
     - name: "Nodejs Container Test"
       <<: *_trusty_nodejs
@@ -234,6 +210,7 @@ jobs:
         - TARGET=x86_64-unknown-linux-gnu
         - CRATE_NAME=hc
       os: linux
+
     - name: "CMD DEPLOY - 64 bit OSX"
       <<: *_cmd_deploy_template
       env:
@@ -250,6 +227,7 @@ jobs:
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
       before_script:
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+
     - name: "CMD DEPLOY - 64 bit Windows GNU"
       <<: *_cmd_deploy_template
       os: windows

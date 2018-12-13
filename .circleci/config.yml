@@ -8,8 +8,8 @@ jobs:
 
       - restore_cache:
           keys:
+            # todo: keys for each target
             - rust-{{ checksum "Cargo.toml" }}
-            # - rust-{{ checksum "Cargo.toml" }}{{ checksum "app_spec/zomes/blog/code/Cargo.toml" }}{{ checksum "app_spec/zomes/summer/code/Cargo.toml" }}{{ checksum "cas_implementations/Cargo.toml" }}{{ checksum "cmd/Cargo.toml" }}{{ checksum "container/Cargo.toml" }}{{ checksum "container_api/Cargo.toml" }}{{ checksum "container_api/wasm-test/Cargo.toml" }}{{ checksum "core/Cargo.toml" }}{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}{{ checksum "core_api_c_binding/Cargo.toml" }}{{ checksum "core_types/Cargo.toml" }}{{ checksum "core_types_derive/Cargo.toml" }}{{ checksum "dna_c_binding/Cargo.toml" }}{{ checksum "hdk-rust/wasm-test/Cargo.toml" }}{{ checksum "hdk-rust/Cargo.toml" }}{{ checksum "net/Cargo.toml" }}{{ checksum "net_connection/Cargo.toml" }}{{ checksum "net_ipc/Cargo.toml" }}{{ checksum "nodejs_container/package.json" }}{{ checksum "nodejs_container/yarn.lock" }}{{ checksum "nodejs_container/native/Cargo.toml" }}{{ checksum "rust_sodium-sys/Cargo.toml" }}{{ checksum "sodium/Cargo.toml" }}{{ checksum "test_bin/Cargo.toml" }}{{ checksum "test_utils/Cargo.toml" }}{{ checksum "wasm_utils/Cargo.toml" }}{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml" }}
 
       - run:
           name: fmt check

@@ -112,6 +112,11 @@ impl Container {
             .map(|_| ())
     }
 
+    /// Directly access an instance in this container, useful for e.g. testing frameworks
+    pub fn get_instance_by_id(&self, id: &str) -> Option<Arc<RwLock<Holochain>>> {
+        self.instances.get(id).map(|hc| hc.clone())
+    }
+
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
         self.stop_all_instances()?;
@@ -227,10 +232,9 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 fn make_interface(
     interface_config: &InterfaceConfiguration,
 ) -> Box<Interface<ContainerApiDispatcher>> {
+    use interface_impls::websocket::WebsocketInterface;
     match interface_config.driver {
-        InterfaceDriver::Websocket { port } => {
-            Box::new(interface_impls::websocket::WebsocketInterface::new(port))
-        }
+        InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
         _ => unimplemented!(),
     }
 }

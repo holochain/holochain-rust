@@ -22,7 +22,7 @@ pub trait DispatchRpc {
 /// Each interface has their own dispatcher, and each may be configured differently.
 pub struct ContainerApiDispatcher {
     instances: InstanceMap,
-    pub io: IoHandler,
+    io: IoHandler,
 }
 
 /// Implements routing for JSON-RPC calls:

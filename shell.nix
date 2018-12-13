@@ -27,14 +27,17 @@ let
   ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
   '';
 
-
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
   rm -rf ~/.cargo/registry;
   rm -rf ~/.cargo/git;
   '';
 
-  hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test --all --exclude hc";
+  hc-test = nixpkgs.writeShellScriptBin "hc-test"
+  ''
+  cargo build --all --exclude hc;
+  cargo test --all --exclude hc;
+  '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
   ''

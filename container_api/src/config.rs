@@ -410,8 +410,7 @@ pub mod tests {
 
     #[test]
     fn test_inconsistent_config() {
-        let toml =
-            r#"
+        let toml = r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"
@@ -435,15 +434,15 @@ pub mod tests {
 
     "#;
 
-        let config: Configuration = load_configuration(toml).expect("Failed to load config from toml string");
+        let config: Configuration =
+            load_configuration(toml).expect("Failed to load config from toml string");
 
         assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
     }
 
     #[test]
     fn test_inconsistent_config_interface_1() {
-        let toml =
-            r#"
+        let toml = r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester"

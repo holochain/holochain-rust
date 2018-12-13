@@ -24,9 +24,9 @@ use std::{
     thread,
 };
 
+use holochain_net::p2p_config::P2pConfig;
 use interface::{ContainerApiDispatcher, InstanceMap, Interface};
 use interface_impls;
-use holochain_net::p2p_config::P2pConfig;
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
 

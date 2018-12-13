@@ -368,8 +368,8 @@ mod tests {
     #[test]
     fn it_can_convert_peer_connected() {
         test_convert!(ProtocolWrapper::PeerConnected(PeerData {
-        dna_hash: "test_dna".to_string(),
-           agent_id: "test_id".to_string(),
+            dna_hash: "test_dna".to_string(),
+            agent_id: "test_id".to_string(),
         }));
     }
 

@@ -3,14 +3,15 @@ use crate::{
     context::Context,
     network::{handler::create_handler, state::NetworkState},
 };
-use holochain_net::p2p_network::P2pNetwork;
-use holochain_net::p2p_config::P2pConfig;
+use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol_wrapper::{ProtocolWrapper, TrackAppData},
 };
-use std::sync::{Arc, Mutex};
-use std::str::FromStr;
+use std::{
+    str::FromStr,
+    sync::{Arc, Mutex},
+};
 
 pub fn reduce_init(
     context: Arc<Context>,

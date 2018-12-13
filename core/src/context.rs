@@ -9,6 +9,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
+use holochain_net::p2p_config::P2pConfig;
 use std::{
     sync::{
         mpsc::{sync_channel, SyncSender},
@@ -17,7 +18,6 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use holochain_net::p2p_config::P2pConfig;
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister

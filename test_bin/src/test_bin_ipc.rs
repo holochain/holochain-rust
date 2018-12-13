@@ -17,10 +17,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use holochain_net::{
-    p2p_network::P2pNetwork,
-    p2p_config::*,
-};
+use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 
 use std::{convert::TryFrom, sync::mpsc};
 
@@ -39,7 +36,6 @@ struct IpcNode {
 }
 
 impl IpcNode {
-
     // See if there is a message to receive
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<ProtocolWrapper> {
@@ -118,7 +114,6 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
                         }
                     },
               }})).unwrap()
-
         }
         None => {
             // use default config
@@ -140,7 +135,8 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
                           "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
                         }
                     },
-              }})).unwrap()
+              }}))
+            .unwrap()
         }
     };
 

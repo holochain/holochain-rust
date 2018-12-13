@@ -9,12 +9,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use super::{
-    ipc_net_worker::IpcNetWorker,
-    mock_worker::MockWorker,
-    p2p_config::*,
-};
-
+use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, p2p_config::*};
 
 /// The p2p network instance
 pub struct P2pNetwork {
@@ -48,22 +43,17 @@ impl P2pNetwork {
                 NetConnectionThread::new(
                     handler,
                     Box::new(move |h| {
-                        let out: Box<NetWorker> = Box::new(IpcNetWorker::new(
-                            h,
-                            &network_config,
-                        )?);
+                        let out: Box<NetWorker> = Box::new(IpcNetWorker::new(h, &network_config)?);
                         Ok(out)
                     }),
                     None,
                 )?
             }
-            P2pBackendKind::MOCK => {
-                 NetConnectionThread::new(
-                    handler,
-                    Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
-                    None,
-                )?
-            },
+            P2pBackendKind::MOCK => NetConnectionThread::new(
+                handler,
+                Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
+                None,
+            )?,
         };
         Ok(P2pNetwork { connection })
     }
@@ -88,22 +78,14 @@ mod tests {
                 "blockConnect": false
             }"#,
         );
-        let mut res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
-            &p2p_config,
-        )
-        .unwrap();
+        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &p2p_config).unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }
 
     #[test]
     fn it_should_create_mock() {
-        let mut res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
-            &P2pConfig::default_mock(),
-        )
-        .unwrap();
+        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::default_mock()).unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

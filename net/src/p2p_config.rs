@@ -1,6 +1,5 @@
-use std::str::FromStr;
 use holochain_core_types::{error::HolochainError, json::JsonString};
-use std::fs::File;
+use std::{fs::File, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
@@ -58,7 +57,7 @@ pub struct P2pConfig {
 impl FromStr for P2pConfig {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(s).map_err(| err| err.to_string())
+        serde_json::from_str(s).map_err(|err| err.to_string())
     }
 }
 impl P2pConfig {
@@ -78,7 +77,8 @@ impl P2pConfig {
     }
 
     pub fn from_file(filepath: &str) -> Self {
-        let config_file = File::open(filepath).expect("Failed to open filepath on P2pConfig creation.");
+        let config_file =
+            File::open(filepath).expect("Failed to open filepath on P2pConfig creation.");
         serde_json::from_reader(config_file)
             .expect("file is not a proper JSON of a P2pConfig struct")
     }
@@ -134,10 +134,11 @@ mod tests {
 
     #[test]
     fn it_should_fail_bad_backend_kind() {
-        let res = P2pConfig::from_str(r#"{
+        let res = P2pConfig::from_str(
+            r#"{
             "backend_kind": "BAD",
             "backend_config": "",
-            }"#
+            }"#,
         );
         assert!(res.is_err());
         let err = format!("{:?}", res.err().unwrap());

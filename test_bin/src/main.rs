@@ -64,8 +64,8 @@ fn main() {
     .expect("context creation failed.");
 
     // Create Holochain Instance
-    let mut hc = Holochain::new(dna, Arc::new(context))
-        .expect("Holochain instance creation failed.");
+    let mut hc =
+        Holochain::new(dna, Arc::new(context)).expect("Holochain instance creation failed.");
     println!("Created a new instance with identity: {}", identity);
 
     // start up the holochain instance

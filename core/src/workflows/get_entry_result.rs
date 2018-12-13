@@ -4,7 +4,7 @@ use holochain_core_types::{
     cas::content::Address, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_entry::{
-    EntryHistory, GetEntryArgs, StatusRequestKind,
+    GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
 use std::sync::Arc;
 
@@ -23,15 +23,21 @@ pub async fn get_entry_with_meta_workflow<'a>(
     await!(network::actions::get_entry::get_entry(context, &address))
 }
 
-/// Get EntryHistory workflow
-pub async fn get_entry_history_workflow<'a>(
+/// Get GetEntryResult workflow
+pub async fn get_entry_result_workflow<'a>(
     context: &'a Arc<Context>,
     args: &'a GetEntryArgs,
-) -> Result<EntryHistory, HolochainError> {
+) -> Result<GetEntryResult, HolochainError> {
+    if args.options.sources || args.options.header {
+        return Err(HolochainError::ErrorGeneric(
+            "sources and header option not implemented".to_string(),
+        ));
+    }
     // Setup
-    let mut entry_history = EntryHistory::new();
+    let mut entry_result = GetEntryResult::new(args.options.status_request.clone(), None);
     let mut maybe_address = Some(args.address.clone());
-    // Accumulate entry history in a loop
+
+    // Accumulate entry history in a loop unless only request initial.
     while maybe_address.is_some() {
         let address = maybe_address.unwrap();
         maybe_address = None;
@@ -41,20 +47,29 @@ pub async fn get_entry_history_workflow<'a>(
         if let Some(entry_with_meta) = maybe_entry_with_meta {
             // Erase history if request is for latest
             if args.options.status_request == StatusRequestKind::Latest {
-                entry_history = EntryHistory::new();
+                if entry_with_meta.crud_status == CrudStatus::Deleted {
+                    entry_result.clear();
+                    break;
+                }
             }
-            // Add entry to history
-            entry_history.push(&entry_with_meta);
+
+            // Add entry
+            entry_result.push(&entry_with_meta);
+
+            if args.options.status_request == StatusRequestKind::Initial {
+                break;
+            }
+
             // Follow crud-link if possible
             if entry_with_meta.maybe_crud_link.is_some()
-                && entry_with_meta.crud_status != CrudStatus::DELETED
+                && entry_with_meta.crud_status != CrudStatus::Deleted
                 && args.options.status_request != StatusRequestKind::Initial
             {
                 maybe_address = Some(entry_with_meta.maybe_crud_link.unwrap());
             }
         }
     }
-    Ok(entry_history)
+    Ok(entry_result)
 }
 
 //#[cfg(test)]
@@ -69,7 +84,7 @@ pub async fn get_entry_history_workflow<'a>(
 //    use holochain_wasm_utils::api_serialization::get_entry::*;
 //
 //    #[test]
-//    fn can_get_entry_history_workflow() {
+//    fn can_get_entry_result_workflow() {
 //        let entry = test_entry();
 //        let context = test_context_with_state();
 //        let args = GetEntryArgs {
@@ -78,16 +93,16 @@ pub async fn get_entry_history_workflow<'a>(
 //                status_request: StatusRequestKind::Latest,
 //            },
 //        };
-//        let maybe_entry_history = block_on(super::get_entry_history_workflow(&context, &args));
+//        let maybe_entry_history = block_on(super::get_entry_result_workflow(&context, &args));
 ////        assert_eq!(0, maybe_entry_history.unwrap().entries.len());
 ////        let content_storage = &context.state().unwrap().dht().content_storage().clone();
 ////        (*content_storage.write().unwrap()).add(&entry).unwrap();
-////        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+////        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
 ////        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
 ////        (*meta_storage.write().unwrap())
 ////            .add_eav(&status_eav)
 ////            .unwrap();
-////        let maybe_entry_history = block_on(super::get_entry_history_workflow(&context, &args));
+////        let maybe_entry_history = block_on(super::get_entry_result_workflow(&context, &args));
 ////        let entry_history = maybe_entry_history.unwrap();
 ////        assert_eq!(&entry, entry_history.entries.iter().next().unwrap());
 //    }

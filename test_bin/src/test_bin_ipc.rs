@@ -4,11 +4,12 @@ extern crate holochain_net;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
+extern crate tempfile;
 
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
-    protocol_wrapper::{ConnectData, MessageData, ProtocolWrapper},
+    protocol_wrapper::{ConnectData, ProtocolWrapper},
     NetResult,
 };
 
@@ -19,8 +20,110 @@ use std::{convert::TryFrom, sync::mpsc};
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn usage() {
-    println!("Usage: test_bin_ipc <ipc_uri>");
+    println!("Usage: test_bin_ipc <path_to_n3h>");
     std::process::exit(1);
+}
+
+struct SpawnResult {
+    pub dir_ref: tempfile::TempDir,
+    pub dir: String,
+    pub con: P2pNetwork,
+    pub receiver: mpsc::Receiver<Protocol>,
+}
+
+impl SpawnResult {
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn try_recv(&mut self) -> NetResult<ProtocolWrapper> {
+        let data = self.receiver.try_recv()?;
+        Ok(ProtocolWrapper::try_from(data)?)
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn wait(
+        &mut self,
+        predicate: Box<dyn Fn(&ProtocolWrapper) -> bool>,
+    ) -> NetResult<ProtocolWrapper> {
+        loop {
+            let mut did_something = false;
+
+            if let Ok(r) = self.try_recv() {
+                did_something = true;
+                if predicate(&r) {
+                    return Ok(r);
+                }
+            }
+
+            if !did_something {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        }
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn stop(self) {
+        self.con.stop().unwrap();
+    }
+}
+
+#[cfg_attr(tarpaulin, skip)]
+fn spawn_connection(n3h_path: &str) -> NetResult<SpawnResult> {
+    let dir_ref = tempfile::tempdir()?;
+    let dir = dir_ref.path().to_string_lossy().to_string();
+
+    let (sender, receiver) = mpsc::channel::<Protocol>();
+
+    let con = P2pNetwork::new(
+        Box::new(move |r| {
+            sender.send(r?)?;
+            Ok(())
+        }),
+        &json!({
+            "backend": "ipc",
+            "config": {
+                "socketType": "zmq",
+                "spawn": {
+                    "cmd": format!("{}/packages/n3h/bin/n3h", n3h_path),
+                    "args": [],
+                    "workDir": dir.clone(),
+                    "env": {
+                        "N3H_HACK_MODE": "1",
+                        "N3H_WORK_DIR": dir.clone(),
+                        "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+                    }
+                },
+            }
+        })
+        .into(),
+    )?;
+
+    Ok(SpawnResult {
+        dir_ref,
+        dir,
+        con,
+        receiver,
+    })
+}
+
+#[allow(unused)]
+#[cfg_attr(tarpaulin, skip)]
+fn is_any(_data: &ProtocolWrapper) -> bool {
+    return true;
+}
+
+#[cfg_attr(tarpaulin, skip)]
+fn is_state(data: &ProtocolWrapper) -> bool {
+    if let ProtocolWrapper::State(_s) = data {
+        return true;
+    }
+    return false;
+}
+
+#[cfg_attr(tarpaulin, skip)]
+fn is_peer_connected(data: &ProtocolWrapper) -> bool {
+    if let ProtocolWrapper::PeerConnected(_id) = data {
+        return true;
+    }
+    return false;
 }
 
 // this is all debug code, no need to track code test coverage
@@ -32,164 +135,54 @@ fn exec() -> NetResult<()> {
         usage();
     }
 
-    let ipc_uri = args[1].clone();
+    let n3h_path = args[1].clone();
 
-    if ipc_uri == "" {
+    if n3h_path == "" {
         usage();
     }
 
-    println!("testing against uri: {}", ipc_uri);
+    let mut node1 = spawn_connection(&n3h_path)?;
+    let mut node2 = spawn_connection(&n3h_path)?;
 
-    static DNA_HASH: &'static str = "sandwich";
-    static AGENT_ID: &'static str = "agent-1";
+    println!("node1 path: {}", node1.dir);
+    println!("node2 path: {}", node2.dir);
 
-    // use a mpsc channel for messaging
-    let (sender, receiver) = mpsc::channel::<Protocol>();
+    let node1_state = node1.wait(Box::new(is_state))?;
+    let node2_state = node2.wait(Box::new(is_state))?;
 
-    // create a new ipc P2pNetwork instance
-    let mut con = P2pNetwork::new(
-        Box::new(move |r| {
-            sender.send(r?)?;
-            Ok(())
-        }),
-        &json!({
-            "backend": "ipc",
-            "config": {
-                "socketType": "zmq",
-                "ipcUri": ipc_uri,
-            }
-        })
-        .into(),
-    )?;
-
-    let mut id = "".to_string();
-    let mut addr = "".to_string();
-
-    // loop until we get a p2p ready message && record our
-    // transport identifier and binding address
-    loop {
-        let z = receiver.recv()?;
-
-        if let Ok(wrap) = ProtocolWrapper::try_from(&z) {
-            match wrap {
-                ProtocolWrapper::State(s) => {
-                    id = s.id;
-                    if !s.bindings.is_empty() {
-                        addr = s.bindings[0].clone();
-                    }
-                }
-                _ => (),
-            }
+    let node1_id = {
+        if let ProtocolWrapper::State(s) = node1_state {
+            s.id
+        } else {
+            unimplemented!()
         }
+    };
 
-        if let Protocol::P2pReady = z {
-            println!("p2p ready!!");
-            break;
+    let node2_binding = {
+        if let ProtocolWrapper::State(s) = node2_state {
+            s.bindings[0].clone()
+        } else {
+            unimplemented!()
         }
-    }
+    };
 
-    println!("id: {}, addr: {}", id, addr);
+    println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
 
-    // send a message to connect to ourselves (just for debug / test)
-    con.send(
+    node1.con.send(
         ProtocolWrapper::Connect(ConnectData {
-            address: addr.clone(),
+            address: node2_binding,
         })
         .into(),
     )?;
 
-    // loop waiting for the message
-    loop {
-        let z = receiver.recv()?;
+    let connect_result_1 = node1.wait(Box::new(is_peer_connected))?;
+    println!("got connect result 1: {:?}", connect_result_1);
 
-        if let Ok(wrap) = ProtocolWrapper::try_from(&z) {
-            match wrap {
-                ProtocolWrapper::PeerConnected(p) => {
-                    println!("got peer connected: {}", p.id);
-                    break;
-                }
-                _ => (),
-            }
-        }
+    let connect_result_2 = node2.wait(Box::new(is_peer_connected))?;
+    println!("got connect result 2: {:?}", connect_result_2);
 
-        println!("got: {:?}", z);
-    }
-
-    // now, let's send a message to ourselves (just for debug / test)
-    con.send(
-        ProtocolWrapper::SendMessage(MessageData {
-            dna_hash: DNA_HASH.to_string(),
-            to_agent_id: AGENT_ID.to_string(),
-            from_agent_id: AGENT_ID.to_string(),
-            msg_id: "unique-id".to_string(),
-            data: json!("test data"),
-        })
-        .into(),
-    )?;
-
-    let handle_data;
-
-    // loop waiting for the request to handle a message
-    loop {
-        let z = receiver.recv()?;
-
-        if let Ok(wrap) = ProtocolWrapper::try_from(&z) {
-            match wrap {
-                ProtocolWrapper::HandleSend(m) => {
-                    handle_data = m;
-                    break;
-                }
-                _ => (),
-            }
-        }
-
-        println!("got: {:?}", z);
-    }
-
-    println!("got handleSend: {:?}", handle_data);
-
-    // hey, we got a message from ourselves!
-    // let's send ourselves a response
-    con.send(
-        ProtocolWrapper::HandleSendResult(MessageData {
-            dna_hash: handle_data.dna_hash,
-            to_agent_id: handle_data.from_agent_id,
-            from_agent_id: AGENT_ID.to_string(),
-            msg_id: handle_data.msg_id,
-            data: json!(format!("echo: {}", handle_data.data)),
-        })
-        .into(),
-    )?;
-
-    // wait for the response to our original message
-    loop {
-        let z = receiver.recv()?;
-        println!("got: {:?}", z);
-
-        if let Ok(wrap) = ProtocolWrapper::try_from(&z) {
-            match wrap {
-                ProtocolWrapper::SendResult(m) => {
-                    println!("Got Result! : {:?}", m);
-
-                    assert_eq!(
-                        "echo: \"test data\"".to_string(),
-                        m.data.as_str().unwrap().to_string(),
-                    );
-
-                    break;
-                }
-                _ => (),
-            }
-        }
-
-        println!("got: {:?}", z);
-    }
-
-    // yay, everything worked
-    println!("test complete");
-
-    // shut down the P2pNetwork instance
-    con.stop()?;
+    node1.stop();
+    node2.stop();
 
     Ok(())
 }

@@ -11,6 +11,18 @@ macro_rules! load_json {
         maybe_input
     }};
 }
+#[macro_export]
+macro_rules! load_string {
+    ($encoded_allocation_of_input:ident) => {{
+        let maybe_input = $crate::holochain_wasm_utils::memory_serialization::load_string(
+            $encoded_allocation_of_input,
+        );
+        if let Err(hc_err) = maybe_input {
+            return $crate::global_fns::store_and_return_output(hc_err);
+        }
+        maybe_input
+    }};
+}
 
 /// Every Zome must utilize the `define_zome`
 /// macro in the main library file in their Zome.
@@ -61,6 +73,8 @@ macro_rules! load_json {
 /// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///
@@ -132,6 +146,12 @@ macro_rules! define_zome {
             $genesis_expr:expr
         }
 
+        $(
+            receive : |$receive_param:ident| {
+                $receive_expr:expr
+            }
+        )*
+
         functions : {
             $(
                 $cap:ident ( $vis:ident ) {
@@ -168,6 +188,23 @@ macro_rules! define_zome {
                 Err(e) => $crate::global_fns::store_and_return_output($crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)),
             }
         }
+
+        $(
+            #[no_mangle]
+            pub extern "C" fn receive(encoded_allocation_of_input: u32) -> u32 {
+                $crate::global_fns::init_global_memory(encoded_allocation_of_input);
+
+                // Deserialize input
+                let input = load_string!(encoded_allocation_of_input).unwrap();
+
+                fn execute(payload: String) -> String {
+                    let $receive_param = payload;
+                    $receive_expr
+                }
+
+                $crate::global_fns::store_and_return_output(execute(input))
+            }
+        )*
 
         use $crate::holochain_core_types::dna::zome::capabilities::Capability;
         use std::collections::HashMap;

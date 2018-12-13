@@ -3,6 +3,7 @@ jobs:
   build:
     docker:
       - image: holochain/holochain-rust:circle
+    parallelism: 4
     steps:
       - checkout
 

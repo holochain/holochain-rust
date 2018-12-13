@@ -115,7 +115,6 @@ stdenv.mkDerivation rec {
 
     # dev tooling
     git
-    docker
 
     # ci
     # curl needed to push codecov

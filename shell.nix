@@ -67,7 +67,7 @@ with nixpkgs;
 stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
-  src = builtins.filterSource (p: t: lib.cleanSourceFilter p t && baseNameOf p != "target") ./.;
+  # src = builtins.filterSource (p: t: lib.cleanSourceFilter p t && baseNameOf p != "target") ./.;
 
   buildInputs = [
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
@@ -77,6 +77,7 @@ stdenv.mkDerivation rec {
     # haskellPackages.pb
     pastebinit
     qdirstat
+    docker
 
     unixtools.watch
 

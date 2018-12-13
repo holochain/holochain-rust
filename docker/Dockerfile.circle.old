@@ -1,0 +1,19 @@
+# FROM nixorg/nix:circleci
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y curl sudo
+
+# UID argument specified by docker build --build-arg uid=<uid> and defaults to 1000
+ARG uid=${UID_MIN:-1000}
+RUN uname -a
+RUN useradd -mUu $uid holochain && usermod -a -G sudo holochain
+WORKDIR /home/holochain
+USER holochain
+ENV USER holochain
+
+RUN curl https://nixos.org/nix/install | sh
+RUN nix-channel --add https://nixos.org/channels/nixpkgs-unstable
+RUN nix-channel --update
+RUN ls
+COPY ./shell.nix ./shell.nix
+# RUN nix-shell --run "echo \"build all the nix!\""

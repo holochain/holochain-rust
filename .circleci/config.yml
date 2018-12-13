@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: holochain/circle:latest
+      - image: holochain/holochain-rust:circle
     steps:
       - restore_cache:
           keys:

@@ -142,4 +142,9 @@ stdenv.mkDerivation rec {
   # CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
   # RUST_LOG = "info";
+
+  shellHook = ''
+    # needed for install cmd and tarpaulin
+    export PATH=$PATH:~/.cargo/bin;
+  '';
 }

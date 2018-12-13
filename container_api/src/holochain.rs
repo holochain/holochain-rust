@@ -11,7 +11,7 @@
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::*;
-//! use holochain_net::p2p_network::P2pNetwork;
+//! use holochain_net::p2p_network::P2pNetworkNode;
 //! use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
 //! use std::sync::{Arc, Mutex,RwLock};
 //! use holochain_core::context::Context;
@@ -37,7 +37,7 @@
 //!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
 //!     file_storage.clone(),
 //!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
-//!     JsonString::from("{\"backend\": \"mock\"}"),
+//!     JsonString::from("{\"backend_end\": \"MOCK\"}"),
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!

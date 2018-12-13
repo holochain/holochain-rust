@@ -168,7 +168,7 @@ fn exec() -> NetResult<()> {
     let node2_state = node2.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
 
     let node1_id;
-    let node2_id;
+    //let node2_id;
     let node2_binding;
 
     one_let!(ProtocolWrapper::State(s) = node1_state {
@@ -176,7 +176,7 @@ fn exec() -> NetResult<()> {
     });
 
     one_let!(ProtocolWrapper::State(s) = node2_state {
-        node2_id = s.id;
+        //node2_id = s.id;
         node2_binding = s.bindings[0].clone();
     });
 

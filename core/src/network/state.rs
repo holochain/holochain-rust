@@ -1,8 +1,8 @@
-use boolinator::*;
 use crate::{
     action::ActionWrapper,
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
+use boolinator::*;
 use holochain_core_types::{
     cas::content::Address, entry::EntryWithMeta, error::HolochainError,
     validation::ValidationPackage,

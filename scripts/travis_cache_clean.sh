@@ -26,3 +26,6 @@ rm -rf ./target/debug/deps/hc*
 
 # incremental is just our new stuff so should not cache
 rm -rf ./target/debug/incremental/*
+
+# heavy wasms
+rm -rf ./core/src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/debug/deps/libholochain*

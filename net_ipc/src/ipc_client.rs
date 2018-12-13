@@ -72,9 +72,9 @@ impl IpcClient {
     pub fn new(
         handler: NetHandler,
         mut socket: Box<IpcSocket>,
-        can_block_on_connect: bool,
+        block_connect: bool,
     ) -> NetResult<Self> {
-        if can_block_on_connect {
+        if block_connect {
             let start = get_millis();
             let mut backoff = 1_u64;
 

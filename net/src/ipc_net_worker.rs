@@ -31,7 +31,7 @@ pub struct IpcNetWorker {
     ipc_relay_receiver: mpsc::Receiver<Protocol>,
     is_ready: bool,
     state: String,
-    last_state_date: f64,
+    last_state_millis: f64,
 }
 
 impl NetWorker for IpcNetWorker {
@@ -161,19 +161,19 @@ impl IpcNetWorker {
         args: Vec<String>,
         work_dir: String,
         env: HashMap<String, String>,
-        can_block_on_connect: bool,
+        block_connect: bool,
     ) -> NetResult<Self> {
-        let mut child_process = std::process::Command::new(cmd);
+        let mut child = std::process::Command::new(cmd);
 
-        child_process
+        child
             .stdout(std::process::Stdio::piped())
             .args(&args)
             .envs(&env)
             .current_dir(work_dir);
 
-        println!("SPAWN ({:?})", child_process);
+        println!("SPAWN ({:?})", child);
 
-        let mut child_process = child_process.spawn()?;
+        let mut child = child.spawn()?;
 
         // transport info (zmq uri) for connecting to the ipc socket
         let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
@@ -191,7 +191,7 @@ impl IpcNetWorker {
         // it will run some startup algorithms, and then output some binding
         // info on stdout and finally a `#IPC-READY#` message.
         // collect the binding info, and proceed when `#IPC-READY#`
-        if let Some(ref mut stdout) = child_process.stdout {
+        if let Some(ref mut stdout) = child.stdout {
             let mut data: Vec<u8> = Vec::new();
             loop {
                 let mut buf: [u8; 4096] = [0; 4096];
@@ -214,7 +214,7 @@ impl IpcNetWorker {
                     std::thread::sleep(std::time::Duration::from_millis(10));
                 }
 
-                if !can_block_on_connect {
+                if !block_connect {
                     break;
                 }
             }
@@ -223,7 +223,7 @@ impl IpcNetWorker {
         }
 
         // close the pipe since we can never read from it again...
-        child_process.stdout = None;
+        child.stdout = None;
 
         println!("READY! {} {:?}", ipc_binding, p2p_bindings);
 
@@ -232,11 +232,11 @@ impl IpcNetWorker {
             Box::new(move |h| {
                 let mut socket = ZmqIpcSocket::new()?;
                 socket.connect(&ipc_binding)?;
-                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, can_block_on_connect)?);
+                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
                 Ok(out)
             }),
             Some(Box::new(move || {
-                child_process.kill().unwrap();
+                child.kill().unwrap();
             })),
         )
     }
@@ -267,7 +267,7 @@ impl IpcNetWorker {
 
             state: "undefined".to_string(),
 
-            last_state_date: 0.0_f64,
+            last_state_millis: 0.0_f64,
         })
     }
 
@@ -275,9 +275,9 @@ impl IpcNetWorker {
     fn priv_check_init(&mut self) -> NetResult<()> {
         let now = get_millis();
 
-        if now - self.last_state_date > 500.0 {
+        if now - self.last_state_millis > 500.0 {
             self.ipc_relay.send(ProtocolWrapper::RequestState.into())?;
-            self.last_state_date = now;
+            self.last_state_millis = now;
         }
 
         Ok(())

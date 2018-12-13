@@ -61,6 +61,13 @@ let
   hc-test-app-spec;
   '';
 
+  hc-ci-code-cov = nixpkgs.writeShellScriptBin "hc-ci-code-cov"
+  ''
+  hc-wasm-build && \
+  hc-install-tarpaulin && \
+  hc-tarpaulin;
+  '';
+
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
 in

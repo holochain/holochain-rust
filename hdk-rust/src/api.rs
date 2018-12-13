@@ -493,7 +493,7 @@ pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
         return Ok(None);
     }
     assert_eq!(entry_result.entries.len(), 1);
-    if entry_result.crud_status.iter().next().unwrap() != &CrudStatus::LIVE {
+    if entry_result.crud_status.iter().next().unwrap() != &CrudStatus::Live {
         return Ok(None);
     }
     let entry = entry_result.entries.iter().next().unwrap();

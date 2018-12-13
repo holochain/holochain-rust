@@ -39,6 +39,6 @@ pub async fn handle_custom_direct_message(
     };
 
     let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
-    dispatch_action(&context.action_channel, action_wrapper);
+    dispatch_action(context.action_channel(), action_wrapper);
     Ok(())
 }

@@ -119,6 +119,7 @@ pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, H
 /// Convert a json string stored in wasm memory into a specified struct
 /// If json deserialization of custom struct failed, tries to deserialize a CoreError struct.
 /// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
+#[allow(unknown_lints)]
 pub fn load_json_from_raw<'s, T: Deserialize<'s>>(
     ptr_data: *mut c_char,
 ) -> Result<T, HolochainError> {

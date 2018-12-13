@@ -107,7 +107,6 @@ stdenv.mkDerivation rec {
 
     hc-test-cmd
     hc-test-app-spec
-    hc-build-and-test-all
 
     hc-fmt
     hc-fmt-check

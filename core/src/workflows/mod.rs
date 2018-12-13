@@ -1,3 +1,4 @@
+pub mod application;
 pub mod author_entry;
 pub mod get_entry_history;
 pub mod handle_custom_direct_message;

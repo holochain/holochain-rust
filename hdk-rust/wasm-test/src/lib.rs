@@ -20,7 +20,7 @@ use hdk::{
 };
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryOptions, EntryHistory},
+        get_entry::{GetEntryOptions, GetEntryResult},
         get_links::GetLinksResult,
     },
     holochain_core_types::dna::zome::entry_types::Sharing,
@@ -92,7 +92,7 @@ fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
     hdk::commit_entry(&entry)
 }
 
-fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<EntryHistory> {
+fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<GetEntryResult> {
     hdk::get_entry_result(entry_address, GetEntryOptions::default())
 }
 
@@ -128,7 +128,7 @@ fn handle_link_two_entries() -> ZomeApiResult<()> {
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
 }
 
-fn handle_links_roundtrip() -> ZomeApiResult<GetLinksResult> {
+fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
@@ -155,8 +155,11 @@ fn handle_links_roundtrip() -> ZomeApiResult<GetLinksResult> {
 
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")?;
     hdk::link_entries(&entry_1.address(), &entry_3.address(), "test-tag")?;
+    Ok(entry_1.address())
+}
 
-    hdk::get_links(&entry_1.address(), "test-tag")
+fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult>{
+    hdk::get_links(&address, "test-tag")
 }
 
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
@@ -333,6 +336,13 @@ fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
+fn handle_send_message(to_agent: Address, message: String) -> String {
+    match hdk::send(to_agent, message) {
+        Ok(response) => response,
+        Err(error) => error.to_string(),
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -428,6 +438,10 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
+    receive: |payload| {
+        format!("Received: {}", payload)
+    }
+
     functions: {
         test (Public) {
             check_global: {
@@ -450,7 +464,7 @@ define_zome! {
 
             check_get_entry_result: {
                 inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<EntryHistory>|,
+                outputs: |result: ZomeApiResult<GetEntryResult>|,
                 handler: handle_check_get_entry_result
             }
 
@@ -466,10 +480,16 @@ define_zome! {
                 handler: handle_link_two_entries
             }
 
-            links_roundtrip: {
+            links_roundtrip_create: {
                 inputs: | |,
+                outputs: |result: ZomeApiResult<Address>|,
+                handler: handle_links_roundtrip_create
+            }
+
+            links_roundtrip_get: {
+                inputs: |address: Address|,
                 outputs: |result: ZomeApiResult<GetLinksResult>|,
-                handler: handle_links_roundtrip
+                handler: handle_links_roundtrip_get
             }
 
             link_validation: {
@@ -530,6 +550,12 @@ define_zome! {
                 inputs: |author: String, content: String|,
                 outputs: |response: TweetResponse|,
                 handler: handle_send_tweet
+            }
+
+            send_message: {
+                inputs: |to_agent: Address, message: String|,
+                outputs: |response: String|,
+                handler: handle_send_message
             }
         }
     }

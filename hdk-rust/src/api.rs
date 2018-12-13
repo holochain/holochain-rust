@@ -4,16 +4,19 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    crud_status::CrudStatus,
     entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{EntryHistory, GetEntryArgs, GetEntryOptions, StatusRequestKind},
+        get_entry::{
+            EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
+            StatusRequestKind,
+        },
         get_links::{GetLinksArgs, GetLinksResult},
         link_entries::LinkEntriesArgs,
+        send::SendArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
@@ -243,6 +246,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///
@@ -308,6 +313,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
 ///
 /// # fn main() {
 ///
@@ -482,44 +489,46 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 /// ```
 pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(address, GetEntryOptions::default())?;
-    if entry_result.entries.is_empty() {
+    if !entry_result.found() {
         return Ok(None);
     }
-    assert_eq!(entry_result.entries.len(), 1);
-    if entry_result.crud_status.iter().next().unwrap() != &CrudStatus::LIVE {
-        return Ok(None);
-    }
-    let entry = entry_result.entries.iter().next().unwrap();
-    Ok(Some(entry.clone()))
+    Ok(entry_result.latest())
 }
 
 /// Returns the Entry at the exact address specified, whatever its crud-status.
 /// Returns None if no entry exists at the specified address.
 pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
-    let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::Initial))?;
-    if entry_result.entries.is_empty() {
-        return Ok(None);
-    }
-    assert_eq!(entry_result.entries.len(), 1);
-    let entry = entry_result.entries.iter().next().unwrap();
-    Ok(Some(entry.clone()))
+    let entry_result = get_entry_result(
+        address,
+        GetEntryOptions::new(StatusRequestKind::Initial, true, false, false),
+    )?;
+    Ok(entry_result.latest())
 }
 
-/// Return a GetEntryHistory filled with all the versions of the entry from the version at
+/// Return an EntryHistory filled with all the versions of the entry from the version at
 /// the specified address to the latest.
 /// Returns None if no entry exists at the specified address.
 pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<EntryHistory>> {
-    let entry_result = get_entry_result(address, GetEntryOptions::new(StatusRequestKind::All))?;
-    if entry_result.entries.is_empty() {
+    let entry_result = get_entry_result(
+        address,
+        GetEntryOptions::new(StatusRequestKind::All, true, false, false),
+    )?;
+    if !entry_result.found() {
         return Ok(None);
     }
-    Ok(Some(entry_result))
+    match entry_result.result {
+        GetEntryResultType::All(history) => Ok(Some(history)),
+        _ => Err(ZomeApiError::from("shouldn't happen".to_string())),
+    }
 }
 
 /// Retrieves an entry and its metadata from the local chain or the DHT, by looking it up using
 /// the specified address.
 /// The data returned is configurable with the GetEntryOptions argument.
-pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiResult<EntryHistory> {
+pub fn get_entry_result(
+    address: Address,
+    options: GetEntryOptions,
+) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
@@ -596,7 +605,7 @@ pub fn get_entry_result(address: Address, options: GetEntryOptions) -> ZomeApiRe
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions { status_request: StatusRequestKind::All })?;
+///         hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///
@@ -892,9 +901,32 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
     }
 }
 
-/// Not Yet Available
-pub fn send(_to: Address, _message: serde_json::Value) -> ZomeApiResult<serde_json::Value> {
-    Err(ZomeApiError::FunctionNotImplemented)
+/// Sends a node-to-node message to the given agent.
+/// This works in conjunction with the `receive` callback that has to be defined in the
+/// [define_zome!](macro.defineZome.html) macro.
+///
+/// This functions blocks and returns the result returned by the `receive` callback on
+/// the other side.
+pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
+    let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
+
+    // Put args in struct and serialize into memory
+    let allocation_of_input = store_as_json(&mut mem_stack, SendArgs { to_agent, payload })?;
+
+    let encoded_allocation_of_result: u32 = unsafe { hc_send(allocation_of_input.encode() as u32) };
+
+    // Deserialize complex result stored in memory
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    // Free result & input allocations
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("deallocate failed");
+    // Done
+    if result.ok {
+        Ok(String::from(result.value))
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Not Yet Available

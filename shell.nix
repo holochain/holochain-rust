@@ -118,6 +118,8 @@ stdenv.mkDerivation rec {
     docker
 
     # ci
+    # curl needed to push codecov
+    curl
     circleci-cli
     ci-codecov
     ci-app-spec

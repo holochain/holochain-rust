@@ -3,7 +3,7 @@ use hdk::{
     error::ZomeApiResult,
     holochain_core_types::{
         cas::content::Address,
-        entry::{entry_type::AppEntryType, AppEntryValue, Entry},
+        entry::Entry,
         error::HolochainError,
         json::JsonString,
     },

@@ -2,7 +2,7 @@ use std;
 
 
 /// helper to get milliseconds (ms) since the unix epoch as an f64
-pub fn get_timestamp_in_ms() -> f64 {
+pub fn get_millis() -> f64 {
     let epoch = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap();
@@ -16,9 +16,9 @@ mod tests {
 
     #[test]
     fn it_fuzzy_millisecond_correctness() {
-        let first = get_timestamp_in_ms();
+        let first = get_millis();
         std::thread::sleep(std::time::Duration::from_millis(10));
-        let second = get_timestamp_in_ms();
+        let second = get_millis();
         let diff = second - first;
         assert!(diff > 5.0 && diff < 100.0);
     }

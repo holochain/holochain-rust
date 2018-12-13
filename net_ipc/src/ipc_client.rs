@@ -1,6 +1,6 @@
 //! implements a net_connection::NetWorker for messaging with an ipc p2p node
 
-use crate::{socket::IpcSocket, util::get_timestamp_in_ms};
+use crate::{socket::IpcSocket, util::get_millis};
 
 use std::{thread, time};
 
@@ -44,14 +44,14 @@ impl NetWorker for IpcClient {
             if let Protocol::Ping(ref p) = msg {
                 self.priv_send(&Protocol::Pong(PongData {
                     orig: p.sent,
-                    recv: get_timestamp_in_ms(),
+                    recv: get_millis(),
                 }))?;
             }
 
             (self.handler)(Ok(msg))?;
         }
 
-        let now = get_timestamp_in_ms();
+        let now = get_millis();
 
         if now - self.last_recv_date > 2000.0 {
             bail!("ipc connection timeout");
@@ -75,7 +75,7 @@ impl IpcClient {
         can_block_on_connect: bool,
     ) -> NetResult<Self> {
         if can_block_on_connect {
-            let start = get_timestamp_in_ms();
+            let start = get_millis();
             let mut backoff = 1_u64;
 
             loop {
@@ -84,11 +84,11 @@ impl IpcClient {
                     break;
                 }
 
-                if get_timestamp_in_ms() - start > 3000.0 {
+                if get_millis() - start > 3000.0 {
                     bail!("connection init timeout");
                 }
 
-                let data = Protocol::Ping(PingData { sent: get_timestamp_in_ms() });
+                let data = Protocol::Ping(PingData { sent: get_millis() });
                 let data: NamedBinaryData = data.into();
                 socket.send(&[SRV_ID, &[], &b"ping".to_vec(), &data.data])?;
 
@@ -104,7 +104,7 @@ impl IpcClient {
         Ok(Self {
             handler,
             socket,
-            last_recv_date: get_timestamp_in_ms(),
+            last_recv_date: get_millis(),
             last_send_date: 0.0,
         })
     }
@@ -124,7 +124,7 @@ impl IpcClient {
         }
 
         // we got a message, update our timeout counter
-        self.last_recv_date = get_timestamp_in_ms();
+        self.last_recv_date = get_millis();
 
         let msg = NamedBinaryData {
             name: res[2].to_vec(),
@@ -138,7 +138,7 @@ impl IpcClient {
 
     /// Send a heartbeat message to the ipc server.
     fn priv_ping(&mut self) -> NetResult<()> {
-        self.priv_send(&Protocol::Ping(PingData { sent: get_timestamp_in_ms() }))
+        self.priv_send(&Protocol::Ping(PingData { sent: get_millis() }))
     }
 
     /// send a raw message to the ipc server
@@ -148,7 +148,7 @@ impl IpcClient {
         self.socket.send(&[SRV_ID, &[], &data.name, &data.data])?;
 
         // sent message, update our ping timer
-        self.last_send_date = get_timestamp_in_ms();
+        self.last_send_date = get_millis();
 
         Ok(())
     }
@@ -170,8 +170,8 @@ mod tests {
         let s = MockIpcSocket::new_test(test_struct).unwrap();
 
         let pong = Protocol::Pong(PongData {
-            orig: get_timestamp_in_ms() - 4.0,
-            recv: get_timestamp_in_ms() - 2.0,
+            orig: get_millis() - 4.0,
+            recv: get_millis() - 2.0,
         });
         let data: NamedBinaryData = (&pong).into();
 
@@ -200,7 +200,7 @@ mod tests {
 
         cli.tick().expect_err("expected bad arg count");
 
-        let ping = Protocol::Ping(PingData { sent: get_timestamp_in_ms() });
+        let ping = Protocol::Ping(PingData { sent: get_millis() });
         let data: NamedBinaryData = (&ping).into();
 
         stx.send(vec![vec![], vec![], b"ping".to_vec(), data.data])

@@ -5,7 +5,7 @@ use holochain_core_types::json::JsonString;
 use holochain_net_ipc::{
     ipc_client::IpcClient,
     socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
-    util::get_timestamp_in_ms,
+    util::get_millis,
 };
 
 use holochain_net_connection::{
@@ -273,7 +273,7 @@ impl IpcNetWorker {
 
     /// send a ping twice per second
     fn priv_check_init(&mut self) -> NetResult<()> {
-        let now = get_timestamp_in_ms();
+        let now = get_millis();
 
         if now - self.last_state_date > 500.0 {
             self.ipc_relay.send(ProtocolWrapper::RequestState.into())?;
@@ -362,8 +362,8 @@ mod tests {
         let (test_struct, test_send, test_recv) = make_test_channels().unwrap();
 
         let pong = Protocol::Pong(PongData {
-            orig: get_timestamp_in_ms() - 4.0,
-            recv: get_timestamp_in_ms() - 2.0,
+            orig: get_millis() - 4.0,
+            recv: get_millis() - 2.0,
         });
         let data: NamedBinaryData = (&pong).into();
         test_send

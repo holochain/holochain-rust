@@ -23,6 +23,6 @@ jobs:
           command: nix-shell --run hc-fmt-check
 
       - save_cache:
-        key: nix
-        paths:
-          - "/nix"
+          key: nix
+          paths:
+            - "/nix"

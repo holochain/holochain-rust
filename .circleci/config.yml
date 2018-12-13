@@ -11,16 +11,20 @@ jobs:
       - checkout
 
       - run:
-          name: add nix unstable
-          command: nix-channel --add https://nixos.org/channels/nixpkgs-unstable
-
-      - run:
-          name: update nix channel
-          command: nix-channel --update
+          name: cat shell.nix
+          command: cat shell.nix
 
       - run:
           name: fmt check
           command: nix-shell --run hc-fmt-check
+
+      - run:
+          name: wasm build
+          command: nix-shell --run hc-wasm-build
+
+      - run:
+          name: run tests
+          command: nix-shell --run hc-test
 
       - save_cache:
           key: nix

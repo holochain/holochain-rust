@@ -23,9 +23,9 @@ let
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
   ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
-  # ${wasmBuild "container_api/wasm-test/Cargo.toml"}
-  # ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
-  # ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
+  ${wasmBuild "container_api/wasm-test/Cargo.toml"}
+  ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
+  ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
   '';
 
 
@@ -72,13 +72,13 @@ stdenv.mkDerivation rec {
   buildInputs = [
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
-    carnix
+    # carnix
     # python36Packages.zerobin
     # haskellPackages.pb
-    pastebinit
-    qdirstat
+    # pastebinit
+    # qdirstat
 
-    unixtools.watch
+    # unixtools.watch
 
     cmake
     python
@@ -123,6 +123,6 @@ stdenv.mkDerivation rec {
   # RUST_LOG = "info";
 
   shellHook = ''
-  export PATH=$PATH:~/.cargo/bin;
+  # export PATH=$PATH:~/.cargo/bin;
   '';
 }

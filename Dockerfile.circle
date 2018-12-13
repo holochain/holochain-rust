@@ -2,4 +2,4 @@ FROM nixorg/nix:circleci
 ENV NIX_PATH nixpkgs=https://github.com/NixOS/nixpkgs/archive/47f008676fe3b77b9c8edda54db621a0dc16dd8e.tar.gz
 COPY shell.nix shell.nix
 # warm the nix store
-RUN nix-shell --run "echo 1" --show-trace
+RUN nix-shell --run "echo 1" --show-trace --

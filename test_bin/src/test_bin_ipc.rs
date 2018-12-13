@@ -34,7 +34,7 @@ fn usage() {
 struct IpcNode {
     pub temp_dir_ref: tempfile::TempDir,
     pub dir: String,
-    pub p2p_node: P2pNetwork,
+    pub p2p_connection: P2pNetwork,
     pub receiver: mpsc::Receiver<Protocol>,
 }
 
@@ -81,7 +81,7 @@ impl IpcNode {
     // Stop node
     #[cfg_attr(tarpaulin, skip)]
     pub fn stop(self) {
-        self.p2p_node.stop().unwrap();
+        self.p2p_connection.stop().unwrap();
     }
 }
 
@@ -155,7 +155,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
     Ok(IpcNode {
         temp_dir_ref: dir_ref,
         dir,
-        p2p_node,
+        p2p_connection: p2p_node,
         receiver,
     })
 }
@@ -224,7 +224,7 @@ fn exec() -> NetResult<()> {
     println!("node2_id: {:?}", node2_id);
 
     // Send TrackApp message on both nodes
-    node1.p2p_node.send(
+    node1.p2p_connection.send(
         ProtocolWrapper::TrackApp(TrackAppData {
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_1.to_string(),
@@ -233,7 +233,7 @@ fn exec() -> NetResult<()> {
     )?;
     let connect_result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     println!("self connected result 1: {:?}", connect_result_1);
-    node2.p2p_node.send(
+    node2.p2p_connection.send(
         ProtocolWrapper::TrackApp(TrackAppData {
             dna_hash: DNA_HASH.to_string(),
             agent_id: AGENT_2.to_string(),
@@ -245,7 +245,7 @@ fn exec() -> NetResult<()> {
 
     // Connect nodes between them
     println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
-    node1.p2p_node.send(
+    node1.p2p_connection.send(
         ProtocolWrapper::Connect(ConnectData {
             address: node2_binding,
         })
@@ -263,7 +263,7 @@ fn exec() -> NetResult<()> {
     });
 
     // Send a generic message
-    node1.p2p_node.send(
+    node1.p2p_connection.send(
         ProtocolWrapper::SendMessage(MessageData {
             msg_id: "test".to_string(),
             dna_hash: DNA_HASH.to_string(),
@@ -276,7 +276,7 @@ fn exec() -> NetResult<()> {
     // Check if node2 received it
     let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
     println!("got handle send 2: {:?}", result_2);
-    node2.p2p_node.send(
+    node2.p2p_connection.send(
         ProtocolWrapper::HandleSendResult(MessageData {
             msg_id: "test".to_string(),
             dna_hash: DNA_HASH.to_string(),
@@ -290,7 +290,7 @@ fn exec() -> NetResult<()> {
     println!("got send result 1: {:?}", result_1);
 
     // Send store DHT data
-    node1.p2p_node.send(
+    node1.p2p_connection.send(
         ProtocolWrapper::PublishDht(DhtData {
             msg_id: "testPub".to_string(),
             dna_hash: DNA_HASH.to_string(),
@@ -307,7 +307,7 @@ fn exec() -> NetResult<()> {
     println!("got store result 2: {:?}", result_2);
 
     // Send get DHT data
-    node2.p2p_node.send(
+    node2.p2p_connection.send(
         ProtocolWrapper::GetDht(GetDhtData {
             msg_id: "testGet".to_string(),
             dna_hash: DNA_HASH.to_string(),
@@ -320,7 +320,7 @@ fn exec() -> NetResult<()> {
     println!("got dht get: {:?}", result_2);
 
     // Send get DHT data result
-    node2.p2p_node.send(
+    node2.p2p_connection.send(
         ProtocolWrapper::GetDhtResult(DhtData {
             msg_id: "testGetResult".to_string(),
             dna_hash: DNA_HASH.to_string(),
@@ -334,7 +334,7 @@ fn exec() -> NetResult<()> {
     println!("got dht get result: {:?}", result_2);
 
     // Send store DHT metadata
-    node1.p2p_node.send(
+    node1.p2p_connection.send(
         ProtocolWrapper::PublishDhtMeta(DhtMetaData {
             msg_id: "testPubMeta".to_string(),
             dna_hash: DNA_HASH.to_string(),
@@ -352,7 +352,7 @@ fn exec() -> NetResult<()> {
     println!("got store meta result 2: {:?}", result_2);
 
     // Send get DHT metadata
-    node2.p2p_node.send(
+    node2.p2p_connection.send(
         ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
             dna_hash: DNA_HASH.to_string(),
@@ -366,7 +366,7 @@ fn exec() -> NetResult<()> {
     println!("got dht get: {:?}", result_2);
 
     // Send get DHT metadata result
-    node2.p2p_node.send(
+    node2.p2p_connection.send(
         ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
             dna_hash: DNA_HASH.to_string(),

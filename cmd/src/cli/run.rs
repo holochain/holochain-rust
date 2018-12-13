@@ -1,6 +1,7 @@
 use cli::{self, package};
 use error::DefaultResult;
 use holochain_container_api::{config::*, container::Container};
+use holochain_net::p2p_config::P2pConfig;
 
 /// Starts a small container with the current application running
 pub fn run(package: bool, port: u16) -> DefaultResult<()> {

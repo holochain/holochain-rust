@@ -1,6 +1,6 @@
 use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    workflows::get_entry_history::get_entry_history_workflow,
+    workflows::get_entry_result::get_entry_result_workflow,
 };
 use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
@@ -23,7 +23,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    let result = block_on(get_entry_history_workflow(&runtime.context, &input));
+    let result = block_on(get_entry_result_workflow(&runtime.context, &input));
     // Store result in wasm memory
     runtime.store_result(result)
 }
@@ -50,7 +50,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
-        entry::test_entry,
+        entry::{test_entry, EntryWithMeta},
         error::ZomeApiInternalResult,
         json::JsonString,
     };
@@ -61,7 +61,7 @@ pub mod tests {
     pub fn test_get_args_bytes() -> Vec<u8> {
         let entry_args = GetEntryArgs {
             address: test_entry().address(),
-            options: GetEntryOptions::new(StatusRequestKind::Latest),
+            options: GetEntryOptions::new(StatusRequestKind::Latest, true, false, false),
         };
         JsonString::from(entry_args).into_bytes()
     }
@@ -70,7 +70,7 @@ pub mod tests {
     pub fn test_get_args_unknown() -> Vec<u8> {
         let entry_args = GetEntryArgs {
             address: Address::from("xxxxxxxxx"),
-            options: GetEntryOptions::new(StatusRequestKind::Latest),
+            options: GetEntryOptions::new(StatusRequestKind::Latest, true, false, false),
         };
         JsonString::from(entry_args).into_bytes()
     }
@@ -225,13 +225,17 @@ pub mod tests {
         )
         .expect("test should be callable");
 
-        let mut entry_history = EntryHistory::new();
-        entry_history.addresses.push(test_entry().address());
-        entry_history.entries.push(test_entry());
-        entry_history.crud_status.push(CrudStatus::Live);
+        let entry_result = GetEntryResult::new(
+            StatusRequestKind::Latest,
+            Some(&EntryWithMeta {
+                entry: test_entry(),
+                crud_status: CrudStatus::Live,
+                maybe_crud_link: None,
+            }),
+        );
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
-                ZomeApiInternalResult::success(entry_history)
+                ZomeApiInternalResult::success(entry_result)
             ))),
             call_result,
         );
@@ -279,7 +283,7 @@ pub mod tests {
         //
         // assert_eq!(
         //     JsonString::from(String::from(JsonString::from(
-        //         ZomeApiInternalResult::success(EntryHistory::new())
+        //         ZomeApiInternalResult::success(GetEntryResult::new(StatusRequestKind::Latest, None))
         //     ))),
         //     call_result,
         // );

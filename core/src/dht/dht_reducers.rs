@@ -206,7 +206,7 @@ fn reduce_remove_entry_inner(
             "trying to remove a system entry type",
         )));
     }
-    // pre-condition: Current status must be LIVE
+    // pre-condition: Current status must be Live
     // get current status
     let meta_storage = &new_store.meta_storage().clone();
     let maybe_status_eav = meta_storage.read().unwrap().fetch_eav(
@@ -220,7 +220,7 @@ fn reduce_remove_entry_inner(
     let status_eavs = maybe_status_eav.unwrap();
     assert!(!status_eavs.is_empty(), "Entry should have a Status");
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
-    // For now checks if crud-status other than LIVE are present
+    // For now checks if crud-status other than Live are present
     let status_eavs = status_eavs
         .iter()
         .filter(|e| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))

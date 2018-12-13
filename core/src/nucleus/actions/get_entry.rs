@@ -40,7 +40,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     }
     let mut crud_status = CrudStatus::Live;
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
-    // For now look for crud-status by life-cycle order: DELETED, MODIFIED, LIVE
+    // For now look for crud-status by life-cycle order: Deleted, Modified, Live
     let has_deleted = status_eavs
         .iter()
         .filter(|e| {

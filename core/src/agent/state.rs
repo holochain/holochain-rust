@@ -3,7 +3,7 @@ use crate::{
     agent::chain_store::ChainStore,
     context::Context,
     state::State,
-    workflows::get_entry_history::get_entry_history_workflow,
+    workflows::get_entry_result::get_entry_result_workflow,
 };
 use holochain_core_types::{
     agent::AgentId,
@@ -79,15 +79,13 @@ impl AgentState {
             address: agent_entry_address,
             options: GetEntryOptions::default(),
         };
-        let agent_entry_history = await!(get_entry_history_workflow(context, &entry_args))?;
-        if agent_entry_history.entries.is_empty() {
-            return Err(HolochainError::ErrorGeneric(
-                "Agent entry not found".to_string(),
-            ));
-        }
-        let agent_entry = agent_entry_history.entries.iter().next().unwrap().clone();
+        let agent_entry_result = await!(get_entry_result_workflow(context, &entry_args))?;
+        let agent_entry = agent_entry_result.latest();
         match agent_entry {
-            Entry::AgentId(agent_id) => Ok(agent_id),
+            None => Err(HolochainError::ErrorGeneric(
+                "Agent entry not found".to_string(),
+            )),
+            Some(Entry::AgentId(agent_id)) => Ok(agent_id),
             _ => unreachable!(),
         }
     }

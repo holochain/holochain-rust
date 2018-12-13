@@ -61,11 +61,12 @@ let
   hc-test-app-spec;
   '';
 
-  hc-ci-code-cov = nixpkgs.writeShellScriptBin "hc-ci-code-cov"
+  ci-codecov = nixpkgs.writeShellScriptBin "ci-codecov"
   ''
   hc-wasm-build && \
   hc-install-tarpaulin && \
-  hc-tarpaulin;
+  hc-tarpaulin && \
+  bash <(curl -s https://codecov.io/bash);
   '';
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
@@ -111,7 +112,10 @@ stdenv.mkDerivation rec {
     # dev tooling
     git
     docker
+
+    # ci
     circleci-cli
+    ci-codecov
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

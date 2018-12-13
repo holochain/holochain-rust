@@ -15,8 +15,8 @@ jobs:
           command: nix-shell --run hc-fmt-check
 
       - run:
-          name: wasm build and test
-          command: nix-shell --run "hc-wasm-build && hc-test"
+          name: code coverage tests and push
+          command: nix-shell --run ci-codecov
 
       - save_cache:
           key: rust

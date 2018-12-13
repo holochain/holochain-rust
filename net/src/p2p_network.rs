@@ -16,9 +16,14 @@ use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker};
 use serde_json;
 
 /// The p2p network instance
-#[derive(Debug)]
 pub struct P2pNetwork {
     con: NetConnectionThread,
+}
+
+impl std::fmt::Debug for P2pNetwork {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "P2pNetwork {{}}")
+    }
 }
 
 impl NetConnection for P2pNetwork {
@@ -47,6 +52,7 @@ impl P2pNetwork {
                             )?);
                             Ok(out)
                         }),
+                        None,
                     )?,
                 })
             }
@@ -54,6 +60,7 @@ impl P2pNetwork {
                 con: NetConnectionThread::new(
                     handler,
                     Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
+                    None,
                 )?,
             }),
             _ => bail!("unknown p2p_network backend: {}", config["backend"]),
@@ -72,17 +79,19 @@ mod tests {
 
     #[test]
     fn it_should_fail_bad_backend_type() {
-        let res = P2pNetwork::new(
+        if let Err(e) = P2pNetwork::new(
             Box::new(|_r| Ok(())),
             &json!({
                 "backend": "bad"
             })
             .to_string()
             .into(),
-        )
-        .expect_err("should have thrown")
-        .to_string();
-        assert!(res.contains("backend: \"bad\""), "res: {}", res);
+        ) {
+            let e = format!("{:?}", e);
+            assert!(e.contains("backend: \\\"bad\\\""), "res: {}", e);
+        } else {
+            panic!("should have thrown");
+        }
     }
 
     #[test]

@@ -125,7 +125,6 @@ stdenv.mkDerivation rec {
     ci-app-spec
   ];
 
-
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
   # RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no -Z incremental-info";

@@ -9,14 +9,6 @@ WORKDIR ~
 COPY shell.nix shell.nix
 RUN nix-shell --run "echo 1" --show-trace --max-jobs 4 --cores 0
 
-# commented out because warming rust is too much "magic" probably
-# e.g. what happens when circleci tries to do a checkout and bring its own
-# cache? then we have two "warm caches" in the same machine
-# seems like an accident waiting to happen
-# warm rust compilation
-# this needs the repo to be copied in
-# COPY . .
-# RUN nix-shell --run hc-install-tarpaulin --show-trace --max-jobs 4 --cores 0
-# RUN nix-shell --run hc-wasm-build --show-trace --max-jobs 4 --cores 0
-# RUN nix-shell --run hc-install-cmd  --show-trace --max-jobs 4 --cores 0
-# RUN nix-shell --run hc-install-node-container --show-trace --max-jobs 4 --cores 0
+# don't try to warm rust compilation
+# that would be too much "magic" for circle to handle
+# instead, make sure the native circle cache keys are robust!

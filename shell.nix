@@ -53,7 +53,7 @@ let
   hc-wasm-build && \
   hc-test && \
   hc-install-cmd && \
-  hc-test-cmd && \
+  # hc-test-cmd && \
   hc-install-node-container && \
   hc-test-app-spec;
   '';

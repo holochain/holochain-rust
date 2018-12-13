@@ -106,12 +106,7 @@ impl Scaffold for RustScaffold {
         util::run_cmd(
             base_path.as_ref().to_path_buf(),
             "cargo".into(),
-            vec![
-                "init".to_owned(),
-                "--lib".to_owned(),
-                "--vcs".to_owned(),
-                "none".to_owned(),
-            ],
+            &["init", "--lib", "--vcs", "none"],
         )?;
 
         // immediately rewrite the generated Cargo file, using some values

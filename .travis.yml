@@ -196,12 +196,6 @@ jobs:
       script:
         - make test_cmd
 
-    - name: "App-spec"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      script:
-        - make test_app_spec
-
     - name: "Nodejs Container Test"
       <<: *_trusty_nodejs
       <<: *_cargo_cache_template

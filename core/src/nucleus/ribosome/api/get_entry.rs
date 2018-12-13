@@ -29,7 +29,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 

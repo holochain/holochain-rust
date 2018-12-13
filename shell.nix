@@ -61,6 +61,12 @@ let
   hc-test-app-spec;
   '';
 
+  hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
+  hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
+
+
+
+  # runs all standard tests and reports code coverage
   ci-codecov = nixpkgs.writeShellScriptBin "ci-codecov"
   ''
   hc-wasm-build && \
@@ -69,8 +75,18 @@ let
   bash <(curl -s https://codecov.io/bash);
   '';
 
-  hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
-  hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
+  # runs all app spec tests
+  ci-app-spec = nixpkgs.writeShellScriptBin "ci-app-spec"
+  ''
+  hc-wasm-build && \
+  hc-install-cmd && \
+  hc-install-node-container && \
+  hc-test-app-spec;
+  '';
+
+  # simulates all supported ci tests in a local circle ci environment
+  ci = nixpkgs.writeShellScriptBin "ci" "circleci-cli local execute";
+
 in
 with nixpkgs;
 stdenv.mkDerivation rec {
@@ -116,6 +132,7 @@ stdenv.mkDerivation rec {
     # ci
     circleci-cli
     ci-codecov
+    ci-app-spec
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

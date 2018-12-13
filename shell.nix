@@ -4,7 +4,7 @@ let
     overlays = [ moz_overlay ];
   };
 
-  date = "2018-10-12";
+  date = "2018-11-28";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
@@ -69,12 +69,6 @@ stdenv.mkDerivation rec {
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
     # carnix
-    # python36Packages.zerobin
-    # haskellPackages.pb
-    # pastebinit
-    # qdirstat
-
-    # unixtools.watch
 
     cmake
     python
@@ -110,8 +104,6 @@ stdenv.mkDerivation rec {
     circleci-cli
   ];
 
-  /* builder = "${hc-fmt}/bin/hc-fmt"; */
-
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
   # RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no -Z incremental-info";
@@ -119,8 +111,4 @@ stdenv.mkDerivation rec {
   # CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
   # RUST_LOG = "info";
-
-  shellHook = ''
-  # export PATH=$PATH:~/.cargo/bin;
-  '';
 }

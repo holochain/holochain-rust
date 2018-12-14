@@ -642,8 +642,6 @@ fn can_send_and_receive() {
     let result = hc2.call("test_zome", "test_cap", "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected: ZomeApiResult<String> = Ok(String::from(
-        "Received: TEST",
-    ));
+    let expected: ZomeApiResult<String> = Ok(String::from("Received: TEST"));
     assert_eq!(result.unwrap(), JsonString::from(expected),);
 }

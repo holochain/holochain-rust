@@ -921,7 +921,7 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
 ///     // signature of handle_send_message we can just directly return its' result
 ///     hdk::send(to_agent, message)
 /// }
-/// 
+///
 /// define_zome! {
 ///    entries: []
 ///

@@ -15,7 +15,8 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::ChainHeader,
         dna::{capabilities::Capability, entry_types::EntryTypeDef, Dna},
-        entry::{entry_type::AppEntryType, Entry},
+        entry::Entry,
+        json::RawString,
     };
     use std::sync::Arc;
     use test_utils::*;
@@ -67,31 +68,22 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_entry() -> Entry {
-        Entry::App(AppEntryType::from("package_entry"), "test value".into())
+        Entry::App("package_entry".into(), RawString::from("test value").into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_entries() -> Entry {
-        Entry::App(
-            AppEntryType::from("package_chain_entries"),
-            "test value".into(),
-        )
+        Entry::App("package_chain_entries".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_headers() -> Entry {
-        Entry::App(
-            AppEntryType::from("package_chain_headers"),
-            "test value".into(),
-        )
+        Entry::App("package_chain_headers".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_full() -> Entry {
-        Entry::App(
-            AppEntryType::from("package_chain_full"),
-            "test value".into(),
-        )
+        Entry::App("package_chain_full".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]

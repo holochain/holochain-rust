@@ -56,6 +56,8 @@ pub enum EntryType {
     LinkList,
     ChainHeader,
     ChainMigrate,
+    CapTokenGrant,
+    CapToken,
 }
 
 impl From<AppEntryType> for EntryType {
@@ -137,6 +139,8 @@ impl FromStr for EntryType {
             sys_prefix!("link_remove") => EntryType::LinkRemove,
             sys_prefix!("link_list") => EntryType::LinkList,
             sys_prefix!("chain_migrate") => EntryType::ChainMigrate,
+            sys_prefix!("cap_token") => EntryType::CapToken,
+            sys_prefix!("cap_token_grant") => EntryType::CapTokenGrant,
             _ => EntryType::App(AppEntryType(s.into())),
         })
     }
@@ -154,6 +158,8 @@ impl From<EntryType> for String {
             EntryType::LinkRemove => sys_prefix!("link_remove"),
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::ChainMigrate => sys_prefix!("chain_migrate"),
+            EntryType::CapToken => sys_prefix!("cap_token"),
+            EntryType::CapTokenGrant => sys_prefix!("cap_token_grant"),
         })
     }
 }
@@ -221,6 +227,8 @@ pub mod tests {
             EntryType::LinkList,
             EntryType::ChainHeader,
             EntryType::ChainMigrate,
+            EntryType::CapToken,
+            EntryType::CapTokenGrant,
         ]
     }
 
@@ -257,6 +265,8 @@ pub mod tests {
             (sys_prefix!("link_list"), EntryType::LinkList),
             (sys_prefix!("chain_header"), EntryType::ChainHeader),
             (sys_prefix!("chain_migrate"), EntryType::ChainMigrate),
+            (sys_prefix!("cap_token"), EntryType::CapToken),
+            (sys_prefix!("cap_token_grant"), EntryType::CapTokenGrant),
         ] {
             assert_eq!(
                 variant,

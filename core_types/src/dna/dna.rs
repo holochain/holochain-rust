@@ -1,10 +1,5 @@
 use crate::{
-    dna::{
-        bridges::{Bridge},
-        capabilities::Capability,
-        entry_types::EntryTypeDef,
-        wasm, zome,
-    },
+    dna::{bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
@@ -199,7 +194,8 @@ impl Dna {
     }
 
     pub fn get_required_bridges(&self) -> Vec<Bridge> {
-        self.zomes.iter()
+        self.zomes
+            .iter()
             .map(|(_, zome)| zome.get_required_bridges())
             .flatten()
             .collect()

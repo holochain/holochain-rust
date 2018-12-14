@@ -3,8 +3,11 @@
 use crate::{
     dna::{
         bridges::{Bridge, BridgePresence},
-        wasm::DnaWasm},
-    entry::entry_type::EntryType, error::HolochainError, json::JsonString,
+        wasm::DnaWasm,
+    },
+    entry::entry_type::EntryType,
+    error::HolochainError,
+    json::JsonString,
 };
 use dna::{
     capabilities,

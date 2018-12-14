@@ -28,6 +28,7 @@ jobs:
           command: nix-shell --run hc-install-cmd
 
       # test the node container build
+      # todo - this cache doesn't stop recompilation of rust on node container
       - restore_cache:
           keys:
             - v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}

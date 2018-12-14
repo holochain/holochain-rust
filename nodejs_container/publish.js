@@ -33,6 +33,7 @@ shell.rm("-rf", "./build");
 
 // Cleanup any previous Rust builds, update deps, and compile
 shell.exec("yarn install --ignore-scripts");
+shell.exec("yarn run clean");
 
 // copy files to include in release
 shell.mkdir("./dist");

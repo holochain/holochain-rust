@@ -1,12 +1,12 @@
 //! holochain_core_types::dna::zome is a set of structs for working with holochain dna.
 
-pub mod capabilities;
-pub mod entry_types;
-
 use crate::{
     dna::wasm::DnaWasm, entry::entry_type::EntryType, error::HolochainError, json::JsonString,
 };
-use dna::zome::entry_types::{deserialize_entry_types, serialize_entry_types, EntryTypeDef};
+use dna::{
+    capabilities,
+    entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef},
+};
 use std::collections::BTreeMap;
 
 /// Enum for "zome" "config" "error_handling" property.

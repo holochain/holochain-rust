@@ -1,8 +1,8 @@
-use boolinator::*;
 use crate::{
     action::ActionWrapper,
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
+use boolinator::*;
 use holochain_core_types::{
     cas::content::Address, entry::EntryWithMeta, error::HolochainError,
     validation::ValidationPackage,
@@ -53,6 +53,8 @@ pub struct NetworkState {
     /// Entries get removed when we receive an answer through Action::ResolveDirectConnection.
     pub direct_message_connections: HashMap<String, DirectMessage>,
 
+    pub custom_direct_message_replys: HashMap<String, Result<String, HolochainError>>,
+
     id: snowflake::ProcessUniqueId,
 }
 
@@ -73,6 +75,7 @@ impl NetworkState {
             get_entry_with_meta_results: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
+            custom_direct_message_replys: HashMap::new(),
 
             id: snowflake::ProcessUniqueId::new(),
         }

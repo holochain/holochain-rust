@@ -20,7 +20,7 @@ pub trait IpcSocket {
     fn connect(&mut self, endpoint: &str) -> Result<()>;
 
     /// see if we have any messages waiting
-    fn poll(&mut self, millis: i64) -> Result<bool>;
+    fn poll(&mut self, timeout_ms: i64) -> Result<bool>;
 
     /// if we DO have messages, fetch them
     fn recv(&mut self) -> Result<Vec<Vec<u8>>>;
@@ -53,8 +53,8 @@ impl IpcSocket for ZmqIpcSocket {
         Ok(())
     }
 
-    fn poll(&mut self, millis: i64) -> Result<bool> {
-        Ok(self.socket.poll(zmq::POLLIN, millis)? != 0)
+    fn poll(&mut self, timeout_ms: i64) -> Result<bool> {
+        Ok(self.socket.poll(zmq::POLLIN, timeout_ms)? != 0)
     }
 
     fn recv(&mut self) -> Result<Vec<Vec<u8>>> {

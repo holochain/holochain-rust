@@ -20,7 +20,7 @@ use hdk::{
 };
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryOptions, EntryHistory},
+        get_entry::{GetEntryOptions, GetEntryResult},
         get_links::GetLinksResult,
     },
     holochain_core_types::{
@@ -92,7 +92,7 @@ fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
     hdk::commit_entry(&entry)
 }
 
-fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<EntryHistory> {
+fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<GetEntryResult> {
     hdk::get_entry_result(entry_address, GetEntryOptions::default())
 }
 
@@ -103,7 +103,7 @@ fn handle_check_get_entry(entry_address: Address) -> ZomeApiResult<Option<Entry>
 fn handle_commit_validation_package_tester() -> ZomeApiResult<Address> {
     hdk::commit_entry(&Entry::App(
         "validation_package_tester".into(),
-        JsonString::from(RawString::from("test")),
+        RawString::from("test").into(),
     ))
 }
 
@@ -238,7 +238,7 @@ fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
     }
 
     // Check bad entry type name
-    let bad_result = hdk::entry_address(&Entry::App(AppEntryType::from("bad"), entry_value.clone()));
+    let bad_result = hdk::entry_address(&Entry::App("bad".into(), entry_value.clone()));
     if !bad_result.is_err() {
         return bad_result.into();
     }
@@ -336,6 +336,13 @@ fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
+fn handle_send_message(to_agent: Address, message: String) -> String {
+    match hdk::send(to_agent, message) {
+        Ok(response) => response,
+        Err(error) => error.to_string(),
+    }
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -431,6 +438,10 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
+    receive: |payload| {
+        format!("Received: {}", payload)
+    }
+
     functions: {
         test (Public) {
             check_global: {
@@ -453,7 +464,7 @@ define_zome! {
 
             check_get_entry_result: {
                 inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<EntryHistory>|,
+                outputs: |result: ZomeApiResult<GetEntryResult>|,
                 handler: handle_check_get_entry_result
             }
 
@@ -539,6 +550,12 @@ define_zome! {
                 inputs: |author: String, content: String|,
                 outputs: |response: TweetResponse|,
                 handler: handle_send_tweet
+            }
+
+            send_message: {
+                inputs: |to_agent: Address, message: String|,
+                outputs: |response: String|,
+                handler: handle_send_message
             }
         }
     }

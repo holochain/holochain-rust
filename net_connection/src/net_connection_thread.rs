@@ -1,7 +1,7 @@
 use super::NetResult;
 
 use super::{
-    net_connection::{NetConnection, NetHandler, NetWorkerFactory},
+    net_connection::{NetConnection, NetHandler, NetShutdown, NetWorkerFactory},
     protocol::Protocol,
 };
 
@@ -13,11 +13,11 @@ use std::sync::{
 };
 
 /// a NetConnection instance that is managed on another thread
-#[derive(Debug)]
 pub struct NetConnectionThread {
-    keep_running: Arc<AtomicBool>,
+    can_keep_running: Arc<AtomicBool>,
     send_channel: mpsc::Sender<Protocol>,
     thread: thread::JoinHandle<()>,
+    done: NetShutdown,
 }
 
 impl NetConnection for NetConnectionThread {
@@ -31,23 +31,28 @@ impl NetConnection for NetConnectionThread {
 impl NetConnectionThread {
     /// stop (join) the worker thread
     pub fn stop(self) -> NetResult<()> {
-        self.keep_running.store(false, Ordering::Relaxed);
-        match self.thread.join() {
-            Ok(_) => Ok(()),
-            Err(_) => {
-                bail!("NetConnectionThread failed to join on stop() call");
-            }
+        self.can_keep_running.store(false, Ordering::Relaxed);
+        if self.thread.join().is_err() {
+            bail!("NetConnectionThread failed to join on stop() call");
         }
+        if let Some(done) = self.done {
+            done();
+        }
+        Ok(())
     }
 
     /// create a new NetConnectionThread instance with given handler / worker
-    pub fn new(handler: NetHandler, worker_factory: NetWorkerFactory) -> NetResult<Self> {
+    pub fn new(
+        handler: NetHandler,
+        worker_factory: NetWorkerFactory,
+        done: NetShutdown,
+    ) -> NetResult<Self> {
         let keep_running = Arc::new(AtomicBool::new(true));
         let keep_running2 = keep_running.clone();
 
         let (sender, receiver) = mpsc::channel();
         Ok(NetConnectionThread {
-            keep_running,
+            can_keep_running: keep_running,
             send_channel: sender,
             thread: thread::spawn(move || {
                 let mut us = 100_u64;
@@ -85,7 +90,10 @@ impl NetConnectionThread {
 
                     thread::sleep(time::Duration::from_micros(us));
                 }
+
+                worker.stop().unwrap_or_else(|e| panic!("{:?}", e));
             }),
+            done,
         })
     }
 }
@@ -105,6 +113,7 @@ mod tests {
         let mut con = NetConnectionThread::new(
             Box::new(move |_r| Ok(())),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 
@@ -137,6 +146,7 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 
@@ -169,6 +179,7 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 

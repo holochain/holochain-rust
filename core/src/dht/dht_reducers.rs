@@ -13,7 +13,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use std::{collections::HashSet, convert::TryFrom, sync::Arc};
+use std::{collections::HashSet, convert::TryFrom, str::FromStr, sync::Arc};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -78,7 +78,7 @@ pub(crate) fn reduce_hold_entry(
 
     // Initialize CRUD status meta
     let meta_storage = &new_store.meta_storage().clone();
-    let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+    let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
     let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
     if res.is_err() {
         // TODO #439 - Log the error. Once we have better logging.
@@ -139,7 +139,7 @@ pub(crate) fn reduce_update_entry(
     // Update crud-status
     let latest_old_address = old_address;
     let meta_storage = &new_store.meta_storage().clone();
-    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::MODIFIED);
+    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::Modified);
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
     if let Err(err) = res {
         new_store
@@ -206,7 +206,7 @@ fn reduce_remove_entry_inner(
             "trying to remove a system entry type",
         )));
     }
-    // pre-condition: Current status must be LIVE
+    // pre-condition: Current status must be Live
     // get current status
     let meta_storage = &new_store.meta_storage().clone();
     let maybe_status_eav = meta_storage.read().unwrap().fetch_eav(
@@ -220,18 +220,18 @@ fn reduce_remove_entry_inner(
     let status_eavs = maybe_status_eav.unwrap();
     assert!(!status_eavs.is_empty(), "Entry should have a Status");
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
-    // For now checks if crud-status other than LIVE are present
+    // For now checks if crud-status other than Live are present
     let status_eavs = status_eavs
         .iter()
-        .filter(|e| CrudStatus::from(String::from(e.value())) != CrudStatus::LIVE)
+        .filter(|e| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))
         .collect::<HashSet<&EntityAttributeValue>>();
     if !status_eavs.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(
-            "entry_status != CrudStatus::LIVE",
+            "entry_status != CrudStatus::Live",
         )));
     }
     // Update crud-status
-    let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::DELETED);
+    let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
     let meta_storage = &new_store.meta_storage().clone();
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
     if let Err(err) = res {

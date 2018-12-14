@@ -2,7 +2,7 @@ use boolinator::Boolinator;
 use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
 use hdk::holochain_core_types::{
-    cas::content::Address, dna::zome::entry_types::Sharing, error::HolochainError, json::JsonString,
+    cas::content::Address, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
 };
 
 /// We declare the structure of our entry type with this Rust struct.
@@ -79,7 +79,7 @@ mod tests {
     use crate::post::{definition, Post};
     use hdk::{
         holochain_core_types::{
-            dna::zome::entry_types::{EntryTypeDef, LinkedFrom},
+            dna::entry_types::{EntryTypeDef, LinkedFrom},
             entry::{entry_type::EntryType, Entry},
         },
         holochain_wasm_utils::api_serialization::validation::LinkDirection,

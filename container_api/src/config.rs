@@ -109,6 +109,8 @@ impl Configuration {
 #[derive(Deserialize, Serialize, Clone)]
 pub struct AgentConfiguration {
     pub id: String,
+    pub name: String,
+    pub public_address: String,
     pub key_file: String,
 }
 

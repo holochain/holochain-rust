@@ -9,7 +9,7 @@ use holochain_core::{
     logger::Logger,
     signal::{signal_channel, Signal, SignalReceiver},
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{agent::{KeyBuffer, AgentId}, dna::Dna, error::HolochainError, json::JsonString};
 
 use std::{
     clone::Clone,
@@ -255,7 +255,8 @@ pub fn instantiate_from_config(
 
             let mut context_builder = ContextBuilder::new();
 
-            context_builder.with_agent(agent_config.into());
+            let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
+            context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
             instance_config
                 .network
@@ -293,7 +294,7 @@ impl Logger for NullLogger {
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
-
+    //use holochain_core_types::agent::AgentId;
     use std::{fs::File, io::Write};
 
     use tempfile::tempdir;
@@ -310,11 +311,13 @@ pub mod tests {
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
+    public_address = "HoloTester2-------------------------------------------------------------------------AJmU"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -426,6 +429,8 @@ pub mod tests {
 
     #[test]
     fn test_instantiate_from_config() {
+        // Used this to created syntatically valid public addresses for the config fixture above:
+        //println!("{}", JsonString::from(AgentId::generate_fake("HoloTester2")));
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let (tx, _) = signal_channel();
         let maybe_holochain = instantiate_from_config(

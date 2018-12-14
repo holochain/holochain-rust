@@ -206,19 +206,12 @@ fn exec() -> NetResult<()> {
 
     // get node IDs from their state
     let node1_id;
-    //let node2_id;
     let node2_binding;
     one_let!(ProtocolWrapper::State(state) = node1_state {
         node1_id = state.id
     });
     one_let!(ProtocolWrapper::State(state) = node2_state {
-        node2_id = state.id;
         node2_binding = state.bindings[0].clone();
-    });
-
-    one_let!(ProtocolWrapper::State(s) = node2_state {
-        //node2_id = s.id;
-        node2_binding = s.bindings[0].clone();
     });
 
     // Send TrackApp message on both nodes

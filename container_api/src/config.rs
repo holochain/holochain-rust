@@ -244,10 +244,14 @@ pub mod tests {
         let toml = r#"
     [[agents]]
     id = "bob"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file="file/to/serialize"
 
     [[agents]]
     id="alex"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file="another/file"
 
     [[dnas]]
@@ -276,6 +280,8 @@ pub mod tests {
         let toml = r#"
     [[agents]]
     id="agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file="whatever"
 
     [[dnas]]
@@ -296,7 +302,8 @@ pub mod tests {
             r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -357,7 +364,8 @@ pub mod tests {
         let toml = r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -415,7 +423,8 @@ pub mod tests {
         let toml = r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -447,7 +456,8 @@ pub mod tests {
         let toml = r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -492,7 +502,8 @@ pub mod tests {
             r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]

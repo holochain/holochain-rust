@@ -121,23 +121,23 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
               "backend_kind": "IPC",
               "backend_config":
               {
-                  "socketType": "zmq",
+                "socketType": "zmq",
                   "spawn":
                   {
-                      "cmd": "node",
-                      "args": [
-                          format!("{}/packages/n3h/bin/n3h", n3h_path)
-                      ],
-                      "workDir": dir.clone(),
-                      "env": {
-                          "N3H_HACK_MODE": "1",
-                          "N3H_WORK_DIR": dir.clone(),
-                          "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
-                        }
-                    },
+                    "cmd": "node",
+                    "args": [
+                        format!("{}/packages/n3h/bin/n3h", n3h_path)
+                    ],
+                    "workDir": dir.clone(),
+                    "env": {
+                        "N3H_HACK_MODE": "1",
+                        "N3H_WORK_DIR": dir.clone(),
+                        "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+                    }
+                },
               }}))
             .unwrap()
-        }
+            }
     };
 
     let p2p_node = P2pNetwork::new(
@@ -206,7 +206,7 @@ fn exec() -> NetResult<()> {
 
     // get node IDs from their state
     let node1_id;
-    let node2_id;
+    //let node2_id;
     let node2_binding;
     one_let!(ProtocolWrapper::State(state) = node1_state {
         node1_id = state.id
@@ -216,8 +216,10 @@ fn exec() -> NetResult<()> {
         node2_binding = state.bindings[0].clone();
     });
 
-    println!("node1_id: {:?}", node1_id);
-    println!("node2_id: {:?}", node2_id);
+    one_let!(ProtocolWrapper::State(s) = node2_state {
+        //node2_id = s.id;
+        node2_binding = s.bindings[0].clone();
+    });
 
     // Send TrackApp message on both nodes
     node1.p2p_connection.send(

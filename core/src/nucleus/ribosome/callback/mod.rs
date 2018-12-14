@@ -58,7 +58,7 @@ impl FromStr for Callback {
         match s {
             "genesis" => Ok(Callback::Genesis),
             "receive" => Ok(Callback::Receive),
-            "" => Ok(Callback::MissingNo),
+            other if other.is_empty() => Ok(Callback::MissingNo),
             _ => Err("Cannot convert string to Callback"),
         }
     }

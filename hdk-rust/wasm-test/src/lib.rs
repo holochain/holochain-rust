@@ -103,7 +103,7 @@ fn handle_check_get_entry(entry_address: Address) -> ZomeApiResult<Option<Entry>
 fn handle_commit_validation_package_tester() -> ZomeApiResult<Address> {
     hdk::commit_entry(&Entry::App(
         "validation_package_tester".into(),
-        JsonString::from(RawString::from("test")),
+        RawString::from("test").into(),
     ))
 }
 
@@ -238,7 +238,7 @@ fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
     }
 
     // Check bad entry type name
-    let bad_result = hdk::entry_address(&Entry::App(AppEntryType::from("bad"), entry_value.clone()));
+    let bad_result = hdk::entry_address(&Entry::App("bad".into(), entry_value.clone()));
     if !bad_result.is_err() {
         return bad_result.into();
     }

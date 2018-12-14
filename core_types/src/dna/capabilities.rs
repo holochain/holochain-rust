@@ -1,7 +1,7 @@
 //! File holding all the structs for handling capabilities defined in DNA.
 
-use std::str::FromStr;
 use crate::cas::content::Address;
+use std::str::FromStr;
 
 //--------------------------------------------------------------------------------------------------
 // Reserved Capabilities names

@@ -9,7 +9,7 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use std::{
     convert::TryFrom,
@@ -186,7 +186,10 @@ pub mod tests {
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
-        dna::{capabilities::{Capability, CapabilityType}, Dna},
+        dna::{
+            capabilities::{Capability, CapabilityType},
+            Dna,
+        },
         error::{DnaError, HolochainError},
         json::JsonString,
     };
@@ -295,13 +298,13 @@ pub mod tests {
 
     #[test]
     fn test_call_no_token() {
-/* this test was actually only testing that the default wat didn't even have a capability at all
-   and the code in reduce_call was behaving as if it didn't have a token.  This test will be fixed
-   in later commits.
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let expected = Ok(Err(HolochainError::DoesNotHaveCapabilityToken));
-        test_reduce_call(dna, expected);
-*/
+        /* this test was actually only testing that the default wat didn't even have a capability at all
+           and the code in reduce_call was behaving as if it didn't have a token.  This test will be fixed
+           in later commits.
+                let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+                let expected = Ok(Err(HolochainError::DoesNotHaveCapabilityToken));
+                test_reduce_call(dna, expected);
+        */
     }
 
     #[test]

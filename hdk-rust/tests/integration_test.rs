@@ -19,7 +19,7 @@ use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, FnDeclaration, CapabilityType},
+        capabilities::{Capability, CapabilityType, FnDeclaration},
         entry_types::{EntryTypeDef, LinksTo},
     },
     entry::{

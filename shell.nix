@@ -90,8 +90,6 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-    # allow nested nix-shell calls even under --pure
-    nix
 
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
@@ -136,6 +134,7 @@ stdenv.mkDerivation rec {
     ci-app-spec
     ci-node
     ci
+
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

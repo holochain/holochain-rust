@@ -89,7 +89,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             .and_then(|new_address| {
                 update_entry(
                     &runtime.context,
-                    &runtime.context.action_channel,
+                    runtime.context.action_channel(),
                     latest_entry.address().clone(),
                     new_address,
                 )

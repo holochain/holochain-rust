@@ -57,29 +57,32 @@ let
   # runs all standard tests and reports code coverage
   ci-codecov = nixpkgs.writeShellScriptBin "ci-codecov"
   ''
-  hc-wasm-build && \
-  hc-install-tarpaulin && \
-  hc-tarpaulin && \
-  bash <(curl -s https://codecov.io/bash);
+    hc-wasm-build && \
+    hc-install-tarpaulin && \
+    hc-tarpaulin && \
+    bash <(curl -s https://codecov.io/bash);
   '';
 
   # runs all app spec tests
   ci-app-spec = nixpkgs.writeShellScriptBin "ci-app-spec"
   ''
-  hc-wasm-build && \
-  hc-install-cmd && \
-  hc-install-node-container && \
-  hc-test-app-spec;
+    hc-wasm-build && \
+    hc-install-cmd && \
+    hc-install-node-container && \
+    hc-test-app-spec;
   '';
 
   ci-node = nixpkgs.writeShellScriptBin "ci-node"
   ''
-  # current node tests only smoke test the build process
-  hc-install-node-container
+    # current node tests only smoke test the build process
+    hc-install-node-container
   '';
 
   # simulates all supported ci tests in a local circle ci environment
-  ci = nixpkgs.writeShellScriptBin "ci" "circleci-cli local execute";
+  ci = nixpkgs.writeShellScriptBin "ci"
+  ''
+    circleci-cli local execute
+  '';
 
 in
 with nixpkgs;
@@ -87,6 +90,9 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
+    # allow nested nix-shell calls even under --pure
+    nix
+
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
     # carnix
@@ -122,13 +128,14 @@ stdenv.mkDerivation rec {
     # dev tooling
     git
 
-    # ci
-    # curl needed to push codecov
+    # curl needed to push to codecov
     curl
+    docker
     circleci-cli
     ci-codecov
     ci-app-spec
     ci-node
+    ci
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

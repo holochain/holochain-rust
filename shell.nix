@@ -139,6 +139,16 @@ stdenv.mkDerivation rec {
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
   # RUST_LOG = "info";
 
+  # non-nixos OS can have a "dirty" setup with rustup installed for the current
+  # user.
+  # `nix-shell` can inherit this e.g. through sourcing `.bashrc`.
+  # even `nix-shell --pure` will still source some files and inherit paths.
+  # for those users we can at least give the OS a clue that we want our pinned
+  # rust version through this environment variable.
+  # https://github.com/rust-lang/rustup.rs#environment-variables
+  # https://github.com/NixOS/nix/issues/903
+  RUSTUP_TOOLCHAIN = "nightly-${date}";
+
   shellHook = ''
     # needed for install cmd and tarpaulin
     export PATH=$PATH:~/.cargo/bin;

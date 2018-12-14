@@ -99,7 +99,7 @@ impl Default for Zome {
             entry_types: BTreeMap::new(),
             capabilities: BTreeMap::new(),
             code: DnaWasm::new(),
-            bridges: None,
+            bridges: Vec::new(),
         }
     }
 }
@@ -119,22 +119,19 @@ impl Zome {
             entry_types: entry_types.to_owned(),
             capabilities: capabilities.to_owned(),
             code: code.clone(),
-            bridges: None,
+            bridges: Vec::new(),
         }
     }
 
     pub fn get_required_bridges(&self) -> Vec<Bridge> {
-        match self.bridges {
-            None => Vec::new(),
-            Some(ref bridges) => bridges
-                .iter()
-                .filter(|bridge| match bridge {
-                    Bridge::Address(b) => b.presence == BridgePresence::Required,
-                    Bridge::Trait(b) => b.presence == BridgePresence::Required,
-                })
-                .cloned()
-                .collect(),
-        }
+        self.bridges
+            .iter()
+            .filter(|bridge| match bridge {
+                Bridge::Address(b) => b.presence == BridgePresence::Required,
+                Bridge::Trait(b) => b.presence == BridgePresence::Required,
+            })
+            .cloned()
+            .collect()
     }
 }
 
@@ -179,7 +176,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"},\"bridges\":null}";
+        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from(expected.clone()),

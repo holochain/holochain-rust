@@ -139,7 +139,7 @@ pub mod tests {
                         "code": {
                             "code": "AAECAw=="
                         },
-                        "bridges": null
+                        "bridges": []
                     }
                 }
             }"#,

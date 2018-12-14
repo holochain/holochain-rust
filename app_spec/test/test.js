@@ -2,7 +2,7 @@ const test = require('tape');
 const Container = require('../../nodejs_container');
 const { pollFor } = require('./util');
 
-const H = Container.HcTest;
+const H = Container.ConfigBuilder;
 
 const agentAlice = H.agent("alice");
 const agentBob = H.agent("bob");
@@ -12,7 +12,9 @@ const dna = H.dna("./blah.dna.json");
 const instanceAlice = H.instance(agentAlice, dna);
 const instanceBob = H.instance(agentBob, dna);
 
-const scenario1 = H.scenario(instanceAlice, instanceBob)
+const habitat1 = H.habitat(instanceAlice, instanceBob);
+
+console.log(habitat1);
 
 
 const app = Container.instanceFromNameAndDna("bob", "dist/app_spec.hcpkg")
@@ -116,7 +118,7 @@ test('my_posts', async (t) => {
   const result = await pollFor(
     () => app.call("blog", "main", "my_posts", {}),
     (result) => {
-        return result &&
+      return result &&
         result.Ok &&
         result.Ok.addresses &&
         result.Ok.addresses.length === 2

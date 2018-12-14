@@ -1,37 +1,12 @@
-use holochain_cas_implementations::{
-    cas::{file::FilesystemStorage, memory::MemoryStorage},
-    eav::memory::EavMemoryStorage,
-};
 use holochain_container_api::{
-    config::{AgentConfiguration, Configuration, DNAConfiguration, InstanceConfiguration, StorageConfiguration},
+    config::{
+        AgentConfiguration, Configuration, DNAConfiguration, InstanceConfiguration,
+        LoggerConfiguration, StorageConfiguration,
+    },
     Holochain,
 };
-use holochain_core::{
-    context::{mock_network_config, Context as HolochainContext},
-    logger::Logger,
-    persister::SimplePersister,
-};
-use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
 use neon::{context::Context, prelude::*};
-use std::{
-    convert::TryFrom,
-    path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
-};
-use tempfile::tempdir;
-
-#[derive(Clone, Debug)]
-struct NullLogger {}
-
-impl Logger for NullLogger {
-    fn log(&mut self, _msg: String) {}
-}
-
-pub struct App {
-    instance: Holochain,
-}
-
-pub struct HcTest {}
+use std::{collections::HashMap, convert::TryFrom, path::PathBuf};
 
 #[derive(Serialize, Deserialize)]
 pub struct AgentData {
@@ -49,54 +24,98 @@ pub struct InstanceData {
     pub dna: DnaData,
 }
 
-pub struct ScenarioConfig(pub Vec<InstanceData>);
+pub struct ConfigBuilder;
 
-pub fn make_config(instance_data: Vec<InstanceData>) -> Result<Configuration, String> {
-    let agent_configs = HashMap::new();
-    let dna_configs = HashMap::new();
-    let instance_configs = Vec::new();
+declare_types! {
+
+    pub class JsConfigBuilder for ConfigBuilder {
+
+        init(_cx) {
+            Ok(ConfigBuilder)
+        }
+
+        method agent(mut cx) {
+            let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+            let obj = AgentData { name };
+            Ok(neon_serde::to_value(&mut cx, &obj)?)
+        }
+
+        method dna(mut cx) {
+            let path = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+            let path = PathBuf::from(path);
+            let obj = DnaData { path };
+            Ok(neon_serde::to_value(&mut cx, &obj)?)
+        }
+
+        method instance(mut cx) {
+            let agent_data = cx.argument(0)?;
+            let dna_data = cx.argument(1)?;
+            let agent: AgentData = neon_serde::from_value(&mut cx, agent_data)?;
+            let dna: DnaData = neon_serde::from_value(&mut cx, dna_data)?;
+            let obj = InstanceData { agent, dna };
+            Ok(neon_serde::to_value(&mut cx, &obj)?)
+        }
+
+        method habitat(mut cx) {
+            let mut i = 0;
+            let mut instances = Vec::<InstanceData>::new();
+            while let Some(arg) = cx.argument_opt(i) {
+                instances.push(neon_serde::from_value(&mut cx, arg)?);
+                i += 1;
+            };
+            let config = make_config(instances);
+            Ok(neon_serde::to_value(&mut cx, &config)?)
+        }
+    }
+}
+
+pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
+    let mut agent_configs = HashMap::new();
+    let mut dna_configs = HashMap::new();
+    let mut instance_configs = Vec::new();
     for instance in instance_data {
         let agent_name = instance.agent.name;
-        let dna_path = instance.dna.path;
+        let dna_path = PathBuf::from(instance.dna.path);
         let agent = agent_configs
-            .entry(agent_name)
-            .insert_or(AgentConfiguration {
-                id: agent_name,
-                key_file: "DONTCARE".into(),
+            .entry(agent_name.clone())
+            .or_insert_with(|| AgentConfiguration {
+                id: agent_name.clone(),
+                key_file: format!("{}-fake-key", agent_name),
             });
         let dna = dna_configs
-            .entry(dna_path)
-            .insert_or_with(|| make_dna_config(dna_path)?);
-        
-        let logger = {
-            logger_type: "DONTCARE".into(),
+            .entry(dna_path.clone())
+            .or_insert_with(|| make_dna_config(dna_path).expect("DNA file not found"));
+
+        let logger = LoggerConfiguration {
+            logger_type: String::from("DONTCARE"),
             file: None,
         };
         let instance = InstanceConfiguration {
-            id: "TODO",
-            dna: dna.id,
-            agent: agent.id,
-            logger,
+            id: "TODO".into(),
+            agent: agent.id.clone(),
+            dna: dna.id.clone(),
             storage: StorageConfiguration::Memory,
+            logger,
             network: None,
         };
         instance_configs.push(instance);
     }
 
-    const config = Configuration {
-        agents: agent_configs.values(),
-        dnas: dna_configs.values(),
+    let config = Configuration {
+        agents: agent_configs.into_iter().map(|(_, v)| v).collect(),
+        dnas: dna_configs.into_iter().map(|(_, v)| v).collect(),
         instances: instance_configs,
         interfaces: Vec::new(),
         bridges: Vec::new(),
     };
-    Ok(config)
+    config
 }
 
-fn make_dna_config(path: String) -> Result<DNAConfiguration, String> {
+fn make_dna_config(path: PathBuf) -> Result<DNAConfiguration, String> {
+    let path = path.to_string_lossy().to_string();
     Ok(DNAConfiguration {
-        id: path,
-        hash: "DONTCARE".into(),
+        id: path.clone(),
+        hash: String::from("DONTCARE"),
         file: path,
     })
     // eventually can get actual file content to calculate hash and stuff,

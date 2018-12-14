@@ -6,10 +6,10 @@ const path = require('path');
 // deals with ensuring the correct version for the machine/node version
 const binding_path = binary.find(path.resolve(path.join(__dirname, './package.json')));
 
-const { HolochainApp, HcTest } = require(binding_path);
+const { HolochainApp, ConfigBuilder } = require(binding_path);
 
 module.exports = {
-    HcTest: new HcTest(),
+    ConfigBuilder: new ConfigBuilder(),
 
     instanceFromNameAndDna: function (agentName, fileName) {
         const content = fs.readFileSync(fileName);

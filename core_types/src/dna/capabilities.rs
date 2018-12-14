@@ -151,7 +151,7 @@ mod tests {
         let cap = Capability::new(CapabilityType::Public);
         assert_eq!(cap.cap_type, CapabilityType::Public);
         let cap = Capability::new(CapabilityType::Transferable);
-        assert_eq!(cap.cap_type,CapabilityType::Transferable);
+        assert_eq!(cap.cap_type, CapabilityType::Transferable);
     }
 
     #[test]

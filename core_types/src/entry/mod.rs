@@ -1,5 +1,5 @@
-pub mod deletion_entry;
 pub mod cap_entries;
+pub mod deletion_entry;
 pub mod entry_type;
 
 use self::deletion_entry::DeletionEntry;

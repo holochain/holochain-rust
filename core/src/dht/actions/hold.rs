@@ -24,7 +24,7 @@ pub async fn hold_entry<'a>(
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::Hold(entry.clone()));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
 
     await!(HoldEntryFuture {
         context: context.clone(),

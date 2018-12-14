@@ -8,11 +8,16 @@ use holochain_cas_implementations::{
     eav::{file::EavFileStorage, memory::EavMemoryStorage},
     path::create_path_if_not_exists,
 };
-use holochain_core::context::Context;
+use holochain_core::{
+    action::Action,
+    context::Context,
+    logger::Logger,
+    persister::SimplePersister,
+    signal::{signal_channel, Signal, SignalReceiver},
+};
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use tempfile::tempdir;
 
-use holochain_core::{logger::Logger, persister::SimplePersister};
 use holochain_core_types::agent::AgentId;
 use std::{
     clone::Clone,
@@ -20,7 +25,7 @@ use std::{
     convert::TryFrom,
     fs::File,
     io::prelude::*,
-    sync::{Arc, Mutex, RwLock},
+    sync::{mpsc::SyncSender, Arc, Mutex, RwLock},
     thread,
 };
 
@@ -41,9 +46,11 @@ pub struct Container {
     pub instances: InstanceMap,
     config: Configuration,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
-    pub dna_loader: DnaLoader,
+    dna_loader: DnaLoader,
+    signal_tx: Option<SignalSender>,
 }
 
+type SignalSender = SyncSender<Signal>;
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
@@ -51,13 +58,22 @@ pub static DEFAULT_NETWORK_CONFIG: &'static str = P2pConfig::DEFAULT_MOCK_CONFIG
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
-    pub fn with_config(config: Configuration) -> Self {
+    pub fn from_config(config: Configuration) -> Self {
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
+            signal_tx: None,
         }
+    }
+
+    pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
+        if !self.instances.is_empty() {
+            panic!("Cannot set a signal channel after having run load_config()");
+        }
+        self.signal_tx = Some(signal_tx);
+        self
     }
 
     pub fn start_all_interfaces(&mut self) {
@@ -103,34 +119,43 @@ impl Container {
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
         self.stop_all_instances()?;
+        // @TODO: also stop all interfaces
         self.instances = HashMap::new();
         Ok(())
     }
 
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
-    pub fn load_config(&mut self, config: &Configuration) -> Result<(), String> {
-        let _ = config.check_consistency()?;
+    /// @TODO: clean up the container creation process to prevent loading config before proper setup,
+    ///        especially regarding the signal handler.
+    ///        (see https://github.com/holochain/holochain-rust/issues/739)
+    pub fn load_config(&mut self) -> Result<SignalReceiver, String> {
+        let _ = self.config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
+        let config = self.config.clone();
         let default_network = DEFAULT_NETWORK_CONFIG.to_string();
-        let id_instance_pairs: Vec<_> = config
+        let mut instances = HashMap::new();
+        let (signal_tx, signal_rx) = signal_channel();
+
+        let errors: Vec<_> = config
             .instance_ids()
             .clone()
             .into_iter()
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(&id, config, &mut self.dna_loader, &default_network),
+                    instantiate_from_config(
+                        &id,
+                        &config,
+                        &mut self.dna_loader,
+                        &default_network,
+                        signal_tx.clone(),
+                    ),
                 )
             })
-            .collect();
-
-        let errors: Vec<_> = id_instance_pairs
-            .into_iter()
             .filter_map(|(id, maybe_holochain)| match maybe_holochain {
                 Ok(holochain) => {
-                    self.instances
-                        .insert(id.clone(), Arc::new(RwLock::new(holochain)));
+                    instances.insert(id.clone(), Arc::new(RwLock::new(holochain)));
                     None
                 }
                 Err(error) => Some(format!(
@@ -141,7 +166,8 @@ impl Container {
             .collect();
 
         if errors.len() == 0 {
-            Ok(())
+            self.instances = instances;
+            Ok(signal_rx)
         } else {
             Err(errors.iter().nth(0).unwrap().clone())
         }
@@ -194,9 +220,9 @@ impl Container {
 impl<'a> TryFrom<&'a Configuration> for Container {
     type Error = HolochainError;
     fn try_from(config: &'a Configuration) -> Result<Self, Self::Error> {
-        let mut container = Container::with_config((*config).clone());
+        let mut container = Container::from_config((*config).clone());
         container
-            .load_config(config)
+            .load_config()
             .map_err(|string| HolochainError::ConfigError(string))?;
         Ok(container)
     }
@@ -221,6 +247,7 @@ pub fn instantiate_from_config(
     config: &Configuration,
     dna_loader: &mut DnaLoader,
     default_network_config: &String,
+    signal_tx: SignalSender,
 ) -> Result<Holochain, String> {
     let _ = config.check_consistency()?;
 
@@ -252,9 +279,19 @@ pub fn instantiate_from_config(
                         .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
                 }
             }?;
-
-            Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+            Holochain::new_with_signals(dna, Arc::new(context), signal_tx, signal_filter)
+                .map_err(|hc_err| hc_err.to_string())
         })
+}
+
+/// This function defines which Actions to filter out for internal signals
+fn signal_filter(action: &Action) -> bool {
+    use self::Action::InitApplication;
+
+    match action {
+        InitApplication(_) => false,
+        _ => true,
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -311,6 +348,7 @@ fn create_file_context(
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
+
     use std::{fs::File, io::Write};
 
     use tempfile::tempdir;
@@ -325,19 +363,34 @@ pub mod tests {
     pub fn test_toml() -> String {
         r#"
     [[agents]]
-    id = "test agent"
-    name = "Holo Tester"
+    id = "test-agent-1"
+    name = "Holo Tester 1"
+    key_file = "holo_tester.key"
+
+    [[agents]]
+    id = "test-agent-2"
+    name = "Holo Tester 2"
     key_file = "holo_tester.key"
 
     [[dnas]]
-    id = "app spec rust"
+    id = "test-dna"
     file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
     [[instances]]
-    id = "app spec instance"
-    dna = "app spec rust"
-    agent = "test agent"
+    id = "test-instance-1"
+    dna = "test-dna"
+    agent = "test-agent-1"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "memory"
+
+    [[instances]]
+    id = "test-instance-2"
+    dna = "test-dna"
+    agent = "test-agent-2"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -345,14 +398,32 @@ pub mod tests {
     type = "memory"
 
     [[interfaces]]
-    id = "app spec interface"
+    id = "test-interface"
     [interfaces.driver]
     type = "websocket"
     port = 8888
     [[interfaces.instances]]
-    id = "app spec instance"
+    id = "test-instance-1"
+    [[interfaces.instances]]
+    id = "test-instance-2"
     "#
         .to_string()
+    }
+
+    fn test_container() -> Container {
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let mut container = Container::from_config(config.clone());
+        container.dna_loader = test_dna_loader();
+        container.load_config().unwrap();
+        container
+    }
+
+    fn test_container_with_signals(signal_tx: SignalSender) -> Container {
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let mut container = Container::from_config(config.clone()).with_signal_channel(signal_tx);
+        container.dna_loader = test_dna_loader();
+        container.load_config().unwrap();
+        container
     }
 
     pub fn example_dna_string() -> String {
@@ -412,11 +483,13 @@ pub mod tests {
     fn test_instantiate_from_config() {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let default_network = DEFAULT_NETWORK_CONFIG.to_string();
+        let (tx, _) = signal_channel();
         let maybe_holochain = instantiate_from_config(
-            &"app spec instance".to_string(),
+            &"test-instance-1".to_string(),
             &config,
             &mut test_dna_loader(),
             &default_network,
+            tx,
         );
 
         assert_eq!(maybe_holochain.err(), None);
@@ -438,14 +511,8 @@ pub mod tests {
 
     #[test]
     fn test_container_load_config() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-
-        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
-        let mut container = Container::with_config(config.clone());
-        container.dna_loader = test_dna_loader();
-
-        container.load_config(&config).unwrap();
-        assert_eq!(container.instances.len(), 1);
+        let mut container = test_container();
+        assert_eq!(container.instances.len(), 2);
 
         container.start_all_instances().unwrap();
         container.start_all_interfaces();
@@ -462,27 +529,38 @@ pub mod tests {
         assert_eq!(
             maybe_container.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"app spec instance\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
+                "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
             )
         );
     }
 
     #[test]
     fn test_rpc_info_instances() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-
-        // TODO: redundant, see https://github.com/holochain/holochain-rust/issues/674
-        let mut container = Container::with_config(config.clone());
-        container.dna_loader = test_dna_loader();
-        container.load_config(&config).unwrap();
-
-        let instance_config = &config.interfaces[0];
-        let dispatcher = container.make_dispatcher(&instance_config);
+        let container = test_container();
+        let interface_config = &container.config.interfaces[0];
+        let dispatcher = container.make_dispatcher(&interface_config);
         let io = dispatcher.io;
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = r#"{"jsonrpc":"2.0","result":"{\"app spec instance\":{\"id\":\"app spec instance\",\"dna\":\"app spec rust\",\"agent\":\"test agent\",\"logger\":{\"type\":\"simple\",\"file\":\"app_spec.log\"},\"storage\":{\"type\":\"memory\"},\"network\":null}}","id":1}"#;
-
-        assert_eq!(io.handle_request_sync(request), Some(response.to_owned()));
+        let response = io
+            .handle_request_sync(request)
+            .expect("No response returned for info/instances");
+        assert!(response.contains("test-instance-1"));
+        assert!(response.contains("test-instance-2"));
     }
+
+    #[test]
+    fn container_signal_handler() {
+        use std::sync::mpsc::TryRecvError;
+        let (signal_tx, signal_rx) = signal_channel();
+        let _container = test_container_with_signals(signal_tx);
+
+        // NB: this is a pretty poor test, but it's the best we can do for now
+        // since this container is not hooked up to a real DNA
+        match signal_rx.try_recv() {
+            Err(TryRecvError::Empty) => (),
+            _ => panic!("Got unexpected result recv'ing from empty channel"),
+        }
+    }
+
 }

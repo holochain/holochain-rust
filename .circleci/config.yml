@@ -46,7 +46,8 @@ jobs:
             - "./test_utils/target"
 
       - save_cache:
-          key: rust-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
+          key: znodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
           paths:
             - "./nodejs_container/native/target"
             - "./nodejs_container/node_modules"
+            - "./nodejs_container/native/Cargo.lock"

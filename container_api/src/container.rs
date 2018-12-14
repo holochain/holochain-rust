@@ -551,8 +551,16 @@ pub mod tests {
 
     #[test]
     fn container_signal_handler() {
+        use std::sync::mpsc::TryRecvError;
         let (signal_tx, signal_rx) = signal_channel();
-        let container = test_container_with_signals(signal_tx);
+        let _container = test_container_with_signals(signal_tx);
+
+        // NB: this is a pretty poor test, but it's the best we can do for now
+        // since this container is not hooked up to a real DNA
+        match signal_rx.try_recv() {
+            Err(TryRecvError::Empty) => (),
+            _ => panic!("Got unexpected result recv'ing from empty channel"),
+        }
     }
 
 }

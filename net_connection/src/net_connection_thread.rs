@@ -14,7 +14,7 @@ use std::sync::{
 
 /// a NetConnection instance that is managed on another thread
 pub struct NetConnectionThread {
-    keep_running: Arc<AtomicBool>,
+    can_keep_running: Arc<AtomicBool>,
     send_channel: mpsc::Sender<Protocol>,
     thread: thread::JoinHandle<()>,
     done: NetShutdown,
@@ -31,7 +31,7 @@ impl NetConnection for NetConnectionThread {
 impl NetConnectionThread {
     /// stop (join) the worker thread
     pub fn stop(self) -> NetResult<()> {
-        self.keep_running.store(false, Ordering::Relaxed);
+        self.can_keep_running.store(false, Ordering::Relaxed);
         if self.thread.join().is_err() {
             bail!("NetConnectionThread failed to join on stop() call");
         }
@@ -52,7 +52,7 @@ impl NetConnectionThread {
 
         let (sender, receiver) = mpsc::channel();
         Ok(NetConnectionThread {
-            keep_running,
+            can_keep_running: keep_running,
             send_channel: sender,
             thread: thread::spawn(move || {
                 let mut us = 100_u64;

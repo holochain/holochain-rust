@@ -35,7 +35,6 @@ jobs:
             - "./target"
             - "./app_spec/zomes/blog/code/target"
             - "./app_spec/zomes/summer/code/target"
-            - "./nodejs_container/native/target"
             - "./container_api/wasm-test/target"
             - "./core/src/nucleus/ribosome/target"
             - "./core/src/nucleus/wasm-test/target"

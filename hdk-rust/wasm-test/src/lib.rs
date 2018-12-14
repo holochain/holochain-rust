@@ -27,7 +27,7 @@ use holochain_wasm_utils::{
     },
     holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        dna::zome::entry_types::Sharing,
+        dna::entry_types::Sharing,
         entry::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,

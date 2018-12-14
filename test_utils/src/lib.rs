@@ -19,12 +19,10 @@ use holochain_core::{
 use holochain_core_types::{
     agent::AgentId,
     dna::{
+        capabilities::{Capability, FnDeclaration, Membrane},
+        entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         wasm::DnaWasm,
-        zome::{
-            capabilities::{Capability, FnDeclaration, Membrane},
-            entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
-            Config, Zome,
-        },
+        zome::{Config, Zome},
         Dna,
     },
     entry::entry_type::{AppEntryType, EntryType},

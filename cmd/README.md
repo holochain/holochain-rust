@@ -188,7 +188,7 @@ where `test/test.js` is the path of the file.
 You have the flexibility to write tests in quite a variety of ways, open to you to explore.
 
 ## Running your application
-For the purpose of *testing* APIs or prototyping user interfaces, you can run the DNA of a hApp, from the directory it's contained. The most basic way to do this is to run:
+For the purpose of *testing* APIs or prototyping user interfaces, you can run a DNA from the directory it's contained. The most basic way to do this is to run:
 ```shell
 hc run
 ```

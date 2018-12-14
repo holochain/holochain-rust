@@ -2,6 +2,7 @@ use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
 use holochain_container_api::{config::*, container::Container};
+use holochain_net::p2p_config::P2pConfig;
 use std::fs;
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
@@ -44,7 +45,7 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         agent: AGENT_CONFIG_ID.into(),
         logger: Default::default(),
         storage,
-        network: Some("{\"backend\": \"mock\"}".to_string()),
+        network: Some(P2pConfig::default_mock().as_str()),
     };
 
     let interface_config = InterfaceConfiguration {

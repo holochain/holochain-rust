@@ -29,9 +29,9 @@ use std::{
     thread,
 };
 
+use holochain_net::p2p_config::P2pConfig;
 use interface::{ContainerApiDispatcher, InstanceMap, Interface};
 use interface_impls;
-
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
 
@@ -54,7 +54,7 @@ type SignalSender = SyncSender<Signal>;
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
-pub static DEFAULT_NETWORK_CONFIG: &'static str = "{\"backend\":\"mock\"}";
+pub static DEFAULT_NETWORK_CONFIG: &'static str = P2pConfig::DEFAULT_MOCK_CONFIG;
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.

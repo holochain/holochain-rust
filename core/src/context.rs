@@ -10,6 +10,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     json::JsonString,
 };
+use holochain_net::p2p_config::P2pConfig;
 use std::{
     sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
@@ -188,7 +189,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, Stri
 /// create a test network
 #[cfg_attr(tarpaulin, skip)]
 pub fn mock_network_config() -> JsonString {
-    json!({"backend": "mock"}).into()
+    JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)
 }
 
 #[cfg(test)]

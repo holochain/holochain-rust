@@ -118,18 +118,21 @@ pub mod tests {
             DEFAULT_NETWORK_CONFIG,
         },
     };
+    use holochain_core::signal::signal_channel;
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let (holochain, _rx) = instantiate_from_config(
-            &"test-instance".to_string(),
+        let (signal_tx, _) = signal_channel();
+        let holochain = instantiate_from_config(
+            &"test-instance-1".to_string(),
             &config,
             &mut test_dna_loader(),
             &DEFAULT_NETWORK_CONFIG.to_string(),
+            signal_tx,
         )
         .unwrap();
         let mut instances = InstanceMap::new();
-        instances.insert("test_instance".into(), Arc::new(RwLock::new(holochain)));
+        instances.insert("test-instance-1".into(), Arc::new(RwLock::new(holochain)));
         (config, instances)
     }
 
@@ -137,11 +140,12 @@ pub mod tests {
     fn test_new_dispatcher() {
         let (config, instances) = example_config_and_instances();
         let dispatcher = ContainerApiDispatcher::new(&config, instances.clone());
-        assert!(dispatcher.instances.get("test_instance").is_some());
+        assert!(dispatcher.instances.get("test-instance-1").is_some());
         let handler = dispatcher.handler();
         let result = format!("{:?}", handler).to_string();
-        let ordering1: bool = result == r#"IoHandler(MetaIoHandler { middleware: Noop, compatibility: V2, methods: {"info/instances": <method>, "test_instance//test/test": <method>} })"#;
-        let ordering2: bool = result == r#"IoHandler(MetaIoHandler { middleware: Noop, compatibility: V2, methods: {"test_instance//test/test": <method>, "info/instances": <method>} })"#;
-        assert!(ordering1 || ordering2, "result = {:?}", result);
+        println!("{}", result);
+        assert!(result.contains("info/instances"));
+        assert!(result.contains(r#""test-instance-1//test/test""#));
+        assert!(!result.contains(r#""test-instance-2//test/test""#));
     }
 }

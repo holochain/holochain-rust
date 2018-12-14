@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    signal::Signal,
+    signal::{Signal, SignalSender},
     state::State,
 };
 use std::{
@@ -224,19 +224,13 @@ impl Instance {
     }
 
     /// Creates a new Instance with only the signal channel set up.
-    pub fn with_signals<F>(context: Arc<Context>, func: F) -> (Self, Receiver<Signal>)
+    pub fn with_signals<F>(mut self, signal_tx: SignalSender, signal_filter: F) -> Self
     where
         F: Fn(&Action) -> bool + 'static + Send + Sync,
     {
-        let (signal_tx, signal_rx) = sync_channel(Self::default_channel_buffer_size());
-        let inst = Instance {
-            state: Arc::new(RwLock::new(State::new(context))),
-            action_channel: None,
-            observer_channel: None,
-            signal_channel: Some(signal_tx),
-            signal_filter: Arc::new(Box::new(func)),
-        };
-        (inst, signal_rx)
+        self.signal_channel = Some(signal_tx);
+        self.signal_filter = Arc::new(Box::new(signal_filter));
+        self
     }
 
     pub fn from_state(state: State) -> Self {

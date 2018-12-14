@@ -1,5 +1,5 @@
 use std::{
-    sync::mpsc::{channel, Receiver},
+    sync::mpsc::{channel, sync_channel, Receiver, SyncSender},
     thread,
 };
 
@@ -11,10 +11,16 @@ pub enum Signal {
     User,
 }
 
+pub type SignalSender = SyncSender<Signal>;
 pub type SignalReceiver = Receiver<Signal>;
 
+pub fn signal_channel() -> (SignalSender, SignalReceiver) {
+    sync_channel(100)
+}
+
 /// Pass on messages from multiple receivers into a single receiver
-pub fn combine_receivers<T>(rxs: Vec<Receiver<T>>) -> Receiver<T>
+/// A potentially useful utility, but currently unused.
+pub fn _combine_receivers<T>(rxs: Vec<Receiver<T>>) -> Receiver<T>
 where
     T: 'static + Send,
 {

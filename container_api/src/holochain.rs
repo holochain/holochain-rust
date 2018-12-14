@@ -68,12 +68,12 @@ use holochain_core::{
     instance::Instance,
     nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
-    signal::Signal,
+    signal::SignalSender,
     state::State,
     workflows::application,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
-use std::sync::{mpsc::Receiver, Arc};
+use std::sync::Arc;
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -93,16 +93,17 @@ impl Holochain {
     /// Create a new Holochain instance with a signal channel, specifying a
     /// predicate closure to define which Actions should result in signals being emitted.
     /// Caller takes ownership of the Receiver for the signal channel.
-    pub fn with_signals<F>(
+    pub fn new_with_signals<F>(
         dna: Dna,
         context: Arc<Context>,
+        signal_tx: SignalSender,
         signal_filter_func: F,
-    ) -> HolochainResult<(Self, Receiver<Signal>)>
+    ) -> HolochainResult<Self>
     where
         F: Fn(&Action) -> bool + 'static + Send + Sync,
     {
-        let (instance, signal_rx) = Instance::with_signals(context.clone(), signal_filter_func);
-        Self::from_dna_and_context_and_instance(dna, context, instance).map(|hc| (hc, signal_rx))
+        let instance = Instance::new(context.clone()).with_signals(signal_tx, signal_filter_func);
+        Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 
     fn from_dna_and_context_and_instance(
@@ -197,14 +198,16 @@ mod tests {
     use self::holochain_cas_implementations::{
         cas::file::FilesystemStorage, eav::file::EavFileStorage,
     };
+
     use super::*;
     use holochain_core::{
         action::Action,
         context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
+        signal::{signal_channel, Signal},
     };
-    use holochain_core_types::{agent::AgentId, dna::Dna};
+    use holochain_core_types::{agent::AgentId, cas::content::AddressableContent, dna::Dna};
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
@@ -467,7 +470,9 @@ mod tests {
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
-        let (mut hc, signal_rx) = Holochain::with_signals(dna.clone(), context, |_| true).unwrap();
+        let (signal_tx, signal_rx) = signal_channel();
+        let mut hc =
+            Holochain::new_with_signals(dna.clone(), context, signal_tx, |_| true).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -614,5 +619,45 @@ mod tests {
             JsonString::from("{\"value\":\"fish\"}"),
             call_result.unwrap()
         );
+    }
+
+    #[test]
+    fn can_receive_action_signals() {
+        use holochain_core::action::Action;
+        use std::time::Duration;
+        let wasm = include_bytes!(
+            "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
+        );
+        let capability = test_utils::create_test_cap_with_fn_name("commit_test");
+        let dna = test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
+        let context = test_utils::test_context("alex");
+        let timeout = 1000;
+        let (tx, rx) = signal_channel();
+        let mut hc =
+            Holochain::new_with_signals(dna.clone(), context, tx, move |action| match action {
+                Action::InitApplication(_) => false,
+                _ => true,
+            })
+            .unwrap();
+        hc.start().expect("couldn't start");
+        hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
+            .unwrap();
+
+        'outer: loop {
+            let msg_publish = rx
+                .recv_timeout(Duration::from_millis(timeout))
+                .expect("no more signals to receive (outer)");
+            if let Signal::Internal(Action::Publish(address)) = msg_publish {
+                loop {
+                    let msg_hold = rx
+                        .recv_timeout(Duration::from_millis(timeout))
+                        .expect("no more signals to receive (inner)");
+                    if let Signal::Internal(Action::Hold(entry)) = msg_hold {
+                        assert_eq!(address, entry.address());
+                        break 'outer;
+                    }
+                }
+            }
+        }
     }
 }

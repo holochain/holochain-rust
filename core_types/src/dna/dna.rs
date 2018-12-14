@@ -195,7 +195,7 @@ impl Dna {
 
     pub fn get_required_bridges(&self) -> Vec<Bridge> {
         self.zomes
-            .iter()
+            .values()
             .map(|(_, zome)| zome.get_required_bridges())
             .flatten()
             .collect()

@@ -96,46 +96,46 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
 
             // complement missing fields
             serde_json::from_value(json!({
-              "backend_kind": String::from(p2p_config.backend_kind),
-              "backend_config":
-              {
-                  "socketType": p2p_config.backend_config["socketType"],
-                  "spawn":
-                  {
-                      "cmd": p2p_config.backend_config["spawn"]["cmd"],
-                      "args": [
-                          format!("{}/packages/n3h/bin/n3h", n3h_path)
-                      ],
-                      "workDir": dir.clone(),
-                      "env": {
-                          "N3H_HACK_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_HACK_MODE"],
-                          "N3H_WORK_DIR": dir.clone(),
-                          "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
+                "backend_kind": String::from(p2p_config.backend_kind),
+                "backend_config":
+                {
+                    "socketType": p2p_config.backend_config["socketType"],
+                    "spawn":
+                    {
+                        "cmd": p2p_config.backend_config["spawn"]["cmd"],
+                        "args": [
+                            format!("{}/packages/n3h/bin/n3h", n3h_path)
+                        ],
+                        "workDir": dir.clone(),
+                        "env": {
+                            "N3H_HACK_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_HACK_MODE"],
+                            "N3H_WORK_DIR": dir.clone(),
+                            "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
                         }
                     },
-              }})).unwrap()
+                }})).unwrap()
         }
         None => {
             // use default config
             serde_json::from_value(json!({
-              "backend_kind": "IPC",
-              "backend_config":
-              {
-                "socketType": "zmq",
-                  "spawn":
-                  {
-                    "cmd": "node",
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
-                    "workDir": dir.clone(),
-                    "env": {
-                        "N3H_HACK_MODE": "1",
-                        "N3H_WORK_DIR": dir.clone(),
-                        "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
+                "backend_kind": "IPC",
+                "backend_config":
+                {
+                    "socketType": "zmq",
+                    "spawn":
+                    {
+                        "cmd": "node",
+                        "args": [
+                            format!("{}/packages/n3h/bin/n3h", n3h_path)
+                        ],
+                        "workDir": dir.clone(),
+                        "env": {
+                            "N3H_HACK_MODE": "1",
+                            "N3H_WORK_DIR": dir.clone(),
+                            "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
                     }
                 },
-              }}))
+                }}))
             .unwrap()
         }
     };

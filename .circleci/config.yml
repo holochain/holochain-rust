@@ -17,16 +17,24 @@ jobs:
           command: nix-shell --run hc-fmt-check
 
       - run:
-          name: code coverage tests and push
-          command: nix-shell --run ci-codecov
+          name: build wasm
+          command: nix-shell --run hc-wasm-build
 
       - run:
-          name: node smoke test
-          command: nix-shell --run ci-node
+          name: code coverage tests and push
+          command: nix-shell --run hc-tarpaulin
+
+      - run:
+          name: install cmd
+          command: nix-shell --run hc-install-cmd
+
+      - run:
+          name: install node container
+          command: nix-shell --run hc-install-node-container
 
       - run:
           name: app spec tests
-          command: nix-shell --run ci-app-spec
+          command: nix-shell --run hc-test-app-spec
 
       - save_cache:
           key: v1-rust-{{ checksum "Cargo.toml" }}

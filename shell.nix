@@ -55,27 +55,11 @@ let
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
 
   # runs all standard tests and reports code coverage
-  ci-codecov = nixpkgs.writeShellScriptBin "ci-codecov"
+  hc-codecov = nixpkgs.writeShellScriptBin "hc-tarpaulin"
   ''
-    hc-wasm-build && \
     hc-install-tarpaulin && \
     hc-tarpaulin && \
     bash <(curl -s https://codecov.io/bash);
-  '';
-
-  # runs all app spec tests
-  ci-app-spec = nixpkgs.writeShellScriptBin "ci-app-spec"
-  ''
-    hc-wasm-build && \
-    hc-install-cmd && \
-    hc-install-node-container && \
-    hc-test-app-spec;
-  '';
-
-  ci-node = nixpkgs.writeShellScriptBin "ci-node"
-  ''
-    # current node tests only smoke test the build process
-    hc-install-node-container
   '';
 
   # simulates all supported ci tests in a local circle ci environment
@@ -130,9 +114,7 @@ stdenv.mkDerivation rec {
     curl
     docker
     circleci-cli
-    ci-codecov
-    ci-app-spec
-    ci-node
+    hc-codecov
     ci
 
   ];

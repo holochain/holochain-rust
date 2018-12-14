@@ -4,7 +4,7 @@ let
     overlays = [ moz_overlay ];
   };
 
-  date = "2018-10-12";
+  date = "2018-11-28";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
@@ -33,7 +33,11 @@ let
   rm -rf ~/.cargo/git;
   '';
 
-  hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test --all --exclude hc";
+  hc-test = nixpkgs.writeShellScriptBin "hc-test"
+  ''
+  cargo build --all --exclude hc;
+  cargo test --all --exclude hc;
+  '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
   ''
@@ -46,19 +50,31 @@ let
   hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
-  hc-build-and-test-all = nixpkgs.writeShellScriptBin "hc-build-and-test-all"
+
+  hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
+  hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
+
+  # runs all standard tests and reports code coverage
+  ci-codecov = nixpkgs.writeShellScriptBin "ci-codecov"
   ''
-  hc-fmt-check && \
   hc-wasm-build && \
-  hc-test && \
+  hc-install-tarpaulin && \
+  hc-tarpaulin && \
+  bash <(curl -s https://codecov.io/bash);
+  '';
+
+  # runs all app spec tests
+  ci-app-spec = nixpkgs.writeShellScriptBin "ci-app-spec"
+  ''
+  hc-wasm-build && \
   hc-install-cmd && \
-  # hc-test-cmd && \
   hc-install-node-container && \
   hc-test-app-spec;
   '';
 
-  hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
-  hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
+  # simulates all supported ci tests in a local circle ci environment
+  ci = nixpkgs.writeShellScriptBin "ci" "circleci-cli local execute";
+
 in
 with nixpkgs;
 stdenv.mkDerivation rec {
@@ -66,10 +82,8 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig
-    carnix
-
-    unixtools.watch
+    binutils gcc gnumake openssl pkgconfig coreutils
+    # carnix
 
     cmake
     python
@@ -88,11 +102,11 @@ stdenv.mkDerivation rec {
     hc-install-tarpaulin
     hc-tarpaulin
 
-    hc-install-node-container
     hc-install-cmd
+    hc-install-node-container
+
     hc-test-cmd
     hc-test-app-spec
-    hc-build-and-test-all
 
     hc-fmt
     hc-fmt-check
@@ -101,11 +115,22 @@ stdenv.mkDerivation rec {
 
     # dev tooling
     git
-    virtualbox
+
+    # ci
+    # curl needed to push codecov
+    curl
+    circleci-cli
+    ci-codecov
+    ci-app-spec
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
+  # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
+  # RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no -Z incremental-info";
   RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
+  # CARGO_INCREMENTAL = "1";
+  # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
+  # RUST_LOG = "info";
 
   # non-nixos OS can have a "dirty" setup with rustup installed for the current
   # user.
@@ -118,6 +143,7 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   shellHook = ''
-  export PATH=$PATH:~/.cargo/bin;
+    # needed for install cmd and tarpaulin
+    export PATH=$PATH:~/.cargo/bin;
   '';
 }

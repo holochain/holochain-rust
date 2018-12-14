@@ -61,14 +61,14 @@
 //!```
 
 use crate::error::{HolochainInstanceError, HolochainResult};
-use futures::{executor::block_on, TryFutureExt};
+use futures::executor::block_on;
 use holochain_core::{
     context::Context,
     instance::Instance,
-    network::actions::initialize_network::initialize_network,
-    nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
+    nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
+    workflows::application,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
@@ -87,17 +87,17 @@ impl Holochain {
         let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
-        let context = instance.initialize_context(context.clone());
-        let context2 = context.clone();
-        let result = block_on(
-            initialize_application(dna, &context2).and_then(|_| initialize_network(&context)),
-        );
+        let result = block_on(application::initialize(
+            &instance,
+            Some(dna),
+            context.clone(),
+        ));
         match result {
-            Ok(_) => {
-                context.log(&format!("{} instantiated", name))?;
+            Ok(new_context) => {
+                context.log(format!("{} instantiated", name));
                 let hc = Holochain {
                     instance,
-                    context,
+                    context: new_context.clone(),
                     active: false,
                 };
                 Ok(hc)
@@ -109,15 +109,14 @@ impl Holochain {
     pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.file_storage.clone());
         let loaded_state = persister
-            .load(context.clone())
-            .unwrap_or(Some(State::new(context.clone())))
-            .unwrap();
-        // TODO get the network state initialized!!
-        let mut instance = Instance::from_state(loaded_state);
+            .load(context.clone())?
+            .unwrap_or(State::new(context.clone()));
+        let mut instance = Instance::from_state(loaded_state.clone());
         instance.start_action_loop(context.clone());
+        let new_context = block_on(application::initialize(&instance, None, context.clone()))?;
         Ok(Holochain {
             instance,
-            context: context.clone(),
+            context: new_context.clone(),
             active: false,
         })
     }
@@ -188,6 +187,8 @@ mod tests {
         create_wasm_from_file, hc_setup_and_call_zome_fn,
     };
 
+    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
+
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
@@ -233,16 +234,40 @@ mod tests {
         dna.name = "TestApp".to_string();
         let (context, test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
-
         assert!(result.is_ok());
         let hc = result.unwrap();
-
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
         assert_eq!(hc.context.agent_id.nick, "bob".to_string());
+        let network_state = hc.context.state().unwrap().network().clone();
+        assert_eq!(network_state.agent_id.is_some(), true);
+        assert_eq!(network_state.dna_hash.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
+    }
+
+    fn write_agent_state_to_file() -> String {
+        let tempdir = tempdir().unwrap();
+        let path = tempdir.path().to_str().unwrap();
+        let tempfile = vec![path, "Agentstate.txt"].join(&*MAIN_SEPARATOR.to_string());
+        let mut file = File::create(tempfile).unwrap();
+        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
+        path.to_string()
+    }
+    #[test]
+    fn can_load() {
+        let path = write_agent_state_to_file();
+        let (context, _) = test_context("bob");
+        let result = Holochain::load(path, context.clone());
+        assert!(result.is_ok());
+        let loaded_holo = result.unwrap();
+        assert!(!loaded_holo.active);
+        assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
+        let network_state = loaded_holo.context.state().unwrap().network().clone();
+        assert_eq!(network_state.agent_id.is_some(), true);
+        assert_eq!(network_state.dna_hash.is_some(), true);
+        assert!(loaded_holo.instance.state().nucleus().has_initialized());
     }
 
     #[test]

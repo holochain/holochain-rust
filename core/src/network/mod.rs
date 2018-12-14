@@ -1,13 +1,21 @@
 pub mod actions;
+pub mod direct_message;
 pub mod entry_with_header;
 pub mod handler;
 pub mod reducers;
 pub mod state;
+#[cfg(test)]
+pub mod test_utils;
 
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        instance::tests::test_instance_and_context_by_name, network::actions::get_entry::get_entry,
+        instance::tests::test_instance_and_context_by_name,
+        network::{
+            actions::{get_entry::get_entry, get_validation_package::get_validation_package},
+            test_utils::test_wat_always_valid,
+        },
+        workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
     use holochain_core_types::{
@@ -28,7 +36,7 @@ pub mod tests {
         let entry = test_entry();
         let result = context1.file_storage.write().unwrap().add(&entry);
         assert!(result.is_ok());
-        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
         let result = context1.eav_storage.write().unwrap().add_eav(&status_eav);
         assert!(result.is_ok());
 
@@ -39,7 +47,7 @@ pub mod tests {
         assert!(maybe_entry_with_meta.is_some());
         let entry_with_meta = maybe_entry_with_meta.unwrap();
         assert_eq!(entry_with_meta.entry, entry);
-        assert_eq!(entry_with_meta.crud_status, CrudStatus::LIVE);
+        assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
     }
 
     #[test]
@@ -69,5 +77,31 @@ pub mod tests {
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
+    }
+
+    #[test]
+    fn get_validation_package_roundtrip() {
+        let wat = &test_wat_always_valid();
+
+        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
+        dna.uuid = String::from("get_validation_package_roundtrip");
+        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
+
+        let entry = test_entry();
+        block_on(author_entry(&entry, None, &context1)).expect("Could not author entry");
+
+        let agent1_state = context1.state().unwrap().agent();
+        let header = agent1_state
+            .get_header_for_entry(&entry)
+            .expect("There must be a header in the author's source chain after commit");
+
+        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
+        let result = block_on(get_validation_package(header.clone(), &context2));
+
+        assert!(result.is_ok());
+        let maybe_validation_package = result.unwrap();
+        assert!(maybe_validation_package.is_some());
+        let validation_package = maybe_validation_package.unwrap();
+        assert_eq!(validation_package.chain_header, Some(header));
     }
 }

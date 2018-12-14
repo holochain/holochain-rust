@@ -641,7 +641,9 @@ fn can_send_and_receive() {
     let params = format!(r#"{{"to_agent": {}, "message": "TEST"}}"#, agent_id);
     let result = hc2.call("test_zome", "test_cap", "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
-    let response = result.unwrap().to_string();
 
-    assert_eq!(response, "Received: TEST");
+    let expected: ZomeApiResult<String> = Ok(String::from(
+        "Received: TEST",
+    ));
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
 }

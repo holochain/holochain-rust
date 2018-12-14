@@ -901,12 +901,49 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
     }
 }
 
-/// Sends a node-to-node message to the given agent.
+/// Sends a node-to-node message to the given agent, specified by their address.
+/// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
 /// This works in conjunction with the `receive` callback that has to be defined in the
-/// [define_zome!](macro.defineZome.html) macro.
+/// [define_zome!](../macro.define_zome.html) macro.
 ///
-/// This functions blocks and returns the result returned by the `receive` callback on
-/// the other side.
+/// This function dispatches a message to the receiver, and will wait up to 60 seconds before returning a timeout error. The `send` function will return the string returned
+/// by the `receive` callback of the other node.
+/// # Examples
+/// ```rust
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # use hdk::error::ZomeApiResult;
+/// # use holochain_core_types::cas::content::Address;
+///
+/// # fn main() {
+/// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
+///     // because the function signature of hdk::send is the same as the
+///     // signature of handle_send_message we can just directly return its' result
+///     hdk::send(to_agent, message)
+/// }
+/// 
+/// define_zome! {
+///    entries: []
+///
+///    genesis: || { Ok(()) }
+///
+///    receive: |payload| {
+///        // simply pass back the received value, appended to a modifier
+///        format!("Received: {}", payload)
+///    }
+///
+///    functions: {
+///        main (Public) {
+///            send_message: {
+///                inputs: |to_agent: Address, message: String|,
+///                outputs: |response: ZomeApiResult<String>|,
+///                handler: handle_send_message
+///            }
+///        }
+///    }
+///}
+/// # }
+/// ```
 pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 

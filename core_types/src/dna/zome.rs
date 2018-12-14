@@ -84,7 +84,8 @@ pub struct Zome {
     pub code: DnaWasm,
 
     /// A list of bridges to other DNAs that this DNA can use or depends on.
-    pub bridges: Option<Vec<Bridge>>,
+    #[serde(default)]
+    pub bridges: Vec<Bridge>,
 }
 
 impl Eq for Zome {}

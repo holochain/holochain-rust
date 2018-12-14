@@ -137,7 +137,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
                 },
               }}))
             .unwrap()
-            }
+        }
     };
 
     let p2p_node = P2pNetwork::new(

@@ -72,9 +72,7 @@ fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
     config
         .check_consistency()
         .map_err(|string| HolochainError::ConfigError(string))?;
-    let mut container = Container::from_config(config).with_signal_handler(|sig| {
-        println!("WE GET SIGNAL:\n{:?}", sig);
-    });
+    let mut container = Container::from_config(config);
     container.load_config()?;
     Ok(container)
 }

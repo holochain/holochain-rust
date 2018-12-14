@@ -17,9 +17,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use std::{convert::TryFrom, sync::mpsc};
-
-use std::{collections::HashMap, io::Read};
+use std::{collections::HashMap, convert::TryFrom, io::Read, sync::mpsc};
 
 use serde_json;
 
@@ -28,11 +26,8 @@ pub struct IpcNetWorker {
     handler: NetHandler,
     ipc_relay: NetConnectionRelay,
     ipc_relay_receiver: mpsc::Receiver<Protocol>,
-
     is_ready: bool,
-
     state: String,
-
     last_state_millis: f64,
 }
 

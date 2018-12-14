@@ -138,10 +138,10 @@ pub mod tests {
                         },
                         "code": {
                             "code": "AAECAw=="
-                        }
+                        },
+                        "bridges": null
                     }
-                },
-                "bridges": null
+                }
             }"#,
         )
         .replace(char::is_whitespace, "");

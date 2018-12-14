@@ -7,6 +7,7 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
 
+use holochain_container_api::{Holochain, error::HolochainResult};
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_core::{
     action::Action,

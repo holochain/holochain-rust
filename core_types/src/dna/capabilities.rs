@@ -146,6 +146,15 @@ mod tests {
     use serde_json;
 
     #[test]
+    /// test that a canonical string can be created from ReservedCapabilityNames
+    fn test_capabilities_new() {
+        let cap = Capability::new(CapabilityType::Public);
+        assert_eq!(cap.cap_type,CapabilityType::Public);
+        let cap = Capability::new(CapabilityType::Transferable);
+        assert_eq!(cap.cap_type,CapabilityType::Transferable);
+    }
+
+    #[test]
     /// test that ReservedCapabilityNames can be created from a canonical string
     fn test_capabilities_from_str() {
         assert_eq!(

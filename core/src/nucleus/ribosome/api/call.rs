@@ -319,7 +319,7 @@ pub mod tests {
     #[test]
     fn test_call_ok() {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let mut capability = Capability::new(CapabilityType::Public);
+        let capability = Capability::new(CapabilityType::Public);
         let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm);
 
         // Expecting timeout since there is no function in wasm to call

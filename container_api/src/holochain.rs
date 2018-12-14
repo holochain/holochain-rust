@@ -236,6 +236,7 @@ mod tests {
                     logger.clone(),
                     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                     file_storage.clone(),
+                    file_storage.clone(),
                     Arc::new(RwLock::new(
                         EavFileStorage::new(
                             tempdir().unwrap().path().to_str().unwrap().to_string(),
@@ -243,8 +244,7 @@ mod tests {
                         .unwrap(),
                     )),
                     mock_network_config(),
-                )
-                .unwrap(),
+                ),
             ),
             logger,
         )

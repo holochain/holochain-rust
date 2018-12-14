@@ -27,8 +27,6 @@ pub struct Context {
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
-    pub action_channel: SyncSender<ActionWrapper>,
-    pub observer_channel: SyncSender<Observer>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub signal_channel: Option<SyncSender<Signal>>,
     pub observer_channel: Option<SyncSender<Observer>>,
@@ -47,11 +45,12 @@ impl Context {
         agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        cas: Arc<RwLock<ContentAddressableStorage>>,
+        chain_storage: Arc<RwLock<ContentAddressableStorage>>,
+        dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
-    ) -> Result<Context, HolochainError> {
-        Ok(Context {
+    ) -> Self {
+        Context {
             agent_id,
             logger,
             persister,
@@ -59,11 +58,11 @@ impl Context {
             action_channel: None,
             signal_channel: None,
             observer_channel: None,
-            chain_storage: cas.clone(),
-            dht_storage: cas,
+            chain_storage,
+            dht_storage,
             eav_storage: eav,
             network_config,
-        })
+        }
     }
 
     pub fn new_with_channels(
@@ -226,13 +225,13 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+        );
 
         assert!(maybe_context.state().is_none());
 
@@ -257,13 +256,13 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+        );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

@@ -311,14 +311,15 @@ fn create_memory_context(
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
     ));
 
-    Context::new(
+    Ok(Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(MemoryStorage::new())),
+        Arc::new(RwLock::new(MemoryStorage::new())),
         Arc::new(RwLock::new(EavMemoryStorage::new())),
         network_config,
-    )
+    ))
 }
 
 fn create_file_context(
@@ -334,14 +335,15 @@ fn create_file_context(
 
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
 
-    Context::new(
+    Ok(Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         file_storage.clone(),
+        file_storage.clone(),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
         network_config,
-    )
+    ))
 }
 
 #[cfg(test)]

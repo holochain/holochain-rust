@@ -233,15 +233,16 @@ pub mod tests {
             Context::new(
                 AgentId::generate_fake("alex"),
                 Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                file_storage.clone(),
                 file_storage.clone(),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
                 mock_network_config(),
-            )
-            .unwrap(),
+            ),
         )
     }
 

@@ -72,6 +72,12 @@ let
   hc-test-app-spec;
   '';
 
+  ci-node = nixpkgs.writeShellScriptBin "ci-node"
+  ''
+  # current node tests only smoke test the build process
+  hc-install-node-container
+  '';
+
   # simulates all supported ci tests in a local circle ci environment
   ci = nixpkgs.writeShellScriptBin "ci" "circleci-cli local execute";
 
@@ -122,6 +128,7 @@ stdenv.mkDerivation rec {
     circleci-cli
     ci-codecov
     ci-app-spec
+    ci-node
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

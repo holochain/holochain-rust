@@ -20,6 +20,10 @@ jobs:
           command: nix-shell --run ci-codecov
 
       - run:
+          name: node smoke test
+          command: nix-shell --run ci-node
+
+      - run:
           name: app spec tests
           command: nix-shell --run ci-app-spec
 

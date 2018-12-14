@@ -18,7 +18,7 @@ use holochain_container_api::*;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
-    dna::zome::{
+    dna::{
         capabilities::{Capability, FnDeclaration, Membrane},
         entry_types::{EntryTypeDef, LinksTo},
     },

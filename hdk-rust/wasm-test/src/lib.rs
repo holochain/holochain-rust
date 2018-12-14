@@ -23,9 +23,9 @@ use holochain_wasm_utils::{
         get_entry::{GetEntryOptions, GetEntryResult},
         get_links::GetLinksResult,
     },
-    holochain_core_types::dna::zome::entry_types::Sharing,
     holochain_core_types::{
         cas::content::{Address, AddressableContent},
+        dna::entry_types::Sharing,
         entry::{Entry, entry_type::EntryType},
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},

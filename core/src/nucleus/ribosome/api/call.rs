@@ -9,7 +9,7 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{dna::zome::capabilities::Membrane, error::HolochainError};
+use holochain_core_types::{dna::capabilities::Membrane, error::HolochainError};
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use std::{
     convert::TryFrom,
@@ -185,7 +185,7 @@ pub mod tests {
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
-        dna::{zome::capabilities::Capability, Dna},
+        dna::{capabilities::Capability, Dna},
         error::{DnaError, HolochainError},
         json::JsonString,
     };

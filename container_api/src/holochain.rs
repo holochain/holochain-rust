@@ -230,22 +230,18 @@ mod tests {
         ));
         let logger = test_utils::test_logger();
         (
-            Arc::new(
-                Context::new(
-                    agent,
-                    logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                    file_storage.clone(),
-                    file_storage.clone(),
-                    Arc::new(RwLock::new(
-                        EavFileStorage::new(
-                            tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        )
+            Arc::new(Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                file_storage.clone(),
+                file_storage.clone(),
+                Arc::new(RwLock::new(
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
-                    )),
-                    mock_network_config(),
-                ),
-            ),
+                )),
+                mock_network_config(),
+            )),
             logger,
         )
     }

@@ -5,11 +5,8 @@ use holochain_cas_implementations::{
 };
 use holochain_core::{context::Context, logger::SimpleLogger, persister::SimplePersister};
 use holochain_core_types::{
-    agent::AgentId,
-    cas::storage::ContentAddressableStorage,
-    eav::EntityAttributeValueStorage,
-    error::HolochainError,
-    json::JsonString,
+    agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
+    error::HolochainError, json::JsonString,
 };
 use holochain_net::p2p_config::P2pConfig;
 use std::sync::{Arc, Mutex, RwLock};
@@ -49,7 +46,10 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_file_storage<T: Into<String>>(&mut self, path: T) -> Result<&mut Self, HolochainError> {
+    pub fn with_file_storage<T: Into<String>>(
+        &mut self,
+        path: T,
+    ) -> Result<&mut Self, HolochainError> {
         let path: String = path.into();
         let cas_path = format!("{}/cas", path);
         let eav_path = format!("{}/eav", path);
@@ -70,17 +70,32 @@ impl ContextBuilder {
     }
 
     pub fn spawn(&self) -> Context {
-        let chain_storage = self.chain_storage.clone().unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
-        let dht_storage = self.dht_storage.clone().unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
-        let eav_storage = self.eav_storage.clone().unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
+        let chain_storage = self
+            .chain_storage
+            .clone()
+            .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
+        let dht_storage = self
+            .dht_storage
+            .clone()
+            .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
+        let eav_storage = self
+            .eav_storage
+            .clone()
+            .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
         Context::new(
-            self.agent_id.clone().unwrap_or(AgentId::generate_fake("alice")),
-            Arc::new(Mutex::new(SimpleLogger{})),
+            self.agent_id
+                .clone()
+                .unwrap_or(AgentId::generate_fake("alice")),
+            Arc::new(Mutex::new(SimpleLogger {})),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config.clone().unwrap_or(JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG))),
+            self.network_config
+                .clone()
+                .unwrap_or(JsonString::from(String::from(
+                    P2pConfig::DEFAULT_MOCK_CONFIG,
+                ))),
         )
     }
 }
@@ -94,7 +109,10 @@ mod tests {
     fn vanilla() {
         let context = ContextBuilder::new().spawn();
         assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
-        assert_eq!(context.network_config, JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG)));
+        assert_eq!(
+            context.network_config,
+            JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG))
+        );
     }
 
     #[test]
@@ -107,7 +125,9 @@ mod tests {
     #[test]
     fn with_network_config() {
         let net = JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG));
-        let context = ContextBuilder::new().with_network_config(net.clone()).spawn();
+        let context = ContextBuilder::new()
+            .with_network_config(net.clone())
+            .spawn();
         assert_eq!(context.network_config, net);
     }
 
@@ -116,6 +136,9 @@ mod tests {
         let _ = ContextBuilder::new().with_memory_storage().spawn();
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
-        let _ = ContextBuilder::new().with_file_storage(temp_path).expect("Filestorage should get instantiated with tempdir").spawn();
+        let _ = ContextBuilder::new()
+            .with_file_storage(temp_path)
+            .expect("Filestorage should get instantiated with tempdir")
+            .spawn();
     }
 }

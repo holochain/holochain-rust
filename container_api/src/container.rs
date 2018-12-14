@@ -9,7 +9,12 @@ use holochain_core::{
     logger::Logger,
     signal::{signal_channel, Signal, SignalReceiver},
 };
-use holochain_core_types::{agent::{KeyBuffer, AgentId}, dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    agent::{AgentId, KeyBuffer},
+    dna::Dna,
+    error::HolochainError,
+    json::JsonString,
+};
 
 use std::{
     clone::Clone,
@@ -135,12 +140,7 @@ impl Container {
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(
-                        &id,
-                        &config,
-                        &mut self.dna_loader,
-                        signal_tx.clone(),
-                    ),
+                    instantiate_from_config(&id, &config, &mut self.dna_loader, signal_tx.clone()),
                 )
             })
             .filter_map(|(id, maybe_holochain)| match maybe_holochain {
@@ -258,12 +258,13 @@ pub fn instantiate_from_config(
             let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
             context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
-            instance_config
-                .network
-                .map(|network_config| context_builder.with_network_config(JsonString::from(network_config)));
+            instance_config.network.map(|network_config| {
+                context_builder.with_network_config(JsonString::from(network_config))
+            });
 
             if let StorageConfiguration::File { path } = instance_config.storage {
-                context_builder.with_file_storage(path)
+                context_builder
+                    .with_file_storage(path)
                     .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))?;
             }
 

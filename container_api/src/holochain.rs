@@ -108,7 +108,7 @@ impl Holochain {
     }
 
     pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(context.file_storage.clone());
+        let persister = SimplePersister::new(context.dht_storage.clone());
         let loaded_state = persister
             .load(context.clone())?
             .unwrap_or(State::new(context.clone()));

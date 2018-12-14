@@ -31,7 +31,7 @@ pub struct Context {
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: SyncSender<ActionWrapper>,
     pub observer_channel: SyncSender<Observer>,
-    pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
+    pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
 }
@@ -58,7 +58,7 @@ impl Context {
             state: None,
             action_channel: tx_action,
             observer_channel: tx_observer,
-            file_storage: cas,
+            dht_storage: cas,
             eav_storage: eav,
             network_config,
         })
@@ -81,7 +81,7 @@ impl Context {
             state: None,
             action_channel,
             observer_channel,
-            file_storage: cas,
+            dht_storage: cas,
             eav_storage: eav,
             network_config,
         })

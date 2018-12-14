@@ -40,7 +40,7 @@ impl State {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let cas = &(*context).file_storage;
+        let cas = &(*context).dht_storage;
         let eav = context.eav_storage.clone();
         State {
             nucleus: Arc::new(NucleusState::new()),
@@ -55,7 +55,7 @@ impl State {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let cas = context.file_storage.clone();
+        let cas = context.dht_storage.clone();
         let eav = context.eav_storage.clone();
 
         fn get_dna(
@@ -145,7 +145,7 @@ impl State {
         snapshot: AgentStateSnapshot,
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
-            ChainStore::new(context.file_storage.clone()),
+            ChainStore::new(context.dht_storage.clone()),
             snapshot.top_chain_header().clone(),
         );
         Ok(State::new_with_agent(

@@ -213,7 +213,7 @@ macro_rules! define_zome {
         #[allow(unused_imports)]
         pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
 
-            use $crate::holochain_core_types::dna::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
+            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType, FnParameter, FnDeclaration};
             use std::collections::BTreeMap;
 
             let return_value: $crate::holochain_core_types::dna::zome::ZomeCapabilities = {
@@ -221,8 +221,7 @@ macro_rules! define_zome {
 
                 $(
                     {
-                        let mut capability = Capability::new();
-                        capability.cap_type = CapabilityType { membrane: Membrane::$vis };
+                        let mut capability = Capability::new(CapabilityType::$vis);
                         capability.functions = vec![
                             $(
                                 FnDeclaration {

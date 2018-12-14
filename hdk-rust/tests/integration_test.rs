@@ -19,7 +19,7 @@ use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, FnDeclaration, Membrane},
+        capabilities::{Capability, FnDeclaration, CapabilityType},
         entry_types::{EntryTypeDef, LinksTo},
     },
     entry::{
@@ -84,8 +84,7 @@ pub fn __list_capabilities(_: u32) -> u32 {
 }
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
-    let mut capability = Capability::new();
-    capability.cap_type.membrane = Membrane::Public;
+    let mut capability = Capability::new(CapabilityType::Public);
 
     for fn_name in fn_names {
         let mut fn_decl = FnDeclaration::new();

@@ -118,9 +118,7 @@ pub mod tests {
                         },
                         "capabilities": {
                             "test": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "functions": [
                                     {
                                         "name": "test",
@@ -378,9 +376,7 @@ pub mod tests {
                         "entry_types": {},
                         "capabilities": {
                             "test capability": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "fn_declarations": [
                                     {
                                         "name": "test",
@@ -427,9 +423,7 @@ pub mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "fn_declarations": []
                             }
                         },

@@ -16,7 +16,7 @@ use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::{Context, mock_network_config}, logger::Logger, persister::SimplePersister};
 use holochain_core_types::json::JsonString;
 use holochain_core_types::dna::{
-    capabilities::{Capability, FnDeclaration, Membrane},
+    capabilities::{Capability, FnDeclaration, CapabilityType},
     entry_types::{EntryTypeDef, LinksTo, LinkedFrom},
     wasm::DnaWasm,
     zome::{Config, Zome},
@@ -108,14 +108,12 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     dna
 }
 
-pub fn create_test_cap(membrane: Membrane) -> Capability {
-    let mut capability = Capability::new();
-    capability.cap_type.membrane = membrane;
-    capability
+pub fn create_test_cap(cap_type: CapabilityType) -> Capability {
+    Capability::new(cap_type)
 }
 
 pub fn create_test_cap_with_fn_name(fn_name: &str) -> Capability {
-    let mut capability = Capability::new();
+    let mut capability = Capability::new(CapabilityType::Public);
     let mut fn_decl = FnDeclaration::new();
     fn_decl.name = String::from(fn_name);
     capability.functions.push(fn_decl);

@@ -4,11 +4,15 @@ extern crate holochain_net;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
+extern crate tempfile;
 
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
-    protocol_wrapper::{ConnectData, MessageData, ProtocolWrapper},
+    protocol_wrapper::{
+        ConnectData, DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, MessageData,
+        ProtocolWrapper, TrackAppData,
+    },
     NetResult,
 };
 
@@ -19,35 +23,68 @@ use std::{convert::TryFrom, sync::mpsc};
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn usage() {
-    println!("Usage: test_bin_ipc <ipc_uri>");
+    println!("Usage: test_bin_ipc <path_to_n3h>");
     std::process::exit(1);
 }
 
-// this is all debug code, no need to track code test coverage
+struct SpawnResult {
+    pub dir_ref: tempfile::TempDir,
+    pub dir: String,
+    pub con: P2pNetwork,
+    pub receiver: mpsc::Receiver<Protocol>,
+}
+
+impl SpawnResult {
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn try_recv(&mut self) -> NetResult<ProtocolWrapper> {
+        let data = self.receiver.try_recv()?;
+        match ProtocolWrapper::try_from(&data) {
+            Ok(r) => Ok(r),
+            Err(e) => {
+                let s = format!("{:?}", e);
+                if !s.contains("Empty") && !s.contains("Pong(PongData") {
+                    println!("##### parse error ##### : {} {:?}", s, data);
+                }
+                Err(e)
+            }
+        }
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn wait(
+        &mut self,
+        predicate: Box<dyn Fn(&ProtocolWrapper) -> bool>,
+    ) -> NetResult<ProtocolWrapper> {
+        loop {
+            let mut did_something = false;
+
+            if let Ok(r) = self.try_recv() {
+                did_something = true;
+                if predicate(&r) {
+                    return Ok(r);
+                }
+            }
+
+            if !did_something {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        }
+    }
+
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn stop(self) {
+        self.con.stop().unwrap();
+    }
+}
+
 #[cfg_attr(tarpaulin, skip)]
-fn exec() -> NetResult<()> {
-    let args: Vec<String> = std::env::args().collect();
+fn spawn_connection(n3h_path: &str) -> NetResult<SpawnResult> {
+    let dir_ref = tempfile::tempdir()?;
+    let dir = dir_ref.path().to_string_lossy().to_string();
 
-    if args.len() != 2 {
-        usage();
-    }
-
-    let ipc_uri = args[1].clone();
-
-    if ipc_uri == "" {
-        usage();
-    }
-
-    println!("testing against uri: {}", ipc_uri);
-
-    static DNA_HASH: &'static str = "sandwich";
-    static AGENT_ID: &'static str = "agent-1";
-
-    // use a mpsc channel for messaging
     let (sender, receiver) = mpsc::channel::<Protocol>();
 
-    // create a new ipc P2pNetwork instance
-    let mut con = P2pNetwork::new(
+    let con = P2pNetwork::new(
         Box::new(move |r| {
             sender.send(r?)?;
             Ok(())
@@ -56,140 +93,260 @@ fn exec() -> NetResult<()> {
             "backend": "ipc",
             "config": {
                 "socketType": "zmq",
-                "ipcUri": ipc_uri,
-            }
-        })
-        .into(),
-    )?;
-
-    let mut id = "".to_string();
-    let mut addr = "".to_string();
-
-    // loop until we get a p2p ready message && record our
-    // transport identifier and binding address
-    loop {
-        let z = receiver.recv()?;
-
-        if let Ok(wrap) = ProtocolWrapper::try_from(&z) {
-            match wrap {
-                ProtocolWrapper::State(s) => {
-                    id = s.id;
-                    if !s.bindings.is_empty() {
-                        addr = s.bindings[0].clone();
+                "spawn": {
+                    "cmd": "node",
+                    "args": [
+                        format!("{}/packages/n3h/bin/n3h", n3h_path)
+                    ],
+                    "workDir": dir.clone(),
+                    "env": {
+                        "N3H_HACK_MODE": "1",
+                        "N3H_WORK_DIR": dir.clone(),
+                        "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
                     }
-                }
-                _ => (),
+                },
             }
-        }
-
-        if let Protocol::P2pReady = z {
-            println!("p2p ready!!");
-            break;
-        }
-    }
-
-    println!("id: {}, addr: {}", id, addr);
-
-    // send a message to connect to ourselves (just for debug / test)
-    con.send(
-        ProtocolWrapper::Connect(ConnectData {
-            address: addr.clone(),
         })
         .into(),
     )?;
 
-    // loop waiting for the message
-    loop {
-        let z = receiver.recv()?;
+    Ok(SpawnResult {
+        dir_ref,
+        dir,
+        con,
+        receiver,
+    })
+}
 
-        if let Ok(wrap) = ProtocolWrapper::try_from(&z) {
-            match wrap {
-                ProtocolWrapper::PeerConnected(p) => {
-                    println!("got peer connected: {}", p.id);
-                    break;
-                }
-                _ => (),
-            }
+macro_rules! one_let {
+    ($p:pat = $enum:ident $code:tt) => {
+        if let $p = $enum {
+            $code
+        } else {
+            unimplemented!();
         }
+    };
+}
 
-        println!("got: {:?}", z);
+macro_rules! one_is {
+    ($p:pat) => {
+        |d| {
+            if let $p = d {
+                return true;
+            }
+            return false;
+        }
+    };
+}
+
+// this is all debug code, no need to track code test coverage
+#[cfg_attr(tarpaulin, skip)]
+fn exec() -> NetResult<()> {
+    static DNA_HASH: &'static str = "TEST_DNA_HASH";
+    static AGENT_1: &'static str = "1_TEST_AGENT_1";
+    static AGENT_2: &'static str = "2_TEST_AGENT_2";
+
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() != 2 {
+        usage();
     }
 
-    // now, let's send a message to ourselves (just for debug / test)
-    con.send(
-        ProtocolWrapper::SendMessage(MessageData {
+    let n3h_path = args[1].clone();
+
+    if n3h_path == "" {
+        usage();
+    }
+
+    let mut node1 = spawn_connection(&n3h_path)?;
+    let mut node2 = spawn_connection(&n3h_path)?;
+
+    println!("node1 path: {}", node1.dir);
+    println!("node2 path: {}", node2.dir);
+
+    let node1_state = node1.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
+    let node2_state = node2.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
+
+    let node1_id;
+    //let node2_id;
+    let node2_binding;
+
+    one_let!(ProtocolWrapper::State(s) = node1_state {
+        node1_id = s.id
+    });
+
+    one_let!(ProtocolWrapper::State(s) = node2_state {
+        //node2_id = s.id;
+        node2_binding = s.bindings[0].clone();
+    });
+
+    node1.con.send(
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_hash: DNA_HASH.to_string(),
-            to_agent_id: AGENT_ID.to_string(),
-            from_agent_id: AGENT_ID.to_string(),
-            msg_id: "unique-id".to_string(),
-            data: json!("test data"),
+            agent_id: AGENT_1.to_string(),
+        })
+        .into(),
+    )?;
+    let connect_result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    println!("self connected result 1: {:?}", connect_result_1);
+
+    node2.con.send(
+        ProtocolWrapper::TrackApp(TrackAppData {
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_2.to_string(),
+        })
+        .into(),
+    )?;
+    let connect_result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    println!("self connected result 2: {:?}", connect_result_2);
+
+    println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
+
+    node1.con.send(
+        ProtocolWrapper::Connect(ConnectData {
+            address: node2_binding,
         })
         .into(),
     )?;
 
-    let handle_data;
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    println!("got connect result 1: {:?}", result_1);
+    one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
+        assert_eq!(d.agent_id, AGENT_2);
+    });
 
-    // loop waiting for the request to handle a message
-    loop {
-        let z = receiver.recv()?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    println!("got connect result 2: {:?}", result_2);
+    one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
+        assert_eq!(d.agent_id, AGENT_1);
+    });
 
-        if let Ok(wrap) = ProtocolWrapper::try_from(&z) {
-            match wrap {
-                ProtocolWrapper::HandleSend(m) => {
-                    handle_data = m;
-                    break;
-                }
-                _ => (),
-            }
-        }
+    node1.con.send(
+        ProtocolWrapper::SendMessage(MessageData {
+            msg_id: "test".to_string(),
+            dna_hash: DNA_HASH.to_string(),
+            to_agent_id: AGENT_2.to_string(),
+            from_agent_id: AGENT_1.to_string(),
+            data: json!("hello"),
+        })
+        .into(),
+    )?;
 
-        println!("got: {:?}", z);
-    }
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
+    println!("got handle send 2: {:?}", result_2);
 
-    println!("got handleSend: {:?}", handle_data);
-
-    // hey, we got a message from ourselves!
-    // let's send ourselves a response
-    con.send(
+    node2.con.send(
         ProtocolWrapper::HandleSendResult(MessageData {
-            dna_hash: handle_data.dna_hash,
-            to_agent_id: handle_data.from_agent_id,
-            from_agent_id: AGENT_ID.to_string(),
-            msg_id: handle_data.msg_id,
-            data: json!(format!("echo: {}", handle_data.data)),
+            msg_id: "test".to_string(),
+            dna_hash: DNA_HASH.to_string(),
+            to_agent_id: AGENT_1.to_string(),
+            from_agent_id: AGENT_2.to_string(),
+            data: json!("echo: hello"),
         })
         .into(),
     )?;
 
-    // wait for the response to our original message
-    loop {
-        let z = receiver.recv()?;
-        println!("got: {:?}", z);
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
+    println!("got send result 1: {:?}", result_1);
 
-        if let Ok(wrap) = ProtocolWrapper::try_from(&z) {
-            match wrap {
-                ProtocolWrapper::SendResult(m) => {
-                    println!("Got Result! : {:?}", m);
+    node1.con.send(
+        ProtocolWrapper::PublishDht(DhtData {
+            msg_id: "testPub".to_string(),
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_1.to_string(),
+            address: "test_addr".to_string(),
+            content: json!("hello"),
+        })
+        .into(),
+    )?;
 
-                    assert_eq!(
-                        "echo: \"test data\"".to_string(),
-                        m.data.as_str().unwrap().to_string(),
-                    );
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
+    println!("got store result 1: {:?}", result_1);
 
-                    break;
-                }
-                _ => (),
-            }
-        }
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
+    println!("got store result 2: {:?}", result_2);
 
-        println!("got: {:?}", z);
+    node2.con.send(
+        ProtocolWrapper::GetDht(GetDhtData {
+            msg_id: "testGet".to_string(),
+            dna_hash: DNA_HASH.to_string(),
+            from_agent_id: AGENT_2.to_string(),
+            address: "test_addr".to_string(),
+        })
+        .into(),
+    )?;
+
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDht(_))))?;
+    println!("got dht get: {:?}", result_2);
+
+    node2.con.send(
+        ProtocolWrapper::GetDhtResult(DhtData {
+            msg_id: "testGetResult".to_string(),
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_1.to_string(),
+            address: "test_addr".to_string(),
+            content: json!("hello"),
+        })
+        .into(),
+    )?;
+
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtResult(_))))?;
+    println!("got dht get result: {:?}", result_2);
+
+    node1.con.send(
+        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+            msg_id: "testPubMeta".to_string(),
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_1.to_string(),
+            address: "test_addr_meta".to_string(),
+            attribute: "link:yay".to_string(),
+            content: json!("hello-meta"),
+        })
+        .into(),
+    )?;
+
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
+    println!("got store meta result 1: {:?}", result_1);
+
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
+    println!("got store meta result 2: {:?}", result_2);
+
+    node2.con.send(
+        ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
+            msg_id: "testGetMeta".to_string(),
+            dna_hash: DNA_HASH.to_string(),
+            from_agent_id: AGENT_2.to_string(),
+            address: "test_addr".to_string(),
+            attribute: "link:yay".to_string(),
+        })
+        .into(),
+    )?;
+
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMeta(_))))?;
+    println!("got dht get: {:?}", result_2);
+
+    node2.con.send(
+        ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
+            msg_id: "testGetMetaResult".to_string(),
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_1.to_string(),
+            address: "test_addr".to_string(),
+            attribute: "link:yay".to_string(),
+            content: json!("hello"),
+        })
+        .into(),
+    )?;
+
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
+    println!("got dht get result: {:?}", result_2);
+
+    for i in (0..4).rev() {
+        println!("tick... {}", i);
+        std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 
-    // yay, everything worked
-    println!("test complete");
-
-    // shut down the P2pNetwork instance
-    con.stop()?;
+    node1.stop();
+    node2.stop();
 
     Ok(())
 }

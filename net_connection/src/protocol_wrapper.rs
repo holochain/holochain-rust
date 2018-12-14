@@ -39,7 +39,11 @@ pub struct ConnectData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct PeerData {
-    pub id: String,
+    #[serde(rename = "dnaHash")]
+    pub dna_hash: String,
+
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
@@ -364,7 +368,8 @@ mod tests {
     #[test]
     fn it_can_convert_peer_connected() {
         test_convert!(ProtocolWrapper::PeerConnected(PeerData {
-            id: "test".to_string(),
+            dna_hash: "test_dna".to_string(),
+            agent_id: "test_id".to_string(),
         }));
     }
 

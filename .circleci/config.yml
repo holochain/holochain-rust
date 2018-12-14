@@ -28,7 +28,6 @@ jobs:
           name: app spec tests
           command: nix-shell --run ci-app-spec
 
-
       - save_cache:
           key: rust-{{ checksum "Cargo.toml" }}
           paths:

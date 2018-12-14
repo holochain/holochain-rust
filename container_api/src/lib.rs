@@ -108,6 +108,7 @@ extern crate tiny_http;
 extern crate toml;
 
 pub mod config;
+pub mod context_builder;
 pub mod container;
 pub mod error;
 pub mod holochain;

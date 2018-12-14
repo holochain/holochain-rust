@@ -630,7 +630,9 @@ mod tests {
             "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
         );
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
-        let dna = test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
+        let mut dna =
+            test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
+        dna.uuid = "can_receive_action_signals".into();
         let context = test_utils::test_context("alex");
         let timeout = 1000;
         let (tx, rx) = signal_channel();

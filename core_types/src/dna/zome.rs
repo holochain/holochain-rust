@@ -1,7 +1,10 @@
 //! holochain_core_types::dna::zome is a set of structs for working with holochain dna.
 
 use crate::{
-    dna::wasm::DnaWasm, entry::entry_type::EntryType, error::HolochainError, json::JsonString,
+    dna::{
+        bridges::{Bridge, BridgePresence},
+        wasm::DnaWasm},
+    entry::entry_type::EntryType, error::HolochainError, json::JsonString,
 };
 use dna::{
     capabilities,
@@ -76,6 +79,9 @@ pub struct Zome {
     /// Validation code for this entry_type.
     #[serde(default)]
     pub code: DnaWasm,
+
+    /// A list of bridges to other DNAs that this DNA can use or depends on.
+    pub bridges: Option<Vec<Bridge>>,
 }
 
 impl Eq for Zome {}
@@ -89,6 +95,7 @@ impl Default for Zome {
             entry_types: BTreeMap::new(),
             capabilities: BTreeMap::new(),
             code: DnaWasm::new(),
+            bridges: None,
         }
     }
 }
@@ -108,6 +115,21 @@ impl Zome {
             entry_types: entry_types.to_owned(),
             capabilities: capabilities.to_owned(),
             code: code.clone(),
+            bridges: None,
+        }
+    }
+
+    pub fn get_required_bridges(&self) -> Vec<Bridge> {
+        match self.bridges {
+            None => Vec::new(),
+            Some(ref bridges) => bridges
+                .iter()
+                .filter(|bridge| match bridge {
+                    Bridge::Address(b) => b.presence == BridgePresence::Required,
+                    Bridge::Trait(b) => b.presence == BridgePresence::Required,
+                })
+                .cloned()
+                .collect(),
         }
     }
 }

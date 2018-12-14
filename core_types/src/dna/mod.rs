@@ -498,26 +498,26 @@ pub mod tests {
                         },
                         "code": {
                             "code": ""
-                        }
+                        },
+                        "bridges": [
+                            {
+                                "presence": "Required",
+                                "handle": "DPKI",
+                                "dna_address": "Qmabcdef1234567890"
+                            },
+                            {
+                                "presence": "Optional",
+                                "handle": "Vault",
+                                "library_trait": "org.holochain.alpha.personal-data-handler"
+                            },
+                            {
+                                "presence": "Required",
+                                "handle": "HCHC",
+                                "library_trait": "org.holochain.alpha.dna-repository"
+                            }
+                        ]
                     }
-                },
-                "bridges": [
-                    {
-                        "presence": "Required",
-                        "handle": "DPKI",
-                        "dna_address": "Qmabcdef1234567890"
-                    },
-                    {
-                        "presence": "Optional",
-                        "handle": "Vault",
-                        "library_trait": "org.holochain.alpha.personal-data-handler"
-                    },
-                    {
-                        "presence": "Required",
-                        "handle": "HCHC",
-                        "library_trait": "org.holochain.alpha.dna-repository"
-                    }
-                ]
+                }
             }"#,
         ))
         .unwrap();

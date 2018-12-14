@@ -1,6 +1,6 @@
 use crate::{
     dna::{
-        bridges::{Bridge, BridgePresence},
+        bridges::{Bridge},
         capabilities::Capability,
         entry_types::EntryTypeDef,
         wasm, zome,
@@ -58,9 +58,6 @@ pub struct Dna {
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
     pub zomes: BTreeMap<String, zome::Zome>,
-
-    /// A list of bridges to other DNAs that this DNA can use or depends on.
-    pub bridges: Option<Vec<Bridge>>,
 }
 
 impl Default for Dna {
@@ -74,7 +71,6 @@ impl Default for Dna {
             dna_spec_version: String::from("2.0"),
             properties: empty_object(),
             zomes: BTreeMap::new(),
-            bridges: None,
         }
     }
 }
@@ -203,17 +199,10 @@ impl Dna {
     }
 
     pub fn get_required_bridges(&self) -> Vec<Bridge> {
-        match self.bridges {
-            None => Vec::new(),
-            Some(ref bridges) => bridges
-                .iter()
-                .filter(|bridge| match bridge {
-                    Bridge::Address(b) => b.presence == BridgePresence::Required,
-                    Bridge::Trait(b) => b.presence == BridgePresence::Required,
-                })
-                .cloned()
-                .collect(),
-        }
+        self.zomes.iter()
+            .map(|(_, zome)| zome.get_required_bridges())
+            .flatten()
+            .collect()
     }
 }
 

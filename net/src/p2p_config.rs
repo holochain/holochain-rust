@@ -62,6 +62,8 @@ impl FromStr for P2pConfig {
 }
 impl P2pConfig {
     pub fn as_str(&self) -> String {
+        // unwrap() is safe since there is no way this can fail
+        // since this struct derives from Serialize.
         serde_json::to_string(self).unwrap()
     }
 }

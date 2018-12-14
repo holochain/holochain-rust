@@ -14,7 +14,6 @@ use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, p2p_config::*
 /// The p2p network instance
 pub struct P2pNetwork {
     connection: NetConnectionThread,
-    // config: P2pConfig,
 }
 
 impl std::fmt::Debug for P2pNetwork {

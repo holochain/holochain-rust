@@ -132,7 +132,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                 });
 
             context
-                .action_channel
+                .action_channel()
                 .send(ActionWrapper::new(Action::ReturnValidationPackage((
                     id,
                     maybe_validation_package,

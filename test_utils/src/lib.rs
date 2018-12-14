@@ -16,12 +16,10 @@ use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{context::{Context, mock_network_config}, logger::Logger, persister::SimplePersister};
 use holochain_core_types::json::JsonString;
 use holochain_core_types::dna::{
+    capabilities::{Capability, FnDeclaration, Membrane},
+    entry_types::{EntryTypeDef, LinksTo, LinkedFrom},
     wasm::DnaWasm,
-    zome::{
-        capabilities::{Capability, FnDeclaration, Membrane},
-        entry_types::{EntryTypeDef, LinksTo, LinkedFrom},
-        Config, Zome,
-    },
+    zome::{Config, Zome},
     Dna,
 };
 

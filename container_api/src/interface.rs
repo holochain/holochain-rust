@@ -25,8 +25,6 @@ pub struct ContainerApiDispatcher {
     pub io: IoHandler,
 }
 
-unsafe impl Send for ContainerApiDispatcher {}
-
 /// Implements routing for JSON-RPC calls:
 /// {instance_id}/{zome}/{cap}/{func} -> a zome call
 /// info/list_instances               -> Map of InstanceConfigs, keyed by ID

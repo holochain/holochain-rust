@@ -129,7 +129,7 @@ impl IpcNetWorker {
                             .as_array()
                             .unwrap()
                             .iter()
-                            .map(|i| i.to_string())
+                            .map(|i| i.as_str().unwrap_or("").to_string())
                             .collect(),
                         s["workDir"].as_str().unwrap().to_string(),
                         env,

@@ -10,7 +10,7 @@ jobs:
           keys:
             # todo: keys for each target
             - rust-{{ checksum "Cargo.toml" }}
-            - rust-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
+            - znodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
 
       - run:
           name: fmt check

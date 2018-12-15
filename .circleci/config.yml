@@ -21,7 +21,7 @@ jobs:
             - v5-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
       - run:
           name: build wasm
-          command: nix-shell -p grep --run hc-wasm-build |& grep "fingerprint error"
+          command: nix-shell --run "hc-wasm-build
       - save_cache:
           key: v5-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
           paths:

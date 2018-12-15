@@ -22,4 +22,4 @@ exclude = [
 ]
 
 [patch.crates-io]
-rust_sodium-sys = { path = "rust_sodium-sys" }
+rust_sodium-sys = { path = "./rust_sodium-sys" }

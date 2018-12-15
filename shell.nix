@@ -102,7 +102,6 @@ stdenv.mkDerivation rec {
 
     hc-install-tarpaulin
     hc-tarpaulin
-    kcov
 
     hc-install-cmd
     hc-install-node-container
@@ -113,7 +112,7 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    zeromq4
+    zeromq3
 
     # dev tooling
     git

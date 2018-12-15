@@ -4,7 +4,7 @@ let
     overlays = [ moz_overlay ];
   };
 
-  date = "2018-11-28";
+  date = "2018-12-15";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
@@ -33,9 +33,14 @@ let
   rm -rf ~/.cargo/git;
   '';
 
+  hc-build = nixpkgs.writeShellScriptBin "hc-build"
+  ''
+  cargo build --all --exclude hc
+  '';
+
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
-  cargo build --all --exclude hc;
+  hc-build
   cargo test --all --exclude hc;
   '';
 
@@ -58,6 +63,7 @@ let
   hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
   ''
     hc-install-tarpaulin && \
+    hc-build && \
     hc-tarpaulin && \
     bash <(curl -s https://codecov.io/bash);
   '';
@@ -82,7 +88,6 @@ stdenv.mkDerivation rec {
     cmake
     python
     pkgconfig
-    zeromq
     rust-build
 
     nodejs-8_13
@@ -92,10 +97,12 @@ stdenv.mkDerivation rec {
 
     hc-wasm-build
 
+    hc-build
     hc-test
 
     hc-install-tarpaulin
     hc-tarpaulin
+    kcov
 
     hc-install-cmd
     hc-install-node-container
@@ -106,7 +113,7 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    zeromq3
+    zeromq4
 
     # dev tooling
     git

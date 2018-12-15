@@ -42,8 +42,8 @@ jobs:
             - "./wasm_utils/wasm-test/integration-test/Cargo.lock"
 
       - run:
-          name: code coverage tests and push
-          command: nix-shell --run hc-codecov
+          name: run all tests
+          command: nix-shell --run hc-test
 
       - run:
           name: install cmd

@@ -23,9 +23,6 @@ jobs:
       - run:
           name: build wasm
           command: nix-shell --run hc-wasm-build
-      - run:
-          name: clean wasm
-          command: nix-shell --run hc-wasm-soft-clean
       - save_cache:
           key: v4-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
           paths:

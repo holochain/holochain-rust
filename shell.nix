@@ -55,25 +55,18 @@ let
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
 
   # runs all standard tests and reports code coverage
-  ci-codecov = nixpkgs.writeShellScriptBin "ci-codecov"
+  hc-codecov = nixpkgs.writeShellScriptBin "hc-tarpaulin"
   ''
-  hc-wasm-build && \
-  hc-install-tarpaulin && \
-  hc-tarpaulin && \
-  bash <(curl -s https://codecov.io/bash);
-  '';
-
-  # runs all app spec tests
-  ci-app-spec = nixpkgs.writeShellScriptBin "ci-app-spec"
-  ''
-  hc-wasm-build && \
-  hc-install-cmd && \
-  hc-install-node-container && \
-  hc-test-app-spec;
+    hc-install-tarpaulin && \
+    hc-tarpaulin && \
+    bash <(curl -s https://codecov.io/bash);
   '';
 
   # simulates all supported ci tests in a local circle ci environment
-  ci = nixpkgs.writeShellScriptBin "ci" "circleci-cli local execute";
+  ci = nixpkgs.writeShellScriptBin "ci"
+  ''
+    circleci-cli local execute
+  '';
 
 in
 with nixpkgs;
@@ -81,6 +74,7 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
+
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
     # carnix
@@ -116,12 +110,13 @@ stdenv.mkDerivation rec {
     # dev tooling
     git
 
-    # ci
-    # curl needed to push codecov
+    # curl needed to push to codecov
     curl
+    docker
     circleci-cli
-    ci-codecov
-    ci-app-spec
+    hc-codecov
+    ci
+
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

@@ -196,13 +196,6 @@ jobs:
       script:
         - make test_cmd
 
-    - name: "Nodejs Container Test"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      <<: *_unix_nodejs_container_template
-      env:
-      - TRAVIS_NODE_VERSION="8"
-
     # holochain-cmd releases section
     - name: "CMD DEPLOY - 64 bit Linux"
       <<: *_cmd_deploy_template

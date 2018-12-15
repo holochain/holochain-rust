@@ -1,18 +1,18 @@
 [workspace]
 
 members = [
-  # "cmd",
-  # "container",
-  # "container_api",
-  # "core_api_c_binding",
-  # "core",
-  # "dna_c_binding",
-  # "hdk-rust",
-  # "net",
-  # "net_connection",
+  "cmd",
+  "container",
+  "container_api",
+  "core_api_c_binding",
+  "core",
+  "dna_c_binding",
+  "hdk-rust",
+  "net",
+  "net_connection",
   "net_ipc",
   "sodium",
-  # "test_bin",
+  "test_bin",
 ]
 exclude = [
   "test_utils",

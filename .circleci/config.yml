@@ -18,14 +18,15 @@ jobs:
 
       - restore_cache:
           keys:
-            - v1-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
+            - v2-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
       - run:
           name: build wasm
           command: nix-shell --run hc-wasm-build
       - save_cache:
-          key: v1-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
+          key: v2-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
           paths:
             - "./core/src/nucleus/actions/wasm-test/target"
+            - "./core/src/nucleus/actions/wasm-test/.cargo"
 
       - run:
           name: code coverage tests and push

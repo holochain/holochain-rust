@@ -18,13 +18,13 @@ let
     };
   });
 
-  wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
+  wasmBuild = path: "CARGO_HOME=${path}/.cargo cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
-  ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
-  ${wasmBuild "container_api/wasm-test/Cargo.toml"}
-  ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
-  ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
+  ${wasmBuild "core/src/nucleus/actions/wasm-test"}
+  ${wasmBuild "container_api/wasm-test"}
+  ${wasmBuild "hdk-rust/wasm-test"}
+  ${wasmBuild "wasm_utils/wasm-test/integration-test"}
   '';
 
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"

@@ -10,7 +10,7 @@ jobs:
       - restore_cache:
           keys:
             # todo: keys for each target
-            - v2-rust-{{ checksum "Cargo.toml" }}
+            - v3-rust-{{ checksum "Cargo.toml" }}
 
       - run:
           name: fmt check
@@ -19,20 +19,20 @@ jobs:
       # wasm tests
       - restore_cache:
           keys:
-            - v2-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
+            - v3-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
       - run:
           name: build wasm
           command: nix-shell --run hc-wasm-build
       - save_cache:
-          key: v2-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
+          key: v3-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
           paths:
-            - "./core/src/nucleus/actions/wasm-test/target"
+            # - "./core/src/nucleus/actions/wasm-test/target"
             - "./core/src/nucleus/actions/wasm-test/.cargo"
-            - "./container_api/wasm-test/target"
+            # - "./container_api/wasm-test/target"
             - "./container_api/wasm-test/.cargo"
-            - "./hdk-rust/wasm-test/target"
+            # - "./hdk-rust/wasm-test/target"
             - "./hdk-rust/wasm-test/.cargo"
-            - "./wasm_utils/wasm-test/integration-test/target"
+            # - "./wasm_utils/wasm-test/integration-test/target"
             - "./wasm_utils/wasm-test/integration-test/.cargo"
 
       - run:
@@ -63,7 +63,7 @@ jobs:
           command: nix-shell --run hc-test-app-spec
 
       - save_cache:
-          key: v2-rust-{{ checksum "Cargo.toml" }}
+          key: v3-rust-{{ checksum "Cargo.toml" }}
           paths:
             - "~/.cargo"
             - "./target"
@@ -71,6 +71,4 @@ jobs:
             - "./app_spec/zomes/summer/code/target"
             - "./core/src/nucleus/ribosome/target"
             - "./core/src/nucleus/wasm-test/target"
-            - "./wasm_utils/wasm-test/integration-test/target"
-            - "./hdk-rust/wasm-test/target"
             - "./test_utils/target"

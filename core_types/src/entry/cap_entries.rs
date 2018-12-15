@@ -3,6 +3,10 @@ use crate::{dna::capabilities::CapabilityType, error::HolochainError, json::Json
 
 pub type CapTokenValue = String;
 
+/// a struct to hold the signature of the call
+pub struct CallSignature {
+}
+
 /// System entry to hold a capability token for use as a caller
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct CapTokenEntry {
@@ -61,12 +65,12 @@ impl CapTokenGrantEntry {
         }
     }
 
-    pub fn token(self) -> CapTokenValue {
-        self.token
+    pub fn token(&self) -> CapTokenValue {
+        self.token.clone()
     }
 
-    pub fn cap_type(self) -> CapabilityType {
-        match self.assignees {
+    pub fn cap_type(&self) -> CapabilityType {
+        match self.assignees() {
             None => CapabilityType::Public,
             Some(vec) => if vec.is_empty() {
                 CapabilityType::Transferable
@@ -76,14 +80,31 @@ impl CapTokenGrantEntry {
         }
     }
 
-    pub fn assignees(self) -> Option<Vec<Address>> {
+    pub fn assignees(&self) -> Option<Vec<Address>> {
         self.assignees.clone()
     }
 
-    pub fn verify(&self,_token:CapTokenValue,_from: Option<Address>) -> bool {
-        true
-    }
+    pub fn verify(&self,token:CapTokenValue,from: Option<Address>,_message: &CallSignature) -> bool {
+        let cap_type = self.cap_type();
+        if cap_type == CapabilityType::Public {
+            return true;
+        }
+        if !from.is_some() {return false}
+        if self.token != token {return false}
 
+        // TODO: CallSignature check against Address
+
+        match self.cap_type() {
+            CapabilityType::Public => true,
+            CapabilityType::Transferable => true,
+            CapabilityType::Assigned => {
+                if !self.assignees().unwrap().contains(&from.unwrap()) {
+                    return false;
+                }
+                true
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -105,7 +126,7 @@ pub mod tests {
         assert_eq!(entry.cap_type(), CapabilityType::Transferable);
         let test_address = Address::new();
         let entry = CapTokenGrantEntry::new(Some(vec![test_address.clone()]));
-        assert_eq!(entry.clone().cap_type(), CapabilityType::Assigned);
+        assert_eq!(entry.cap_type(), CapabilityType::Assigned);
         assert_eq!(entry.assignees().unwrap()[0],test_address)
     }
 
@@ -146,13 +167,35 @@ pub mod tests {
         let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Assigned,Some(vec![test_address.clone()]));
         assert!(maybe_entry.is_ok());
         let entry = maybe_entry.unwrap();
-        assert_eq!(entry.clone().cap_type(), CapabilityType::Assigned);
+        assert_eq!(entry.cap_type(), CapabilityType::Assigned);
         assert_eq!(entry.assignees().unwrap()[0],test_address)
     }
 
     #[test]
     fn test_cap_grant_verify() {
-        let _entry = CapTokenGrantEntry::new(None);
+        let test_address1 = Address::from("some identity");
+        let test_address2 = Address::from("some other identity");
+        let test_call_signature = &CallSignature{};
 
+        let entry = CapTokenGrantEntry::create(CapabilityType::Public,None).unwrap();
+        let token = entry.token();
+        assert!(entry.verify(token.clone(),None,test_call_signature));
+        assert!(entry.verify(token.clone(),Some(test_address1.clone()),test_call_signature));
+        assert!(entry.verify("Bad Token".to_string(),None,test_call_signature));
+
+        let entry = CapTokenGrantEntry::create(CapabilityType::Transferable,None).unwrap();
+        let token = entry.token();
+        assert!(!entry.verify(token.clone(),None,test_call_signature));
+        assert!(entry.verify(token.clone(),Some(test_address1.clone()),test_call_signature));
+        assert!(entry.verify(token.clone(),Some(test_address2.clone()),test_call_signature));
+        assert!(!entry.verify("Bad Token".to_string(),Some(test_address1.clone()),test_call_signature));
+
+
+        let entry = CapTokenGrantEntry::create(CapabilityType::Assigned,Some(vec![test_address1.clone()])).unwrap();
+        let token = entry.token();
+        assert!(!entry.verify(token.clone(),None,test_call_signature));
+        assert!(entry.verify(token.clone(),Some(test_address1.clone()),test_call_signature));
+        assert!(!entry.verify(token.clone(),Some(test_address2.clone()),test_call_signature));
+        assert!(!entry.verify("Bad Token".to_string(),Some(test_address1.clone()),test_call_signature));
     }
 }

@@ -1,7 +1,7 @@
 //! File holding all the structs for handling capabilities defined in DNA.
 
-use crate::cas::content::Address;
 use std::str::FromStr;
+
 
 //--------------------------------------------------------------------------------------------------
 // Reserved Capabilities names
@@ -60,7 +60,7 @@ pub enum CapabilityType {
     #[serde(rename = "transferable")]
     Transferable,
     #[serde(rename = "assigned")]
-    Assigned(Vec<Address>),
+    Assigned,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -121,10 +121,10 @@ pub struct Capability {
 }
 
 impl Default for Capability {
-    /// Provide defaults for a "zome"s "capabilities" object.
+    /// Provide defaults for a Capability object
     fn default() -> Self {
         Capability {
-            cap_type: CapabilityType::Assigned(Vec::new()),
+            cap_type: CapabilityType::Assigned,
             functions: Vec::new(),
         }
     }
@@ -148,6 +148,8 @@ mod tests {
     #[test]
     /// test that a canonical string can be created from ReservedCapabilityNames
     fn test_capabilities_new() {
+        let cap = Capability::default();
+        assert_eq!(cap.cap_type, CapabilityType::Assigned);
         let cap = Capability::new(CapabilityType::Public);
         assert_eq!(cap.cap_type, CapabilityType::Public);
         let cap = Capability::new(CapabilityType::Transferable);

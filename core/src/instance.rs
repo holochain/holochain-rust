@@ -177,6 +177,7 @@ impl Instance {
             *state = new_state;
         }
 
+        // @TODO: add a big fat debug logger here
         self.maybe_emit_action_signal(action_wrapper.action().clone());
 
         // Add new observers

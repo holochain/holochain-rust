@@ -5,6 +5,7 @@ use holochain_container_api::{
     },
     Holochain,
 };
+use holochain_net::p2p_config::P2pConfig;
 use neon::{context::Context, prelude::*};
 use std::{collections::HashMap, convert::TryFrom, path::PathBuf};
 
@@ -86,10 +87,11 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             .entry(dna_path.clone())
             .or_insert_with(|| make_dna_config(dna_path).expect("DNA file not found"));
 
-        let logger = LoggerConfiguration {
+        let logger_mock = LoggerConfiguration {
             logger_type: String::from("DONTCARE"),
             file: None,
         };
+        let network_mock = Some(P2pConfig::DEFAULT_MOCK_CONFIG.to_string());
         let agent_id = agent.id.clone();
         let dna_id = dna.id.clone();
         let instance = InstanceConfiguration {
@@ -97,8 +99,8 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             agent: agent_id,
             dna: dna_id,
             storage: StorageConfiguration::Memory,
-            logger,
-            network: None,
+            logger: logger_mock,
+            network: network_mock,
         };
         instance_configs.push(instance);
     }

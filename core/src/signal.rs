@@ -15,7 +15,7 @@ pub type SignalSender = SyncSender<Signal>;
 pub type SignalReceiver = Receiver<Signal>;
 
 pub fn signal_channel() -> (SignalSender, SignalReceiver) {
-    sync_channel(100)
+    sync_channel(1000)
 }
 
 /// Pass on messages from multiple receivers into a single receiver

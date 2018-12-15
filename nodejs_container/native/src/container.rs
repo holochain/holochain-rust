@@ -35,7 +35,10 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
-pub struct Habitat(Container);
+pub struct Habitat {
+    container: Container,
+    signal_rx: SignalReceiver,
+}
 
 declare_types! {
 
@@ -43,9 +46,9 @@ declare_types! {
         init(mut cx) {
             let config_arg = cx.argument(0)?;
             let config = neon_serde::from_value(&mut cx, config_arg)?;
-            let (tx, rx) = signal_channel();
-            let container = Container::from_config(config).with_signal_channel(tx);
-            Ok(Habitat(container))
+            let (signal_tx, signal_rx) = signal_channel();
+            let container = Container::from_config(config).with_signal_channel(signal_tx);
+            Ok(Habitat { container, signal_rx })
         }
 
         method start(mut cx) {
@@ -53,9 +56,9 @@ declare_types! {
 
             let start_result: Result<(), String> = {
                 let guard = cx.lock();
-                let Habitat(container) = &mut *this.borrow_mut(&guard);
-                container.load_config().and_then(|_| {
-                    container.start_all_instances().map_err(|e| e.to_string())
+                let hab = &mut *this.borrow_mut(&guard);
+                hab.container.load_config().and_then(|_| {
+                    hab.container.start_all_instances().map_err(|e| e.to_string())
                 })
             };
 
@@ -95,8 +98,8 @@ declare_types! {
 
             let call_result = {
                 let guard = cx.lock();
-                let Habitat(container) = &mut *this.borrow_mut(&guard);
-                let instance_arc = container.get_instance_by_id(&instance_id)
+                let hab = &mut *this.borrow_mut(&guard);
+                let instance_arc = hab.container.get_instance_by_id(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
                 instance.call(&zome, &cap, &fn_name, &params)

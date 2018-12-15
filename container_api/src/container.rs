@@ -297,10 +297,10 @@ impl Logger for NullLogger {
 }
 
 fn create_memory_context(
-    _: &String,
+    agent_name: &String,
     network_config: JsonString,
 ) -> Result<Context, HolochainError> {
-    let agent = AgentId::generate_fake("c+bob");
+    let agent = AgentId::generate_fake(agent_name);
     let tempdir = tempdir().unwrap();
     let file_storage = Arc::new(RwLock::new(
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),

@@ -55,7 +55,7 @@ let
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
 
   # runs all standard tests and reports code coverage
-  hc-codecov = nixpkgs.writeShellScriptBin "hc-tarpaulin"
+  hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
   ''
     hc-install-tarpaulin && \
     hc-tarpaulin && \

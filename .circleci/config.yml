@@ -11,6 +11,7 @@ jobs:
             # todo: keys for each target
             - v3-rust-{{ checksum "Cargo.toml" }}
 
+
       - run:
           name: fmt check
           command: nix-shell --run hc-fmt-check

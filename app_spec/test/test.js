@@ -71,7 +71,6 @@ test('create_post with bad reply to', (t) => {
   // bad in_reply_to is an error condition
   t.ok(result.Err)
   t.notOk(result.Ok)
-  console.log('here be the problem:', result)
   const error = JSON.parse(result.Err.Internal)
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)

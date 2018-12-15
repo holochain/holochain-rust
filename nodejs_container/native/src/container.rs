@@ -70,23 +70,22 @@ declare_types! {
             Ok(cx.undefined().upcast())
         }
 
-        // method stop(mut cx) {
-        //     let mut this = cx.this();
+        method stop(mut cx) {
+            let mut this = cx.this();
 
-        //     let start_result = {
-        //         let guard = cx.lock();
-        //         let mut app = this.borrow_mut(&guard);
+            let stop_result: Result<(), String> = {
+                let guard = cx.lock();
+                let hab = &mut *this.borrow_mut(&guard);
+                hab.container.stop_all_instances().map_err(|e| e.to_string())
+            };
 
-        //         app.instance.stop()
-        //     };
+            stop_result.or_else(|e| {
+                let error_string = cx.string(format!("unable to stop habitat: {}", e));
+                cx.throw(error_string)
+            })?;
 
-        //     start_result.or_else(|_| {
-        //         let error_string = cx.string("unable to stop habitat");
-        //         cx.throw(error_string)
-        //     })?;
-
-        //     Ok(cx.undefined().upcast())
-        // }
+            Ok(cx.undefined().upcast())
+        }
 
         method call(mut cx) {
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();

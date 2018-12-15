@@ -16,6 +16,7 @@ jobs:
           name: fmt check
           command: nix-shell --run hc-fmt-check
 
+      # wasm tests
       - restore_cache:
           keys:
             - v2-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}
@@ -33,7 +34,7 @@ jobs:
 
       - run:
           name: code coverage tests and push
-          command: nix-shell --run hc-tarpaulin
+          command: nix-shell --run ci-tarpaulin
 
       - run:
           name: install cmd
@@ -65,7 +66,6 @@ jobs:
             - "./target"
             - "./app_spec/zomes/blog/code/target"
             - "./app_spec/zomes/summer/code/target"
-            - "./container_api/wasm-test/target"
             - "./core/src/nucleus/ribosome/target"
             - "./core/src/nucleus/wasm-test/target"
             - "./wasm_utils/wasm-test/integration-test/target"

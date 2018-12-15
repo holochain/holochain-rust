@@ -10,7 +10,7 @@ members = [
   # "hdk-rust",
   # "net",
   # "net_connection",
-  # "net_ipc",
+  "net_ipc",
   "sodium",
   # "test_bin",
 ]

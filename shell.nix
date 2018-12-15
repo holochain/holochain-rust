@@ -26,6 +26,12 @@ let
   ${wasmBuild "hdk-rust/wasm-test"}
   ${wasmBuild "wasm_utils/wasm-test/integration-test"}
   '';
+  # keeps wasm deps drops hc wasm targets
+  # allows us to cache as many deps as possible to keep fast compilations
+  # drops things that will be recompiled so we don't have huge caches on ci
+  hc-wasm-clean = nixpkgs.writeShellScriptBin "hc-wasm-soft-clean"
+  ''
+  '';
 
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
@@ -91,6 +97,8 @@ stdenv.mkDerivation rec {
     hc-flush-cargo-registry
 
     hc-wasm-build
+    hc-wasm-clean
+
     hc-test
 
     hc-install-tarpaulin

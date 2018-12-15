@@ -37,7 +37,12 @@ impl Logger for NullLogger {
 
 pub struct Habitat {
     container: Container,
-    signal_rx: SignalReceiver,
+    // signal_task: HabitatSignalDispatcher,
+}
+
+fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
+    panic!("never should happen");
+    Ok(cx.null())
 }
 
 declare_types! {
@@ -58,16 +63,20 @@ declare_types! {
             };
             let (signal_tx, signal_rx) = signal_channel();
             let container = Container::from_config(config).with_signal_channel(signal_tx);
-            Ok(Habitat { container, signal_rx })
+            Ok(Habitat { container })
         }
 
         method start(mut cx) {
+            let js_callback = JsFunction::new(&mut cx, signal_callback).unwrap();
             let mut this = cx.this();
 
             let start_result: Result<(), String> = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
-                hab.container.load_config().and_then(|_| {
+                let (signal_tx, signal_rx) = signal_channel();
+                hab.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
+                    let signal_task = HabitatSignalDispatcher {signal_rx};
+                    signal_task.schedule(js_callback);
                     hab.container.start_all_instances().map_err(|e| e.to_string())
                 })
             };
@@ -79,6 +88,15 @@ declare_types! {
 
             Ok(cx.undefined().upcast())
         }
+
+        // method start_signal_system(mut cx) {
+        //     let mut this = cx.this();
+
+        //     let guard = cx.lock();
+        //     let hab = &mut *this.borrow_mut(&guard);
+        //     hab.signal_task.schedule(JsFunction::new(&mut cx, signal_callback).unwrap());
+        //     Ok(cx.undefined().upcast())
+        // }
 
         method stop(mut cx) {
             let mut this = cx.this();
@@ -122,6 +140,36 @@ declare_types! {
             let result_string: String = res_string.into();
             Ok(cx.string(result_string).upcast())
         }
+    }
+}
+
+struct HabitatSignalDispatcher {
+    signal_rx: SignalReceiver
+}
+
+impl HabitatSignalDispatcher {
+    pub fn new(signal_rx: SignalReceiver) -> Self {
+        let this = Self { signal_rx };
+        this
+    }
+}
+
+impl Task for HabitatSignalDispatcher {
+    type Output = ();
+    type Error = String;
+    type JsEvent = JsNumber;
+
+    fn perform(&self) -> Result<(), String> {
+        use std::io::{self, Write};
+        while let Ok(sig) = self.signal_rx.recv() {
+            print!(".");
+            io::stdout().flush().unwrap();
+        }
+        Ok(())
+    }
+
+    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
+        Ok(cx.number(17))
     }
 }
 

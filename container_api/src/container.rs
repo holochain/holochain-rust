@@ -64,13 +64,6 @@ impl Container {
         }
     }
 
-    pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
-        if !self.instances.is_empty() {
-            panic!("Cannot set a signal channel after having run load_config()");
-        }
-        self.signal_tx = Some(signal_tx);
-        self
-    }
 
     pub fn start_all_interfaces(&mut self) {
         self.interface_threads = self
@@ -124,12 +117,13 @@ impl Container {
         Ok(())
     }
 
+
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     /// @TODO: clean up the container creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config(&mut self) -> Result<(), String> {
+    pub fn load_config_with_signal(&mut self, signal_tx: Option<SyncSender<Signal>>) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
         let config = self.config.clone();
@@ -146,7 +140,7 @@ impl Container {
                         &id,
                         &config,
                         &mut self.dna_loader,
-                        self.signal_tx.clone(),
+                        signal_tx.clone(),
                     ),
                 )
             })
@@ -168,6 +162,11 @@ impl Container {
         } else {
             Err(errors.iter().nth(0).unwrap().clone())
         }
+    }
+
+    /// @TODO: remove with_signal_channel!
+    pub fn load_config(&mut self) -> Result<(), String> {
+        self.load_config_with_signal(None)
     }
 
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {

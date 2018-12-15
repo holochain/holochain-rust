@@ -1,21 +1,18 @@
-cargo-features = ["rename-dependency"]
-
 [workspace]
 
 members = [
-  "cmd",
-  "container",
-  "container_api",
-  "core_api_c_binding",
-  "core",
-  "dna_c_binding",
-  "hdk-rust",
-  "net",
-  "net_connection",
-  "net_ipc",
+  # "cmd",
+  # "container",
+  # "container_api",
+  # "core_api_c_binding",
+  # "core",
+  # "dna_c_binding",
+  # "hdk-rust",
+  # "net",
+  # "net_connection",
+  # "net_ipc",
   "sodium",
-  "test_bin",
-#  "app_spec/zomes/blog/code",
+  # "test_bin",
 ]
 exclude = [
   "test_utils",

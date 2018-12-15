@@ -9,8 +9,8 @@
 
 all: lint build_holochain build_cmd
 
-CORE_RUST_VERSION ?= nightly-2018-10-12
-TOOLS_RUST_VERSION ?= nightly-2018-07-17
+CORE_RUST_VERSION ?= nightly-2018-11-28
+TOOLS_RUST_VERSION ?= nightly-2018-11-28
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)

@@ -9,15 +9,23 @@ jobs:
       - restore_cache:
           keys:
             # todo: keys for each target
-            - v1-rust-{{ checksum "Cargo.toml" }}
+            - v2-rust-{{ checksum "Cargo.toml" }}
 
       - run:
           name: fmt check
           command: nix-shell --run hc-fmt-check
 
+      - restore_cache:
+          keys:
+            - v1-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
       - run:
           name: build wasm
           command: nix-shell --run hc-wasm-build
+      - save_cache:
+          keys:
+            - v1-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
+          paths:
+            - "./core/src/nucleus/actions/wasm-test/target"
 
       - run:
           name: code coverage tests and push
@@ -47,7 +55,7 @@ jobs:
           command: nix-shell --run hc-test-app-spec
 
       - save_cache:
-          key: v1-rust-{{ checksum "Cargo.toml" }}
+          key: v2-rust-{{ checksum "Cargo.toml" }}
           paths:
             - "~/.cargo"
             - "./target"
@@ -56,7 +64,6 @@ jobs:
             - "./container_api/wasm-test/target"
             - "./core/src/nucleus/ribosome/target"
             - "./core/src/nucleus/wasm-test/target"
-            - "./core/src/nucleus/actions/wasm-test/target"
             - "./wasm_utils/wasm-test/integration-test/target"
             - "./hdk-rust/wasm-test/target"
             - "./test_utils/target"

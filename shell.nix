@@ -126,7 +126,7 @@ stdenv.mkDerivation rec {
   RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no";
   CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
-  RUST_LOG = "info";
+  # RUST_LOG = "info";
 
   # non-nixos OS can have a "dirty" setup with rustup installed for the current
   # user.

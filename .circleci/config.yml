@@ -36,7 +36,7 @@ jobs:
 
       - run:
           name: code coverage tests and push
-          command: nix-shell --run ci-tarpaulin
+          command: nix-shell --run ci-codecov
 
       - run:
           name: install cmd

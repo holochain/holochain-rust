@@ -1,11 +1,12 @@
-use crate::cas::content::Address;
-use crate::{dna::capabilities::CapabilityType, error::HolochainError, json::JsonString};
+use crate::{
+    cas::content::Address, dna::capabilities::CapabilityType, error::HolochainError,
+    json::JsonString,
+};
 
 pub type CapTokenValue = String;
 
 /// a struct to hold the signature of the call
-pub struct CallSignature {
-}
+pub struct CallSignature {}
 
 /// System entry to hold a capability token for use as a caller
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
@@ -41,25 +42,35 @@ impl CapTokenGrantEntry {
         }
     }
 
-    pub fn create(cap_type:CapabilityType, assignees: Option<Vec<Address>>) -> Result<Self,HolochainError> {
-        let assignees = CapTokenGrantEntry::valid(cap_type,assignees)?;
+    pub fn create(
+        cap_type: CapabilityType,
+        assignees: Option<Vec<Address>>,
+    ) -> Result<Self, HolochainError> {
+        let assignees = CapTokenGrantEntry::valid(cap_type, assignees)?;
         Ok(CapTokenGrantEntry::new(assignees))
     }
 
-
     // internal check that type and assignees are valid for create
-    fn valid(cap_type: CapabilityType, assignees: Option<Vec<Address>>) -> Result<Option<Vec<Address>>,HolochainError> {
-        if (cap_type == CapabilityType::Public || cap_type == CapabilityType::Transferable) &&
-            (assignees.is_some() && !assignees.clone().unwrap().is_empty()) {
-                return Err(HolochainError::new("there must be no assignees for public or transferable grants"))
-            }
+    fn valid(
+        cap_type: CapabilityType,
+        assignees: Option<Vec<Address>>,
+    ) -> Result<Option<Vec<Address>>, HolochainError> {
+        if (cap_type == CapabilityType::Public || cap_type == CapabilityType::Transferable)
+            && (assignees.is_some() && !assignees.clone().unwrap().is_empty())
+        {
+            return Err(HolochainError::new(
+                "there must be no assignees for public or transferable grants",
+            ));
+        }
         match cap_type {
             CapabilityType::Assigned => {
                 if assignees.is_none() || assignees.clone().unwrap().is_empty() {
-                    return Err(HolochainError::new("Assigned grant must have 1 or more assignees"))
+                    return Err(HolochainError::new(
+                        "Assigned grant must have 1 or more assignees",
+                    ));
                 }
                 Ok(assignees)
-            },
+            }
             CapabilityType::Public => Ok(None),
             CapabilityType::Transferable => Ok(Some(Vec::new())),
         }
@@ -72,10 +83,12 @@ impl CapTokenGrantEntry {
     pub fn cap_type(&self) -> CapabilityType {
         match self.assignees() {
             None => CapabilityType::Public,
-            Some(vec) => if vec.is_empty() {
-                CapabilityType::Transferable
-            } else {
-                CapabilityType::Assigned
+            Some(vec) => {
+                if vec.is_empty() {
+                    CapabilityType::Transferable
+                } else {
+                    CapabilityType::Assigned
+                }
             }
         }
     }
@@ -84,13 +97,22 @@ impl CapTokenGrantEntry {
         self.assignees.clone()
     }
 
-    pub fn verify(&self,token:CapTokenValue,from: Option<Address>,_message: &CallSignature) -> bool {
+    pub fn verify(
+        &self,
+        token: CapTokenValue,
+        from: Option<Address>,
+        _message: &CallSignature,
+    ) -> bool {
         let cap_type = self.cap_type();
         if cap_type == CapabilityType::Public {
             return true;
         }
-        if !from.is_some() {return false}
-        if self.token != token {return false}
+        if !from.is_some() {
+            return false;
+        }
+        if self.token != token {
+            return false;
+        }
 
         // TODO: CallSignature check against Address
 
@@ -127,75 +149,115 @@ pub mod tests {
         let test_address = Address::new();
         let entry = CapTokenGrantEntry::new(Some(vec![test_address.clone()]));
         assert_eq!(entry.cap_type(), CapabilityType::Assigned);
-        assert_eq!(entry.assignees().unwrap()[0],test_address)
+        assert_eq!(entry.assignees().unwrap()[0], test_address)
     }
 
     #[test]
     fn test_cap_grant_valid() {
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Public,None).is_ok());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Public,Some(Vec::new())).is_ok());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Public,Some(vec![Address::new()])).is_err());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Transferable,None).is_ok());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Transferable,Some(Vec::new())).is_ok());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Transferable,Some(vec![Address::new()])).is_err());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Assigned,None).is_err());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Assigned,Some(Vec::new())).is_err());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Assigned,Some(vec![Address::new()])).is_ok());
+        assert!(CapTokenGrantEntry::valid(CapabilityType::Public, None).is_ok());
+        assert!(CapTokenGrantEntry::valid(CapabilityType::Public, Some(Vec::new())).is_ok());
+        assert!(
+            CapTokenGrantEntry::valid(CapabilityType::Public, Some(vec![Address::new()])).is_err()
+        );
+        assert!(CapTokenGrantEntry::valid(CapabilityType::Transferable, None).is_ok());
+        assert!(CapTokenGrantEntry::valid(CapabilityType::Transferable, Some(Vec::new())).is_ok());
+        assert!(CapTokenGrantEntry::valid(
+            CapabilityType::Transferable,
+            Some(vec![Address::new()])
+        )
+        .is_err());
+        assert!(CapTokenGrantEntry::valid(CapabilityType::Assigned, None).is_err());
+        assert!(CapTokenGrantEntry::valid(CapabilityType::Assigned, Some(Vec::new())).is_err());
+        assert!(
+            CapTokenGrantEntry::valid(CapabilityType::Assigned, Some(vec![Address::new()])).is_ok()
+        );
     }
 
     #[test]
     fn test_create_cap_token_grant_entry() {
-        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Public,None);
+        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Public, None);
         assert!(maybe_entry.is_ok());
         let entry = maybe_entry.unwrap();
         assert_eq!(entry.cap_type(), CapabilityType::Public);
 
-        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Transferable,Some(Vec::new()));
+        let maybe_entry =
+            CapTokenGrantEntry::create(CapabilityType::Transferable, Some(Vec::new()));
         assert!(maybe_entry.is_ok());
         let entry = maybe_entry.unwrap();
         assert_eq!(entry.cap_type(), CapabilityType::Transferable);
 
         let test_address = Address::new();
 
-        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Public,Some(vec![test_address.clone()]));
+        let maybe_entry =
+            CapTokenGrantEntry::create(CapabilityType::Public, Some(vec![test_address.clone()]));
         assert!(maybe_entry.is_err());
-        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Transferable,None);
+        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Transferable, None);
         assert!(maybe_entry.is_ok());
         let entry = maybe_entry.unwrap();
         assert_eq!(entry.cap_type(), CapabilityType::Transferable);
 
-        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Assigned,Some(vec![test_address.clone()]));
+        let maybe_entry =
+            CapTokenGrantEntry::create(CapabilityType::Assigned, Some(vec![test_address.clone()]));
         assert!(maybe_entry.is_ok());
         let entry = maybe_entry.unwrap();
         assert_eq!(entry.cap_type(), CapabilityType::Assigned);
-        assert_eq!(entry.assignees().unwrap()[0],test_address)
+        assert_eq!(entry.assignees().unwrap()[0], test_address)
     }
 
     #[test]
     fn test_cap_grant_verify() {
         let test_address1 = Address::from("some identity");
         let test_address2 = Address::from("some other identity");
-        let test_call_signature = &CallSignature{};
+        let test_call_signature = &CallSignature {};
 
-        let entry = CapTokenGrantEntry::create(CapabilityType::Public,None).unwrap();
+        let entry = CapTokenGrantEntry::create(CapabilityType::Public, None).unwrap();
         let token = entry.token();
-        assert!(entry.verify(token.clone(),None,test_call_signature));
-        assert!(entry.verify(token.clone(),Some(test_address1.clone()),test_call_signature));
-        assert!(entry.verify("Bad Token".to_string(),None,test_call_signature));
+        assert!(entry.verify(token.clone(), None, test_call_signature));
+        assert!(entry.verify(
+            token.clone(),
+            Some(test_address1.clone()),
+            test_call_signature
+        ));
+        assert!(entry.verify("Bad Token".to_string(), None, test_call_signature));
 
-        let entry = CapTokenGrantEntry::create(CapabilityType::Transferable,None).unwrap();
+        let entry = CapTokenGrantEntry::create(CapabilityType::Transferable, None).unwrap();
         let token = entry.token();
-        assert!(!entry.verify(token.clone(),None,test_call_signature));
-        assert!(entry.verify(token.clone(),Some(test_address1.clone()),test_call_signature));
-        assert!(entry.verify(token.clone(),Some(test_address2.clone()),test_call_signature));
-        assert!(!entry.verify("Bad Token".to_string(),Some(test_address1.clone()),test_call_signature));
+        assert!(!entry.verify(token.clone(), None, test_call_signature));
+        assert!(entry.verify(
+            token.clone(),
+            Some(test_address1.clone()),
+            test_call_signature
+        ));
+        assert!(entry.verify(
+            token.clone(),
+            Some(test_address2.clone()),
+            test_call_signature
+        ));
+        assert!(!entry.verify(
+            "Bad Token".to_string(),
+            Some(test_address1.clone()),
+            test_call_signature
+        ));
 
-
-        let entry = CapTokenGrantEntry::create(CapabilityType::Assigned,Some(vec![test_address1.clone()])).unwrap();
+        let entry =
+            CapTokenGrantEntry::create(CapabilityType::Assigned, Some(vec![test_address1.clone()]))
+                .unwrap();
         let token = entry.token();
-        assert!(!entry.verify(token.clone(),None,test_call_signature));
-        assert!(entry.verify(token.clone(),Some(test_address1.clone()),test_call_signature));
-        assert!(!entry.verify(token.clone(),Some(test_address2.clone()),test_call_signature));
-        assert!(!entry.verify("Bad Token".to_string(),Some(test_address1.clone()),test_call_signature));
+        assert!(!entry.verify(token.clone(), None, test_call_signature));
+        assert!(entry.verify(
+            token.clone(),
+            Some(test_address1.clone()),
+            test_call_signature
+        ));
+        assert!(!entry.verify(
+            token.clone(),
+            Some(test_address2.clone()),
+            test_call_signature
+        ));
+        assert!(!entry.verify(
+            "Bad Token".to_string(),
+            Some(test_address1.clone()),
+            test_call_signature
+        ));
     }
 }

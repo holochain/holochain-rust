@@ -112,7 +112,7 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    zeromq3
+    zeromq4
 
     # dev tooling
     git

@@ -18,12 +18,12 @@ jobs:
       # wasm tests
       - restore_cache:
           keys:
-            - v5-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
+            - v5-wasm-{{ checksum "shell.nix" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
       - run:
           name: build wasm
           command: nix-shell --run "hc-wasm-build"
       - save_cache:
-          key: v5-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
+          key: v5-wasm-{{ checksum "shell.nix" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
           paths:
             - "./core/src/nucleus/actions/wasm-test/target"
             - "./core/src/nucleus/actions/wasm-test/.cargo"

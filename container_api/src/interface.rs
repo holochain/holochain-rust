@@ -128,7 +128,7 @@ pub mod tests {
             &config,
             &mut test_dna_loader(),
             &DEFAULT_NETWORK_CONFIG.to_string(),
-            signal_tx,
+            Some(signal_tx),
         )
         .unwrap();
         let mut instances = InstanceMap::new();

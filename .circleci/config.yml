@@ -22,7 +22,7 @@ jobs:
           name: build wasm
           command: nix-shell --run hc-wasm-build
       - save_cache:
-          keys:
+          key:
             - v1-wasm-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
           paths:
             - "./core/src/nucleus/actions/wasm-test/target"

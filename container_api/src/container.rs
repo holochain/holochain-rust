@@ -90,6 +90,7 @@ impl Container {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        println!("NUM INSTANCES: {}", self.instances.len());
         self.instances
             .iter_mut()
             .map(|(id, hc)| {

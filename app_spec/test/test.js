@@ -1,27 +1,32 @@
 const test = require('tape');
-const Container = require('../../nodejs_container');
 const { pollFor } = require('./util');
 
-const H = Container.ConfigBuilder;
+const { ConfigBuilder, Habitat } = require('../../nodejs_container');
 
-const agentAlice = H.agent("alice");
-const agentBob = H.agent("bob");
+const agentAlice = ConfigBuilder.agent("alice");
+const agentBob = ConfigBuilder.agent("bob");
 
-const dna = H.dna("./blah.dna.json");
+const dnaPath = "./dist/app_spec.hcpkg";
+const dna = ConfigBuilder.dna(dnaPath);
 
-const instanceAlice = H.instance(agentAlice, dna);
-const instanceBob = H.instance(agentBob, dna);
+const instanceAlice = ConfigBuilder.instance(agentAlice, dna);
+const instanceBob = ConfigBuilder.instance(agentBob, dna);
 
-const habitat1 = H.habitat(instanceAlice, instanceBob);
+const config = ConfigBuilder.habitat(instanceAlice, instanceBob);
 
-console.log(habitat1);
+const hab = new Habitat(config);
+hab.start();
 
+const caller = id => (zome, cap, fn, params) => (
+  hab.call(id, zome, cap, fn, params)
+)
 
-const app = Container.instanceFromNameAndDna("bob", "dist/app_spec.hcpkg")
-app.start()
-
-const app2 = Container.instanceFromNameAndDna("alice", "dist/app_spec.hcpkg")
-app2.start()
+const app = {
+  call: caller('alice-' + dnaPath)
+}
+const app2 = {
+  call: caller('bob-' + dnaPath)
+}
 
 test('call', (t) => {
   t.plan(1)
@@ -30,7 +35,6 @@ test('call', (t) => {
   const num2 = 2
   const params = { num1, num2 }
   const result = app.call("blog", "main", "check_sum", params)
-
   t.equal(result.Ok.value, JSON.stringify({ "sum": "4" }))
 })
 
@@ -67,7 +71,7 @@ test('create_post with bad reply to', (t) => {
   // bad in_reply_to is an error condition
   t.ok(result.Err)
   t.notOk(result.Ok)
-
+  console.log('here be the problem:', result)
   const error = JSON.parse(result.Err.Internal)
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)

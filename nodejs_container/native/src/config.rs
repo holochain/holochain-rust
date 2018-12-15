@@ -90,10 +90,12 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             logger_type: String::from("DONTCARE"),
             file: None,
         };
+        let agent_id = agent.id.clone();
+        let dna_id = dna.id.clone();
         let instance = InstanceConfiguration {
-            id: "TODO".into(),
-            agent: agent.id.clone(),
-            dna: dna.id.clone(),
+            id: instance_id(&agent_id, &dna_id),
+            agent: agent_id,
+            dna: dna_id,
             storage: StorageConfiguration::Memory,
             logger,
             network: None,
@@ -109,6 +111,10 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
         bridges: Vec::new(),
     };
     config
+}
+
+fn instance_id(agent_id: &str, dna_id: &str) -> String {
+    format!("{}-{}", agent_id, dna_id)
 }
 
 fn make_dna_config(path: PathBuf) -> Result<DNAConfiguration, String> {

@@ -13,6 +13,6 @@ extern crate holochain_core_types;
 extern crate holochain_net;
 extern crate tempfile;
 
-pub mod app;
 mod config;
+pub mod container;
 // mod test_container;

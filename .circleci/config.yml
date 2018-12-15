@@ -35,7 +35,6 @@ jobs:
             - "./wasm_utils/wasm-test/integration-test/target"
             - "./wasm_utils/wasm-test/integration-test/.cargo"
 
-
       - run:
           name: code coverage tests and push
           command: nix-shell --run hc-codecov

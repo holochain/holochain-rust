@@ -25,6 +25,9 @@ pub struct InstanceData {
     pub dna: DnaData,
 }
 
+/// Provides functions for create the building blocks of configuration.
+/// These pieces can be assembled together to create different configurations
+/// which can be used to create Habitats
 pub struct ConfigBuilder;
 
 declare_types! {

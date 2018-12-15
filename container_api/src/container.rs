@@ -27,7 +27,7 @@ use std::{
 
 use holochain_net::p2p_config::P2pConfig;
 use interface::{ContainerApiDispatcher, InstanceMap, Interface};
-use interface_impls;
+
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
 
@@ -39,7 +39,7 @@ use interface_impls;
 /// and also enable easier testing, a DnaLoader ()which is a closure that returns a
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
-    pub instances: InstanceMap,
+    instances: InstanceMap,
     config: Configuration,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     dna_loader: DnaLoader,
@@ -90,7 +90,6 @@ impl Container {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
-        println!("NUM INSTANCES: {}", self.instances.len());
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
@@ -114,8 +113,8 @@ impl Container {
     }
 
     /// Directly access an instance in this container, useful for e.g. testing frameworks
-    pub fn get_instance_by_id(&self, id: &str) -> Option<Arc<RwLock<Holochain>>> {
-        self.instances.get(id).map(|hc| hc.clone())
+    pub fn instances(&self) -> &InstanceMap {
+        &self.instances
     }
 
     /// Stop and clear all instances
@@ -342,7 +341,7 @@ fn create_file_context(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::config::load_configuration;
+    use crate::{config::load_configuration, interface::DispatchRpc};
 
     use holochain_core::signal::signal_channel;
     use std::{fs::File, io::Write};
@@ -535,7 +534,7 @@ pub mod tests {
         let container = test_container();
         let interface_config = &container.config.interfaces[0];
         let dispatcher = container.make_dispatcher(&interface_config);
-        let io = dispatcher.io;
+        let io = dispatcher.handler();
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
         let response = io

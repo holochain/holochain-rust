@@ -18,7 +18,7 @@ let
     };
   });
 
-  wasmBuild = path: "CARGO_HOME=${path}/.cargo cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
+  wasmBuild = path: "CARGO_HOME=${path}/.cargo CARGO_TARGET_DIR=${path}/target cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
   ${wasmBuild "core/src/nucleus/actions/wasm-test"}

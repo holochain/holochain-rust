@@ -15,6 +15,7 @@ jobs:
           name: fmt check
           command: nix-shell --run hc-fmt-check
 
+
       # wasm tests
       - restore_cache:
           keys:

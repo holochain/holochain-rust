@@ -112,7 +112,6 @@ impl Container {
             .map(|_| ())
     }
 
-    /// Directly access an instance in this container, useful for e.g. testing frameworks
     pub fn instances(&self) -> &InstanceMap {
         &self.instances
     }

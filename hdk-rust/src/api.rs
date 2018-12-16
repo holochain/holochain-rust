@@ -328,7 +328,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call("summer", "main", "sum", call_input.into())
+///     hdk::call("summer", "main", "test_token", "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -353,7 +353,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// ```
 pub fn call<S: Into<String>>(
     zome_name: S,
-    cap_name: S,
+    cap_token: S,
+    cap_name: S, //temporary...
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
@@ -368,6 +369,7 @@ pub fn call<S: Into<String>>(
         ZomeFnCallArgs {
             zome_name: zome_name.into(),
             cap_name: cap_name.into(),
+            cap_token: Address::from(cap_token.into()),
             fn_name: fn_name.into(),
             fn_args: String::from(fn_args),
         },

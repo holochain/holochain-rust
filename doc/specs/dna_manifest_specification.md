@@ -146,9 +146,9 @@ They are available in keyword specific Capabilities and function names.
         }
       ], // end of entry-types
       // Zome capabilities holding functions & signals
-      "capabilities": [
+      "capabilities": {
+        "web_gateway":
         {
-          "cap_name": "web_gateway",
           "type": "public",
           "functions": [
             {
@@ -183,14 +183,14 @@ They are available in keyword specific Capabilities and function names.
             // ...
           ],
         },
+        "indexing":
         {
-          "cap_name": "indexing",
           "type": "public",
           "functions": [
             // ...
           ],
         },
-      ] // end of capabilities
+      } // end of capabilities
     }
   ] // end of zomes
 }

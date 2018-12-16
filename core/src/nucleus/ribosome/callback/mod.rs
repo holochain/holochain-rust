@@ -207,6 +207,7 @@ pub fn call(
     let zome_call = ZomeFnCall::new(
         zome,
         &function.capability().as_str().to_string(),
+        "", //TODO: token?
         &function.as_str().to_string(),
         params,
     );

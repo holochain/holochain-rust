@@ -279,6 +279,7 @@ fn handle_check_call() -> ZomeApiResult<JsonString> {
     let maybe_hash = hdk::call(
         "test_zome",
         "test_cap",
+        "test_token",
         "check_app_entry_address",
         empty_dumpty,
     );
@@ -296,6 +297,7 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
     hdk::call(
         "test_zome",
         "test_cap",
+        "test_token",
         "check_commit_entry_macro",
         JsonString::from(CommitEntryInput {
             entry: hdk_test_entry(),

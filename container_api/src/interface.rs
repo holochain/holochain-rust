@@ -81,7 +81,13 @@ impl ContainerApiDispatcher {
                                             jsonrpc_core::Error::invalid_params(e.to_string())
                                         })?;
                                     let response = hc
-                                        .call(&zome_name, &cap_name, &func_name, &params_string)
+                                        .call(
+                                            &zome_name,
+                                            &cap_name,
+                                            "fake token",
+                                            &func_name,
+                                            &params_string,
+                                        )
                                         .map_err(|e| {
                                             jsonrpc_core::Error::invalid_params(e.to_string())
                                         })?;

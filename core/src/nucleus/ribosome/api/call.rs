@@ -20,13 +20,19 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(args: ZomeFnCallArgs) -> Self {
-        ZomeFnCall::new(&args.zome_name, &args.cap_name, &args.fn_name, args.fn_args)
+        ZomeFnCall::new(
+            &args.zome_name,
+            &args.cap_name,
+            &String::from(args.cap_token),
+            &args.fn_name,
+            args.fn_args,
+        )
     }
 }
 
 /// HcApiFuncIndex::CALL function code
 /// args: [0] encoded MemoryAllocation as u32
-/// expected complex argument: {zome_name: String, cap_name: String, fn_name: String, args: String}
+/// expected complex argument: {zome_name: String, cap_token: Address, fn_name: String, args: String}
 /// args from API call are converted into a ZomeFnCall
 /// Launch an Action::Call with newly formed ZomeFnCall
 /// Waits for a ZomeFnResult
@@ -170,22 +176,26 @@ pub mod tests {
             tests::{test_instance, TestLogger},
             Observer, RECV_DEFAULT_TIMEOUT_MS,
         },
-        nucleus::ribosome::{
-            api::{
-                call::{Action, ActionWrapper, ZomeFnCall},
-                tests::{
-                    test_capability, test_function_name, test_parameters,
-                    test_zome_api_function_wasm, test_zome_name,
+        nucleus::{
+            ribosome::{
+                api::{
+                    call::{Action, ActionWrapper, ZomeFnCall},
+                    tests::{
+                        test_function_name, test_parameters, test_zome_api_function_wasm,
+                        test_zome_name,
+                    },
+                    ZomeApiFunction,
                 },
-                ZomeApiFunction,
+                Defn,
             },
-            Defn,
+            tests::{test_capability_name, test_capability_token},
         },
         persister::SimplePersister,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
+        cas::content::Address,
         dna::{
             capabilities::{Capability, CapabilityType},
             Dna,
@@ -207,6 +217,7 @@ pub mod tests {
         let args = ZomeFnCallArgs {
             zome_name: "zome_name".to_string(),
             cap_name: "cap_name".to_string(),
+            cap_token: Address::from("bad cap_token"),
             fn_name: "fn_name".to_string(),
             fn_args: "fn_args".to_string(),
         };
@@ -219,7 +230,8 @@ pub mod tests {
     pub fn test_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
             zome_name: test_zome_name(),
-            cap_name: test_capability(),
+            cap_name: test_capability_name(),
+            cap_token: test_capability_token(),
             fn_name: test_function_name(),
             fn_args: test_parameters(),
         };
@@ -256,7 +268,7 @@ pub mod tests {
     ) {
         let context = create_context();
 
-        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "test", "{}");
+        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "foo token", "test", "{}");
         let zome_call_action = ActionWrapper::new(Action::Call(zome_call.clone()));
 
         // Set up instance and process the action
@@ -301,7 +313,7 @@ pub mod tests {
         /* this test was actually only testing that the default wat didn't even have a capability at all
            and the code in reduce_call was behaving as if it didn't have a token.  This test will be fixed
            in later commits.
-                let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+                let dna = test_utils::create_test_dna_with_wat("test_zome", "foo token", None);
                 let expected = Ok(Err(HolochainError::DoesNotHaveCapabilityToken));
                 test_reduce_call(dna, expected);
         */
@@ -309,7 +321,7 @@ pub mod tests {
 
     #[test]
     fn test_call_no_zome() {
-        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", "foo token", None);
         let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
         ))));

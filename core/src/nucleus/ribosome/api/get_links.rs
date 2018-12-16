@@ -49,9 +49,12 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         dht::actions::add_link::add_link,
         instance::tests::{test_context_and_logger, test_instance},
-        nucleus::ribosome::{
-            api::{tests::*, ZomeApiFunction},
-            Defn,
+        nucleus::{
+            ribosome::{
+                api::{tests::*, ZomeApiFunction},
+                Defn,
+            },
+            tests::*,
         },
     };
     use futures::executor::block_on;
@@ -80,7 +83,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
-            &test_capability(),
+            &test_capability_name(),
             wasm.clone(),
         );
 

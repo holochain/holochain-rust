@@ -244,7 +244,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
+    return hc.call("test_zome", "test_cap", "test_token", fn_name, r#"{}"#);
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions

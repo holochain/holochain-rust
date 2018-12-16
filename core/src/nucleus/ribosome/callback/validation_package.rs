@@ -42,6 +42,7 @@ pub fn get_validation_package_definition(
                 &ZomeFnCall::new(
                     &zome_name,
                     "no capability, since this is an entry validation call",
+                    "no token, since this is an entry validation call",
                     "__hdk_get_validation_package_for_entry_type",
                     app_entry_type.to_string(),
                 ),
@@ -80,6 +81,7 @@ pub fn get_validation_package_definition(
             let call = ZomeFnCall::new(
                 "",
                 "no capability, since this is an entry validation call",
+                "no token, since this is an entry validation call",
                 "__hdk_get_validation_package_for_link",
                 params,
             );

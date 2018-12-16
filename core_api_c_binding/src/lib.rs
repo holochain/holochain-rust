@@ -109,6 +109,7 @@ pub unsafe extern "C" fn holochain_call(
     ptr: *mut Holochain,
     zome: CStrPtr,
     capability: CStrPtr,
+    token: CStrPtr,
     function: CStrPtr,
     parameters: CStrPtr,
 ) -> CStrPtr {
@@ -124,12 +125,14 @@ pub unsafe extern "C" fn holochain_call(
     let holochain = &mut *ptr;
     let zome = CStr::from_ptr(zome).to_string_lossy().into_owned();
     let capability = CStr::from_ptr(capability).to_string_lossy().into_owned();
+    let token = CStr::from_ptr(token).to_string_lossy().into_owned();
     let function = CStr::from_ptr(function).to_string_lossy().into_owned();
     let parameters = CStr::from_ptr(parameters).to_string_lossy().into_owned();
 
     match holochain.call(
         zome.as_str(),
         capability.as_str(),
+        token.as_str(),
         function.as_str(),
         parameters.as_str(),
     ) {

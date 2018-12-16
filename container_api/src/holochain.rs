@@ -46,7 +46,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome","test_cap","some_fn","{}");
+//! hc.call("test_zome", "test_cap", "test_token", "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -171,13 +171,14 @@ impl Holochain {
         &mut self,
         zome: &str,
         cap: &str,
+        cap_token: &str,
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, &cap, &cap_token, &fn_name, String::from(params));
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 
@@ -410,7 +411,7 @@ mod tests {
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", "test_cap", "main", "");
+        let result = hc.call("test_zome", "test_cap", "test_token", "main", "");
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -420,7 +421,7 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", "test_cap", "main", "");
+        let result = hc.call("test_zome", "test_cap", "test_token", "main", "");
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
@@ -453,6 +454,7 @@ mod tests {
         let result = hc.call(
             "test_zome",
             "test_cap",
+            "test_token",
             "round_trip_test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
@@ -488,7 +490,13 @@ mod tests {
         .unwrap();
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+            "test_token",
+            "commit_test",
+            r#"{}"#,
+        );
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
@@ -525,7 +533,13 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "commit_fail_test", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+            "test_token",
+            "commit_fail_test",
+            r#"{}"#,
+        );
         println!("can_call_commit_err result: {:?}", result);
 
         // Expect normal OK result with hash
@@ -560,7 +574,13 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+            "test_token",
+            "debug_hello",
+            r#"{}"#,
+        );
 
         assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
@@ -592,7 +612,13 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            "test_cap",
+            "test_token",
+            "debug_multiple",
+            r#"{}"#,
+        );
 
         // Expect Success as result
         println!("result = {:?}", result);
@@ -643,8 +669,14 @@ mod tests {
             })
             .unwrap();
         hc.start().expect("couldn't start");
-        hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
-            .unwrap();
+        hc.call(
+            "test_zome",
+            "test_cap",
+            "test_token",
+            "commit_test",
+            r#"{}"#,
+        )
+        .unwrap();
 
         'outer: loop {
             let msg_publish = rx

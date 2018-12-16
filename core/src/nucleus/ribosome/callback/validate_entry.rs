@@ -98,6 +98,7 @@ fn validate_link_entry(
     let call = ZomeFnCall::new(
         &link_definition_path.zome_name,
         "no capability, since this is an entry validation call",
+        "no token, since this an entry validation call",
         "__hdk_validate_link",
         params,
     );
@@ -156,6 +157,7 @@ fn build_validation_call(
     Ok(ZomeFnCall::new(
         &zome_name,
         "no capability, since this is an entry validation call",
+        "no token, since this is an entry validation call",
         "__hdk_validate_app_entry",
         params,
     ))

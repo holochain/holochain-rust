@@ -152,7 +152,7 @@ impl Packager {
                         "HC",
                         context,
                         wasm_binary,
-                        &ZomeFnCall::new("", "", "__hdk_get_json_definition", ""),
+                        &ZomeFnCall::new("", "", "", "__hdk_get_json_definition", ""),
                         Some("{}".as_bytes().to_vec()),
                     )?;
 

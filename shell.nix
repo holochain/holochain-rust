@@ -18,13 +18,13 @@ let
     };
   });
 
-  wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
+  wasmBuild = path: "CARGO_HOME=${path}/.cargo CARGO_TARGET_DIR=${path}/target cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
-  ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
-  ${wasmBuild "container_api/wasm-test/Cargo.toml"}
-  ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
-  ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
+  ${wasmBuild "core/src/nucleus/actions/wasm-test"}
+  ${wasmBuild "container_api/wasm-test"}
+  ${wasmBuild "hdk-rust/wasm-test"}
+  ${wasmBuild "wasm_utils/wasm-test/integration-test"}
   '';
 
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
@@ -33,9 +33,14 @@ let
   rm -rf ~/.cargo/git;
   '';
 
+  hc-build = nixpkgs.writeShellScriptBin "hc-build"
+  ''
+  cargo build --all --exclude hc
+  '';
+
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
-  cargo build --all --exclude hc;
+  hc-build
   cargo test --all --exclude hc;
   '';
 
@@ -55,9 +60,10 @@ let
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
 
   # runs all standard tests and reports code coverage
-  hc-codecov = nixpkgs.writeShellScriptBin "hc-tarpaulin"
+  hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
   ''
     hc-install-tarpaulin && \
+    hc-build && \
     hc-tarpaulin && \
     bash <(curl -s https://codecov.io/bash);
   '';
@@ -82,7 +88,6 @@ stdenv.mkDerivation rec {
     cmake
     python
     pkgconfig
-    zeromq
     rust-build
 
     nodejs-8_13
@@ -91,6 +96,8 @@ stdenv.mkDerivation rec {
     hc-flush-cargo-registry
 
     hc-wasm-build
+
+    hc-build
     hc-test
 
     hc-install-tarpaulin
@@ -105,7 +112,7 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    zeromq3
+    zeromq4
 
     # dev tooling
     git

@@ -106,6 +106,7 @@ extern crate serde_json;
 extern crate test_utils;
 extern crate tiny_http;
 extern crate toml;
+extern crate petgraph;
 
 pub mod config;
 pub mod container;

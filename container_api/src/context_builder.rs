@@ -11,8 +11,18 @@ use holochain_core_types::{
 use holochain_net::p2p_config::P2pConfig;
 use std::sync::{Arc, Mutex, RwLock};
 
+/// This type helps building [context objects](struct.Context.html) that need to be
+/// passed in to Holochain intances.
+///
+/// This is typically needed in any container implementation but also in almost every test.
+/// Follows the [builder pattern](https://doc.rust-lang.org/1.0.0/style/ownership/builders.html).
+///
+/// Use any combination of `with_*` functions to configure the context and finally call
+/// `spawn()` to retrieve the context.
 pub struct ContextBuilder {
     agent_id: Option<AgentId>,
+    // Logger and persister are currently set to a reasonable default in spawn().
+    // TODO: add with_logger() and with_persister() functions to ContextBuilder.
     //logger: Option<Arc<Mutex<Logger>>>,
     //persister: Option<Arc<Mutex<Persister>>>,
     chain_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
@@ -32,11 +42,14 @@ impl ContextBuilder {
         }
     }
 
+    /// Sets the agent of the context that gets build.
     pub fn with_agent(&mut self, agent_id: AgentId) -> &mut Self {
         self.agent_id = Some(agent_id);
         self
     }
 
+    /// Sets all three storages, chain, DHT and EAV storage, to transient memory implementations.
+    /// Chain and DHT storages get set to the same memory CAS.
     pub fn with_memory_storage(&mut self) -> &mut Self {
         let cas = Arc::new(RwLock::new(MemoryStorage::new()));
         let eav = Arc::new(RwLock::new(EavMemoryStorage::new()));
@@ -46,6 +59,9 @@ impl ContextBuilder {
         self
     }
 
+    /// Sets all three storages, chain, DHT and EAV storage, to persistent file based implementations.
+    /// Chain and DHT storages get set to the same file CAS.
+    /// Returns an error if no file storage could spawned on the given path.
     pub fn with_file_storage<T: Into<String>>(
         &mut self,
         path: T,
@@ -64,11 +80,16 @@ impl ContextBuilder {
         Ok(self)
     }
 
+    /// Sets the network config.
     pub fn with_network_config(&mut self, network_config: JsonString) -> &mut Self {
         self.network_config = Some(network_config);
         self
     }
 
+    /// Actually creates the context.
+    /// Defaults to memory storages, a mock network config and a fake agent called "alice".
+    /// The logger gets set to SimpleLogger.
+    /// The persister gets set to SimplePersister based on the chain storage.
     pub fn spawn(&self) -> Context {
         let chain_storage = self
             .chain_storage

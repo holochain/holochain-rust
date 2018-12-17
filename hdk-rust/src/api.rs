@@ -921,6 +921,26 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::cas::content::Address;
 ///
+/// # // Adding empty functions so that the cfg(test) build can link.
+/// # #[no_mangle]
+/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
+///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
 ///     // because the function signature of hdk::send is the same as the

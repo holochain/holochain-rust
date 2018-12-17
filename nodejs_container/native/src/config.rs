@@ -84,7 +84,7 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             .entry(agent_name.clone())
             .or_insert_with(|| AgentConfiguration {
                 id: agent_name.clone(),
-                key_file: format!("{}-fake-key", agent_name),
+                key_file: format!("fake/key/{}", agent_name),
             });
         let dna = dna_configs
             .entry(dna_path.clone())

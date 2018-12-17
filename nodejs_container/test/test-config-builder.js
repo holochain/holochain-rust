@@ -35,8 +35,14 @@ test('config construction', t => {
         H.instance(agent1, dna),
         H.instance(agent2, dna),
     )
-    t.deepEqual(config.agents.map(a => a.id), ['alessia', 'bartolini'])
-    t.deepEqual(config.dnas.map(d => d.id), [path])
+    t.deepEqual(
+        config.agents.map(a => a.id).sort(),
+        ['alessia', 'bartolini']
+    )
+    t.deepEqual(
+        config.dnas.map(d => d.id).sort(),
+        [path]
+    )
     t.equal(config.instances[0].id, `alessia-${path}`)
     t.equal(config.instances[0].agent, `alessia`)
     t.equal(config.instances[0].dna, path)

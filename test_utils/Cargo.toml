@@ -9,6 +9,6 @@ holochain_core = { path = "../core" }
 holochain_container_api = { path = "../container_api" }
 holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core_types = { path = "../core_types" }
-wabt = { git = 'https://github.com/ddd-mtl/wabt-rs.git'  }
+wabt = "0.7.2"
 tempfile = "3"
 serde_json = { version = "1.0", features = ["preserve_order"] }

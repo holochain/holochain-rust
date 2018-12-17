@@ -9,7 +9,7 @@ pub fn buf(b: &mut SecBuf) {
     check_init();
     unsafe {
         let mut b = b.write_lock();
-        rust_sodium_sys::randombytes_buf(rptr!(b), b.len());
+        rust_sodium_sys::randombytes_buf(raw_ptr_void!(b), b.len());
     }
 }
 

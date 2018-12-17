@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 use super::check_init;
 
 /// a trait for structures that can be used as a backing store for SecBuf
-trait Bufferable {
+pub trait Bufferable {
     fn new(s: usize) -> Box<Bufferable>
     where
         Self: Sized;
@@ -172,7 +172,7 @@ impl SecBuf {
         Locker::new(self, false)
     }
 
-    /// make this SecBuf writeable, and return a locker object
+    /// make this SecBuf writable, and return a locker object
     /// that will secure this SecBuf automatically when it goes out of scope.
     pub fn write_lock(&mut self) -> Locker {
         Locker::new(self, true)

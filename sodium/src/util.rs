@@ -9,7 +9,7 @@ pub fn zero(b: &mut SecBuf) {
     check_init();
     unsafe {
         let mut b = b.write_lock();
-        rust_sodium_sys::sodium_memzero(rptr!(b), b.len());
+        rust_sodium_sys::sodium_memzero(raw_ptr_void!(b), b.len());
     }
 }
 
@@ -18,7 +18,7 @@ pub fn increment(b: &mut SecBuf) {
     check_init();
     unsafe{
         let mut b = b.write_lock();
-        rust_sodium_sys::sodium_increment(rptrc!(b), b.len());
+        rust_sodium_sys::sodium_increment(raw_ptr_char!(b), b.len());
     }
 }
 
@@ -26,13 +26,13 @@ pub fn increment(b: &mut SecBuf) {
 /// Return :
 /// | if a > b; return 1
 /// | if a < b; return -1
-/// | if a == b; return 0  
+/// | if a == b; return 0
 pub fn compare(a: &mut SecBuf,b: &mut SecBuf) -> i32 {
     check_init();
     unsafe{
         let mut a = a.write_lock();
         let mut b = b.write_lock();
-        rust_sodium_sys::sodium_compare(rptrc!(a),rptrc!(b), a.len())
+        rust_sodium_sys::sodium_compare(raw_ptr_char!(a),raw_ptr_char!(b), a.len())
     }
 }
 #[cfg(test)]

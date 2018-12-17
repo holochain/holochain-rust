@@ -1,3 +1,8 @@
+//! ContentAddressableStorage (CAS) is defined here as a trait, such that there could be various implementations,
+//! such as the memory based, and file storage based implementations already in this code base.
+//! ContentAddressableStorage is a way of reading and writing AddressableContent in a persistent data store.
+//! A test suite for CAS is also implemented here.
+
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
@@ -114,13 +119,13 @@ impl ExampleContentAddressableStorageContent {
     }
 }
 
-//A struct for our test suite that infers a type of ContentAddressableStorage
+// A struct for our test suite that infers a type of ContentAddressableStorage
 pub struct StorageTestSuite<T>
 where
     T: ContentAddressableStorage,
 {
     pub cas: T,
-    /// it is important that every cloned copy of any CAS has a consistent view to data
+    // it is important that every cloned copy of any CAS has a consistent view to data
     pub cas_clone: T,
 }
 
@@ -135,7 +140,7 @@ where
         }
     }
 
-    //does round trip test that can infer two Addressable Content Types
+    // does round trip test that can infer two Addressable Content Types
     pub fn round_trip_test<Addressable, OtherAddressable>(
         mut self,
         content: Content,

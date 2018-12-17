@@ -152,6 +152,9 @@ _cmd_deploy_template: &_cmd_deploy_template
 
 jobs:
   include:
+    - name: "windows sandbox"
+      <<: *_windows_template
+
     - name: "windows build & test all"
       <<: *_windows_template
       env:

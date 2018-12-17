@@ -21,6 +21,28 @@ use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 
 use std::{convert::TryFrom, sync::mpsc};
 
+
+macro_rules! one_let {
+    ($p:pat = $enum:ident $code:tt) => {
+        if let $p = $enum {
+            $code
+        } else {
+            unimplemented!();
+        }
+    };
+}
+
+macro_rules! one_is {
+    ($p:pat) => {
+        |d| {
+            if let $p = d {
+                return true;
+            }
+            return false;
+        }
+    };
+}
+
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn usage() {
@@ -81,15 +103,14 @@ impl IpcNode {
     }
 }
 
-// Spawn an IPC node that uses n3h and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
-    let dir_ref = tempfile::tempdir()?;
+fn create_config(n3h_path: &str, maybe_config_filepath: Option<&str>) -> (P2pConfig, tempfile::TempDir) {
+
+    // Create temp directory
+    let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
 
-    let (sender, receiver) = mpsc::channel::<Protocol>();
-
-    let p2p_config: P2pConfig = match maybe_config_filepath {
+    let config = match maybe_config_filepath {
         Some(filepath) => {
             // Get config from file
             let p2p_config = P2pConfig::from_file(filepath);
@@ -136,10 +157,20 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
                 }
             },
             }}))
-            .unwrap()
+                .unwrap()
         }
     };
+    return (config, dir_ref);
+}
 
+// Spawn an IPC node that uses n3h and a temp folder
+#[cfg_attr(tarpaulin, skip)]
+fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
+    // Create Config
+    let (p2p_config, dir_ref) = create_config(n3h_path, maybe_config_filepath);
+    // Create channel
+    let (sender, receiver) = mpsc::channel::<Protocol>();
+    // Create P2pNetwork
     let p2p_node = P2pNetwork::new(
         Box::new(move |r| {
             sender.send(r?)?;
@@ -147,56 +178,25 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
         }),
         &p2p_config,
     )?;
-
+    // Create IpcNode
     Ok(IpcNode {
+        dir: dir_ref.path().to_string_lossy().to_string(),
         temp_dir_ref: dir_ref,
-        dir,
         p2p_connection: p2p_node,
         receiver,
     })
 }
 
-macro_rules! one_let {
-    ($p:pat = $enum:ident $code:tt) => {
-        if let $p = $enum {
-            $code
-        } else {
-            unimplemented!();
-        }
-    };
-}
-
-macro_rules! one_is {
-    ($p:pat) => {
-        |d| {
-            if let $p = d {
-                return true;
-            }
-            return false;
-        }
-    };
-}
-
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-fn exec() -> NetResult<()> {
+fn general_test(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
     static DNA_HASH: &'static str = "TEST_DNA_HASH";
     static AGENT_1: &'static str = "1_TEST_AGENT_1";
     static AGENT_2: &'static str = "2_TEST_AGENT_2";
 
-    // Check args
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() != 2 {
-        usage();
-    }
-    let n3h_path = args[1].clone();
-    if n3h_path == "" {
-        usage();
-    }
-
     // Create two nodes
-    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"))?;
-    let mut node2 = spawn_connection(&n3h_path, None)?;
+    let mut node1 = spawn_connection(n3h_path, Some(config_filepath))?;
+    let mut node2 = spawn_connection(n3h_path, Some(config_filepath))?;
     println!("node1 path: {}", node1.dir);
     println!("node2 path: {}", node2.dir);
 
@@ -388,5 +388,18 @@ fn exec() -> NetResult<()> {
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
-    exec().unwrap();
+    // Check args
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() != 2 {
+        usage();
+    }
+    let n3h_path = args[1].clone();
+    if n3h_path == "" {
+        usage();
+    }
+    // Launch normal test
+    let config_filepath = "test_bin/src/network_config.json";
+    let res = general_test(&n3h_path, config_filepath);
+    assert!(res.is_ok());
+
 }

@@ -171,6 +171,7 @@ jobs:
       script:
        - CARGO_HOME=core/src/nucleus/actions/wasm-test/.cargo CARGO_TARGET_DIR=core/src/nucleus/actions/wasm-test/target cargo build --release --target $HC_WASM_TARGET --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml
 
+
     - name: "windows build & test all"
       <<: *_windows_template
       env:

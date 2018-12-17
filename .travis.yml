@@ -162,10 +162,18 @@ jobs:
         - HC_WASM_TARGET=wasm32-unknown-unknown
         - CARGO_INCREMENTAL=1
         - RUSTFLAGS="-C lto=no"
+
+        # set this local to the repo as it produces cleaner/easier cache
+        # debug/cleanup/hits than sending off to some external folder
+        - CARGO_HOME=.cargo
+        - CARGO_TARGET_DIR=target
       install:
        - rustup target add $HC_WASM_TARGET
       cache:
        directories:
+        - .cargo
+        - target
+
         - core/src/nucleus/actions/wasm-test/.cargo
         - core/src/nucleus/actions/wasm-test/target
 
@@ -182,6 +190,8 @@ jobs:
        - CARGO_HOME=container_api/wasm-test/.cargo CARGO_TARGET_DIR=container_api/wasm-test/target cargo build --release --target $HC_WASM_TARGET --manifest-path container_api/wasm-test/Cargo.toml
        - CARGO_HOME=hdk-rust/wasm-test/.cargo CARGO_TARGET_DIR=hdk-rust/wasm-test/target cargo build --release --target $HC_WASM_TARGET --manifest-path hdk-rust/wasm-test/Cargo.toml
        - CARGO_HOME=wasm_utils/wasm-test/integration-test/.cargo CARGO_TARGET_DIR=wasm_utils/wasm-test/integration-test/target cargo build --release --target $HC_WASM_TARGET --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml
+
+       - cargo test --all
 
     - name: "windows build & test all"
       <<: *_windows_template

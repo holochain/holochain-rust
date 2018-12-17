@@ -190,6 +190,14 @@ impl Configuration {
             .cloned()
             .collect())
     }
+
+    pub fn bridge_dependencies(&self, caller_instance_id: String) -> Vec<String> {
+        self.bridges
+            .iter()
+            .filter(|bridge| bridge.caller_id == caller_instance_id)
+            .map(|bridge| bridge.callee_id.clone())
+            .collect()
+    }
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
@@ -760,6 +768,34 @@ pub mod tests {
         assert_eq!(
             config.check_consistency(),
             Err("Instance configuration \"app9000\" not found, mentioned in bridge".to_string())
+        );
+    }
+
+    #[test]
+    fn test_bridge_dependencies() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app3"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app1"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.bridge_dependencies(String::from("app1")),
+            vec![
+                String::from("app2"),
+                String::from("app3"),
+            ]
         );
     }
 }

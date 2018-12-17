@@ -40,15 +40,13 @@ pub fn test_context(agent_name: &str) -> Arc<Context> {
     let file_storage = Arc::new(RwLock::new(
         FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
     ));
-    Arc::new(
-        Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            Arc::new(RwLock::new(MemoryStorage::new())),
-            Arc::new(RwLock::new(EavMemoryStorage::new())),
-            mock_network_config(),
-        )
-        .unwrap(),
-    )
+    Arc::new(Context::new(
+        agent,
+        logger.clone(),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+        Arc::new(RwLock::new(MemoryStorage::new())),
+        Arc::new(RwLock::new(MemoryStorage::new())),
+        Arc::new(RwLock::new(EavMemoryStorage::new())),
+        mock_network_config(),
+    ))
 }

@@ -3,48 +3,29 @@ use super::check_init;
 
 use super::secbuf::{
     SecBuf,
-    Bufferable,
 };
 
-struct SeedKeypair {
-    public_key:SecBuf,
-    secret_key:SecBuf,
-}
-/// Generate a signing keypair from a seed buffer
+use super::random::{
+    buf,
+};
 
-/// @example
-/// const { publicKey, secretKey } = mosodium.sign.seedKeypair(seed)
-/// @param {SecBuf} seed - the seed to derive a keypair from
-/// @retun {object} - { publicKey, privateKey }
-pub fn seedKeypair(seed: &mut SecBuf) -> Vec<SecBuf> {
+pub fn seedKeypair(public_key: &mut SecBuf,secret_key: &mut SecBuf,seed: &mut SecBuf) {
     check_init();
+    println!("<Seed_Generation/>");
     unsafe {
-        let mut public_key = SecBuf::with_insecure(rust_sodium_sys::crypto_sign_publickeybytes());
-        let mut secret_key = SecBuf::with_secure(rust_sodium_sys::crypto_sign_secretkeybytes());
-        {
+        public_key.writable();
+        secret_key.writable();
         seed.writable();
-        let _public_key = &mut public_key;
-        let _secret_key = &mut secret_key;
-        _public_key.writable();
-        _secret_key.writable();
-        let mut _public_key = _public_key.write_lock();
-        let mut _secret_key = _secret_key.write_lock();
-        rust_sodium_sys::crypto_sign_seed_keypair(raw_ptr_char!(_public_key),raw_ptr_char!(_secret_key),raw_ptr_char!(seed));
+        rust_sodium_sys::crypto_sign_seed_keypair(raw_ptr_char!(public_key),raw_ptr_char!(secret_key),raw_ptr_char!(seed));
         }
-        vec![public_key,secret_key]
-    }
+    // (public_key.into(),secret_key.into())
 }
 
-/// generate a signature
-/// @example
-/// const sig = mosodium.sign.sign(Buffer.from('hello'), secretKey)
-/// @param {Buffer} message - the message to sign
-/// @param {SecBuf} secretKey - the secret key to sign with
-/// @return {Buffer} signature data
-pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf){
+pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf)->SecBuf{
     check_init();
+    println!("<Signing/>");
+    let mut out = SecBuf::with_insecure(rust_sodium_sys::crypto_sign_BYTES as usize);
     unsafe {
-        let mut out = SecBuf::with_insecure(rust_sodium_sys::crypto_sign_bytes());
         secret_key.readable();
         let mut message = message.write_lock();
         let mut secret_key = secret_key.write_lock();
@@ -52,19 +33,14 @@ pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf){
         let mut out_len = out.len();
         let mess_len = message.len() as libc::c_ulonglong;
         rust_sodium_sys::crypto_sign_detached(raw_ptr_char!(out),raw_ptr_longlong!(out_len),raw_ptr_char!(message),mess_len,raw_ptr_char!(secret_key));
-        // return out;
     }
+    return out;
 }
 
 
 
-/// verify a signature given the message and a publicKey
-/// @example
-/// const isGood = mosodium.sign.verify(sig, Buffer.from('hello'), pubKey)
-/// @param {Buffer} signature
-/// @param {Buffer} message
-/// @param {Buffer} publicKey
 pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, publicKey: &mut SecBuf)->i32{
+    println!("<Verify/>");
     unsafe{
         let mut message = message.write_lock();
         let mut publicKey = publicKey.write_lock();
@@ -77,25 +53,31 @@ pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, publicKey: &mut SecB
 mod tests {
     use super::*;
     #[test]
-    fn it_should_sign_the_secBuf() {
-        let mut b = SecBuf::with_insecure(1);
+    fn it_should_get_true_on_good_verify() {
+        let mut seed = SecBuf::with_insecure(2);
+        let mut public_key = SecBuf::with_insecure(2);
+        let mut secret_key = SecBuf::with_insecure(2);
+        let mut seed = seed.write_lock();
+        let mut secret_key = secret_key.write_lock();
+        let mut public_key = public_key.write_lock();
+        buf(&mut seed);
+        buf(&mut public_key);
+        buf(&mut secret_key);
+        seedKeypair(&mut public_key,&mut secret_key,&mut seed);
+        // seed.drop();
+        let mut message = SecBuf::with_insecure(2);
+        let mut message = message.write_lock();
+        buf(&mut message);
+        let mut sig = sign(&mut message,&mut secret_key);
+        // let ver = verify(&mut sig,&mut message,&mut public_key);
 
-        {
-            let mut b = b.write_lock();
-            b[0] = 42;
-        }
+        // secret_key.drop();
 
-        let mut kp = seedKeypair(&mut b);
-        // println!("{:?}", kp);
-        {
-            let b = b.read_lock();
-            // let pk = kp[0].read_lock();
-            let sk = &kp[1];
-            assert_eq!(b[0], 42);
-        }
-        let signed = sign(&mut b, &mut kp[1]);
-        {
-
-        }
+        // assert_eq!(1, ver);
     }
+
+    // #[test]
+    // fn it_should_get_false_on_bad_verify() {
+    // }
+
 }

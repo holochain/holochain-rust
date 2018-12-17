@@ -11,7 +11,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use regex::{Regex, RegexBuilder};
+use regex::RegexBuilder;
 use std::fmt::Debug;
 /// EAV (entity-attribute-value) data
 /// ostensibly for metadata about entries in the DHT

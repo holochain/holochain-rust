@@ -910,6 +910,7 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
 /// by the `receive` callback of the other node.
 /// # Examples
 /// ```rust
+/// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # use hdk::error::ZomeApiResult;

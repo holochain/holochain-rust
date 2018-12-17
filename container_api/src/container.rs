@@ -4,11 +4,7 @@ use crate::{
     error::HolochainInstanceError,
     Holochain,
 };
-use holochain_core::{
-    action::Action,
-    logger::Logger,
-    signal::{signal_channel, Signal, SignalReceiver},
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,
@@ -126,12 +122,11 @@ impl Container {
     /// @TODO: clean up the container creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config(&mut self) -> Result<SignalReceiver, String> {
+    pub fn load_config(&mut self) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
         let config = self.config.clone();
         let mut instances = HashMap::new();
-        let (signal_tx, signal_rx) = signal_channel();
 
         let errors: Vec<_> = config
             .instance_ids()
@@ -140,7 +135,12 @@ impl Container {
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(&id, &config, &mut self.dna_loader, signal_tx.clone()),
+                    instantiate_from_config(
+                        &id,
+                        &config,
+                        &mut self.dna_loader,
+                        self.signal_tx.clone(),
+                    ),
                 )
             })
             .filter_map(|(id, maybe_holochain)| match maybe_holochain {
@@ -157,7 +157,7 @@ impl Container {
 
         if errors.len() == 0 {
             self.instances = instances;
-            Ok(signal_rx)
+            Ok(())
         } else {
             Err(errors.iter().nth(0).unwrap().clone())
         }
@@ -236,7 +236,7 @@ pub fn instantiate_from_config(
     id: &String,
     config: &Configuration,
     dna_loader: &mut DnaLoader,
-    signal_tx: SignalSender,
+    signal_tx: Option<SignalSender>,
 ) -> Result<Holochain, String> {
     let _ = config.check_consistency()?;
 
@@ -254,7 +254,6 @@ pub fn instantiate_from_config(
             })?;
 
             let mut context_builder = ContextBuilder::new();
-
             let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
             context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
@@ -269,19 +268,14 @@ pub fn instantiate_from_config(
             }
 
             let context = context_builder.spawn();
-            Holochain::new_with_signals(dna, Arc::new(context), signal_tx, signal_filter)
-                .map_err(|hc_err| hc_err.to_string())
+            match signal_tx {
+                Some(signal_tx) => {
+                    Holochain::new_with_signals(dna, Arc::new(context), signal_tx, |_| true)
+                }
+                None => Holochain::new(dna, Arc::new(context)),
+            }
+            .map_err(|hc_err| hc_err.to_string())
         })
-}
-
-/// This function defines which Actions to filter out for internal signals
-fn signal_filter(action: &Action) -> bool {
-    use self::Action::InitApplication;
-
-    match action {
-        InitApplication(_) => false,
-        _ => true,
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -295,7 +289,8 @@ impl Logger for NullLogger {
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
-    //use holochain_core_types::agent::AgentId;
+
+    use holochain_core::signal::signal_channel;
     use std::{fs::File, io::Write};
 
     use tempfile::tempdir;
@@ -438,7 +433,7 @@ pub mod tests {
             &"test-instance-1".to_string(),
             &config,
             &mut test_dna_loader(),
-            tx,
+            Some(tx),
         );
 
         assert_eq!(maybe_holochain.err(), None);
@@ -500,16 +495,29 @@ pub mod tests {
 
     #[test]
     fn container_signal_handler() {
-        use std::sync::mpsc::TryRecvError;
+        use holochain_core::action::Action;
         let (signal_tx, signal_rx) = signal_channel();
         let _container = test_container_with_signals(signal_tx);
 
-        // NB: this is a pretty poor test, but it's the best we can do for now
-        // since this container is not hooked up to a real DNA
-        match signal_rx.try_recv() {
-            Err(TryRecvError::Empty) => (),
-            _ => panic!("Got unexpected result recv'ing from empty channel"),
-        }
+        test_utils::expect_action(&signal_rx, |action| match action {
+            Action::InitApplication(_) => true,
+            _ => false,
+        })
+        .unwrap();
+
+        // expect one InitNetwork for each instance
+
+        test_utils::expect_action(&signal_rx, |action| match action {
+            Action::InitNetwork(_) => true,
+            _ => false,
+        })
+        .unwrap();
+
+        test_utils::expect_action(&signal_rx, |action| match action {
+            Action::InitNetwork(_) => true,
+            _ => false,
+        })
+        .unwrap();
     }
 
 }

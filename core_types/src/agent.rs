@@ -131,15 +131,16 @@ pub static GOOD_ID: &'static str =
     "sandwich--------------------------------------------------------------------------AAAEqzh28L";
 pub static BAD_ID: &'static str =
     "asndwich--------------------------------------------------------------------------AAAEqzh28L";
+pub static TOO_BAD_ID: &'static str =
+    "asadwich--------------------------------------------------------------------------AAAEqzh28L";
 
-pub fn test_agent_id() -> AgentId {
-    let key = &KeyBuffer::with_corrected(BAD_ID).unwrap();
-    AgentId::new("bob", key)
+pub fn test_base64_to_agent_id(s: &str) -> Result<AgentId, HolochainError> {
+    let key = &KeyBuffer::with_corrected(s)?;
+    Ok(AgentId::new("bob", key))
 }
 
-pub fn test_good_agent_id() -> AgentId {
-    let key = &KeyBuffer::with_corrected(GOOD_ID).unwrap();
-    AgentId::new("bob", key)
+pub fn test_agent_id() -> AgentId {
+    test_base64_to_agent_id(BAD_ID).unwrap()
 }
 
 #[cfg(test)]
@@ -152,7 +153,7 @@ mod tests {
 
     #[test]
     fn it_should_allow_buffer_access() {
-        let buf = test_good_agent_id().to_buffer();
+        let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
 
         assert_eq!(
             &[
@@ -182,6 +183,12 @@ mod tests {
     #[test]
     fn it_should_correct_errors() {
         assert_eq!(GOOD_ID.to_string(), test_agent_id().address().to_string());
+    }
+
+    #[test]
+    fn it_fails_if_too_many_errors() {
+        let res = test_base64_to_agent_id(TOO_BAD_ID);
+        assert!(res.is_err())
     }
 
     #[test]

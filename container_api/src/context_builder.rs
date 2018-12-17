@@ -42,7 +42,7 @@ impl ContextBuilder {
         }
     }
 
-    /// Sets the agent of the context that gets build.
+    /// Sets the agent of the context that gets built.
     pub fn with_agent(&mut self, agent_id: AgentId) -> &mut Self {
         self.agent_id = Some(agent_id);
         self

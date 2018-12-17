@@ -175,6 +175,7 @@ jobs:
 
         - .cargo
         - .rustup
+        - target
 
         - core/src/nucleus/actions/wasm-test/.cargo
         - core/src/nucleus/actions/wasm-test/target

@@ -164,8 +164,12 @@ jobs:
         - RUSTFLAGS="-C lto=no"
       install:
        - rustup target add $HC_WASM_TARGET
+      cache:
+       directories:
+        - core/src/nucleus/actions/wasm-test/.cargo
+        - core/src/nucleus/actions/wasm-test/target
       script:
-       - WASM_PATH=core/src/nucleus/actions/wasm-test CARGO_HOME=core/src/nucleus/actions/wasm-test/.cargo CARGO_TARGET_DIR=$WASM_PATH/target cargo build --release --target $HC_WASM_TARGET --manifest-path $WASM_PATH/Cargo.toml
+       - CARGO_HOME=core/src/nucleus/actions/wasm-test/.cargo CARGO_TARGET_DIR=core/src/nucleus/actions/wasm-test/target cargo build --release --target $HC_WASM_TARGET --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml
 
     - name: "windows build & test all"
       <<: *_windows_template

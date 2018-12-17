@@ -78,7 +78,7 @@ pub(crate) fn reduce_hold_entry(
 
     // Initialize CRUD status meta
     let meta_storage = &new_store.meta_storage().clone();
-    create_crud_status_eav(&entry.address(), CrudStatus::LIVE)
+    create_crud_status_eav(&entry.address(), CrudStatus::Live)
         .map(|status_eav| {
             let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
             if res.is_err() {
@@ -147,7 +147,7 @@ pub(crate) fn reduce_update_entry(
     let latest_old_address = old_address;
     let meta_storage = &new_store.meta_storage().clone();
     let closure_store = new_store.clone();
-    let new_status_eav_option = create_crud_status_eav(latest_old_address, CrudStatus::MODIFIED)
+    let new_status_eav_option = create_crud_status_eav(latest_old_address, CrudStatus::Modified)
         .map(|new_status_eav| {
             let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
             if let Err(err) = res {
@@ -253,7 +253,7 @@ fn reduce_remove_entry_inner(
         )));
     }
     // Update crud-status
-    let result = create_crud_status_eav(latest_deleted_address, CrudStatus::DELETED);
+    let result = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
     if result.is_err() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Could not create eav",

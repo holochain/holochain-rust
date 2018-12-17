@@ -257,7 +257,6 @@ pub fn instantiate_from_config(
             })?;
 
             let mut context_builder = ContextBuilder::new();
-
             let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
             context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
@@ -289,13 +288,14 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::{config::load_configuration, interface::DispatchRpc};
-
-    use tempfile::tempdir;
-
     use holochain_core::{action::Action, signal::signal_channel};
+
+    use std::{fs::File, io::Write};
+    use tempfile::tempdir;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| {
@@ -309,13 +309,13 @@ pub mod tests {
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
-    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
     key_file = "holo_tester.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
-    public_address = "HoloTester2-------------------------------------------------------------------------AJmU"
+    public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
     key_file = "holo_tester.key"
 
     [[dnas]]

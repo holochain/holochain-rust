@@ -4,10 +4,7 @@ use crate::{
     error::HolochainInstanceError,
     Holochain,
 };
-use holochain_core::{
-    logger::Logger,
-    signal::Signal,
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,
@@ -298,8 +295,7 @@ pub mod tests {
 
     use tempfile::tempdir;
 
-    use holochain_core::signal::signal_channel;
-
+    use holochain_core::{action::Action, signal::signal_channel};
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| {
@@ -500,8 +496,7 @@ pub mod tests {
     }
 
     #[test]
-    fn container_signal_handler() {
-        use holochain_core::action::Action;
+    fn test_container_signal_handler() {
         let (signal_tx, signal_rx) = signal_channel();
         let _container = test_container_with_signals(signal_tx);
 

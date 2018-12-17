@@ -1,6 +1,6 @@
 use holochain_container_api::{
     config::{
-        AgentConfiguration, Configuration, DNAConfiguration, InstanceConfiguration,
+        AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
         LoggerConfiguration, StorageConfiguration,
     },
     Holochain,
@@ -122,9 +122,9 @@ fn instance_id(agent_id: &str, dna_id: &str) -> String {
     format!("{}-{}", agent_id, dna_id)
 }
 
-fn make_dna_config(path: PathBuf) -> Result<DNAConfiguration, String> {
+fn make_dna_config(path: PathBuf) -> Result<DnaConfiguration, String> {
     let path = path.to_string_lossy().to_string();
-    Ok(DNAConfiguration {
+    Ok(DnaConfiguration {
         id: path.clone(),
         hash: String::from("DONTCARE"),
         file: path,
@@ -132,6 +132,6 @@ fn make_dna_config(path: PathBuf) -> Result<DNAConfiguration, String> {
     // eventually can get actual file content to calculate hash and stuff,
     // but for now it doesn't matter so don't care...
 
-    // let temp = DNAConfiguration {id: "", hash: "", file: dna_path};
+    // let temp = DnaConfiguration {id: "", hash: "", file: dna_path};
     // let dna = Dna::try_from(temp).map_err(|e| e.to_string())?;
 }

@@ -4,7 +4,7 @@ use holochain_cas_implementations::{
 };
 use holochain_container_api::{
     config::{
-        AgentConfiguration, Configuration, DNAConfiguration, InstanceConfiguration,
+        AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
         LoggerConfiguration, StorageConfiguration, load_configuration,
     },
     container::Container,

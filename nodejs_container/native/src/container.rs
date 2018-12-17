@@ -5,7 +5,7 @@ use holochain_cas_implementations::{
 use holochain_container_api::{
     config::{
         AgentConfiguration, Configuration, DNAConfiguration, InstanceConfiguration,
-        LoggerConfiguration, StorageConfiguration,
+        LoggerConfiguration, StorageConfiguration, load_configuration,
     },
     container::Container,
     Holochain,
@@ -42,10 +42,20 @@ pub struct Habitat {
 
 declare_types! {
 
+    /// A Habitat can be initialized either by:
+    /// - an Object representation of a Configuration struct
+    /// - a string representing TOML
     pub class JsHabitat for Habitat {
         init(mut cx) {
-            let config_arg = cx.argument(0)?;
-            let config = neon_serde::from_value(&mut cx, config_arg)?;
+            let config_arg: Handle<JsValue> = cx.argument(0)?;
+            let config: Configuration = if config_arg.is_a::<JsObject>() {
+                neon_serde::from_value(&mut cx, config_arg)?
+            } else if config_arg.is_a::<JsString>() {
+                let toml_str: String = neon_serde::from_value(&mut cx, config_arg)?;
+                load_configuration(&toml_str).expect("Could not load TOML config")
+            } else {
+                panic!("Invalid type specified for config, must be object or string");
+            };
             let (signal_tx, signal_rx) = signal_channel();
             let container = Container::from_config(config).with_signal_channel(signal_tx);
             Ok(Habitat { container, signal_rx })
@@ -98,7 +108,7 @@ declare_types! {
             let call_result = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
-                let instance_arc = hab.container.get_instance_by_id(&instance_id)
+                let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
                 instance.call(&zome, &cap, &fn_name, &params)

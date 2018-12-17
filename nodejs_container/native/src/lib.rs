@@ -13,5 +13,5 @@ extern crate holochain_core_types;
 extern crate holochain_net;
 extern crate tempfile;
 
-mod config;
 pub mod container;
+mod config;

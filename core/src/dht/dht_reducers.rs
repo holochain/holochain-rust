@@ -70,32 +70,28 @@ pub(crate) fn reduce_hold_entry(
     let new_store = (*old_store).clone();
     let content_storage = &new_store.content_storage().clone();
     let res = (*content_storage.write().unwrap()).add(entry).ok();
-    res.and_then(|_|{
+    res.and_then(|_| {
         // Initialize CRUD status meta
-    let meta_storage = &new_store.meta_storage().clone();
-    create_crud_status_eav(&entry.address(), CrudStatus::Live)
-        .map(|status_eav| {
-            let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
-            let res_option = res.clone().ok();
-            res_option.and_then(|_|{
-                Some(new_store)
+        let meta_storage = &new_store.meta_storage().clone();
+        create_crud_status_eav(&entry.address(), CrudStatus::Live)
+            .map(|status_eav| {
+                let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
+                let res_option = res.clone().ok();
+                res_option.and_then(|_| Some(new_store)).or_else(|| {
+                    println!(
+                        "reduce_hold_entry: meta_storage write failed!: {:?}",
+                        res.err().unwrap()
+                    );
+                    None
+                })
             })
-            .or_else(||{
-
-                println!(
-                    "reduce_hold_entry: meta_storage write failed!: {:?}",
-                    res.err().unwrap()
-                );
-                None
-            })
-        })
-        .ok()
-        .unwrap_or(None)
-    }).or_else(||{
+            .ok()
+            .unwrap_or(None)
+    })
+    .or_else(|| {
         println!("dht::reduce_hold_entry() FAILED {:?}", res);
         None
     })
-
 }
 
 //
@@ -110,8 +106,7 @@ pub(crate) fn reduce_add_link(
 
     let mut new_store = (*old_store).clone();
     let storage = &old_store.content_storage().clone();
-    if !(*storage.read().unwrap()).contains(link.base()).unwrap() 
-    {
+    if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
@@ -119,10 +114,7 @@ pub(crate) fn reduce_add_link(
             ))),
         );
         Some(new_store)
-    }
-    else  
-    {
-        
+    } else {
         let eav =
             EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
         eav.map(|e| {
@@ -174,17 +166,21 @@ pub(crate) fn reduce_update_entry(
     create_crud_link_eav(latest_old_address, new_address)
         .map(|crud_link_eav| {
             let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
-            if let Err(err) = res {
-                new_store
-                    .actions_mut()
-                    .insert(action_wrapper.clone(), Err(err));
-                return Some(new_store);
-            }
-            // Done
-            new_store
-                .actions_mut()
-                .insert(action_wrapper.clone(), res.map(|_| new_address.clone()));
-            Some(new_store)
+            let res_option = res.clone().ok();
+            res_option
+                .and_then(|_| {
+                    new_store.actions_mut().insert(
+                        action_wrapper.clone(),
+                        res.clone().map(|_| new_address.clone()),
+                    );
+                    Some(new_store.clone())
+                })
+                .or_else(|| {
+                    new_store
+                        .actions_mut()
+                        .insert(action_wrapper.clone(), Err(res.err().unwrap()));
+                    Some(new_store.clone())
+                })
         })
         .ok()
         .unwrap_or(None)
@@ -220,12 +216,10 @@ fn reduce_remove_entry_inner(
         .unwrap()
         .fetch(latest_deleted_address)
         .unwrap();
-    if maybe_json_entry.is_none() {
-        return Err(HolochainError::ErrorGeneric(String::from(
-            "trying to remove a missing entry",
-        )));
-    }
-    let json_entry = maybe_json_entry.unwrap();
+    let json_entry = maybe_json_entry.ok_or_else(|| {
+        HolochainError::ErrorGeneric(String::from("trying to remove a missing entry"))
+    })?;
+
     let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
@@ -274,10 +268,6 @@ fn reduce_remove_entry_inner(
     let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
         .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
     let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
-    //    if let Err(err) = res {
-    //        return Err(err);
-    //    }
-    // Done
     res.map(|_| latest_deleted_address.clone())
 }
 

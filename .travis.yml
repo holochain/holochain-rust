@@ -154,6 +154,18 @@ jobs:
   include:
     - name: "windows sandbox"
       <<: *_windows_template
+      env:
+        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - NODIST_X64=1
+        - TRAVIS_NODE_VERSION=8
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+        - HC_WASM_TARGET=wasm32-unknown-unknown
+        - CARGO_INCREMENTAL=1
+        - RUSTFLAGS="-C lto=no"
+      install:
+       - rustup target add $HC_WASM_TARGET
+      script:
+       - WASM_PATH=core/src/nucleus/actions/wasm-test CARGO_HOME=core/src/nucleus/actions/wasm-test/.cargo CARGO_TARGET_DIR=$WASM_PATH/target cargo build --release --target $HC_WASM_TARGET --manifest-path $WASM_PATH/Cargo.toml
 
     - name: "windows build & test all"
       <<: *_windows_template

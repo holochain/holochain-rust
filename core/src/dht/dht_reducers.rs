@@ -266,13 +266,8 @@ fn reduce_remove_entry_inner(
         return Err(err);
     }
     // Update crud-link
-    let result = create_crud_link_eav(latest_deleted_address, deletion_address);
-    if result.is_err() {
-        return Err(HolochainError::ErrorGeneric(String::from(
-            "Could not create eav",
-        )));
-    }
-    let crud_link_eav = result.expect("Should create crud link");
+    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
+                 .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
     let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
     //    if let Err(err) = res {
     //        return Err(err);

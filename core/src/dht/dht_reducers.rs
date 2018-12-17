@@ -69,32 +69,33 @@ pub(crate) fn reduce_hold_entry(
     // Add it to local storage
     let new_store = (*old_store).clone();
     let content_storage = &new_store.content_storage().clone();
-    let res = (*content_storage.write().unwrap()).add(entry);
-    if res.is_err() {
-        // TODO #439 - Log the error. Once we have better logging.
-        println!("dht::reduce_hold_entry() FAILED {:?}", res);
-        return None;
-    }
-
-    // Initialize CRUD status meta
+    let res = (*content_storage.write().unwrap()).add(entry).ok();
+    res.and_then(|_|{
+        // Initialize CRUD status meta
     let meta_storage = &new_store.meta_storage().clone();
     create_crud_status_eav(&entry.address(), CrudStatus::Live)
         .map(|status_eav| {
             let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
-            if res.is_err() {
-                // TODO #439 - Log the error. Once we have better logging.
+            let res_option = res.clone().ok();
+            res_option.and_then(|_|{
+                Some(new_store)
+            })
+            .or_else(||{
+
                 println!(
                     "reduce_hold_entry: meta_storage write failed!: {:?}",
                     res.err().unwrap()
                 );
-                return None;
-            }
-
-            // Done
-            Some(new_store)
+                None
+            })
         })
         .ok()
         .unwrap_or(None)
+    }).or_else(||{
+        println!("dht::reduce_hold_entry() FAILED {:?}", res);
+        None
+    })
+
 }
 
 //
@@ -109,28 +110,32 @@ pub(crate) fn reduce_add_link(
 
     let mut new_store = (*old_store).clone();
     let storage = &old_store.content_storage().clone();
-    if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
+    if !(*storage.read().unwrap()).contains(link.base()).unwrap() 
+    {
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
                 "Base for link not found",
             ))),
         );
-        return Some(new_store);
-    }
-
-    let eav =
-        EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
-    eav.map(|e| {
-        let storage = new_store.meta_storage();
-        let result = storage.write().unwrap().add_eav(&e);
-        new_store
-            .actions_mut()
-            .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
         Some(new_store)
-    })
-    .ok()
-    .unwrap_or(None)
+    }
+    else  
+    {
+        
+        let eav =
+            EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
+        eav.map(|e| {
+            let storage = new_store.meta_storage();
+            let result = storage.write().unwrap().add_eav(&e);
+            new_store
+                .actions_mut()
+                .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
+            Some(new_store)
+        })
+        .ok()
+        .unwrap_or(None)
+    }
 }
 
 //
@@ -198,7 +203,7 @@ pub(crate) fn reduce_remove_entry(
     let res = reduce_remove_entry_inner(context, &mut new_store, deleted_address, deletion_address);
     // Done
     new_store.actions_mut().insert(action_wrapper.clone(), res);
-    return Some(new_store);
+    Some(new_store)
 }
 
 //

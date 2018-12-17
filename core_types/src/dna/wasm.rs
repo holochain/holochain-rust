@@ -8,6 +8,7 @@ use serde::{
     de::{Deserializer, Visitor},
     ser::Serializer,
 };
+use std::fmt;
 
 /// Private helper for converting binary WebAssembly into base64 serialized string.
 fn _vec_u8_to_b64_str<S>(data: &[u8], s: S) -> Result<S::Ok, S::Error>
@@ -50,7 +51,7 @@ where
 }
 
 /// Represents web assembly code.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Hash)]
 pub struct DnaWasm {
     /// The actual binary WebAssembly bytecode goes here.
     #[serde(
@@ -67,6 +68,12 @@ impl Default for DnaWasm {
     /// Provide defaults for wasm entries in dna structs.
     fn default() -> Self {
         DnaWasm { code: vec![] }
+    }
+}
+
+impl fmt::Debug for DnaWasm {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<<<DNA WASM CODE>>>")
     }
 }
 

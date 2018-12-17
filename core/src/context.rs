@@ -1,5 +1,6 @@
 use crate::{
-    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, state::State,
+    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister,
+    signal::Signal, state::State,
 };
 use holochain_core_types::{
     agent::AgentId,
@@ -11,10 +12,7 @@ use holochain_core_types::{
 };
 use holochain_net::p2p_config::P2pConfig;
 use std::{
-    sync::{
-        mpsc::{sync_channel, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
     time::Duration,
 };
@@ -29,8 +27,9 @@ pub struct Context {
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
-    pub action_channel: SyncSender<ActionWrapper>,
-    pub observer_channel: SyncSender<Observer>,
+    pub action_channel: Option<SyncSender<ActionWrapper>>,
+    pub signal_channel: Option<SyncSender<Signal>>,
+    pub observer_channel: Option<SyncSender<Observer>>,
     pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
@@ -49,15 +48,14 @@ impl Context {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
     ) -> Result<Context, HolochainError> {
-        let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
-        let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
         Ok(Context {
             agent_id,
             logger,
             persister,
             state: None,
-            action_channel: tx_action,
-            observer_channel: tx_observer,
+            action_channel: None,
+            signal_channel: None,
+            observer_channel: None,
             file_storage: cas,
             eav_storage: eav,
             network_config,
@@ -68,8 +66,9 @@ impl Context {
         agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        action_channel: SyncSender<ActionWrapper>,
-        observer_channel: SyncSender<Observer>,
+        action_channel: Option<SyncSender<ActionWrapper>>,
+        signal_channel: Option<SyncSender<Signal>>,
+        observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
@@ -80,6 +79,7 @@ impl Context {
             persister,
             state: None,
             action_channel,
+            signal_channel,
             observer_channel,
             file_storage: cas,
             eav_storage: eav,
@@ -143,6 +143,29 @@ impl Context {
         let dna = self.get_dna().expect("Callback called without DNA set!");
         dna.get_wasm_from_zome_name(zome)
             .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
+    }
+
+    // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
+    // rather than Option<SyncSenders>, but these would be initialized by default to broken channels
+    // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
+    // that potential failure mode.
+    // @see https://github.com/holochain/holochain-rust/issues/739
+    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+        self.action_channel
+            .as_ref()
+            .expect("Action channel not initialized")
+    }
+
+    pub fn signal_channel(&self) -> &SyncSender<Signal> {
+        self.signal_channel
+            .as_ref()
+            .expect("Signal channel not initialized")
+    }
+
+    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+        self.observer_channel
+            .as_ref()
+            .expect("Observer channel not initialized")
     }
 }
 

@@ -24,7 +24,7 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
         agent_id,
     };
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
 
     await!(InitNetworkFuture {
         context: context.clone(),
@@ -43,7 +43,7 @@ pub async fn initialize_network_with_spoofed_dna(
         agent_id,
     };
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
 
     await!(InitNetworkFuture {
         context: context.clone(),

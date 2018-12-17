@@ -9,33 +9,68 @@ jobs:
       - restore_cache:
           keys:
             # todo: keys for each target
-            - rust-{{ checksum "Cargo.toml" }}
+            - v3-rust-{{ checksum "Cargo.toml" }}
 
       - run:
           name: fmt check
           command: nix-shell --run hc-fmt-check
 
+      # wasm tests
+      - restore_cache:
+          keys:
+            - v6-wasm-{{ checksum "shell.nix" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
       - run:
-          name: code coverage tests and push
-          command: nix-shell --run ci-codecov
+          name: build wasm
+          command: nix-shell --run hc-wasm-build
+      - save_cache:
+          key: v6-wasm-{{ checksum "shell.nix" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
+          paths:
+            - "./core/src/nucleus/actions/wasm-test/target"
+            - "./core/src/nucleus/actions/wasm-test/.cargo"
+
+            - "./container_api/wasm-test/target"
+            - "./container_api/wasm-test/.cargo"
+
+            - "./hdk-rust/wasm-test/target"
+            - "./hdk-rust/wasm-test/.cargo"
+
+            - "./wasm_utils/wasm-test/integration-test/target"
+            - "./wasm_utils/wasm-test/integration-test/.cargo"
+
+      - run:
+          name: run all tests
+          command: nix-shell --run hc-test
+
+      - run:
+          name: install cmd
+          command: nix-shell --run hc-install-cmd
+
+      # test the node container build
+      # todo - this cache doesn't stop recompilation of rust on node container
+      - restore_cache:
+          keys:
+            - v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
+      - run:
+          name: install node container
+          command: nix-shell --run hc-install-node-container
+      - save_cache:
+          key: v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
+          paths:
+            - "./nodejs_container/native/target"
+            - "./nodejs_container/node_modules"
+            - "./nodejs_container/native/Cargo.lock"
 
       - run:
           name: app spec tests
-          command: nix-shell --run ci-app-spec
-
+          command: nix-shell --run hc-test-app-spec
 
       - save_cache:
-          key: rust-{{ checksum "Cargo.toml" }}
+          key: v3-rust-{{ checksum "Cargo.toml" }}
           paths:
             - "~/.cargo"
             - "./target"
             - "./app_spec/zomes/blog/code/target"
             - "./app_spec/zomes/summer/code/target"
-            - "./nodejs_container/native/target"
-            - "./container_api/wasm-test/target"
             - "./core/src/nucleus/ribosome/target"
             - "./core/src/nucleus/wasm-test/target"
-            - "./core/src/nucleus/actions/wasm-test/target"
-            - "./wasm_utils/wasm-test/integration-test/target"
-            - "./hdk-rust/wasm-test/target"
             - "./test_utils/target"

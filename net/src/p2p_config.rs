@@ -1,3 +1,5 @@
+//! ?
+
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use std::{fs::File, str::FromStr};
 
@@ -5,6 +7,7 @@ use std::{fs::File, str::FromStr};
 // P2pBackendKind
 //--------------------------------------------------------------------------------------------------
 
+/// ?
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
     MOCK,
@@ -47,9 +50,12 @@ impl From<&'static str> for P2pBackendKind {
 // P2pConfig
 //--------------------------------------------------------------------------------------------------
 
+/// ?
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct P2pConfig {
+    /// ?
     pub backend_kind: P2pBackendKind,
+    /// ?
     pub backend_config: serde_json::Value,
 }
 
@@ -61,6 +67,7 @@ impl FromStr for P2pConfig {
     }
 }
 impl P2pConfig {
+    /// ?
     pub fn as_str(&self) -> String {
         // unwrap() is safe since there is no way this can fail
         // since this struct derives from Serialize.
@@ -70,6 +77,7 @@ impl P2pConfig {
 
 // Constructors
 impl P2pConfig {
+    /// ?
     pub fn new(backend_kind: P2pBackendKind, backend_config: &str) -> Self {
         P2pConfig {
             backend_kind,
@@ -78,6 +86,7 @@ impl P2pConfig {
         }
     }
 
+    /// ?
     pub fn from_file(filepath: &str) -> Self {
         let config_file =
             File::open(filepath).expect("Failed to open filepath on P2pConfig creation.");
@@ -85,11 +94,13 @@ impl P2pConfig {
             .expect("file is not a proper JSON of a P2pConfig struct")
     }
 
+    /// ?
     pub fn default_mock() -> Self {
         P2pConfig::from_str(P2pConfig::DEFAULT_MOCK_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
+    /// ?
     pub fn default_ipc() -> Self {
         P2pConfig::from_str(P2pConfig::DEFAULT_IPC_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")
@@ -98,11 +109,13 @@ impl P2pConfig {
 
 // statics
 impl P2pConfig {
+    /// ?
     pub const DEFAULT_MOCK_CONFIG: &'static str = r#"{
     "backend_kind": "MOCK",
     "backend_config": ""
     }"#;
 
+    /// ?
     pub const DEFAULT_IPC_CONFIG: &'static str = r#"
     {
       "backend_kind": "IPC",

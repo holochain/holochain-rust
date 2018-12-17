@@ -1,3 +1,5 @@
+//! This module holds util functions, such as constructing time related values
+
 use std;
 
 /// helper to get milliseconds since the unix epoch as an f64

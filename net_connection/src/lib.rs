@@ -25,6 +25,7 @@ extern crate serde_json;
 
 use failure::Error;
 
+/// ?
 pub type NetResult<T> = Result<T, Error>;
 
 pub mod net_connection;

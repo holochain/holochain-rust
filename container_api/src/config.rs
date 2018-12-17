@@ -16,10 +16,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     json::JsonString,
 };
-use petgraph::{
-    algo::toposort, graph::DiGraph,
-    prelude::NodeIndex,
-};
+use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
 use toml;
@@ -78,18 +75,22 @@ impl Configuration {
         }
 
         for ref bridge in self.bridges.iter() {
-            self.instance_by_id(&bridge.callee_id).is_some().ok_or_else(|| {
-                format!(
-                    "Instance configuration \"{}\" not found, mentioned in bridge",
-                    bridge.callee_id
-                )
-            })?;
-            self.instance_by_id(&bridge.caller_id).is_some().ok_or_else(|| {
-                format!(
-                    "Instance configuration \"{}\" not found, mentioned in bridge",
-                    bridge.caller_id
-                )
-            })?;
+            self.instance_by_id(&bridge.callee_id)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "Instance configuration \"{}\" not found, mentioned in bridge",
+                        bridge.callee_id
+                    )
+                })?;
+            self.instance_by_id(&bridge.caller_id)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "Instance configuration \"{}\" not found, mentioned in bridge",
+                        bridge.caller_id
+                    )
+                })?;
         }
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
@@ -131,24 +132,24 @@ impl Configuration {
     /// such that this ordering of instances can be used to spawn them and simultaneously create
     /// initialize the bridges and be able to assert that any callee already exists (which makes
     /// this task much easier).
-    pub fn instance_ids_sorted_by_bridge_dependencies(&self) -> Result<Vec<String>, HolochainError> {
+    pub fn instance_ids_sorted_by_bridge_dependencies(
+        &self,
+    ) -> Result<Vec<String>, HolochainError> {
         let mut graph = DiGraph::<&str, &str>::new();
 
         // Add instance ids to the graph which returns the indices the graph is using.
         // Storing those in a map from ids to create edges from bridges below.
-        let index_map : HashMap<_,_> = self.instances
+        let index_map: HashMap<_, _> = self
+            .instances
             .iter()
-            .map(|instance| {
-                (instance.id.clone(), graph.add_node(&instance.id))
-            })
+            .map(|instance| (instance.id.clone(), graph.add_node(&instance.id)))
             .collect();
 
         // Reverse of graph indices to instance ids to create the return vector below.
-        let reverse_map : HashMap<_,_> = self.instances
+        let reverse_map: HashMap<_, _> = self
+            .instances
             .iter()
-            .map(|instance| {
-                (index_map.get(&instance.id).unwrap(), instance.id.clone())
-            })
+            .map(|instance| (index_map.get(&instance.id).unwrap(), instance.id.clone()))
             .collect();
 
         // Create vector of edges (with node indices) from bridges:
@@ -174,10 +175,9 @@ impl Configuration {
         }
 
         // Sort with petgraph::algo::toposort
-        let mut sorted_nodes = toposort(&graph, None)
-            .map_err(|_cycle_error|
-                HolochainError::ConfigError("Cyclic dependency in bridge configuration".to_string())
-            )?;
+        let mut sorted_nodes = toposort(&graph, None).map_err(|_cycle_error| {
+            HolochainError::ConfigError("Cyclic dependency in bridge configuration".to_string())
+        })?;
 
         // REVERSE order because we want to the instance with NO dependencies first
         // since that is the instance we should spawn first.
@@ -188,8 +188,7 @@ impl Configuration {
             .iter()
             .map(|node_index| reverse_map.get(node_index).unwrap())
             .cloned()
-            .collect()
-        )
+            .collect())
     }
 }
 
@@ -693,8 +692,10 @@ pub mod tests {
     [[bridges]]
     caller_id = "app2"
     callee_id = "app3"
-    "#);
-        let config = load_configuration::<Configuration>(&toml).expect("Config should be syntactically correct");
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
         assert_eq!(config.check_consistency(), Ok(()));
 
         // "->": calls
@@ -707,8 +708,8 @@ pub mod tests {
             Ok(vec![
                 String::from("app3"),
                 String::from("app2"),
-                String::from("app1")]
-            )
+                String::from("app1")
+            ])
         );
     }
 
@@ -727,9 +728,14 @@ pub mod tests {
     [[bridges]]
     caller_id = "app3"
     callee_id = "app1"
-    "#);
-        let config = load_configuration::<Configuration>(&toml).expect("Config should be syntactically correct");
-        assert_eq!(config.check_consistency(), Err("Cyclic dependency in bridge configuration".to_string()));
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("Cyclic dependency in bridge configuration".to_string())
+        );
     }
 
     #[test]
@@ -747,8 +753,13 @@ pub mod tests {
     [[bridges]]
     caller_id = "app9000"
     callee_id = "app1"
-    "#);
-        let config = load_configuration::<Configuration>(&toml).expect("Config should be syntactically correct");
-        assert_eq!(config.check_consistency(), Err("Instance configuration \"app9000\" not found, mentioned in bridge".to_string()));
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("Instance configuration \"app9000\" not found, mentioned in bridge".to_string())
+        );
     }
 }

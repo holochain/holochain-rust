@@ -4,10 +4,7 @@ use crate::{
     error::HolochainInstanceError,
     Holochain,
 };
-use holochain_core::{
-    logger::Logger,
-    signal::Signal,
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,

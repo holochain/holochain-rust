@@ -48,17 +48,6 @@ impl DhtStore {
         }
     }
 
-    // Linking
-    // =======
-    pub fn add_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
-        // FIXME
-        Err(HolochainError::NotImplemented)
-    }
-
-    pub fn remove_link(&mut self) {
-        // FIXME
-    }
-
     pub fn get_links(
         &self,
         address: Address,

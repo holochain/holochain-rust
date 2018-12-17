@@ -58,6 +58,9 @@ pub fn validate_entry(
         // TODO: Specify how Deletion can be commited to chain.
         EntryType::Deletion => Ok(CallbackResult::Pass),
 
+        // a grant should always be private, so it should always pass
+        EntryType::CapTokenGrant => Ok(CallbackResult::Pass),
+
         _ => Ok(CallbackResult::NotImplemented),
     }
 }

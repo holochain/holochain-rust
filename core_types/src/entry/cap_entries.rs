@@ -1,22 +1,25 @@
 use crate::{
-    cas::content::Address, dna::capabilities::CapabilityType, error::HolochainError,
+    cas::content::{Address, AddressableContent},
+    dna::capabilities::CapabilityType,
+    entry::Entry,
+    error::HolochainError,
     json::JsonString,
 };
 
-pub type CapTokenValue = String;
+pub type CapTokenValue = Address;
 
 /// a struct to hold the signature of the call
 pub struct CallSignature {}
 
 /// System entry to hold a capability token for use as a caller
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
-pub struct CapTokenEntry {
+pub struct CapToken {
     token: CapTokenValue,
 }
 
-impl CapTokenEntry {
+impl CapToken {
     pub fn new(token: CapTokenValue) -> Self {
-        CapTokenEntry { token }
+        CapToken { token }
     }
     pub fn token(self) -> CapTokenValue {
         self.token
@@ -25,20 +28,14 @@ impl CapTokenEntry {
 
 /// System entry to hold a capabilities granted by the callee
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
-pub struct CapTokenGrantEntry {
+pub struct CapTokenGrant {
     assignees: Option<Vec<Address>>,
-    token: CapTokenValue,
 }
 
-fn gen_token() -> CapTokenValue {
-    "fake_token".to_string()
-}
-
-impl CapTokenGrantEntry {
+impl CapTokenGrant {
     pub fn new(assignees: Option<Vec<Address>>) -> Self {
-        CapTokenGrantEntry {
+        CapTokenGrant {
             assignees: assignees,
-            token: gen_token(),
         }
     }
 
@@ -46,8 +43,8 @@ impl CapTokenGrantEntry {
         cap_type: CapabilityType,
         assignees: Option<Vec<Address>>,
     ) -> Result<Self, HolochainError> {
-        let assignees = CapTokenGrantEntry::valid(cap_type, assignees)?;
-        Ok(CapTokenGrantEntry::new(assignees))
+        let assignees = CapTokenGrant::valid(cap_type, assignees)?;
+        Ok(CapTokenGrant::new(assignees))
     }
 
     // internal check that type and assignees are valid for create
@@ -76,8 +73,11 @@ impl CapTokenGrantEntry {
         }
     }
 
+    // the token value is address of the entry, so we can just build it
+    // and take the address.
     pub fn token(&self) -> CapTokenValue {
-        self.token.clone()
+        let addr: Address = Entry::CapTokenGrant((*self).clone()).address();
+        addr
     }
 
     pub fn cap_type(&self) -> CapabilityType {
@@ -97,6 +97,7 @@ impl CapTokenGrantEntry {
         self.assignees.clone()
     }
 
+    /// verifies that this grant is valid for a given requester and token value
     pub fn verify(
         &self,
         token: CapTokenValue,
@@ -110,7 +111,8 @@ impl CapTokenGrantEntry {
         if !from.is_some() {
             return false;
         }
-        if self.token != token {
+
+        if self.token() != token {
             return false;
         }
 
@@ -134,74 +136,60 @@ pub mod tests {
     use super::*;
 
     #[test]
-    fn test_new_cap_token_entry() {
-        let token = gen_token();
-        let cap_token_entry = CapTokenEntry::new(token.clone());
-        assert_eq!(token, cap_token_entry.token());
-    }
-
-    #[test]
     fn test_new_cap_token_grant_entry() {
-        let entry = CapTokenGrantEntry::new(None);
-        assert_eq!(entry.cap_type(), CapabilityType::Public);
-        let entry = CapTokenGrantEntry::new(Some(Vec::new()));
-        assert_eq!(entry.cap_type(), CapabilityType::Transferable);
+        let grant = CapTokenGrant::new(None);
+        assert_eq!(grant.cap_type(), CapabilityType::Public);
+        let grant = CapTokenGrant::new(Some(Vec::new()));
+        assert_eq!(grant.cap_type(), CapabilityType::Transferable);
         let test_address = Address::new();
-        let entry = CapTokenGrantEntry::new(Some(vec![test_address.clone()]));
-        assert_eq!(entry.cap_type(), CapabilityType::Assigned);
-        assert_eq!(entry.assignees().unwrap()[0], test_address)
+        let grant = CapTokenGrant::new(Some(vec![test_address.clone()]));
+        assert_eq!(grant.cap_type(), CapabilityType::Assigned);
+        assert_eq!(grant.assignees().unwrap()[0], test_address)
     }
 
     #[test]
     fn test_cap_grant_valid() {
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Public, None).is_ok());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Public, Some(Vec::new())).is_ok());
+        assert!(CapTokenGrant::valid(CapabilityType::Public, None).is_ok());
+        assert!(CapTokenGrant::valid(CapabilityType::Public, Some(Vec::new())).is_ok());
+        assert!(CapTokenGrant::valid(CapabilityType::Public, Some(vec![Address::new()])).is_err());
+        assert!(CapTokenGrant::valid(CapabilityType::Transferable, None).is_ok());
+        assert!(CapTokenGrant::valid(CapabilityType::Transferable, Some(Vec::new())).is_ok());
         assert!(
-            CapTokenGrantEntry::valid(CapabilityType::Public, Some(vec![Address::new()])).is_err()
+            CapTokenGrant::valid(CapabilityType::Transferable, Some(vec![Address::new()])).is_err()
         );
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Transferable, None).is_ok());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Transferable, Some(Vec::new())).is_ok());
-        assert!(CapTokenGrantEntry::valid(
-            CapabilityType::Transferable,
-            Some(vec![Address::new()])
-        )
-        .is_err());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Assigned, None).is_err());
-        assert!(CapTokenGrantEntry::valid(CapabilityType::Assigned, Some(Vec::new())).is_err());
-        assert!(
-            CapTokenGrantEntry::valid(CapabilityType::Assigned, Some(vec![Address::new()])).is_ok()
-        );
+        assert!(CapTokenGrant::valid(CapabilityType::Assigned, None).is_err());
+        assert!(CapTokenGrant::valid(CapabilityType::Assigned, Some(Vec::new())).is_err());
+        assert!(CapTokenGrant::valid(CapabilityType::Assigned, Some(vec![Address::new()])).is_ok());
     }
 
     #[test]
     fn test_create_cap_token_grant_entry() {
-        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Public, None);
-        assert!(maybe_entry.is_ok());
-        let entry = maybe_entry.unwrap();
-        assert_eq!(entry.cap_type(), CapabilityType::Public);
+        let maybe_grant = CapTokenGrant::create(CapabilityType::Public, None);
+        assert!(maybe_grant.is_ok());
+        let grant = maybe_grant.unwrap();
+        assert_eq!(grant.cap_type(), CapabilityType::Public);
 
-        let maybe_entry =
-            CapTokenGrantEntry::create(CapabilityType::Transferable, Some(Vec::new()));
-        assert!(maybe_entry.is_ok());
-        let entry = maybe_entry.unwrap();
-        assert_eq!(entry.cap_type(), CapabilityType::Transferable);
+        let maybe_grant = CapTokenGrant::create(CapabilityType::Transferable, Some(Vec::new()));
+        assert!(maybe_grant.is_ok());
+        let grant = maybe_grant.unwrap();
+        assert_eq!(grant.cap_type(), CapabilityType::Transferable);
 
         let test_address = Address::new();
 
-        let maybe_entry =
-            CapTokenGrantEntry::create(CapabilityType::Public, Some(vec![test_address.clone()]));
-        assert!(maybe_entry.is_err());
-        let maybe_entry = CapTokenGrantEntry::create(CapabilityType::Transferable, None);
-        assert!(maybe_entry.is_ok());
-        let entry = maybe_entry.unwrap();
-        assert_eq!(entry.cap_type(), CapabilityType::Transferable);
+        let maybe_grant =
+            CapTokenGrant::create(CapabilityType::Public, Some(vec![test_address.clone()]));
+        assert!(maybe_grant.is_err());
+        let maybe_grant = CapTokenGrant::create(CapabilityType::Transferable, None);
+        assert!(maybe_grant.is_ok());
+        let grant = maybe_grant.unwrap();
+        assert_eq!(grant.cap_type(), CapabilityType::Transferable);
 
-        let maybe_entry =
-            CapTokenGrantEntry::create(CapabilityType::Assigned, Some(vec![test_address.clone()]));
-        assert!(maybe_entry.is_ok());
-        let entry = maybe_entry.unwrap();
-        assert_eq!(entry.cap_type(), CapabilityType::Assigned);
-        assert_eq!(entry.assignees().unwrap()[0], test_address)
+        let maybe_grant =
+            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![test_address.clone()]));
+        assert!(maybe_grant.is_ok());
+        let grant = maybe_grant.unwrap();
+        assert_eq!(grant.cap_type(), CapabilityType::Assigned);
+        assert_eq!(grant.assignees().unwrap()[0], test_address)
     }
 
     #[test]
@@ -210,52 +198,52 @@ pub mod tests {
         let test_address2 = Address::from("some other identity");
         let test_call_signature = &CallSignature {};
 
-        let entry = CapTokenGrantEntry::create(CapabilityType::Public, None).unwrap();
-        let token = entry.token();
-        assert!(entry.verify(token.clone(), None, test_call_signature));
-        assert!(entry.verify(
+        let grant = CapTokenGrant::create(CapabilityType::Public, None).unwrap();
+        let token = grant.token();
+        assert!(grant.verify(token.clone(), None, test_call_signature));
+        assert!(grant.verify(
             token.clone(),
             Some(test_address1.clone()),
             test_call_signature
         ));
-        assert!(entry.verify("Bad Token".to_string(), None, test_call_signature));
+        assert!(grant.verify(Address::from("Bad Token"), None, test_call_signature));
 
-        let entry = CapTokenGrantEntry::create(CapabilityType::Transferable, None).unwrap();
-        let token = entry.token();
-        assert!(!entry.verify(token.clone(), None, test_call_signature));
-        assert!(entry.verify(
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
+        let token = grant.token();
+        assert!(!grant.verify(token.clone(), None, test_call_signature));
+        assert!(grant.verify(
             token.clone(),
             Some(test_address1.clone()),
             test_call_signature
         ));
-        assert!(entry.verify(
+        assert!(grant.verify(
             token.clone(),
             Some(test_address2.clone()),
             test_call_signature
         ));
-        assert!(!entry.verify(
-            "Bad Token".to_string(),
+        assert!(!grant.verify(
+            Address::from("Bad Token"),
             Some(test_address1.clone()),
             test_call_signature
         ));
 
-        let entry =
-            CapTokenGrantEntry::create(CapabilityType::Assigned, Some(vec![test_address1.clone()]))
+        let grant =
+            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![test_address1.clone()]))
                 .unwrap();
-        let token = entry.token();
-        assert!(!entry.verify(token.clone(), None, test_call_signature));
-        assert!(entry.verify(
+        let token = grant.token();
+        assert!(!grant.verify(token.clone(), None, test_call_signature));
+        assert!(grant.verify(
             token.clone(),
             Some(test_address1.clone()),
             test_call_signature
         ));
-        assert!(!entry.verify(
+        assert!(!grant.verify(
             token.clone(),
             Some(test_address2.clone()),
             test_call_signature
         ));
-        assert!(!entry.verify(
-            "Bad Token".to_string(),
+        assert!(!grant.verify(
+            Address::from("Bad Token"),
             Some(test_address1.clone()),
             test_call_signature
         ));

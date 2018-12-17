@@ -64,6 +64,10 @@ pub fn validate_entry<'a>(
             // FIXME
         }
 
+        EntryType::CapTokenGrant => {
+            // FIXME
+        }
+
         _ => {
             return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
                 format!(

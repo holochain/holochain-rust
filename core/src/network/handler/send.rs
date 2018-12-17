@@ -3,7 +3,10 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::DirectMessage,
-    workflows::respond_validation_package_request::respond_validation_package_request,
+    workflows::{
+        handle_custom_direct_message::handle_custom_direct_message,
+        respond_validation_package_request::respond_validation_package_request,
+    },
 };
 use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
@@ -18,7 +21,18 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
         serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
 
     match message {
-        DirectMessage::Custom(_) => context.log("DirectMessage::Custom not implemented"),
+        DirectMessage::Custom(custom_direct_message) => {
+            thread::spawn(move || {
+                if let Err(error) = block_on(handle_custom_direct_message(
+                    Address::from(message_data.from_agent_id),
+                    message_data.msg_id,
+                    custom_direct_message,
+                    context.clone(),
+                )) {
+                    context.log(format!("Error handling custom direct message: {:?}", error));
+                }
+            });
+        }
         DirectMessage::RequestValidationPackage(address) => {
             // Async functions only get executed when they are polled.
             // I don't want to wait for this workflow to finish here as it would block the
@@ -39,7 +53,7 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
     };
 }
 
-/// We got a ProtocolWrapper::SendResult, this means somebody has responded to our message
+/// We got a ProtocolWrapper::HandleSendResult, this means somebody has responded to our message
 /// -> we called and this is the answer
 pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
     let response: DirectMessage =
@@ -55,7 +69,22 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
         .cloned();
 
     match response {
-        DirectMessage::Custom(_) => context.log("DirectMessage::Custom not implemented"),
+        DirectMessage::Custom(custom_direct_message) => {
+            if initial_message.is_none() {
+                context.log("Received a custom direct message response but could not find message ID in history. Not able to process.");
+                return;
+            }
+
+            let action_wrapper = ActionWrapper::new(Action::HandleCustomSendResponse((
+                message_data.msg_id.clone(),
+                custom_direct_message.payload,
+            )));
+            dispatch_action(context.action_channel(), action_wrapper.clone());
+
+            let action_wrapper =
+                ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
+            dispatch_action(context.action_channel(), action_wrapper.clone());
+        }
         DirectMessage::RequestValidationPackage(_) => context.log(
             "Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
         ),
@@ -72,11 +101,11 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
                 address.clone(),
                 maybe_validation_package.clone(),
             )));
-            dispatch_action(&context.action_channel, action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper.clone());
 
             let action_wrapper =
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
-            dispatch_action(&context.action_channel, action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper.clone());
         }
     };
 }

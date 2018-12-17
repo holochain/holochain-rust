@@ -8,7 +8,7 @@ mod runtime;
 
 pub use self::{run_dna::*, runtime::*};
 
-use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_core_types::dna::capabilities::ReservedCapabilityNames;
 
 use std::str::FromStr;
 

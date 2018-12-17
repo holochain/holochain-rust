@@ -21,6 +21,7 @@
 //!        cas::file::FilesystemStorage, eav::file::EavFileStorage,
 //! };
 //! use tempfile::tempdir;
+//! use holochain_core::context::mock_network_config;
 //!
 //! // instantiate a new holochain instance
 //!
@@ -37,7 +38,7 @@
 //!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
 //!     file_storage.clone(),
 //!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
-//!     JsonString::from("{\"backend\": \"mock\"}"),
+//!     mock_network_config(),
 //!  ).unwrap();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
@@ -61,14 +62,16 @@
 //!```
 
 use crate::error::{HolochainInstanceError, HolochainResult};
-use futures::{executor::block_on, TryFutureExt};
+use futures::executor::block_on;
 use holochain_core::{
+    action::Action,
     context::Context,
     instance::Instance,
-    network::actions::initialize_network::initialize_network,
-    nucleus::{actions::initialize::initialize_application, call_and_wait_for_result, ZomeFnCall},
+    nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
+    signal::SignalSender,
     state::State,
+    workflows::application,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
@@ -84,20 +87,44 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
-        let mut instance = Instance::new(context.clone());
+        let instance = Instance::new(context.clone());
+        Self::from_dna_and_context_and_instance(dna, context, instance)
+    }
+
+    /// Create a new Holochain instance with a signal channel, specifying a
+    /// predicate closure to define which Actions should result in signals being emitted.
+    /// Caller takes ownership of the Receiver for the signal channel.
+    pub fn new_with_signals<F>(
+        dna: Dna,
+        context: Arc<Context>,
+        signal_tx: SignalSender,
+        signal_filter_func: F,
+    ) -> HolochainResult<Self>
+    where
+        F: Fn(&Action) -> bool + 'static + Send + Sync,
+    {
+        let instance = Instance::new(context.clone()).with_signals(signal_tx, signal_filter_func);
+        Self::from_dna_and_context_and_instance(dna, context, instance)
+    }
+
+    fn from_dna_and_context_and_instance(
+        dna: Dna,
+        context: Arc<Context>,
+        mut instance: Instance,
+    ) -> HolochainResult<Self> {
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
-        let context = instance.initialize_context(context.clone());
-        let context2 = context.clone();
-        let result = block_on(
-            initialize_application(dna, &context2).and_then(|_| initialize_network(&context)),
-        );
+        let result = block_on(application::initialize(
+            &instance,
+            Some(dna),
+            context.clone(),
+        ));
         match result {
-            Ok(_) => {
+            Ok(new_context) => {
                 context.log(format!("{} instantiated", name));
                 let hc = Holochain {
                     instance,
-                    context,
+                    context: new_context.clone(),
                     active: false,
                 };
                 Ok(hc)
@@ -109,15 +136,14 @@ impl Holochain {
     pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.file_storage.clone());
         let loaded_state = persister
-            .load(context.clone())
-            .unwrap_or(Some(State::new(context.clone())))
-            .unwrap();
-        // TODO get the network state initialized!!
-        let mut instance = Instance::from_state(loaded_state);
+            .load(context.clone())?
+            .unwrap_or(State::new(context.clone()));
+        let mut instance = Instance::from_state(loaded_state.clone());
         instance.start_action_loop(context.clone());
+        let new_context = block_on(application::initialize(&instance, None, context.clone()))?;
         Ok(Holochain {
             instance,
-            context: context.clone(),
+            context: new_context.clone(),
             active: false,
         })
     }
@@ -173,20 +199,25 @@ mod tests {
     use self::holochain_cas_implementations::{
         cas::file::FilesystemStorage, eav::file::EavFileStorage,
     };
+
     use super::*;
     use holochain_core::{
+        action::Action,
         context::{mock_network_config, Context},
         nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
+        signal::{signal_channel, Signal},
     };
-    use holochain_core_types::{agent::AgentId, dna::Dna};
+    use holochain_core_types::{agent::AgentId, cas::content::AddressableContent, dna::Dna};
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
-        create_wasm_from_file, hc_setup_and_call_zome_fn,
+        create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
+
+    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -233,16 +264,40 @@ mod tests {
         dna.name = "TestApp".to_string();
         let (context, test_logger) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
-
         assert!(result.is_ok());
         let hc = result.unwrap();
-
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
         assert_eq!(hc.context.agent_id.nick, "bob".to_string());
+        let network_state = hc.context.state().unwrap().network().clone();
+        assert_eq!(network_state.agent_id.is_some(), true);
+        assert_eq!(network_state.dna_hash.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
+    }
+
+    fn write_agent_state_to_file() -> String {
+        let tempdir = tempdir().unwrap();
+        let path = tempdir.path().to_str().unwrap();
+        let tempfile = vec![path, "Agentstate.txt"].join(&*MAIN_SEPARATOR.to_string());
+        let mut file = File::create(tempfile).unwrap();
+        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
+        path.to_string()
+    }
+    #[test]
+    fn can_load() {
+        let path = write_agent_state_to_file();
+        let (context, _) = test_context("bob");
+        let result = Holochain::load(path, context.clone());
+        assert!(result.is_ok());
+        let loaded_holo = result.unwrap();
+        assert!(!loaded_holo.active);
+        assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
+        let network_state = loaded_holo.context.state().unwrap().network().clone();
+        assert_eq!(network_state.agent_id.is_some(), true);
+        assert_eq!(network_state.dna_hash.is_some(), true);
+        assert!(loaded_holo.instance.state().nucleus().has_initialized());
     }
 
     #[test]
@@ -416,13 +471,21 @@ mod tests {
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let (signal_tx, signal_rx) = signal_channel();
+        let mut hc =
+            Holochain::new_with_signals(dna.clone(), context, signal_tx, |_| true).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
+
+        expect_action(&signal_rx, |action| {
+            if let Action::InitNetwork(_) = action {
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap();
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
@@ -435,10 +498,14 @@ mod tests {
             JsonString::from("{\"Err\":\"Argument deserialization failed\"}")
         );
 
-        // Check in holochain instance's history that the commit event has been processed
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 9);
+        expect_action(&signal_rx, |action| {
+            if let Action::Commit(_) = action {
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap();
     }
 
     #[test]
@@ -553,5 +620,47 @@ mod tests {
             JsonString::from("{\"value\":\"fish\"}"),
             call_result.unwrap()
         );
+    }
+
+    #[test]
+    fn can_receive_action_signals() {
+        use holochain_core::action::Action;
+        use std::time::Duration;
+        let wasm = include_bytes!(
+            "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
+        );
+        let capability = test_utils::create_test_cap_with_fn_name("commit_test");
+        let mut dna =
+            test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
+        dna.uuid = "can_receive_action_signals".into();
+        let context = test_utils::test_context("alex");
+        let timeout = 1000;
+        let (tx, rx) = signal_channel();
+        let mut hc =
+            Holochain::new_with_signals(dna.clone(), context, tx, move |action| match action {
+                Action::InitApplication(_) => false,
+                _ => true,
+            })
+            .unwrap();
+        hc.start().expect("couldn't start");
+        hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
+            .unwrap();
+
+        'outer: loop {
+            let msg_publish = rx
+                .recv_timeout(Duration::from_millis(timeout))
+                .expect("no more signals to receive (outer)");
+            if let Signal::Internal(Action::Publish(address)) = msg_publish {
+                loop {
+                    let msg_hold = rx
+                        .recv_timeout(Duration::from_millis(timeout))
+                        .expect("no more signals to receive (inner)");
+                    if let Signal::Internal(Action::Hold(entry)) = msg_hold {
+                        assert_eq!(address, entry.address());
+                        break 'outer;
+                    }
+                }
+            }
+        }
     }
 }

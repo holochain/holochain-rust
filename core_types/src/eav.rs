@@ -56,14 +56,15 @@ impl AddressableContent for EntityAttributeValue {
 }
 
 fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
-    let regex = RegexBuilder::new(r"\w+$/")
-        .case_insensitive(true)
-        .ignore_whitespace(true)
+    let regex = RegexBuilder::new(r"[/:*?<>|+]")
         .build()
-        .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
-    if regex.is_match(attribute) {
+        .unwrap();
+       // .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
+    if !regex.is_match(attribute) {
+        println!("does match");
         Ok(())
     } else {
+        println!("does not match");
         Err(HolochainError::ErrorGeneric(
             "Attribute name invalid".to_string(),
         ))
@@ -367,6 +368,16 @@ pub mod tests {
             EntityAttributeValue,
             ExampleContentAddressableStorage,
         >(addressable_contents, test_content_addressable_storage());
+    }
+
+    #[test]
+    fn validate_attribute_paths()
+    {
+        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"abc".to_string(),&test_eav_entity().address()).is_ok());
+        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"abc123".to_string(),&test_eav_entity().address()).is_ok());
+        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"123".to_string(),&test_eav_entity().address()).is_ok());
+        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_:{}".to_string(),&test_eav_entity().address()).is_err());
+
     }
 
 }

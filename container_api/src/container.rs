@@ -1,27 +1,27 @@
 use crate::{
     config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration},
+    context_builder::ContextBuilder,
     error::HolochainInstanceError,
     Holochain,
 };
-use holochain_cas_implementations::{
-    cas::{file::FilesystemStorage, memory::MemoryStorage},
-    eav::{file::EavFileStorage, memory::EavMemoryStorage},
-    path::create_path_if_not_exists,
-};
 use holochain_core::{
-    context::Context, logger::Logger, persister::SimplePersister, signal::Signal,
+    logger::Logger,
+    signal::Signal,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
-use tempfile::tempdir;
+use holochain_core_types::{
+    agent::{AgentId, KeyBuffer},
+    dna::Dna,
+    error::HolochainError,
+    json::JsonString,
+};
 
-use holochain_core_types::agent::AgentId;
 use std::{
     clone::Clone,
     collections::HashMap,
     convert::TryFrom,
     fs::File,
     io::prelude::*,
-    sync::{mpsc::SyncSender, Arc, Mutex, RwLock},
+    sync::{mpsc::SyncSender, Arc, RwLock},
     thread,
 };
 
@@ -129,7 +129,6 @@ impl Container {
         let _ = self.config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
         let config = self.config.clone();
-        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
         let mut instances = HashMap::new();
 
         let errors: Vec<_> = config
@@ -143,7 +142,6 @@ impl Container {
                         &id,
                         &config,
                         &mut self.dna_loader,
-                        &default_network,
                         self.signal_tx.clone(),
                     ),
                 )
@@ -241,7 +239,6 @@ pub fn instantiate_from_config(
     id: &String,
     config: &Configuration,
     dna_loader: &mut DnaLoader,
-    default_network_config: &String,
     signal_tx: Option<SignalSender>,
 ) -> Result<Holochain, String> {
     let _ = config.check_consistency()?;
@@ -259,21 +256,21 @@ pub fn instantiate_from_config(
                 ))
             })?;
 
-            let network_config = instance_config
-                .network
-                .unwrap_or(default_network_config.to_owned())
-                .into();
+            let mut context_builder = ContextBuilder::new();
+            let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
+            context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
-            let context: Context = match instance_config.storage {
-                StorageConfiguration::File { path } => {
-                    create_file_context(&agent_config.id, &path, network_config)
-                        .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
-                }
-                StorageConfiguration::Memory => {
-                    create_memory_context(&agent_config.id, network_config)
-                        .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))
-                }
-            }?;
+            instance_config.network.map(|network_config| {
+                context_builder.with_network_config(JsonString::from(network_config))
+            });
+
+            if let StorageConfiguration::File { path } = instance_config.storage {
+                context_builder
+                    .with_file_storage(path)
+                    .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))?;
+            }
+
+            let context = context_builder.spawn();
             match signal_tx {
                 Some(signal_tx) => {
                     Holochain::new_with_signals(dna, Arc::new(context), signal_tx, |_| true)
@@ -289,49 +286,6 @@ struct NullLogger {}
 
 impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
-}
-
-fn create_memory_context(
-    _: &String,
-    network_config: JsonString,
-) -> Result<Context, HolochainError> {
-    let agent = AgentId::generate_fake("c+bob");
-    let tempdir = tempdir().unwrap();
-    let file_storage = Arc::new(RwLock::new(
-        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-    ));
-
-    Context::new(
-        agent,
-        Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-        Arc::new(RwLock::new(MemoryStorage::new())),
-        Arc::new(RwLock::new(EavMemoryStorage::new())),
-        network_config,
-    )
-}
-
-fn create_file_context(
-    _: &String,
-    path: &String,
-    network_config: JsonString,
-) -> Result<Context, HolochainError> {
-    let agent = AgentId::generate_fake("c+bob");
-    let cas_path = format!("{}/cas", path);
-    let eav_path = format!("{}/eav", path);
-    create_path_if_not_exists(&cas_path)?;
-    create_path_if_not_exists(&eav_path)?;
-
-    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-
-    Context::new(
-        agent,
-        Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-        file_storage.clone(),
-        Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
-        network_config,
-    )
 }
 
 #[cfg(test)]
@@ -356,11 +310,13 @@ pub mod tests {
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
+    public_address = "HoloTester2-------------------------------------------------------------------------AJmU"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -472,14 +428,14 @@ pub mod tests {
 
     #[test]
     fn test_instantiate_from_config() {
+        // Used this to created syntatically valid public addresses for the config fixture above:
+        //println!("{}", JsonString::from(AgentId::generate_fake("HoloTester2")));
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let default_network = DEFAULT_NETWORK_CONFIG.to_string();
         let (tx, _) = signal_channel();
         let maybe_holochain = instantiate_from_config(
             &"test-instance-1".to_string(),
             &config,
             &mut test_dna_loader(),
-            &default_network,
             Some(tx),
         );
 

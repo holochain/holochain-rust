@@ -68,14 +68,15 @@ fn get_context(path: &String) -> Result<Context, HolochainError> {
     create_path_if_not_exists(&cas_path)?;
     create_path_if_not_exists(&eav_path)?;
     let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-    Context::new(
+    Ok(Context::new(
         agent,
         Arc::new(Mutex::new(NullLogger {})),
         Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
         Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
+        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
         Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
         mock_network_config(),
-    )
+    ))
 }
 
 #[no_mangle]

@@ -229,20 +229,18 @@ pub mod tests {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
-        Arc::new(
-            Context::new(
-                AgentId::generate_fake("alex"),
-                Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
-                mock_network_config(),
-            )
-            .unwrap(),
-        )
+        Arc::new(Context::new(
+            AgentId::generate_fake("alex"),
+            Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
+            file_storage.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
+        ))
     }
 
     #[cfg_attr(tarpaulin, skip)]

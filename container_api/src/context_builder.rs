@@ -61,7 +61,7 @@ impl ContextBuilder {
 
     /// Sets all three storages, chain, DHT and EAV storage, to persistent file based implementations.
     /// Chain and DHT storages get set to the same file CAS.
-    /// Returns an error if no file storage could spawned on the given path.
+    /// Returns an error if no file storage could be spawned on the given path.
     pub fn with_file_storage<T: Into<String>>(
         &mut self,
         path: T,

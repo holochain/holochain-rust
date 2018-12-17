@@ -1,3 +1,5 @@
+//! ?
+
 #[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 /// represents a single Key
 /// e.g. private + public keys would be two Key structs

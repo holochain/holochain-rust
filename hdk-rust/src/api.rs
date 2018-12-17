@@ -1,3 +1,5 @@
+//! ?
+
 use crate::{
     error::{ZomeApiError, ZomeApiResult},
     globals::*,
@@ -103,6 +105,7 @@ impl From<AGENT_LATEST_HASH> for JsonString {
 
 // HC.GetMask
 bitflags! {
+  /// ?
   pub struct GetEntryMask: u8 {
     const ENTRY      = 1 << 0;
     const ENTRY_TYPE = 1 << 1;
@@ -167,7 +170,7 @@ impl Default for GetEntryMask {
 //    }
 //}
 
-// Allowed input for close_bundle()
+/// Allowed input for close_bundle()
 pub enum BundleOnClose {
     Commit,
     Discard,
@@ -648,7 +651,7 @@ pub fn link_entries<S: Into<String>>(
     }
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 // Returns a DNA property, which are defined by the DNA developer.
 // They are custom values that are defined in the DNA file
 // that can be used in the zome code for defining configurable behaviors.
@@ -724,12 +727,12 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
     }
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn sign<S: Into<String>>(_doc: S) -> ZomeApiResult<String> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn verify_signature<S: Into<String>>(
     _signature: S,
     _data: S,
@@ -773,7 +776,7 @@ pub fn update_entry(new_entry: Entry, address: Address) -> ZomeApiResult<Address
     }
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn update_agent() -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
@@ -992,12 +995,12 @@ pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
     }
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
@@ -1006,6 +1009,7 @@ pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
 // Helpers
 //--------------------------------------------------------------------------------------------------
 
+#[doc(hidden)]
 pub fn check_for_ribosome_error(encoded_allocation: u32) -> ZomeApiResult<()> {
     // Check for error from Ribosome
     let rib_result = decode_encoded_allocation(encoded_allocation);

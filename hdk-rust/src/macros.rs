@@ -1,3 +1,5 @@
+//! ?
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! load_json {
@@ -11,6 +13,7 @@ macro_rules! load_json {
         maybe_input
     }};
 }
+#[doc(hidden)]
 #[macro_export]
 macro_rules! load_string {
     ($encoded_allocation_of_input:ident) => {{
@@ -53,11 +56,12 @@ macro_rules! load_string {
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::dna::entry_types::Sharing;
 /// # use boolinator::Boolinator;
-/// # use hdk::error::ZomeApiResult;
-/// use holochain_core_types::cas::content::Address;
-///
+/// use hdk::error::ZomeApiResult;
+/// use holochain_core_types::{
+///     cas::content::Address,
+///     dna::entry_types::Sharing,
+/// };
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
 /// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
@@ -75,9 +79,8 @@ macro_rules! load_string {
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_send(_: u32) -> u32 { 0 }
-///
 /// # fn main() {
-///
+/// 
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 /// pub struct Post {
 ///     content: String,

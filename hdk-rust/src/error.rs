@@ -1,11 +1,13 @@
+//! ?
+
 use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
     json::{JsonError, JsonString},
 };
 use std::{error::Error, fmt};
 
-/// Error for DNA developers to use in their zome code.
-/// They do not have to send this error back to Ribosome unless its an InternalError.
+/// Error for DNA developers to use in their Zome code.
+/// This does not have to be sent back to Ribosome unless its an InternalError.
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson)]
 pub enum ZomeApiError {
     Internal(String),
@@ -83,6 +85,7 @@ impl fmt::Display for ZomeApiError {
     }
 }
 
+/// ?
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 
 #[cfg(test)]

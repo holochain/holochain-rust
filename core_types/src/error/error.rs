@@ -35,7 +35,7 @@ impl Error for CoreError {
         self.kind.description()
     }
     fn cause(&self) -> Option<&Error> {
-        self.kind.cause()
+        self.kind.source()
     }
 }
 impl CoreError {

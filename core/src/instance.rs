@@ -401,22 +401,18 @@ pub mod tests {
         ));
         let logger = test_logger();
         (
-            Arc::new(
-                Context::new(
-                    agent,
-                    logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                    file_storage.clone(),
-                    Arc::new(RwLock::new(
-                        EavFileStorage::new(
-                            tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        )
+            Arc::new(Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                file_storage.clone(),
+                file_storage.clone(),
+                Arc::new(RwLock::new(
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
-                    )),
-                    mock_network_config(),
-                )
-                .unwrap(),
-            ),
+                )),
+                mock_network_config(),
+            )),
             logger,
         )
     }
@@ -469,13 +465,13 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+        );
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -491,13 +487,13 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
+            cas.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+        );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);

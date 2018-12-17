@@ -1,5 +1,7 @@
-//! `holochain_core_api` is a library for instantiating and using a holochain instance that
-//! runs a holochain DNA, DHT and source chain.
+//! `holochain_container_api` is a library for instantiating and using holochain instances that
+//! each run a holochain DNA, DHT and source chain.
+//!
+//! The struct Holochain wraps everything needed to run such an instance.
 //!
 //! # Examples
 //!
@@ -10,18 +12,10 @@
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
-//! use holochain_container_api::*;
-//! use holochain_net::p2p_network::P2pNetwork;
+//! use holochain_container_api::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
-//! use std::sync::{Arc, Mutex,RwLock};
-//! use holochain_core::context::Context;
-//! use holochain_core::logger::SimpleLogger;
-//! use holochain_core::persister::SimplePersister;
-//! use self::holochain_cas_implementations::{
-//!        cas::file::FilesystemStorage, eav::file::EavFileStorage,
-//! };
+//! use std::sync::Arc;
 //! use tempfile::tempdir;
-//! use holochain_core::context::mock_network_config;
 //!
 //! // instantiate a new holochain instance
 //!
@@ -30,16 +24,14 @@
 //!
 //! // but for now:
 //! let dna = Dna::new();
+//! let dir = tempdir().unwrap();
+//! let storage_directory_path = dir.path().to_str().unwrap();
 //! let agent = AgentId::generate_fake("bob");
-//! let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
-//! let context = Context::new(
-//!     agent,
-//!     Arc::new(Mutex::new(SimpleLogger {})),
-//!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-//!     file_storage.clone(),
-//!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
-//!     mock_network_config(),
-//!  ).unwrap();
+//! let context = ContextBuilder::new()
+//!     .with_agent(agent)
+//!     .with_file_storage(storage_directory_path)
+//!     .expect("Tempdir should be accessible")
+//!     .spawn();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
 //! // start up the holochain instance
@@ -134,7 +126,7 @@ impl Holochain {
     }
 
     pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(context.file_storage.clone());
+        let persister = SimplePersister::new(context.dht_storage.clone());
         let loaded_state = persister
             .load(context.clone())?
             .unwrap_or(State::new(context.clone()));
@@ -230,22 +222,18 @@ mod tests {
         ));
         let logger = test_utils::test_logger();
         (
-            Arc::new(
-                Context::new(
-                    agent,
-                    logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                    file_storage.clone(),
-                    Arc::new(RwLock::new(
-                        EavFileStorage::new(
-                            tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        )
+            Arc::new(Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                file_storage.clone(),
+                file_storage.clone(),
+                Arc::new(RwLock::new(
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
-                    )),
-                    mock_network_config(),
-                )
-                .unwrap(),
-            ),
+                )),
+                mock_network_config(),
+            )),
             logger,
         )
     }

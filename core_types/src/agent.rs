@@ -130,7 +130,7 @@ impl AddressableContent for AgentId {
 pub static GOOD_ID: &'static str =
     "sandwich--------------------------------------------------------------------------AAAEqzh28L";
 pub static BAD_ID: &'static str =
-    "aandwich--------------------------------------------------------------------------AAAEqzh28L";
+    "asndwich--------------------------------------------------------------------------AAAEqzh28L";
 
 pub fn test_agent_id() -> AgentId {
     let key = &KeyBuffer::with_corrected(BAD_ID).unwrap();

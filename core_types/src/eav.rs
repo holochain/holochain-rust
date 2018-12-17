@@ -56,10 +56,9 @@ impl AddressableContent for EntityAttributeValue {
 }
 
 fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
-    let regex = RegexBuilder::new(r"[/:*?<>|+]")
+    let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
         .build()
-        .unwrap();
-       // .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
+        .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
     if !regex.is_match(attribute) {
         println!("does match");
         Ok(())
@@ -377,6 +376,10 @@ pub mod tests {
         assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"abc123".to_string(),&test_eav_entity().address()).is_ok());
         assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"123".to_string(),&test_eav_entity().address()).is_ok());
         assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_:{}".to_string(),&test_eav_entity().address()).is_err());
+        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_\"".to_string(),&test_eav_entity().address()).is_err());
+        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_/".to_string(),&test_eav_entity().address()).is_err());
+        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_\\".to_string(),&test_eav_entity().address()).is_err());
+        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_?".to_string(),&test_eav_entity().address()).is_err());
 
     }
 

@@ -3,7 +3,6 @@ use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
     error::HolochainError,
-    link::Link,
 };
 use std::{
     collections::{HashMap, HashSet},

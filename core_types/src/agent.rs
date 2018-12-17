@@ -7,53 +7,56 @@ use crate::{
     json::JsonString,
 };
 
-use std::convert::TryFrom;
+use std::{convert::TryFrom, str};
 
 use crate::error::HolochainError;
 use reed_solomon::{Decoder, Encoder};
-
-const PARITY_LEN: usize = 2;
 
 /// A raw public key buffer
 /// Can extract the signature and encryption portions
 /// Can parse a base64url encoded user representation
 /// Can render a base64url encoded user representation
 #[derive(Clone)]
-pub struct KeyBuffer([u8; 64]);
+pub struct KeyBuffer([u8; KeyBuffer::KEY_LEN]);
 
 impl KeyBuffer {
+    /// Constants specific to KeyBuffer
+    const PARITY_LEN: usize = 5;
+    const KEY_LEN: usize = 64;
+    const HALF_KEY_LEN: usize = KeyBuffer::KEY_LEN / 2;
+
     /// take a potentially user-entered base64url encoded user representation
     /// of an public key identity
     /// apply reed-solomon parity correction
     /// returns a raw byte buffer
     pub fn with_corrected(s: &str) -> Result<KeyBuffer, HolochainError> {
         let s = s.replace("-", "+").replace("_", "/");
-        let s = base64::decode(&s)?;
-        let dec = Decoder::new(PARITY_LEN);
-        let dec = *dec.correct(s.as_slice(), None)?;
-        Ok(KeyBuffer::with_raw(array_ref![dec, 0, 64]))
+        let base64 = base64::decode(&s)?;
+        let dec = Decoder::new(KeyBuffer::PARITY_LEN);
+        let dec = *dec.correct(base64.as_slice(), None)?;
+        Ok(KeyBuffer::with_raw(array_ref![dec, 0, KeyBuffer::KEY_LEN]))
     }
 
     /// generate a key buffer from raw bytes (no correction)
-    pub fn with_raw(b: &[u8; 64]) -> KeyBuffer {
+    pub fn with_raw(b: &[u8; KeyBuffer::KEY_LEN]) -> KeyBuffer {
         KeyBuffer(b.clone())
     }
 
     /// render a base64url encoded user identity with reed-solomon parity bytes
     pub fn render(&self) -> String {
-        let enc = Encoder::new(PARITY_LEN);
+        let enc = Encoder::new(KeyBuffer::PARITY_LEN);
         let enc = *enc.encode(&self.0);
         base64::encode(&enc[..]).replace("+", "-").replace("/", "_")
     }
 
     /// get the signature public key portion of this buffer
-    pub fn get_sig(&self) -> &[u8; 32] {
-        array_ref![self.0, 0, 32]
+    pub fn get_sig(&self) -> &[u8; KeyBuffer::HALF_KEY_LEN] {
+        array_ref![self.0, 0, KeyBuffer::HALF_KEY_LEN]
     }
 
     /// get the encryption public key portion of this buffer
-    pub fn get_enc(&self) -> &[u8; 32] {
-        array_ref![self.0, 32, 32]
+    pub fn get_enc(&self) -> &[u8; KeyBuffer::HALF_KEY_LEN] {
+        array_ref![self.0, KeyBuffer::HALF_KEY_LEN, KeyBuffer::HALF_KEY_LEN]
     }
 }
 
@@ -73,16 +76,17 @@ impl AgentId {
     /// `s` will be used for the `nick` and included in the key string as well
     /// this agent is not cryptographically generated...
     /// it will not be able to sign / encrypt anything
-    pub fn generate_fake(s: &str) -> Self {
-        let mut buf = s.to_string();
-        while buf.len() < 84 {
+    pub fn generate_fake(nick: &str) -> Self {
+        let mut buf = nick.to_string();
+        // Make sure base64 string must is big enough to decode into 64 bytes key
+        while buf.len() < 82 {
             buf.push_str("+");
         }
         buf.push_str("AAAA");
         let buf = base64::decode(&buf)
             .expect("could not decode the generated fake base64 string - use the base64 alphabet");
-        let buf = KeyBuffer::with_raw(array_ref![buf, 0, 64]);
-        AgentId::new(s, &buf)
+        let buf = KeyBuffer::with_raw(array_ref![buf, 0, KeyBuffer::KEY_LEN]);
+        AgentId::new(nick, &buf)
     }
 
     /// initialize an Agent struct with `nick` and `key`
@@ -95,8 +99,9 @@ impl AgentId {
 
     /// get a key buffer based on this agent's key (no correction)
     pub fn to_buffer(&self) -> KeyBuffer {
-        let key = base64::decode(&self.key).expect("corrupt identity key");
-        KeyBuffer::with_raw(array_ref![key, 0, 64])
+        let s = self.key.replace("-", "+").replace("_", "/");
+        let key = base64::decode(&s).expect("corrupt identity key");
+        KeyBuffer::with_raw(array_ref![key, 0, KeyBuffer::KEY_LEN])
     }
 }
 
@@ -123,12 +128,19 @@ impl AddressableContent for AgentId {
 }
 
 pub static GOOD_ID: &'static str =
-    "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd";
+    "sandwich--------------------------------------------------------------------------AAAEqzh28L";
 pub static BAD_ID: &'static str =
-    "ATIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd";
+    "asndwich--------------------------------------------------------------------------AAAEqzh28L";
+pub static TOO_BAD_ID: &'static str =
+    "asadwich--------------------------------------------------------------------------AAAEqzh28L";
+
+pub fn test_base64_to_agent_id(s: &str) -> Result<AgentId, HolochainError> {
+    let key = &KeyBuffer::with_corrected(s)?;
+    Ok(AgentId::new("bob", key))
+}
 
 pub fn test_agent_id() -> AgentId {
-    AgentId::new("bob", &KeyBuffer::with_corrected(BAD_ID).unwrap())
+    test_base64_to_agent_id(BAD_ID).unwrap()
 }
 
 #[cfg(test)]
@@ -141,18 +153,19 @@ mod tests {
 
     #[test]
     fn it_should_allow_buffer_access() {
-        let buf = test_agent_id().to_buffer();
+        let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
+
         assert_eq!(
             &[
-                49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49,
-                50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50
+                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
             ],
             buf.get_sig()
         );
         assert_eq!(
             &[
-                51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,
-                52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
+                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
             ],
             buf.get_enc()
         );
@@ -160,12 +173,22 @@ mod tests {
 
     #[test]
     fn it_can_generate_fake() {
-        assert_eq!("sandwich----------------------------------------------------------------------------AA-k".to_string(), AgentId::generate_fake("sandwich").address().to_string());
+        let agent_id = AgentId::generate_fake("sandwich");
+        assert_eq!(
+            "sandwich--------------------------------------------------------------------------AAAEqzh28L".to_string(),
+            agent_id.address().to_string(),
+        );
     }
 
     #[test]
     fn it_should_correct_errors() {
         assert_eq!(GOOD_ID.to_string(), test_agent_id().address().to_string());
+    }
+
+    #[test]
+    fn it_fails_if_too_many_errors() {
+        let res = test_base64_to_agent_id(TOO_BAD_ID);
+        assert!(res.is_err())
     }
 
     #[test]
@@ -178,7 +201,7 @@ mod tests {
     /// show AddressableContent implementation for Agent
     fn agent_addressable_content_test() {
         let expected_content =
-            Content::from("{\"AgentId\":{\"nick\":\"bob\",\"key\":\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\"}}");
+            Content::from("{\"AgentId\":{\"nick\":\"bob\",\"key\":\"sandwich--------------------------------------------------------------------------AAAEqzh28L\"}}");
         // content()
         assert_eq!(expected_content, test_agent_id().content(),);
 

@@ -6,7 +6,7 @@ use crate::{
 };
 use holochain_core::{
     logger::Logger,
-    signal::{signal_channel, Signal, SignalReceiver},
+    signal::Signal,
 };
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
@@ -296,10 +296,10 @@ pub mod tests {
     use super::*;
     use crate::{config::load_configuration, interface::DispatchRpc};
 
-    use holochain_core::signal::signal_channel;
-    use std::{fs::File, io::Write};
-
     use tempfile::tempdir;
+
+    use holochain_core::signal::signal_channel;
+
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_path: &String| {

@@ -29,7 +29,7 @@ _cargo_cache_template: &_cargo_cache_template
   install:
     - export PATH=$HOME/.cargo/bin:$PATH
   before_cache:
-    - cd $TRAVIS_BUILD_DIR && . scripts/travis_cache_clean.sh
+    - cd $TRAVIS_BUILD_DIR && . scripts/prune_all_targets.sh
     - rm -rf $HOME/.cargo/registry/index
 
 _windows_template: &_windows_template
@@ -168,26 +168,30 @@ jobs:
         - RUSTUP_TOOLCHAIN=nightly-2018-11-28-x86_64-pc-windows-msvc
       install:
         - rustup target add $HC_WASM_TARGET
+
+      before_cache:
+        - cd $TRAVIS_BUILD_DIR && . scripts/prune_all_targets.sh
+
       cache:
        directories:
         - $HOME/.cargo
         - $HOME/.rustup
 
-        - .cargo
-        - .rustup
-        - target
+        - $TRAVIS_BUILD_DIR/.cargo
+        - $TRAVIS_BUILD_DIR/.rustup
+        - $TRAVIS_BUILD_DIR/target
 
-        - core/src/nucleus/actions/wasm-test/.cargo
-        - core/src/nucleus/actions/wasm-test/target
+        - $TRAVIS_BUILD_DIR/core/src/nucleus/actions/wasm-test/.cargo
+        - $TRAVIS_BUILD_DIR/core/src/nucleus/actions/wasm-test/target
 
-        - container_api/wasm-test/.cargo
-        - container_api/wasm-test/target
+        - $TRAVIS_BUILD_DIR/container_api/wasm-test/.cargo
+        - $TRAVIS_BUILD_DIR/container_api/wasm-test/target
 
-        - hdk-rust/wasm-test/.cargo
-        - hdk-rust/wasm-test/target
+        - $TRAVIS_BUILD_DIR/hdk-rust/wasm-test/.cargo
+        - $TRAVIS_BUILD_DIR/hdk-rust/wasm-test/target
 
-        - wasm_utils/wasm-test/integration-test/.cargo
-        - wasm_utils/wasm-test/integration-test/target
+        - $TRAVIS_BUILD_DIR/wasm_utils/wasm-test/integration-test/.cargo
+        - $TRAVIS_BUILD_DIR/wasm_utils/wasm-test/integration-test/target
       script:
        - CARGO_HOME=core/src/nucleus/actions/wasm-test/.cargo CARGO_TARGET_DIR=core/src/nucleus/actions/wasm-test/target cargo build --release --target $HC_WASM_TARGET --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml
        - CARGO_HOME=container_api/wasm-test/.cargo CARGO_TARGET_DIR=container_api/wasm-test/target cargo build --release --target $HC_WASM_TARGET --manifest-path container_api/wasm-test/Cargo.toml

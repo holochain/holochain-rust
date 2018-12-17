@@ -697,9 +697,18 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&toml).expect("Config should be syntactically correct");
         assert_eq!(config.check_consistency(), Ok(()));
 
+        // "->": calls
+        // app1 -> app2 -> app3
+        // app3 has no dependency so it can be instantiated first.
+        // app2 depends on (calls) only app3, so app2 is next.
+        // app1 should be last.
         assert_eq!(
             config.instance_ids_sorted_by_bridge_dependencies(),
-            Ok(vec![String::from("app3"), String::from("app2"), String::from("app1")])
+            Ok(vec![
+                String::from("app3"),
+                String::from("app2"),
+                String::from("app1")]
+            )
         );
     }
 

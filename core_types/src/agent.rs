@@ -7,8 +7,7 @@ use crate::{
     json::JsonString,
 };
 
-use std::convert::TryFrom;
-use std::str;
+use std::{convert::TryFrom, str};
 
 use crate::error::HolochainError;
 use reed_solomon::{Decoder, Encoder};
@@ -21,7 +20,6 @@ use reed_solomon::{Decoder, Encoder};
 pub struct KeyBuffer([u8; KeyBuffer::KEY_LEN]);
 
 impl KeyBuffer {
-
     /// Constants specific to KeyBuffer
     const PARITY_LEN: usize = 5;
     const KEY_LEN: usize = 64;
@@ -130,9 +128,9 @@ impl AddressableContent for AgentId {
 }
 
 pub static GOOD_ID: &'static str =
-"sandwich--------------------------------------------------------------------------AAAEqzh28L";
+    "sandwich--------------------------------------------------------------------------AAAEqzh28L";
 pub static BAD_ID: &'static str =
-"aandwich--------------------------------------------------------------------------AAAEqzh28L";
+    "aandwich--------------------------------------------------------------------------AAAEqzh28L";
 
 pub fn test_agent_id() -> AgentId {
     let key = &KeyBuffer::with_corrected(BAD_ID).unwrap();
@@ -157,11 +155,17 @@ mod tests {
         let buf = test_good_agent_id().to_buffer();
 
         assert_eq!(
-            &[177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239],
+            &[
+                177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
+            ],
             buf.get_sig()
         );
         assert_eq!(
-            &[190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0],
+            &[
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
+                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
+            ],
             buf.get_enc()
         );
     }

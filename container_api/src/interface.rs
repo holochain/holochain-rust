@@ -121,7 +121,6 @@ pub mod tests {
         container::{
             instantiate_from_config,
             tests::{test_dna_loader, test_toml},
-            DEFAULT_NETWORK_CONFIG,
         },
     };
     use holochain_core::signal::signal_channel;
@@ -133,7 +132,6 @@ pub mod tests {
             &"test-instance-1".to_string(),
             &config,
             &mut test_dna_loader(),
-            &DEFAULT_NETWORK_CONFIG.to_string(),
             signal_tx,
         )
         .unwrap();

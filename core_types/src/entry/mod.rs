@@ -282,7 +282,7 @@ pub mod tests {
         let expected = JsonString::from(format!(
             "{{\"AgentId\":{{\"nick\":\"{}\",\"key\":\"{}\"}}}}",
             "bob",
-            "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd",
+            crate::agent::GOOD_ID,
         ));
         assert_eq!(expected, JsonString::from(Entry::from(sys_entry.clone())));
         assert_eq!(

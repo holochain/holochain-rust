@@ -204,13 +204,13 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
                 file_storage.clone(),
+                file_storage.clone(),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
                 mock_network_config(),
             )
-            .unwrap(),
         ),
         logger,
     )
@@ -261,13 +261,13 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             logger.clone(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
         )
-        .unwrap(),
     )
 }
 

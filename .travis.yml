@@ -174,7 +174,7 @@ jobs:
         - cd $TRAVIS_BUILD_DIR && . scripts/prune_all_targets.sh
 
       cache:
-       timeout: 604800  # 1 week
+       timeout: 604800  # 1 week c
        directories:
         - $HOME/.cargo
         - $HOME/.rustup

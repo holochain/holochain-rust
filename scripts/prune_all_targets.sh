@@ -1,31 +1,46 @@
-rm -rf ./target/.rustc_info.json
+rm -rf ./target/**/holochain*
+rm -rf ./target/**/**/holochain*
 
-rm -rf ./target/debug/holochain*
-rm -rf ./target/debug/libholochain*
-rm -rf ./target/debug/libtest_utils*
-rm -rf ./target/debug/test_utils*
-rm -rf ./target/debug/integration_test*
-rm -rf ./target/debug/hdk*
-rm -rf ./target/debug/test_bin_ipc*
-rm -rf ./target/debug/test_bin_mock_net*
-rm -rf ./target/debug/hc*
+rm -rf ./target/**/libholochain*
+rm -rf ./target/**/**/libholochain*
 
-rm -rf ./target/debug/.fingerprint/holochain*/
-rm -rf ./target/debug/.fingerprint/test_utils*/
+rm -rf ./target/**/libtest_utils*
+rm -rf ./target/**/**/libtest_utils*
 
-# should match debug above, but under deps
-rm -rf ./target/debug/deps/holochain*
-rm -rf ./target/debug/deps/libholochain*
-rm -rf ./target/debug/deps/libtest_utils*
-rm -rf ./target/debug/deps/test_utils*
-rm -rf ./target/debug/deps/integration_test*
-rm -rf ./target/debug/deps/hdk*
-rm -rf ./target/debug/deps/test_bin_ipc*
-rm -rf ./target/debug/deps/test_bin_mock_net*
-rm -rf ./target/debug/deps/hc*
+rm -rf ./target/**/test_utils*
+rm -rf ./target/**/**/test_utils*
 
-# incremental is just our new stuff so should not cache
-rm -rf ./target/debug/incremental/*
+rm -rf ./target/**/integration_test*
+rm -rf ./target/**/**/integration_test*
 
-# heavy wasms
-rm -rf ./core/src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/debug/deps/libholochain*
+rm -rf ./target/**/hdk*
+rm -rf ./target/**/**/hdk*
+
+rm -rf ./target/**/test_bin_ipc*
+rm -rf ./target/**/**/test_bin_ipc*
+
+rm -rf ./target/**/test_bin_mock_net*
+rm -rf ./target/**/**/test_bin_mock_net*
+
+rm -rf ./target/**/hc*
+rm -rf ./target/**/**/hc*
+
+# core/src/nucleus/actions/wasm-test
+rm -rf ./core/src/nucleus/actions/wasm-test/target/**/**/libholochain*
+rm -rf ./core/src/nucleus/actions/wasm-test/target/**/**/**/libholochain*
+rm -rf ./core/src/nucleus/actions/wasm-test/target/**/**/**/holochain*
+
+# container_api/wasm-test
+rm -rf ./container_api/wasm-test/target/**/**/libholochain*
+rm -rf ./container_api/wasm-test/target/**/**/**/libholochain*
+rm -rf ./container_api/wasm-test/target/**/**/**/holochain*
+
+# hdk-rust/wasm-test
+rm -rf ./hdk-rust/wasm-test/target/**/**/libholochain*
+rm -rf ./hdk-rust/wasm-test/target/**/**/**/libholochain*
+rm -rf ./hdk-rust/wasm-test/target/**/**/**/holochain*
+
+# wasm_utils/wasm-test/integration-test
+rm -rf ./wasm_utils/wasm-test/integration-test/target/**/**/libholochain*
+rm -rf ./wasm_utils/wasm-test/integration-test/target/**/**/**/libholochain*
+rm -rf ./wasm_utils/wasm-test/integration-test/target/**/**/**/holochain*

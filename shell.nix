@@ -18,6 +18,18 @@ let
     };
   });
 
+  hc-flush-targets = nixpkgs.writeShellScriptBin "hc-flush-targets"
+  ''
+  rm -rf ./target
+  rm -rf ./core/src/nucleus/actions/wasm-test/target
+  rm -rf ./hdk-rust/wasm-test/target
+  rm -rf ./nodejs_container/native/target
+  rm -rf ./container_api/wasm-test/target
+  rm -rf ./wasm_utils/wasm-test/integration-test/target
+  rm -rf ./app_spec/zomes/blog/code/target
+  rm -rf ./app_spec/zomes/summer/code/target
+  '';
+
   wasmBuild = path: "CARGO_HOME=${path}/.cargo CARGO_TARGET_DIR=${path}/target cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
@@ -94,6 +106,7 @@ stdenv.mkDerivation rec {
     yarn
 
     hc-flush-cargo-registry
+    hc-flush-targets
 
     hc-wasm-build
 

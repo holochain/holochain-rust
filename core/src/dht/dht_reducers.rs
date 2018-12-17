@@ -267,7 +267,7 @@ fn reduce_remove_entry_inner(
     }
     // Update crud-link
     let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
-                 .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
+        .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
     let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
     //    if let Err(err) = res {
     //        return Err(err);

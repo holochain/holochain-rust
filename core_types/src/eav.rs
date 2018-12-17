@@ -370,17 +370,55 @@ pub mod tests {
     }
 
     #[test]
-    fn validate_attribute_paths()
-    {
-        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"abc".to_string(),&test_eav_entity().address()).is_ok());
-        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"abc123".to_string(),&test_eav_entity().address()).is_ok());
-        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"123".to_string(),&test_eav_entity().address()).is_ok());
-        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_:{}".to_string(),&test_eav_entity().address()).is_err());
-        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_\"".to_string(),&test_eav_entity().address()).is_err());
-        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_/".to_string(),&test_eav_entity().address()).is_err());
-        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_\\".to_string(),&test_eav_entity().address()).is_err());
-        assert!(EntityAttributeValue::new(&test_eav_entity().address(),&"link_?".to_string(),&test_eav_entity().address()).is_err());
-
+    fn validate_attribute_paths() {
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"abc".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_ok());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"abc123".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_ok());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"123".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_ok());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_:{}".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_\"".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_/".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_\\".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_?".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
     }
 
 }

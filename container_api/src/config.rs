@@ -179,7 +179,7 @@ impl Configuration {
             HolochainError::ConfigError("Cyclic dependency in bridge configuration".to_string())
         })?;
 
-        // REVERSE order because we want to the instance with NO dependencies first
+        // REVERSE order because we want to get the instance with NO dependencies first
         // since that is the instance we should spawn first.
         sorted_nodes.reverse();
 

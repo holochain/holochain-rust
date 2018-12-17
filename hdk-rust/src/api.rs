@@ -913,6 +913,11 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
+/// # extern crate serde;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # #[macro_use]
+/// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::cas::content::Address;
 ///

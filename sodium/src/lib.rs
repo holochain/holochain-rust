@@ -31,6 +31,14 @@ macro_rules! raw_ptr_char {
         $name.as_mut_ptr() as *mut libc::c_uchar
     };
 }
+
+/// make invoking ffi functions taking SecBuf references more readable
+macro_rules! raw_ptr_char_immut {
+    ($name: ident) => {
+        $name.as_ptr() as *const libc::c_uchar
+    };
+}
+
 /// make invoking ffi functions taking SecBuf references more readable
 macro_rules! raw_ptr_longlong {
     ($name: ident) => {

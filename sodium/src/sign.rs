@@ -16,10 +16,10 @@ pub fn seedKeypair(public_key: &mut SecBuf,secret_key: &mut SecBuf,seed: &mut Se
         // public_key.writable();
         // secret_key.writable();
         // seed.writable();
-        let mut seed = seed.write_lock();
+        let mut seed = seed.read_lock();
         let mut secret_key = secret_key.write_lock();
         let mut public_key = public_key.write_lock();
-        rust_sodium_sys::crypto_sign_seed_keypair(raw_ptr_char!(public_key),raw_ptr_char!(secret_key),raw_ptr_char!(seed));
+        rust_sodium_sys::crypto_sign_seed_keypair(raw_ptr_char!(public_key),raw_ptr_char!(secret_key),raw_ptr_char_immut!(seed));
         }
         // println!("{:?}",secret_key );
      // (public_key.into(),secret_key.into())
@@ -31,12 +31,11 @@ pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf)->SecBuf{
     let mut out = SecBuf::with_secure(rust_sodium_sys::crypto_sign_BYTES as usize);
     unsafe {
         // secret_key.readable();
-        let mut message = message.write_lock();
-        let mut secret_key = secret_key.write_lock();
+        let mut message = message.read_lock();
+        let mut secret_key = secret_key.read_lock();
         let mut out = out.write_lock();
-        let mut out_len = out.len();
         let mess_len = message.len() as libc::c_ulonglong;
-        rust_sodium_sys::crypto_sign_detached(raw_ptr_char!(out),raw_ptr_longlong!(out_len),raw_ptr_char!(message),mess_len,raw_ptr_char!(secret_key));
+        rust_sodium_sys::crypto_sign_detached(raw_ptr_char!(out),std::ptr::null_mut(),raw_ptr_char_immut!(message),mess_len,raw_ptr_char_immut!(secret_key));
     }
     return out;
 }
@@ -61,35 +60,17 @@ mod tests {
         let mut seed = SecBuf::with_secure(32);
         let mut public_key = SecBuf::with_secure(32);
         let mut secret_key = SecBuf::with_secure(64);
-        {
-            let mut seed = seed.write_lock();
-            let mut secret_key = secret_key.write_lock();
-            let mut public_key = public_key.write_lock();
-            buf(&mut seed);
-            buf(&mut public_key);
-            buf(&mut secret_key);
-        }
-        {
-            let mut seed = seed.write_lock();
-            let mut secret_key = secret_key.write_lock();
-            let mut public_key = public_key.write_lock();
-            seedKeypair(&mut public_key,&mut secret_key,&mut seed);
-        }
 
-        {
-            let mut secret_key = secret_key.write_lock();
-            assert_eq!(34,secret_key.len());
-        }
-            let mut message = SecBuf::with_insecure(32);
+        buf(&mut seed);
+
+        seedKeypair(&mut public_key,&mut secret_key,&mut seed);
+
+        let mut message = SecBuf::with_insecure(32);
         {
             let mut message = message.write_lock();
             buf(&mut message);
         }
-        {
-            let mut message = message.write_lock();
-            let mut secret_key = secret_key.write_lock();
-            // let mut sig = sign(&mut message,&mut secret_key);
-        }// let ver = verify(&mut sig,&mut message,&mut public_key);
+        let mut sig = sign(&mut message,&mut secret_key);
 
         // assert_eq!(1, ver);
     }

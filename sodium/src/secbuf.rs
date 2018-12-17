@@ -219,7 +219,7 @@ impl<'a> Drop for Locker<'a> {
     }
 }
 
-impl std::fmt::Debug for Locker {
+impl<'a> std::fmt::Debug for Locker<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self.b.ref_())
     }

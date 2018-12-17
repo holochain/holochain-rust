@@ -60,10 +60,8 @@ fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
         .build()
         .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
     if !regex.is_match(attribute) {
-        println!("does match");
         Ok(())
     } else {
-        println!("does not match");
         Err(HolochainError::ErrorGeneric(
             "Attribute name invalid".to_string(),
         ))

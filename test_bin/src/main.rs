@@ -57,11 +57,13 @@ fn main() {
             FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
         )),
         Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
+        )),
+        Arc::new(RwLock::new(
             EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
         )),
         mock_network_config(),
-    )
-    .expect("context creation failed.");
+    );
 
     // Create Holochain Instance
     let mut hc =

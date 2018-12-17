@@ -325,7 +325,7 @@ pub mod tests {
 
         let mut context = (*context).clone();
         context.set_state(locked_state.clone());
-        let storage = context.file_storage.clone();
+        let storage = context.dht_storage.clone();
         let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
@@ -399,7 +399,7 @@ pub mod tests {
 
         store.reduce(context.clone(), action_wrapper);
 
-        let cas = context.file_storage.read().unwrap();
+        let cas = context.dht_storage.read().unwrap();
 
         let maybe_json = cas.fetch(&entry.address()).unwrap();
         let result_entry = match maybe_json {

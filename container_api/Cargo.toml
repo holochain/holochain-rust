@@ -22,3 +22,4 @@ jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
 test_utils = { path = "../test_utils"}
 clap = "2"
 structopt = "0.2"
+tempfile = "3"

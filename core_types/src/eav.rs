@@ -213,7 +213,7 @@ pub fn test_eav_entity() -> Entry {
 }
 
 pub fn test_eav_attribute() -> String {
-    "foo:attribute".to_string()
+    "foo-attribute".to_string()
 }
 
 pub fn test_eav_value() -> Entry {

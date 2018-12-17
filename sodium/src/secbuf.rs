@@ -219,6 +219,12 @@ impl<'a> Drop for Locker<'a> {
     }
 }
 
+impl std::fmt::Debug for Locker {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self.b.ref_())
+    }
+}
+
 impl<'a> Deref for Locker<'a> {
     type Target = SecBuf;
 

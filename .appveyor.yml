@@ -24,6 +24,14 @@ environment:
 #   - cmake -H. -BBuild -DENABLE_DRAFTS=ON -DCMAKE_PREFIX_PATH=./libzmq -A%PLATFORM%
 
 install:
+ # zmq
+ - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
+ - echo %LIB%
+ - dir %LIB%
+ - copy vendor\zmq\lib %LIB%
+ - dir %LIB%
+
+ # rust
  - ps: >-
      $Env:PATH += ';C:\msys64\usr\bin'
  - curl -sSf -o rustup-init.exe https://win.rustup.rs/
@@ -32,10 +40,6 @@ install:
  - rustc -Vv
  - cargo -V
  - rustup target add %WASM_TARGET%
- - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
- - echo %LIB%
- - dir %LIB%
- - copy vendor\zmq\lib %LIB%
 
 cache:
  - C:\Users\appveyor\.rustup

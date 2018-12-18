@@ -1,14 +1,14 @@
 # handy validation tool:
 # https://ci.appveyor.com/tools/validate-yaml
 # references
+# https://crate-ci.github.io/pr/testing.html
 # https://github.com/japaric/trust/blob/master/appveyor.yml
 environment:
  global:
   RUST_VERSION: nightly-2018-11-28
+  TARGET: x86_64-pc-windows-msvc
   WASM_TARGET: wasm32-unknown-unknown
-
- matrix:
-  - TARGET: x86_64-pc-windows-msvc
+  LIBZMQ_PREFIX: vendor\zmq
 
 install:
  - ps: >-

@@ -32,8 +32,13 @@ cache:
  - core\src\nucleus\actions\wasm-test\target
 
 test_script:
- - CARGO_HOME=core\src\nucleus\actions\wasm-test\.cargo CARGO_TARGET_DIR=core\src\nucleus\actions\wasm-test\target cargo build --release --target %WASM_TARGET% --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml
- - CARGO_HOME=container_api\wasm-test\.cargo CARGO_TARGET=container_api\wasm-test\target cargo build --release --target %WASM_TARGET% --manifest-path container_api\wasm-test\Cargo.toml
+ - set CARGO_HOME=core\src\nucleus\actions\wasm-test\.cargo
+ - set CARGO_TARGET_DIR=core\src\nucleus\actions\wasm-test\target
+ - cargo build --release --target %WASM_TARGET% --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml
+
+ - set CARGO_HOME=container_api\wasm-test\.cargo
+ - set CARGO_TARGET=container_api\wasm-test\target
+ - cargo build --release --target %WASM_TARGET% --manifest-path container_api\wasm-test\Cargo.toml
  # - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
  # - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
 

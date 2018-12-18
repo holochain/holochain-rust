@@ -11,6 +11,7 @@ use holochain_container_api::{
     Holochain,
 };
 use holochain_core::{
+    action::Action,
     context::{mock_network_config, Context as HolochainContext},
     logger::Logger,
     persister::SimplePersister,
@@ -24,6 +25,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
     thread,
 };
+use snowflake::ProcessUniqueId;
 use tempfile::tempdir;
 
 use crate::config::*;
@@ -37,11 +39,16 @@ impl Logger for NullLogger {
 
 pub struct Habitat {
     container: Container,
-    // signal_task: HabitatSignalDispatcher,
+    // signal_task: HabitatSignalTask,
 }
 
 fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
     panic!("never should happen");
+    Ok(cx.null())
+}
+
+fn promise_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
+    panic!("callback called");
     Ok(cx.null())
 }
 
@@ -75,7 +82,7 @@ declare_types! {
                 let hab = &mut *this.borrow_mut(&guard);
                 let (signal_tx, signal_rx) = signal_channel();
                 hab.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
-                    let signal_task = HabitatSignalDispatcher {signal_rx};
+                    let signal_task = HabitatSignalTask {signal_rx};
                     signal_task.schedule(js_callback);
                     hab.container.start_all_instances().map_err(|e| e.to_string())
                 })
@@ -88,16 +95,7 @@ declare_types! {
 
             Ok(cx.undefined().upcast())
         }
-
-        // method start_signal_system(mut cx) {
-        //     let mut this = cx.this();
-
-        //     let guard = cx.lock();
-        //     let hab = &mut *this.borrow_mut(&guard);
-        //     hab.signal_task.schedule(JsFunction::new(&mut cx, signal_callback).unwrap());
-        //     Ok(cx.undefined().upcast())
-        // }
-
+        
         method stop(mut cx) {
             let mut this = cx.this();
 
@@ -116,6 +114,7 @@ declare_types! {
         }
 
         method call(mut cx) {
+            let js_callback = JsFunction::new(&mut cx, signal_callback).unwrap();
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let zome = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
             let cap = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
@@ -129,7 +128,11 @@ declare_types! {
                 let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
-                instance.call(&zome, &cap, &fn_name, &params)
+                let val = instance.call(&zome, &cap, &fn_name, &params);
+                let (tx, rx) = sync_channel(0);
+                let task = SignalWaiterTask {rx};
+                task.schedule(js_callback);
+                val
             };
 
             let res_string = call_result.or_else(|e| {
@@ -138,23 +141,71 @@ declare_types! {
             })?;
 
             let result_string: String = res_string.into();
+
+            let completion_callback = 
             Ok(cx.string(result_string).upcast())
         }
     }
 }
 
-struct HabitatSignalDispatcher {
-    signal_rx: SignalReceiver
+/// Encapsulates the side-effects of running a particular signal which need to be waited for
+enum WaiterMsg {
+    Stop
 }
 
-impl HabitatSignalDispatcher {
+struct WaiterComm {
+    predicate: Box<Fn(Signal) -> bool>,
+    tx: SyncSender<WaiterMsg>,
+}
+
+type WaiterPool = Arc<RwLock<ProcessUniqueId, WaiterComm>>;
+
+struct HabitatSignalTask {
+    signal_rx: SignalReceiver,
+    waiter_pool: WaiterPool,
+}
+
+impl HabitatSignalTask {
     pub fn new(signal_rx: SignalReceiver) -> Self {
         let this = Self { signal_rx };
         this
     }
+
+    fn process_incoming_signal(&self, sig: Signal) {
+        match sig {
+            Signal::Internal(action_wrapper) => {
+                match action_wrapper.action {
+                    Action::Commit((entry, _)) => {
+                        match entry {
+                            App(_, _) => {
+
+                            }
+                        }
+                    },
+                    _ => ()
+                }
+            }
+        }
+    }
+
+    fn process_outgoing(&self) {
+        self.waiter_pool.write().unwrap().remove(self.action_id)
+    }
+
+    fn add_waiter(&self, action_id: ProcessUniqueId, action: Action) {
+        self.waiter_pool.write().unwrap().insert(id, )
+    }
+
+    fn remove_waiter(&self, id: ProcessUniqueId) {
+        
+    }
+
+    fn check(&self) {
+
+    }
 }
 
-impl Task for HabitatSignalDispatcher {
+impl Task for HabitatSignalTask {
     type Output = ();
     type Error = String;
     type JsEvent = JsNumber;
@@ -172,6 +223,30 @@ impl Task for HabitatSignalDispatcher {
         Ok(cx.number(17))
     }
 }
+
+struct SignalWaiterTask {
+    rx: Receiver<WaiterMsg>,
+}
+
+impl Task for SignalWaiterTask {
+    type Output = ();
+    type Error = String;
+    type JsEvent = JsUndefined;
+
+    fn perform(&self) -> Result<(), String> {
+        while let Ok(sig) = self.rx.recv() {
+            match sig {
+                WaiterMsg::Stop => break
+            }
+        }
+        Ok(())
+    }
+
+    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
+        result.map(|_| cx.undefined())
+    }
+}
+
 
 register_module!(mut cx, {
     cx.export_class::<JsHabitat>("Habitat")?;

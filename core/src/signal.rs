@@ -3,11 +3,11 @@ use std::{
     thread,
 };
 
-use crate::action::Action;
+use crate::action::ActionWrapper;
 
 #[derive(Debug)]
 pub enum Signal {
-    Internal(Action),
+    Internal(ActionWrapper),
     User,
 }
 

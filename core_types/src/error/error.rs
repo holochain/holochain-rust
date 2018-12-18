@@ -184,13 +184,13 @@ impl From<SerdeError> for HolochainError {
 
 impl From<base64::DecodeError> for HolochainError {
     fn from(error: base64::DecodeError) -> Self {
-        HolochainError::SerializationError(error.to_string())
+        HolochainError::ErrorGeneric(format!("base64 decode error: {}", error.to_string()))
     }
 }
 
 impl From<reed_solomon::DecoderError> for HolochainError {
     fn from(error: reed_solomon::DecoderError) -> Self {
-        HolochainError::SerializationError(format!("{:?}", error))
+        HolochainError::ErrorGeneric(format!("reed_solomon decode error: {:?}", error))
     }
 }
 

@@ -7,11 +7,13 @@ const toml = `
 id = "test/agent/1"
 name = "Holo Tester 1"
 key_file = "holo_tester.key"
+public_address = "sandwich--------------------------------------------------------------------------AAAEqzh28L"
 
 [[agents]]
 id = "test/agent/2"
 name = "Holo Tester 2"
 key_file = "holo_tester.key"
+public_address = "sandwich--------------------------------------------------------------------------AAAEqzh28L"
 
 [[dnas]]
 id = "test/dna"

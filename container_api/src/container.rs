@@ -4,10 +4,7 @@ use crate::{
     error::HolochainInstanceError,
     Holochain,
 };
-use holochain_core::{
-    logger::Logger,
-    signal::{signal_channel, Signal, SignalReceiver},
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,
@@ -255,7 +252,6 @@ pub fn instantiate_from_config(
             })?;
 
             let mut context_builder = ContextBuilder::new();
-
             let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
             context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
@@ -287,13 +283,13 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::{config::load_configuration, interface::DispatchRpc};
+    use holochain_core::{action::Action, signal::signal_channel};
 
-    use holochain_core::signal::signal_channel;
     use std::{fs::File, io::Write};
-
     use tempfile::tempdir;
 
     pub fn test_dna_loader() -> DnaLoader {
@@ -308,13 +304,13 @@ pub mod tests {
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
-    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
     key_file = "holo_tester.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
-    public_address = "HoloTester2-------------------------------------------------------------------------AJmU"
+    public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -495,8 +491,7 @@ pub mod tests {
     }
 
     #[test]
-    fn container_signal_handler() {
-        use holochain_core::action::Action;
+    fn test_container_signal_handler() {
         let (signal_tx, signal_rx) = signal_channel();
         let _container = test_container_with_signals(signal_tx);
 

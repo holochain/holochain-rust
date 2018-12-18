@@ -1,23 +1,11 @@
-use holochain_cas_implementations::{
-    cas::{file::FilesystemStorage, memory::MemoryStorage},
-    eav::memory::EavMemoryStorage,
-};
 use holochain_container_api::{
-    config::{
-        load_configuration, AgentConfiguration, Configuration, DnaConfiguration,
-        InstanceConfiguration, LoggerConfiguration, StorageConfiguration,
-    },
+    config::{load_configuration, Configuration},
     container::Container,
-    Holochain,
 };
 use holochain_core::{
     action::Action,
-    context::{mock_network_config, Context as HolochainContext},
-    logger::Logger,
-    persister::SimplePersister,
-    signal::{signal_channel, Signal, SignalReceiver},
+    signal::{signal_channel, SignalReceiver},
 };
-use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
 use neon::{context::Context, prelude::*};
 use snowflake::ProcessUniqueId;
 use std::{
@@ -35,9 +23,6 @@ use crate::{
     config::{ConfigBuilder, JsConfigBuilder},
     waiter::{HabitatSignalTask, JsCallback, Waiter},
 };
-
-#[derive(Clone, Debug)]
-struct NullLogger {}
 
 impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}

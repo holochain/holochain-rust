@@ -11,7 +11,10 @@ extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
+extern crate snowflake;
 extern crate tempfile;
 
-pub mod container;
+pub mod habitat;
+
 mod config;
+mod waiter;

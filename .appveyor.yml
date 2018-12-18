@@ -33,6 +33,9 @@ install:
  - cargo -V
  - rustup target add %WASM_TARGET%
  - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
+ - echo %LIB%
+ - dir %LIB%
+ - copy vendor\zmq\lib %LIB%
 
 cache:
  - C:\Users\appveyor\.rustup

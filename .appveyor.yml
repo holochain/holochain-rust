@@ -37,6 +37,9 @@ cache:
  - hdk-rust\wasm-test\.cargo
  - hdk-rust\wasm-test\target
 
+ - wasm_utils\wasm-test\integration-test\.cargo
+ - wasm_utils\wasm-test\integration-test\target
+
 test_script:
  - set CARGO_HOME=core\src\nucleus\actions\wasm-test\.cargo
  - cargo build --release --target %WASM_TARGET% --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml --target-dir core\src\nucleus\actions\wasm-test\target

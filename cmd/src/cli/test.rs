@@ -79,6 +79,8 @@ pub mod tests {
     }
 
     #[test]
+    // flagged as broken for taking 60+ seconds
+    #[cfg(feature="broken-tests")]
     fn test_command_basic_test() {
         let temp_space = gen_dir();
         let temp_dir_path = temp_space.path();
@@ -107,6 +109,8 @@ pub mod tests {
     }
 
     #[test]
+    // flagged broken for taking 60+ seconds to run
+    #[cfg(feature="broken-tests")]
     fn test_command_no_test_folder() {
         let temp_space = gen_dir();
         let temp_dir_path = temp_space.path();

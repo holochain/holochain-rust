@@ -1,6 +1,13 @@
 [[agents]]
-id = "test agent"
-name = "Holo Tester"
+id = "test agent 1"
+name = "Holo Tester 1"
+public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+key_file = "holo_tester.key"
+
+[[agents]]
+id = "test agent 2"
+name = "Holo Tester 2"
+public_address = "HoloTester2-------------------------------------------------------------------------AJmU"
 key_file = "holo_tester.key"
 
 [[dnas]]
@@ -9,9 +16,20 @@ file = "example-config/app_spec.hcpkg"
 hash = "Qm328wyq38924y"
 
 [[instances]]
-id = "app spec instance"
+id = "app spec instance 1"
 dna = "app spec rust"
-agent = "test agent"
+agent = "test agent 1"
+[instances.logger]
+type = "simple"
+file = "app_spec.log"
+[instances.storage]
+type = "file"
+path = "example-config/tmp-storage"
+
+[[instances]]
+id = "app spec instance 2"
+dna = "app spec rust"
+agent = "test agent 2"
 [instances.logger]
 type = "simple"
 file = "app_spec.log"
@@ -26,4 +44,6 @@ id = "websocket interface"
 type = "websocket"
 port = 3000
 [[interfaces.instances]]
-id = "app spec instance"
+id = "app spec instance 1"
+[[interfaces.instances]]
+id = "app spec instance 2"

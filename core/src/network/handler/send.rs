@@ -79,11 +79,11 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
                 message_data.msg_id.clone(),
                 custom_direct_message.payload,
             )));
-            dispatch_action(&context.action_channel, action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper.clone());
 
             let action_wrapper =
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
-            dispatch_action(&context.action_channel, action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper.clone());
         }
         DirectMessage::RequestValidationPackage(_) => context.log(
             "Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
@@ -101,11 +101,11 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
                 address.clone(),
                 maybe_validation_package.clone(),
             )));
-            dispatch_action(&context.action_channel, action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper.clone());
 
             let action_wrapper =
                 ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
-            dispatch_action(&context.action_channel, action_wrapper.clone());
+            dispatch_action(context.action_channel(), action_wrapper.clone());
         }
     };
 }

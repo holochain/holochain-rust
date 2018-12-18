@@ -218,6 +218,11 @@ pub extern "C" fn commit_fail_test(encoded_allocation_of_input: usize) -> i32 {
 }
 
 #[no_mangle]
+pub extern "C" fn __hdk_validate_app_entry(_encoded_allocation_of_input: u32) -> u32 {
+    0
+}
+
+#[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     encoded_allocation_of_input: usize,
 ) -> i32 {

@@ -85,7 +85,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             .and_then(|_| {
                 remove_entry(
                     &runtime.context,
-                    &runtime.context.action_channel,
+                    runtime.context.action_channel(),
                     deleted_entry_address.clone(),
                     deletion_entry.address().clone(),
                 )

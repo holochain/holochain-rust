@@ -43,5 +43,5 @@ pub async fn respond_validation_package_request(
         is_response: true,
     };
     let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
-    dispatch_action(&context.action_channel, action_wrapper);
+    dispatch_action(context.action_channel(), action_wrapper);
 }

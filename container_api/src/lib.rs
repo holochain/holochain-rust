@@ -101,6 +101,7 @@ extern crate tempfile;
 extern crate serde_derive;
 extern crate boolinator;
 extern crate jsonrpc_ws_server;
+extern crate petgraph;
 extern crate serde_json;
 #[cfg(test)]
 extern crate test_utils;
@@ -109,6 +110,7 @@ extern crate toml;
 
 pub mod config;
 pub mod container;
+pub mod context_builder;
 pub mod error;
 pub mod holochain;
 pub mod interface;

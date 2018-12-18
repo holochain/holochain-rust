@@ -25,8 +25,6 @@ pub struct ContainerApiDispatcher {
     pub io: IoHandler,
 }
 
-unsafe impl Send for ContainerApiDispatcher {}
-
 /// Implements routing for JSON-RPC calls:
 /// {instance_id}/{zome}/{cap}/{func} -> a zome call
 /// info/list_instances               -> Map of InstanceConfigs, keyed by ID
@@ -117,21 +115,22 @@ pub mod tests {
         container::{
             instantiate_from_config,
             tests::{test_dna_loader, test_toml},
-            DEFAULT_NETWORK_CONFIG,
         },
     };
+    use holochain_core::signal::signal_channel;
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let (signal_tx, _) = signal_channel();
         let holochain = instantiate_from_config(
-            &"app spec instance".to_string(),
+            &"test-instance-1".to_string(),
             &config,
             &mut test_dna_loader(),
-            &DEFAULT_NETWORK_CONFIG.to_string(),
+            Some(signal_tx),
         )
         .unwrap();
         let mut instances = InstanceMap::new();
-        instances.insert("test_instance".into(), Arc::new(RwLock::new(holochain)));
+        instances.insert("test-instance-1".into(), Arc::new(RwLock::new(holochain)));
         (config, instances)
     }
 
@@ -139,11 +138,12 @@ pub mod tests {
     fn test_new_dispatcher() {
         let (config, instances) = example_config_and_instances();
         let dispatcher = ContainerApiDispatcher::new(&config, instances.clone());
-        assert!(dispatcher.instances.get("test_instance").is_some());
+        assert!(dispatcher.instances.get("test-instance-1").is_some());
         let handler = dispatcher.handler();
         let result = format!("{:?}", handler).to_string();
-        let ordering1: bool = result == r#"IoHandler(MetaIoHandler { middleware: Noop, compatibility: V2, methods: {"info/instances": <method>, "test_instance//test/test": <method>} })"#;
-        let ordering2: bool = result == r#"IoHandler(MetaIoHandler { middleware: Noop, compatibility: V2, methods: {"test_instance//test/test": <method>, "info/instances": <method>} })"#;
-        assert!(ordering1 || ordering2, "result = {:?}", result);
+        println!("{}", result);
+        assert!(result.contains("info/instances"));
+        assert!(result.contains(r#""test-instance-1//test/test""#));
+        assert!(!result.contains(r#""test-instance-2//test/test""#));
     }
 }

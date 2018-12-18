@@ -188,8 +188,8 @@ impl Holochain {
 mod tests {
     extern crate holochain_cas_implementations;
 
-    use context_builder::ContextBuilder;
     use super::*;
+    use context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,
@@ -216,8 +216,9 @@ mod tests {
                 ContextBuilder::new()
                     .with_agent(agent)
                     .with_logger(logger.clone())
-                    .with_file_storage(tempdir().unwrap().path().to_str().unwrap()).unwrap()
-                    .spawn()
+                    .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                    .unwrap()
+                    .spawn(),
             ),
             logger,
         )

@@ -130,16 +130,17 @@ impl Container {
         self.instances = HashMap::new();
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
-            let instance = self.instantiate_from_config(
-                &id,
-                &config,
-            )
-            .map_err(|error| format!(
-                "Error while trying to create instance \"{}\": {}",
-                id, error
-            ))?;
+            let instance = self
+                .instantiate_from_config(&id, &config)
+                .map_err(|error| {
+                    format!(
+                        "Error while trying to create instance \"{}\": {}",
+                        id, error
+                    )
+                })?;
 
-            self.instances.insert(id.clone(), Arc::new(RwLock::new(instance)));
+            self.instances
+                .insert(id.clone(), Arc::new(RwLock::new(instance)));
         }
         Ok(())
     }
@@ -172,9 +173,9 @@ impl Container {
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
-                    context_builder
-                        .with_file_storage(path)
-                        .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))?;
+                    context_builder.with_file_storage(path).map_err(|hc_err| {
+                        format!("Error creating context: {}", hc_err.to_string())
+                    })?;
                 }
 
                 // Container API
@@ -183,16 +184,20 @@ impl Container {
                 let id = instance_config.id.clone();
                 for bridge in config.bridge_dependencies(id.clone()) {
                     assert_eq!(bridge.caller_id, id.clone());
-                    let callee_config = config.instance_by_id(&bridge.callee_id)
+                    let callee_config = config
+                        .instance_by_id(&bridge.callee_id)
                         .expect("config.check_consistency()? jumps out if config is broken");
-                    let callee_instance = self.instances.get(&bridge.callee_id)
-                        .expect(r#"
+                    let callee_instance = self.instances.get(&bridge.callee_id).expect(
+                        r#"
                             We have to create instances ordered by bridge dependencies such that we
                             can expect the callee to be present here because we need it to create
-                            the bridge API"#);
+                            the bridge API"#,
+                    );
 
-                    api_builder = api_builder.with_named_instance(bridge.callee_id.clone(), callee_instance.clone());
-                    api_builder = api_builder.with_named_instance_config(bridge.callee_id.clone(), callee_config);
+                    api_builder = api_builder
+                        .with_named_instance(bridge.callee_id.clone(), callee_instance.clone());
+                    api_builder = api_builder
+                        .with_named_instance_config(bridge.callee_id.clone(), callee_config);
                 }
                 context_builder.with_container_api(api_builder.spawn());
 
@@ -201,23 +206,27 @@ impl Container {
 
                 // Get DNA
                 let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
-                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_config.file).map_err(|_| {
-                    HolochainError::ConfigError(format!(
-                        "Could not load DNA file \"{}\"",
-                        dna_config.file
-                    ))
-                })?;
+                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_config.file).map_err(
+                    |_| {
+                        HolochainError::ConfigError(format!(
+                            "Could not load DNA file \"{}\"",
+                            dna_config.file
+                        ))
+                    },
+                )?;
 
                 match self.signal_tx {
-                    Some(ref signal_tx) => {
-                        Holochain::new_with_signals(dna, Arc::new(context), signal_tx.clone(), |_| true)
-                    }
+                    Some(ref signal_tx) => Holochain::new_with_signals(
+                        dna,
+                        Arc::new(context),
+                        signal_tx.clone(),
+                        |_| true,
+                    ),
                     None => Holochain::new(dna, Arc::new(context)),
                 }
-                    .map_err(|hc_err| hc_err.to_string())
+                .map_err(|hc_err| hc_err.to_string())
             })
     }
-
 
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
         if self.interface_threads.contains_key(&config.id) {

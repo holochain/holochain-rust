@@ -4,7 +4,11 @@ use holochain_cas_implementations::{
     path::create_path_if_not_exists,
 };
 
-use holochain_core::{context::Context, logger::{Logger, SimpleLogger}, persister::SimplePersister};
+use holochain_core::{
+    context::Context,
+    logger::{Logger, SimpleLogger},
+    persister::SimplePersister,
+};
 use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     error::HolochainError, json::JsonString,
@@ -122,7 +126,9 @@ impl ContextBuilder {
             self.agent_id
                 .clone()
                 .unwrap_or(AgentId::generate_fake("alice")),
-            self.logger.clone().unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
+            self.logger
+                .clone()
+                .unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,
             dht_storage,

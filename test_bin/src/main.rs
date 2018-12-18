@@ -6,12 +6,9 @@ extern crate holochain_net;
 extern crate serde_json;
 extern crate tempfile;
 
-use holochain_container_api::{*, context_builder::ContextBuilder};
+use holochain_container_api::{context_builder::ContextBuilder, *};
 use holochain_core_types::{agent::AgentId, dna::Dna};
-use std::{
-    env,
-    sync::Arc,
-};
+use std::{env, sync::Arc};
 
 use tempfile::tempdir;
 

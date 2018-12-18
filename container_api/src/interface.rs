@@ -37,7 +37,6 @@ pub struct ContainerApiBuilder {
     io: Box<IoHandler>,
 }
 
-
 impl ContainerApiBuilder {
     pub fn new() -> Self {
         ContainerApiBuilder {
@@ -156,16 +155,11 @@ pub trait Interface {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{
-        config::Configuration,
-        container::tests::test_container,
-    };
+    use crate::{config::Configuration, container::tests::test_container};
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let container = test_container();
-        let holochain = container.instances.get("test-instance-1")
-            .unwrap()
-            .clone();
+        let holochain = container.instances.get("test-instance-1").unwrap().clone();
         let mut instances = InstanceMap::new();
         instances.insert("test-instance-1".into(), holochain);
         (container.config, instances)
@@ -189,8 +183,14 @@ pub mod tests {
     fn test_named_instances() {
         let (config, instances) = example_config_and_instances();
         let handler = ContainerApiBuilder::new()
-            .with_named_instance(String::from("happ-store"), instances.iter().nth(0).unwrap().1.clone())
-            .with_named_instance_config(String::from("happ-store"), config.instances.iter().nth(0).unwrap().clone())
+            .with_named_instance(
+                String::from("happ-store"),
+                instances.iter().nth(0).unwrap().1.clone(),
+            )
+            .with_named_instance_config(
+                String::from("happ-store"),
+                config.instances.iter().nth(0).unwrap().clone(),
+            )
             .spawn();
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);

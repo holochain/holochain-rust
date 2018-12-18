@@ -1,8 +1,5 @@
-use holochain_core::{
-    context::Context,
-    logger::Logger,
-};
 use holochain_container_api::context_builder::ContextBuilder;
+use holochain_core::{context::Context, logger::Logger};
 use holochain_core_types::agent::AgentId;
 use std::sync::{Arc, Mutex};
 
@@ -31,9 +28,9 @@ pub fn test_context(agent_name: &str) -> Arc<Context> {
     let agent = AgentId::generate_fake(agent_name);
     Arc::new(
         ContextBuilder::new()
-             .with_agent(agent)
-             .with_logger(test_logger())
-             .with_memory_storage()
-             .spawn()
+            .with_agent(agent)
+            .with_logger(test_logger())
+            .with_memory_storage()
+            .spawn(),
     )
 }

@@ -790,7 +790,8 @@ pub mod tests {
         );
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
-        let bridged_ids: Vec<_> = config.bridge_dependencies(String::from("app1"))
+        let bridged_ids: Vec<_> = config
+            .bridge_dependencies(String::from("app1"))
             .iter()
             .map(|bridge| bridge.callee_id.clone())
             .collect();

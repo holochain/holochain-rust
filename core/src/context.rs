@@ -2,7 +2,6 @@ use crate::{
     action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister,
     signal::Signal, state::State,
 };
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use holochain_core_types::{
     agent::AgentId,
     cas::storage::ContentAddressableStorage,
@@ -12,6 +11,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,

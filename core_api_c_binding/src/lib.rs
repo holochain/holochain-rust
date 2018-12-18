@@ -61,8 +61,7 @@ fn get_context(path: &String) -> Result<Context, HolochainError> {
     Ok(ContextBuilder::new()
         .with_agent(agent)
         .with_file_storage(path.clone())?
-        .spawn()
-    )
+        .spawn())
 }
 
 #[no_mangle]

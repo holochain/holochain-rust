@@ -3,11 +3,10 @@ use holochain_container_api::{
         AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
         LoggerConfiguration, StorageConfiguration,
     },
-    Holochain,
 };
 use holochain_net::p2p_config::P2pConfig;
-use neon::{context::Context, prelude::*};
-use std::{collections::HashMap, convert::TryFrom, path::PathBuf};
+use neon::prelude::*;
+use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Serialize, Deserialize)]
 pub struct AgentData {
@@ -84,6 +83,8 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             .entry(agent_name.clone())
             .or_insert_with(|| AgentConfiguration {
                 id: agent_name.clone(),
+                name: agent_name.clone(),
+                public_address: "DONTCARE".to_string(),
                 key_file: format!("fake/key/{}", agent_name),
             });
         let dna = dna_configs

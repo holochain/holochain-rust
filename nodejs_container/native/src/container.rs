@@ -1,30 +1,12 @@
-use holochain_cas_implementations::{
-    cas::{file::FilesystemStorage, memory::MemoryStorage},
-    eav::memory::EavMemoryStorage,
-};
 use holochain_container_api::{
-    config::{
-        AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
-        LoggerConfiguration, StorageConfiguration, load_configuration,
-    },
+    config::{Configuration, load_configuration},
     container::Container,
-    Holochain,
 };
 use holochain_core::{
-    context::{mock_network_config, Context as HolochainContext},
     logger::Logger,
-    persister::SimplePersister,
-    signal::{signal_channel, Signal, SignalReceiver},
+    signal::{signal_channel, SignalReceiver},
 };
-use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
 use neon::{context::Context, prelude::*};
-use std::{
-    convert::TryFrom,
-    path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
-    thread,
-};
-use tempfile::tempdir;
 
 use crate::config::*;
 
@@ -37,7 +19,7 @@ impl Logger for NullLogger {
 
 pub struct Habitat {
     container: Container,
-    signal_rx: SignalReceiver,
+    _signal_rx: SignalReceiver,
 }
 
 declare_types! {
@@ -56,9 +38,9 @@ declare_types! {
             } else {
                 panic!("Invalid type specified for config, must be object or string");
             };
-            let (signal_tx, signal_rx) = signal_channel();
+            let (signal_tx, _signal_rx) = signal_channel();
             let container = Container::from_config(config).with_signal_channel(signal_tx);
-            Ok(Habitat { container, signal_rx })
+            Ok(Habitat { container, _signal_rx })
         }
 
         method start(mut cx) {

@@ -1,7 +1,6 @@
 #![feature(try_from)]
 #[macro_use]
 extern crate neon;
-#[macro_use]
 extern crate neon_serde;
 #[macro_use]
 extern crate serde_derive;

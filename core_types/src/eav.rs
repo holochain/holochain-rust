@@ -124,6 +124,11 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
+
+    
+    fn remove_eav(&mut self, entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>) ->Result<(), HolochainError>;
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -144,6 +149,31 @@ impl ExampleEntityAttributeValueStorageNonSync {
         self.storage.insert(eav.clone());
         Ok(())
     }
+
+    fn unthreadable_remove_eavs(&mut self,
+        entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>) ->Result<(),HolochainError>
+        {
+            let filtered = self
+            .storage
+            .iter()
+            .cloned()
+            .filter(|eav| match entity {
+                Some(ref e) => &eav.entity() != e,
+                None => true,
+            })
+            .filter(|eav| match attribute {
+                Some(ref a) => &eav.attribute() != a,
+                None => true,
+            })
+            .filter(|eav| match value {
+                Some(ref v) => &eav.value() == v,
+                None => true,
+            }).collect::<HashSet<EntityAttributeValue>>();
+            self.storage = self.storage.symmetric_difference(&filtered).cloned().collect::<HashSet<EntityAttributeValue>>();
+            Ok(())
+        }
 
     fn unthreadable_fetch_eav(
         &self,
@@ -205,6 +235,13 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             .read()
             .unwrap()
             .unthreadable_fetch_eav(entity, attribute, value)
+    }
+
+    fn remove_eav(&mut self, entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>) -> HcResult<()>
+    {
+        self.content.write().unwrap().unthreadable_remove_eavs(entity,attribute,value)
     }
 }
 

@@ -1,3 +1,9 @@
+# handy validation tool:
+# https://ci.appveyor.com/tools/validate-yaml
+# references
+# https://crate-ci.github.io/pr/testing.html
+# https://github.com/japaric/trust/blob/master/appveyor.yml
+
 # needed for wabt-rs
 # https://github.com/pepyakin/wabt-rs/blob/master/appveyor.yml#L1
 os: Visual Studio 2017
@@ -9,11 +15,6 @@ shallow_clone: true
 # https://github.com/rust-lang/rust/blob/master/appveyor.yml#L12
 appveyor_build_worker_cloud: gce
 
-# handy validation tool:
-# https://ci.appveyor.com/tools/validate-yaml
-# references
-# https://crate-ci.github.io/pr/testing.html
-# https://github.com/japaric/trust/blob/master/appveyor.yml
 environment:
  global:
   RUST_VERSION: nightly-2018-11-28
@@ -36,8 +37,8 @@ install:
  - rustup target add %WASM_TARGET%
 
 cache:
- - %USERPROFILE%\.rustup
- - %USERPROFILE%\.cargo
+ # - %USERPROFILE%\.rustup
+ # - %USERPROFILE%\.cargo
 
  - .rustup
  - .cargo

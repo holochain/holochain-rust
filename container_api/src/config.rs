@@ -191,11 +191,11 @@ impl Configuration {
             .collect())
     }
 
-    pub fn bridge_dependencies(&self, caller_instance_id: String) -> Vec<String> {
+    pub fn bridge_dependencies(&self, caller_instance_id: String) -> Vec<Bridge> {
         self.bridges
             .iter()
             .filter(|bridge| bridge.caller_id == caller_instance_id)
-            .map(|bridge| bridge.callee_id.clone())
+            .cloned()
             .collect()
     }
 }
@@ -790,8 +790,12 @@ pub mod tests {
         );
         let config = load_configuration::<Configuration>(&toml)
             .expect("Config should be syntactically correct");
+        let bridged_ids: Vec<_> = config.bridge_dependencies(String::from("app1"))
+            .iter()
+            .map(|bridge| bridge.callee_id.clone())
+            .collect();
         assert_eq!(
-            config.bridge_dependencies(String::from("app1")),
+            bridged_ids,
             vec![String::from("app2"), String::from("app3"),]
         );
     }

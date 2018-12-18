@@ -34,7 +34,7 @@ pub trait DispatchRpc {
 pub struct ContainerApiBuilder {
     instances: InstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
-    io: IoHandler,
+    io: Box<IoHandler>,
 }
 
 
@@ -43,14 +43,14 @@ impl ContainerApiBuilder {
         ContainerApiBuilder {
             instances: HashMap::new(),
             instance_configs: HashMap::new(),
-            io: IoHandler::new(),
+            io: Box::new(IoHandler::new()),
         }
     }
 
     /// Finish the building and retrieve the populated handler
     pub fn spawn(mut self) -> IoHandler {
         self.setup_info_api();
-        self.io
+        *self.io
     }
 
     /// Adds a "info/instances" method that returns a JSON object describing all registered
@@ -157,27 +157,18 @@ pub trait Interface {
 pub mod tests {
     use super::*;
     use crate::{
-        config::{load_configuration, Configuration},
-        container::{
-            instantiate_from_config,
-            tests::{test_dna_loader, test_toml},
-        },
+        config::Configuration,
+        container::tests::test_container,
     };
-    use holochain_core::signal::signal_channel;
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let (signal_tx, _) = signal_channel();
-        let holochain = instantiate_from_config(
-            &"test-instance-1".to_string(),
-            &config,
-            &mut test_dna_loader(),
-            Some(signal_tx),
-        )
-        .unwrap();
+        let container = test_container();
+        let holochain = container.instances.get("test-instance-1")
+            .unwrap()
+            .clone();
         let mut instances = InstanceMap::new();
-        instances.insert("test-instance-1".into(), Arc::new(RwLock::new(holochain)));
-        (config, instances)
+        instances.insert("test-instance-1".into(), holochain);
+        (container.config, instances)
     }
 
     #[test]

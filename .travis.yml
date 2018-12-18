@@ -161,6 +161,11 @@ jobs:
   include:
     - name: "windows sandbox"
       <<: *_windows_template
+      cache:
+        timeout: 1000
+        directories:
+         - $HOME/.cargo
+         - $TRAVIS_BUILD_DIR/$TEST_PATH/target
       env:
         - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
         - NODIST_X64=1
@@ -169,7 +174,7 @@ jobs:
       install:
         - rustup target add wasm32-unknown-unknown
       script:
-        - cargo test --release -p %TEST_P% --target-dir %TEST_PATH%\target
+        - cargo test --release -p $TEST_P --target-dir $TEST_PATH/target
 
     # - name: "windows build & test all"
     #   <<: *_windows_template

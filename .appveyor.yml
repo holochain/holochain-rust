@@ -34,14 +34,21 @@ cache:
  - container_api\wasm-test\.cargo
  - container_api\wasm-test\target
 
+ - hdk-rust\wasm-test\.cargo
+ - hdk-rust\wasm-test\target
+
 test_script:
  - set CARGO_HOME=core\src\nucleus\actions\wasm-test\.cargo
  - cargo build --release --target %WASM_TARGET% --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml --target-dir core\src\nucleus\actions\wasm-test\target
 
  - set CARGO_HOME=container_api\wasm-test\.cargo
  - cargo build --release --target %WASM_TARGET% --manifest-path container_api\wasm-test\Cargo.toml --target-dir container_api\wasm-test\target
- # - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
- # - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+
+ - set CARGO_HOME=hdk-rust\wasm-test\.cargo
+ - cargo build --release --target %WASM_TARGET% --manifest-path hdk-rust\wasm-test\Cargo.toml --target-dir hdk-rust\wasm-test\target
+
+ - set CARGO_HOME=wasm_utils\wasm-test\integration-test\.cargo
+ - cargo build --release --target %WASM_TARGET% --manifest-path wasm_utils\wasm-test\integration-test\Cargo.toml --target-dir wasm_utils\wasm-test\integration-test\target
 
 # Building is done in the test phase, so we disable Appveyor's build phase.
 build: false

@@ -195,9 +195,9 @@ impl Container {
                     );
 
                     api_builder = api_builder
-                        .with_named_instance(bridge.callee_id.clone(), callee_instance.clone());
+                        .with_named_instance(bridge.handle.clone(), callee_instance.clone());
                     api_builder = api_builder
-                        .with_named_instance_config(bridge.callee_id.clone(), callee_config);
+                        .with_named_instance_config(bridge.handle.clone(), callee_config);
                 }
                 context_builder.with_container_api(api_builder.spawn());
 
@@ -390,14 +390,17 @@ pub mod tests {
     [[bridges]]
     caller_id = "test-instance-2"
     callee_id = "test-instance-1"
+    handle = "DPKI"
 
     [[bridges]]
     caller_id = "test-instance-3"
     callee_id = "test-instance-2"
+    handle = "happ-store"
 
     [[bridges]]
     caller_id = "test-instance-3"
     callee_id = "test-instance-1"
+    handle = "DPKI"
     "#
         .to_string()
     }

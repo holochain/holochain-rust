@@ -34,6 +34,7 @@ install:
  - dir %APPVEYOR_BUILD_FOLDER%
  - set LIBZMQ_PREFIX=%APPVEYOR_BUILD_FOLDER%\vendor\zmq\
  - dir %LIBZMQ_PREFIX%
+ - set RUST_LOG=debug
 
  # - set LIBZMQ_SOURCEDIR=C:\projects\libzmq
  # - git clone --branch v4.2.0 --depth 1 https://github.com/zeromq/libzmq.git "%LIBZMQ_SOURCEDIR%"

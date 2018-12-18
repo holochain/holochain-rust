@@ -75,17 +75,17 @@ cache:
  - wasm_utils\wasm-test\integration-test\target
 
 test_script:
- # - set CARGO_HOME=core\src\nucleus\actions\wasm-test\.cargo
- # - cargo build --release --target %WASM_TARGET% --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml --target-dir core\src\nucleus\actions\wasm-test\target
- #
- # - set CARGO_HOME=container_api\wasm-test\.cargo
- # - cargo build --release --target %WASM_TARGET% --manifest-path container_api\wasm-test\Cargo.toml --target-dir container_api\wasm-test\target
- #
- # - set CARGO_HOME=hdk-rust\wasm-test\.cargo
- # - cargo build --release --target %WASM_TARGET% --manifest-path hdk-rust\wasm-test\Cargo.toml --target-dir hdk-rust\wasm-test\target
- #
- # - set CARGO_HOME=wasm_utils\wasm-test\integration-test\.cargo
- # - cargo build --release --target %WASM_TARGET% --manifest-path wasm_utils\wasm-test\integration-test\Cargo.toml --target-dir wasm_utils\wasm-test\integration-test\target
+ - set CARGO_HOME=core\src\nucleus\actions\wasm-test\.cargo
+ - cargo build --release --target %WASM_TARGET% --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml --target-dir core\src\nucleus\actions\wasm-test\target
+
+ - set CARGO_HOME=container_api\wasm-test\.cargo
+ - cargo build --release --target %WASM_TARGET% --manifest-path container_api\wasm-test\Cargo.toml --target-dir container_api\wasm-test\target
+
+ - set CARGO_HOME=hdk-rust\wasm-test\.cargo
+ - cargo build --release --target %WASM_TARGET% --manifest-path hdk-rust\wasm-test\Cargo.toml --target-dir hdk-rust\wasm-test\target
+
+ - set CARGO_HOME=wasm_utils\wasm-test\integration-test\.cargo
+ - cargo build --release --target %WASM_TARGET% --manifest-path wasm_utils\wasm-test\integration-test\Cargo.toml --target-dir wasm_utils\wasm-test\integration-test\target
 
  # - cargo build --all --release --target %TARGET% --manifest-path Cargo.toml --target-dir target
  - cargo test --all --exclude hc --target %TARGET% --manifest-path Cargo.toml --target-dir target

@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     instance::RECV_DEFAULT_TIMEOUT_MS,
     nucleus::{
-        get_capability_with_zome_call, launch_zome_fn_call,
+        is_fn_public, launch_zome_fn_call,
         ribosome::{api::ZomeApiResult, Runtime},
         state::NucleusState,
         ZomeFnCall,
@@ -11,7 +11,6 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::capabilities::{Capability, CapabilityType},
     entry::cap_entries::{CallSignature, CapTokenGrant},
     error::HolochainError,
 };
@@ -123,21 +122,20 @@ pub(crate) fn reduce_call(
         return;
     }
     let dna = state.dna.clone().unwrap();
-    let maybe_cap = get_capability_with_zome_call(&dna, &fn_call);
-    if let Err(fn_res) = maybe_cap {
+    let maybe_public = is_fn_public(&dna, &fn_call);
+    if let Err(fn_res) = maybe_public {
         // Notify failure
         state
             .zome_calls
             .insert(fn_call.clone(), Some(fn_res.result()));
         return;
     }
-    let cap = maybe_cap.unwrap().clone();
+    let public = maybe_public.unwrap();
     // TODO: actually get the caller's address
     let caller = Address::from("fake caller");
     // 2. Checks for permission to access Capability
-    if !check_capability(
+    if !public && !check_capability(
         context.clone(),
-        &cap,
         &fn_call.clone(),
         caller,
         &CallSignature {},
@@ -166,15 +164,10 @@ fn is_token_the_agent(context: Arc<Context>, cap_token: &Address) -> bool {
 /// that have been registered to callers in the chain.
 fn check_capability(
     context: Arc<Context>,
-    cap: &Capability,
     fn_call: &ZomeFnCall,
     caller: Address,
     call_sig: &CallSignature,
 ) -> bool {
-    // TODO: this probably should go away...
-    if cap.cap_type == CapabilityType::Public {
-        return true;
-    }
 
     // the agent can always do everything
     // TODO: check the signature too
@@ -184,10 +177,6 @@ fn check_capability(
 
     let chain = &context.chain_storage;
     let maybe_json = chain.read().unwrap().fetch(&fn_call.cap_token).unwrap();
-    println!(
-        "Searhcing for:{:?} FOUNT:{:?}",
-        &fn_call.cap_token, maybe_json
-    );
     let grant = match maybe_json {
         Some(content) => CapTokenGrant::try_from(content).unwrap(),
         None => return false,

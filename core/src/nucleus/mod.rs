@@ -15,7 +15,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::{capabilities::Capability, wasm::DnaWasm, Dna},
+    dna::{capabilities::CapabilityType, wasm::DnaWasm, Dna},
     error::{DnaError, HcResult, HolochainError},
     json::JsonString,
 };
@@ -419,11 +419,11 @@ pub fn reduce(
     }
 }
 
-// Helper function for getting a Capability for a ZomeFnCall request
-fn get_capability_with_zome_call(
+// Helper function for finding out if a given function call is public
+fn is_fn_public(
     dna: &Dna,
     zome_call: &ZomeFnCall,
-) -> Result<Capability, ExecuteZomeFnResponse> {
+) -> Result<bool, ExecuteZomeFnResponse> {
     // Get Capability from DNA
     let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name);
     match res {
@@ -431,7 +431,7 @@ fn get_capability_with_zome_call(
             zome_call.clone(),
             Err(HolochainError::Dna(e)),
         )),
-        Ok(cap) => Ok(cap.clone()),
+        Ok(cap) => Ok(cap.cap_type == CapabilityType::Public),
     }
 }
 

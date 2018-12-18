@@ -10,6 +10,15 @@ environment:
   WASM_TARGET: wasm32-unknown-unknown
   LIBZMQ_PREFIX: vendor\zmq
 
+# before_build:
+#  # https://github.com/zeromq/cppzmq/blob/master/appveyor.yml
+#   - if not exist libzmq (
+#    appveyor DownloadFile https://github.com/zeromq/libzmq/archive/v%ZMQ_VER%.zip &&
+#    7z x v%ZMQ_VER%.zip >NUL &&
+#    cmake -H./libzmq-%ZMQ_VER% -Blibzmq-%ZMQ_VER%/build -DCMAKE_INSTALL_PREFIX=libzmq -DENABLE_DRAFTS=ON -DWITH_PERF_TOOL=OFF -DZMQ_BUILD_TESTS=OFF -DENABLE_CPACK=OFF -A%PLATFORM% &&
+#    cmake --build libzmq-%ZMQ_VER%/build --target install)
+#   - cmake -H. -BBuild -DENABLE_DRAFTS=ON -DCMAKE_PREFIX_PATH=./libzmq -A%PLATFORM%
+
 install:
  - ps: >-
      $Env:PATH += ';C:\msys64\usr\bin'
@@ -53,8 +62,8 @@ test_script:
  # - set CARGO_HOME=wasm_utils\wasm-test\integration-test\.cargo
  # - cargo build --release --target %WASM_TARGET% --manifest-path wasm_utils\wasm-test\integration-test\Cargo.toml --target-dir wasm_utils\wasm-test\integration-test\target
 
- - cargo build --all --release --target %TARGET% --manifest-path Cargo.toml --target-dir target
- # - cargo test --release --target %TARGET% --manifest-path Cargo.toml --target-dir target
+ # - cargo build --all --release --target %TARGET% --manifest-path Cargo.toml --target-dir target
+ - cargo test --release --target %TARGET% --manifest-path Cargo.toml --target-dir target
 
 # Building is done in the test phase, so we disable Appveyor's build phase.
 build: false

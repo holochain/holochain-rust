@@ -290,7 +290,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 
 #[cfg(test)]
 // too slow!
-#[cfg(feature="broken-tests")]
+#[cfg(feature = "broken-tests")]
 mod tests {
     use assert_cmd::prelude::*;
     use std::process::Command;

@@ -62,7 +62,7 @@ pub fn test(
 }
 
 #[cfg(test)]
-#[cfg(feature="broken-tests")]
+#[cfg(feature = "broken-tests")]
 pub mod tests {
     // imports for broken tests
     // use super::*;
@@ -71,10 +71,10 @@ pub mod tests {
     // use std::process::Command;
     use tempfile::{Builder, TempDir};
 
-    #[cfg(feature="broken-tests")]
+    #[cfg(feature = "broken-tests")]
     const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
 
-    #[cfg(feature="broken-tests")]
+    #[cfg(feature = "broken-tests")]
     pub fn gen_dir() -> TempDir {
         Builder::new()
             .prefix(HOLOCHAIN_TEST_PREFIX)
@@ -84,7 +84,7 @@ pub mod tests {
 
     #[test]
     // flagged as broken for taking 60+ seconds
-    #[cfg(feature="broken-tests")]
+    #[cfg(feature = "broken-tests")]
     fn test_command_basic_test() {
         let temp_space = gen_dir();
         let temp_dir_path = temp_space.path();
@@ -114,7 +114,7 @@ pub mod tests {
 
     #[test]
     // flagged broken for taking 60+ seconds to run
-    #[cfg(feature="broken-tests")]
+    #[cfg(feature = "broken-tests")]
     fn test_command_no_test_folder() {
         let temp_space = gen_dir();
         let temp_dir_path = temp_space.path();

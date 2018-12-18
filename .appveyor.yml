@@ -25,14 +25,14 @@ environment:
 
 install:
  # zmq
- # - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
  # - dir %LIB%
  # - dir %LIBPATH%
  # - copy vendor\zmq\lib %LIB%
  # - dir %LIB%
  # - dir %LIBPATH%
  - dir %APPVEYOR_BUILD_FOLDER%
- - set LIBZMQ_PREFIX=%APPVEYOR_BUILD_FOLDER%\vendor\zmq\
+ - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
+ - set LIBZMQ_PREFIX=%APPVEYOR_BUILD_FOLDER%\vendor\zmq
  - dir %LIBZMQ_PREFIX%
  - set RUST_LOG=debug
 

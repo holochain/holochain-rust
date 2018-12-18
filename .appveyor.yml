@@ -19,7 +19,7 @@ environment:
 
  # as per rust docs
  # https://github.com/rust-lang/rust/blob/master/appveyor.yml#L12
- # appveyor_build_worker_cloud: gce
+ appveyor_build_worker_cloud: gce
 
 install:
  # zmq

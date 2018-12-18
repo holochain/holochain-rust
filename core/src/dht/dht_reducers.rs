@@ -160,30 +160,31 @@ pub(crate) fn reduce_update_entry(
         .ok()
         .unwrap_or(None);
     if new_status_eav_option.is_some() {
-        return new_status_eav_option;
+        new_status_eav_option;
+    } else {
+        // Update crud-link
+        create_crud_link_eav(latest_old_address, new_address)
+            .map(|crud_link_eav| {
+                let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
+                let res_option = res.clone().ok();
+                res_option
+                    .and_then(|_| {
+                        new_store.actions_mut().insert(
+                            action_wrapper.clone(),
+                            res.clone().map(|_| new_address.clone()),
+                        );
+                        Some(new_store.clone())
+                    })
+                    .or_else(|| {
+                        new_store
+                            .actions_mut()
+                            .insert(action_wrapper.clone(), Err(res.err().unwrap()));
+                        Some(new_store.clone())
+                    })
+            })
+            .ok()
+            .unwrap_or(None)
     }
-    // Update crud-link
-    create_crud_link_eav(latest_old_address, new_address)
-        .map(|crud_link_eav| {
-            let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
-            let res_option = res.clone().ok();
-            res_option
-                .and_then(|_| {
-                    new_store.actions_mut().insert(
-                        action_wrapper.clone(),
-                        res.clone().map(|_| new_address.clone()),
-                    );
-                    Some(new_store.clone())
-                })
-                .or_else(|| {
-                    new_store
-                        .actions_mut()
-                        .insert(action_wrapper.clone(), Err(res.err().unwrap()));
-                    Some(new_store.clone())
-                })
-        })
-        .ok()
-        .unwrap_or(None)
 }
 
 pub(crate) fn reduce_remove_entry(

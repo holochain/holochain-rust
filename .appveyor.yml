@@ -42,7 +42,7 @@ cache:
  - container_api\wasm-test\target
  - hdk-rust\wasm-test\target
  # - hc\target
- - target
+ # - target
 
 # everything uses --release to keep compiled targets small
 # large compilation = blows up appveyor cache limits

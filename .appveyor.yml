@@ -11,15 +11,15 @@ os: Visual Studio 2017
 # https://www.appveyor.com/blog/2014/06/04/shallow-clone-for-git-repositories/
 shallow_clone: true
 
-# as per rust docs
-# https://github.com/rust-lang/rust/blob/master/appveyor.yml#L12
-appveyor_build_worker_cloud: gce
-
 environment:
  global:
   RUST_VERSION: nightly-2018-11-28
   TARGET: x86_64-pc-windows-msvc
   WASM_TARGET: wasm32-unknown-unknown
+
+ # as per rust docs
+ # https://github.com/rust-lang/rust/blob/master/appveyor.yml#L12
+ appveyor_build_worker_cloud: gce
 
 install:
  # zmq

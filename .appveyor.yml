@@ -26,10 +26,11 @@ environment:
 install:
  # zmq
  - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
- - echo %LIB%
  - dir %LIB%
+ - dir %LIBPATH%
  - copy vendor\zmq\lib %LIB%
  - dir %LIB%
+ - dir %LIBPATH%
 
  # rust
  - ps: >-

@@ -27,9 +27,9 @@ use std::sync::{Arc, Mutex, RwLock};
 /// `spawn()` to retrieve the context.
 pub struct ContextBuilder {
     agent_id: Option<AgentId>,
-    // Logger and persister are currently set to a reasonable default in spawn().
-    // TODO: add with_logger() and with_persister() functions to ContextBuilder.
     logger: Option<Arc<Mutex<Logger>>>,
+    // Persister is currently set to a reasonable default in spawn().
+    // TODO: add with_persister() function to ContextBuilder.
     //persister: Option<Arc<Mutex<Persister>>>,
     chain_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     dht_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,

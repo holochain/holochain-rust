@@ -5,21 +5,17 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
 
-use holochain_cas_implementations::{
-    cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
-};
-use holochain_container_api::Holochain;
-use holochain_core::context::{mock_network_config, Context};
+use holochain_container_api::{context_builder::ContextBuilder, Holochain};
+use holochain_core::context::Context;
 use holochain_core_types::{dna::Dna, error::HolochainError};
 
 use std::sync::Arc;
 
-use holochain_core::{logger::Logger, persister::SimplePersister};
+use holochain_core::logger::Logger;
 use holochain_core_types::agent::AgentId;
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
-    sync::{Mutex, RwLock},
 };
 
 #[derive(Clone, Debug)]
@@ -62,21 +58,11 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
 
 fn get_context(path: &String) -> Result<Context, HolochainError> {
     let agent = AgentId::generate_fake("c_bob");
-    let cas_path = format!("{}/cas", path);
-    let eav_path = format!("{}/eav", path);
-    let _agent_path = format!("{}/state", path);
-    create_path_if_not_exists(&cas_path)?;
-    create_path_if_not_exists(&eav_path)?;
-    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-    Ok(Context::new(
-        agent,
-        Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
-        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
-        Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
-        mock_network_config(),
-    ))
+    Ok(ContextBuilder::new()
+        .with_agent(agent)
+        .with_file_storage(path.clone())?
+        .spawn()
+    )
 }
 
 #[no_mangle]

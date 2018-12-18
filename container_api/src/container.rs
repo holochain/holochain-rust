@@ -38,7 +38,7 @@ use interface_impls;
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
     pub instances: InstanceMap,
-    pub config: Configuration,
+    config: Configuration,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
@@ -68,6 +68,10 @@ impl Container {
         }
         self.signal_tx = Some(signal_tx);
         self
+    }
+
+    pub fn config(&self) -> Configuration {
+        self.config.clone()
     }
 
     pub fn start_all_interfaces(&mut self) {

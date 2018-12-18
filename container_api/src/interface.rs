@@ -162,7 +162,7 @@ pub mod tests {
         let holochain = container.instances.get("test-instance-1").unwrap().clone();
         let mut instances = InstanceMap::new();
         instances.insert("test-instance-1".into(), holochain);
-        (container.config, instances)
+        (container.config(), instances)
     }
 
     #[test]

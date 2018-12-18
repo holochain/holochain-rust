@@ -30,14 +30,7 @@ pub trait DispatchRpc {
 /// This builder makes it convenient to create handlers with different configurations.
 ///
 /// Call any sequence of with_* functions on a ContainerApiBuilder object and finalize
-/// with spawn() to retrieve the IoHandler:
-/// # Example
-/// ```rust
-/// let handler = ContainerApiBuilder::new()
-//            .with_instances(instances.clone())
-//            .with_instance_configs(config.instances)
-//            .spawn();
-/// ```
+/// with spawn() to retrieve the IoHandler.
 pub struct ContainerApiBuilder {
     instances: InstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,

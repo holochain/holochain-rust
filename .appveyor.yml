@@ -35,10 +35,8 @@ install:
  - rustup target add %WASM_TARGET%
 
 cache:
- # - C:\Users\appveyor\.rustup
  - C:\Users\appveyor\.cargo
  - C:\Users\appveyor\target
-
  - core\src\nucleus\actions\wasm-test\target
  - wasm_utils\wasm-test\integration-test\target
  - container_api\wasm-test\target

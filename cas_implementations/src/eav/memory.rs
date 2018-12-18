@@ -60,7 +60,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         }
         else 
         {
-            HolochainError::ErrorGeneric("Could not remove eav".to_string())
+            Err(HolochainError::ErrorGeneric("Could not remove eav".to_string()))
         }
     }
 }

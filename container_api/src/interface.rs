@@ -8,7 +8,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use config::{Configuration, InstanceConfiguration};
+use config::InstanceConfiguration;
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
@@ -20,91 +20,122 @@ pub trait DispatchRpc {
 /// ContainerApiDispatcher exposes some subset of the Container API,
 /// including zome function calls as well as admin functionality.
 /// Each interface has their own dispatcher, and each may be configured differently.
-pub struct ContainerApiDispatcher {
+pub struct ContainerApiBuilder {
     instances: InstanceMap,
-    pub io: IoHandler,
+    instance_configs: HashMap<String, InstanceConfiguration>,
+    io: IoHandler,
 }
 
 /// Implements routing for JSON-RPC calls:
 /// {instance_id}/{zome}/{cap}/{func} -> a zome call
 /// info/list_instances               -> Map of InstanceConfigs, keyed by ID
 /// admin/...                         -> TODO
-impl ContainerApiDispatcher {
-    pub fn new(config: &Configuration, instances: InstanceMap) -> Self {
-        let instance_configs = config
-            .instances
-            .iter()
-            .map(|inst| (inst.id.clone(), inst.clone()))
-            .collect();
-        let io = IoHandler::new();
-        let mut this = Self { instances, io };
-        this.setup_info_api(instance_configs);
-        this.setup_zome_api();
-        this
+impl ContainerApiBuilder {
+    pub fn new() -> Self {
+        ContainerApiBuilder {
+            instances: HashMap::new(),
+            instance_configs: HashMap::new(),
+            io: IoHandler::new(),
+        }
+    }
+
+    pub fn spawn(mut self) -> IoHandler {
+        self.setup_info_api();
+        self.io
     }
 
     // initialize a json rpc method for accessing which instances exist
-    fn setup_info_api(&mut self, instance_configs: HashMap<String, InstanceConfiguration>) {
+    fn setup_info_api(&mut self) {
+        let instance_configs = self.instance_configs.clone();
+
+        let configs: Vec<_> = self
+            .instances
+            .iter()
+            .filter(|&(name, _)| instance_configs.contains_key(name))
+            .map(|(name, _)| instance_configs.get(name).unwrap())
+            .collect();
+
+        let config_string = serde_json::to_string(&configs)
+            .expect("Vector of InstanceConfigurations must be serializable");
+
         self.io.add_method("info/instances", move |_| {
-            let configs = instance_configs.clone();
-            let config_string = serde_json::to_string(&configs)
-                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
-            Ok(Value::String(config_string))
+            Ok(Value::String(config_string.clone()))
         });
     }
 
-    // initialize json rpc methods for accessing all zomes' functions
-    fn setup_zome_api(&mut self) {
-        for (instance_id, hc_lock) in self.instances.clone() {
-            let hc_lock = hc_lock.clone();
-            let hc = hc_lock.read().unwrap();
-            let state: State = hc.state().unwrap();
-            let nucleus = state.nucleus();
-            let dna = nucleus.dna();
-            match dna {
-                Some(dna) => {
-                    for (zome_name, zome) in dna.zomes {
-                        for (cap_name, cap) in zome.capabilities {
-                            for func in cap.functions {
-                                let func_name = func.name;
-                                let zome_name = zome_name.clone();
-                                let cap_name = cap_name.clone();
-                                let method_name = format!(
-                                    "{}/{}/{}/{}",
-                                    instance_id, zome_name, cap_name, func_name
-                                );
-                                let hc_lock_inner = hc_lock.clone();
-                                self.io.add_method(&method_name, move |params| {
-                                    let mut hc = hc_lock_inner.write().unwrap();
-                                    let params_string =
-                                        serde_json::to_string(&params).map_err(|e| {
-                                            jsonrpc_core::Error::invalid_params(e.to_string())
-                                        })?;
-                                    let response = hc
-                                        .call(&zome_name, &cap_name, &func_name, &params_string)
-                                        .map_err(|e| {
-                                            jsonrpc_core::Error::invalid_params(e.to_string())
-                                        })?;
-                                    Ok(Value::String(response.to_string()))
-                                })
-                            }
+    pub fn with_named_instance_config(
+        mut self,
+        instance_name: String,
+        instance_config: InstanceConfiguration,
+    ) -> Self {
+        self.instance_configs.insert(instance_name, instance_config);
+        self
+    }
+
+    pub fn with_instance_configs(mut self, instance_configs: Vec<InstanceConfiguration>) -> Self {
+        for config in instance_configs {
+            self.instance_configs.insert(config.id.clone(), config);
+        }
+        self
+    }
+
+    pub fn with_instances(mut self, instances: InstanceMap) -> Self {
+        for (instance_id, hc_lock) in instances {
+            self = self.with_named_instance(instance_id, hc_lock);
+        }
+        self
+    }
+
+    pub fn with_named_instance(
+        mut self,
+        instance_name: String,
+        instance: Arc<RwLock<Holochain>>,
+    ) -> Self {
+        let hc_lock = instance.clone();
+        let hc = hc_lock.read().unwrap();
+        let state: State = hc.state().unwrap();
+        let nucleus = state.nucleus();
+        let dna = nucleus.dna();
+        match dna {
+            Some(dna) => {
+                for (zome_name, zome) in dna.zomes {
+                    for (cap_name, cap) in zome.capabilities {
+                        for func in cap.functions {
+                            let func_name = func.name;
+                            let zome_name = zome_name.clone();
+                            let cap_name = cap_name.clone();
+                            let method_name = format!(
+                                "{}/{}/{}/{}",
+                                instance_name, zome_name, cap_name, func_name
+                            );
+                            let hc_lock_inner = hc_lock.clone();
+                            self.io.add_method(&method_name, move |params| {
+                                let mut hc = hc_lock_inner.write().unwrap();
+                                let params_string =
+                                    serde_json::to_string(&params).map_err(|e| {
+                                        jsonrpc_core::Error::invalid_params(e.to_string())
+                                    })?;
+                                let response = hc
+                                    .call(&zome_name, &cap_name, &func_name, &params_string)
+                                    .map_err(|e| {
+                                        jsonrpc_core::Error::invalid_params(e.to_string())
+                                    })?;
+                                Ok(Value::String(response.to_string()))
+                            })
                         }
                     }
                 }
-                None => unreachable!(),
-            };
-        }
+            }
+            None => unreachable!(),
+        };
+        self.instances
+            .insert(instance_name.clone(), instance.clone());
+        self
     }
 }
 
-impl DispatchRpc for ContainerApiDispatcher {
-    fn handler(self) -> IoHandler {
-        self.io
-    }
-}
-
-pub trait Interface<D: DispatchRpc> {
-    fn run(&self, d: D) -> Result<(), String>;
+pub trait Interface {
+    fn run(&self, handler: IoHandler) -> Result<(), String>;
 }
 
 #[cfg(test)]
@@ -137,13 +168,28 @@ pub mod tests {
     #[test]
     fn test_new_dispatcher() {
         let (config, instances) = example_config_and_instances();
-        let dispatcher = ContainerApiDispatcher::new(&config, instances.clone());
-        assert!(dispatcher.instances.get("test-instance-1").is_some());
-        let handler = dispatcher.handler();
+        let handler = ContainerApiBuilder::new()
+            .with_instances(instances.clone())
+            .with_instance_configs(config.instances)
+            .spawn();
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
         assert!(result.contains(r#""test-instance-1//test/test""#));
         assert!(!result.contains(r#""test-instance-2//test/test""#));
+    }
+
+    #[test]
+    fn test_named_instances() {
+        let (config, instances) = example_config_and_instances();
+        let handler = ContainerApiBuilder::new()
+            .with_named_instance(String::from("happ-store"), instances.iter().nth(0).unwrap().1.clone())
+            .with_named_instance_config(String::from("happ-store"), config.instances.iter().nth(0).unwrap().clone())
+            .spawn();
+        let result = format!("{:?}", handler).to_string();
+        println!("{}", result);
+        assert!(result.contains("info/instances"));
+        assert!(result.contains(r#""happ-store//test/test""#));
+        assert!(!result.contains(r#""test-instance-1//test/test""#));
     }
 }

@@ -792,10 +792,7 @@ pub mod tests {
             .expect("Config should be syntactically correct");
         assert_eq!(
             config.bridge_dependencies(String::from("app1")),
-            vec![
-                String::from("app2"),
-                String::from("app3"),
-            ]
+            vec![String::from("app2"), String::from("app3"),]
         );
     }
 }

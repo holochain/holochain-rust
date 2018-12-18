@@ -11,6 +11,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 
 use std::{
     clone::Clone,
@@ -23,7 +24,7 @@ use std::{
 };
 
 use holochain_net::p2p_config::P2pConfig;
-use interface::{ContainerApiDispatcher, InstanceMap, Interface};
+use interface::{ContainerApiBuilder, InstanceMap, Interface};
 use interface_impls;
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
@@ -180,26 +181,31 @@ impl Container {
         Dna::try_from(JsonString::from(contents))
     }
 
-    fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> ContainerApiDispatcher {
+    fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
         let instance_ids: Vec<String> = interface_config
             .instances
             .iter()
             .map(|i| i.id.clone())
             .collect();
+
         let instance_subset: InstanceMap = self
             .instances
             .iter()
             .filter(|(id, _)| instance_ids.contains(&id))
             .map(|(id, val)| (id.clone(), val.clone()))
             .collect();
-        ContainerApiDispatcher::new(&self.config, instance_subset)
+
+        ContainerApiBuilder::new()
+            .with_instances(instance_subset)
+            .with_instance_configs(self.config.instances.clone())
+            .spawn()
     }
 
     fn spawn_interface_thread(
         &self,
         interface_config: InterfaceConfiguration,
     ) -> InterfaceThreadHandle {
-        let dispatcher = self.make_dispatcher(&interface_config);
+        let dispatcher = self.make_interface_handler(&interface_config);
         thread::spawn(move || {
             let iface = make_interface(&interface_config);
             iface.run(dispatcher)
@@ -219,9 +225,7 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 }
 
 /// This can eventually be dependency injected for third party Interface definitions
-fn make_interface(
-    interface_config: &InterfaceConfiguration,
-) -> Box<Interface<ContainerApiDispatcher>> {
+fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => {
             Box::new(interface_impls::websocket::WebsocketInterface::new(port))
@@ -482,8 +486,7 @@ pub mod tests {
     fn test_rpc_info_instances() {
         let container = test_container();
         let interface_config = &container.config.interfaces[0];
-        let dispatcher = container.make_dispatcher(&interface_config);
-        let io = dispatcher.io;
+        let io = container.make_interface_handler(&interface_config);
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
         let response = io

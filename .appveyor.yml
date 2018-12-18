@@ -19,7 +19,7 @@ environment:
 
  # as per rust docs
  # https://github.com/rust-lang/rust/blob/master/appveyor.yml#L12
- appveyor_build_worker_cloud: gce
+ # appveyor_build_worker_cloud: gce
 
 install:
  # zmq
@@ -36,18 +36,19 @@ install:
 
 cache:
  - C:\Users\appveyor\.cargo
- - C:\Users\appveyor\target
+ - cas_implementations\target
  - core\src\nucleus\actions\wasm-test\target
  - wasm_utils\wasm-test\integration-test\target
  - container_api\wasm-test\target
  - hdk-rust\wasm-test\target
- - hc\target
+ # - hc\target
  - target
 
 # everything uses --release to keep compiled targets small
 # large compilation = blows up appveyor cache limits
 test_script:
- - cargo test --release -p hc --target-dir hc\target
+ - cargo test --release -p holochain_cas_implementations --target-dir cas_implementations\target
+ # - cargo test --release -p hc --target-dir hc\target
  # - cargo build --release --target %WASM_TARGET% --target-dir core\src\nucleus\actions\wasm-test\target --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml
  # - cargo build --release --target %WASM_TARGET% --target-dir wasm_utils\wasm-test\integration-test\target --manifest-path wasm_utils\wasm-test\integration-test\Cargo.toml
  # - cargo build --release --target %WASM_TARGET% --target-dir container_api\wasm-test\target --manifest-path container_api\wasm-test\Cargo.toml

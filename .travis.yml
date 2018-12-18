@@ -152,10 +152,8 @@ _cmd_deploy_template: &_cmd_deploy_template
 
 matrix:
  include:
-  - env: TEST_P=holochain_cas_implementations
-    env: TEST_PATH=cas_implementations
-  - env: TEST_P=hc
-    env: TEST_PATH=hc
+  - env: TEST_P=holochain_cas_implementations TEST_PATH=cas_implementations
+  - env: TEST_P=hc TEST_PATH=hc
 
 jobs:
   include:

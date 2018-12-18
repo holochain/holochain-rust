@@ -37,9 +37,79 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
+type ExpectedAction = Box<Fn(Action) -> bool>;
+
+struct WaitTarget {
+    tx: SyncSender<WaiterMsg>,
+    actions: RefCell<HashSet<ExpectedAction>>,
+}
+
+struct Waiter {
+    everything: HashMap<ZomeFnCall, WaitTarget>,
+    current: RefCell<Option<ZomeFnCall>>,
+};
+
+enum WaiterMsg {
+    Stop
+}
+
+struct HabitatSignalTask {
+    signal_rx: SignalReceiver,
+    waiter: RefCell<Waiter>,
+}
+
+impl HabitatSignalTask {
+    pub fn new(signal_rx: SignalReceiver) -> Self {
+        let this = Self { signal_rx };
+        this
+    }
+
+    fn current_target(&self) -> Option<WaitTarget> {
+        let current = self.current.borrow();
+        self.waiter.everything.get(current)
+    }
+
+    fn process_incoming_signal(&self, sig: Signal) {
+        match sig {
+            Signal::Internal(action_wrapper) => {
+                match action_wrapper.action {
+                    Action::Commit((entry, _)) => {
+                        match entry {
+                            App(_, _) => {
+                                self.current_target.actions.borrow_mut().insert(Action::Hold(entry))
+                            }
+                        }
+                    },
+                    Action::SendDirectMessage(data) => {
+                        let DirectMessageData {msg_id} = data;
+                        // TODO: either this or SendDirectMessageTimeout!
+                        self.current_target.actions.borrow_mut().insert(ResolveDirectConnection(msg_id));
+                    },
+                    _ => ()
+                }
+            }
+        }
+    }
+
+    fn process_outgoing(&self) {
+        self.waiter_pool.write().unwrap().remove(self.action_id)
+    }
+
+    fn add_waiter(&self, action_id: ProcessUniqueId, action: Action) {
+        self.waiter_pool.write().unwrap().insert(id, )
+    }
+
+    fn remove_waiter(&self, id: ProcessUniqueId) {
+        
+    }
+
+    fn check(&self) {
+
+    }
+}
+
 pub struct Habitat {
-    container: Container,
-    // signal_task: HabitatSignalTask,
+    container: Container
 }
 
 fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
@@ -82,7 +152,8 @@ declare_types! {
                 let hab = &mut *this.borrow_mut(&guard);
                 let (signal_tx, signal_rx) = signal_channel();
                 hab.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
-                    let signal_task = HabitatSignalTask {signal_rx};
+                    let waiter = Waiter { everything: HashMap::new(), current: RefCell::new(None)};
+                    let signal_task = HabitatSignalTask {signal_rx, waiter };
                     signal_task.schedule(js_callback);
                     hab.container.start_all_instances().map_err(|e| e.to_string())
                 })
@@ -148,104 +219,49 @@ declare_types! {
     }
 }
 
-/// Encapsulates the side-effects of running a particular signal which need to be waited for
-enum WaiterMsg {
-    Stop
-}
 
-struct WaiterComm {
-    predicate: Box<Fn(Signal) -> bool>,
-    tx: SyncSender<WaiterMsg>,
-}
 
-type WaiterPool = Arc<RwLock<ProcessUniqueId, WaiterComm>>;
+// impl Task for HabitatSignalTask {
+//     type Output = ();
+//     type Error = String;
+//     type JsEvent = JsNumber;
 
-struct HabitatSignalTask {
-    signal_rx: SignalReceiver,
-    waiter_pool: WaiterPool,
-}
+//     fn perform(&self) -> Result<(), String> {
+//         use std::io::{self, Write};
+//         while let Ok(sig) = self.signal_rx.recv() {
+//             print!(".");
+//             io::stdout().flush().unwrap();
+//         }
+//         Ok(())
+//     }
 
-impl HabitatSignalTask {
-    pub fn new(signal_rx: SignalReceiver) -> Self {
-        let this = Self { signal_rx };
-        this
-    }
+//     fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
+//         Ok(cx.number(17))
+//     }
+// }
 
-    fn process_incoming_signal(&self, sig: Signal) {
-        match sig {
-            Signal::Internal(action_wrapper) => {
-                match action_wrapper.action {
-                    Action::Commit((entry, _)) => {
-                        match entry {
-                            App(_, _) => {
+// struct SignalWaiterTask {
+//     rx: Receiver<WaiterMsg>,
+// }
 
-                            }
-                        }
-                    },
-                    _ => ()
-                }
-            }
-        }
-    }
+// impl Task for SignalWaiterTask {
+//     type Output = ();
+//     type Error = String;
+//     type JsEvent = JsUndefined;
 
-    fn process_outgoing(&self) {
-        self.waiter_pool.write().unwrap().remove(self.action_id)
-    }
+//     fn perform(&self) -> Result<(), String> {
+//         while let Ok(sig) = self.rx.recv() {
+//             match sig {
+//                 WaiterMsg::Stop => break
+//             }
+//         }
+//         Ok(())
+//     }
 
-    fn add_waiter(&self, action_id: ProcessUniqueId, action: Action) {
-        self.waiter_pool.write().unwrap().insert(id, )
-    }
-
-    fn remove_waiter(&self, id: ProcessUniqueId) {
-        
-    }
-
-    fn check(&self) {
-
-    }
-}
-
-impl Task for HabitatSignalTask {
-    type Output = ();
-    type Error = String;
-    type JsEvent = JsNumber;
-
-    fn perform(&self) -> Result<(), String> {
-        use std::io::{self, Write};
-        while let Ok(sig) = self.signal_rx.recv() {
-            print!(".");
-            io::stdout().flush().unwrap();
-        }
-        Ok(())
-    }
-
-    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
-        Ok(cx.number(17))
-    }
-}
-
-struct SignalWaiterTask {
-    rx: Receiver<WaiterMsg>,
-}
-
-impl Task for SignalWaiterTask {
-    type Output = ();
-    type Error = String;
-    type JsEvent = JsUndefined;
-
-    fn perform(&self) -> Result<(), String> {
-        while let Ok(sig) = self.rx.recv() {
-            match sig {
-                WaiterMsg::Stop => break
-            }
-        }
-        Ok(())
-    }
-
-    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
-        result.map(|_| cx.undefined())
-    }
-}
+//     fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
+//         result.map(|_| cx.undefined())
+//     }
+// }
 
 
 register_module!(mut cx, {

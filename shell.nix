@@ -41,7 +41,7 @@ let
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
   hc-build
-  cargo test --all --exclude hc;
+  cargo test --release --all --exclude hc;
   '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"

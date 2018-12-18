@@ -10,7 +10,7 @@ extern crate wabt;
 use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
 use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{
-    action::Action,
+    action::{Action, ActionWrapper},
     context::{mock_network_config, Context},
     logger::Logger,
     persister::SimplePersister,
@@ -200,20 +200,18 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
     ));
     let logger = test_logger();
     (
-        Arc::new(
-            Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
-                mock_network_config(),
-            )
-        ),
+        Arc::new(Context::new(
+            agent,
+            logger.clone(),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
+            file_storage.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
+        )),
         logger,
     )
 }
@@ -257,27 +255,24 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
     let file_storage = Arc::new(RwLock::new(
         FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
     ));
-    Arc::new(
-        Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-        )
-    )
+    Arc::new(Context::new(
+        agent,
+        logger.clone(),
+        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+        file_storage.clone(),
+        file_storage.clone(),
+        Arc::new(RwLock::new(
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
+        )),
+        mock_network_config(),
+    ))
 }
 
 // @TODO this is a first attempt at replacing history.len() tests
 // @see https://github.com/holochain/holochain-rust/issues/195
-pub fn expect_action<F>(rx: &Receiver<Signal>, f: F) -> Result<Action, String>
+pub fn expect_action<F>(rx: &Receiver<Signal>, mut f: F) -> Result<ActionWrapper, String>
 where
-    F: Fn(&Action) -> bool,
+    F: FnMut(&Action) -> bool,
 {
     let timeout = 1000;
     loop {
@@ -285,9 +280,9 @@ where
             .recv_timeout(Duration::from_millis(timeout))
             .map_err(|e| e.to_string())?
         {
-            Signal::Internal(action) => {
-                if f(&action) {
-                    return Ok(action);
+            Signal::Internal(action_wrapper) => {
+                if f(action_wrapper.action()) {
+                    return Ok(action_wrapper);
                 }
             }
             _ => continue,

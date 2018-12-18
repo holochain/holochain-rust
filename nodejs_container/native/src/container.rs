@@ -4,8 +4,8 @@ use holochain_cas_implementations::{
 };
 use holochain_container_api::{
     config::{
-        AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
-        LoggerConfiguration, StorageConfiguration, load_configuration,
+        load_configuration, AgentConfiguration, Configuration, DnaConfiguration,
+        InstanceConfiguration, LoggerConfiguration, StorageConfiguration,
     },
     container::Container,
     Holochain,
@@ -19,13 +19,16 @@ use holochain_core::{
 };
 use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
 use neon::{context::Context, prelude::*};
+use snowflake::ProcessUniqueId;
 use std::{
     convert::TryFrom,
     path::PathBuf,
-    sync::{Arc, Mutex, RwLock},
+    sync::{
+        mpsc::{sync_channel, Receiver, SyncSender},
+        Arc, Mutex, RwLock,
+    },
     thread,
 };
-use snowflake::ProcessUniqueId;
 use tempfile::tempdir;
 
 use crate::config::*;
@@ -37,79 +40,189 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
-type ExpectedAction = Box<Fn(Action) -> bool>;
+type JsCallback<'a> = Handle<'a, JsFunction>;
 
-struct WaitTarget {
+/// A set of closures, each of which checks for a certain condition to be met
+/// (usually for a certain action to be seen). When the condition specified by the closure
+/// is met, that closure is removed from the set of checks.
+///
+/// When the set of checks goes from non-empty to empty, send a message via `tx`
+/// to the BlockTask on the other side
+struct CallFxChecker {
     tx: SyncSender<WaiterMsg>,
-    actions: RefCell<HashSet<ExpectedAction>>,
+    conditions: HashSet<CallFxCondition>, // maybe RefCell
 }
 
-struct Waiter {
-    everything: HashMap<ZomeFnCall, WaitTarget>,
-    current: RefCell<Option<ZomeFnCall>>,
-};
+// Could maybe reduce this to HashSet<ActionWrapper> if we only need to check for
+// simple existence of one of any possible ActionWrappers
+type CallFxCondition = Box<Fn(&ActionWrapper) -> bool>;
 
-enum WaiterMsg {
-    Stop
-}
-
-struct HabitatSignalTask {
-    signal_rx: SignalReceiver,
-    waiter: RefCell<Waiter>,
-}
-
-impl HabitatSignalTask {
-    pub fn new(signal_rx: SignalReceiver) -> Self {
-        let this = Self { signal_rx };
-        this
-    }
-
-    fn current_target(&self) -> Option<WaitTarget> {
-        let current = self.current.borrow();
-        self.waiter.everything.get(current)
-    }
-
-    fn process_incoming_signal(&self, sig: Signal) {
-        match sig {
-            Signal::Internal(action_wrapper) => {
-                match action_wrapper.action {
-                    Action::Commit((entry, _)) => {
-                        match entry {
-                            App(_, _) => {
-                                self.current_target.actions.borrow_mut().insert(Action::Hold(entry))
-                            }
-                        }
-                    },
-                    Action::SendDirectMessage(data) => {
-                        let DirectMessageData {msg_id} = data;
-                        // TODO: either this or SendDirectMessageTimeout!
-                        self.current_target.actions.borrow_mut().insert(ResolveDirectConnection(msg_id));
-                    },
-                    _ => ()
-                }
-            }
+impl CallFxChecker {
+    pub fn new(callback: JsCallback) -> Self {
+        let (tx, rx) = sync_channel(1);
+        let task = CallBlockingTask { rx };
+        task.schedule(callback);
+        Self {
+            tx,
+            conditions: HashSet::new(),
         }
     }
 
-    fn process_outgoing(&self) {
-        self.waiter_pool.write().unwrap().remove(self.action_id)
+    pub fn add(&mut self, f: F) -> ()
+    where
+        F: Fn(&ActionWrapper) -> bool,
+    {
+        self.conditions.insert(Box::new(f));
     }
 
-    fn add_waiter(&self, action_id: ProcessUniqueId, action: Action) {
-        self.waiter_pool.write().unwrap().insert(id, )
+    pub fn run_checks(&mut self, aw: &ActionWrapper) {
+        let was_empty = self.conditions.is_empty();
+        for condition in self.conditions {
+            if (condition(aw)) {
+                self.conditions.remove(condition);
+            }
+        }
+        if self.conditions.is_empty() && !was_empty {
+            self.tx.send(WaiterMsg::Stop);
+        }
+    }
+}
+
+/// A simple Task that blocks until it receives a message.
+/// This is used to trigger a JS Promise resolution when a ZomeFnCall's
+/// side effects have all completed.
+struct CallBlockingTask {
+    pub rx: Receiver<WaiterMsg>,
+}
+
+impl Task for CallBlockingTask {
+    type Output = ();
+    type Error = String;
+    type JsEvent = JsUndefined;
+
+    fn perform(&self) -> Result<(), String> {
+        while let Ok(sig) = self.rx.recv() {
+            match sig {
+                WaiterMsg::Stop => break,
+            }
+        }
+        Ok(())
     }
 
-    fn remove_waiter(&self, id: ProcessUniqueId) {
-        
+    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
+        result.map(|_| cx.undefined())
+    }
+}
+
+/// A singleton which runs in a Task and is the receiver for the Signal channel.
+/// - handles incoming `ZomeFnCall`s, attaching and activating a new `CallFxChecker`
+/// - handles incoming Signals, running all `CallFxChecker` closures
+struct Waiter<'a> {
+    checkers: HashMap<ZomeFnCall, CallFxChecker>,
+    current: Option<ZomeFnCall>, // maybe RefCell
+    callback_rx: CallbackReceiver<'a>,
+}
+
+type CallbackReceiver<'a> = Receiver<JsCallback<'a>>;
+
+impl Waiter<'_> {
+    pub fn new(callback_rx: CallbackReceiver) -> Self {
+        Self {
+            checkers: HashMap::new(),
+            current: None,
+            callback_rx,
+        }
     }
 
-    fn check(&self) {
+    pub fn process_signal(sig: Signal) {
+        match sig {
+            Signal::Internal(aw) => {
+                match aw.action {
+                    Action::ExecuteZomeFn(call) => {
+                        let callback = self.callback_rx.recv();
+                        self.add_call(call, callback);
+                    }
+                    Action::Commit((entry, _)) => match entry {
+                        App(_, _) => self
+                            .current_checker()
+                            .unwrap()
+                            .add(|aw| aw.action == Action::Hold(entry)),
+                    },
+                    Action::SendDirectMessage(data) => {
+                        let DirectMessageData { msg_id } = data;
+                        let possible_actions = &[
+                            ResolveDirectConnection(msg_id),
+                            SendDirectMessageTimeout(msg_id),
+                        ];
+                        self.current_checker()
+                            .unwrap()
+                            .add(|aw| possible_actions.contains(aw))
+                    }
+                    _ => (),
+                }
 
+                self.run_checks(aw);
+            }
+            _ => (),
+        }
+    }
+
+    fn run_checks(&mut self, aw: &ActionWrapper) {
+        for (_call, checker) in self.checkers {
+            checker.run_checks(aw);
+        }
+    }
+
+    fn current_checker(&mut self) -> Option<&mut CallFxChecker> {
+        self.current.and_then(|call| self.checkers.get_mut(call))
+    }
+
+    fn add_call(&mut self, call: ZomeFnCall, callback: JsCallback<'_>) {
+        self.checkers.insert(call, CallFxChecker::new(callback));
+        self.current = Some(call);
+    }
+}
+
+enum WaiterMsg {
+    Stop,
+}
+
+struct HabitatSignalTask<'a> {
+    signal_rx: SignalReceiver,
+    waiter: RefCell<Waiter<'a>>,
+}
+
+impl HabitatSignalTask<'_> {
+    pub fn new(signal_rx: SignalReceiver, callback_rx: CallbackReceiver) -> Self {
+        let this = Self {
+            signal_rx,
+            waiter: Waiter::new(callback_rx),
+        };
+        this
+    }
+}
+
+impl Task for HabitatSignalTask {
+    type Output = ();
+    type Error = String;
+    type JsEvent = JsNumber;
+
+    fn perform(&self) -> Result<(), String> {
+        use std::io::{self, Write};
+        while let Ok(sig) = self.signal_rx.recv() {
+            self.waiter.borrow_mut().process_signal(sig);
+        }
+        Ok(())
+    }
+
+    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
+        Ok(cx.number(17))
     }
 }
 
 pub struct Habitat {
-    container: Container
+    container: Container,
+    callback_tx: SyncSender<JsCallback>,
 }
 
 fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
@@ -118,7 +231,7 @@ fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
 }
 
 fn promise_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
-    panic!("callback called");
+    panic!("callback called!!");
     Ok(cx.null())
 }
 
@@ -140,7 +253,34 @@ declare_types! {
             };
             let (signal_tx, signal_rx) = signal_channel();
             let container = Container::from_config(config).with_signal_channel(signal_tx);
-            Ok(Habitat { container })
+
+            let result = {
+                let js_callback = JsFunction::new(&mut cx, signal_callback).unwrap();
+                let mut this = cx.this();
+
+                let result: Result<_, String> = {
+                    let guard = cx.lock();
+                    let hab = &mut *this.borrow_mut(&guard);
+                    let (signal_tx, signal_rx) = signal_channel();
+                    let (callback_tx, callback_rx) = sync_channel(100);
+                    hab.container.load_config_with_signal(Some(signal_tx))?;
+
+                    let waiter = Waiter::new(callback_rx);
+                    let signal_task = HabitatSignalTask::new(signal_rx, callback_rx);
+                    signal_task.schedule(js_callback);
+                    hab.container.start_all_instances().map_err(|e| e.to_string()).and_then(|_| {
+                        Ok(callback_tx)
+                    })
+                };
+                result
+            };
+
+            let callback_tx = result.or_else(|e| {
+                let error_string = cx.string(format!("unable to initialize habitat: {}", e));
+                cx.throw(error_string)
+            })?;
+
+            Ok(Habitat { container, callback_tx })
         }
 
         method start(mut cx) {
@@ -150,13 +290,7 @@ declare_types! {
             let start_result: Result<(), String> = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
-                let (signal_tx, signal_rx) = signal_channel();
-                hab.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
-                    let waiter = Waiter { everything: HashMap::new(), current: RefCell::new(None)};
-                    let signal_task = HabitatSignalTask {signal_rx, waiter };
-                    signal_task.schedule(js_callback);
-                    hab.container.start_all_instances().map_err(|e| e.to_string())
-                })
+                hab.container.start_all_instances().map_err(|e| e.to_string())
             };
 
             start_result.or_else(|e| {
@@ -166,7 +300,7 @@ declare_types! {
 
             Ok(cx.undefined().upcast())
         }
-        
+
         method stop(mut cx) {
             let mut this = cx.this();
 
@@ -213,13 +347,11 @@ declare_types! {
 
             let result_string: String = res_string.into();
 
-            let completion_callback = 
+            // let completion_callback =
             Ok(cx.string(result_string).upcast())
         }
     }
 }
-
-
 
 // impl Task for HabitatSignalTask {
 //     type Output = ();
@@ -262,7 +394,6 @@ declare_types! {
 //         result.map(|_| cx.undefined())
 //     }
 // }
-
 
 register_module!(mut cx, {
     cx.export_class::<JsHabitat>("Habitat")?;

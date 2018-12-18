@@ -56,7 +56,7 @@
 use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
-    action::Action,
+    action::{Action, ActionWrapper},
     context::Context,
     instance::Instance,
     nucleus::{call_and_wait_for_result, ZomeFnCall},
@@ -65,7 +65,7 @@ use holochain_core::{
     state::State,
     workflows::application,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{dna::Dna, error::HolochainError, hash::HashString, json::JsonString};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -634,21 +634,21 @@ mod tests {
         hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
             .unwrap();
 
-        'outer: loop {
-            let msg_publish = rx
-                .recv_timeout(Duration::from_millis(timeout))
-                .expect("no more signals to receive (outer)");
-            if let Signal::Internal(Action::Publish(address)) = msg_publish {
-                loop {
-                    let msg_hold = rx
-                        .recv_timeout(Duration::from_millis(timeout))
-                        .expect("no more signals to receive (inner)");
-                    if let Signal::Internal(Action::Hold(entry)) = msg_hold {
-                        assert_eq!(address, entry.address());
-                        break 'outer;
-                    }
-                }
+        let mut entry_address: HashString = "".into();
+        let aw_publish = expect_action(&rx, |action| match action {
+            Action::Publish(address) => {
+                entry_address = address.clone();
+                true
             }
-        }
+            _ => false,
+        });
+
+        let aw_hold = expect_action(&rx, |action| match action {
+            Action::Hold(entry) => {
+                assert_eq!(entry_address, entry.address());
+                true
+            }
+            _ => false,
+        });
     }
 }

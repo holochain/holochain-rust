@@ -64,7 +64,6 @@ impl Container {
         }
     }
 
-
     pub fn start_all_interfaces(&mut self) {
         self.interface_threads = self
             .config
@@ -117,13 +116,15 @@ impl Container {
         Ok(())
     }
 
-
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     /// @TODO: clean up the container creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config_with_signal(&mut self, signal_tx: Option<SyncSender<Signal>>) -> Result<(), String> {
+    pub fn load_config_with_signal(
+        &mut self,
+        signal_tx: Option<SyncSender<Signal>>,
+    ) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
         self.shutdown().map_err(|e| e.to_string())?;
         let config = self.config.clone();
@@ -136,12 +137,7 @@ impl Container {
             .map(|id| {
                 (
                     id.clone(),
-                    instantiate_from_config(
-                        &id,
-                        &config,
-                        &mut self.dna_loader,
-                        signal_tx.clone(),
-                    ),
+                    instantiate_from_config(&id, &config, &mut self.dna_loader, signal_tx.clone()),
                 )
             })
             .filter_map(|(id, maybe_holochain)| match maybe_holochain {
@@ -369,9 +365,9 @@ pub mod tests {
 
     fn test_container_with_signals(signal_tx: SignalSender) -> Container {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let mut container = Container::from_config(config.clone()).with_signal_channel(signal_tx);
+        let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
-        container.load_config().unwrap();
+        container.load_config_with_signal(Some(signal_tx)).unwrap();
         container
     }
 

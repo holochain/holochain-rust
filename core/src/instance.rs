@@ -178,7 +178,7 @@ impl Instance {
         }
 
         // @TODO: add a big fat debug logger here
-        self.maybe_emit_action_signal(action_wrapper.action().clone());
+        self.maybe_emit_action_signal(action_wrapper.clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -203,10 +203,10 @@ impl Instance {
 
     /// Given an `Action` that is being processed, decide whether or not it should be
     /// emitted as a `Signal::Internal`, and if so, send it
-    fn maybe_emit_action_signal(&self, action: Action) {
+    fn maybe_emit_action_signal(&self, action_wrapper: ActionWrapper) {
         if let Some(ref tx) = self.signal_channel {
-            if (self.signal_filter)(&action) {
-                let signal = Signal::Internal(action);
+            if (self.signal_filter)(&action_wrapper.action()) {
+                let signal = Signal::Internal(action_wrapper);
                 tx.send(signal).unwrap_or(())
                 // @TODO: once logging is implemented, kick out a warning for SendErrors
             }

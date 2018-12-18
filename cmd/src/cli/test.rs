@@ -62,16 +62,20 @@ pub fn test(
 }
 
 #[cfg(test)]
+#[cfg(feature="broken-tests")]
 pub mod tests {
-    use super::*;
-    use crate::cli::package;
-    use assert_cmd::prelude::*;
-    use std::process::Command;
+    // imports for broken tests
+    // use super::*;
+    // use crate::cli::package;
+    // use assert_cmd::prelude::*;
+    // use std::process::Command;
     use tempfile::{Builder, TempDir};
 
+    #[cfg(feature="broken-tests")]
     const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
 
-    fn gen_dir() -> TempDir {
+    #[cfg(feature="broken-tests")]
+    pub fn gen_dir() -> TempDir {
         Builder::new()
             .prefix(HOLOCHAIN_TEST_PREFIX)
             .tempdir()

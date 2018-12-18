@@ -150,9 +150,16 @@ _cmd_deploy_template: &_cmd_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
+matrix:
+ include:
+  - env: TEST_P=holochain_cas_implementations
+    env: TEST_PATH=cas_implementations
+  - env: TEST_P=hc
+    env: TEST_PATH=hc
+
 jobs:
   include:
-    - name: "windows build & test all"
+    - name: "windows sandbox"
       <<: *_windows_template
       env:
         - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
@@ -162,39 +169,51 @@ jobs:
       install:
         - rustup target add wasm32-unknown-unknown
       script:
-        # Build WASMs
-        - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
-        # Build & test All
-        - cargo test --all
+        - cargo test --release -p %TEST_P% --target-dir %TEST_PATH%\target
 
-    - name: "C binding tests"
-      <<: *_trusty_bash
-      # sudo is needed for codecov, && system library install which makes things 20-50s slower
-      # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
-      sudo: true
-      # manually cache as we manually install rustup
-      # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
-      cache:
-        timeout: 1000
-        directories:
-          - $HOME/.cargo
-          # faster to build this than manage a cache for the target
-          # - $TRAVIS_BUILD_DIR/target
-      install:
-        - export PATH=$HOME/.cargo/bin:$PATH
-      script:
-        - make test_c_ci
-      before_cache:
-        - rm -rf $HOME/.cargo/registry/index
+    # - name: "windows build & test all"
+    #   <<: *_windows_template
+    #   env:
+    #     - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+    #     - NODIST_X64=1
+    #     - TRAVIS_NODE_VERSION=8
+    #     - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+    #   install:
+    #     - rustup target add wasm32-unknown-unknown
+    #   script:
+    #     # Build WASMs
+    #     - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+    #     - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+    #     - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+    #     - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
+    #     # Build & test All
+    #     - cargo test --all
 
-    - name: "Command-line tools"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      script:
-        - make test_cmd
+    # - name: "C binding tests"
+    #   <<: *_trusty_bash
+    #   # sudo is needed for codecov, && system library install which makes things 20-50s slower
+    #   # https://docs.travis-ci.com/user/reference/overview/#virtualisation-environment-vs-operating-system
+    #   sudo: true
+    #   # manually cache as we manually install rustup
+    #   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
+    #   cache:
+    #     timeout: 1000
+    #     directories:
+    #       - $HOME/.cargo
+    #       # faster to build this than manage a cache for the target
+    #       # - $TRAVIS_BUILD_DIR/target
+    #   install:
+    #     - export PATH=$HOME/.cargo/bin:$PATH
+    #   script:
+    #     - make test_c_ci
+    #   before_cache:
+    #     - rm -rf $HOME/.cargo/registry/index
+
+    # - name: "Command-line tools"
+    #   <<: *_trusty_nodejs
+    #   <<: *_cargo_cache_template
+    #   script:
+    #     - make test_cmd
 
     # holochain-cmd releases section
     - name: "CMD DEPLOY - 64 bit Linux"

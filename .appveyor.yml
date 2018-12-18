@@ -27,8 +27,6 @@ install:
  - set LIBZMQ_PREFIX=%APPVEYOR_BUILD_FOLDER%\vendor\zmq
 
  # rust
- # - ps: >-
- #     $Env:PATH += ';C:\msys64\usr\bin'
  - curl -sSf -o rustup-init.exe https://win.rustup.rs/
  - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
  - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
@@ -42,13 +40,10 @@ cache:
  - C:\Users\appveyor\target
 
 test_script:
- - cargo build --release --target %WASM_TARGET% --target-dir %USERPROFILE%\target --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml
-
- - cargo build --release --target %WASM_TARGET% --target-dir %USERPROFILE%\target --manifest-path container_api\wasm-test\Cargo.toml
-
- - cargo build --release --target %WASM_TARGET% --target-dir %USERPROFILE%\target --manifest-path hdk-rust\wasm-test\Cargo.toml
-
- - cargo build --release --target %WASM_TARGET% --target-dir %USERPROFILE%\target --manifest-path wasm_utils\wasm-test\integration-test\Cargo.toml
+ - cargo build --release --target %WASM_TARGET% --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml
+ - cargo build --release --target %WASM_TARGET% --manifest-path container_api\wasm-test\Cargo.toml
+ - cargo build --release --target %WASM_TARGET% --manifest-path hdk-rust\wasm-test\Cargo.toml
+ - cargo build --release --target %WASM_TARGET% --manifest-path wasm_utils\wasm-test\integration-test\Cargo.toml
 
  - cargo test --all --exclude hc --release --target %TARGET% --target-dir %USERPROFILE%\target --manifest-path Cargo.toml
 

@@ -49,3 +49,4 @@ pub mod random;
 pub mod secbuf;
 pub mod util;
 pub mod sign;
+pub mod hash;

@@ -17,19 +17,34 @@ pub trait DispatchRpc {
     fn handler(self) -> IoHandler;
 }
 
-/// ContainerApiDispatcher exposes some subset of the Container API,
-/// including zome function calls as well as admin functionality.
-/// Each interface has their own dispatcher, and each may be configured differently.
+/// ContainerApiBuilder creates IoHandlers that implement RPCs for exposure
+/// through interfaces or bridges.
+/// This includes zome function calls as well as admin functionality.
+///
+/// Examples for method names are:
+/// {instance_id}/{zome}/{cap}/{func} -> a zome call
+/// info/list_instances               -> Map of InstanceConfigs, keyed by ID
+/// admin/...                         -> TODO
+///
+/// Each interface has their own handler, and each may be configured differently.
+/// This builder makes it convenient to create handlers with different configurations.
+///
+/// Call any sequence of with_* functions on a ContainerApiBuilder object and finalize
+/// with spawn() to retrieve the IoHandler:
+/// # Example
+/// ```rust
+/// let handler = ContainerApiBuilder::new()
+//            .with_instances(instances.clone())
+//            .with_instance_configs(config.instances)
+//            .spawn();
+/// ```
 pub struct ContainerApiBuilder {
     instances: InstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
     io: IoHandler,
 }
 
-/// Implements routing for JSON-RPC calls:
-/// {instance_id}/{zome}/{cap}/{func} -> a zome call
-/// info/list_instances               -> Map of InstanceConfigs, keyed by ID
-/// admin/...                         -> TODO
+
 impl ContainerApiBuilder {
     pub fn new() -> Self {
         ContainerApiBuilder {
@@ -39,12 +54,14 @@ impl ContainerApiBuilder {
         }
     }
 
+    /// Finish the building and retrieve the populated handler
     pub fn spawn(mut self) -> IoHandler {
         self.setup_info_api();
         self.io
     }
 
-    // initialize a json rpc method for accessing which instances exist
+    /// Adds a "info/instances" method that returns a JSON object describing all registered
+    /// instances we have a config for.
     fn setup_info_api(&mut self) {
         let instance_configs = self.instance_configs.clone();
 
@@ -63,6 +80,7 @@ impl ContainerApiBuilder {
         });
     }
 
+    /// Add a [InstanceConfig](struct.InstanceConfig.html) for a custom named instance
     pub fn with_named_instance_config(
         mut self,
         instance_name: String,
@@ -72,6 +90,8 @@ impl ContainerApiBuilder {
         self
     }
 
+    /// Add a vector of [InstanceConfig](struct.InstanceConfig.html) and regard their ID from
+    /// the config as name.
     pub fn with_instance_configs(mut self, instance_configs: Vec<InstanceConfiguration>) -> Self {
         for config in instance_configs {
             self.instance_configs.insert(config.id.clone(), config);
@@ -79,6 +99,7 @@ impl ContainerApiBuilder {
         self
     }
 
+    /// Add several instances with the names given in the InstanceMap
     pub fn with_instances(mut self, instances: InstanceMap) -> Self {
         for (instance_id, hc_lock) in instances {
             self = self.with_named_instance(instance_id, hc_lock);
@@ -86,6 +107,7 @@ impl ContainerApiBuilder {
         self
     }
 
+    /// Add a single instance and register it under the given name
     pub fn with_named_instance(
         mut self,
         instance_name: String,

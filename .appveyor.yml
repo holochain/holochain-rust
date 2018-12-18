@@ -1,8 +1,11 @@
 # handy validation tool:
 # https://ci.appveyor.com/tools/validate-yaml
+# references
+# https://github.com/japaric/trust/blob/master/appveyor.yml
 environment:
  global:
-  CHANNEL: nightly-2018-11-28
+  RUST_VERSION: nightly-2018-11-28
+  WASM_TARGET: wasm32-unknown-unknown
 
  matrix:
   - TARGET: x86_64-pc-windows-msvc
@@ -11,10 +14,25 @@ install:
  - ps: >-
      $Env:PATH += ';C:\msys64\usr\bin'
  - curl -sSf -o rustup-init.exe https://win.rustup.rs/
- - rustup-init.exe -y --default-host %TARGET% --default-toolchain %CHANNEL%
+ - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
  - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
  - rustc -Vv
  - cargo -V
+ - rustup target add $WASM_TARGET
+
+cache:
+ - C:\Users\appveyor\.rustup
+ - C:\Users\appveyor\.cargo
+
+ - .rustup
+ - .cargo
+ - target
+
+ - core/src/nucleus/actions/wasm-test/.cargo
+ - core/src/nucleus/actions/wasm-test/target
+
+test_script:
+ - CARGO_HOME=core/src/nucleus/actions/wasm-test/.cargo CARGO_TARGET_DIR=core/src/nucleus/actions/wasm-test/target cargo build --release --target $WASM_TARGET --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml
 
 # Building is done in the test phase, so we disable Appveyor's build phase.
 build: false

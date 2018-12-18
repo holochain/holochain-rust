@@ -70,28 +70,26 @@ pub(crate) fn reduce_hold_entry(
     let new_store = (*old_store).clone();
     let content_storage = &new_store.content_storage().clone();
     let res = (*content_storage.write().unwrap()).add(entry).ok();
-    res.and_then(|_| {
-        // Initialize CRUD status meta
+    if res.is_some() {
         let meta_storage = &new_store.meta_storage().clone();
         create_crud_status_eav(&entry.address(), CrudStatus::Live)
             .map(|status_eav| {
-                let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
-                let res_option = res.clone().ok();
-                res_option.and_then(|_| Some(new_store)).or_else(|| {
-                    println!(
-                        "reduce_hold_entry: meta_storage write failed!: {:?}",
-                        res.err().unwrap()
-                    );
-                    None
-                })
+                let meta_res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
+                meta_res
+                    .map(|_| Some(new_store))
+                    .map_err(|err| {
+                        println!("reduce_hold_entry: meta_storage write failed!: {:?}", err);
+                        None::<DhtStore>
+                    })
+                    .ok()
+                    .unwrap_or(None)
             })
             .ok()
             .unwrap_or(None)
-    })
-    .or_else(|| {
+    } else {
         println!("dht::reduce_hold_entry() FAILED {:?}", res);
         None
-    })
+    }
 }
 
 //
@@ -147,20 +145,21 @@ pub(crate) fn reduce_update_entry(
     let new_status_eav_option = create_crud_status_eav(latest_old_address, CrudStatus::Modified)
         .map(|new_status_eav| {
             let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
-            if let Err(err) = res {
-                closure_store
-                    .clone()
-                    .actions_mut()
-                    .insert(action_wrapper.clone(), Err(err));
-                return Some(closure_store);
-            }
-
-            None
+            res.map(|_| None)
+                .map_err(|err| {
+                    closure_store
+                        .clone()
+                        .actions_mut()
+                        .insert(action_wrapper.clone(), Err(err));
+                    Some(closure_store.clone())
+                })
+                .ok()
+                .unwrap_or(Some(closure_store.clone()))
         })
         .ok()
         .unwrap_or(None);
     if new_status_eav_option.is_some() {
-        new_status_eav_option;
+        new_status_eav_option
     } else {
         // Update crud-link
         create_crud_link_eav(latest_old_address, new_address)

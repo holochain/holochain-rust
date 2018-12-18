@@ -132,7 +132,7 @@ pub mod tests {
             &"test-instance-1".to_string(),
             &config,
             &mut test_dna_loader(),
-            signal_tx,
+            Some(signal_tx),
         )
         .unwrap();
         let mut instances = InstanceMap::new();

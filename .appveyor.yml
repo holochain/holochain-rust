@@ -1,3 +1,5 @@
+# needed for wabt-rs
+# https://github.com/pepyakin/wabt-rs/blob/master/appveyor.yml#L1
 os: Visual Studio 2017
 
 # handy validation tool:
@@ -30,6 +32,7 @@ install:
  - rustc -Vv
  - cargo -V
  - rustup target add %WASM_TARGET%
+ - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
 
 cache:
  - C:\Users\appveyor\.rustup

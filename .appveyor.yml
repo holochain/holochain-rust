@@ -12,7 +12,7 @@ environment:
   RUST_VERSION: nightly-2018-11-28
   TARGET: x86_64-pc-windows-msvc
   WASM_TARGET: wasm32-unknown-unknown
-  LIBZMQ_PREFIX: vendor\zmq
+  # LIBZMQ_PREFIX: vendor\zmq
 
 # before_build:
 #  # https://github.com/zeromq/cppzmq/blob/master/appveyor.yml
@@ -25,12 +25,21 @@ environment:
 
 install:
  # zmq
- - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
- - dir %LIB%
- - dir %LIBPATH%
- - copy vendor\zmq\lib %LIB%
- - dir %LIB%
- - dir %LIBPATH%
+ # - set PATH=%PATH%;%APPVEYOR_BUILD_FOLDER%\vendor\zmq\bin
+ # - dir %LIB%
+ # - dir %LIBPATH%
+ # - copy vendor\zmq\lib %LIB%
+ # - dir %LIB%
+ # - dir %LIBPATH%
+ - set LIBZMQ_PREFIX=%APPVEYOR_BUILD_FOLDER%\vendor\zmq
+
+ # - set LIBZMQ_SOURCEDIR=C:\projects\libzmq
+ # - git clone --branch v4.2.0 --depth 1 https://github.com/zeromq/libzmq.git "%LIBZMQ_SOURCEDIR%"
+ # - set LIBZMQ_BUILDDIR=C:\projects\build_libzmq
+ # - md "%LIBZMQ_BUILDDIR%"
+ # - set ORIGINAL_PATH=%CD%
+ # - cd "%LIBZMQ_BUILDDIR%"
+ # - cmake -D CMAKE_INCLUDE_PATH="%SODIUM_INCLUDE_DIR%" -D CMAKE_LIBRARY_PATH="%SODIUM_LIBRARY_DIR%" -D CMAKE_CXX_FLAGS_RELEASE="/MT" -D CMAKE_CXX_FLAGS_DEBUG="/MTd" -G %CMAKE_GENERATOR% %LIBZMQ_SOURCEDIR%
 
  # rust
  - ps: >-

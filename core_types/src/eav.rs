@@ -126,9 +126,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
 
     
-    fn remove_eav(&mut self, entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>) ->Result<(), HolochainError>;
+    fn remove_eav(&mut self, eav:&EntityAttributeValue) ->Result<(), HolochainError>;
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -150,29 +148,17 @@ impl ExampleEntityAttributeValueStorageNonSync {
         Ok(())
     }
 
-    fn unthreadable_remove_eavs(&mut self,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>) ->Result<(),HolochainError>
+    fn unthreadable_remove_eav(&mut self,
+        eav:&EntityAttributeValue) ->Result<(),HolochainError>
         {
-            let filtered = self
-            .storage
-            .iter()
-            .cloned()
-            .filter(|eav| match entity {
-                Some(ref e) => &eav.entity() != e,
-                None => true,
-            })
-            .filter(|eav| match attribute {
-                Some(ref a) => &eav.attribute() != a,
-                None => true,
-            })
-            .filter(|eav| match value {
-                Some(ref v) => &eav.value() == v,
-                None => true,
-            }).collect::<HashSet<EntityAttributeValue>>();
-            self.storage = self.storage.symmetric_difference(&filtered).cloned().collect::<HashSet<EntityAttributeValue>>();
-            Ok(())
+            if self.storage.remove(eav)
+            {
+                Ok(())
+            }
+            else
+            {
+                Err(HolochainError::ErrorGeneric("Could not remove eav".to_string()))
+            }
         }
 
     fn unthreadable_fetch_eav(
@@ -237,11 +223,9 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             .unthreadable_fetch_eav(entity, attribute, value)
     }
 
-    fn remove_eav(&mut self, entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>) -> HcResult<()>
+    fn remove_eav(&mut self, eav:&EntityAttributeValue) -> HcResult<()>
     {
-        self.content.write().unwrap().unthreadable_remove_eavs(entity,attribute,value)
+        self.content.write().unwrap().unthreadable_remove_eav(eav)
     }
 }
 

@@ -52,19 +52,16 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .collect())
     }
 
-    fn remove_eav(&mut self, entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>) -> Result<(), HolochainError> {
+    fn remove_eav(&mut self, eav:&EntityAttributeValue) -> Result<(), HolochainError> {
         let mut map = self.storage.write()?;
-        let non_intersected_map = map
-        .iter()
-        .cloned()
-        .filter(|e| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
-        .filter(|e| EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref()))
-        .filter(|e| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-        .collect()
-        map = map.symmetric_difference(&non_intersected_map).cloned().collect();
-        Ok(())
+        if map.remove(eav)
+        {
+            Ok(())
+        }
+        else 
+        {
+            HolochainError::ErrorGeneric("Could not remove eav".to_string())
+        }
     }
 }
 

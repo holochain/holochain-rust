@@ -39,8 +39,10 @@ cache:
  - C:\Users\appveyor\.cargo
  - C:\Users\appveyor\target
 
+ - core\src\nucleus\actions\wasm-test\target
+
 test_script:
- - cargo build --release --target %WASM_TARGET% --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml
+ - cargo build --release --target %WASM_TARGET% --target-dir core\src\nucleus\actions\wasm-test\target --manifest-path core\src\nucleus\actions\wasm-test\Cargo.toml
  # - cargo build --release --target %WASM_TARGET% --manifest-path container_api\wasm-test\Cargo.toml
  # - cargo build --release --target %WASM_TARGET% --manifest-path hdk-rust\wasm-test\Cargo.toml
  # - cargo build --release --target %WASM_TARGET% --manifest-path wasm_utils\wasm-test\integration-test\Cargo.toml

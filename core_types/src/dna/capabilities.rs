@@ -1,5 +1,6 @@
 //! File holding all the structs for handling capabilities defined in DNA.
 
+use crate::cas::content::Address;
 use std::str::FromStr;
 
 //--------------------------------------------------------------------------------------------------
@@ -39,6 +40,26 @@ impl ReservedCapabilityNames {
             ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
             ReservedCapabilityNames::Communication => "hc_web_gateway",
             ReservedCapabilityNames::MissingNo => "",
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// CapabilityCall
+//--------------------------------------------------------------------------------------------------
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct CapabilityCall {
+    pub cap_name: String,
+    pub cap_token: Address,
+    pub caller: Option<Address>,
+}
+
+impl CapabilityCall {
+    pub fn new(name: String, token: Address, caller: Option<Address>) -> Self {
+        CapabilityCall {
+            cap_name: name,
+            cap_token: token,
+            caller: caller,
         }
     }
 }

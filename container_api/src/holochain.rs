@@ -38,7 +38,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome", "test_cap", "test_token", "some_fn", "{}");
+//! hc.call("test_zome", Some(CapabilityCall::new()), "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -65,7 +65,11 @@ use holochain_core::{
     state::State,
     workflows::application,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    dna::{capabilities::CapabilityCall, Dna},
+    error::HolochainError,
+    json::JsonString,
+};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -162,15 +166,14 @@ impl Holochain {
     pub fn call(
         &mut self,
         zome: &str,
-        cap: &str,
-        cap_token: &str,
+        cap: Option<CapabilityCall>,
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-        let zome_call = ZomeFnCall::new(&zome, &cap, &cap_token, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 
@@ -201,7 +204,11 @@ mod tests {
         persister::SimplePersister,
         signal::{signal_channel, Signal},
     };
-    use holochain_core_types::{agent::AgentId, cas::content::AddressableContent, dna::Dna};
+    use holochain_core_types::{
+        agent::AgentId,
+        cas::content::{Address, AddressableContent},
+        dna::Dna,
+    };
 
     use std::sync::{Arc, Mutex, RwLock};
     use tempfile::tempdir;
@@ -245,6 +252,14 @@ mod tests {
 
     fn example_api_wasm() -> Vec<u8> {
         create_wasm_from_file(&example_api_wasm_path())
+    }
+
+    fn example_capability_call() -> Option<CapabilityCall> {
+        Some(CapabilityCall::new(
+            "test_cap".to_string(),
+            Address::from("test_token"),
+            None,
+        ))
     }
 
     #[test]
@@ -399,7 +414,7 @@ mod tests {
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", "test_cap", "test_token", "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "main", "");
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -409,7 +424,7 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", "test_cap", "test_token", "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "main", "");
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
@@ -441,8 +456,7 @@ mod tests {
         // always returns not implemented error for now!
         let result = hc.call(
             "test_zome",
-            "test_cap",
-            "test_token",
+            example_capability_call(),
             "round_trip_test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
@@ -480,8 +494,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
-            "test_cap",
-            "test_token",
+            example_capability_call(),
             "commit_test",
             r#"{}"#,
         );
@@ -523,8 +536,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
-            "test_cap",
-            "test_token",
+            example_capability_call(),
             "commit_fail_test",
             r#"{}"#,
         );
@@ -564,8 +576,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
-            "test_cap",
-            "test_token",
+            example_capability_call(),
             "debug_hello",
             r#"{}"#,
         );
@@ -602,8 +613,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
-            "test_cap",
-            "test_token",
+            example_capability_call(),
             "debug_multiple",
             r#"{}"#,
         );
@@ -659,8 +669,7 @@ mod tests {
         hc.start().expect("couldn't start");
         hc.call(
             "test_zome",
-            "test_cap",
-            "test_token",
+            example_capability_call(),
             "commit_test",
             r#"{}"#,
         )

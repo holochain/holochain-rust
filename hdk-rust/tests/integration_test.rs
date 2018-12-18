@@ -19,7 +19,7 @@ use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, CapabilityType, FnDeclaration},
+        capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
         entry_types::{EntryTypeDef, LinksTo},
     },
     entry::{
@@ -207,7 +207,16 @@ fn start_holochain_instance<T: Into<String>>(
 }
 
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
-    hc.call("test_zome", "test_cap", "test_token", fn_name, params)
+    hc.call(
+        "test_zome",
+        Some(CapabilityCall::new(
+            "test_cap".to_string(),
+            Address::from("test_token"),
+            None,
+        )),
+        fn_name,
+        params,
+    )
 }
 
 #[test]

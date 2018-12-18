@@ -193,7 +193,7 @@ pub mod tests {
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{self, Defn},
-            tests::{test_capability_name, test_capability_token_str},
+            tests::{test_capability_call, test_capability_name},
             ZomeFnCall,
         },
     };
@@ -368,8 +368,7 @@ pub mod tests {
     ) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
-            &test_capability_name(),
-            &test_capability_token_str(),
+            Some(test_capability_call()),
             &test_function_name(),
             test_parameters(),
         );

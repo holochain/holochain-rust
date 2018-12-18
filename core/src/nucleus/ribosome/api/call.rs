@@ -11,6 +11,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
+    dna::capabilities::CapabilityCall,
     entry::cap_entries::{CallSignature, CapTokenGrant},
     error::HolochainError,
 };
@@ -24,13 +25,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(args: ZomeFnCallArgs) -> Self {
-        ZomeFnCall::new(
-            &args.zome_name,
-            &args.cap_name,
-            &String::from(args.cap_token),
-            &args.fn_name,
-            args.fn_args,
-        )
+        ZomeFnCall::new(&args.zome_name, args.cap, &args.fn_name, args.fn_args)
     }
 }
 
@@ -134,12 +129,7 @@ pub(crate) fn reduce_call(
     // TODO: actually get the caller's address
     let caller = Address::from("fake caller");
     // 2. Checks for permission to access Capability
-    if !public && !check_capability(
-        context.clone(),
-        &fn_call.clone(),
-        caller,
-        &CallSignature {},
-    ) {
+    if !public && !check_capability(context.clone(), &fn_call.clone(), caller, &CallSignature {}) {
         // Notify failure
         state.zome_calls.insert(
             fn_call.clone(),
@@ -156,8 +146,12 @@ pub(crate) fn reduce_call(
     launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }
 
-fn is_token_the_agent(context: Arc<Context>, cap_token: &Address) -> bool {
-    context.agent_id.key == cap_token.to_string()
+// TODO: check the signature too
+fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bool {
+    match cap {
+        None => false,
+        Some(call) => context.agent_id.key == call.cap_token.to_string(),
+    }
 }
 
 /// checks to see if a given function call is allowable according to the capabilities
@@ -168,20 +162,23 @@ fn check_capability(
     caller: Address,
     call_sig: &CallSignature,
 ) -> bool {
-
     // the agent can always do everything
-    // TODO: check the signature too
-    if is_token_the_agent(context.clone(), &fn_call.cap_token) {
+    if is_token_the_agent(context.clone(), &fn_call.cap) {
         return true;
     }
 
-    let chain = &context.chain_storage;
-    let maybe_json = chain.read().unwrap().fetch(&fn_call.cap_token).unwrap();
-    let grant = match maybe_json {
-        Some(content) => CapTokenGrant::try_from(content).unwrap(),
-        None => return false,
-    };
-    grant.verify(fn_call.cap_token.clone(), Some(caller), call_sig)
+    match fn_call.cap.clone() {
+        None => false,
+        Some(call) => {
+            let chain = &context.chain_storage;
+            let maybe_json = chain.read().unwrap().fetch(&call.cap_token).unwrap();
+            let grant = match maybe_json {
+                Some(content) => CapTokenGrant::try_from(content).unwrap(),
+                None => return false,
+            };
+            grant.verify(call.cap_token.clone(), Some(caller), call_sig)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -205,14 +202,14 @@ pub mod tests {
                 },
                 Defn,
             },
-            tests::{test_capability_name, test_capability_token},
+            tests::test_capability_call,
         },
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            capabilities::{Capability, CapabilityType},
+            capabilities::{Capability, CapabilityCall, CapabilityType},
             Dna,
         },
         entry::Entry,
@@ -234,8 +231,11 @@ pub mod tests {
     pub fn test_bad_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
             zome_name: "zome_name".to_string(),
-            cap_name: "cap_name".to_string(),
-            cap_token: Address::from("bad cap_token"),
+            cap: Some(CapabilityCall::new(
+                "cap_name".to_string(),
+                Address::from("bad cap_token"),
+                None,
+            )),
             fn_name: "fn_name".to_string(),
             fn_args: "fn_args".to_string(),
         };
@@ -248,8 +248,7 @@ pub mod tests {
     pub fn test_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
             zome_name: test_zome_name(),
-            cap_name: test_capability_name(),
-            cap_token: test_capability_token(),
+            cap: Some(test_capability_call()),
             fn_name: test_function_name(),
             fn_args: test_parameters(),
         };
@@ -279,7 +278,16 @@ pub mod tests {
         _caller: Address,
         expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
-        let zome_call = ZomeFnCall::new("test_zome", "test_cap", token_str, "test", "{}");
+        let zome_call = ZomeFnCall::new(
+            "test_zome",
+            Some(CapabilityCall::new(
+                "test_cap".to_string(),
+                Address::from(token_str),
+                None,
+            )),
+            "test",
+            "{}",
+        );
         let zome_call_action = ActionWrapper::new(Action::Call(zome_call.clone()));
 
         // process the action
@@ -324,7 +332,7 @@ pub mod tests {
 
     #[test]
     fn test_call_no_zome() {
-        let dna = test_utils::create_test_dna_with_wat("bad_zome", "foo token", None);
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
         let test_setup = setup_test(dna);
         let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
@@ -335,7 +343,7 @@ pub mod tests {
     /*
     #[test]
     fn test_call_no_fn_defn() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "foo token", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let expected = Ok(Err(HolochainError::DoesNotHaveCapabilityToken));
         test_reduce_call(dna,"foo token", expected);
     }
@@ -427,11 +435,13 @@ pub mod tests {
 
     #[test]
     fn test_agent_as_token() {
-        let dna = test_utils::create_test_dna_with_wat("bad_zome", "foo token", None);
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
         let test_setup = setup_test(dna);
         let agent_token = Address::from(test_setup.context.agent_id.key.clone());
         let context = test_setup.context.clone();
-        assert!(is_token_the_agent(context.clone(), &agent_token));
-        assert!(!is_token_the_agent(context, &Address::from("")));
+        let cap_call = CapabilityCall::new("foo".to_string(), agent_token, None);
+        assert!(is_token_the_agent(context.clone(), &Some(cap_call)));
+        let cap_call = CapabilityCall::new("foo".to_string(), Address::from(""), None);
+        assert!(!is_token_the_agent(context, &Some(cap_call)));
     }
 }

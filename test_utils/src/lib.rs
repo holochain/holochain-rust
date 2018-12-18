@@ -17,9 +17,10 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
+    cas::content::Address,
     agent::AgentId,
     dna::{
-        capabilities::{Capability, FnDeclaration, CapabilityType},
+        capabilities::{Capability, FnDeclaration, CapabilityType, CapabilityCall},
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         wasm::DnaWasm,
         zome::{Config, Zome},
@@ -244,7 +245,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call("test_zome", "test_cap", "test_token", fn_name, r#"{}"#);
+    return hc.call("test_zome", Some(CapabilityCall::new("test_cap".to_string(), Address::from("test_token"),None)), fn_name, r#"{}"#);
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions

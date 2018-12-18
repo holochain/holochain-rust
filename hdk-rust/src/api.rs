@@ -4,6 +4,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
+    dna::capabilities::CapabilityCall,
     entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
@@ -368,8 +369,11 @@ pub fn call<S: Into<String>>(
         &mut mem_stack,
         ZomeFnCallArgs {
             zome_name: zome_name.into(),
-            cap_name: cap_name.into(),
-            cap_token: Address::from(cap_token.into()),
+            cap: Some(CapabilityCall::new(
+                cap_name.into(),
+                Address::from(cap_token.into()),
+                None,
+            )),
             fn_name: fn_name.into(),
             fn_args: String::from(fn_args),
         },

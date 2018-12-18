@@ -15,7 +15,9 @@ use holochain_core_types::{dna::Dna, error::HolochainError};
 use std::sync::Arc;
 
 use holochain_core::{logger::Logger, persister::SimplePersister};
-use holochain_core_types::agent::AgentId;
+use holochain_core_types::{
+    agent::AgentId, cas::content::Address, dna::capabilities::CapabilityCall,
+};
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
@@ -132,8 +134,11 @@ pub unsafe extern "C" fn holochain_call(
 
     match holochain.call(
         zome.as_str(),
-        capability.as_str(),
-        token.as_str(),
+        Some(CapabilityCall::new(
+            capability.to_string(),
+            Address::from(token.as_str()),
+            None,
+        )),
         function.as_str(),
         parameters.as_str(),
     ) {

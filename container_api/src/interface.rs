@@ -1,4 +1,5 @@
 use holochain_core::state::State;
+use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value};
@@ -83,8 +84,11 @@ impl ContainerApiDispatcher {
                                     let response = hc
                                         .call(
                                             &zome_name,
-                                            &cap_name,
-                                            "fake token",
+                                            Some(CapabilityCall::new(
+                                                cap_name.clone(),
+                                                Address::from("fake_token"),
+                                                None,
+                                            )),
                                             &func_name,
                                             &params_string,
                                         )

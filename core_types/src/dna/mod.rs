@@ -39,8 +39,8 @@ pub mod tests {
     use crate::{
         cas::content::Address,
         dna::{
-            capabilities::{Capability, FnDeclaration, FnParameter, CapabilityType, Membrane},
             bridges::{Bridge, BridgePresence, BridgeReference},
+            capabilities::{Capability, CapabilityType, FnDeclaration, FnParameter, Membrane},
             entry_types::EntryTypeDef,
             zome::tests::test_zome,
         },
@@ -558,17 +558,17 @@ pub mod tests {
         assert_eq!(
             dna.get_required_bridges(),
             vec![
-                Bridge{
+                Bridge {
                     presence: BridgePresence::Required,
                     handle: String::from("DPKI"),
-                    reference: BridgeReference::Address{
+                    reference: BridgeReference::Address {
                         dna_address: Address::from("Qmabcdef1234567890"),
                     }
                 },
-                Bridge{
+                Bridge {
                     presence: BridgePresence::Required,
                     handle: String::from("HCHC"),
-                    reference: BridgeReference::Capability{
+                    reference: BridgeReference::Capability {
                         capabilities: btreemap! {
                             String::from("happ_directory") => Capability{
                                 cap_type: CapabilityType {

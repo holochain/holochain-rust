@@ -1,7 +1,4 @@
-use crate::{
-    cas::content::Address,
-    dna::capabilities::Capability,
-};
+use crate::{cas::content::Address, dna::capabilities::Capability};
 use std::collections::BTreeMap;
 
 /// A bridge is the definition of a connection to another DNA that runs under the same agency,
@@ -45,12 +42,14 @@ pub struct Bridge {
 pub enum BridgeReference {
     /// A bridge reference that defines another DNA statically by its address (i.e. hash).
     /// If this variant is used the other DNA gets locked in as per DNA hash
-    Address{dna_address: Address},
+    Address { dna_address: Address },
 
     /// A bridge reference that defines another DNA loosely by expecting a DNA that implements
     /// a given set of capabilities, i.e. that has specific sets of zome functions with
     /// matching signatures.
-    Capability{capabilities: BTreeMap<String, Capability>},
+    Capability {
+        capabilities: BTreeMap<String, Capability>,
+    },
 }
 
 /// Required or optional

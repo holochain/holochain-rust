@@ -1,4 +1,8 @@
-use crate::cas::content::Address;
+use crate::{
+    cas::content::Address,
+    dna::capabilities::Capability,
+};
+use std::collections::BTreeMap;
 
 /// A bridge is the definition of a connection to another DNA that runs under the same agency,
 /// i.e. in the same container.
@@ -7,46 +11,46 @@ use crate::cas::content::Address;
 /// DNA.
 ///
 /// The other DNA can either be referenced statically by exact DNA address/hash or dynamically
-/// by defining the trait that other DNA has to implement in order to be used as bridge.
+/// by defining the capabilities that other DNA has to provide in order to be usable as bridge.
 ///
 /// Bridges can be required or optional. If a required bridge DNA is not installed this DNA
 /// can't run, so required bridges are hard dependencies that have to be enforced by the container.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+pub struct Bridge {
+    /// Required or optional
+    pub presence: BridgePresence,
+
+    /// An arbitrary name of this bridge that is used as handle to reference this
+    /// bridge in according zome API functions
+    pub handle: String,
+
+    /// Define what other DNA(s) to bridge to
+    pub reference: BridgeReference,
+}
+
+/// This enum represents the two different ways of referring to another DNA instance.
+/// If we know a priori what exact version of another DNA we want to bridge to we can
+/// specify the DNA address (i.e. hash) and lock it in.
+/// Often, we need more flexibility when
+/// * the other DNA gets replaced by a newer version
+/// * the other DNA gets created from a template and thus we don't know the exact hash
+///   during build-time
+/// * we want to build a complex system of components that should be pluggable.
+/// Bridges can therefore also be specified by capabilities (read traits or interfaces).
+/// That means we specify a list of functions with their signatures and allow the container
+/// (through the container bridge config) to resolve this bridge by any DNA instance that
+/// implements all specified functions, just like a dynamic binding of function calls.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 #[serde(untagged)]
-pub enum Bridge {
-    Address(AddressBridge),
-    Trait(TraitBridge),
-}
+pub enum BridgeReference {
+    /// A bridge reference that defines another DNA statically by its address (i.e. hash).
+    /// If this variant is used the other DNA gets locked in as per DNA hash
+    Address{dna_address: Address},
 
-/// A bridge that defines another DNA statically by its address (i.e. hash).
-/// If this variant is used the other DNA gets locked in as per DNA hash
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub struct AddressBridge {
-    /// Required or optional
-    pub presence: BridgePresence,
-
-    /// An arbitrary name of this bridge that is used as handle to reference this
-    /// bridge in according zome API functions
-    pub handle: String,
-
-    /// The address (= hash) of the other DNA that we want to use.
-    pub dna_address: Address,
-}
-
-/// A bridge that defines another DNA loosely by expecting a DNA that implements
-/// a given trait, i.e. that has a specific set of zome functions.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub struct TraitBridge {
-    /// Required or optional
-    pub presence: BridgePresence,
-
-    /// An arbitrary name of this bridge that is used as handle to reference this
-    /// bridge in according zome API functions
-    pub handle: String,
-
-    /// The unique, qualified domain name of a predefined trait.
-    /// Example: org.holochain.my-trait.
-    pub library_trait: String,
+    /// A bridge reference that defines another DNA loosely by expecting a DNA that implements
+    /// a given set of capabilities, i.e. that has specific sets of zome functions with
+    /// matching signatures.
+    Capability{capabilities: BTreeMap<String, Capability>},
 }
 
 /// Required or optional

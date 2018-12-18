@@ -39,7 +39,8 @@ pub mod tests {
     use crate::{
         cas::content::Address,
         dna::{
-            bridges::{AddressBridge, Bridge, BridgePresence, TraitBridge},
+            capabilities::{Capability, FnDeclaration, FnParameter, CapabilityType, Membrane},
+            bridges::{Bridge, BridgePresence, BridgeReference},
             entry_types::EntryTypeDef,
             zome::tests::test_zome,
         },
@@ -503,17 +504,49 @@ pub mod tests {
                             {
                                 "presence": "Required",
                                 "handle": "DPKI",
-                                "dna_address": "Qmabcdef1234567890"
+                                "reference": {
+                                    "dna_address": "Qmabcdef1234567890"
+                                }
                             },
                             {
                                 "presence": "Optional",
                                 "handle": "Vault",
-                                "library_trait": "org.holochain.alpha.personal-data-handler"
+                                "reference": {
+                                    "capabilities": {
+                                        "persona_management": {
+                                            "capability": {
+                                                "membrane": "public"
+                                            },
+                                            "functions": [
+                                                {
+                                                    "name": "get_persona",
+                                                    "inputs": [{"name": "domain", "type": "string"}],
+                                                    "outputs": [{"name": "persona", "type": "json"}]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
                             },
                             {
                                 "presence": "Required",
                                 "handle": "HCHC",
-                                "library_trait": "org.holochain.alpha.dna-repository"
+                                "reference": {
+                                    "capabilities": {
+                                        "happ_directory": {
+                                            "capability": {
+                                                "membrane": "public"
+                                            },
+                                            "functions": [
+                                                {
+                                                    "name": "get_happs",
+                                                    "inputs": [],
+                                                    "outputs": [{"name": "happs", "type": "json"}]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
                             }
                         ]
                     }
@@ -525,16 +558,36 @@ pub mod tests {
         assert_eq!(
             dna.get_required_bridges(),
             vec![
-                Bridge::Address(AddressBridge {
+                Bridge{
                     presence: BridgePresence::Required,
                     handle: String::from("DPKI"),
-                    dna_address: Address::from("Qmabcdef1234567890"),
-                }),
-                Bridge::Trait(TraitBridge {
+                    reference: BridgeReference::Address{
+                        dna_address: Address::from("Qmabcdef1234567890"),
+                    }
+                },
+                Bridge{
                     presence: BridgePresence::Required,
                     handle: String::from("HCHC"),
-                    library_trait: String::from("org.holochain.alpha.dna-repository"),
-                }),
+                    reference: BridgeReference::Capability{
+                        capabilities: btreemap! {
+                            String::from("happ_directory") => Capability{
+                                cap_type: CapabilityType {
+                                    membrane: Membrane::Public
+                                },
+                                functions: vec![
+                                    FnDeclaration {
+                                        name: String::from("get_happs"),
+                                        inputs: vec![],
+                                        outputs: vec![FnParameter{
+                                            name: String::from("happs"),
+                                            parameter_type: String::from("json"),
+                                        }],
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                },
             ]
         );
     }

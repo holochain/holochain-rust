@@ -126,10 +126,7 @@ impl Zome {
     pub fn get_required_bridges(&self) -> Vec<Bridge> {
         self.bridges
             .iter()
-            .filter(|bridge| match bridge {
-                Bridge::Address(b) => b.presence == BridgePresence::Required,
-                Bridge::Trait(b) => b.presence == BridgePresence::Required,
-            })
+            .filter(|bridge| bridge.presence == BridgePresence::Required)
             .cloned()
             .collect()
     }

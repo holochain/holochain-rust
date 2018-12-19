@@ -240,6 +240,7 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
         ))
     }
 

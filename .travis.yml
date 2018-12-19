@@ -179,19 +179,20 @@ _windows_template_lite: &_windows_template_lite
      - target
      - $TRAVIS_BUILD_DIR/$TEST_PATH/.cargo
      - $CARGO_TARGET_DIR
+     - $TRAVIS_BUILD_DIR/$WASM_PATH/.cargo
+     - $WASM_TARGET_DIR
   install:
-    # - curl -sSf -o rustup-init.exe https://win.rustup.rs/
-    # - rustup-init.exe --help
-    # - rustup-init.exe -y --default-host $TARGET --default-toolchain $RUST_VERSION --profile minimal
-    - rustup target add wasm32-unknown-unknown
+    - if [ $WASM_PATH != "none" ]; then rustup target add wasm32-unknown-unknown; fi;
+    - if [ $WASM_PATH != "none" ]; then cargo build --manifest-path $WASM_PATH/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR; fi;
   script:
     - echo $RUSTFLAGS
     - echo $TEST_P
     - echo $TEST_PATH
     - echo $CARGO_TARGET_DIR
     - echo $CARGO_HOME
-    # - echo $CARGO_HOME
     - echo $CARGO_TARGET_DIR
+    - echo $WASM_PATH
+    - echo $WASM_TARGET_DIR
     - dir $LIBZMQ_PREFIX
     - cargo test -p $TEST_P --target-dir $CARGO_TARGET_DIR
     - dir $CARGO_TARGET_DIR
@@ -209,19 +210,36 @@ jobs:
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_PATH=hdk-rust/wasm-test
        - WASM_TARGET_DIR=$WASM_PATH/target
-      cache:
-        timeout: 1000
-        directories:
-         - $HOME/.cargo
-         - .cargo
-         - target
-         - $TRAVIS_BUILD_DIR/$TEST_PATH/.cargo
-         - $CARGO_TARGET_DIR
-         - $TRAVIS_BUILD_DIR/$WASM_PATH/.cargo
-         - $WASM_TARGET_DIR
 
-      before_script:
-       - cargo build --manifest-path $WASM_PATH/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR
+    - name: "windows wasm_utils"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_wasm_utils
+       - TEST_PATH=wasm_utils
+       - WASM_PATH=wasm_utils/wasm-test/integration-test
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows container_api"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_container_api
+       - TEST_PATH=container_api
+       - WASM_PATH=container_api/wasm-test
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows core"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_core
+       - TEST_PATH=core
+       - WASM_PATH=core/src/nucleus/actions/wasm-test
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     # contains no tests
     # quick to build, good for basic debugging
@@ -236,102 +254,112 @@ jobs:
     - name: "windows holochain_cas_implementations"
       <<: *_windows_template_lite
       env:
-        - TEST_P=holochain_cas_implementations
-        - TEST_PATH=cas_implementations
-        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - TEST_P=holochain_cas_implementations
+       - TEST_PATH=cas_implementations
+       - WASM_PATH=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows dna_c_binding"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_dna_c_binding
        - TEST_PATH=dna_c_binding
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows holochain_net_connection"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_net_connection
        - TEST_PATH=net_connection
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows holochain_sodium"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_sodium
        - TEST_PATH=sodium
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows hc"
       <<: *_windows_template_lite
       env:
-        - TEST_P=hc
-        - TEST_PATH=cmd
-        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - TEST_P=hc
+       - TEST_PATH=cmd
+       - WASM_PATH=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows holochain_container"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_container
        - TEST_PATH=container
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
-
-    - name: "windows core"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core
-       - TEST_PATH=core
-       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows core_api_c_binding"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_core_api_c_binding
        - TEST_PATH=core_api_c_binding
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows core_types"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_core_types
        - TEST_PATH=core_types
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows holochain_net"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_net
        - TEST_PATH=net
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows holochain_net_ipc"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_net_ipc
        - TEST_PATH=net_ipc
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows holochain_test_bin"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_test_bin
        - TEST_PATH=test_bin
+       - WASM_PATH=none
+       # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
-
-    - name: "windows wasm_utils"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_wasm_utils
-       - TEST_PATH=wasm_utils
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-
-    - name: "windows container_api"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_container_api
-       - TEST_PATH=container_api
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-      before_script:
-       - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown --target-dir container_api/wasm-test/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
 
     # - name: "windows build & test all"
     #   <<: *_windows_template

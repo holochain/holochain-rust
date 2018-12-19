@@ -11,7 +11,6 @@ use super::random::{
 
 pub fn seedKeypair(public_key: &mut SecBuf,secret_key: &mut SecBuf,seed: &mut SecBuf) {
     check_init();
-    println!("<Seed_Generation/>");
     unsafe {
         let mut seed = seed.read_lock();
         let mut secret_key = secret_key.write_lock();
@@ -22,7 +21,6 @@ pub fn seedKeypair(public_key: &mut SecBuf,secret_key: &mut SecBuf,seed: &mut Se
 
 pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf,signature:&mut SecBuf){
     check_init();
-    println!("<Signing/>");
     unsafe {
         let mut message = message.read_lock();
         let mut secret_key = secret_key.read_lock();
@@ -35,7 +33,6 @@ pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf,signature:&mut SecBuf){
 
 
 pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf)->i32{
-    println!("<Verify/>");
     unsafe{
         let mut signature = signature.write_lock();
         let mut message = message.write_lock();

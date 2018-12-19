@@ -39,14 +39,9 @@ macro_rules! raw_ptr_char_immut {
     };
 }
 
-/// make invoking ffi functions taking SecBuf references more readable
-macro_rules! raw_ptr_longlong {
-    ($name: ident) => {
-        $name as *mut libc::c_ulonglong
-    };
-}
 pub mod random;
 pub mod secbuf;
 pub mod util;
 pub mod sign;
 pub mod hash;
+pub mod aead;

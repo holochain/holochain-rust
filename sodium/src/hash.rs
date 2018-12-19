@@ -1,14 +1,7 @@
 //! This module provides access to libsodium
-use super::check_init;
 
-use super::secbuf::{
-    SecBuf,
-};
-
-use super::random::{
-    buf,
-};
-
+use super::secbuf::SecBuf;
+use super::random::buf;
 
 /// XOR an arbitrary length buffer (byteLength must be a multiple of 4)
 /// into an int32 sized javascript number

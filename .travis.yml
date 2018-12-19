@@ -150,53 +150,38 @@ _cmd_deploy_template: &_cmd_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
-# matrix:
-#  include:
-#   - env: TEST_P=holochain_cas_implementations TEST_PATH=cas_implementations
-#   - env: TEST_P=hc TEST_PATH=hc
-
 env:
  global:
   - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
 
 _windows_template_lite: &_windows_template_lite
   os: windows
-  # language: bash
   language: rust
   rust: nightly-2018-11-28-x86_64-pc-windows-msvc
   before_install:
    - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-Z thinlto -C codegen-units=16"
-   # - RUSTFLAGS="-C lto=no"
-   # - RUST_VERSION=nightly-2018-11-28
-   # - TARGET=x86_64-pc-windows-msvc
   cache:
-    timeout: 1000
-    directories:
-     # - $HOME/.cargo
-     # - .cargo
-     - target
-     # - $TRAVIS_BUILD_DIR/$TEST_PATH/.cargo
-     - $CARGO_TARGET_DIR
-     # - $TRAVIS_BUILD_DIR/$WASM_PATH/.cargo
-     - $WASM_TARGET_DIR
+   timeout: 1000
+   directories:
+    # only keep target directories
+    # as we don't keep .cargo everything will be redownloaded every time
+    # as travis downloads the cache every time, this doesn't make much
+    # difference, actually it can be a bit faster or slightly slower to pull
+    # the crates down vs. loading the cache - seems to be an overall benefit
+    # as we do CARGO_INCREMENTAL and keep the targets, the newly downloaded
+    # crates don't recompile, so we save *a lot* of time there
+    - target
+    - $CARGO_TARGET_DIR
+    - $WASM_TARGET_DIR
   install:
+    # "none" is a hack here to avoid "" ending up in the cache, potentially
+    # caching everything in the repo (we never want to accidentally do that)
     - if [ $WASM_PATH != "none" ]; then rustup target add wasm32-unknown-unknown; fi;
     - if [ $WASM_PATH != "none" ]; then cargo build --manifest-path $WASM_PATH/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR; fi;
   script:
-    - echo $RUSTFLAGS
-    - echo $TEST_P
-    - echo $TEST_PATH
-    - echo $CARGO_TARGET_DIR
-    - echo $CARGO_HOME
-    - echo $CARGO_TARGET_DIR
-    - echo $WASM_PATH
-    - echo $WASM_TARGET_DIR
-    - dir $LIBZMQ_PREFIX
     - cargo test -p $TEST_P --target-dir $CARGO_TARGET_DIR
-    - dir $CARGO_TARGET_DIR
-    - dir $HOME/.cargo
 
 jobs:
   # test builds are ordered from slowest to quickest
@@ -207,8 +192,9 @@ jobs:
       env:
        - TEST_P=hdk
        - TEST_PATH=hdk-rust
-       - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_PATH=hdk-rust/wasm-test
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows wasm_utils"

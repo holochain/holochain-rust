@@ -40,7 +40,7 @@ pub mod tests {
         cas::content::Address,
         dna::{
             bridges::{Bridge, BridgePresence, BridgeReference},
-            capabilities::{Capability, CapabilityType, FnDeclaration, FnParameter, Membrane},
+            capabilities::{Capability, CapabilityType, FnDeclaration, FnParameter},
             entry_types::EntryTypeDef,
             zome::tests::test_zome,
         },
@@ -479,9 +479,7 @@ pub mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "fn_declarations": []
                             }
                         },
@@ -508,9 +506,7 @@ pub mod tests {
                                 "reference": {
                                     "capabilities": {
                                         "persona_management": {
-                                            "capability": {
-                                                "membrane": "public"
-                                            },
+                                            "type": "public",
                                             "functions": [
                                                 {
                                                     "name": "get_persona",
@@ -528,9 +524,7 @@ pub mod tests {
                                 "reference": {
                                     "capabilities": {
                                         "happ_directory": {
-                                            "capability": {
-                                                "membrane": "public"
-                                            },
+                                            "type": "public",
                                             "functions": [
                                                 {
                                                     "name": "get_happs",
@@ -565,9 +559,7 @@ pub mod tests {
                     reference: BridgeReference::Capability {
                         capabilities: btreemap! {
                             String::from("happ_directory") => Capability{
-                                cap_type: CapabilityType {
-                                    membrane: Membrane::Public
-                                },
+                                cap_type: CapabilityType::Public,
                                 functions: vec![
                                     FnDeclaration {
                                         name: String::from("get_happs"),

@@ -14,6 +14,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
+use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
 use std::{
     convert::TryFrom,
@@ -129,12 +130,19 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
         r#"{{"jsonrpc": "2.0", "method": "{}", "params": {}, "id": "{}"}}"#,
         method, input.fn_args, id
     );
-    
+
     let response = handler
         .handle_request_sync(&request)
         .ok_or("Bridge call failed".to_string())?;
 
-    Ok(JsonString::from(response))
+    let response = JsonRpc::parse(&response)?;
+
+    match response {
+        JsonRpc::Success(_) => Ok(JsonString::from(serde_json::to_string(&response.get_result().unwrap()).unwrap())),
+        JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(&response.get_error().unwrap()).unwrap())),
+        _ => Err(HolochainError::ErrorGeneric("Bridge call failed".to_string()))
+    }
+
 }
 
 /// Reduce Call Action

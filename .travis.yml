@@ -164,7 +164,6 @@ _windows_template_lite: &_windows_template_lite
    - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-Z thinlto -C codegen-units=16"
-   - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
    # - RUSTFLAGS="-C lto=no"
    # - RUST_VERSION=nightly-2018-11-28
    # - TARGET=x86_64-pc-windows-msvc
@@ -225,6 +224,7 @@ jobs:
         - TEST_P=hc
         - TEST_PATH=cmd
         - CARGO_TARGET_DIR=$TEST_PATH/target
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
 
     - name: "windows holochain_container"
       <<: *_windows_template_lite

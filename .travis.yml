@@ -301,25 +301,29 @@ jobs:
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
 
-    - name: "windows holochain_container"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_container
-       - TEST_PATH=container
-       - WASM_PATH=none
-       # boilerplate
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-       - WASM_TARGET_DIR=$WASM_PATH/target
+    # no tests
+    # https://travis-ci.com/holochain/holochain-rust/jobs/166086955
+    # - name: "windows holochain_container"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_container
+    #    - TEST_PATH=container
+    #    - WASM_PATH=none
+    #    # boilerplate
+    #    - CARGO_TARGET_DIR=$TEST_PATH/target
+    #    - WASM_TARGET_DIR=$WASM_PATH/target
 
-    - name: "windows core_api_c_binding"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core_api_c_binding
-       - TEST_PATH=core_api_c_binding
-       - WASM_PATH=none
-       # boilerplate
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-       - WASM_TARGET_DIR=$WASM_PATH/target
+    # no tests
+    # https://travis-ci.com/holochain/holochain-rust/jobs/166086957
+    # - name: "windows core_api_c_binding"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core_api_c_binding
+    #    - TEST_PATH=core_api_c_binding
+    #    - WASM_PATH=none
+    #    # boilerplate
+    #    - CARGO_TARGET_DIR=$TEST_PATH/target
+    #    - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "windows core_types"
       <<: *_windows_template_lite
@@ -351,15 +355,17 @@ jobs:
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
 
-    - name: "windows holochain_test_bin"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_test_bin
-       - TEST_PATH=test_bin
-       - WASM_PATH=none
-       # boilerplate
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-       - WASM_TARGET_DIR=$WASM_PATH/target
+    # no tests
+    # https://travis-ci.com/holochain/holochain-rust/jobs/166086961
+    # - name: "windows holochain_test_bin"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_test_bin
+    #    - TEST_PATH=test_bin
+    #    - WASM_PATH=none
+    #    # boilerplate
+    #    - CARGO_TARGET_DIR=$TEST_PATH/target
+    #    - WASM_TARGET_DIR=$WASM_PATH/target
 
     # - name: "windows build & test all"
     #   <<: *_windows_template

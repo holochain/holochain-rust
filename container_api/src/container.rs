@@ -315,7 +315,7 @@ pub mod tests {
     use crate::config::load_configuration;
 
     use holochain_core::signal::signal_channel;
-    use holochain_core_types::{cas::content::Address, dna};
+    use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use std::{fs::File, io::Write};
 
     use tempfile::tempdir;
@@ -720,7 +720,7 @@ pub mod tests {
             .unwrap();
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
-        assert_eq!(result, "Holo World");
+        assert_eq!(result, JsonString::from(RawString::from("Holo World")));
     }
 
 }

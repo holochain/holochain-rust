@@ -171,9 +171,11 @@ impl Container {
                 context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 // Network config:
-                instance_config.network.map(|network_config| {
-                    context_builder.with_network_config(JsonString::from(network_config))
-                });
+                //instance_config.network.map(|network_config| {
+                //    context_builder.with_network_config(JsonString::from(network_config))
+                //});
+
+                context_builder.with_network_config(JsonString::from(P2pConfig::DEFAULT_IPC_CONFIG));
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {

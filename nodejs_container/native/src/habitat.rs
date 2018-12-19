@@ -3,7 +3,7 @@ use holochain_container_api::{
     container::Container,
 };
 use holochain_core::{
-    action::Action,
+    action::{Action, ActionWrapper},
     signal::{signal_channel, SignalReceiver},
 };
 use neon::{context::Context, prelude::*};
@@ -24,10 +24,6 @@ use crate::{
     waiter::{HabitatSignalTask, JsCallback, Waiter},
 };
 
-impl Logger for NullLogger {
-    fn log(&mut self, _msg: String) {}
-}
-
 pub struct Habitat {
     container: Container,
     callback_tx: SyncSender<JsCallback>,
@@ -42,6 +38,13 @@ fn promise_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
     panic!("callback called!!");
     Ok(cx.null())
 }
+
+// fn function_handle(mut cx: &FunctionContext, jsf: JsFunction) -> Handle<JsFunction> {
+//     jsf.unwrap()
+//         .as_value(&mut cx)
+//         .downcast_or_throw(&mut cx)
+//         .unwrap();
+// }
 
 declare_types! {
 
@@ -63,7 +66,11 @@ declare_types! {
             let container = Container::from_config(config);
 
             let result = {
-                let js_callback = JsFunction::new(&mut cx, signal_callback).unwrap();
+                let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
+                    .unwrap()
+                    .as_value(&mut cx)
+                    .downcast_or_throw(&mut cx)
+                    .unwrap();
                 let (signal_tx, signal_rx) = signal_channel();
                 let (callback_tx, callback_rx) = sync_channel(100);
                 let waiter = Waiter::new(callback_rx);
@@ -117,7 +124,11 @@ declare_types! {
         }
 
         method call(mut cx) {
-            let js_callback = JsFunction::new(&mut cx, signal_callback).unwrap();
+            let js_callback: JsCallback = JsFunction::new(&mut cx, signal_callback)
+                    .unwrap()
+                    .as_value(&mut cx)
+                    .downcast_or_throw(&mut cx)
+                    .unwrap();
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let zome = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
             let cap = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
@@ -131,10 +142,8 @@ declare_types! {
                 let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
+                hab.callback_tx.send(js_callback);
                 let val = instance.call(&zome, &cap, &fn_name, &params);
-                let (tx, rx) = sync_channel(0);
-                let task = SignalWaiterTask {rx};
-                task.schedule(js_callback);
                 val
             };
 
@@ -150,48 +159,6 @@ declare_types! {
         }
     }
 }
-
-// impl Task for HabitatSignalTask {
-//     type Output = ();
-//     type Error = String;
-//     type JsEvent = JsNumber;
-
-//     fn perform(&self) -> Result<(), String> {
-//         use std::io::{self, Write};
-//         while let Ok(sig) = self.signal_rx.recv() {
-//             print!(".");
-//             io::stdout().flush().unwrap();
-//         }
-//         Ok(())
-//     }
-
-//     fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
-//         Ok(cx.number(17))
-//     }
-// }
-
-// struct SignalWaiterTask {
-//     rx: Receiver<WaiterMsg>,
-// }
-
-// impl Task for SignalWaiterTask {
-//     type Output = ();
-//     type Error = String;
-//     type JsEvent = JsUndefined;
-
-//     fn perform(&self) -> Result<(), String> {
-//         while let Ok(sig) = self.rx.recv() {
-//             match sig {
-//                 WaiterMsg::Stop => break
-//             }
-//         }
-//         Ok(())
-//     }
-
-//     fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
-//         result.map(|_| cx.undefined())
-//     }
-// }
 
 register_module!(mut cx, {
     cx.export_class::<JsHabitat>("Habitat")?;

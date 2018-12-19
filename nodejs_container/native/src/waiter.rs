@@ -1,40 +1,24 @@
-use holochain_cas_implementations::{
-    cas::{file::FilesystemStorage, memory::MemoryStorage},
-    eav::memory::EavMemoryStorage,
-};
-use holochain_container_api::{
-    config::{
-        load_configuration, AgentConfiguration, Configuration, DnaConfiguration,
-        InstanceConfiguration, LoggerConfiguration, StorageConfiguration,
-    },
-    container::Container,
-    Holochain,
-};
 use holochain_core::{
-    action::Action,
+    action::{Action, ActionWrapper},
     context::{mock_network_config, Context as HolochainContext},
-    logger::Logger,
-    persister::SimplePersister,
+    nucleus::ZomeFnCall,
     signal::{signal_channel, Signal, SignalReceiver},
 };
-use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
+use holochain_core_types::entry::Entry;
 use neon::{context::Context, prelude::*};
 use snowflake::ProcessUniqueId;
 use std::{
+    cell::RefCell,
     collections::{HashMap, HashSet},
-    convert::TryFrom,
-    path::PathBuf,
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
         Arc, Mutex, RwLock,
     },
-    thread,
 };
-use tempfile::tempdir;
 
 use crate::config::*;
 
-pub type JsCallback = JsFunction;
+pub type JsCallback = Handle<'static, JsFunction>;
 
 /// A set of closures, each of which checks for a certain condition to be met
 /// (usually for a certain action to be seen). When the condition specified by the closure
@@ -49,7 +33,7 @@ struct CallFxChecker {
 
 // Could maybe reduce this to HashSet<ActionWrapper> if we only need to check for
 // simple existence of one of any possible ActionWrappers
-type CallFxCondition = Box<Fn(&ActionWrapper) -> bool>;
+type CallFxCondition = Box<Fn(&ActionWrapper) -> bool + 'static + Send>;
 
 impl CallFxChecker {
     pub fn new(callback: JsCallback) -> Self {
@@ -104,7 +88,10 @@ impl Task for CallBlockingTask {
     }
 
     fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsUndefined> {
-        result.map(|_| cx.undefined())
+        result.map(|_| cx.undefined()).or_else(|e| {
+            let error_string = cx.string(format!("unable to initialize habitat: {}", e));
+            cx.throw(error_string)
+        })
     }
 }
 
@@ -128,7 +115,7 @@ impl Waiter {
         }
     }
 
-    pub fn process_signal(sig: Signal) {
+    pub fn process_signal(&mut self, sig: Signal) {
         match sig {
             Signal::Internal(aw) => {
                 match aw.action() {
@@ -137,16 +124,16 @@ impl Waiter {
                         self.add_call(call, callback);
                     }
                     Action::Commit((entry, _)) => match entry {
-                        App(_, _) => self
+                        Entry::App(_, _) => self
                             .current_checker()
                             .unwrap()
                             .add(|aw| aw.action == Action::Hold(entry.clone())),
                     },
                     Action::SendDirectMessage(data) => {
-                        let DirectMessageData { msg_id } = data;
+                        let Action::DirectMessageData { msg_id } = data;
                         let possible_actions = &[
-                            ResolveDirectConnection(msg_id),
-                            SendDirectMessageTimeout(msg_id),
+                            Action::ResolveDirectConnection(msg_id),
+                            Action::SendDirectMessageTimeout(msg_id),
                         ];
                         self.current_checker()
                             .unwrap()

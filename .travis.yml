@@ -309,7 +309,7 @@ jobs:
     - name: "windows wasm_utils"
       <<: *_windows_template_lite
       env:
-       - TEST_P=wasm_utils
+       - TEST_P=holochain_wasm_utils
        - TEST_PATH=wasm_utils
        - CARGO_TARGET_DIR=$TEST_PATH/target
 

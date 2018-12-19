@@ -178,7 +178,7 @@ jobs:
         - echo $TEST_PATH
         - cargo test --release -p $TEST_P --target-dir $TEST_PATH/target
 
-    - name: "windows holochain_cas_implementations"
+    - name: "windows hc"
       <<: *_windows_template
       cache:
         timeout: 1000

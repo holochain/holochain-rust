@@ -164,6 +164,8 @@ _windows_template: &_windows_template_lite
    - LIBZMQ_PREFIX=$TRAVIS_BUILD_DIR/vendor/zmq
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-C lto=no"
+   - RUST_VERSION=nightly-2018-11-28
+   - TARGET=x86_64-pc-windows-msvc
   cache:
     timeout: 1000
     directories:

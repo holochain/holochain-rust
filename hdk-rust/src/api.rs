@@ -354,8 +354,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// ```
 pub fn call<S: Into<String>>(
     zome_name: S,
-    cap_token: S,
     cap_name: S, //temporary...
+    cap_token: S,
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {

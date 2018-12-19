@@ -11,8 +11,10 @@ use crate::{
 };
 use holochain_core_types::{
     dna::capabilities::CapabilityCall, entry::cap_entries::CapTokenGrant, error::HolochainError,
+    json::JsonString,
 };
-use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
+use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
+use snowflake::ProcessUniqueId;
 use std::{
     convert::TryFrom,
     sync::{mpsc::channel, Arc},
@@ -46,14 +48,25 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         }
     };
 
+    let result = if input.instance_handle == String::from(THIS_INSTANCE) {
+        // ZomeFnCallArgs to ZomeFnCall
+        let zome_call = ZomeFnCall::from_args(input.clone());
+
+        // Don't allow recursive calls
+        if zome_call.same_fn_as(&runtime.zome_call) {
+            return ribosome_error_code!(RecursiveCallForbidden);
+        }
+        local_call(runtime, input)
+    } else {
+        bridge_call(runtime, input)
+    };
+
+    runtime.store_result(result)
+}
+
+fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(input);
-
-    // Don't allow recursive calls
-    if zome_call.same_fn_as(&runtime.zome_call) {
-        return ribosome_error_code!(RecursiveCallForbidden);
-    }
-
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
     // Send Action and block
@@ -84,10 +97,35 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
-    let result = receiver
+    receiver
         .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
-        .expect("observer dropped before done");
-    runtime.store_result(result)
+        .expect("observer dropped before done")
+}
+
+fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+    let container_api =
+        runtime
+            .context
+            .container_api
+            .clone()
+            .ok_or(HolochainError::ConfigError(
+                "No container API in context".to_string(),
+            ))?;
+
+    let method = format!(
+        "{}/{}/{}/{}",
+        input.instance_handle, input.zome_name, "", input.fn_name
+    );
+    let id = ProcessUniqueId::new();
+    let request = format!(
+        r#"{{"jsonrpc": "2.0", "method": "{}", "params": "{}", "id": {}}}"#,
+        method, input.fn_args, id
+    );
+    let handler = container_api.write().unwrap();
+    let response = handler
+        .handle_request_sync(&request)
+        .ok_or("Bridge call failed".to_string())?;
+    Ok(JsonString::from(response))
 }
 
 /// Reduce Call Action
@@ -221,6 +259,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_bad_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
+            instance_handle: "instance_handle".to_string(),
             zome_name: "zome_name".to_string(),
             cap: Some(CapabilityCall::new(
                 "cap_name".to_string(),
@@ -238,6 +277,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
+            instance_handle: THIS_INSTANCE.to_string(),
             zome_name: test_zome_name(),
             cap: Some(test_capability_call()),
             fn_name: test_function_name(),

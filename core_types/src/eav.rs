@@ -124,8 +124,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
-
-    
+    //deletes the given EntityAttributeValue from the EntityAttributeValueStorage
     fn remove_eav(&mut self, eav:&EntityAttributeValue) ->Result<(), HolochainError>;
 }
 

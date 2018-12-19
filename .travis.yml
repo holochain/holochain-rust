@@ -250,13 +250,6 @@ jobs:
        - TEST_PATH=container
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
-    - name: "windows container_api"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_container_api
-       - TEST_PATH=container_api
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-
     - name: "windows core"
       <<: *_windows_template_lite
       env:
@@ -315,6 +308,14 @@ jobs:
       before_script:
        - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
 
+    - name: "windows container_api"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_container_api
+       - TEST_PATH=container_api
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+      before_script:
+       - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
 
     # - name: "windows build & test all"
     #   <<: *_windows_template

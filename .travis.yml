@@ -172,6 +172,8 @@ jobs:
       install:
         - rustup target add wasm32-unknown-unknown
       script:
+        - echo $TEST_P
+        - echo $TEST_PATH
         - cargo test --release -p $TEST_P --target-dir $TEST_PATH/target
 
     # - name: "windows build & test all"

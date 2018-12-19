@@ -48,16 +48,16 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::UpdateEntry(_) => Some(reduce_update_entry),
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
         Action::AddLink(_) => Some(reduce_add_link),
-        Action::RemoveLink(_) =>Some(reduce_remove_link),
+        Action::RemoveLink(_) => Some(reduce_remove_link),
         _ => None,
     }
 }
 
-pub (crate) fn reduce_remove_link( _context: Arc<Context>,
+pub(crate) fn reduce_remove_link(
+    _context: Arc<Context>,
     old_store: &DhtStore,
-    action_wrapper: &ActionWrapper) -> Option<DhtStore>
-{
-
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
     let action = action_wrapper.action();
     let link = unwrap_to!(action => Action::RemoveLink);
     let mut new_store = (*old_store).clone();
@@ -411,8 +411,7 @@ pub mod tests {
         assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
     }
 
-
-     #[test]
+    #[test]
     fn can_delete_links() {
         let context = test_context("bob");
         let store = test_store(context.clone());
@@ -454,7 +453,8 @@ pub mod tests {
         {
             let state = locked_state.read().unwrap();
 
-            new_delete_dht_store = (*reduce(Arc::clone(&context), Arc::new(new_dht_store), &action)).clone();
+            new_delete_dht_store =
+                (*reduce(Arc::clone(&context), Arc::new(new_dht_store), &action)).clone();
         }
         let storage = new_delete_dht_store.meta_storage();
         let fetched = storage

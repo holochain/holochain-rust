@@ -52,15 +52,14 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .collect())
     }
 
-    fn remove_eav(&mut self, eav:&EntityAttributeValue) -> Result<(), HolochainError> {
+    fn remove_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let mut map = self.storage.write()?;
-        if map.remove(eav)
-        {
+        if map.remove(eav) {
             Ok(())
-        }
-        else 
-        {
-            Err(HolochainError::ErrorGeneric("Could not remove eav".to_string()))
+        } else {
+            Err(HolochainError::ErrorGeneric(
+                "Could not remove eav".to_string(),
+            ))
         }
     }
 }

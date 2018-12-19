@@ -5,7 +5,7 @@ use holochain_core_types::{
 };
 use std::{
     collections::HashSet,
-    fs::{create_dir_all, File, OpenOptions,remove_file},
+    fs::{create_dir_all, remove_file, File, OpenOptions},
     io::prelude::*,
     path::MAIN_SEPARATOR,
     sync::{Arc, RwLock},
@@ -90,21 +90,22 @@ impl EavFileStorage {
         Ok(())
     }
 
-    fn delete_file(&self,subscript:String,eav:&EntityAttributeValue) -> Result<(), HolochainError>
-    {
+    fn delete_file(
+        &self,
+        subscript: String,
+        eav: &EntityAttributeValue,
+    ) -> Result<(), HolochainError> {
         let address: String = match &*subscript {
             ENTITY_DIR => eav.entity().to_string(),
             ATTRIBUTE_DIR => eav.attribute(),
             VALUE_DIR => eav.value().to_string(),
             _ => String::new(),
         };
-         let path =
+        let path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
         remove_file(address_path)?;
         Ok(())
-
-        
     }
 
     fn read_from_dir<T>(
@@ -148,8 +149,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), eav))
     }
 
-    fn remove_eav(&mut self, eav:&EntityAttributeValue) -> Result<(),HolochainError>
-    {
+    fn remove_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         self.delete_file(ENTITY_DIR.to_string(), eav)
             .and_then(|_| self.delete_file(ATTRIBUTE_DIR.to_string(), eav))
             .and_then(|_| self.delete_file(VALUE_DIR.to_string(), eav))

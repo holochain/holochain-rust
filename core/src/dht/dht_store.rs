@@ -55,7 +55,7 @@ impl DhtStore {
         Err(HolochainError::NotImplemented)
     }
 
-    pub fn remove_link(&mut self,_link:&Link) {
+    pub fn remove_link(&mut self, _link: &Link) {
         // FIXME
     }
 

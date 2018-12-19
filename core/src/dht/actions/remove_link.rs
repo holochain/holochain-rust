@@ -60,6 +60,3 @@ impl Future for RemoveLinkFuture {
         }
     }
 }
-
-
-

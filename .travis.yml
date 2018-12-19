@@ -155,49 +155,40 @@ _cmd_deploy_template: &_cmd_deploy_template
 #   - env: TEST_P=holochain_cas_implementations TEST_PATH=cas_implementations
 #   - env: TEST_P=hc TEST_PATH=hc
 
+_windows_template: &_windows_template_lite
+  os: windows
+  language: rust
+  rust: nightly-2018-11-28-x86_64-pc-windows-msvc
+  before_install:
+   - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+   - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+   - CARGO_INCREMENTAL=1
+   - RUSTFLAGS="-C lto=no"
+  cache:
+    timeout: 1000
+    directories:
+     - $HOME/.cargo
+     - $TRAVIS_BUILD_DIR/$TEST_PATH/target
+  install:
+    - rustup target add wasm32-unknown-unknown
+  script:
+    - echo $TEST_P
+    - echo $TEST_PATH
+    - cargo test --release -p $TEST_P --target-dir $TEST_PATH/target --manifest-path $TEST_PATH/Cargo.toml
+
 jobs:
   include:
     - name: "windows holochain_cas_implementations"
-      <<: *_windows_template
-      cache:
-        timeout: 1000
-        directories:
-         - $HOME/.cargo
-         - $TRAVIS_BUILD_DIR/$TEST_PATH/target
+      <<: *_windows_template_lite
       env:
-        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-        - NODIST_X64=1
-        - TRAVIS_NODE_VERSION=8
-        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
         - TEST_P=holochain_cas_implementations
         - TEST_PATH=cas_implementations
-      install:
-        - rustup target add wasm32-unknown-unknown
-      script:
-        - echo $TEST_P
-        - echo $TEST_PATH
-        - cargo test --release -p $TEST_P --target-dir $TEST_PATH/target
 
     - name: "windows hc"
-      <<: *_windows_template
-      cache:
-        timeout: 1000
-        directories:
-         - $HOME/.cargo
-         - $TRAVIS_BUILD_DIR/$TEST_PATH/target
+      <<: *_windows_template_lite
       env:
-        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-        - NODIST_X64=1
-        - TRAVIS_NODE_VERSION=8
-        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
         - TEST_P=hc
         - TEST_PATH=hc
-      install:
-        - rustup target add wasm32-unknown-unknown
-      script:
-        - echo $TEST_P
-        - echo $TEST_PATH
-        - cargo test --release -p $TEST_P --target-dir $TEST_PATH/target
 
     # - name: "windows build & test all"
     #   <<: *_windows_template

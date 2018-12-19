@@ -150,14 +150,14 @@ _cmd_deploy_template: &_cmd_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
-matrix:
- include:
-  - env: TEST_P=holochain_cas_implementations TEST_PATH=cas_implementations
-  - env: TEST_P=hc TEST_PATH=hc
+# matrix:
+#  include:
+#   - env: TEST_P=holochain_cas_implementations TEST_PATH=cas_implementations
+#   - env: TEST_P=hc TEST_PATH=hc
 
 jobs:
   include:
-    - name: "windows sandbox"
+    - name: "windows holochain_cas_implementations"
       <<: *_windows_template
       cache:
         timeout: 1000
@@ -169,6 +169,29 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION=8
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+        - TEST_P=holochain_cas_implementations
+        - TEST_PATH=cas_implementations
+      install:
+        - rustup target add wasm32-unknown-unknown
+      script:
+        - echo $TEST_P
+        - echo $TEST_PATH
+        - cargo test --release -p $TEST_P --target-dir $TEST_PATH/target
+
+    - name: "windows holochain_cas_implementations"
+      <<: *_windows_template
+      cache:
+        timeout: 1000
+        directories:
+         - $HOME/.cargo
+         - $TRAVIS_BUILD_DIR/$TEST_PATH/target
+      env:
+        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
+        - NODIST_X64=1
+        - TRAVIS_NODE_VERSION=8
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+        - TEST_P=hc
+        - TEST_PATH=hc
       install:
         - rustup target add wasm32-unknown-unknown
       script:

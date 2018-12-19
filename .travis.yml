@@ -197,13 +197,13 @@ jobs:
        - TEST_PATH=core_types_derive
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
-    # - name: "windows holochain_cas_implementations"
-    #   <<: *_windows_template_lite
-    #   env:
-    #     - TEST_P=holochain_cas_implementations
-    #     - TEST_PATH=cas_implementations
-    #     # - CARGO_HOME=$TEST_PATH\.cargo
-    #     - CARGO_TARGET_DIR=%TEST_PATH%\target
+    - name: "windows holochain_cas_implementations"
+      <<: *_windows_template_lite
+      env:
+        - TEST_P=holochain_cas_implementations
+        - TEST_PATH=cas_implementations
+        # - CARGO_HOME=$TEST_PATH\.cargo
+        - CARGO_TARGET_DIR=$TEST_PATH/target
     #
     # - name: "windows hc"
     #   <<: *_windows_template_lite

@@ -10,7 +10,9 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    dna::capabilities::CapabilityCall, entry::cap_entries::CapTokenGrant, error::HolochainError,
+    dna::{capabilities::CapabilityCall, Dna},
+    entry::cap_entries::CapTokenGrant,
+    error::{DnaError, HolochainError},
 };
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use std::{
@@ -90,10 +92,60 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     runtime.store_result(result)
 }
 
+pub fn validate_call(
+    context: Arc<Context>,
+    state: &NucleusState,
+    fn_call: &ZomeFnCall,
+) -> Result<Dna, HolochainError> {
+    if state.dna.is_none() {
+        return Err(HolochainError::DnaMissing);
+    }
+    let dna = state.dna.clone().unwrap();
+
+    // Get zome
+    let zome = match dna.zomes.get(&fn_call.zome_name) {
+        None => {
+            return Err(HolochainError::Dna(DnaError::ZomeNotFound(format!(
+                "Zome '{}' not found",
+                fn_call.zome_name.clone()
+            ))))
+        }
+        Some(zome) => zome,
+    };
+
+    // Get capability
+    // NOTE, this will go away soon because function won't be inside the capability.
+    let capability = match zome.capabilities.get(&fn_call.cap_name()) {
+        None => {
+            return Err(HolochainError::Dna(DnaError::CapabilityNotFound(format!(
+                "Capability '{}' not found in Zome '{}'",
+                fn_call.cap_name().clone(),
+                fn_call.zome_name.clone()
+            ))));
+        }
+        Some(capability) => capability,
+    };
+    // Get ZomeFn
+    let maybe_fn = capability
+        .functions
+        .iter()
+        .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name);
+    if maybe_fn.is_none() {
+        return Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(
+            format!("Zome function '{}' not found", fn_call.fn_name.clone()),
+        )));
+    }
+
+    let public = is_fn_public(&dna, &fn_call)?;
+    if !public && !check_capability(context.clone(), &fn_call.clone()) {
+        return Err(HolochainError::CapabilityCheckFailed);
+    }
+    Ok(dna)
+}
+
 /// Reduce Call Action
-///   1. Checks for correctness of ZomeFnCall inside the Action
-///   2. Checks for permission to access Capability
-///   3. Execute the exposed Zome function in a separate thread
+///   1. Checks for validity of ZomeFnCall
+///   2. Execute the exposed Zome function in a separate thread
 /// Send the result in a ReturnZomeFunctionResult Action on success or failure like ExecuteZomeFunction
 pub(crate) fn reduce_call(
     context: Arc<Context>,
@@ -105,36 +157,18 @@ pub(crate) fn reduce_call(
         Action::Call(call) => call,
         _ => unreachable!(),
     };
-    // Get Capability
-    if state.dna.is_none() {
-        // Notify failure
-        state
-            .zome_calls
-            .insert(fn_call.clone(), Some(Err(HolochainError::DnaMissing)));
-        return;
-    }
-    let dna = state.dna.clone().unwrap();
-    let maybe_public = is_fn_public(&dna, &fn_call);
-    if let Err(fn_res) = maybe_public {
-        // Notify failure
-        state
-            .zome_calls
-            .insert(fn_call.clone(), Some(fn_res.result()));
-        return;
-    }
-    let public = maybe_public.unwrap();
 
-    // 2. Checks for permission to access Capability
-    if !public && !check_capability(context.clone(), &fn_call.clone()) {
-        // Notify failure
-        state.zome_calls.insert(
-            fn_call.clone(),
-            Some(Err(HolochainError::CapabilityCheckFailed)),
-        );
-        return;
-    }
+    // 1. Validate that the call (a number of things could go wrong)
+    let dna = match validate_call(context.clone(), state, &fn_call) {
+        Err(err) => {
+            // Notify failure
+            state.zome_calls.insert(fn_call.clone(), Some(Err(err)));
+            return;
+        }
+        Ok(dna) => dna,
+    };
 
-    // 3. Get the exposed Zome function WASM and execute it in a separate thread
+    // 2. Get the exposed Zome function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
     let code =
         maybe_code.expect("zome not found, Should have failed before when getting capability.");
@@ -200,7 +234,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            capabilities::{Capability, CapabilityCall, CapabilityType},
+            capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
             Dna,
         },
         entry::Entry,
@@ -331,20 +365,20 @@ pub mod tests {
         test_reduce_call(&test_setup, "foo token", Address::from("caller"), expected);
     }
 
-    /*
-    #[test]
-    fn test_call_no_fn_defn() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let expected = Ok(Err(HolochainError::DoesNotHaveCapabilityToken));
-        test_reduce_call(dna,"foo token", expected);
+    fn setup_dna_for_cap_test(cap_type: CapabilityType) -> Dna {
+        let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
+        let mut capability = Capability::new(cap_type);
+        capability.functions = vec![FnDeclaration {
+            name: "test".into(),
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+        }];
+        create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm)
     }
-    */
 
     #[test]
     fn test_call_public() {
-        let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let capability = Capability::new(CapabilityType::Public);
-        let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm);
+        let dna = setup_dna_for_cap_test(CapabilityType::Public);
         let test_setup = setup_test(dna);
         // Expecting timeout since there is no function in wasm to call
         let expected = Err(RecvTimeoutError::Disconnected);
@@ -353,10 +387,7 @@ pub mod tests {
 
     #[test]
     fn test_call_transferable() {
-        let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let capability = Capability::new(CapabilityType::Transferable);
-        let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm);
-
+        let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
         let test_setup = setup_test(dna);
         let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
         test_reduce_call(&test_setup, "", Address::from("caller"), expected_failure);
@@ -384,10 +415,7 @@ pub mod tests {
 
     #[test]
     fn test_call_assigned() {
-        let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let capability = Capability::new(CapabilityType::Assigned);
-        let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm);
-
+        let dna = setup_dna_for_cap_test(CapabilityType::Assigned);
         let test_setup = setup_test(dna);
         let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
         test_reduce_call(

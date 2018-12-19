@@ -205,7 +205,9 @@ mod tests {
         signal::{signal_channel, Signal},
     };
     use holochain_core_types::{
-        agent::AgentId, cas::content::{Address, AddressableContent}, dna::Dna
+        agent::AgentId,
+        cas::content::{Address, AddressableContent},
+        dna::Dna,
     };
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;

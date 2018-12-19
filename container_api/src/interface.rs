@@ -139,7 +139,7 @@ impl ContainerApiBuilder {
                                             None,
                                         )),
                                         &func_name,
-                                        &params_string
+                                        &params_string,
                                     )
                                     .map_err(|e| {
                                         jsonrpc_core::Error::invalid_params(e.to_string())

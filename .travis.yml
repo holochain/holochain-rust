@@ -165,12 +165,14 @@ _windows_template: &_windows_template_lite
    - LIBZMQ_PREFIX=$TRAVIS_BUILD_DIR/vendor/zmq
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-C lto=no"
-   - RUST_VERSION=nightly-2018-11-28
-   - TARGET=x86_64-pc-windows-msvc
+   # - RUST_VERSION=nightly-2018-11-28
+   # - TARGET=x86_64-pc-windows-msvc
   cache:
     timeout: 1000
     directories:
      - $HOME/.cargo
+     - .cargo
+     - target
      - $TRAVIS_BUILD_DIR/$TEST_PATH/.cargo
      - $CARGO_TARGET_DIR
   install:
@@ -200,6 +202,7 @@ jobs:
        - TEST_P=holochain_core_types_derive
        - TEST_PATH=core_types_derive
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - RUSTUP_TOOLCHAIN=nightly-2018-11-28-x86_64-pc-windows-msvc
 
     - name: "windows holochain_cas_implementations"
       <<: *_windows_template_lite

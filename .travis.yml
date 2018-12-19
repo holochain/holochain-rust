@@ -201,12 +201,37 @@ jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
-    - name: "windows core_types_derive"
+    - name: "windows hdk"
       <<: *_windows_template_lite
       env:
-       - TEST_P=holochain_core_types_derive
-       - TEST_PATH=core_types_derive
+       - TEST_P=hdk
+       - TEST_PATH=hdk-rust
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_PATH=hdk-rust/wasm-test
+       - WASM_TARGET_DIR=$WASM_PATH/target
+      cache:
+        timeout: 1000
+        directories:
+         - $HOME/.cargo
+         - .cargo
+         - target
+         - $TRAVIS_BUILD_DIR/$TEST_PATH/.cargo
+         - $CARGO_TARGET_DIR
+         - $TRAVIS_BUILD_DIR/$WASM_PATH/.cargo
+         - $WASM_TARGET_DIR
+
+      before_script:
+       - cargo build --manifest-path $WASM_PATH/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR
+
+    # contains no tests
+    # quick to build, good for basic debugging
+    # @see https://travis-ci.com/holochain/holochain-rust/jobs/166081895
+    # - name: "windows core_types_derive"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core_types_derive
+    #    - TEST_PATH=core_types_derive
+    #    - CARGO_TARGET_DIR=$TEST_PATH/target
 
     - name: "windows holochain_cas_implementations"
       <<: *_windows_template_lite
@@ -299,15 +324,6 @@ jobs:
        - TEST_PATH=wasm_utils
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
-    - name: "windows hdk"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hdk
-       - TEST_PATH=hdk-rust
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-      before_script:
-       - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-
     - name: "windows container_api"
       <<: *_windows_template_lite
       env:
@@ -315,7 +331,7 @@ jobs:
        - TEST_PATH=container_api
        - CARGO_TARGET_DIR=$TEST_PATH/target
       before_script:
-       - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
+       - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown --target-dir container_api/wasm-test/target
 
     # - name: "windows build & test all"
     #   <<: *_windows_template

@@ -225,87 +225,97 @@ jobs:
         - TEST_P=hc
         - TEST_PATH=cmd
         - CARGO_TARGET_DIR=$TEST_PATH/target
-    #
-    # - name: "windows holochain_container"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_container
-    #    - TEST_PATH=container
-    #
-    # - name: "windows container_api"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_container_api
-    #    - TEST_PATH=container_api
-    #
-    # - name: "windows core"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_core
-    #    - TEST_PATH=core
-    #
-    # - name: "windows core_api_c_binding"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_core_api_c_binding
-    #    - TEST_PATH=core_api_c_binding
-    #
-    # - name: "windows core_types"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_core_types
-    #    - TEST_PATH=core_types
-    #
 
-    #
-    # - name: "windows hdk"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=hdk
-    #    - TEST_PATH=hdk-rust
-    #
-    # - name: "windows holochain_net"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_net
-    #    - TEST_PATH=net
-    #
-    # - name: "windows holochain_net_connection"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_net_connection
-    #    - TEST_PATH=net_connection
-    #
-    # - name: "windows holochain_net_ipc"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_net_ipc
-    #    - TEST_PATH=net_ipc
-    #
-    # - name: "windows holochain_sodium"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_sodium
-    #    - TEST_PATH=sodium
-    #
-    # - name: "windows holochain_test_bin"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_test_bin
-    #    - TEST_PATH=test_bin
-    #
-    # - name: "windows test_utils"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=test_utils
-    #    - TEST_PATH=test_utils
-    #
-    # - name: "windows wasm_utils"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=wasm_utils
-    #    - TEST_PATH=wasm_utils
+    - name: "windows holochain_container"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_container
+       - TEST_PATH=container
+       - CARGO_TARGET_DIR=$TEST_PATH/target
 
+    - name: "windows container_api"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_container_api
+       - TEST_PATH=container_api
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows core"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_core
+       - TEST_PATH=core
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows core_api_c_binding"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_core_api_c_binding
+       - TEST_PATH=core_api_c_binding
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows core_types"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_core_types
+       - TEST_PATH=core_types
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows hdk"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=hdk
+       - TEST_PATH=hdk-rust
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows holochain_net"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_net
+       - TEST_PATH=net
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows holochain_net_connection"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_net_connection
+       - TEST_PATH=net_connection
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows holochain_net_ipc"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_net_ipc
+       - TEST_PATH=net_ipc
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows holochain_sodium"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_sodium
+       - TEST_PATH=sodium
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows holochain_test_bin"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_test_bin
+       - TEST_PATH=test_bin
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows test_utils"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=test_utils
+       - TEST_PATH=test_utils
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows wasm_utils"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=wasm_utils
+       - TEST_PATH=wasm_utils
+       - CARGO_TARGET_DIR=$TEST_PATH/target
 
 
 

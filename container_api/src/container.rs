@@ -651,9 +651,9 @@ pub mod tests {
         (i32.store (i32.const 4) (i32.const 32))
         (i32.store (i32.const 5) (i32.const 87))
         (i32.store (i32.const 6) (i32.const 111))
-        (i32.store (i32.const 6) (i32.const 114))
-        (i32.store (i32.const 6) (i32.const 108))
-        (i32.store (i32.const 6) (i32.const 100))
+        (i32.store (i32.const 7) (i32.const 114))
+        (i32.store (i32.const 8) (i32.const 108))
+        (i32.store (i32.const 9) (i32.const 100))
 
         (i32.const 10)
     )

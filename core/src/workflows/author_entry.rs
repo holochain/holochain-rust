@@ -9,7 +9,7 @@ use crate::{
 
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::{entry_type::EntryType, Entry},
+    entry::{ Entry},
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
@@ -33,9 +33,9 @@ pub async fn author_entry<'a>(
     // 3. Commit the entry
     let addr = await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
     // 4. Publish the valid entry to DHT. This will call Hold to itself
-    //TODO: missing a general public/private sharing check here, for now just manually
-    // forcing CapTokenGrant to private
-    if entry.entry_type() != EntryType::CapTokenGrant {
+    //TODO: missing a general public/private sharing check here, for now just
+    // using the entry_type can_publish() function which isn't enough
+    if entry.entry_type().can_publish() {
         await!(publish(entry.address(), &context))?;
     }
     Ok(addr)

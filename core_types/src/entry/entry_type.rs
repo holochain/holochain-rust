@@ -112,6 +112,7 @@ impl EntryType {
             */
         match self {
             EntryType::Dna => false,
+            EntryType::CapTokenGrant => false,
             _ => true,
         }
     }
@@ -282,6 +283,7 @@ pub mod tests {
         for t in test_types() {
             match t {
                 EntryType::Dna => assert!(!t.can_publish()),
+                EntryType::CapTokenGrant => assert!(!t.can_publish()),
                 _ => assert!(t.can_publish()),
             }
         }

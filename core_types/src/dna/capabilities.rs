@@ -47,11 +47,16 @@ impl ReservedCapabilityNames {
 //--------------------------------------------------------------------------------------------------
 // CapabilityCall
 //--------------------------------------------------------------------------------------------------
+/// a struct to hold the signature of the call
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct CallSignature {}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct CapabilityCall {
     pub cap_name: String,
     pub cap_token: Address,
     pub caller: Option<Address>,
+    pub signature: CallSignature,
 }
 
 impl CapabilityCall {
@@ -60,6 +65,7 @@ impl CapabilityCall {
             cap_name: name,
             cap_token: token,
             caller: caller,
+            signature: CallSignature {}, // FIXME
         }
     }
 }

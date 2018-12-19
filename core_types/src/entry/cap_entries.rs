@@ -1,15 +1,12 @@
 use crate::{
     cas::content::{Address, AddressableContent},
-    dna::capabilities::CapabilityType,
+    dna::capabilities::{CallSignature, CapabilityType},
     entry::Entry,
     error::HolochainError,
     json::JsonString,
 };
 
 pub type CapTokenValue = Address;
-
-/// a struct to hold the signature of the call
-pub struct CallSignature {}
 
 /// System entry to hold a capability token for use as a caller
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
@@ -122,6 +119,8 @@ impl CapTokenGrant {
             CapabilityType::Public => true,
             CapabilityType::Transferable => true,
             CapabilityType::Assigned => {
+                // unwraps are safe because type comes from the shape of
+                // the assignee, and the from must some by the check above.
                 if !self.assignees().unwrap().contains(&from.unwrap()) {
                     return false;
                 }

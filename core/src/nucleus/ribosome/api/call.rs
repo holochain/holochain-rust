@@ -10,10 +10,7 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    cas::content::Address,
-    dna::capabilities::CapabilityCall,
-    entry::cap_entries::{CallSignature, CapTokenGrant},
-    error::HolochainError,
+    dna::capabilities::CapabilityCall, entry::cap_entries::CapTokenGrant, error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use std::{
@@ -126,10 +123,9 @@ pub(crate) fn reduce_call(
         return;
     }
     let public = maybe_public.unwrap();
-    // TODO: actually get the caller's address
-    let caller = Address::from("fake caller");
+
     // 2. Checks for permission to access Capability
-    if !public && !check_capability(context.clone(), &fn_call.clone(), caller, &CallSignature {}) {
+    if !public && !check_capability(context.clone(), &fn_call.clone()) {
         // Notify failure
         state.zome_calls.insert(
             fn_call.clone(),
@@ -156,12 +152,7 @@ fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bo
 
 /// checks to see if a given function call is allowable according to the capabilities
 /// that have been registered to callers in the chain.
-fn check_capability(
-    context: Arc<Context>,
-    fn_call: &ZomeFnCall,
-    caller: Address,
-    call_sig: &CallSignature,
-) -> bool {
+fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     // the agent can always do everything
     if is_token_the_agent(context.clone(), &fn_call.cap) {
         return true;
@@ -176,7 +167,7 @@ fn check_capability(
                 Some(content) => CapTokenGrant::try_from(content).unwrap(),
                 None => return false,
             };
-            grant.verify(call.cap_token.clone(), Some(caller), call_sig)
+            grant.verify(call.cap_token.clone(), call.caller, &call.signature)
         }
     }
 }

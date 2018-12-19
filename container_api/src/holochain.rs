@@ -16,7 +16,7 @@
 //! use holochain_core_types::{
 //!     cas::content::Address,
 //!     agent::AgentId,
-//!     dna::{Dna, capabilities::CapbilityCall},
+//!     dna::{Dna, capabilities::CapabilityCall},
 //!     json::JsonString};
 //! use std::sync::Arc;
 //! use tempfile::tempdir;

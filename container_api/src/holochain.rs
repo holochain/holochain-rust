@@ -13,7 +13,11 @@
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::{*, context_builder::ContextBuilder};
-//! use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
+//! use holochain_core_types::{
+//!     cas::content::Address,
+//!     agent::AgentId,
+//!     dna::{Dna, capabilities::CapbilityCall},
+//!     json::JsonString};
 //! use std::sync::Arc;
 //! use tempfile::tempdir;
 //!

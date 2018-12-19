@@ -695,7 +695,7 @@ pub mod tests {
     }
 
     #[test]
-    fn basic_bridge_call() {
+    fn basic_bridge_call_roundtrip() {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
@@ -716,7 +716,9 @@ pub mod tests {
                 "{}",
             )
             .unwrap();
-        println!("{}", result);
+
+        // "Holo World" comes for the callee_wat above which runs in the callee instance
+        assert_eq!(result, "Holo World");
     }
 
 }

@@ -155,6 +155,10 @@ _cmd_deploy_template: &_cmd_deploy_template
 #   - env: TEST_P=holochain_cas_implementations TEST_PATH=cas_implementations
 #   - env: TEST_P=hc TEST_PATH=hc
 
+env:
+ global:
+  - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+
 _windows_template_lite: &_windows_template_lite
   os: windows
   # language: bash
@@ -218,6 +222,20 @@ jobs:
        - TEST_PATH=dna_c_binding
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
+    - name: "windows holochain_net_connection"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_net_connection
+       - TEST_PATH=net_connection
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows holochain_sodium"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_sodium
+       - TEST_PATH=sodium
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+
     - name: "windows hc"
       <<: *_windows_template_lite
       env:
@@ -232,6 +250,7 @@ jobs:
        - TEST_P=holochain_container
        - TEST_PATH=container
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
 
     - name: "windows container_api"
       <<: *_windows_template_lite
@@ -239,6 +258,7 @@ jobs:
        - TEST_P=holochain_container_api
        - TEST_PATH=container_api
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
 
     - name: "windows core"
       <<: *_windows_template_lite
@@ -246,6 +266,7 @@ jobs:
        - TEST_P=holochain_core
        - TEST_PATH=core
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
 
     - name: "windows core_api_c_binding"
       <<: *_windows_template_lite
@@ -253,6 +274,7 @@ jobs:
        - TEST_P=holochain_core_api_c_binding
        - TEST_PATH=core_api_c_binding
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
 
     - name: "windows core_types"
       <<: *_windows_template_lite
@@ -260,6 +282,7 @@ jobs:
        - TEST_P=holochain_core_types
        - TEST_PATH=core_types
        - CARGO_TARGET_DIR=$TEST_PATH/target
+       - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
 
     - name: "windows hdk"
       <<: *_windows_template_lite
@@ -275,25 +298,11 @@ jobs:
        - TEST_PATH=net
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
-    - name: "windows holochain_net_connection"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net_connection
-       - TEST_PATH=net_connection
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-
     - name: "windows holochain_net_ipc"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_net_ipc
        - TEST_PATH=net_ipc
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-
-    - name: "windows holochain_sodium"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_sodium
-       - TEST_PATH=sodium
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
     - name: "windows holochain_test_bin"

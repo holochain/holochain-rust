@@ -64,11 +64,10 @@ pub fn test(
 #[cfg(test)]
 #[cfg(feature = "broken-tests")]
 pub mod tests {
-    // imports for broken tests
-    // use super::*;
-    // use crate::cli::package;
-    // use assert_cmd::prelude::*;
-    // use std::process::Command;
+    use super::*;
+    use crate::cli::package;
+    use assert_cmd::prelude::*;
+    use std::process::Command;
     use tempfile::{Builder, TempDir};
 
     #[cfg(feature = "broken-tests")]

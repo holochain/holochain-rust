@@ -189,7 +189,7 @@ jobs:
       env:
        - TEST_P=holochain_core_types_derive
        - TEST_PATH=core_types_derive
-       - CARGO_TARGET_DIR=$TEST_PATH\target
+       - CARGO_TARGET_DIR=$TEST_PATH/target
 
     # - name: "windows holochain_cas_implementations"
     #   <<: *_windows_template_lite

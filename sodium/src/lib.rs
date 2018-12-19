@@ -39,9 +39,16 @@ macro_rules! raw_ptr_char_immut {
     };
 }
 
+/// make invoking ffi functions taking SecBuf references more readable
+macro_rules! raw_ptr_ichar_immut {
+    ($name: ident) => {
+        $name.as_ptr() as *const libc::c_char
+    };
+}
 pub mod random;
 pub mod secbuf;
 pub mod util;
 pub mod sign;
 pub mod hash;
 pub mod aead;
+pub mod kdf;

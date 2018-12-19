@@ -526,7 +526,7 @@ pub mod tests {
         assert_eq!(
             maybe_container.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
+                "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"bridge/callee.dna\"".to_string()
             )
         );
     }

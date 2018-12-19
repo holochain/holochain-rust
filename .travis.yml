@@ -168,7 +168,7 @@ _windows_template: &_windows_template_lite
     timeout: 1000
     directories:
      - $HOME/.cargo
-     - $HOME/.rustup
+     # - $HOME/.rustup
      - $TRAVIS_BUILD_DIR/$TEST_PATH/.cargo
      - $TRAVIS_BUILD_DIR/$TEST_PATH/target
   install:

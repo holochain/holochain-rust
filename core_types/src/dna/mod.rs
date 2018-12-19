@@ -502,14 +502,14 @@ pub mod tests {
                         },
                         "bridges": [
                             {
-                                "presence": "Required",
+                                "presence": "required",
                                 "handle": "DPKI",
                                 "reference": {
                                     "dna_address": "Qmabcdef1234567890"
                                 }
                             },
                             {
-                                "presence": "Optional",
+                                "presence": "optional",
                                 "handle": "Vault",
                                 "reference": {
                                     "capabilities": {
@@ -529,7 +529,7 @@ pub mod tests {
                                 }
                             },
                             {
-                                "presence": "Required",
+                                "presence": "required",
                                 "handle": "HCHC",
                                 "reference": {
                                     "capabilities": {

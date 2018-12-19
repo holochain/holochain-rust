@@ -188,7 +188,7 @@ jobs:
       <<: *_windows_template_lite
       env:
         - TEST_P=hc
-        - TEST_PATH=hc
+        - TEST_PATH=cmd
 
     - name: "windows holochain_container"
       <<: *_windows_template_lite

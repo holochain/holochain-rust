@@ -182,6 +182,7 @@ _windows_template_lite: &_windows_template_lite
     # - rustup-init.exe -y --default-host $TARGET --default-toolchain $RUST_VERSION --profile minimal
     - rustup target add wasm32-unknown-unknown
   script:
+    - echo $RUSTFLAGS
     - echo $TEST_P
     - echo $TEST_PATH
     - echo $CARGO_TARGET_DIR
@@ -218,11 +219,12 @@ jobs:
        - TEST_PATH=dna_c_binding
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
-    # - name: "windows hc"
-    #   <<: *_windows_template_lite
-    #   env:
-    #     - TEST_P=hc
-    #     - TEST_PATH=cmd
+    - name: "windows hc"
+      <<: *_windows_template_lite
+      env:
+        - TEST_P=hc
+        - TEST_PATH=cmd
+        - CARGO_TARGET_DIR=$TEST_PATH/target
     #
     # - name: "windows holochain_container"
     #   <<: *_windows_template_lite

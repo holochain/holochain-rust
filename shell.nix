@@ -41,7 +41,7 @@ let
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
   hc-build
-  cargo test --all --exclude hc;
+  cargo test --release --all --exclude hc;
   '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
@@ -129,7 +129,7 @@ stdenv.mkDerivation rec {
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
   # RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no -Z incremental-info";
-  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -Z thinlto -C codegen-units=16";
   # CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
   # RUST_LOG = "info";

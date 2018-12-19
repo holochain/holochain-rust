@@ -179,6 +179,8 @@ _windows_template: &_windows_template_lite
     - CARGO_HOME=$TEST_PATH/.cargo CARGO_TARGET_DIR=$TEST_PATH/target cargo test --release -p $TEST_P --manifest-path $TEST_PATH/Cargo.toml
 
 jobs:
+  # test builds are ordered from slowest to quickest
+  # this allows us to keep walltimes down
   include:
     - name: "windows holochain_cas_implementations"
       <<: *_windows_template_lite
@@ -221,12 +223,6 @@ jobs:
       env:
        - TEST_P=holochain_core_types
        - TEST_PATH=core_types
-
-    - name: "windows core_types_derive"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core_types_derive
-       - TEST_PATH=core_types_derive
 
     - name: "windows dna_c_binding"
       <<: *_windows_template_lite
@@ -281,6 +277,12 @@ jobs:
       env:
        - TEST_P=wasm_utils
        - TEST_PATH=wasm_utils
+
+    - name: "windows core_types_derive"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_core_types_derive
+       - TEST_PATH=core_types_derive
 
     # - name: "windows build & test all"
     #   <<: *_windows_template

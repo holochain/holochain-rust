@@ -189,7 +189,7 @@ _windows_template_lite: &_windows_template_lite
     # - echo $CARGO_HOME
     - echo $CARGO_TARGET_DIR
     - dir $LIBZMQ_PREFIX
-    - cargo test --release -p $TEST_P --target-dir $CARGO_TARGET_DIR
+    - cargo test -p $TEST_P --target-dir $CARGO_TARGET_DIR
     - dir $CARGO_TARGET_DIR
     - dir $HOME/.cargo
 

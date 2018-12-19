@@ -112,19 +112,28 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
                 "No container API in context".to_string(),
             ))?;
 
+    let cap_name = match input.cap {
+        Some(cap_call) => cap_call.cap_name,
+        None => String::from(""),
+    };
+
     let method = format!(
         "{}/{}/{}/{}",
-        input.instance_handle, input.zome_name, "", input.fn_name
+        input.instance_handle, input.zome_name, cap_name, input.fn_name
     );
+
+    let handler = container_api.write().unwrap();
+
     let id = ProcessUniqueId::new();
     let request = format!(
-        r#"{{"jsonrpc": "2.0", "method": "{}", "params": "{}", "id": {}}}"#,
+        r#"{{"jsonrpc": "2.0", "method": "{}", "params": {}, "id": "{}"}}"#,
         method, input.fn_args, id
     );
-    let handler = container_api.write().unwrap();
+    
     let response = handler
         .handle_request_sync(&request)
         .ok_or("Bridge call failed".to_string())?;
+
     Ok(JsonString::from(response))
 }
 

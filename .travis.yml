@@ -167,122 +167,130 @@ _windows_template: &_windows_template_lite
   cache:
     timeout: 1000
     directories:
-     # - $HOME/.cargo
-     # - $HOME/.rustup
+     - $HOME/.cargo
      - $TRAVIS_BUILD_DIR/$TEST_PATH/.cargo
      - $TRAVIS_BUILD_DIR/$TEST_PATH/target
   install:
     - rustup target add wasm32-unknown-unknown
   script:
-    - echo $TEST_P
-    - echo $TEST_PATH
-    - CARGO_HOME=$TEST_PATH/.cargo CARGO_TARGET_DIR=$TEST_PATH/target cargo test --release -p $TEST_P --manifest-path $TEST_PATH/Cargo.toml
+    - echo %TEST_P%
+    - echo %TEST_PATH%
+    # - echo $CARGO_HOME
+    - echo %CARGO_TARGET_DIR%
+    - cargo test --release -p $TEST_P --target-dir %CARGO_TARGET_DIR%
 
 jobs:
   # test builds are ordered from slowest to quickest
   # this allows us to keep walltimes down
   include:
-    - name: "windows holochain_cas_implementations"
-      <<: *_windows_template_lite
-      env:
-        - TEST_P=holochain_cas_implementations
-        - TEST_PATH=cas_implementations
-
-    - name: "windows hc"
-      <<: *_windows_template_lite
-      env:
-        - TEST_P=hc
-        - TEST_PATH=cmd
-
-    - name: "windows holochain_container"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_container
-       - TEST_PATH=container
-
-    - name: "windows container_api"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_container_api
-       - TEST_PATH=container_api
-
-    - name: "windows core"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core
-       - TEST_PATH=core
-
-    - name: "windows core_api_c_binding"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core_api_c_binding
-       - TEST_PATH=core_api_c_binding
-
-    - name: "windows core_types"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_core_types
-       - TEST_PATH=core_types
-
-    - name: "windows dna_c_binding"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_dna_c_binding
-       - TEST_PATH=dna_c_binding
-
-    - name: "windows hdk"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hdk
-       - TEST_PATH=hdk-rust
-
-    - name: "windows holochain_net"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net
-       - TEST_PATH=net
-
-    - name: "windows holochain_net_connection"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net_connection
-       - TEST_PATH=net_connection
-
-    - name: "windows holochain_net_ipc"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_net_ipc
-       - TEST_PATH=net_ipc
-
-    - name: "windows holochain_sodium"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_sodium
-       - TEST_PATH=sodium
-
-    - name: "windows holochain_test_bin"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=holochain_test_bin
-       - TEST_PATH=test_bin
-
-    - name: "windows test_utils"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=test_utils
-       - TEST_PATH=test_utils
-
-    - name: "windows wasm_utils"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=wasm_utils
-       - TEST_PATH=wasm_utils
-
     - name: "windows core_types_derive"
       <<: *_windows_template_lite
       env:
        - TEST_P=holochain_core_types_derive
        - TEST_PATH=core_types_derive
+       - CARGO_TARGET_DIR=$TEST_PATH\target
+
+    # - name: "windows holochain_cas_implementations"
+    #   <<: *_windows_template_lite
+    #   env:
+    #     - TEST_P=holochain_cas_implementations
+    #     - TEST_PATH=cas_implementations
+    #     # - CARGO_HOME=$TEST_PATH\.cargo
+    #     - CARGO_TARGET_DIR=%TEST_PATH%\target
+    #
+    # - name: "windows hc"
+    #   <<: *_windows_template_lite
+    #   env:
+    #     - TEST_P=hc
+    #     - TEST_PATH=cmd
+    #
+    # - name: "windows holochain_container"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_container
+    #    - TEST_PATH=container
+    #
+    # - name: "windows container_api"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_container_api
+    #    - TEST_PATH=container_api
+    #
+    # - name: "windows core"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core
+    #    - TEST_PATH=core
+    #
+    # - name: "windows core_api_c_binding"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core_api_c_binding
+    #    - TEST_PATH=core_api_c_binding
+    #
+    # - name: "windows core_types"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core_types
+    #    - TEST_PATH=core_types
+    #
+    # - name: "windows dna_c_binding"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_dna_c_binding
+    #    - TEST_PATH=dna_c_binding
+    #
+    # - name: "windows hdk"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=hdk
+    #    - TEST_PATH=hdk-rust
+    #
+    # - name: "windows holochain_net"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_net
+    #    - TEST_PATH=net
+    #
+    # - name: "windows holochain_net_connection"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_net_connection
+    #    - TEST_PATH=net_connection
+    #
+    # - name: "windows holochain_net_ipc"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_net_ipc
+    #    - TEST_PATH=net_ipc
+    #
+    # - name: "windows holochain_sodium"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_sodium
+    #    - TEST_PATH=sodium
+    #
+    # - name: "windows holochain_test_bin"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_test_bin
+    #    - TEST_PATH=test_bin
+    #
+    # - name: "windows test_utils"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=test_utils
+    #    - TEST_PATH=test_utils
+    #
+    # - name: "windows wasm_utils"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=wasm_utils
+    #    - TEST_PATH=wasm_utils
+
+
+
+
 
     # - name: "windows build & test all"
     #   <<: *_windows_template

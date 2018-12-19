@@ -168,13 +168,15 @@ _windows_template: &_windows_template_lite
     timeout: 1000
     directories:
      - $HOME/.cargo
+     - $HOME/.rustup
+     - $TRAVIS_BUILD_DIR/$TEST_PATH/.cargo
      - $TRAVIS_BUILD_DIR/$TEST_PATH/target
   install:
     - rustup target add wasm32-unknown-unknown
   script:
     - echo $TEST_P
     - echo $TEST_PATH
-    - cargo test --release -p $TEST_P --target-dir $TEST_PATH/target --manifest-path $TEST_PATH/Cargo.toml
+    - CARGO_HOME=$TEST_PATH/.cargo CARGO_TARGET_DIR=$TEST_PATH/target cargo test --release -p $TEST_P --manifest-path $TEST_PATH/Cargo.toml
 
 jobs:
   include:

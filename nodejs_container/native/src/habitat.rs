@@ -21,12 +21,12 @@ use tempfile::tempdir;
 
 use crate::{
     config::{ConfigBuilder, JsConfigBuilder},
-    waiter::{HabitatSignalTask, JsCallback, Waiter},
+    waiter::{CallBlockingTask, ControlMsg, HabitatSignalTask, JsCallback, Waiter},
 };
 
 pub struct Habitat {
     container: Container,
-    callback_tx: SyncSender<JsCallback>,
+    sender_tx: SyncSender<SyncSender<ControlMsg>>,
 }
 
 fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
@@ -63,7 +63,7 @@ declare_types! {
                 panic!("Invalid type specified for config, must be object or string");
             };
             let (signal_tx, signal_rx) = signal_channel();
-            let container = Container::from_config(config);
+            let mut container = Container::from_config(config);
 
             let result = {
                 let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
@@ -72,20 +72,19 @@ declare_types! {
                     .downcast_or_throw(&mut cx)
                     .unwrap();
                 let (signal_tx, signal_rx) = signal_channel();
-                let (callback_tx, callback_rx) = sync_channel(100);
-                let waiter = Waiter::new(callback_rx);
-                let signal_task = HabitatSignalTask::new(signal_rx, callback_rx);
+                let (sender_tx, sender_rx) = sync_channel(100);
+                let signal_task = HabitatSignalTask::new(signal_rx, sender_rx);
                 signal_task.schedule(js_callback);
 
-                container.load_config_with_signal(Some(signal_tx)).map(|_| callback_tx)
+                container.load_config_with_signal(Some(signal_tx)).map(|_| sender_tx)
             };
 
-            let callback_tx = result.or_else(|e| {
+            let sender_tx = result.or_else(|e| {
                 let error_string = cx.string(format!("unable to initialize habitat: {}", e));
                 cx.throw(error_string)
             })?;
 
-            Ok(Habitat { container, callback_tx })
+            Ok(Habitat { container, sender_tx })
         }
 
         method start(mut cx) {
@@ -124,16 +123,15 @@ declare_types! {
         }
 
         method call(mut cx) {
-            let js_callback: JsCallback = JsFunction::new(&mut cx, signal_callback)
-                    .unwrap()
-                    .as_value(&mut cx)
-                    .downcast_or_throw(&mut cx)
-                    .unwrap();
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let zome = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
             let cap = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
             let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
             let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
+            let js_callback: Handle<JsFunction> = cx.argument::<JsFunction>(5)?;
+                // .as_value(&mut cx)
+                //     .downcast_or_throw(&mut cx)
+                //     .unwrap();
             let mut this = cx.this();
 
             let call_result = {
@@ -142,7 +140,10 @@ declare_types! {
                 let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
-                hab.callback_tx.send(js_callback);
+                let (tx, rx) = sync_channel(0);
+                hab.sender_tx.send(tx);
+                let task = CallBlockingTask { rx };
+                task.schedule(js_callback);
                 let val = instance.call(&zome, &cap, &fn_name, &params);
                 val
             };

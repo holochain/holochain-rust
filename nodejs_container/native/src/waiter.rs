@@ -20,6 +20,9 @@ use crate::config::*;
 
 pub type JsCallback = Handle<'static, JsFunction>;
 
+type ControlSender = SyncSender<ControlMsg>;
+type ControlReceiver = Receiver<ControlMsg>;
+
 /// A set of closures, each of which checks for a certain condition to be met
 /// (usually for a certain action to be seen). When the condition specified by the closure
 /// is met, that closure is removed from the set of checks.
@@ -27,8 +30,8 @@ pub type JsCallback = Handle<'static, JsFunction>;
 /// When the set of checks goes from non-empty to empty, send a message via `tx`
 /// to the BlockTask on the other side
 struct CallFxChecker {
-    tx: SyncSender<WaiterMsg>,
-    conditions: HashSet<CallFxCondition>, // maybe RefCell
+    tx: ControlSender,
+    conditions: Vec<CallFxCondition>, // maybe RefCell
 }
 
 // Could maybe reduce this to HashSet<ActionWrapper> if we only need to check for
@@ -36,32 +39,25 @@ struct CallFxChecker {
 type CallFxCondition = Box<Fn(&ActionWrapper) -> bool + 'static + Send>;
 
 impl CallFxChecker {
-    pub fn new(callback: JsCallback) -> Self {
-        let (tx, rx) = sync_channel(1);
-        let task = CallBlockingTask { rx };
-        task.schedule(callback);
+    pub fn new(tx: ControlSender) -> Self {
         Self {
             tx,
-            conditions: HashSet::new(),
+            conditions: Vec::new(),
         }
     }
 
     pub fn add<F>(&mut self, f: F) -> ()
     where
-        F: Fn(&ActionWrapper) -> bool,
+        F: Fn(&ActionWrapper) -> bool + 'static + Send,
     {
-        self.conditions.insert(Box::new(f));
+        self.conditions.push(Box::new(f));
     }
 
     pub fn run_checks(&mut self, aw: &ActionWrapper) {
         let was_empty = self.conditions.is_empty();
-        for condition in self.conditions {
-            if (condition(aw)) {
-                self.conditions.remove(condition);
-            }
-        }
+        self.conditions.retain(|condition| !condition(aw));
         if self.conditions.is_empty() && !was_empty {
-            self.tx.send(WaiterMsg::Stop);
+            self.tx.send(ControlMsg::Stop).unwrap();
         }
     }
 }
@@ -69,8 +65,8 @@ impl CallFxChecker {
 /// A simple Task that blocks until it receives a message.
 /// This is used to trigger a JS Promise resolution when a ZomeFnCall's
 /// side effects have all completed.
-struct CallBlockingTask {
-    pub rx: Receiver<WaiterMsg>,
+pub struct CallBlockingTask {
+    pub rx: ControlReceiver,
 }
 
 impl Task for CallBlockingTask {
@@ -81,7 +77,7 @@ impl Task for CallBlockingTask {
     fn perform(&self) -> Result<(), String> {
         while let Ok(sig) = self.rx.recv() {
             match sig {
-                WaiterMsg::Stop => break,
+                ControlMsg::Stop => break,
             }
         }
         Ok(())
@@ -101,70 +97,71 @@ impl Task for CallBlockingTask {
 pub struct Waiter {
     checkers: HashMap<ZomeFnCall, CallFxChecker>,
     current: Option<ZomeFnCall>, // maybe RefCell
-    callback_rx: CallbackReceiver,
+    sender_rx: Receiver<ControlSender>,
 }
 
-type CallbackReceiver = Receiver<JsCallback>;
-
 impl Waiter {
-    pub fn new(callback_rx: CallbackReceiver) -> Self {
+    pub fn new(sender_rx: Receiver<ControlSender>) -> Self {
         Self {
             checkers: HashMap::new(),
             current: None,
-            callback_rx,
+            sender_rx,
         }
     }
 
     pub fn process_signal(&mut self, sig: Signal) {
         match sig {
             Signal::Internal(aw) => {
-                match aw.action() {
+                match aw.action().clone() {
                     Action::ExecuteZomeFunction(call) => {
-                        let callback = self.callback_rx.recv();
-                        self.add_call(call, callback);
+                        let sender = self.sender_rx.recv().unwrap();
+                        self.add_call(call.clone(), sender);
                     }
                     Action::Commit((entry, _)) => match entry {
                         Entry::App(_, _) => self
                             .current_checker()
                             .unwrap()
-                            .add(|aw| aw.action == Action::Hold(entry.clone())),
+                            .add(move |aw| *aw.action() == Action::Hold(entry.clone())),
+                        _ => (),
                     },
                     Action::SendDirectMessage(data) => {
-                        let Action::DirectMessageData { msg_id } = data;
-                        let possible_actions = &[
-                            Action::ResolveDirectConnection(msg_id),
-                            Action::SendDirectMessageTimeout(msg_id),
-                        ];
-                        self.current_checker()
-                            .unwrap()
-                            .add(|aw| possible_actions.contains(aw))
+                        let msg_id = data.msg_id;
+                        self.current_checker().unwrap().add(move |aw| {
+                            [
+                                Action::ResolveDirectConnection(msg_id.clone()),
+                                Action::SendDirectMessageTimeout(msg_id.clone()),
+                            ]
+                            .contains(aw.action())
+                        })
                     }
                     _ => (),
                 }
 
-                self.run_checks(aw);
+                self.run_checks(&aw);
             }
             _ => (),
         }
     }
 
     fn run_checks(&mut self, aw: &ActionWrapper) {
-        for (_call, checker) in self.checkers {
+        for (_, mut checker) in self.checkers.iter_mut() {
             checker.run_checks(aw);
         }
     }
 
     fn current_checker(&mut self) -> Option<&mut CallFxChecker> {
-        self.current.and_then(|call| self.checkers.get_mut(call))
+        self.current
+            .clone()
+            .and_then(move |call| self.checkers.get_mut(&call))
     }
 
-    fn add_call(&mut self, call: ZomeFnCall, callback: JsCallback) {
-        self.checkers.insert(call, CallFxChecker::new(callback));
+    fn add_call(&mut self, call: ZomeFnCall, tx: ControlSender) {
+        self.checkers.insert(call.clone(), CallFxChecker::new(tx));
         self.current = Some(call);
     }
 }
 
-enum WaiterMsg {
+pub enum ControlMsg {
     Stop,
 }
 
@@ -174,10 +171,10 @@ pub struct HabitatSignalTask {
 }
 
 impl HabitatSignalTask {
-    pub fn new(signal_rx: SignalReceiver, callback_rx: CallbackReceiver) -> Self {
+    pub fn new(signal_rx: SignalReceiver, sender_rx: Receiver<ControlSender>) -> Self {
         let this = Self {
             signal_rx,
-            waiter: Waiter::new(callback_rx),
+            waiter: RefCell::new(Waiter::new(sender_rx)),
         };
         this
     }

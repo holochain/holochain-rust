@@ -6,18 +6,9 @@ extern crate holochain_net;
 extern crate serde_json;
 extern crate tempfile;
 
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_container_api::*;
-use holochain_core::{
-    context::{mock_network_config, Context},
-    logger::SimpleLogger,
-    persister::SimplePersister,
-};
+use holochain_container_api::{context_builder::ContextBuilder, *};
 use holochain_core_types::{agent::AgentId, dna::Dna};
-use std::{
-    env,
-    sync::{Arc, Mutex, RwLock},
-};
+use std::{env, sync::Arc};
 
 use tempfile::tempdir;
 
@@ -46,24 +37,11 @@ fn main() {
     let tempdir = tempdir().unwrap();
     let dna = Dna::new();
     let agent = AgentId::generate_fake(identity);
-    let file_storage = Arc::new(RwLock::new(
-        FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-    ));
-    let context = Context::new(
-        agent,
-        Arc::new(Mutex::new(SimpleLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-        Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-        )),
-        Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-        )),
-        Arc::new(RwLock::new(
-            EavFileStorage::new(tempdir.path().to_str().unwrap().to_string()).unwrap(),
-        )),
-        mock_network_config(),
-    );
+    let context = ContextBuilder::new()
+        .with_agent(agent)
+        .with_file_storage(tempdir.path().to_str().unwrap())
+        .expect("Tempdir must be accessible")
+        .spawn();
 
     // Create Holochain Instance
     let mut hc =

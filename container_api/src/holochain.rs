@@ -196,32 +196,23 @@ impl Holochain {
 mod tests {
     extern crate holochain_cas_implementations;
 
-    use self::holochain_cas_implementations::{
-        cas::file::FilesystemStorage, eav::file::EavFileStorage,
-    };
-
     use super::*;
+    use context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
-        context::{mock_network_config, Context},
+        context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
-        persister::SimplePersister,
         signal::{signal_channel, Signal},
     };
     use holochain_core_types::{
-        agent::AgentId,
-        cas::content::{Address, AddressableContent},
-        dna::Dna,
+        agent::AgentId, cas::content::{Address, AddressableContent}, dna::Dna
     };
-
-    use std::sync::{Arc, Mutex, RwLock};
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
-
-    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -229,26 +220,21 @@ mod tests {
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
         let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
         let logger = test_utils::test_logger();
         (
-            Arc::new(Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
-                mock_network_config(),
-            )),
+            Arc::new(
+                ContextBuilder::new()
+                    .with_agent(agent)
+                    .with_logger(logger.clone())
+                    .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                    .unwrap()
+                    .spawn(),
+            ),
             logger,
         )
     }
+
+    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     fn example_api_wasm_path() -> String {
         "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm".into()

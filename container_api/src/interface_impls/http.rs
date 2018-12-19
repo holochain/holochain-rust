@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 use tiny_http::{Response, Server};
-
+use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value};
 use interface::{DispatchRpc, Interface};
 
 pub struct HttpInterface {
@@ -17,7 +17,7 @@ impl HttpInterface {
 }
 
 impl Interface for HttpInterface {
-    fn run(&self, _dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
+    fn run(&self, _handlerr: IoHandler) -> Result<(), String> {
         let server_url = format!("0.0.0.0:{}", self.port);
         let server = Server::http(server_url.as_str()).unwrap();
         for request in server.incoming_requests() {

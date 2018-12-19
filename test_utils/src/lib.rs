@@ -7,13 +7,11 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
 
-use holochain_container_api::{Holochain, error::HolochainResult};
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+use holochain_container_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
-    context::{mock_network_config, Context},
+    context::Context,
     logger::Logger,
-    persister::SimplePersister,
     signal::Signal,
 };
 use holochain_core_types::{
@@ -36,7 +34,7 @@ use std::{
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{mpsc::Receiver, Arc, Mutex, RwLock},
+    sync::{mpsc::Receiver, Arc, Mutex},
     time::Duration,
 };
 use tempfile::tempdir;
@@ -194,24 +192,15 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let agent = AgentId::generate_fake(agent_name);
-    let file_storage = Arc::new(RwLock::new(
-        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-    ));
     let logger = test_logger();
     (
         Arc::new(
-            Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
-                mock_network_config(),
-            )
+            ContextBuilder::new()
+                .with_agent(agent)
+                .with_logger(logger.clone())
+                .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                .expect("Tempdir must be accessible")
+                .spawn()
         ),
         logger,
     )
@@ -251,24 +240,12 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
     let agent = AgentId::generate_fake(agent_name);
-    let logger = test_logger();
-
-    let file_storage = Arc::new(RwLock::new(
-        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-    ));
     Arc::new(
-        Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-        )
+        ContextBuilder::new()
+            .with_agent(agent)
+            .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+            .expect("Tempdir must be accessible")
+            .spawn()
     )
 }
 

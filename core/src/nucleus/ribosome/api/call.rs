@@ -138,11 +138,16 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(JsonString::from(serde_json::to_string(&response.get_result().unwrap()).unwrap())),
-        JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(&response.get_error().unwrap()).unwrap())),
-        _ => Err(HolochainError::ErrorGeneric("Bridge call failed".to_string()))
+        JsonRpc::Success(_) => Ok(JsonString::from(
+            serde_json::to_string(&response.get_result().unwrap()).unwrap(),
+        )),
+        JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
+            serde_json::to_string(&response.get_error().unwrap()).unwrap(),
+        )),
+        _ => Err(HolochainError::ErrorGeneric(
+            "Bridge call failed".to_string(),
+        )),
     }
-
 }
 
 /// Reduce Call Action

@@ -700,7 +700,9 @@ pub mod tests {
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
         container.load_config().expect("Test config must be sane");
-        container.start_all_instances().expect("Instances must be spawnable");
+        container
+            .start_all_instances()
+            .expect("Instances must be spawnable");
         let caller_instance = container.instances["bridge-caller"].clone();
         let result = caller_instance
             .write()

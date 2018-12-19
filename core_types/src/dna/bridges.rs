@@ -54,6 +54,7 @@ pub enum BridgeReference {
 
 /// Required or optional
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[serde(rename_all = "lowercase")]
 pub enum BridgePresence {
     /// A required bridge is a dependency to another DNA.
     /// This DNA won't load without it.

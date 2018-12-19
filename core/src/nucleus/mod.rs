@@ -9,7 +9,7 @@ use crate::{
     context::Context,
     instance::{dispatch_action_with_observer, Observer},
     nucleus::{
-        ribosome::api::call::reduce_call,
+        ribosome::api::call::{reduce_call, validate_call},
         state::{NucleusState, NucleusStatus},
     },
 };
@@ -20,7 +20,7 @@ use holochain_core_types::{
         wasm::DnaWasm,
         Dna,
     },
-    error::{DnaError, HcResult, HolochainError},
+    error::{HcResult, HolochainError},
     json::JsonString,
 };
 use snowflake;
@@ -289,77 +289,26 @@ fn reduce_execute_zome_function(
             .expect("action channel to be open in reducer");
     }
 
-    // Get DNA
-    let dna = match state.dna {
-        None => {
-            dispatch_error_result(
-                context.action_channel(),
-                &fn_call,
-                HolochainError::DnaMissing,
-            );
+    // 1. Validate that the call (a number of tings could go wrong)
+    let dna = match validate_call(context.clone(), state, &fn_call) {
+        Err(err) => {
+            // Notify failure
+            dispatch_error_result(context.action_channel(), &fn_call, err);
             return;
         }
-        Some(ref d) => d,
+        Ok(dna) => dna,
     };
 
-    // Get zome
-    let zome = match dna.zomes.get(&fn_call.zome_name) {
-        None => {
-            dispatch_error_result(
-                context.action_channel(),
-                &fn_call,
-                HolochainError::Dna(DnaError::ZomeNotFound(format!(
-                    "Zome '{}' not found",
-                    fn_call.zome_name.clone()
-                ))),
-            );
-            return;
-        }
-        Some(zome) => zome,
-    };
+    // 2. function WASM and execute it in a separate thread
+    let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
+    let code =
+        maybe_code.expect("zome not found, Should have failed before when getting capability.");
 
-    // Get capability
-    let capability = match zome.capabilities.get(&fn_call.cap_name()) {
-        None => {
-            dispatch_error_result(
-                context.action_channel(),
-                &fn_call,
-                HolochainError::Dna(DnaError::CapabilityNotFound(format!(
-                    "Capability '{}' not found in Zome '{}'",
-                    fn_call.cap_name().clone(),
-                    fn_call.zome_name.clone()
-                ))),
-            );
-            return;
-        }
-        Some(capability) => capability,
-    };
-    // Get ZomeFn
-    let maybe_fn = capability
-        .functions
-        .iter()
-        .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name);
-    if maybe_fn.is_none() {
-        dispatch_error_result(
-            context.action_channel(),
-            &fn_call,
-            HolochainError::Dna(DnaError::ZomeFunctionNotFound(format!(
-                "Zome function '{}' not found",
-                fn_call.fn_name.clone()
-            ))),
-        );
-        return;
-    }
     // Ok Zome function is defined in given capability.
     // Prepare call - FIXME is this really useful?
     state.zome_calls.insert(fn_call.clone(), None);
     // Launch thread with function call
-    launch_zome_fn_call(
-        context,
-        fn_call,
-        &zome.code,
-        state.dna.clone().unwrap().name,
-    );
+    launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }
 
 fn reduce_return_validation_result(
@@ -435,14 +384,11 @@ pub fn reduce(
 }
 
 // Helper function for finding out if a given function call is public
-fn is_fn_public(dna: &Dna, zome_call: &ZomeFnCall) -> Result<bool, ExecuteZomeFnResponse> {
+fn is_fn_public(dna: &Dna, zome_call: &ZomeFnCall) -> Result<bool, HolochainError> {
     // Get Capability from DNA
     let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name());
     match res {
-        Err(e) => Err(ExecuteZomeFnResponse::new(
-            zome_call.clone(),
-            Err(HolochainError::Dna(e)),
-        )),
+        Err(e) => Err(HolochainError::Dna(e)),
         Ok(cap) => Ok(cap.cap_type == CapabilityType::Public),
     }
 }
@@ -462,7 +408,10 @@ pub mod tests {
     use holochain_core_types::dna::{capabilities::CapabilityCall, Dna};
     use std::sync::Arc;
 
-    use holochain_core_types::json::{JsonString, RawString};
+    use holochain_core_types::{
+        error::DnaError,
+        json::{JsonString, RawString},
+    };
     use std::error::Error;
 
     /// dummy zome name compatible with ZomeFnCall

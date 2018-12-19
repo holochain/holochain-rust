@@ -162,9 +162,9 @@ _windows_template_lite: &_windows_template_lite
   rust: nightly-2018-11-28-x86_64-pc-windows-msvc
   before_install:
    - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
-   - LIBZMQ_PREFIX=$TRAVIS_BUILD_DIR/vendor/zmq
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-Z thinlto -C codegen-units=16"
+   - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
    # - RUSTFLAGS="-C lto=no"
    # - RUST_VERSION=nightly-2018-11-28
    # - TARGET=x86_64-pc-windows-msvc

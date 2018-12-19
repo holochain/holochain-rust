@@ -157,7 +157,7 @@ _cmd_deploy_template: &_cmd_deploy_template
 
 _windows_template: &_windows_template_lite
   os: windows
-  language: generic
+  language: bash
   # rust: nightly-2018-11-28-x86_64-pc-windows-msvc
   before_install:
    - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin

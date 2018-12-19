@@ -2,6 +2,7 @@ use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
 use holochain_container_api::{config::*, container::Container};
+use holochain_core_types::agent::AgentId;
 use holochain_net::p2p_config::P2pConfig;
 use std::fs;
 
@@ -18,8 +19,11 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
+    let agent = AgentId::generate_fake("developer_test_agent");
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
+        name: agent.nick,
+        public_address: agent.key,
         key_file: "hc_run.key".into(),
     };
 

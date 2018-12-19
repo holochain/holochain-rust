@@ -80,7 +80,7 @@ mod tests {
         let _tempfile = temp_path.to_str().unwrap();
         let context = test_context_with_agent_state();
         File::create(temp_path.clone()).unwrap();
-        let mut persistance = SimplePersister::new(context.file_storage.clone());
+        let mut persistance = SimplePersister::new(context.dht_storage.clone());
         let state = context.state().unwrap().clone();
         persistance.save(state.clone()).unwrap();
         let state_from_file = persistance.load(context).unwrap().unwrap();

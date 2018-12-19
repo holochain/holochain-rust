@@ -16,6 +16,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use regex::RegexBuilder;
 use std::fmt::Debug;
 
 /// Address of AddressableContent representing the EAV entity
@@ -56,13 +57,31 @@ impl AddressableContent for EntityAttributeValue {
     }
 }
 
+fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
+    let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
+        .build()
+        .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
+    if !regex.is_match(attribute) {
+        Ok(())
+    } else {
+        Err(HolochainError::ErrorGeneric(
+            "Attribute name invalid".to_string(),
+        ))
+    }
+}
+
 impl EntityAttributeValue {
-    pub fn new(entity: &Entity, attribute: &Attribute, value: &Value) -> EntityAttributeValue {
-        EntityAttributeValue {
+    pub fn new(
+        entity: &Entity,
+        attribute: &Attribute,
+        value: &Value,
+    ) -> HcResult<EntityAttributeValue> {
+        validate_attribute(attribute)?;
+        Ok(EntityAttributeValue {
             entity: entity.clone(),
             attribute: attribute.clone(),
             value: value.clone(),
-        }
+        })
     }
 
     pub fn entity(&self) -> Entity {
@@ -193,7 +212,7 @@ pub fn test_eav_entity() -> Entry {
 }
 
 pub fn test_eav_attribute() -> String {
-    "foo:attribute".to_string()
+    "foo-attribute".to_string()
 }
 
 pub fn test_eav_value() -> Entry {
@@ -206,6 +225,7 @@ pub fn test_eav() -> EntityAttributeValue {
         &test_eav_attribute(),
         &test_eav_value().address(),
     )
+    .expect("Could not create eav")
 }
 
 pub fn test_eav_content() -> Content {
@@ -225,7 +245,8 @@ pub fn eav_round_trip_test_runner(
         &entity_content.address(),
         &attribute,
         &value_content.address(),
-    );
+    )
+    .expect("Could not create EAV");
     let mut eav_storage =
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
 
@@ -343,6 +364,58 @@ pub mod tests {
             EntityAttributeValue,
             ExampleContentAddressableStorage,
         >(addressable_contents, test_content_addressable_storage());
+    }
+
+    #[test]
+    fn validate_attribute_paths() {
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"abc".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_ok());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"abc123".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_ok());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"123".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_ok());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_:{}".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_\"".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_/".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_\\".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
+        assert!(EntityAttributeValue::new(
+            &test_eav_entity().address(),
+            &"link_?".to_string(),
+            &test_eav_entity().address()
+        )
+        .is_err());
     }
 
 }

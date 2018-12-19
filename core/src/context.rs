@@ -11,6 +11,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
@@ -30,9 +31,11 @@ pub struct Context {
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub signal_channel: Option<SyncSender<Signal>>,
     pub observer_channel: Option<SyncSender<Observer>>,
-    pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
+    pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
+    pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
+    pub container_api: Option<Arc<RwLock<IoHandler>>>,
 }
 
 impl Context {
@@ -44,11 +47,13 @@ impl Context {
         agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        cas: Arc<RwLock<ContentAddressableStorage>>,
+        chain_storage: Arc<RwLock<ContentAddressableStorage>>,
+        dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
-    ) -> Result<Context, HolochainError> {
-        Ok(Context {
+        container_api: Option<Arc<RwLock<IoHandler>>>,
+    ) -> Self {
+        Context {
             agent_id,
             logger,
             persister,
@@ -56,10 +61,12 @@ impl Context {
             action_channel: None,
             signal_channel: None,
             observer_channel: None,
-            file_storage: cas,
+            chain_storage,
+            dht_storage,
             eav_storage: eav,
             network_config,
-        })
+            container_api,
+        }
     }
 
     pub fn new_with_channels(
@@ -81,9 +88,11 @@ impl Context {
             action_channel,
             signal_channel,
             observer_channel,
-            file_storage: cas,
+            chain_storage: cas.clone(),
+            dht_storage: cas,
             eav_storage: eav,
             network_config,
+            container_api: None,
         })
     }
 
@@ -221,13 +230,14 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+            None,
+        );
 
         assert!(maybe_context.state().is_none());
 
@@ -252,13 +262,14 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+            None,
+        );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

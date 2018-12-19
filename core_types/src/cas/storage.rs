@@ -251,7 +251,8 @@ impl EavTestSuite {
             &entity_content.address(),
             &"favourite-color".to_string(),
             &value_content.address(),
-        );
+        )
+        .expect("Could create entityAttributeValue");
 
         let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
 
@@ -328,7 +329,8 @@ impl EavTestSuite {
 
         let mut expected = HashSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address());
+            let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
+                .expect("could not create EAV");
             eav_storage.add_eav(&eav).expect("could not add eav");
             expected.insert(eav);
         }
@@ -338,11 +340,10 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
-                .add_eav(&EntityAttributeValue::new(
-                    &two.address(),
-                    &attribute,
-                    &many.address(),
-                ))
+                .add_eav(
+                    &EntityAttributeValue::new(&two.address(), &attribute, &many.address())
+                        .expect("Could not create eav"),
+                )
                 .expect("could not add eav");
         }
 
@@ -357,11 +358,10 @@ impl EavTestSuite {
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let mut expected_one = HashSet::new();
-            expected_one.insert(EntityAttributeValue::new(
-                &one.address(),
-                &attribute.clone(),
-                &many.address(),
-            ));
+            expected_one.insert(
+                EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
+                    .expect("Could not create eav"),
+            );
             assert_eq!(
                 expected_one,
                 eav_storage
@@ -394,7 +394,8 @@ impl EavTestSuite {
 
         let mut expected = HashSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address());
+            let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
+                .expect("could not create EAV");
             eav_storage.add_eav(&eav).expect("could not add eav");
             expected.insert(eav);
         }
@@ -404,11 +405,10 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
-                .add_eav(&EntityAttributeValue::new(
-                    &many.address(),
-                    &attribute,
-                    &two.address(),
-                ))
+                .add_eav(
+                    &EntityAttributeValue::new(&many.address(), &attribute, &two.address())
+                        .expect("Could not create eav"),
+                )
                 .expect("could not add eav");
         }
 
@@ -423,11 +423,10 @@ impl EavTestSuite {
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let mut expected_one = HashSet::new();
-            expected_one.insert(EntityAttributeValue::new(
-                &many.address(),
-                &attribute.clone(),
-                &one.address(),
-            ));
+            expected_one.insert(
+                EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
+                    .expect("Could not create eav"),
+            );
             assert_eq!(
                 expected_one,
                 eav_storage

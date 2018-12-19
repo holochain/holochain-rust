@@ -1,5 +1,7 @@
-//! `holochain_core_api` is a library for instantiating and using a holochain instance that
-//! runs a holochain DNA, DHT and source chain.
+//! `holochain_container_api` is a library for instantiating and using holochain instances that
+//! each run a holochain DNA, DHT and source chain.
+//!
+//! The struct Holochain wraps everything needed to run such an instance.
 //!
 //! # Examples
 //!
@@ -10,18 +12,10 @@
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
-//! use holochain_container_api::*;
-//! use holochain_net::p2p_network::P2pNetwork;
+//! use holochain_container_api::{*, context_builder::ContextBuilder};
 //! use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
-//! use std::sync::{Arc, Mutex,RwLock};
-//! use holochain_core::context::Context;
-//! use holochain_core::logger::SimpleLogger;
-//! use holochain_core::persister::SimplePersister;
-//! use self::holochain_cas_implementations::{
-//!        cas::file::FilesystemStorage, eav::file::EavFileStorage,
-//! };
+//! use std::sync::Arc;
 //! use tempfile::tempdir;
-//! use holochain_core::context::mock_network_config;
 //!
 //! // instantiate a new holochain instance
 //!
@@ -30,16 +24,14 @@
 //!
 //! // but for now:
 //! let dna = Dna::new();
+//! let dir = tempdir().unwrap();
+//! let storage_directory_path = dir.path().to_str().unwrap();
 //! let agent = AgentId::generate_fake("bob");
-//! let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
-//! let context = Context::new(
-//!     agent,
-//!     Arc::new(Mutex::new(SimpleLogger {})),
-//!     Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-//!     file_storage.clone(),
-//!     Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
-//!     mock_network_config(),
-//!  ).unwrap();
+//! let context = ContextBuilder::new()
+//!     .with_agent(agent)
+//!     .with_file_storage(storage_directory_path)
+//!     .expect("Tempdir should be accessible")
+//!     .spawn();
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
 //! // start up the holochain instance
@@ -134,7 +126,7 @@ impl Holochain {
     }
 
     pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(context.file_storage.clone());
+        let persister = SimplePersister::new(context.dht_storage.clone());
         let loaded_state = persister
             .load(context.clone())?
             .unwrap_or(State::new(context.clone()));
@@ -196,28 +188,21 @@ impl Holochain {
 mod tests {
     extern crate holochain_cas_implementations;
 
-    use self::holochain_cas_implementations::{
-        cas::file::FilesystemStorage, eav::file::EavFileStorage,
-    };
-
     use super::*;
+    use context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
-        context::{mock_network_config, Context},
+        context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
-        persister::SimplePersister,
         signal::{signal_channel, Signal},
     };
     use holochain_core_types::{agent::AgentId, cas::content::AddressableContent, dna::Dna};
-
-    use std::sync::{Arc, Mutex, RwLock};
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
-
-    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -225,30 +210,21 @@ mod tests {
     // @see https://github.com/holochain/holochain-rust/issues/185
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
         let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
         let logger = test_utils::test_logger();
         (
             Arc::new(
-                Context::new(
-                    agent,
-                    logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                    file_storage.clone(),
-                    Arc::new(RwLock::new(
-                        EavFileStorage::new(
-                            tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        )
-                        .unwrap(),
-                    )),
-                    mock_network_config(),
-                )
-                .unwrap(),
+                ContextBuilder::new()
+                    .with_agent(agent)
+                    .with_logger(logger.clone())
+                    .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                    .unwrap()
+                    .spawn(),
             ),
             logger,
         )
     }
+
+    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     fn example_api_wasm_path() -> String {
         "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm".into()
@@ -282,7 +258,7 @@ mod tests {
         let path = tempdir.path().to_str().unwrap();
         let tempfile = vec![path, "Agentstate.txt"].join(&*MAIN_SEPARATOR.to_string());
         let mut file = File::create(tempfile).unwrap();
-        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNBkd\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
+        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"sandwich--------------------------------------------------------------------------AAAEqzh28L\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
         path.to_string()
     }
     #[test]

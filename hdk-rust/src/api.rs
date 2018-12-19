@@ -387,16 +387,18 @@ pub fn call<S: Into<String>>(
     unsafe {
         encoded_allocation_of_result = hc_call(allocation_of_input.encode() as u32);
     }
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_string(encoded_allocation_of_result as u32)?;
-
-    // Free result & input allocations.
+    // Deserialize complex result stored in wasm memory
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-
     // Done
-    Ok(result.into())
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Attempts to commit an entry to your local source chain. The entry

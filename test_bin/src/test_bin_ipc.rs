@@ -129,7 +129,7 @@ fn create_config(n3h_path: &str, maybe_config_filepath: Option<&str>) -> (P2pCon
                     ],
                     "workDir": dir.clone(),
                     "env": {
-                        "N3H_HACK_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_HACK_MODE"],
+                        "N3H_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_MODE"],
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
                     }
@@ -151,7 +151,7 @@ fn create_config(n3h_path: &str, maybe_config_filepath: Option<&str>) -> (P2pCon
                     ],
                     "workDir": dir.clone(),
                     "env": {
-                        "N3H_HACK_MODE": "1",
+                        "N3H_MODE": "HACK",
                         "N3H_WORK_DIR": dir.clone(),
                         "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
                 }

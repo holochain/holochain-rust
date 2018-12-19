@@ -111,7 +111,7 @@ impl P2pConfig {
         "spawn": {
           "cmd": "node",
           "env": {
-            "N3H_HACK_MODE": "1",
+            "N3H_MODE": "HACK",
             "N3H_IPC_SOCKET": "tcp://127.0.0.1:*"
           }
         }

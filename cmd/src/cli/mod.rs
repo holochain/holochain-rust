@@ -4,7 +4,7 @@ mod init;
 pub mod package;
 mod run;
 mod scaffold;
-mod test;
+pub mod test;
 mod test_context;
 
 pub use self::{

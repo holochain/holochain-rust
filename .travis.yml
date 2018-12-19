@@ -278,13 +278,6 @@ jobs:
        - TEST_PATH=core_types
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
-    - name: "windows hdk"
-      <<: *_windows_template_lite
-      env:
-       - TEST_P=hdk
-       - TEST_PATH=hdk-rust
-       - CARGO_TARGET_DIR=$TEST_PATH/target
-
     - name: "windows holochain_net"
       <<: *_windows_template_lite
       env:
@@ -313,7 +306,14 @@ jobs:
        - TEST_PATH=wasm_utils
        - CARGO_TARGET_DIR=$TEST_PATH/target
 
-
+    - name: "windows hdk"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=hdk
+       - TEST_PATH=hdk-rust
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+      before_script:
+       - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
 
 
     # - name: "windows build & test all"

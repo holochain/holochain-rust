@@ -449,9 +449,7 @@ pub mod tests {
                         },
                         "capabilities": {
                             "test": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "functions": [
                                     {
                                         "name": "test",

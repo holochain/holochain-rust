@@ -1,4 +1,5 @@
 use holochain_core::state::State;
+use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value};
@@ -130,7 +131,16 @@ impl ContainerApiBuilder {
                                         jsonrpc_core::Error::invalid_params(e.to_string())
                                     })?;
                                 let response = hc
-                                    .call(&zome_name, &cap_name, &func_name, &params_string)
+                                    .call(
+                                        &zome_name,
+                                        Some(CapabilityCall::new(
+                                            cap_name.clone(),
+                                            Address::from("fake_token"),
+                                            None,
+                                        )),
+                                        &func_name,
+                                        &params_string,
+                                    )
                                     .map_err(|e| {
                                         jsonrpc_core::Error::invalid_params(e.to_string())
                                     })?;

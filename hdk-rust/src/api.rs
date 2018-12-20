@@ -4,6 +4,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
+    dna::capabilities::CapabilityCall,
     entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
@@ -328,7 +329,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call("summer", "main", "sum", call_input.into())
+///     hdk::call("summer", "main", "test_token", "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -353,7 +354,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// ```
 pub fn call<S: Into<String>>(
     zome_name: S,
-    cap_name: S,
+    cap_name: S, //temporary...
+    cap_token: S,
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
@@ -367,7 +369,11 @@ pub fn call<S: Into<String>>(
         &mut mem_stack,
         ZomeFnCallArgs {
             zome_name: zome_name.into(),
-            cap_name: cap_name.into(),
+            cap: Some(CapabilityCall::new(
+                cap_name.into(),
+                Address::from(cap_token.into()),
+                None,
+            )),
             fn_name: fn_name.into(),
             fn_args: String::from(fn_args),
         },

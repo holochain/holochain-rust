@@ -64,7 +64,6 @@ use holochain_core::{
     instance::Instance,
     nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
-    signal::{SignalReceiver},
     state::State,
     workflows::application,
 };
@@ -185,7 +184,7 @@ mod tests {
         action::Action,
         context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
-        signal::{signal_channel, Signal},
+        signal::{signal_channel, Signal, SignalReceiver},
     };
     use holochain_core_types::{
         agent::AgentId,

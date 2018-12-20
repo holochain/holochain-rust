@@ -30,7 +30,8 @@ jobs:
        name: app spec tests
        command: nix-shell --run hc-test-app-spec
 
- unit-tests:
+ build:
+ # unit-tests:
   docker:
    - image: holochain/holochain-rust:circle
   steps:

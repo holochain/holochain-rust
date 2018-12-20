@@ -1,12 +1,23 @@
 FROM nixorg/nix:circleci
 ENV NIX_PATH nixpkgs=https://github.com/NixOS/nixpkgs/archive/47f008676fe3b77b9c8edda54db621a0dc16dd8e.tar.gz
 
-WORKDIR ~
+WORKDIR /holochain-rust/build
 
 # warm nix
 # this is slow so we don't want to redo it if possible so we run a no-op
 
 COPY shell.nix shell.nix
 
+# warm nix
+# don't combine this with the step below
+# it makes sense to keep these two steps in separate docker build steps so they
+# can be snapshotted and downloaded, etc. independently
+RUN nix-shell --run "echo 1" --show-trace --max-jobs 4 --cores 0
+
 # pop the test suite off once to warm the incremental rust cache
+COPY . .
 RUN nix-shell --run hc-test --show-trace --max-jobs 4 --cores 0
+
+# the default command can also be the unit tests, why not?
+# if the previous step incrementally compiles correctly this should be fast
+CMD nix-shell --run hc-test --show-trace --max-jobs 4 --cores 0

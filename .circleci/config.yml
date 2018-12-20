@@ -98,6 +98,30 @@ jobs:
          paths:
           - net_connection/target
 
+      # holochain sodium test
+      - restore_cache:
+         keys:
+          - sodium-v1-{{ checksum "sodium/Cargo.toml" }}
+      - run:
+         name: test sodium
+         command: nix-shell --run hc-test-sodium
+      - save_cache:
+         key: sodium-v1-{{ checksum "sodium/Cargo.toml" }}
+         paths:
+          - sodium/target
+
+      # holochain cmd test
+      - restore_cache:
+         keys:
+          - cmd-v1-{{ checksum "cmd/Cargo.toml" }}
+      - run:
+         name: test cmd
+         command: nix-shell --run hc-test-hc
+      - save_cache:
+         key: cmd-v1-{{ checksum "cmd/Cargo.toml" }}
+         paths:
+          - cmd/target
+
 
       - run:
           name: install cmd

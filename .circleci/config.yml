@@ -122,6 +122,41 @@ jobs:
          paths:
           - cmd/target
 
+      # holochain core types test
+      - restore_cache:
+         keys:
+          - core-types-v1-{{ checksum "core_types/Cargo.toml" }}
+      - run:
+         name: test core types
+         command: nix-shell --run hc-test-core-types
+      - save_cache:
+         key: core-types-v1-{{ checksum "core_types/Cargo.toml" }}
+         paths:
+          - core_types/target
+
+      # holochain net test
+      - restore_cache:
+         keys:
+          - net-v1-{{ checksum "net/Cargo.toml" }}
+      - run:
+         name: test core types
+         command: nix-shell --run hc-test-net
+      - save_cache:
+         key: net-v1-{{ checksum "net/Cargo.toml" }}
+         paths:
+          - net/target
+
+      # holochain net ipc test
+      - restore_cache:
+         keys:
+          - net-ipc-v1-{{ checksum "net_ipc/Cargo.toml" }}
+      - run:
+         name: test net ipc
+         command: nix-shell --run hc-test-net-ipc
+      - save_cache:
+         key: net-ipc-v1-{{ checksum "net_ipc/Cargo.toml" }}
+         paths:
+          - net_ipc/target
 
       - run:
           name: install cmd

@@ -61,25 +61,23 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         .expect("Should have genesis entries.");
     let addresses = match query.entry_type_names {
         QueryArgsNames::QueryList(pats) => {
-            let refs:Vec<&str> = pats.iter()
-                .map(AsRef::as_ref)
-                .collect(); // Vec<String> -> Vec<&str>
+            let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>
             agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> Vec[&str]
                 query.start,
                 query.limit,
             )
-        },
+        }
         QueryArgsNames::QueryName(name) => {
-            let refs:Vec<&str> = vec![&name]; // String -> Vec<&str>
+            let refs: Vec<&str> = vec![&name]; // String -> Vec<&str>
             agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> &[&str]
                 query.start,
                 query.limit,
             )
-        },
+        }
     };
     let result = match addresses {
         // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
@@ -89,5 +87,5 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         Err(_code) => return ribosome_error_code!(UnknownEntryType),
     };
 
-    runtime.store_result( result )
+    runtime.store_result(result)
 }

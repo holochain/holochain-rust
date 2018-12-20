@@ -1,7 +1,11 @@
+pub mod cap_entries;
 pub mod deletion_entry;
 pub mod entry_type;
 
-use self::deletion_entry::DeletionEntry;
+use self::{
+    cap_entries::{CapToken, CapTokenGrant},
+    deletion_entry::DeletionEntry,
+};
 use agent::{test_agent_id, AgentId};
 use cas::content::{Address, AddressableContent, Content};
 use chain_header::ChainHeader;
@@ -63,6 +67,8 @@ pub enum Entry {
     LinkList(LinkList),
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),
+    CapToken(CapToken),
+    CapTokenGrant(CapTokenGrant),
 }
 
 impl From<Option<Entry>> for JsonString {
@@ -90,6 +96,8 @@ impl Entry {
             Entry::LinkList(_) => EntryType::LinkList,
             Entry::ChainHeader(_) => EntryType::ChainHeader,
             Entry::ChainMigrate(_) => EntryType::ChainMigrate,
+            Entry::CapToken(_) => EntryType::CapToken,
+            Entry::CapTokenGrant(_) => EntryType::CapTokenGrant,
         }
     }
 }

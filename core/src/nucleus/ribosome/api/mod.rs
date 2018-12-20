@@ -75,7 +75,7 @@ pub enum ZomeApiFunction {
     InitGlobals,
 
     /// Call a zome function in a different capability or zome
-    /// hc_call(zome_name: String, cap_name: String, fn_name: String, args: String);
+    /// hc_call(zome_name: String, cap_token: Address, fn_name: String, args: String);
     Call,
 
     LinkEntries,
@@ -193,12 +193,11 @@ pub mod tests {
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{self, Defn},
+            tests::{test_capability_call, test_capability_name},
             ZomeFnCall,
         },
     };
     use std::{str::FromStr, sync::Arc};
-
-    use holochain_core_types::dna::capabilities::ReservedCapabilityNames;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
@@ -348,11 +347,6 @@ pub mod tests {
         "test_zome".to_string()
     }
 
-    /// dummy capability
-    pub fn test_capability() -> String {
-        ReservedCapabilityNames::MissingNo.as_str().to_string()
-    }
-
     /// dummy zome API function name
     pub fn test_function_name() -> String {
         "test".to_string()
@@ -374,7 +368,7 @@ pub mod tests {
     ) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
-            &test_capability(),
+            Some(test_capability_call()),
             &test_function_name(),
             test_parameters(),
         );
@@ -400,7 +394,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
-            &test_capability(),
+            &test_capability_name(),
             wasm.clone(),
         );
 

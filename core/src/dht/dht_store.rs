@@ -3,7 +3,6 @@ use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
     error::HolochainError,
-    link::Link,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -46,17 +45,6 @@ impl DhtStore {
             meta_storage,
             actions: HashMap::new(),
         }
-    }
-
-    // Linking
-    // =======
-    pub fn add_link(&mut self, _link: &Link) -> Result<(), HolochainError> {
-        // FIXME
-        Err(HolochainError::NotImplemented)
-    }
-
-    pub fn remove_link(&mut self) {
-        // FIXME
     }
 
     pub fn get_links(

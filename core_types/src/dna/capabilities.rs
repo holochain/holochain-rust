@@ -1,5 +1,6 @@
 //! File holding all the structs for handling capabilities defined in DNA.
 
+use crate::cas::content::Address;
 use std::str::FromStr;
 
 //--------------------------------------------------------------------------------------------------
@@ -44,51 +45,48 @@ impl ReservedCapabilityNames {
 }
 
 //--------------------------------------------------------------------------------------------------
-// CapabilityType
+// CapabilityCall
 //--------------------------------------------------------------------------------------------------
+/// a struct to hold the signature of the call
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct CallSignature {}
 
-/// Enum for Zome Capability "membrane" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub enum Membrane {
-    #[serde(rename = "public")]
-    Public,
-    #[serde(rename = "agent")]
-    Agent,
-    #[serde(rename = "api-key")]
-    ApiKey,
-    #[serde(rename = "zome")]
-    Zome,
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct CapabilityCall {
+    pub cap_name: String,
+    pub cap_token: Address,
+    pub caller: Option<Address>,
+    pub signature: CallSignature,
 }
 
-impl Default for Membrane {
-    /// Default zome capability membrane is "agent"
-    fn default() -> Self {
-        Membrane::Agent
-    }
-}
-
-/// Represents the "capability" sub-object on a "zome" "capabilities" object.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub struct CapabilityType {
-    /// How visibility should be handled for this capability.
-    #[serde(default)]
-    pub membrane: Membrane,
-}
-
-impl Default for CapabilityType {
-    /// Defaults for a "capability" sub-object on a "zome" "capabilities" object.
-    fn default() -> Self {
-        CapabilityType {
-            membrane: Membrane::Agent,
+impl CapabilityCall {
+    pub fn new(name: String, token: Address, caller: Option<Address>) -> Self {
+        CapabilityCall {
+            cap_name: name,
+            cap_token: token,
+            caller: caller,
+            signature: CallSignature {}, // FIXME
         }
     }
 }
 
-impl CapabilityType {
-    /// Allow sane defaults for `CapabilityType::new()`.
-    pub fn new() -> Self {
-        Default::default()
-    }
+//--------------------------------------------------------------------------------------------------
+// CapabilityType
+//--------------------------------------------------------------------------------------------------
+
+/// Enum for Zome CapabilityType.  Public capabilities require no token.  Transferable
+/// capabilities require a token, but don't limit the capability to specific agent(s);
+/// this functions like a password in that you can give the token to someone else and it works.
+/// Assigned capabilities check the request's signature against the list of agents to which
+/// the capability has been granted.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+pub enum CapabilityType {
+    #[serde(rename = "public")]
+    Public,
+    #[serde(rename = "transferable")]
+    Transferable,
+    #[serde(rename = "assigned")]
+    Assigned,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
@@ -139,8 +137,8 @@ impl FnDeclaration {
 /// Represents an individual object in the "zome" "capabilities" array.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Capability {
-    /// "capability" sub-object
-    #[serde(rename = "capability")]
+    /// capability type enum
+    #[serde(rename = "type")]
     pub cap_type: CapabilityType,
 
     /// "fn_declarations" array
@@ -149,19 +147,22 @@ pub struct Capability {
 }
 
 impl Default for Capability {
-    /// Provide defaults for a "zome"s "capabilities" object.
+    /// Provide defaults for a Capability object
     fn default() -> Self {
         Capability {
-            cap_type: CapabilityType::new(),
+            cap_type: CapabilityType::Assigned,
             functions: Vec::new(),
         }
     }
 }
 
 impl Capability {
-    /// Allow sane defaults for `Capability::new()`.
-    pub fn new() -> Self {
-        Default::default()
+    /// Capability Constructor
+    pub fn new(cap_type: CapabilityType) -> Self {
+        Capability {
+            cap_type,
+            functions: Vec::new(),
+        }
     }
 }
 
@@ -169,6 +170,17 @@ impl Capability {
 mod tests {
     use super::*;
     use serde_json;
+
+    #[test]
+    /// test that a canonical string can be created from ReservedCapabilityNames
+    fn test_capabilities_new() {
+        let cap = Capability::default();
+        assert_eq!(cap.cap_type, CapabilityType::Assigned);
+        let cap = Capability::new(CapabilityType::Public);
+        assert_eq!(cap.cap_type, CapabilityType::Public);
+        let cap = Capability::new(CapabilityType::Transferable);
+        assert_eq!(cap.cap_type, CapabilityType::Transferable);
+    }
 
     #[test]
     /// test that ReservedCapabilityNames can be created from a canonical string
@@ -201,9 +213,7 @@ mod tests {
     fn build_and_compare() {
         let fixture: Capability = serde_json::from_str(
             r#"{
-                "capability": {
-                    "membrane": "agent"
-                },
+                "type": "transferable",
                 "functions": [
                     {
                         "name": "test",
@@ -225,7 +235,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut cap = Capability::new();
+        let mut cap = Capability::new(CapabilityType::Transferable);
         let mut fn_dec = FnDeclaration::new();
         fn_dec.name = String::from("test");
         let input = FnParameter::new("post", "string");

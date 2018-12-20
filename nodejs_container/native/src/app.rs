@@ -3,7 +3,8 @@ use holochain_container_api::{
     Holochain,
 };
 use holochain_core_types::{
-    dna::Dna,
+    cas::content::Address,
+    dna::{Dna, capabilities::CapabilityCall},
     agent::AgentId,
     json::JsonString
 };
@@ -80,8 +81,12 @@ declare_types! {
             let call_result = {
                 let guard = ctx.lock();
                 let mut app = this.borrow_mut(&guard);
-
-                app.instance.call(&zome, &cap, &fn_name, &params)
+                let call =  Some(CapabilityCall::new(
+                    cap.to_string(),
+                    Address::from(""), //FIXME
+                    None,
+                ));
+                app.instance.call(&zome, call, &fn_name, &params)
             };
 
             let res_string = call_result.or_else(|e| {

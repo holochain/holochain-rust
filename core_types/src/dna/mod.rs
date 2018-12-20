@@ -23,6 +23,7 @@
 //! assert_eq!(name, dna2.name);
 //! ```
 
+pub mod bridges;
 pub mod capabilities;
 pub mod dna;
 pub mod entry_types;
@@ -36,7 +37,13 @@ pub mod tests {
     use super::*;
     extern crate base64;
     use crate::{
-        dna::{entry_types::EntryTypeDef, zome::tests::test_zome},
+        cas::content::Address,
+        dna::{
+            bridges::{Bridge, BridgePresence, BridgeReference},
+            capabilities::{Capability, CapabilityType, FnDeclaration, FnParameter},
+            entry_types::EntryTypeDef,
+            zome::tests::test_zome,
+        },
         entry::entry_type::{AppEntryType, EntryType},
         json::JsonString,
     };
@@ -118,9 +125,7 @@ pub mod tests {
                         },
                         "capabilities": {
                             "test": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "functions": [
                                     {
                                         "name": "test",
@@ -132,7 +137,8 @@ pub mod tests {
                         },
                         "code": {
                             "code": "AAECAw=="
-                        }
+                        },
+                        "bridges": []
                     }
                 }
             }"#,
@@ -378,9 +384,7 @@ pub mod tests {
                         "entry_types": {},
                         "capabilities": {
                             "test capability": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "fn_declarations": [
                                     {
                                         "name": "test",
@@ -427,9 +431,7 @@ pub mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "fn_declarations": []
                             }
                         },
@@ -456,5 +458,123 @@ pub mod tests {
         assert!(dna
             .get_zome_name_for_app_entry_type(&AppEntryType::from("non existant entry type"))
             .is_none());
+    }
+
+    #[test]
+    fn test_get_required_bridges() {
+        let dna = Dna::try_from(JsonString::from(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": {
+                    "test zome": {
+                        "name": "test zome",
+                        "description": "test",
+                        "config": {},
+                        "capabilities": {
+                            "test capability": {
+                                "type": "public",
+                                "fn_declarations": []
+                            }
+                        },
+                        "entry_types": {
+                            "test type": {
+                                "description": "",
+                                "sharing": "public"
+                            }
+                        },
+                        "code": {
+                            "code": ""
+                        },
+                        "bridges": [
+                            {
+                                "presence": "required",
+                                "handle": "DPKI",
+                                "reference": {
+                                    "dna_address": "Qmabcdef1234567890"
+                                }
+                            },
+                            {
+                                "presence": "optional",
+                                "handle": "Vault",
+                                "reference": {
+                                    "capabilities": {
+                                        "persona_management": {
+                                            "type": "public",
+                                            "functions": [
+                                                {
+                                                    "name": "get_persona",
+                                                    "inputs": [{"name": "domain", "type": "string"}],
+                                                    "outputs": [{"name": "persona", "type": "json"}]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "presence": "required",
+                                "handle": "HCHC",
+                                "reference": {
+                                    "capabilities": {
+                                        "happ_directory": {
+                                            "type": "public",
+                                            "functions": [
+                                                {
+                                                    "name": "get_happs",
+                                                    "inputs": [],
+                                                    "outputs": [{"name": "happs", "type": "json"}]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }"#,
+        ))
+        .unwrap();
+
+        assert_eq!(
+            dna.get_required_bridges(),
+            vec![
+                Bridge {
+                    presence: BridgePresence::Required,
+                    handle: String::from("DPKI"),
+                    reference: BridgeReference::Address {
+                        dna_address: Address::from("Qmabcdef1234567890"),
+                    }
+                },
+                Bridge {
+                    presence: BridgePresence::Required,
+                    handle: String::from("HCHC"),
+                    reference: BridgeReference::Capability {
+                        capabilities: btreemap! {
+                            String::from("happ_directory") => Capability{
+                                cap_type: CapabilityType::Public,
+                                functions: vec![
+                                    FnDeclaration {
+                                        name: String::from("get_happs"),
+                                        inputs: vec![],
+                                        outputs: vec![FnParameter{
+                                            name: String::from("happs"),
+                                            parameter_type: String::from("json"),
+                                        }],
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                },
+            ]
+        );
     }
 }

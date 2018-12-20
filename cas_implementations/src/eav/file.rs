@@ -32,9 +32,12 @@ impl PartialEq for EavFileStorage {
 }
 
 #[warn(unused_must_use)]
-pub fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String>>) {
+pub fn add_eav_to_hashset(dir_entry: DirEntry, hash:HashString,set: &mut HashSet<HcResult<String>>) {
     let path = dir_entry.path();
-    match OpenOptions::new().read(true).open(path) {
+    let hash = read_from_hash_list(hash).expect("Could not read index file");
+    if(hash.find(dir_entry))
+    {
+        match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {
             let mut content: String = String::new();
             let _result = file
@@ -60,6 +63,12 @@ pub fn add_eav_to_hashset(dir_entry: DirEntry, set: &mut HashSet<HcResult<String
             ))));
         }
     }
+    }
+    else
+    {
+        ();
+    }
+    
 }
 
 impl EavFileStorage {
@@ -119,6 +128,7 @@ impl EavFileStorage {
 
     fn read_from_dir<T>(
         &self,
+        hash:HashString,
         subscript: String,
         eav_constraint: Option<T>,
     ) -> HashSet<HcResult<String>>
@@ -166,7 +176,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
-        let hash = read_from_hash_list(self.current_hash)?;
         let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity);
         let attribute_set = self
             .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)

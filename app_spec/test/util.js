@@ -1,5 +1,5 @@
 
-const defaultOpts = {timeout: 2000, interval: 100}
+const defaultOpts = { timeout: 2000, interval: 100 }
 const identity = x => x
 
 /**
@@ -7,28 +7,28 @@ const identity = x => x
  * capturing the result (or timeout event) in a Promise
  */
 const pollFor = (
-  fn, 
-  pred = identity, 
-  {timeout, interval} = defaultOpts
-) => new Promise(
-  (fulfill, reject) => {
-    let t = 0
-    let timer = null
-    const run = () => {
-      const val = fn()
-      if (pred(val)) {
-        fulfill(val)
-      } else {
-        if (t >= timeout) {
-          reject(`pollFor timed out after ${timeout}ms`)
-        } else {
-          t += interval
-          setTimeout(run, interval)
-        }
+  fn,
+  pred = identity,
+  { timeout, interval } = defaultOpts
+) => new Promise((fulfill, reject) => {
+  let t = 0;
+  let timer = null;
+  const run = () => {
+    const val = fn();
+    if (pred(val)) {
+      fulfill(val);
+    }
+    else {
+      if (t >= timeout) {
+        reject(`pollFor timed out after ${timeout}ms`);
+      }
+      else {
+        t += interval;
+        setTimeout(run, interval);
       }
     }
-    run()
-  }
-)
+  };
+  run();
+})
 
-module.exports = {pollFor}
+module.exports = { pollFor }

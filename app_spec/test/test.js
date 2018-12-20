@@ -76,36 +76,40 @@ test('create_post', (t) => {
 })
 
 test('delete_post', (t) => {
-  t.plan(2)
+  t.plan(3)
 
-  const content = "Holo world"
+  const content = "Hello Holo world 321"
   const in_reply_to = null
   const params = { content, in_reply_to }
   const createResult = app.call("blog", "main", "create_post", params)
 
   t.ok(createResult.Ok)
 
-  const deletionParams = { post_address: "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk" }
-  const result = app.call("blog", "main", "delete_post", deletionParams)
+  const deletionParams = { post_address: createResult.Ok }
+  const deletionResult = app.call("blog", "main", "delete_post", deletionParams)
 
-  t.ok(result.Ok)
+  t.equals(deletionResult.Ok, null)
+
+  const paramsGet = { post_address: createResult.Ok }
+  const result = app.call("blog", "main", "get_post", paramsGet)
+
+  t.equals(result.Ok, null)
 })
 
 test('update_post', (t) => {
   t.plan(2)
 
-  const content = "Holo world"
+  const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
   const createResult = app.call("blog", "main", "create_post", params)
 
   t.ok(createResult.Ok)
 
-
-  const updateParams = { post_address: "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk", new_content: "Hello Holo" }
+  const updateParams = { post_address: createResult.Ok, new_content: "Hello Holo" }
   const result = app.call("blog", "main", "update_post", updateParams)
 
-  t.ok(result.Ok)
+  t.equals(result.Ok, null)
 })
 
 

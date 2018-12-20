@@ -41,9 +41,10 @@ pub mod tests {
                 self,
                 api::{
                     commit::tests::test_commit_args_bytes,
-                    tests::{test_capability, test_parameters, test_zome_name},
+                    tests::{test_parameters, test_zome_name},
                 },
             },
+            tests::{test_capability_call, test_capability_name},
             ZomeFnCall,
         },
     };
@@ -168,7 +169,7 @@ pub mod tests {
         let wasm = test_get_round_trip_wat();
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
-            &test_capability(),
+            &test_capability_name(),
             wasm.clone(),
         );
         let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
@@ -188,7 +189,7 @@ pub mod tests {
 
         let commit_call = ZomeFnCall::new(
             &test_zome_name(),
-            &test_capability(),
+            Some(test_capability_call()),
             "commit_dispatch",
             test_parameters(),
         );
@@ -212,7 +213,7 @@ pub mod tests {
 
         let get_call = ZomeFnCall::new(
             &test_zome_name(),
-            &test_capability(),
+            Some(test_capability_call()),
             "get_dispatch",
             test_parameters(),
         );
@@ -248,7 +249,7 @@ pub mod tests {
         // let wasm = test_get_round_trip_wat();
         // let dna = test_utils::create_test_dna_with_wasm(
         //     &test_zome_name(),
-        //     &test_capability(),
+        //     &test_capability_name(),
         //     wasm.clone(),
         // );
         // let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
@@ -268,7 +269,7 @@ pub mod tests {
         //
         // let get_call = ZomeFnCall::new(
         //     &test_zome_name(),
-        //     &test_capability(),
+        //     Some(test_capability_call()),
         //     "get_dispatch",
         //     test_parameters(),
         // );

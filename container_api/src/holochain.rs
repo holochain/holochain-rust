@@ -13,7 +13,11 @@
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::{*, context_builder::ContextBuilder};
-//! use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
+//! use holochain_core_types::{
+//!     cas::content::Address,
+//!     agent::AgentId,
+//!     dna::{Dna, capabilities::CapabilityCall},
+//!     json::JsonString};
 //! use std::sync::Arc;
 //! use tempfile::tempdir;
 //!
@@ -38,7 +42,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome","test_cap","some_fn","{}");
+//! hc.call("test_zome", Some(CapabilityCall::new("foo".to_string(), Address::from(""), None)), "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -65,7 +69,11 @@ use holochain_core::{
     state::State,
     workflows::application,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    dna::{capabilities::CapabilityCall, Dna},
+    error::HolochainError,
+    json::JsonString,
+};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -162,14 +170,14 @@ impl Holochain {
     pub fn call(
         &mut self,
         zome: &str,
-        cap: &str,
+        cap: Option<CapabilityCall>,
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 
@@ -196,7 +204,11 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, Signal},
     };
-    use holochain_core_types::{agent::AgentId, cas::content::AddressableContent, dna::Dna};
+    use holochain_core_types::{
+        agent::AgentId,
+        cas::content::{Address, AddressableContent},
+        dna::Dna,
+    };
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
@@ -232,6 +244,14 @@ mod tests {
 
     fn example_api_wasm() -> Vec<u8> {
         create_wasm_from_file(&example_api_wasm_path())
+    }
+
+    fn example_capability_call() -> Option<CapabilityCall> {
+        Some(CapabilityCall::new(
+            "test_cap".to_string(),
+            Address::from("test_token"),
+            None,
+        ))
     }
 
     #[test]
@@ -386,7 +406,7 @@ mod tests {
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", "test_cap", "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "main", "");
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -396,7 +416,7 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", "test_cap", "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "main", "");
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
@@ -428,7 +448,7 @@ mod tests {
         // always returns not implemented error for now!
         let result = hc.call(
             "test_zome",
-            "test_cap",
+            example_capability_call(),
             "round_trip_test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
@@ -464,7 +484,12 @@ mod tests {
         .unwrap();
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            example_capability_call(),
+            "commit_test",
+            r#"{}"#,
+        );
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
@@ -501,7 +526,12 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "commit_fail_test", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            example_capability_call(),
+            "commit_fail_test",
+            r#"{}"#,
+        );
         println!("can_call_commit_err result: {:?}", result);
 
         // Expect normal OK result with hash
@@ -536,7 +566,12 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            example_capability_call(),
+            "debug_hello",
+            r#"{}"#,
+        );
 
         assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
@@ -568,7 +603,12 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            example_capability_call(),
+            "debug_multiple",
+            r#"{}"#,
+        );
 
         // Expect Success as result
         println!("result = {:?}", result);
@@ -619,8 +659,13 @@ mod tests {
             })
             .unwrap();
         hc.start().expect("couldn't start");
-        hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
-            .unwrap();
+        hc.call(
+            "test_zome",
+            example_capability_call(),
+            "commit_test",
+            r#"{}"#,
+        )
+        .unwrap();
 
         'outer: loop {
             let msg_publish = rx

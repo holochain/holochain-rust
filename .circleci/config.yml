@@ -6,14 +6,50 @@ jobs:
     steps:
       - checkout
 
-      - restore_cache:
-          keys:
-            # todo: keys for each target
-            - v3-rust-{{ checksum "Cargo.toml" }}
-
       - run:
           name: fmt check
           command: nix-shell --run hc-fmt-check
+
+      # hdk test
+      - restore_cache:
+         keys:
+          - hdk-v1-{{ checksum "hdk-rust/Cargo.toml" }}-{{ checksum "hdk-rust/wasm-test/Cargo.toml" }}
+      - run:
+         name: test hdk
+         command: nix-shell --run hc-test-hdk
+      - save_cache:
+         key: hdk-v1-{{ checksum "hdk-rust/Cargo.toml" }}-{{ checksum "hdk-rust/wasm-test/Cargo.toml" }}
+         paths:
+          - hdk-rust/target
+          - hdk-rust/wasm-test/target
+
+      # wasm-utils test
+      - restore_cache:
+         keys:
+          - wasm-utils-v1-{{ checksum "wasm_utils/Cargo.toml" }}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml" }}
+      - run:
+         name: test wasm utils
+         command: nix-shell --run hc-test-wasm-utils
+      - save_cache:
+         key: wasm-utils-v1-{{ checksum "wasm_utils/Cargo.toml" }}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml" }}
+         paths:
+          - wasm_utils/target
+          - wasm_utils/wasm-test/integration-test/target
+
+      # container api test
+      - restore_cache:
+         keys:
+          - wasm-utils-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
+      - run:
+         name: test container api
+         command: nix-shell --run hc-test-container-api
+      - save_cache:
+         key: wasm-utils-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
+         paths:
+          - container_api/target
+          - container_api/wasm-test/target
+
+
 
       # wasm tests
       - restore_cache:
@@ -63,14 +99,3 @@ jobs:
       - run:
           name: app spec tests
           command: nix-shell --run hc-test-app-spec
-
-      - save_cache:
-          key: v3-rust-{{ checksum "Cargo.toml" }}
-          paths:
-            - "~/.cargo"
-            - "./target"
-            - "./app_spec/zomes/blog/code/target"
-            - "./app_spec/zomes/summer/code/target"
-            - "./core/src/nucleus/ribosome/target"
-            - "./core/src/nucleus/wasm-test/target"
-            - "./test_utils/target"

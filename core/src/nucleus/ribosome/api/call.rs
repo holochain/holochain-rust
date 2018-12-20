@@ -218,7 +218,7 @@ pub(crate) fn reduce_call(
         _ => unreachable!(),
     };
 
-    // 1. Validate that the call (a number of things could go wrong)
+    // 1. Validate the call (a number of things could go wrong)
     let dna = match validate_call(context.clone(), state, &fn_call) {
         Err(err) => {
             // Notify failure
@@ -464,7 +464,7 @@ pub mod tests {
             expected.clone(),
         );
 
-        let grant = CapTokenGrant::new(None);
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         test_reduce_call(
@@ -498,7 +498,8 @@ pub mod tests {
         );
 
         let someone = Address::from("somoeone");
-        let grant = CapTokenGrant::new(Some(vec![someone.clone()]));
+        let grant =
+            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()])).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         test_reduce_call(

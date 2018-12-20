@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -f Dockerfile.circle -t holochain/holochain-rust:circle "$@" .
+docker build -f Dockerfile.circle -t holochain/holochain-rust:circle-incremental "$@" .

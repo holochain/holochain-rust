@@ -96,18 +96,19 @@ let
   hc-test-net-ipc = nixpkgs.writeShellScriptBin "hc-test-net-ipc" "${test "holochain_net_ipc" "net_ipc" "none"}";
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
-  hc-test-hdk
-  hc-test-wasm-utils
-  hc-test-container-api
-  hc-test-core
-  hc-test-cas-implementations
-  hc-test-dna-c-binding
-  hc-test-net-connection
-  hc-test-sodium
-  hc-test-hc
-  hc-test-core-types
-  hc-test-net
-  hc-test-net-ipc
+  hc-test-hdk \
+  && hc-test-wasm-utils \
+  && hc-test-container-api \
+  && hc-test-core \
+  && hc-test-cas-implementations \
+  && hc-test-dna-c-binding \
+  && hc-test-net-connection \
+  && hc-test-sodium \
+  && hc-test-hc \
+  && hc-test-core-types \
+  && hc-test-net \
+  && hc-test-net-ipc \
+  ;
   '';
 
 in

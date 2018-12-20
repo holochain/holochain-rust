@@ -180,7 +180,7 @@ _windows_template_lite: &_windows_template_lite
     # caching everything in the repo (we never want to accidentally do that)
     - if [ $WASM_PATH != "none" ]; then rustup target add wasm32-unknown-unknown; fi;
     - if [ $WASM_PATH != "none" ]; then cargo build --manifest-path $WASM_PATH/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR; fi;
-    - if [ -n "$WASM_PATH_2" ]; then cargo build --manifest-path $WASM_PATH_2/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR; fi;
+    - if [ $WASM_PATH_2 != "none" ]; then cargo build --manifest-path $WASM_PATH_2/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR; fi;
   script:
     - cargo test -p $TEST_P --target-dir $CARGO_TARGET_DIR
 
@@ -194,6 +194,7 @@ jobs:
        - TEST_P=hdk
        - TEST_PATH=hdk-rust
        - WASM_PATH=hdk-rust/wasm-test
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -204,6 +205,7 @@ jobs:
        - TEST_P=holochain_wasm_utils
        - TEST_PATH=wasm_utils
        - WASM_PATH=wasm_utils/wasm-test/integration-test
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -225,6 +227,7 @@ jobs:
        - TEST_P=holochain_core
        - TEST_PATH=core
        - WASM_PATH=core/src/nucleus/actions/wasm-test
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -245,6 +248,7 @@ jobs:
        - TEST_P=holochain_cas_implementations
        - TEST_PATH=cas_implementations
        - WASM_PATH=none
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -255,6 +259,7 @@ jobs:
        - TEST_P=holochain_dna_c_binding
        - TEST_PATH=dna_c_binding
        - WASM_PATH=none
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -265,6 +270,7 @@ jobs:
        - TEST_P=holochain_net_connection
        - TEST_PATH=net_connection
        - WASM_PATH=none
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -275,6 +281,7 @@ jobs:
        - TEST_P=holochain_sodium
        - TEST_PATH=sodium
        - WASM_PATH=none
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -285,6 +292,7 @@ jobs:
        - TEST_P=hc
        - TEST_PATH=cmd
        - WASM_PATH=none
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -319,6 +327,7 @@ jobs:
        - TEST_P=holochain_core_types
        - TEST_PATH=core_types
        - WASM_PATH=none
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -329,6 +338,7 @@ jobs:
        - TEST_P=holochain_net
        - TEST_PATH=net
        - WASM_PATH=none
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
@@ -339,6 +349,7 @@ jobs:
        - TEST_P=holochain_net_ipc
        - TEST_PATH=net_ipc
        - WASM_PATH=none
+       - WASM_PATH_2=none
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target

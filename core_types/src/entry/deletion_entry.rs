@@ -1,7 +1,7 @@
 use crate::{cas::content::Address, error::HolochainError, json::JsonString};
 
 //-------------------------------------------------------------------------------------------------
-// LinkAddEntry
+// DeletionEntry
 //-------------------------------------------------------------------------------------------------
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]

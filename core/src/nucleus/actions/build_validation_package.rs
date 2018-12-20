@@ -54,10 +54,14 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
         EntryType::LinkAdd => {
             // LinkAdd can always be validated
         }
+
         EntryType::Deletion => {
             // FIXME
         }
 
+        EntryType::CapTokenGrant => {
+            // FIXME
+        }
         _ => {
             return ValidationPackageFuture {
                 context: context.clone(),

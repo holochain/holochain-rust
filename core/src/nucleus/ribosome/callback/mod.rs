@@ -19,7 +19,11 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    dna::{capabilities::ReservedCapabilityNames, wasm::DnaWasm},
+    cas::content::Address,
+    dna::{
+        capabilities::{CapabilityCall, ReservedCapabilityNames},
+        wasm::DnaWasm,
+    },
     entry::Entry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
@@ -206,7 +210,13 @@ pub fn call(
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,
-        &function.capability().as_str().to_string(),
+        Some(CapabilityCall::new(
+            function.capability().as_str().to_string(),
+            Address::from(""), //FIXME!!
+            None,
+        )),
+        //&function.capability().as_str().to_string(),
+        //"", //TODO: token?
         &function.as_str().to_string(),
         params,
     );

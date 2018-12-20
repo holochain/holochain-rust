@@ -49,33 +49,19 @@ jobs:
           - container_api/target
           - container_api/wasm-test/target
 
-
-
-      # wasm tests
+      # core test
       - restore_cache:
-          keys:
-            - v6-wasm-{{ checksum "shell.nix" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
+         keys:
+          - wasm-utils-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
       - run:
-          name: build wasm
-          command: nix-shell --run hc-wasm-build
+         name: test core
+         command: nix-shell --run hc-test-core
       - save_cache:
-          key: v6-wasm-{{ checksum "shell.nix" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
-          paths:
-            - "./core/src/nucleus/actions/wasm-test/target"
-            - "./core/src/nucleus/actions/wasm-test/.cargo"
+         key: wasm-utils-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
+         paths:
+          - core/target
+          - core/src/nucleus/actions/wasm-test/target
 
-            - "./container_api/wasm-test/target"
-            - "./container_api/wasm-test/.cargo"
-
-            - "./hdk-rust/wasm-test/target"
-            - "./hdk-rust/wasm-test/.cargo"
-
-            - "./wasm_utils/wasm-test/integration-test/target"
-            - "./wasm_utils/wasm-test/integration-test/.cargo"
-
-      - run:
-          name: run all tests
-          command: nix-shell --run hc-test
 
       - run:
           name: install cmd

@@ -1,16 +1,18 @@
 use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
+    hash::HashString
 };
 use std::{
-    collections::HashSet,
+    collections::{HashMap,HashSet},
     sync::{Arc, RwLock},
 };
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct EavMemoryStorage {
-    storage: Arc<RwLock<HashSet<EntityAttributeValue>>>,
+    storage: Arc<RwLock<HashMap<HashString,EntityAttributeValue>>>,
+    current_hash : HashString,
     id: Uuid,
 }
 
@@ -23,7 +25,7 @@ impl PartialEq for EavMemoryStorage {
 impl EavMemoryStorage {
     pub fn new() -> EavMemoryStorage {
         EavMemoryStorage {
-            storage: Arc::new(RwLock::new(HashSet::new())),
+            storage: Arc::new(RwLock::new(HashMap::new())),
             id: Uuid::new_v4(),
         }
     }
@@ -32,7 +34,7 @@ impl EavMemoryStorage {
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let mut map = self.storage.write()?;
-        map.insert(eav.clone());
+        map.insert(self.current_hash,eav.clone());
         Ok(())
     }
 
@@ -41,15 +43,16 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?;
         Ok(map
             .iter()
             .cloned()
-            .filter(|e| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|e| EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref()))
-            .filter(|e| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-            .collect())
+            .filter(|(k,a)|k==self.current_hash)
+            .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
+            .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref()))
+            .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
+            .collect::<HashMap<HashString,EntityAttributeValue>>())
     }
 }
 

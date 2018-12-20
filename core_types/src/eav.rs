@@ -3,10 +3,11 @@ use crate::{
     entry::{test_entry_a, test_entry_b, Entry},
     error::{HcResult, HolochainError},
     json::JsonString,
+    hash::HashString,
 };
 use objekt;
 use std::{
-    collections::HashSet,
+    collections::{HashSet,HashMap},
     convert::TryInto,
     sync::{Arc, RwLock},
 };
@@ -123,25 +124,25 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError>;
+    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError>;
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
-    storage: HashSet<EntityAttributeValue>,
+    storage: HashMap<HashString,EntityAttributeValue>,
 }
 
 impl ExampleEntityAttributeValueStorageNonSync {
     pub fn new() -> ExampleEntityAttributeValueStorageNonSync {
         ExampleEntityAttributeValueStorageNonSync {
-            storage: HashSet::new(),
+            storage: HashMap::new(),
         }
     }
 
     fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        self.storage.insert(eav.clone());
+        self.storage.insert(HashString::from(""),eav.clone());
         Ok(())
     }
 
@@ -150,24 +151,24 @@ impl ExampleEntityAttributeValueStorageNonSync {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        let filtered = self
+    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
+        let filtered = self.clone()
             .storage
-            .iter()
-            .cloned()
-            .filter(|eav| match entity {
+            .into_iter()
+          // .cloned()
+            .filter(|(_,eav)| match entity {
                 Some(ref e) => &eav.entity() == e,
                 None => true,
             })
-            .filter(|eav| match attribute {
+            .filter(|(_,eav)| match attribute {
                 Some(ref a) => &eav.attribute() == a,
                 None => true,
             })
-            .filter(|eav| match value {
+            .filter(|(_,eav)| match value {
                 Some(ref v) => &eav.value() == v,
                 None => true,
             })
-            .collect::<HashSet<EntityAttributeValue>>();
+            .collect::<HashMap<HashString,EntityAttributeValue>>();
         Ok(filtered)
     }
 }
@@ -200,7 +201,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
         self.content
             .read()
             .unwrap()
@@ -252,7 +253,7 @@ pub fn eav_round_trip_test_runner(
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
 
     assert_eq!(
-        HashSet::new(),
+        HashMap::new(),
         eav_storage
             .fetch_eav(
                 Some(entity_content.address()),
@@ -264,8 +265,8 @@ pub fn eav_round_trip_test_runner(
 
     eav_storage.add_eav(&eav).expect("could not add eav");
 
-    let mut expected = HashSet::new();
-    expected.insert(eav.clone());
+    let mut expected = HashMap::new();
+    expected.insert(HashString::from(""),eav.clone());
     // some examples of constraints that should all return the eav
     for (e, a, v) in vec![
         // constrain all

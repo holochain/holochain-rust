@@ -4,6 +4,7 @@ use crate::{
     entry::{test_entry_unique, Entry},
     error::HolochainError,
     json::RawString,
+    hash::HashString
 };
 use objekt;
 use std::{
@@ -253,7 +254,7 @@ impl EavTestSuite {
 
         for eav_storage in two_stores.iter() {
             assert_eq!(
-                HashSet::new(),
+                HashMap::new(),
                 eav_storage
                     .fetch_eav(
                         Some(entity_content.address()),
@@ -266,8 +267,8 @@ impl EavTestSuite {
 
         eav_storage.add_eav(&eav).expect("could not add eav");
 
-        let mut expected = HashSet::new();
-        expected.insert(eav.clone());
+        let mut expected = HashMap::new();
+        expected.insert(HashString::from(""),eav.clone());
 
         for eav_storage in two_stores.iter() {
             // some examples of constraints that should all return the eav
@@ -322,12 +323,12 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "one_to_many".to_string();
 
-        let mut expected = HashSet::new();
+        let mut expected = HashMap::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
             eav_storage.add_eav(&eav).expect("could not add eav");
-            expected.insert(eav);
+            expected.insert(HashString::from(""),eav);
         }
 
         // throw an extra thing referencing many to show fetch ignores it
@@ -352,8 +353,9 @@ impl EavTestSuite {
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = HashSet::new();
+            let mut expected_one = HashMap::new();
             expected_one.insert(
+                HashString::from(""),
                 EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
                     .expect("Could not create eav"),
             );
@@ -387,12 +389,12 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "many_to_one".to_string();
 
-        let mut expected = HashSet::new();
+        let mut expected = HashMap::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
             eav_storage.add_eav(&eav).expect("could not add eav");
-            expected.insert(eav);
+            expected.insert(HashString::from(""),eav);
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
@@ -417,8 +419,9 @@ impl EavTestSuite {
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = HashSet::new();
+            let mut expected_one = HashMap::new();
             expected_one.insert(
+                HashString::from(""),
                 EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
                     .expect("Could not create eav"),
             );

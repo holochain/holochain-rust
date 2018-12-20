@@ -390,6 +390,7 @@ pub mod tests {
                 )),
                 mock_network_config(),
                 None,
+                None,
             )),
             logger,
         )
@@ -450,6 +451,7 @@ pub mod tests {
             )),
             mock_network_config(),
             None,
+            None,
         );
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -472,6 +474,7 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
             None,
         );
         let chain_store = ChainStore::new(cas.clone());

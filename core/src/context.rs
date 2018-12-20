@@ -242,6 +242,7 @@ pub mod tests {
             )),
             mock_network_config(),
             None,
+            None,
         );
 
         assert!(maybe_context.state().is_none());
@@ -273,6 +274,7 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
             None,
         );
 

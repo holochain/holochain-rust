@@ -871,7 +871,11 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 /// }
 /// # }
 /// ```
-pub fn query(entry_type_names: QueryArgsNames, start: u32, limit: u32) -> ZomeApiResult<QueryResult> {
+pub fn query(
+    entry_type_names: QueryArgsNames,
+    start: u32,
+    limit: u32,
+) -> ZomeApiResult<QueryResult> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory

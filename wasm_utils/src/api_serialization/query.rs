@@ -1,4 +1,6 @@
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::*, entry::entry_type::EntryType};
+use holochain_core_types::{
+    cas::content::Address, entry::entry_type::EntryType, error::HolochainError, json::*,
+};
 
 // QueryArgsNames -- support querying single/multiple EntryType names
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
@@ -10,38 +12,38 @@ pub enum QueryArgsNames {
 
 impl Default for QueryArgsNames {
     fn default() -> QueryArgsNames {
-        QueryArgsNames::QueryList( vec![] )
+        QueryArgsNames::QueryList(vec![])
     }
 }
 
 // Handle automatic convertions from various types into the appropriate QueryArgsNames enum type
 impl From<EntryType> for QueryArgsNames {
-    fn from( e: EntryType ) -> QueryArgsNames {
-        QueryArgsNames::QueryName( e.to_string() )
+    fn from(e: EntryType) -> QueryArgsNames {
+        QueryArgsNames::QueryName(e.to_string())
     }
 }
 
 impl From<String> for QueryArgsNames {
-    fn from( s: String ) -> QueryArgsNames {
-        QueryArgsNames::QueryName( s )
+    fn from(s: String) -> QueryArgsNames {
+        QueryArgsNames::QueryName(s)
     }
 }
 
 impl From<&str> for QueryArgsNames {
-    fn from( s: &str ) -> QueryArgsNames {
-        QueryArgsNames::QueryName( s.to_string() )
+    fn from(s: &str) -> QueryArgsNames {
+        QueryArgsNames::QueryName(s.to_string())
     }
 }
 
 impl From<Vec<String>> for QueryArgsNames {
-    fn from( v: Vec<String> ) -> QueryArgsNames {
-        QueryArgsNames::QueryList( v )
+    fn from(v: Vec<String>) -> QueryArgsNames {
+        QueryArgsNames::QueryList(v)
     }
 }
 
 impl From<Vec<&str>> for QueryArgsNames {
-    fn from( v: Vec<&str> ) -> QueryArgsNames {
-        QueryArgsNames::QueryList( v.iter().map(|s| s.to_string()).collect() )
+    fn from(v: Vec<&str>) -> QueryArgsNames {
+        QueryArgsNames::QueryList(v.iter().map(|s| s.to_string()).collect())
     }
 }
 

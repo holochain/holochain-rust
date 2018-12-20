@@ -10,7 +10,7 @@ use holochain_core_types::{
 };
 use std::{
     str::FromStr,
-    sync::{Arc, RwLock}
+    sync::{Arc, RwLock},
 };
 
 #[derive(Debug, Clone)]
@@ -68,11 +68,11 @@ impl ChainStore {
         // single matching entry type name with no glob pattern matching will use the single
         // entry_type optimization.  Otherwise, we'll construct a GlobSet match and scan the list to
         // create a pattern-match engine to select the EntryTypes we want.
-        fn is_glob( c: &char ) -> bool {
-            "./*[]{}".chars().any( |y| y == *c )
+        fn is_glob(c: &char) -> bool {
+            "./*[]{}".chars().any(|y| y == *c)
         }
-        fn is_glob_str( s: &str ) -> bool {
-            s.chars().any( |c| is_glob( &c ))
+        fn is_glob_str(s: &str) -> bool {
+            s.chars().any(|c| is_glob(&c))
         }
 
         Ok(match entry_type_names {
@@ -88,13 +88,14 @@ impl ChainStore {
                     base_iter.collect()
                 }
             }
-            [one] if ! is_glob_str( one ) => {
+            [one] if !is_glob_str(one) => {
                 // Single EntryType without "glob" pattern; uses .iter_type()
                 let entry_type = match EntryType::from_str(&one) {
                     Ok(inner) => inner,
                     Err(..) => return Err(UnknownEntryType),
                 };
-                let base_iter = self.iter_type(start_chain_header, &entry_type)
+                let base_iter = self
+                    .iter_type(start_chain_header, &entry_type)
                     .skip(start as usize)
                     .map(|header| header.entry_address().clone());
                 if limit > 0 {
@@ -112,19 +113,21 @@ impl ChainStore {
                 let mut builder = GlobSetBuilder::new();
                 for name in rest {
                     builder.add(
-                        GlobBuilder::new( name )
-                            .literal_separator( true )
+                        GlobBuilder::new(name)
+                            .literal_separator(true)
                             .build()
-                            .map_err(|_| UnknownEntryType)?
+                            .map_err(|_| UnknownEntryType)?,
                     );
-                };
-                let globset = builder
-                    .build()
-                    .map_err(|_| UnknownEntryType)?;
+                }
+                let globset = builder.build().map_err(|_| UnknownEntryType)?;
                 let base_iter = self
                     .iter(start_chain_header)
-                    .filter(|header|
-                            globset.matches(String::from((*header.entry_type()).clone())).len() > 0)
+                    .filter(|header| {
+                        globset
+                            .matches(String::from((*header.entry_type()).clone()))
+                            .len()
+                            > 0
+                    })
                     .skip(start as usize)
                     .map(|header| header.entry_address().clone());
                 if limit > 0 {
@@ -215,7 +218,7 @@ impl ChainStoreTypeIterator {
     }
 }
 
-/// Follows ChainHeader.link_same_type through every previous Entry of the same EntryType in the chain 
+/// Follows ChainHeader.link_same_type through every previous Entry of the same EntryType in the chain
 impl Iterator for ChainStoreTypeIterator {
     type Item = ChainHeader;
 
@@ -254,11 +257,11 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::{test_chain_header, test_sources, ChainHeader},
         entry::{
-            entry_type::{AppEntryType, test_entry_type_b},
-            Entry, test_entry, test_entry_b, test_entry_c,
+            entry_type::{test_entry_type_b, AppEntryType},
+            test_entry, test_entry_b, test_entry_c, Entry,
         },
         json::JsonString,
-        signature::{Signature, test_signature_b, test_signature_c, test_signatures},
+        signature::{test_signature_b, test_signature_c, test_signatures, Signature},
         time::test_iso_8601,
     };
 
@@ -390,7 +393,7 @@ pub mod tests {
     fn query_test() {
         let chain_store = test_chain_store();
 
-        // Two entries w/ the same EntryType "testEntryTypeB".  
+        // Two entries w/ the same EntryType "testEntryTypeB".
         let chain_header_a = test_chain_header();
         let entry = test_entry_b();
         let chain_header_b = ChainHeader::new(
@@ -398,8 +401,8 @@ pub mod tests {
             &entry.address(),
             &test_sources(),
             &vec![test_signature_b()],
-            &Some(chain_header_a.address()),    // .link                (to previous entry)
-            &None,                              // .link_same_type      (to previous entry of same type)
+            &Some(chain_header_a.address()), // .link                (to previous entry)
+            &None, // .link_same_type      (to previous entry of same type)
             &None,
             &test_iso_8601(),
         );
@@ -414,7 +417,10 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        let entry = Entry::App(AppEntryType::from("another/something"), JsonString::from("Hello, World!"));
+        let entry = Entry::App(
+            AppEntryType::from("another/something"),
+            JsonString::from("Hello, World!"),
+        );
         let chain_header_d = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
@@ -425,7 +431,10 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
-        let entry = Entry::App(AppEntryType::from("another/different"), JsonString::from("Kthxbye"));
+        let entry = Entry::App(
+            AppEntryType::from("another/different"),
+            JsonString::from("Kthxbye"),
+        );
         let chain_header_e = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
@@ -460,7 +469,7 @@ pub mod tests {
                 &Some(chain_header_e.clone()),
                 &vec![test_entry_type_b().to_string().as_ref()],
                 0,
-                0
+                0,
             )
             .unwrap();
         let expected = vec![
@@ -475,7 +484,7 @@ pub mod tests {
                 &Some(chain_header_e.clone()),
                 &vec![test_entry_type_b().to_string().as_ref()],
                 0,
-                1
+                1,
             )
             .unwrap();
         let expected = vec![chain_header_c.entry_address().clone()];
@@ -483,19 +492,15 @@ pub mod tests {
 
         // Now query for all EntryTypes via entry_type == None
         let found = chain_store
-            .query(
-                &Some(chain_header_e.clone()),
-                &[],
-                0,
-                0
-            )
+            .query(&Some(chain_header_e.clone()), &[], 0, 0)
             .unwrap();
         let expected = vec![
             chain_header_e.entry_address().clone(),
             chain_header_d.entry_address().clone(),
             chain_header_c.entry_address().clone(),
             chain_header_b.entry_address().clone(),
-            chain_header_a.entry_address().clone()];
+            chain_header_a.entry_address().clone(),
+        ];
         assert_eq!(expected, found);
 
         // Test Glob matching, namespacing.
@@ -506,13 +511,20 @@ pub mod tests {
                 &Some(chain_header_e.clone()),
                 &vec!["**".to_string().as_ref()],
                 0,
-                0
+                0,
             )
             .unwrap();
         assert_eq!(expected, found);
 
         // Globbing plus some arbitrary EntryType names, thus matches everything again
-        let found = chain_store.query(&Some(chain_header_e.clone()), &vec!["another/*".to_string().as_ref(), "testEntryType*"], 0, 0).unwrap();
+        let found = chain_store
+            .query(
+                &Some(chain_header_e.clone()),
+                &vec!["another/*".to_string().as_ref(), "testEntryType*"],
+                0,
+                0,
+            )
+            .unwrap();
         assert_eq!(expected, found);
 
         // Just globbing
@@ -521,7 +533,7 @@ pub mod tests {
                 &Some(chain_header_e.clone()),
                 &vec!["another/*".to_string().as_ref()],
                 0,
-                0
+                0,
             )
             .unwrap();
         let expected = vec![
@@ -572,14 +584,14 @@ pub mod tests {
         (*storage.write().unwrap())
             .add(&chain_header_h)
             .expect("could not add header to cas");
-        
+
         // Multiple complex globs.  The leading '**/' matches 0 or more leading .../ segments, so returns
         let found = chain_store
             .query(
                 &Some(chain_header_h.clone()),
                 &vec!["another/*", "ns/**/t*"],
                 0,
-                0
+                0,
             )
             .unwrap();
         let expected = vec![
@@ -592,13 +604,7 @@ pub mod tests {
 
         // So, we should be able to find EntryType names by suffix at any depth
         let found = chain_store
-            .query(
-                &Some(
-                    chain_header_h.clone()),
-                &vec!["**/*{e,B}"],
-                0,
-                0
-            )
+            .query(&Some(chain_header_h.clone()), &vec!["**/*{e,B}"], 0, 0)
             .unwrap();
         let expected = vec![
             chain_header_h.entry_address().clone(), // .../three
@@ -608,8 +614,11 @@ pub mod tests {
             chain_header_a.entry_address().clone(), // testEntryType
         ];
         assert_eq!(expected, found);
-        
-        let entry = Entry::App(AppEntryType::from("%system_entry_type"), JsonString::from("System Entry"));
+
+        let entry = Entry::App(
+            AppEntryType::from("%system_entry_type"),
+            JsonString::from("System Entry"),
+        );
         let chain_header_i = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
@@ -626,12 +635,7 @@ pub mod tests {
 
         // Find EntryTypes which are/not System (start with '%'), and end in 'e'
         let found = chain_store
-            .query(
-                &Some(chain_header_i.clone()),
-                &vec!["[!%]*e"],
-                0,
-                0
-            )
+            .query(&Some(chain_header_i.clone()), &vec!["[!%]*e"], 0, 0)
             .unwrap();
         let expected = vec![
             chain_header_a.entry_address().clone(), // testEntryType
@@ -639,12 +643,7 @@ pub mod tests {
         assert_eq!(expected, found);
         // Including all namespaced EntryTypes
         let found = chain_store
-            .query(
-                &Some(chain_header_i.clone()),
-                &vec!["**/[!%]*e"],
-                0,
-                0
-            )
+            .query(&Some(chain_header_i.clone()), &vec!["**/[!%]*e"], 0, 0)
             .unwrap();
         let expected = vec![
             chain_header_h.entry_address().clone(), // .../three
@@ -653,88 +652,97 @@ pub mod tests {
         ];
         assert_eq!(expected, found);
         let found = chain_store
-            .query(
-                &Some(chain_header_i.clone()),
-                &vec!["%*e"],
-                0,
-                0
-            )
+            .query(&Some(chain_header_i.clone()), &vec!["%*e"], 0, 0)
             .unwrap();
         let expected = vec![
             chain_header_i.entry_address().clone(), // %system_entry_type
         ];
         assert_eq!(expected, found);
-        
     }
 
-    use globset::{ Glob, GlobBuilder, GlobSetBuilder };
+    use globset::{Glob, GlobBuilder, GlobSetBuilder};
 
     #[test]
     /// show query() globbing implementation
     fn glob_query_test() {
-
-        let glob = match Glob::new( "*.rs" ) {
+        let glob = match Glob::new("*.rs") {
             Ok(pat) => pat.compile_matcher(),
-            Err(_) => panic!( "Couldn't craete new Glob" ),
+            Err(_) => panic!("Couldn't craete new Glob"),
         };
-        assert!(glob.is_match( "foo.rs" ));
-        assert!(glob.is_match( "foo/bar.rs" )); // separators not specially handled
-        assert!(!glob.is_match( "Cargo.toml" ));
+        assert!(glob.is_match("foo.rs"));
+        assert!(glob.is_match("foo/bar.rs")); // separators not specially handled
+        assert!(!glob.is_match("Cargo.toml"));
 
-        let glob = match GlobBuilder::new( "*.rs" ).literal_separator(true).build() {
+        let glob = match GlobBuilder::new("*.rs").literal_separator(true).build() {
             Ok(pat) => pat.compile_matcher(),
-            Err(_) => panic!( "Couldn't craete new Glob" ),
+            Err(_) => panic!("Couldn't craete new Glob"),
         };
-        assert!(glob.is_match( "foo.rs" ));
-        assert!(!glob.is_match( "foo/bar.rs" )); // separators now are special
-        assert!(!glob.is_match( "Cargo.toml" ));
-        
+        assert!(glob.is_match("foo.rs"));
+        assert!(!glob.is_match("foo/bar.rs")); // separators now are special
+        assert!(!glob.is_match("Cargo.toml"));
+
         let mut builder = GlobSetBuilder::new();
         // A GlobBuilder can be used to configure each glob's match semantics
         // independently.  Either using simple Glob::new (default semantics):
-        builder.add( match Glob::new( "*.rs" ) {
+        builder.add(match Glob::new("*.rs") {
             Ok(pat) => pat,
-            Err(_) => panic!( "Couldn't craete new Glob" ),
+            Err(_) => panic!("Couldn't craete new Glob"),
         });
-        builder.add( match Glob::new( "src/lib.rs" ) {
+        builder.add(match Glob::new("src/lib.rs") {
             Ok(pat) => pat,
-            Err(_) => panic!( "Couldn't craete new Glob" ),
+            Err(_) => panic!("Couldn't craete new Glob"),
         });
-        builder.add(match Glob::new( "src/**/foo.rs" ) {
+        builder.add(match Glob::new("src/**/foo.rs") {
             Ok(pat) => pat,
-            Err(_) => panic!( "Couldn't craete new Glob" ),
+            Err(_) => panic!("Couldn't craete new Glob"),
         });
         let set = match builder.build() {
             Ok(globset) => globset,
-            Err(_) => panic!( "Couldn't build GlobSetBuilder" ),
+            Err(_) => panic!("Couldn't build GlobSetBuilder"),
         };
-        assert_eq!( set.matches( "src/bar/baz/foo.rs" ), vec![0, 2] ); // separators are not treated specially; '*' matches them
+        assert_eq!(set.matches("src/bar/baz/foo.rs"), vec![0, 2]); // separators are not treated specially; '*' matches them
 
         // Or using GlobBuilder::new for specific modifiers on each pattern's behaviour
         let mut builder = GlobSetBuilder::new();
-        builder.add( match GlobBuilder::new( "*.rs" ).literal_separator(true).build() {
-            Ok(pat) => pat,
-            Err(_) => panic!( "Couldn't craete new Glob" ),
-        });
-        builder.add( match GlobBuilder::new( "src/lib.rs" ).literal_separator(true).build() {
-            Ok(pat) => pat,
-            Err(_) => panic!( "Couldn't craete new Glob" ),
-        });
-        builder.add( match GlobBuilder::new( "src/**/foo.rs" ).literal_separator(true).build() {
-            Ok(pat) => pat,
-            Err(_) => panic!( "Couldn't craete new Glob" ),
-        });
-        builder.add( match GlobBuilder::new( "**/foo.rs" ).literal_separator(true).build() {
-            Ok(pat) => pat,
-            Err(_) => panic!( "Couldn't craete new Glob" ),
-        });
+        builder.add(
+            match GlobBuilder::new("*.rs").literal_separator(true).build() {
+                Ok(pat) => pat,
+                Err(_) => panic!("Couldn't craete new Glob"),
+            },
+        );
+        builder.add(
+            match GlobBuilder::new("src/lib.rs")
+                .literal_separator(true)
+                .build()
+            {
+                Ok(pat) => pat,
+                Err(_) => panic!("Couldn't craete new Glob"),
+            },
+        );
+        builder.add(
+            match GlobBuilder::new("src/**/foo.rs")
+                .literal_separator(true)
+                .build()
+            {
+                Ok(pat) => pat,
+                Err(_) => panic!("Couldn't craete new Glob"),
+            },
+        );
+        builder.add(
+            match GlobBuilder::new("**/foo.rs")
+                .literal_separator(true)
+                .build()
+            {
+                Ok(pat) => pat,
+                Err(_) => panic!("Couldn't craete new Glob"),
+            },
+        );
         let set = match builder.build() {
             Ok(globset) => globset,
-            Err(_) => panic!( "Couldn't build GlobSetBuilder" ),
+            Err(_) => panic!("Couldn't build GlobSetBuilder"),
         };
-        assert_eq!( set.matches( "src/bar/baz/foo.rs" ), vec![2,3] ); // *.rs no longer matches, due to '/' separators
-        assert_eq!( set.matches( "foo.rs" ), vec![0,3] ); // but, any number of leading '/' are matched by a '**/...'
-
+        assert_eq!(set.matches("src/bar/baz/foo.rs"), vec![2, 3]); // *.rs no longer matches, due to '/' separators
+        assert_eq!(set.matches("foo.rs"), vec![0, 3]); // but, any number of leading '/' are matched by a '**/...'
     }
 
 }

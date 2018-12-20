@@ -7,35 +7,35 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected complex argument: ?
 /// Returns an HcApiReturnCode as I32
-/// 
+///
 /// Specify 0 or more simple or "glob" patterns matching EntryType names.
-/// 
+///
 /// The empty String or an empty Vec matches all.  The '*' glob pattern matches all simple EntryType
 /// names (with no '/'), while the ** pattern matches everything (use "" or [] for efficiency).
 ///  
 /// // [ ]
 /// // [ "" ]
 /// // [ "**" ]
-/// 
+///
 /// Namespaces (groups of related EntryType names) can be queried easily, eg:
-/// 
+///
 /// // [ "name/*" ]
-/// 
+///
 /// Several simple names and/or "glob" patterns can be supplied, and are efficiently
 /// searched for in a single pass using a single efficient Regular Expression engine:
-/// 
+///
 /// // [ "name/*", "and_another", "SomethingElse" ]
-/// 
+///
 /// EntryType names can be excluded, eg. to return every simple (non-namespaced) EntryType except System:
-/// 
+///
 /// // [ "[!%]*" ]
-/// 
+///
 /// To match a pattern, including all namespaced EntryType names, eg. every EntryType except System:
-/// 
+///
 /// // [ "**/[!%]*" ]
-/// 
+///
 /// The following standard "glob" patterns are supported:
-/// 
+///
 /// // Pattern	Match
 /// // =======     =====
 /// // .           One character (other than a '/')
@@ -45,7 +45,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// // {abc,123}   one of a number of sequences of characters
 /// // *           Zero or more of any character
 /// // **/         Zero or more namespace components
-/// 
+///
 pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
@@ -89,40 +89,37 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     */
 
     // TODO: Code duplication; handle the query enum for String/Vec<String> without copying code
-    runtime.store_result(
-        match query.entry_type_names {
-            QueryArgsNames::QueryList(pats) => { // Vec<String> -> Vec[&str]
-                let refs:Vec<&str> = pats.iter()
-                        .map(AsRef::as_ref)
-                        .collect();
-                match agent.chain().query(
-                    &Some(top),
-                    refs.as_slice(), // Vec<&str> -> Vec[&str]
-                    query.start,
-                    query.limit,
-                ) {
-                    // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
-                    // Perhaps return chain().query should return Some(result)/None instead, and the fixed
-                    // UnknownEntryType code here, rather than trying to return a specific error code.
-                    Ok(result) => Ok(result),
-                    Err(_code) => return ribosome_error_code!(UnknownEntryType),
-                }
-            },
-            QueryArgsNames::QueryName(name) => {
-                let refs:Vec<&str> = vec![&name]; // String -> Vec<&str>
-                match agent.chain().query(
-                    &Some(top),
-                    refs.as_slice(), // Vec[&str] -> &[&str]
-                    query.start,
-                    query.limit,
-                ) {
-                    // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
-                    // Perhaps return chain().query should return Some(result)/None instead, and the fixed
-                    // UnknownEntryType code here, rather than trying to return a specific error code.
-                    Ok(result) => Ok(result),
-                    Err(_code) => return ribosome_error_code!(UnknownEntryType),
-                }
+    runtime.store_result(match query.entry_type_names {
+        QueryArgsNames::QueryList(pats) => {
+            // Vec<String> -> Vec[&str]
+            let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect();
+            match agent.chain().query(
+                &Some(top),
+                refs.as_slice(), // Vec<&str> -> Vec[&str]
+                query.start,
+                query.limit,
+            ) {
+                // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
+                // Perhaps return chain().query should return Some(result)/None instead, and the fixed
+                // UnknownEntryType code here, rather than trying to return a specific error code.
+                Ok(result) => Ok(result),
+                Err(_code) => return ribosome_error_code!(UnknownEntryType),
             }
         }
-    )
+        QueryArgsNames::QueryName(name) => {
+            let refs: Vec<&str> = vec![&name]; // String -> Vec<&str>
+            match agent.chain().query(
+                &Some(top),
+                refs.as_slice(), // Vec[&str] -> &[&str]
+                query.start,
+                query.limit,
+            ) {
+                // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
+                // Perhaps return chain().query should return Some(result)/None instead, and the fixed
+                // UnknownEntryType code here, rather than trying to return a specific error code.
+                Ok(result) => Ok(result),
+                Err(_code) => return ribosome_error_code!(UnknownEntryType),
+            }
+        }
+    })
 }

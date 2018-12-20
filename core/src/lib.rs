@@ -38,8 +38,8 @@ extern crate holochain_core_types;
 #[macro_use]
 extern crate holochain_core_types_derive;
 extern crate base64;
-extern crate holochain_net_connection;
 extern crate globset;
+extern crate holochain_net_connection;
 
 pub mod action;
 pub mod agent;

@@ -18,10 +18,14 @@ const config = (() => {
   return ConfigBuilder.habitat(instanceAlice, instanceBob)
 })()
 
+// Initialize the Container (Habitat)
 const hab = new Habitat(config)
 hab.start()
 
-const caller = (agentId) => {
+// This function is a bit of temporary boilerplate to construct a convenient object
+// for testing. These objects will be created automatically with the new Scenario API,
+// and then this function will go away. (TODO)
+const makeCaller = (agentId) => {
   const instanceId = agentId + '-' + dnaPath
   return {
     call: (zome, cap, fn, params) => hab.call(instanceId, zome, cap, fn, params),
@@ -29,8 +33,8 @@ const caller = (agentId) => {
   }
 }
 
-const app = caller('alice')
-const app2 = caller('bob')
+const app = makeCaller('alice')
+const app2 = makeCaller('bob')
 
 test('agentId', (t) => {
   t.plan(2)

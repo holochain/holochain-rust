@@ -1,182 +1,196 @@
 version: 2
+
 jobs:
-  build:
-    docker:
-      - image: holochain/holochain-rust:circle
-    steps:
-      - checkout
+ integration-tests:
+  docker:
+   - image: holochain/holochain-rust:circle
+  steps:
+   - checkout
 
-      - run:
-          name: fmt check
-          command: nix-shell --run hc-fmt-check
+   - run:
+       name: install cmd
+       command: nix-shell --run hc-install-cmd
 
-      # hdk test
-      - restore_cache:
-         keys:
-          - hdk-v1-{{ checksum "hdk-rust/Cargo.toml" }}-{{ checksum "hdk-rust/wasm-test/Cargo.toml" }}
-      - run:
-         name: test hdk
-         command: nix-shell --run hc-test-hdk
-      - save_cache:
-         key: hdk-v1-{{ checksum "hdk-rust/Cargo.toml" }}-{{ checksum "hdk-rust/wasm-test/Cargo.toml" }}
-         paths:
-          - hdk-rust/target
-          - hdk-rust/wasm-test/target
+   # test the node container build
+   # todo - this cache doesn't stop recompilation of rust on node container
+   - restore_cache:
+       keys:
+         - v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
+   - run:
+       name: install node container
+       command: nix-shell --run hc-install-node-container
+   - save_cache:
+       key: v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
+       paths:
+         - "./nodejs_container/native/target"
+         - "./nodejs_container/node_modules"
+         - "./nodejs_container/native/Cargo.lock"
 
-      # wasm-utils test
-      - restore_cache:
-         keys:
-          - wasm-utils-v1-{{ checksum "wasm_utils/Cargo.toml" }}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml" }}
-      - run:
-         name: test wasm utils
-         command: nix-shell --run hc-test-wasm-utils
-      - save_cache:
-         key: wasm-utils-v1-{{ checksum "wasm_utils/Cargo.toml" }}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml" }}
-         paths:
-          - wasm_utils/target
-          - wasm_utils/wasm-test/integration-test/target
+   - run:
+       name: app spec tests
+       command: nix-shell --run hc-test-app-spec
 
-      # container api test
-      - restore_cache:
-         keys:
-          - container-api-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
-      - run:
-         name: test container api
-         command: nix-shell --run hc-test-container-api
-      - save_cache:
-         key: container-api-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
-         paths:
-          - container_api/target
-          - container_api/wasm-test/target
+ unit-tests:
+  docker:
+   - image: holochain/holochain-rust:circle
+  steps:
+   - checkout
 
-      # core test
-      - restore_cache:
-         keys:
-          - core-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
-      - run:
-         name: test core
-         command: nix-shell --run hc-test-core
-      - save_cache:
-         key: core-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
-         paths:
-          - core/target
-          - core/src/nucleus/actions/wasm-test/target
+   - run:
+       name: fmt check
+       command: nix-shell --run hc-fmt-check
 
-      # cas implementations test
-      - restore_cache:
-         keys:
-          - cas-implementations-v1-{{ checksum "cas_implementations/Cargo.toml" }}
-      - run:
-         name: test cas implementations
-         command: nix-shell --run hc-test-cas-implementations
-      - save_cache:
-         key: cas-implementations-v1-{{ checksum "cas_implementations/Cargo.toml" }}
-         paths:
-          - cas_implementations/target
+   # hdk test
+   - restore_cache:
+      keys:
+       - hdk-v1-{{ checksum "hdk-rust/Cargo.toml" }}-{{ checksum "hdk-rust/wasm-test/Cargo.toml" }}
+   - run:
+      name: test hdk
+      command: nix-shell --run hc-test-hdk
+   - save_cache:
+      key: hdk-v1-{{ checksum "hdk-rust/Cargo.toml" }}-{{ checksum "hdk-rust/wasm-test/Cargo.toml" }}
+      paths:
+       - hdk-rust/target
+       - hdk-rust/wasm-test/target
 
-      # dna c binding test
-      - restore_cache:
-         keys:
-          - dna-c-binding-v1-{{ checksum "dna_c_binding/Cargo.toml" }}
-      - run:
-         name: test dna c binding
-         command: nix-shell --run hc-test-dna-c-binding
-      - save_cache:
-         key: dna-c-binding-v1-{{ checksum "dna_c_binding/Cargo.toml" }}
-         paths:
-          - dna_c_binding/target
+   # wasm-utils test
+   - restore_cache:
+      keys:
+       - wasm-utils-v1-{{ checksum "wasm_utils/Cargo.toml" }}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml" }}
+   - run:
+      name: test wasm utils
+      command: nix-shell --run hc-test-wasm-utils
+   - save_cache:
+      key: wasm-utils-v1-{{ checksum "wasm_utils/Cargo.toml" }}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml" }}
+      paths:
+       - wasm_utils/target
+       - wasm_utils/wasm-test/integration-test/target
 
-      # net connection test
-      - restore_cache:
-         keys:
-          - net-connection-v1-{{ checksum "net_connection/Cargo.toml" }}
-      - run:
-         name: test net connection
-         command: nix-shell --run hc-test-net-connection
-      - save_cache:
-         key: net-connection-v1-{{ checksum "net_connection/Cargo.toml" }}
-         paths:
-          - net_connection/target
+   # container api test
+   - restore_cache:
+      keys:
+       - container-api-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
+   - run:
+      name: test container api
+      command: nix-shell --run hc-test-container-api
+   - save_cache:
+      key: container-api-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
+      paths:
+       - container_api/target
+       - container_api/wasm-test/target
 
-      # holochain sodium test
-      - restore_cache:
-         keys:
-          - sodium-v1-{{ checksum "sodium/Cargo.toml" }}
-      - run:
-         name: test sodium
-         command: nix-shell --run hc-test-sodium
-      - save_cache:
-         key: sodium-v1-{{ checksum "sodium/Cargo.toml" }}
-         paths:
-          - sodium/target
+   # core test
+   - restore_cache:
+      keys:
+       - core-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
+   - run:
+      name: test core
+      command: nix-shell --run hc-test-core
+   - save_cache:
+      key: core-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
+      paths:
+       - core/target
+       - core/src/nucleus/actions/wasm-test/target
 
-      # holochain cmd test
-      - restore_cache:
-         keys:
-          - cmd-v1-{{ checksum "cmd/Cargo.toml" }}
-      - run:
-         name: test cmd
-         command: nix-shell --run hc-test-hc
-      - save_cache:
-         key: cmd-v1-{{ checksum "cmd/Cargo.toml" }}
-         paths:
-          - cmd/target
+   # cas implementations test
+   - restore_cache:
+      keys:
+       - cas-implementations-v1-{{ checksum "cas_implementations/Cargo.toml" }}
+   - run:
+      name: test cas implementations
+      command: nix-shell --run hc-test-cas-implementations
+   - save_cache:
+      key: cas-implementations-v1-{{ checksum "cas_implementations/Cargo.toml" }}
+      paths:
+       - cas_implementations/target
 
-      # holochain core types test
-      - restore_cache:
-         keys:
-          - core-types-v1-{{ checksum "core_types/Cargo.toml" }}
-      - run:
-         name: test core types
-         command: nix-shell --run hc-test-core-types
-      - save_cache:
-         key: core-types-v1-{{ checksum "core_types/Cargo.toml" }}
-         paths:
-          - core_types/target
+   # dna c binding test
+   - restore_cache:
+      keys:
+       - dna-c-binding-v1-{{ checksum "dna_c_binding/Cargo.toml" }}
+   - run:
+      name: test dna c binding
+      command: nix-shell --run hc-test-dna-c-binding
+   - save_cache:
+      key: dna-c-binding-v1-{{ checksum "dna_c_binding/Cargo.toml" }}
+      paths:
+       - dna_c_binding/target
 
-      # holochain net test
-      - restore_cache:
-         keys:
-          - net-v1-{{ checksum "net/Cargo.toml" }}
-      - run:
-         name: test core types
-         command: nix-shell --run hc-test-net
-      - save_cache:
-         key: net-v1-{{ checksum "net/Cargo.toml" }}
-         paths:
-          - net/target
+   # net connection test
+   - restore_cache:
+      keys:
+       - net-connection-v1-{{ checksum "net_connection/Cargo.toml" }}
+   - run:
+      name: test net connection
+      command: nix-shell --run hc-test-net-connection
+   - save_cache:
+      key: net-connection-v1-{{ checksum "net_connection/Cargo.toml" }}
+      paths:
+       - net_connection/target
 
-      # holochain net ipc test
-      - restore_cache:
-         keys:
-          - net-ipc-v1-{{ checksum "net_ipc/Cargo.toml" }}
-      - run:
-         name: test net ipc
-         command: nix-shell --run hc-test-net-ipc
-      - save_cache:
-         key: net-ipc-v1-{{ checksum "net_ipc/Cargo.toml" }}
-         paths:
-          - net_ipc/target
+   # holochain sodium test
+   - restore_cache:
+      keys:
+       - sodium-v1-{{ checksum "sodium/Cargo.toml" }}
+   - run:
+      name: test sodium
+      command: nix-shell --run hc-test-sodium
+   - save_cache:
+      key: sodium-v1-{{ checksum "sodium/Cargo.toml" }}
+      paths:
+       - sodium/target
 
-      - run:
-          name: install cmd
-          command: nix-shell --run hc-install-cmd
+   # holochain cmd test
+   - restore_cache:
+      keys:
+       - cmd-v1-{{ checksum "cmd/Cargo.toml" }}
+   - run:
+      name: test cmd
+      command: nix-shell --run hc-test-hc
+   - save_cache:
+      key: cmd-v1-{{ checksum "cmd/Cargo.toml" }}
+      paths:
+       - cmd/target
 
-      # test the node container build
-      # todo - this cache doesn't stop recompilation of rust on node container
-      - restore_cache:
-          keys:
-            - v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
-      - run:
-          name: install node container
-          command: nix-shell --run hc-install-node-container
-      - save_cache:
-          key: v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
-          paths:
-            - "./nodejs_container/native/target"
-            - "./nodejs_container/node_modules"
-            - "./nodejs_container/native/Cargo.lock"
+   # holochain core types test
+   - restore_cache:
+      keys:
+       - core-types-v1-{{ checksum "core_types/Cargo.toml" }}
+   - run:
+      name: test core types
+      command: nix-shell --run hc-test-core-types
+   - save_cache:
+      key: core-types-v1-{{ checksum "core_types/Cargo.toml" }}
+      paths:
+       - core_types/target
 
-      - run:
-          name: app spec tests
-          command: nix-shell --run hc-test-app-spec
+   # holochain net test
+   - restore_cache:
+      keys:
+       - net-v1-{{ checksum "net/Cargo.toml" }}
+   - run:
+      name: test core types
+      command: nix-shell --run hc-test-net
+   - save_cache:
+      key: net-v1-{{ checksum "net/Cargo.toml" }}
+      paths:
+       - net/target
+
+   # holochain net ipc test
+   - restore_cache:
+      keys:
+       - net-ipc-v1-{{ checksum "net_ipc/Cargo.toml" }}
+   - run:
+      name: test net ipc
+      command: nix-shell --run hc-test-net-ipc
+   - save_cache:
+      key: net-ipc-v1-{{ checksum "net_ipc/Cargo.toml" }}
+      paths:
+       - net_ipc/target
+
+workflows:
+ version: 2
+ tests:
+  jobs:
+   - integration-tests
+   - unit-tests

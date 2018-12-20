@@ -4,7 +4,10 @@ use holochain_core::{
     nucleus::ZomeFnCall,
     signal::{signal_channel, Signal, SignalReceiver},
 };
-use holochain_core_types::entry::Entry;
+use holochain_core_types::{
+    entry::Entry,
+    link::{link_add::LinkAdd, Link},
+};
 use neon::{context::Context, prelude::*};
 use snowflake::ProcessUniqueId;
 use std::{
@@ -17,8 +20,6 @@ use std::{
 };
 
 use crate::config::*;
-
-pub type JsCallback = Handle<'static, JsFunction>;
 
 type ControlSender = SyncSender<ControlMsg>;
 type ControlReceiver = Receiver<ControlMsg>;
@@ -53,11 +54,17 @@ impl CallFxChecker {
         self.conditions.push(Box::new(f));
     }
 
-    pub fn run_checks(&mut self, aw: &ActionWrapper) {
+    pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
         let was_empty = self.conditions.is_empty();
+        let size = self.conditions.len();
         self.conditions.retain(|condition| !condition(aw));
+        println!("{}/{}", size, self.conditions.len());
         if self.conditions.is_empty() && !was_empty {
+            log("STOP!!");
             self.tx.send(ControlMsg::Stop).unwrap();
+            return false;
+        } else {
+            return true;
         }
     }
 }
@@ -91,6 +98,10 @@ impl Task for CallBlockingTask {
     }
 }
 
+fn log(msg: &str) {
+    println!("\nLOG:\n{}\n", msg);
+}
+
 /// A singleton which runs in a Task and is the receiver for the Signal channel.
 /// - handles incoming `ZomeFnCall`s, attaching and activating a new `CallFxChecker`
 /// - handles incoming Signals, running all `CallFxChecker` closures
@@ -110,43 +121,80 @@ impl Waiter {
     }
 
     pub fn process_signal(&mut self, sig: Signal) {
-        match sig {
+        let do_log = match sig.clone() {
             Signal::Internal(aw) => {
-                match aw.action().clone() {
+                let do_log = match aw.action().clone() {
                     Action::ExecuteZomeFunction(call) => {
-                        let sender = self.sender_rx.recv().unwrap();
-                        self.add_call(call.clone(), sender);
+                        match self.sender_rx.try_recv() {
+                            Ok(sender) => {
+                                self.add_call(call.clone(), sender);
+                                log("Waiter: add_call");
+                                self.current_checker().unwrap().add(move |aw| {
+                                    if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
+                                        r.call() == call
+                                    } else {
+                                        false
+                                    }
+                                });
+                            }
+                            Err(_) => {
+                                self.deactivate_current();
+                                log("Waiter: deactivate_current");
+                            }
+                        }
+                        true
                     }
-                    Action::Commit((entry, _)) => match entry {
-                        Entry::App(_, _) => self
-                            .current_checker()
-                            .unwrap()
-                            .add(move |aw| *aw.action() == Action::Hold(entry.clone())),
-                        _ => (),
+                    Action::ReturnZomeFunctionResult(_) => true,
+                    Action::Commit((entry, _)) => match self.current_checker() {
+                        Some(checker) => {
+                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
+                            true
+                        }
+                        None => false,
                     },
-                    Action::SendDirectMessage(data) => {
-                        let msg_id = data.msg_id;
-                        self.current_checker().unwrap().add(move |aw| {
-                            [
-                                Action::ResolveDirectConnection(msg_id.clone()),
-                                Action::SendDirectMessageTimeout(msg_id.clone()),
-                            ]
-                            .contains(aw.action())
-                        })
-                    }
-                    _ => (),
-                }
+                    Action::AddLink(link) => match self.current_checker() {
+                        Some(checker) => {
+                            let entry = Entry::LinkAdd(LinkAdd::new(
+                                link.base(),
+                                link.target(),
+                                link.tag(),
+                            ));
+                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
+                            true
+                        }
+                        None => false,
+                    },
+                    // Action::SendDirectMessage(data) => {
+                    //     let msg_id = data.msg_id;
+                    //     match self.current_checker() {
+                    //         Some(checker) => checker.add(move |aw| {
+                    //             [
+                    //                 Action::ResolveDirectConnection(msg_id.clone()),
+                    //                 Action::SendDirectMessageTimeout(msg_id.clone()),
+                    //             ]
+                    //             .contains(aw.action())
+                    //         }),
+                    //         None => (),
+                    //     }
+                    // },
+                    Action::Hold(_) => true,
+                    _ => false,
+                };
 
                 self.run_checks(&aw);
+                do_log
             }
-            _ => (),
+            _ => false,
+        };
+        if do_log {
+            let mut s = format!(":::SIG {:?}", sig);
+            s.truncate(300);
+            println!("{}", s);
         }
     }
 
     fn run_checks(&mut self, aw: &ActionWrapper) {
-        for (_, mut checker) in self.checkers.iter_mut() {
-            checker.run_checks(aw);
-        }
+        self.checkers.retain(|_, checker| checker.run_checks(aw));
     }
 
     fn current_checker(&mut self) -> Option<&mut CallFxChecker> {
@@ -156,8 +204,13 @@ impl Waiter {
     }
 
     fn add_call(&mut self, call: ZomeFnCall, tx: ControlSender) {
-        self.checkers.insert(call.clone(), CallFxChecker::new(tx));
+        let checker = CallFxChecker::new(tx);
+        self.checkers.insert(call.clone(), checker);
         self.current = Some(call);
+    }
+
+    fn deactivate_current(&mut self) {
+        self.current = None;
     }
 }
 
@@ -193,7 +246,7 @@ impl Task for HabitatSignalTask {
         Ok(())
     }
 
-    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsNumber> {
+    fn complete(self, mut cx: TaskContext, _result: Result<(), String>) -> JsResult<JsNumber> {
         Ok(cx.number(17))
     }
 }

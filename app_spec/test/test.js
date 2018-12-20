@@ -17,15 +17,17 @@ const config = ConfigBuilder.habitat(instanceAlice, instanceBob);
 const hab = new Habitat(config);
 hab.start();
 
-const caller = id => (zome, cap, fn, params) => (
-  hab.call(id, zome, cap, fn, params)
-)
+const caller = (id, method) => (zome, cap, fn, params) => {
+  return hab[method](id, zome, cap, fn, params)
+}
 
 const app = {
-  call: caller('alice-' + dnaPath)
+  call: caller('alice-' + dnaPath, 'call'),
+  callSync: caller('alice-' + dnaPath, 'callSync')
 }
 const app2 = {
-  call: caller('bob-' + dnaPath)
+  call: caller('bob-' + dnaPath, 'call'),
+  callSync: caller('bob-' + dnaPath, 'callSync')
 }
 
 test('call', (t) => {
@@ -170,12 +172,12 @@ test('scenario test create & publish post -> get from other instance', async (t)
   const content = "Holo world"
   const in_reply_to = null
   const params = { content, in_reply_to }
-  const create_result = app.call("blog", "main", "create_post", params)
+  const create_result = await app.callSync("blog", "main", "create_post", params)
   t.comment("create_result = " + create_result.address + "")
 
   const content2 = "post 2"
   const params2 = { content2, in_reply_to }
-  const create_result2 = app2.call("blog", "main", "create_post", params2)
+  const create_result2 = await app2.callSync("blog", "main", "create_post", params2)
   t.comment("create_result2 = " + create_result2.address + "")
 
   t.equal(create_result.Ok.length, 46)
@@ -184,9 +186,7 @@ test('scenario test create & publish post -> get from other instance', async (t)
   const post_address = create_result.Ok
   const params_get = { post_address }
 
-  const result = await pollFor(
-    () => app2.call("blog", "main", "get_post", params_get)
-  ).catch(t.fail)
+  const result = app2.call("blog", "main", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, content)
 })

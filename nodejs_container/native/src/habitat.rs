@@ -62,7 +62,6 @@ declare_types! {
             } else {
                 panic!("Invalid type specified for config, must be object or string");
             };
-            let (signal_tx, signal_rx) = signal_channel();
             let mut container = Container::from_config(config);
 
             let result = {
@@ -72,11 +71,11 @@ declare_types! {
                     .downcast_or_throw(&mut cx)
                     .unwrap();
                 let (signal_tx, signal_rx) = signal_channel();
-                let (sender_tx, sender_rx) = sync_channel(100);
+                let (sender_tx, sender_rx) = sync_channel(1);
                 let signal_task = HabitatSignalTask::new(signal_rx, sender_rx);
                 signal_task.schedule(js_callback);
 
-                container.load_config_with_signal(Some(signal_tx)).map(|_| sender_tx)
+                container.load_config_with_signal(Some(signal_tx)).map(|_| sender_tx.clone())
             };
 
             let sender_tx = result.or_else(|e| {
@@ -128,10 +127,8 @@ declare_types! {
             let cap = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
             let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
             let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
-            let js_callback: Handle<JsFunction> = cx.argument::<JsFunction>(5)?;
-                // .as_value(&mut cx)
-                //     .downcast_or_throw(&mut cx)
-                //     .unwrap();
+            let maybe_callback = cx.argument_opt(5);
+
             let mut this = cx.this();
 
             let call_result = {
@@ -140,10 +137,19 @@ declare_types! {
                 let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
-                let (tx, rx) = sync_channel(0);
-                hab.sender_tx.send(tx);
-                let task = CallBlockingTask { rx };
-                task.schedule(js_callback);
+                match maybe_callback {
+                    Some(v) => {
+                        println!("\nHere we go, some callback");
+                        let js_callback: Handle<JsFunction> = v.downcast().unwrap();
+                        let (tx, rx) = sync_channel(0);
+                        let task = CallBlockingTask { rx };
+                        task.schedule(js_callback);
+                        hab.sender_tx.send(tx).expect("Could not send to sender channel");
+                        println!("FYI was able to send sender.");
+                    },
+                    None =>
+                        println!("\nnoooo callback")
+                };
                 let val = instance.call(&zome, &cap, &fn_name, &params);
                 val
             };

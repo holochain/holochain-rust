@@ -5,7 +5,7 @@ use std::{
 
 use crate::action::ActionWrapper;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Signal {
     Internal(ActionWrapper),
     User,

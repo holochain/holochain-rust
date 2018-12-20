@@ -21,6 +21,7 @@ const VALUE_DIR: &str = "v";
 pub struct EavFileStorage {
     dir_path: String,
     id: Uuid,
+    current_hash : HashString,
     lock: Arc<RwLock<()>>,
 }
 
@@ -90,6 +91,32 @@ impl EavFileStorage {
         Ok(())
     }
 
+    fn write_to_hash_file(&self,eav:EntityAttributeValue) -> Result<(),HolochainError>
+    {
+        let path =
+            vec![self.dir_path.clone(), self.current_hash].join(&MAIN_SEPARATOR.to_string());
+        let file = OpenOptions::()
+                   .write(true)
+                   .create(true)
+                   .append(true)
+                   .open(path);
+        writeln!(file,"{}",eav)?;
+        Ok(())
+    }
+
+    fn read_from_hash_list(current_hash:HashString)-> Result<Vec<HashString>,HolochainError>
+    {
+        let path =
+            vec![self.dir_path.clone(), self.current_hash].join(&MAIN_SEPARATOR.to_string());
+        let file = OpenOptions::new().read(true).open(path)?
+        let file_contents = file.read_to_string()?;
+        ok(file_contents.split("\n")
+                        .map(|s|{
+                            HashString::from(s)
+                        }).collect::<Vec<HashString>())
+
+    }
+
     fn read_from_dir<T>(
         &self,
         subscript: String,
@@ -129,6 +156,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         self.write_to_file(ENTITY_DIR.to_string(), eav)
             .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), eav))
             .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), eav))
+            .and_then(|_| self.write_to_hash_file(eav))
     }
 
     fn fetch_eav(
@@ -138,7 +166,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         value: Option<Value>,
     ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
-
+        let hash = read_from_hash_list(self.current_hash)?;
         let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity);
         let attribute_set = self
             .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)
@@ -174,6 +202,9 @@ impl EntityAttributeValueStorage for EavFileStorage {
                     .map(|eav|
                         // errors filtered out above... unwrap is safe
                         eav.unwrap())
+                    .filter(|eav|{
+                        hash.find(eav.content())
+                    })
                     .collect())
             }
         }

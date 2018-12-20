@@ -75,6 +75,41 @@ test('create_post', (t) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+test('delete_post', (t) => {
+  t.plan(2)
+
+  const content = "Holo world"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const createResult = app.call("blog", "main", "create_post", params)
+
+  t.ok(createResult.Ok)
+
+  const deletionParams = { post_address: "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk" }
+  const result = app.call("blog", "main", "delete_post", deletionParams)
+
+  t.ok(result.Ok)
+})
+
+test('update_post', (t) => {
+  t.plan(2)
+
+  const content = "Holo world"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const createResult = app.call("blog", "main", "create_post", params)
+
+  t.ok(createResult.Ok)
+
+
+  const updateParams = { post_address: "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk", new_content: "Hello Holo" }
+  const result = app.call("blog", "main", "update_post", updateParams)
+
+  t.ok(result.Ok)
+})
+
+
+
 test('create_post with bad reply to', (t) => {
   t.plan(5)
 

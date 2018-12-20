@@ -15,8 +15,8 @@ use hdk::{
 /// So this is our normative schema definition:
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 pub struct Post {
-    content: String,
-    date_created: String,
+    pub content: String,
+    pub date_created: String,
 }
 
 impl Post {

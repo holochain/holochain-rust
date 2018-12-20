@@ -48,6 +48,18 @@ define_zome! {
                 handler: blog::handle_create_post
             }
 
+            delete_post: {
+                inputs: |post_address: Address|,
+                outputs: |result: ZomeApiResult<()>|,
+                handler: blog::handle_delete_post
+            }
+
+            update_post: {
+                inputs: |post_address: Address, new_content: String|,
+                outputs: |result: ZomeApiResult<()>|,
+                handler: blog::handle_update_post
+            }
+
             posts_by_agent: {
                 inputs: |agent: Address|,
                 outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,

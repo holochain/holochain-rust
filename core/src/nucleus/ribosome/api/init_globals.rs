@@ -1,5 +1,3 @@
-//! ?
-
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{
     cas::content::Address, entry::entry_type::EntryType, hash::HashString, json::JsonString,

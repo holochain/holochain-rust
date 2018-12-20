@@ -3,7 +3,7 @@
 use super::secbuf::SecBuf;
 use super::random::buf;
 
-const CONTEXTBYTES: usize = rust_sodium_sys::crypto_kdf_CONTEXTBYTES as usize;
+pub const CONTEXTBYTES: usize = rust_sodium_sys::crypto_kdf_CONTEXTBYTES as usize;
 
 
 /// Derive a subkey from a parent key

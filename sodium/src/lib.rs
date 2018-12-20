@@ -52,3 +52,4 @@ pub mod sign;
 pub mod hash;
 pub mod aead;
 pub mod kdf;
+pub mod pwhash;

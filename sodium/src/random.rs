@@ -20,7 +20,6 @@ mod tests {
     #[test]
     fn it_should_randomize_buffer() {
         let mut b = SecBuf::with_insecure(1);
-
         buf(&mut b);
     }
 }

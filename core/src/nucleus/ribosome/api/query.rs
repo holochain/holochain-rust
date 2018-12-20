@@ -36,15 +36,15 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 ///
 /// The following standard "glob" patterns are supported:
 ///
-/// // Pattern	Match
+/// // Pattern     Match
 /// // =======     =====
 /// // .           One character (other than a '/')
 /// // [abcd]      One of a set of characters
-/// // [a-d]	Once range of characters
-/// // [!a-d]	Once range of characters
-/// // {abc,123}   one of a number of sequences of characters
+/// // [a-d]       One of a range of characters
+/// // [!a-d]      Not one of  range of characters
+/// // {abc,123}   One of a number of sequences of characters
 /// // *           Zero or more of any character
-/// // **/         Zero or more namespace components
+/// // **/         Zero or more of any namespace component
 ///
 pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
@@ -59,67 +59,35 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
-
-    /*
-    // We can't do this because of lifespans...?
-    let pats:Vec<&str> = match query.entry_type_names {
-        QueryArgsNames::QueryList(list) => { // Vec<String> -> Vec[&str]
-            list.iter()
-                .map(AsRef::as_ref)
-                .collect()
-        }
-        QueryArgsNames::QueryName(name) => {
-            vec![&name] // String -> Vec<&str>
-        }
-     };
-
-    runtime.store_result(
-        match agent.chain().query(
-            &Some(top),
-            pats.as_slice(), // Vec<&str> -> &[&str]
-            query.start,
-            query.limit,
-        ) {
-            // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
-            // Perhaps return chain().query should return Some(result)/None instead, and the fixed
-            // UnknownEntryType code here, rather than trying to return a specific error code.
-            Ok(result) => Ok(result),
-            Err(_code) => return ribosome_error_code!(UnknownEntryType),
-        }
-    */
-
-    // TODO: Code duplication; handle the query enum for String/Vec<String> without copying code
-    runtime.store_result(match query.entry_type_names {
+    let addresses = match query.entry_type_names {
         QueryArgsNames::QueryList(pats) => {
-            // Vec<String> -> Vec[&str]
-            let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect();
-            match agent.chain().query(
+            let refs:Vec<&str> = pats.iter()
+                .map(AsRef::as_ref)
+                .collect(); // Vec<String> -> Vec<&str>
+            agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> Vec[&str]
                 query.start,
                 query.limit,
-            ) {
-                // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
-                // Perhaps return chain().query should return Some(result)/None instead, and the fixed
-                // UnknownEntryType code here, rather than trying to return a specific error code.
-                Ok(result) => Ok(result),
-                Err(_code) => return ribosome_error_code!(UnknownEntryType),
-            }
-        }
+            )
+        },
         QueryArgsNames::QueryName(name) => {
-            let refs: Vec<&str> = vec![&name]; // String -> Vec<&str>
-            match agent.chain().query(
+            let refs:Vec<&str> = vec![&name]; // String -> Vec<&str>
+            agent.chain().query(
                 &Some(top),
-                refs.as_slice(), // Vec[&str] -> &[&str]
+                refs.as_slice(), // Vec<&str> -> &[&str]
                 query.start,
                 query.limit,
-            ) {
-                // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
-                // Perhaps return chain().query should return Some(result)/None instead, and the fixed
-                // UnknownEntryType code here, rather than trying to return a specific error code.
-                Ok(result) => Ok(result),
-                Err(_code) => return ribosome_error_code!(UnknownEntryType),
-            }
-        }
-    })
+            )
+        },
+    };
+    let result = match addresses {
+        // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
+        // Perhaps return chain().query should return Some(result)/None instead, and the fixed
+        // UnknownEntryType code here, rather than trying to return a specific error code.
+        Ok(result) => Ok(result),
+        Err(_code) => return ribosome_error_code!(UnknownEntryType),
+    };
+
+    runtime.store_result( result )
 }

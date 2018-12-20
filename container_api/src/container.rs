@@ -204,6 +204,9 @@ impl Container {
                         .with_named_instance_config(bridge.handle.clone(), callee_config);
                 }
                 context_builder.with_container_api(api_builder.spawn());
+                if let Some(signal_tx) = self.signal_tx.clone() {
+                    context_builder.with_signals(signal_tx);
+                }
 
                 // Spawn context
                 let context = context_builder.spawn();
@@ -219,16 +222,7 @@ impl Container {
                     },
                 )?;
 
-                match self.signal_tx {
-                    Some(ref signal_tx) => Holochain::new_with_signals(
-                        dna,
-                        Arc::new(context),
-                        signal_tx.clone(),
-                        |_| true,
-                    ),
-                    None => Holochain::new(dna, Arc::new(context)),
-                }
-                .map_err(|hc_err| hc_err.to_string())
+                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
             })
     }
 

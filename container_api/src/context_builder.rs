@@ -8,6 +8,7 @@ use holochain_core::{
     context::Context,
     logger::{Logger, SimpleLogger},
     persister::SimplePersister,
+    signal::{SignalSender},
 };
 use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
@@ -36,6 +37,7 @@ pub struct ContextBuilder {
     eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
     network_config: Option<JsonString>,
     container_api: Option<Arc<RwLock<IoHandler>>>,
+    signal_tx: Option<SignalSender>,
 }
 
 impl ContextBuilder {
@@ -48,6 +50,7 @@ impl ContextBuilder {
             eav_storage: None,
             network_config: None,
             container_api: None,
+            signal_tx: None,
         }
     }
 
@@ -105,6 +108,11 @@ impl ContextBuilder {
         self
     }
 
+    pub fn with_signals(&mut self, signal_tx: SignalSender) -> &mut Self {
+        self.signal_tx = Some(signal_tx);
+        self
+    }
+
     /// Actually creates the context.
     /// Defaults to memory storages, a mock network config and a fake agent called "alice".
     /// The logger gets set to SimpleLogger.
@@ -139,6 +147,7 @@ impl ContextBuilder {
                     P2pConfig::DEFAULT_MOCK_CONFIG,
                 ))),
             self.container_api.clone(),
+            self.signal_tx.clone(),
         )
     }
 }

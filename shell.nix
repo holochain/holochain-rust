@@ -35,13 +35,14 @@ let
 
   hc-build = nixpkgs.writeShellScriptBin "hc-build"
   ''
-  cargo build --all --exclude hc
+  hc-wasm-build
+  cargo build --release --all
   '';
 
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
   hc-build
-  cargo test --release --all --exclude hc;
+  cargo test --release --all;
   '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
@@ -49,10 +50,16 @@ let
   . ./scripts/build_nodejs_container.sh;
   '';
 
-  hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin" "if ! cargo --list | grep --quiet tarpaulin; then cargo install cargo-tarpaulin; fi;";
+  hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin"
+  ''
+  if ! cargo --list | grep --quiet tarpaulin;
+  then
+    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin;
+  fi;
+  '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
-  hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
+  hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc --release && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
 
@@ -128,7 +135,7 @@ stdenv.mkDerivation rec {
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
-  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -Z thinlto -C codegen-units=16 -C opt-level=z";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace -Z thinlto -C codegen-units=16 -C opt-level=z";
   CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
   # RUST_LOG = "info";

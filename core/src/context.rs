@@ -11,6 +11,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
@@ -34,6 +35,7 @@ pub struct Context {
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
+    pub container_api: Option<Arc<RwLock<IoHandler>>>,
 }
 
 impl Context {
@@ -49,6 +51,7 @@ impl Context {
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
+        container_api: Option<Arc<RwLock<IoHandler>>>,
     ) -> Self {
         Context {
             agent_id,
@@ -62,6 +65,7 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             network_config,
+            container_api,
         }
     }
 
@@ -88,6 +92,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             network_config,
+            container_api: None,
         })
     }
 
@@ -231,6 +236,7 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
         );
 
         assert!(maybe_context.state().is_none());
@@ -262,6 +268,7 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
         );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

@@ -402,7 +402,7 @@ pub mod tests {
             expected.clone(),
         );
 
-        let grant = CapTokenGrant::new(None);
+        let grant = CapTokenGrant::create(CapabilityType::Transferable,None).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         test_reduce_call(
@@ -436,7 +436,7 @@ pub mod tests {
         );
 
         let someone = Address::from("somoeone");
-        let grant = CapTokenGrant::new(Some(vec![someone.clone()]));
+        let grant = CapTokenGrant::create(CapabilityType::Assigned,Some(vec![someone.clone()])).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         test_reduce_call(

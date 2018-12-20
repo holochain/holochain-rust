@@ -6,6 +6,10 @@ use holochain_core::{
     logger::Logger,
     signal::{signal_channel, SignalReceiver},
 };
+use holochain_core_types::{
+    cas::content::Address,
+    dna::{capabilities::CapabilityCall},
+};
 use neon::{context::Context, prelude::*};
 
 use crate::config::*;
@@ -82,7 +86,7 @@ declare_types! {
         method call(mut cx) {
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let zome = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
-            let _cap = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
+            let cap_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
             let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
             let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
             let mut this = cx.this();
@@ -90,10 +94,15 @@ declare_types! {
             let call_result = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
+                let cap = Some(CapabilityCall::new(
+                    cap_name.to_string(),
+                    Address::from(""), //FIXME
+                    None,
+                ));
                 let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
-                instance.call(&zome, None, &fn_name, &params)
+                instance.call(&zome, cap, &fn_name, &params)
             };
 
             let res_string = call_result.or_else(|e| {

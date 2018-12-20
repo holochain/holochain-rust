@@ -158,7 +158,7 @@ pub(crate) fn reduce_call(
         _ => unreachable!(),
     };
 
-    // 1. Validate that the call (a number of things could go wrong)
+    // 1. Validate the call (a number of things could go wrong)
     let dna = match validate_call(context.clone(), state, &fn_call) {
         Err(err) => {
             // Notify failure

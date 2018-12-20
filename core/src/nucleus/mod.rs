@@ -289,7 +289,7 @@ fn reduce_execute_zome_function(
             .expect("action channel to be open in reducer");
     }
 
-    // 1. Validate that the call (a number of tings could go wrong)
+    // 1. Validate the call (a number of things could go wrong)
     let dna = match validate_call(context.clone(), state, &fn_call) {
         Err(err) => {
             // Notify failure

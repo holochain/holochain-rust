@@ -804,7 +804,13 @@ pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
     res
 }
 
-
+/// Retrieves data about entries linked to a base address with a given tag. This is the most general verion of get_links
+/// and can return the linked addresses, entries, headers and sources. Also supports CRUD status_request
+/// The data returned is configurable with the GetEntryOptions argument which is identical to that used in get_entry_result.
+/// # Examples
+/// ```rust
+/// // TODO: write example
+/// ```
 pub fn get_links_result<S: Into<String>>(
     base: &Address,
     tag: S,
@@ -868,7 +874,10 @@ pub fn get_links_result<S: Into<String>>(
 /// }
 /// # }
 /// ```
-pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLinksResult> {
+pub fn get_links<S: Into<String>>(
+    base: &Address, 
+    tag: S
+) -> ZomeApiResult<GetLinksResult> {
     
     let get_links_result = get_links_result(base, tag, GetLinksOptions{
         status_request: StatusRequestKind::default(),
@@ -890,6 +899,34 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
     .collect();
 
     Ok(GetLinksResult::new(addresses))
+}
+
+
+
+pub fn get_links_and_load<S: Into<String>>(
+ base: &HashString,
+ tag: S
+) -> ZomeApiResult<Vec<Entry>>  {
+    let get_links_result = get_links_result(base, tag, GetLinksOptions{
+        status_request: StatusRequestKind::default(),
+        entry: true,
+        header: false,
+        sources: false
+    })?;
+
+    let entries: Vec<Entry> = get_links_result
+    .into_iter()
+    .map(|get_result| {
+        let get_type = get_result.unwrap().result;
+        match get_type {
+            GetEntryResultType::Single(elem) => Ok(elem.entry.unwrap().to_owned()),
+            GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string()))
+        }
+    })
+    .filter_map(Result::ok)
+    .collect();
+
+    Ok(entries)
 }
 
 /// Returns a list of entries from your local source chain, that match a given type.

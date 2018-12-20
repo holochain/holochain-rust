@@ -631,12 +631,6 @@ fn can_remove_modified_entry() {
 }
 
 #[test]
-<<<<<<< HEAD
-fn can_call_get_links_load() {
-    let (mut hc, _) = start_holochain_instance("can_call_get_links_load");
-    let result = hc.call("test_zome", "test_cap", "check_get_links_and_load", r#"{}"#);
-    assert!(result.is_ok(), "result = {:?}", result);
-=======
 fn can_send_and_receive() {
     let (mut hc, _) = start_holochain_instance("can_send_and_receive", "alice");
     let result = hc.call("test_zome", "test_cap", "check_global", r#"{}"#);
@@ -650,5 +644,4 @@ fn can_send_and_receive() {
 
     let expected: ZomeApiResult<String> = Ok(String::from("Received: TEST"));
     assert_eq!(result.unwrap(), JsonString::from(expected),);
->>>>>>> 2aa3277834e89f69b7b36f15afb5b3736bd4bb86
 }

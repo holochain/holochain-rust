@@ -42,7 +42,6 @@ pub mod chain_migrate;
 pub mod dna;
 pub mod hash;
 pub mod json;
-pub mod keys;
 pub mod link;
 pub mod signature;
 pub mod time;

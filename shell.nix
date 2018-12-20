@@ -78,9 +78,11 @@ let
   test = test-p: test-path: wasm-path:
   ''
    if [ ${wasm-path} != "none" ]; then
-    cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir ${wasm-path}/target;
+    # cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir ${wasm-path}/target;
+    cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir $HC_TARGET_PREFIX${wasm-path}/target;
    fi;
-   cargo test -p ${test-p} --release --target-dir ${test-path}/target
+   # cargo test -p ${test-p} --release --target-dir ${test-path}/target
+   cargo test -p ${test-p} --release --target-dir $HC_TARGET_PREFIX${test-path}/target
   '';
   hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" "hdk-rust/wasm-test"}";
   hc-test-wasm-utils = nixpkgs.writeShellScriptBin "hc-test-wasm-utils" "${test "holochain_wasm_utils" "wasm_utils" "wasm_utils/wasm-test/integration-test"}";

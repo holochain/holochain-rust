@@ -1,5 +1,7 @@
 FROM nixorg/nix:circleci
+
 ENV NIX_PATH nixpkgs=https://github.com/NixOS/nixpkgs/archive/47f008676fe3b77b9c8edda54db621a0dc16dd8e.tar.gz
+ENV HC_TARGET_PREFIX /holochain-rust/build/
 
 WORKDIR /holochain-rust/build
 
@@ -17,6 +19,7 @@ RUN nix-shell --run "echo 1" --show-trace --max-jobs 4 --cores 0
 # pop the test suite off once to warm the incremental rust cache
 COPY . .
 RUN nix-shell --run hc-test --show-trace --max-jobs 4 --cores 0
+
 
 # the default command can also be the unit tests, why not?
 # if the previous step incrementally compiles correctly this should be fast

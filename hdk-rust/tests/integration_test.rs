@@ -474,25 +474,53 @@ fn can_roundtrip_links() {
         );
 
         assert!(result.is_ok(), "result = {:?}", result);
-        assert!(result_load.is_ok(), "result = {:?}", result_load);
+        assert!(result_load.is_ok(), ";load result = {:?}", result_load);
         
         result_string = result.unwrap();
         let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
         let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
-        println!(
-            "can_roundtrip_links result_string - try {}: {:?}",
-            tries, result_string
+        let entries_result_string = result_load.unwrap();
+        let entry_1 = Entry::App(
+            "testEntryType".into(),
+            EntryStruct {
+                stuff: "entry1".into(),
+            }.into(),
         );
+        let entry_2 = Entry::App(
+            "testEntryType".into(),
+            EntryStruct {
+                stuff: "entry2".into(),
+            }.into(),
+        );
+
+
         let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
             address_1.clone(),
             address_2.clone(),
         ]));
+        let expected_entries: ZomeApiResult<Vec<Entry>> = Ok(
+            vec![entry_1.clone(), entry_2.clone()]
+        );
+
+        println!(
+            "can_roundtrip_links result_string - try {}:\n {:?}\n expecting:\n {:?}",
+            tries, entries_result_string, &expected_entries
+        );
+
         let ordering1: bool = result_string == JsonString::from(expected);
+        let _entries_ordering1: bool = entries_result_string == JsonString::from(expected_entries);
+
+        assert!(_entries_ordering1);
 
         let expected: Result<GetLinksResult, HolochainError> =
             Ok(GetLinksResult::new(vec![address_2, address_1]));
+
+        let expected_entries: ZomeApiResult<Vec<Entry>> = Ok(
+            vec!(entry_2, entry_1)
+        );
         let ordering2: bool = result_string == JsonString::from(expected);
+        let _entries_ordering2: bool = entries_result_string == JsonString::from(expected_entries);
 
         both_links_present = ordering1 || ordering2;
         if !both_links_present {

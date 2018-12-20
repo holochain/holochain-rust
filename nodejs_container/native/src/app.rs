@@ -1,16 +1,7 @@
-use holochain_core::{
-    context::{
-        Context as HolochainContext,
-        mock_network_config,
-    },
-    logger::Logger, persister::SimplePersister,
+use holochain_container_api::{
+    context_builder::ContextBuilder,
+    Holochain,
 };
-use holochain_cas_implementations::{
-    cas::file::FilesystemStorage,
-    cas::memory::MemoryStorage,
-    eav::memory::EavMemoryStorage
-};
-use holochain_container_api::Holochain;
 use holochain_core_types::{
     dna::Dna,
     agent::AgentId,
@@ -18,16 +9,8 @@ use holochain_core_types::{
 };
 use neon::context::Context;
 use neon::prelude::*;
-use std::sync::{Arc, Mutex, RwLock};
-use tempfile::tempdir;
+use std::sync::Arc;
 use std::convert::TryFrom;
-
-#[derive(Clone, Debug)]
-struct NullLogger {}
-
-impl Logger for NullLogger {
-    fn log(&mut self, _msg: String) {}
-}
 
 pub struct App {
     instance: Holochain,
@@ -36,23 +19,11 @@ pub struct App {
 declare_types! {
     pub class JsApp for App {
         init(mut ctx) {
-            let tempdir = tempdir().unwrap();
             let agent_name = ctx.argument::<JsString>(0)?.to_string(&mut ctx)?.value();
             let dna_data = ctx.argument::<JsString>(1)?.to_string(&mut ctx)?.value();
 
             let agent = AgentId::generate_fake(&agent_name);
-            let file_storage = Arc::new(RwLock::new(
-                FilesystemStorage::new(tempdir.path().to_str().unwrap()).unwrap(),
-            ));
-
-            let context = HolochainContext::new(
-                agent,
-                Arc::new(Mutex::new(NullLogger {})),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                Arc::new(RwLock::new(MemoryStorage::new())),
-                Arc::new(RwLock::new(EavMemoryStorage::new())),
-                mock_network_config(),
-            ).unwrap();
+            let context = ContextBuilder::new().with_agent(agent).spawn();
             let dna = Dna::try_from(JsonString::from(dna_data)).expect("unable to parse dna data");
             Ok(App {
                 instance: Holochain::new(dna, Arc::new(context))

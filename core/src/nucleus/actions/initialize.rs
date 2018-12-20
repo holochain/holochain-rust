@@ -46,8 +46,8 @@ pub async fn initialize_application(
 
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
     dispatch_action_and_wait(
-        &context_clone.action_channel,
-        &context_clone.observer_channel,
+        &context_clone.action_channel(),
+        &context_clone.observer_channel(),
         action_wrapper.clone(),
     );
 
@@ -60,7 +60,7 @@ pub async fn initialize_application(
         // an entry from a Dna object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
         context_clone
-            .action_channel
+            .action_channel()
             .send(ActionWrapper::new(Action::ReturnInitializationResult(
                 Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
             )))
@@ -79,7 +79,7 @@ pub async fn initialize_application(
 
     if agent_id_commit.is_err() {
         context_clone
-            .action_channel
+            .action_channel()
             .send(ActionWrapper::new(Action::ReturnInitializationResult(
                 Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
             )))
@@ -105,7 +105,7 @@ pub async fn initialize_application(
     });
 
     context_clone
-        .action_channel
+        .action_channel()
         .send(ActionWrapper::new(Action::ReturnInitializationResult(
             maybe_error,
         )))

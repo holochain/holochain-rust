@@ -3,35 +3,38 @@ extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
+extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
-extern crate serde_json;
 
-
-use holochain_core_types::agent::AgentId;
-use holochain_core_types::entry::entry_type::EntryType;
-use holochain_core_types::entry::entry_type::AppEntryType;
-use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_container_api::{error::HolochainResult, Holochain};
-use holochain_core::{context::{Context, mock_network_config}, logger::Logger, persister::SimplePersister};
-use holochain_core_types::json::JsonString;
-use holochain_core_types::dna::{
-    wasm::DnaWasm,
-    zome::{
+use holochain_container_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
+use holochain_core::{
+    action::Action,
+    context::Context,
+    logger::Logger,
+    signal::Signal,
+};
+use holochain_core_types::{
+    agent::AgentId,
+    dna::{
         capabilities::{Capability, FnDeclaration, Membrane},
-        entry_types::{EntryTypeDef, LinksTo, LinkedFrom},
-        Config, Zome,
+        entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
+        wasm::DnaWasm,
+        zome::{Config, Zome},
+        Dna,
     },
-    Dna,
+    entry::entry_type::{AppEntryType, EntryType},
+    json::JsonString,
 };
 
 use std::{
-    collections::{BTreeMap, hash_map::DefaultHasher},
+    collections::{hash_map::DefaultHasher, BTreeMap},
     fmt,
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
-    sync::{Arc, Mutex,RwLock},
+    sync::{mpsc::Receiver, Arc, Mutex},
+    time::Duration,
 };
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
@@ -92,8 +95,14 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     });
 
     let mut entry_types = BTreeMap::new();
-    entry_types.insert(EntryType::App(AppEntryType::from("testEntryType")), test_entry_def);
-    entry_types.insert(EntryType::App(AppEntryType::from("testEntryTypeB")), test_entry_b_def);
+    entry_types.insert(
+        EntryType::App(AppEntryType::from("testEntryType")),
+        test_entry_def,
+    );
+    entry_types.insert(
+        EntryType::App(AppEntryType::from("testEntryTypeB")),
+        test_entry_b_def,
+    );
 
     let zome = Zome::new(
         "some zome description",
@@ -184,18 +193,15 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let agent = AgentId::generate_fake(agent_name);
-    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
     let logger = test_logger();
     (
         Arc::new(
-            Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
-                mock_network_config(),
-            ).unwrap(),
+            ContextBuilder::new()
+                .with_agent(agent)
+                .with_logger(logger.clone())
+                .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                .expect("Tempdir must be accessible")
+                .spawn()
         ),
         logger,
     )
@@ -235,17 +241,33 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
 /// create a test context and TestLogger pair so we can use the logger in assertions
 pub fn create_test_context(agent_name: &str) -> Arc<Context> {
     let agent = AgentId::generate_fake(agent_name);
-    let logger = test_logger();
-
-    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap()));
     Arc::new(
-        Context::new(
-            agent,
-            logger.clone(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            Arc::new(RwLock::new(EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap())),
-            mock_network_config(),
-        ).unwrap(),
+        ContextBuilder::new()
+            .with_agent(agent)
+            .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+            .expect("Tempdir must be accessible")
+            .spawn()
     )
+}
+
+// @TODO this is a first attempt at replacing history.len() tests
+// @see https://github.com/holochain/holochain-rust/issues/195
+pub fn expect_action<F>(rx: &Receiver<Signal>, f: F) -> Result<Action, String>
+where
+    F: Fn(&Action) -> bool,
+{
+    let timeout = 1000;
+    loop {
+        match rx
+            .recv_timeout(Duration::from_millis(timeout))
+            .map_err(|e| e.to_string())?
+        {
+            Signal::Internal(action) => {
+                if f(&action) {
+                    return Ok(action);
+                }
+            }
+            _ => continue,
+        }
+    }
 }

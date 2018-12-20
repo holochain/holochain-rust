@@ -6,16 +6,13 @@ use std::{convert::TryInto, sync::Arc};
 
 #[derive(Serialize, Deserialize)]
 pub struct EntryWithHeader {
-    pub entry_body: Entry,
+    pub entry: Entry,
     pub header: ChainHeader,
 }
 
 impl EntryWithHeader {
     pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
-        EntryWithHeader {
-            entry_body: entry,
-            header,
-        }
+        EntryWithHeader { entry, header }
     }
 }
 
@@ -24,7 +21,7 @@ fn fetch_entry_from_cas(
     context: &Arc<Context>,
 ) -> Result<Entry, HolochainError> {
     let json = context
-        .file_storage
+        .dht_storage
         .read()?
         .fetch(address)?
         .ok_or("Entry not found".to_string())?;

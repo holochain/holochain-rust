@@ -13,7 +13,6 @@ members = [
   "net_ipc",
   "sodium",
   "test_bin",
-#  "app_spec/zomes/blog/code",
 ]
 exclude = [
   "test_utils",

@@ -30,7 +30,7 @@ fn publish_entry(
             msg_id: "?".to_string(),
             dna_hash: network_state.dna_hash.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
-            address: entry_with_header.entry_body.address().to_string(),
+            address: entry_with_header.entry.address().to_string(),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
                 .unwrap(),
         }),
@@ -79,12 +79,12 @@ fn publish_link_meta(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-    let link_add_entry = match entry_with_header.entry_body.clone() {
+    let link_add_entry = match entry_with_header.entry.clone() {
         Entry::LinkAdd(link_add_entry) => link_add_entry,
         _ => {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Received bad entry type. Expected Entry::LinkAdd received {:?}",
-                entry_with_header.entry_body,
+                entry_with_header.entry,
             )));
         }
     };
@@ -114,11 +114,11 @@ fn reduce_publish_inner(
     let entry_with_header = fetch_entry_with_header(&address, &context)?;
     let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address.clone())?
         .expect("Entry should have crud-status metadata in DHT.");
-    match entry_with_header.entry_body.entry_type() {
+    match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_crud_meta(
                 network_state,
-                entry_with_header.entry_body.address(),
+                entry_with_header.entry.address(),
                 crud_status,
                 maybe_crud_link,
             )
@@ -126,7 +126,7 @@ fn reduce_publish_inner(
         EntryType::App(_) => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_crud_meta(
                 network_state,
-                entry_with_header.entry_body.address(),
+                entry_with_header.entry.address(),
                 crud_status,
                 maybe_crud_link,
             )
@@ -136,7 +136,7 @@ fn reduce_publish_inner(
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_crud_meta(
                 network_state,
-                entry_with_header.entry_body.address(),
+                entry_with_header.entry.address(),
                 crud_status,
                 maybe_crud_link,
             )

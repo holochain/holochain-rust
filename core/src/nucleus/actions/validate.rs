@@ -100,7 +100,7 @@ pub fn validate_entry<'a>(
             };
 
             context
-                .action_channel
+                .action_channel()
                 .send(ActionWrapper::new(Action::ReturnValidationResult((
                     (id, address),
                     result,

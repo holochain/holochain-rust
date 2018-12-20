@@ -89,7 +89,7 @@ test('posts_by_agent', (t) => {
   t.deepEqual(result.Ok, {"addresses":[]})
 })
 
-test('my_posts', (t) => {
+test('my_posts', async (t) => {
   t.plan(1)
 
   app.call("blog", "main", "create_post",
@@ -100,7 +100,15 @@ test('my_posts', (t) => {
     {"content": "Another post", "in_reply_to": ""}
   )
 
-  const result = app.call("blog", "main", "my_posts", {})
+  const result = await pollFor(
+    () => app.call("blog", "main", "my_posts", {}),
+    (result) => {
+        return result &&
+        result.Ok &&
+        result.Ok.addresses &&
+        result.Ok.addresses.length === 2
+    }
+  ).catch(t.fail)
 
   t.equal(result.Ok.addresses.length, 2)
 })

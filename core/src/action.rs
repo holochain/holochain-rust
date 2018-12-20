@@ -134,6 +134,10 @@ pub enum Action {
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
     SendDirectMessage(DirectMessageData),
 
+    /// Makes the direct message connection with the given ID timeout by adding an
+    /// Err(HolochainError::Timeout) to NetworkState::custom_direct_message_replys.
+    SendDirectMessageTimeout(String),
+
     /// Makes the network module forget about the direct message
     /// connection with the given ID.
     /// Triggered when we got an answer to our initial DM.
@@ -145,8 +149,13 @@ pub enum Action {
 
     /// Updates the state to hold the response that we got for
     /// our previous request for a validation package.
-    /// Triggered from the network handler when we got the response.
+    /// Triggered from the network handler when we get the response.
     HandleGetValidationPackage((Address, Option<ValidationPackage>)),
+
+    /// Updates the state to hold the response that we got for
+    /// our previous custom direct message.
+    /// /// Triggered from the network handler when we get the response.
+    HandleCustomSendResponse((String, Result<String, String>)),
 
     // ----------------
     // Nucleus actions:

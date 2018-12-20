@@ -1,6 +1,6 @@
+use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
-use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util};
 use holochain_core::nucleus::{ribosome, ZomeFnCall};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
@@ -289,8 +289,9 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 }
 
 #[cfg(test)]
+// too slow!
+#[cfg(feature = "broken-tests")]
 mod tests {
-    use super::*;
     use assert_cmd::prelude::*;
     use std::process::Command;
     use tempfile::{Builder, TempDir};

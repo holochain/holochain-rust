@@ -29,7 +29,7 @@ pub async fn get_validation_package(
 ) -> HcResult<Option<ValidationPackage>> {
     let entry_address = header.entry_address().clone();
     let action_wrapper = ActionWrapper::new(Action::GetValidationPackage(header));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
     await!(GetValidationPackageFuture {
         context: context.clone(),
         address: entry_address,

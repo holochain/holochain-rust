@@ -25,11 +25,16 @@ impl ValidationPackage {
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub enum ValidationPackageDefinition {
-    Entry,          //sending only the entry
-    ChainEntries,   //sending all (public?) source chain entries
-    ChainHeaders,   //sending all source chain headers
-    ChainFull,      //sending the whole chain, entries and headers
-    Custom(String), //sending something custom
+    /// sending only the entry
+    Entry,
+    /// sending all (public?) source chain entries
+    ChainEntries,
+    /// sending all source chain headers
+    ChainHeaders,
+    /// sending the whole chain, entries and headers
+    ChainFull,
+    /// sending something custom
+    Custom(String),
 }
 
 /// This structs carries information contextual for the process

@@ -9,7 +9,7 @@ use crate::{
         ZomeFnCall,
     },
 };
-use holochain_core_types::{dna::zome::capabilities::Membrane, error::HolochainError};
+use holochain_core_types::{dna::capabilities::Membrane, error::HolochainError};
 use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 use std::{
     convert::TryFrom,
@@ -57,8 +57,8 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // Send Action and block
     let (sender, receiver) = channel();
     crate::instance::dispatch_action_with_observer(
-        &runtime.context.action_channel,
-        &runtime.context.observer_channel,
+        runtime.context.action_channel(),
+        runtime.context.observer_channel(),
         action_wrapper.clone(),
         move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
@@ -185,7 +185,7 @@ pub mod tests {
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
-        dna::{zome::capabilities::Capability, Dna},
+        dna::{capabilities::Capability, Dna},
         error::{DnaError, HolochainError},
         json::JsonString,
     };
@@ -229,20 +229,19 @@ pub mod tests {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
-        Arc::new(
-            Context::new(
-                AgentId::generate_fake("alex"),
-                Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
-                mock_network_config(),
-            )
-            .unwrap(),
-        )
+        Arc::new(Context::new(
+            AgentId::generate_fake("alex"),
+            Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
+            file_storage.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
+            None,
+        ))
     }
 
     #[cfg_attr(tarpaulin, skip)]

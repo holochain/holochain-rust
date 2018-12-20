@@ -102,7 +102,7 @@ impl EntryType {
             return None;
         }
         let entry_type_def = maybe_def.unwrap();
-        
+
         // app entry type must be publishable
         if !entry_type_def.sharing.clone().can_publish() {
             return None;

@@ -4,6 +4,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
+    dna::capabilities::CapabilityCall,
     entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
 };
@@ -328,7 +329,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call("summer", "main", "sum", call_input.into())
+///     hdk::call("summer", "main", "test_token", "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -353,7 +354,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// ```
 pub fn call<S: Into<String>>(
     zome_name: S,
-    cap_name: S,
+    cap_name: S, //temporary...
+    cap_token: S,
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
@@ -367,7 +369,11 @@ pub fn call<S: Into<String>>(
         &mut mem_stack,
         ZomeFnCallArgs {
             zome_name: zome_name.into(),
-            cap_name: cap_name.into(),
+            cap: Some(CapabilityCall::new(
+                cap_name.into(),
+                Address::from(cap_token.into()),
+                None,
+            )),
             fn_name: fn_name.into(),
             fn_args: String::from(fn_args),
         },
@@ -901,12 +907,75 @@ pub fn query(entry_type_name: &str, start: u32, limit: u32) -> ZomeApiResult<Que
     }
 }
 
-/// Sends a node-to-node message to the given agent.
+/// Sends a node-to-node message to the given agent, specified by their address.
+/// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
 /// This works in conjunction with the `receive` callback that has to be defined in the
-/// [define_zome!](macro.defineZome.html) macro.
+/// [define_zome!](../macro.define_zome.html) macro.
 ///
-/// This functions blocks and returns the result returned by the `receive` callback on
-/// the other side.
+/// This function dispatches a message to the receiver, and will wait up to 60 seconds before returning a timeout error. The `send` function will return the string returned
+/// by the `receive` callback of the other node.
+/// # Examples
+/// ```rust
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # extern crate serde;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # #[macro_use]
+/// # extern crate serde_json;
+/// # use hdk::error::ZomeApiResult;
+/// # use holochain_core_types::cas::content::Address;
+///
+/// # // Adding empty functions so that the cfg(test) build can link.
+/// # #[no_mangle]
+/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
+///
+/// # fn main() {
+/// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
+///     // because the function signature of hdk::send is the same as the
+///     // signature of handle_send_message we can just directly return its' result
+///     hdk::send(to_agent, message)
+/// }
+///
+/// define_zome! {
+///    entries: []
+///
+///    genesis: || { Ok(()) }
+///
+///    receive: |payload| {
+///        // simply pass back the received value, appended to a modifier
+///        format!("Received: {}", payload)
+///    }
+///
+///    functions: {
+///        main (Public) {
+///            send_message: {
+///                inputs: |to_agent: Address, message: String|,
+///                outputs: |response: ZomeApiResult<String>|,
+///                handler: handle_send_message
+///            }
+///        }
+///    }
+///}
+/// # }
+/// ```
 pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 

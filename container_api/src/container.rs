@@ -23,6 +23,7 @@ use std::{
     thread,
 };
 
+use holochain_net_connection::net_connection::NetShutdown;
 use holochain_net::p2p_config::P2pConfig;
 use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
@@ -44,6 +45,15 @@ pub struct Container {
     dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     network_ipc_uri: Option<String>,
+    network_child_process: NetShutdown,
+}
+
+impl Drop for Container {
+    fn drop(&mut self) {
+        if let Some(kill) = self.network_child_process.take() {
+            kill();
+        }
+    }
 }
 
 type SignalSender = SyncSender<Signal>;
@@ -62,6 +72,7 @@ impl Container {
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
             network_ipc_uri: None,
+            network_child_process: None,
         }
     }
 
@@ -129,7 +140,7 @@ impl Container {
         let SpawnResult {
             kill,
             ipc_binding,
-            p2p_bindings,
+            p2p_bindings: _,
         } = ipc_spawn(
             "node".to_string(),
             vec![format!(
@@ -145,6 +156,7 @@ impl Container {
             true,
         )
         .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))?;
+        self.network_child_process = kill;
         Ok(ipc_binding)
     }
 

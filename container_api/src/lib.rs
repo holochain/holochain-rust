@@ -94,6 +94,7 @@ extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
+extern crate holochain_net_connection;
 extern crate holochain_net_ipc;
 
 extern crate serde;

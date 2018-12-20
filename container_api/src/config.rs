@@ -340,6 +340,12 @@ pub struct NetworkConfig {
     /// Absolute path to the directory that n3h uses to store persisted data.
     #[serde(default, rename = "n3h_persistence_path")]
     pub n3h_persistence_path: String,
+    /// URI pointing a n3h process that is already running and not managed by this
+    /// container.
+    /// If this is set the container does not spawn n3h itself and ignores the path
+    /// configs above. Default is None.
+    #[serde(default, rename = "n3h_ipc_uri")]
+    pub n3h_ipc_uri: Option<String>,
 }
 
 impl Default for NetworkConfig {
@@ -348,6 +354,7 @@ impl Default for NetworkConfig {
             bootstrap_nodes: Vec::new(),
             n3h_path: String::from("~/.holochain/n3h"),
             n3h_persistence_path: String::from("/.holochain/n3h_persistence"),
+            n3h_ipc_uri: None,
         }
     }
 }
@@ -500,6 +507,7 @@ pub mod tests {
                 bootstrap_nodes: vec![ String::from("/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i") ],
                 n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
+                n3h_ipc_uri: None,
             }
         );
 

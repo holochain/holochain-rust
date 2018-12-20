@@ -15,9 +15,10 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
+    cas::content::Address,
     agent::AgentId,
     dna::{
-        capabilities::{Capability, FnDeclaration, Membrane},
+        capabilities::{Capability, FnDeclaration, CapabilityType, CapabilityCall},
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         wasm::DnaWasm,
         zome::{Config, Zome},
@@ -119,14 +120,12 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
     dna
 }
 
-pub fn create_test_cap(membrane: Membrane) -> Capability {
-    let mut capability = Capability::new();
-    capability.cap_type.membrane = membrane;
-    capability
+pub fn create_test_cap(cap_type: CapabilityType) -> Capability {
+    Capability::new(cap_type)
 }
 
 pub fn create_test_cap_with_fn_name(fn_name: &str) -> Capability {
-    let mut capability = Capability::new();
+    let mut capability = Capability::new(CapabilityType::Public);
     let mut fn_decl = FnDeclaration::new();
     fn_decl.name = String::from(fn_name);
     capability.functions.push(fn_decl);
@@ -235,7 +234,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call("test_zome", "test_cap", fn_name, r#"{}"#);
+    return hc.call("test_zome", Some(CapabilityCall::new("test_cap".to_string(), Address::from("test_token"),None)), fn_name, r#"{}"#);
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions

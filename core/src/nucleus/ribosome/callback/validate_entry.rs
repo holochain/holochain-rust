@@ -58,6 +58,9 @@ pub fn validate_entry(
         // TODO: Specify how Deletion can be commited to chain.
         EntryType::Deletion => Ok(CallbackResult::Pass),
 
+        // a grant should always be private, so it should always pass
+        EntryType::CapTokenGrant => Ok(CallbackResult::Pass),
+
         _ => Ok(CallbackResult::NotImplemented),
     }
 }
@@ -97,7 +100,7 @@ fn validate_link_entry(
     };
     let call = ZomeFnCall::new(
         &link_definition_path.zome_name,
-        "no capability, since this is an entry validation call",
+        None,
         "__hdk_validate_link",
         params,
     );
@@ -155,7 +158,7 @@ fn build_validation_call(
 
     Ok(ZomeFnCall::new(
         &zome_name,
-        "no capability, since this is an entry validation call",
+        None,
         "__hdk_validate_app_entry",
         params,
     ))

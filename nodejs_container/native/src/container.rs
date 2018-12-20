@@ -1,5 +1,5 @@
 use holochain_container_api::{
-    config::{Configuration, load_configuration},
+    config::{load_configuration, Configuration},
     container::Container,
 };
 use holochain_core::{
@@ -82,7 +82,7 @@ declare_types! {
         method call(mut cx) {
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let zome = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
-            let cap = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
+            let _cap = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
             let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
             let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
             let mut this = cx.this();
@@ -93,7 +93,7 @@ declare_types! {
                 let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
-                instance.call(&zome, &cap, &fn_name, &params)
+                instance.call(&zome, None, &fn_name, &params)
             };
 
             let res_string = call_result.or_else(|e| {
@@ -103,6 +103,29 @@ declare_types! {
 
             let result_string: String = res_string.into();
             Ok(cx.string(result_string).upcast())
+        }
+
+        method agent_id(mut cx) {
+            let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+            let this = cx.this();
+            let result = {
+                let guard = cx.lock();
+                let hab = this.borrow(&guard);
+                let instance = hab.container.instances().get(&instance_id)
+                    .expect(&format!("No instance with id: {}", instance_id))
+                    .read().unwrap();
+                let out = instance.context().state().ok_or("No state?".to_string())
+                    .and_then(|state| state
+                        .agent().get_agent_address()
+                        .map_err(|e| e.to_string()));
+                out
+            };
+
+            let hash = result.or_else(|e: String| {
+                let error_string = cx.string(format!("unable to call zome function: {:?}", &e));
+                cx.throw(error_string)
+            })?;
+            Ok(cx.string(hash.to_string()).upcast())
         }
     }
 }

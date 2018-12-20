@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![feature(await_macro)]
 #[macro_use]
 extern crate neon;
 extern crate neon_serde;
@@ -12,5 +13,5 @@ extern crate holochain_core_types;
 extern crate holochain_net;
 extern crate tempfile;
 
-pub mod container;
 mod config;
+pub mod container;

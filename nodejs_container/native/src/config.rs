@@ -1,8 +1,6 @@
-use holochain_container_api::{
-    config::{
-        AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
-        LoggerConfiguration, StorageConfiguration,
-    },
+use holochain_container_api::config::{
+    AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
+    LoggerConfiguration, StorageConfiguration,
 };
 use holochain_core_types::agent::AgentId;
 use holochain_net::p2p_config::P2pConfig;
@@ -80,17 +78,15 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
     for instance in instance_data {
         let agent_name = instance.agent.name;
         let dna_path = PathBuf::from(instance.dna.path);
-        let agent = agent_configs
-            .entry(agent_name.clone())
-            .or_insert_with(|| {
-                let agent_id = AgentId::generate_fake(&agent_name);
-                AgentConfiguration {
-                    id: agent_name.clone(),
-                    name: agent_name.clone(),
-                    public_address: agent_id.key,
-                    key_file: format!("fake/key/{}", agent_name),
-                }
-            });
+        let agent = agent_configs.entry(agent_name.clone()).or_insert_with(|| {
+            let agent_id = AgentId::generate_fake(&agent_name);
+            AgentConfiguration {
+                id: agent_name.clone(),
+                name: agent_name.clone(),
+                public_address: agent_id.key,
+                key_file: format!("fake/key/{}", agent_name),
+            }
+        });
         let dna = dna_configs
             .entry(dna_path.clone())
             .or_insert_with(|| make_dna_config(dna_path).expect("DNA file not found"));

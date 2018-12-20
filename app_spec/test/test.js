@@ -1,32 +1,42 @@
-const test = require('tape');
-const { pollFor } = require('./util');
+const test = require('tape')
+const { pollFor } = require('./util')
 
-const { ConfigBuilder, Habitat } = require('../../nodejs_container');
+const { ConfigBuilder, Habitat } = require('../../nodejs_container')
 
-const agentAlice = ConfigBuilder.agent("alice");
-const agentBob = ConfigBuilder.agent("bob");
+const dnaPath = "./dist/app_spec.hcpkg"
 
-const dnaPath = "./dist/app_spec.hcpkg";
-const dna = ConfigBuilder.dna(dnaPath);
+// IIFE to keep config-only stuff out of test scope
+const config = (() => {
+  const agentAlice = ConfigBuilder.agent("alice")
+  const agentBob = ConfigBuilder.agent("bob")
 
-const instanceAlice = ConfigBuilder.instance(agentAlice, dna);
-const instanceBob = ConfigBuilder.instance(agentBob, dna);
+  const dna = ConfigBuilder.dna(dnaPath)
 
-const config = ConfigBuilder.habitat(instanceAlice, instanceBob);
+  const instanceAlice = ConfigBuilder.instance(agentAlice, dna)
+  const instanceBob = ConfigBuilder.instance(agentBob, dna)
 
-const hab = new Habitat(config);
-hab.start();
+  return ConfigBuilder.habitat(instanceAlice, instanceBob)
+})()
 
-const caller = id => (zome, cap, fn, params) => (
-  hab.call(id, zome, cap, fn, params)
-)
+const hab = new Habitat(config)
+hab.start()
 
-const app = {
-  call: caller('alice-' + dnaPath)
+const caller = (agentId) => {
+  const instanceId = agentId + '-' + dnaPath
+  return {
+    call: (zome, cap, fn, params) => hab.call(instanceId, zome, cap, fn, params),
+    agentId: hab.agent_id(instanceId)
+  }
 }
-const app2 = {
-  call: caller('bob-' + dnaPath)
-}
+
+const app = caller('alice')
+const app2 = caller('bob')
+
+test('agentId', (t) => {
+  t.plan(2)
+  t.ok(app.agentId)
+  t.notEqual(app.agentId, app2.agentId)
+})
 
 test('call', (t) => {
   t.plan(1)

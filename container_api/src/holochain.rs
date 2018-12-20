@@ -202,7 +202,13 @@ mod tests {
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
-    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>, SignalReceiver) {
+    fn test_context(
+        agent_name: &str,
+    ) -> (
+        Arc<Context>,
+        Arc<Mutex<test_utils::TestLogger>>,
+        SignalReceiver,
+    ) {
         let agent = AgentId::generate_fake(agent_name);
         let (signal_tx, signal_rx) = signal_channel();
         let logger = test_utils::test_logger();
@@ -452,8 +458,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _, signal_rx) = test_context("alex");
-        let mut hc =
-            Holochain::new(dna.clone(), context).unwrap();
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -635,9 +640,7 @@ mod tests {
         dna.uuid = "can_receive_action_signals".into();
         let (context, _, signal_rx) = test_context("alex");
         let timeout = 1000;
-        let mut hc =
-            Holochain::new(dna.clone(), context)
-            .unwrap();
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
         hc.start().expect("couldn't start");
         hc.call(
             "test_zome",

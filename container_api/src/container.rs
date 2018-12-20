@@ -168,11 +168,13 @@ impl Container {
                 // Agent:
                 let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
                 let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
-                context_builder = context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
+                context_builder =
+                    context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 // Network config:
                 if let Some(network_config) = instance_config.network {
-                    context_builder = context_builder.with_network_config(JsonString::from(network_config))
+                    context_builder =
+                        context_builder.with_network_config(JsonString::from(network_config))
                 };
 
                 // Storage:

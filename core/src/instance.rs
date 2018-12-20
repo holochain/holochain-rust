@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    signal::{Signal, SignalSender},
+    signal::Signal,
     state::State,
 };
 use std::{

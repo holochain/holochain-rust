@@ -1,6 +1,10 @@
 use crate::{
-    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister,
-    signal::{Signal, SignalSender}, state::State,
+    action::ActionWrapper,
+    instance::Observer,
+    logger::Logger,
+    persister::Persister,
+    signal::{Signal, SignalSender},
+    state::State,
 };
 use holochain_core_types::{
     agent::AgentId,

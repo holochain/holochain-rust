@@ -8,7 +8,7 @@ use holochain_core::{
     context::Context,
     logger::{Logger, SimpleLogger},
     persister::SimplePersister,
-    signal::{SignalSender},
+    signal::SignalSender,
 };
 use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
@@ -74,10 +74,7 @@ impl ContextBuilder {
     /// Sets all three storages, chain, DHT and EAV storage, to persistent file based implementations.
     /// Chain and DHT storages get set to the same file CAS.
     /// Returns an error if no file storage could be spawned on the given path.
-    pub fn with_file_storage<T: Into<String>>(
-        mut self,
-        path: T,
-    ) -> Result<Self, HolochainError> {
+    pub fn with_file_storage<T: Into<String>>(mut self, path: T) -> Result<Self, HolochainError> {
         let path: String = path.into();
         let cas_path = format!("{}/cas", path);
         let eav_path = format!("{}/eav", path);
@@ -128,18 +125,15 @@ impl ContextBuilder {
             .eav_storage
             .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
         Context::new(
-            self.agent_id
-                .unwrap_or(AgentId::generate_fake("alice")),
-            self.logger
-                .unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
+            self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
+            self.logger.unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config
-                .unwrap_or(JsonString::from(String::from(
-                    P2pConfig::DEFAULT_MOCK_CONFIG,
-                ))),
+            self.network_config.unwrap_or(JsonString::from(String::from(
+                P2pConfig::DEFAULT_MOCK_CONFIG,
+            ))),
             self.container_api,
             self.signal_tx,
         )

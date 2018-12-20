@@ -152,6 +152,7 @@ fn start_holochain_instance<T: Into<String>>(
         "link_two_entries",
         "links_roundtrip_create",
         "links_roundtrip_get",
+        "links_roundtrip_get_and_load",
         "link_validation",
         "check_query",
         "check_app_entry_address",
@@ -464,7 +465,17 @@ fn can_roundtrip_links() {
             "links_roundtrip_get",
             &format!(r#"{{"address": "{}"}}"#, address),
         );
+
+        let result_load = hc.call(
+            "test_zome",
+            "test_cap",
+            "links_roundtrip_get_and_load",
+            &format!(r#"{{"address": "{}"}}"#, address),
+        );
+
         assert!(result.is_ok(), "result = {:?}", result);
+        assert!(result_load.is_ok(), "result = {:?}", result_load);
+        
         result_string = result.unwrap();
         let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
         let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");

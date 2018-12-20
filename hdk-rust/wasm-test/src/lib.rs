@@ -167,6 +167,10 @@ fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult>
     hdk::get_links(&address, "test-tag")
 }
 
+fn handle_links_roundtrip_get_and_load(address: Address) -> ZomeApiResult<Vec<Entry>> {
+    hdk::get_links_and_load(&address, "test-tag")
+}
+
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     fn err(s: &str) -> ZomeApiResult<Vec<Address>> {
         Err(ZomeApiError::Internal(s.to_owned()))
@@ -499,6 +503,12 @@ define_zome! {
                 inputs: |address: Address|,
                 outputs: |result: ZomeApiResult<GetLinksResult>|,
                 handler: handle_links_roundtrip_get
+            }
+
+            links_roundtrip_get_and_load: {
+                inputs: |address: Address|,
+                outputs: |result: ZomeApiResult<Vec<Entry>>|,
+                handler: handle_links_roundtrip_get_and_load
             }
 
             link_validation: {

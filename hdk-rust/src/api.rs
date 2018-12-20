@@ -902,17 +902,12 @@ pub fn get_links<S: Into<String>>(
 }
 
 
-
+/// Helper function for get_links. Returns a vector of the entries themselves
 pub fn get_links_and_load<S: Into<String>>(
  base: &HashString,
  tag: S
 ) -> ZomeApiResult<Vec<Entry>>  {
-    let get_links_result = get_links_result(base, tag, GetLinksOptions{
-        status_request: StatusRequestKind::default(),
-        entry: true,
-        header: false,
-        sources: false
-    })?;
+    let get_links_result = get_links_result(base, tag, GetLinksOptions::default())?;
 
     let entries: Vec<Entry> = get_links_result
     .into_iter()

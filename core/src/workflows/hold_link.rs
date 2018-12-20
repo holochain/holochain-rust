@@ -49,6 +49,8 @@ pub async fn hold_link_workflow<'a>(
 }
 
 #[cfg(test)]
+// too slow!
+#[cfg(feature = "broken-tests")]
 pub mod tests {
     use super::*;
     use crate::{

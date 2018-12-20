@@ -1,5 +1,5 @@
 use crate::{
-    dna::{capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
+    dna::{bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
@@ -191,6 +191,14 @@ impl Dna {
         let s = String::from(JsonString::from(self.to_owned()));
         multihash::encode(multihash::Hash::SHA2256, &s.into_bytes())
             .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
+    }
+
+    pub fn get_required_bridges(&self) -> Vec<Bridge> {
+        self.zomes
+            .values()
+            .map(|zome| zome.get_required_bridges())
+            .flatten()
+            .collect()
     }
 }
 

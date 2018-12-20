@@ -878,10 +878,9 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
     })?;
 
     let addresses: Vec<Address> = get_links_result
-    .iter()
-    .map(|get_result: &ZomeApiResult<GetEntryResult>| {
+    .into_iter()
+    .map(|get_result| {
         let get_type = get_result.unwrap().result;
-
         match get_type {
             GetEntryResultType::Single(elem) => Ok(elem.meta.unwrap().address.to_owned()),
             GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string()))

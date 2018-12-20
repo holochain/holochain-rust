@@ -24,6 +24,7 @@ use std::{
 };
 
 use holochain_net::p2p_config::P2pConfig;
+use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
 use interface_impls;
 /// Main representation of the container.
@@ -42,6 +43,7 @@ pub struct Container {
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
+    network_ipc_uri: Option<String>,
 }
 
 type SignalSender = SyncSender<Signal>;
@@ -59,6 +61,7 @@ impl Container {
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
+            network_ipc_uri: None,
         }
     }
 
@@ -122,6 +125,49 @@ impl Container {
         Ok(())
     }
 
+    pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
+        let SpawnResult {
+            kill,
+            ipc_binding,
+            p2p_bindings,
+        } = ipc_spawn(
+            "node".to_string(),
+            vec![format!(
+                "{}/packages/n3h/bin/n3h",
+                self.config.network.n3h_path.clone()
+            )],
+            self.config.network.n3h_persistence_path.clone(),
+            hashmap! {
+                String::from("N3H_HACK_MODE") => String::from("1"),
+                String::from("N3H_WORK_DIR") => self.config.network.n3h_persistence_path.clone(),
+                String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
+            },
+            true,
+        )
+        .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))?;
+        Ok(ipc_binding)
+    }
+
+    fn instance_network_config(&self) -> Result<JsonString, HolochainError> {
+        match self.network_ipc_uri {
+            Some(ref uri) => Ok(JsonString::from(format!(
+                r#"
+                {{
+                    "backend_kind": "IPC",
+                    "backend_config": {{
+                        "socketType": "zmq",
+                        "ipcUri": {}
+                    }}
+                }}
+        "#,
+                uri.clone()
+            ))),
+            None => Err(HolochainError::ErrorGeneric(
+                "Network IPC URI missing".to_string(),
+            )),
+        }
+    }
+
     /// Tries to create all instances configured in the given Configuration object.
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     /// @TODO: clean up the container creation process to prevent loading config before proper setup,
@@ -129,6 +175,15 @@ impl Container {
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
     pub fn load_config(&mut self) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
+        if self.network_ipc_uri.is_none() {
+            self.network_ipc_uri = self
+                .config
+                .network
+                .n3h_ipc_uri
+                .clone()
+                .or_else(|| self.spawn_network().ok());
+        }
+
         let config = self.config.clone();
         self.shutdown().map_err(|e| e.to_string())?;
         self.instances = HashMap::new();
@@ -171,11 +226,7 @@ impl Container {
                 context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 // Network config:
-                //instance_config.network.map(|network_config| {
-                //    context_builder.with_network_config(JsonString::from(network_config))
-                //});
-
-                context_builder.with_network_config(JsonString::from(P2pConfig::DEFAULT_IPC_CONFIG));
+                context_builder.with_network_config(self.instance_network_config()?);
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {

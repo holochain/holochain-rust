@@ -94,6 +94,7 @@ extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
+extern crate holochain_net_ipc;
 
 extern crate serde;
 extern crate tempfile;
@@ -107,6 +108,8 @@ extern crate serde_json;
 extern crate test_utils;
 extern crate tiny_http;
 extern crate toml;
+#[macro_use]
+extern crate maplit;
 
 pub mod config;
 pub mod container;

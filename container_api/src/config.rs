@@ -504,13 +504,14 @@ pub mod tests {
         assert_eq!(
             config.network,
             NetworkConfig {
-                bootstrap_nodes: vec![ String::from("/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i") ],
+                bootstrap_nodes: vec![String::from(
+                    "/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"
+                )],
                 n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
             }
         );
-
     }
 
     #[test]

@@ -209,7 +209,6 @@ jobs:
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
-       - WASM_TARGET_DIR_2=$WASM_PATH_2/target
 
     - name: "windows container_api"
       <<: *_windows_template_lite
@@ -221,6 +220,7 @@ jobs:
        # boilerplate
        - CARGO_TARGET_DIR=$TEST_PATH/target
        - WASM_TARGET_DIR=$WASM_PATH/target
+       - WASM_TARGET_DIR_2=$WASM_PATH_2/target
 
     - name: "windows core"
       <<: *_windows_template_lite

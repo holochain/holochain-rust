@@ -41,7 +41,6 @@ let
 
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
-  hc-build
   cargo test --release --all;
   '';
 

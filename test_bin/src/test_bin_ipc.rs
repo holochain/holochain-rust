@@ -83,7 +83,7 @@ impl IpcNode {
 
 // Spawn an IPC node that uses n3h and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
+fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>, bootstrap_nodes: Vec<String>) -> NetResult<IpcNode> {
     let dir_ref = tempfile::tempdir()?;
     let dir = dir_ref.path().to_string_lossy().to_string();
 
@@ -100,6 +100,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
             "backend_config":
             {
                 "socketType": p2p_config.backend_config["socketType"],
+                "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
                     "cmd": p2p_config.backend_config["spawn"]["cmd"],
@@ -122,6 +123,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
             "backend_config":
             {
                 "socketType": "zmq",
+                "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
                     "cmd": "node",
@@ -195,8 +197,8 @@ fn exec() -> NetResult<()> {
     }
 
     // Create two nodes
-    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"))?;
-    let mut node2 = spawn_connection(&n3h_path, None)?;
+    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"), vec![])?;
+    let mut node2 = spawn_connection(&n3h_path, None, vec![])?;
     println!("node1 path: {}", node1.dir);
     println!("node2 path: {}", node2.dir);
 

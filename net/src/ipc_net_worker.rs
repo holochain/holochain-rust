@@ -6,6 +6,7 @@ use holochain_net_ipc::{
     ipc_client::IpcClient,
     socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
     util::get_millis,
+    spawn,
 };
 
 use holochain_net_connection::{
@@ -160,69 +161,10 @@ impl IpcNetWorker {
         env: HashMap<String, String>,
         block_connect: bool,
     ) -> NetResult<Self> {
-        let mut child = std::process::Command::new(cmd);
+        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, env, block_connect)?;
 
-        child
-            .stdout(std::process::Stdio::piped())
-            .args(&args)
-            .envs(&env)
-            .current_dir(work_dir);
-
-        println!("SPAWN ({:?})", child);
-
-        let mut child = child.spawn()?;
-
-        // transport info (zmq uri) for connecting to the ipc socket
-        let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
-
-        // transport info (multiaddr) for any p2p interface bindings
-        let re_p2p = regex::Regex::new("(?m)^#P2P-BINDING#:(.+)$")?;
-
-        // the child process is ready for connections
-        let re_ready = regex::Regex::new("#IPC-READY#")?;
-
-        let mut ipc_binding = String::new();
-        let mut p2p_bindings: Vec<String> = Vec::new();
-
-        // we need to know when our child process is ready for IPC connections
-        // it will run some startup algorithms, and then output some binding
-        // info on stdout and finally a `#IPC-READY#` message.
-        // collect the binding info, and proceed when `#IPC-READY#`
-        if let Some(ref mut stdout) = child.stdout {
-            let mut data: Vec<u8> = Vec::new();
-            loop {
-                let mut buf: [u8; 4096] = [0; 4096];
-                let size = stdout.read(&mut buf)?;
-                if size > 0 {
-                    data.extend_from_slice(&buf[..size]);
-
-                    let tmp = String::from_utf8_lossy(&data);
-                    if re_ready.is_match(&tmp) {
-                        for m in re_ipc.captures_iter(&tmp) {
-                            ipc_binding = m[1].to_string();
-                            break;
-                        }
-                        for m in re_p2p.captures_iter(&tmp) {
-                            p2p_bindings.push(m[1].to_string());
-                        }
-                        break;
-                    }
-                } else {
-                    std::thread::sleep(std::time::Duration::from_millis(10));
-                }
-
-                if !block_connect {
-                    break;
-                }
-            }
-        } else {
-            bail!("pipe fail");
-        }
-
-        // close the pipe since we can never read from it again...
-        child.stdout = None;
-
-        println!("READY! {} {:?}", ipc_binding, p2p_bindings);
+        let ipc_binding = spawn_result.ipc_binding;
+        let kill = spawn_result.kill;
 
         IpcNetWorker::priv_new(
             handler,
@@ -232,9 +174,7 @@ impl IpcNetWorker {
                 let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
                 Ok(out)
             }),
-            Some(Box::new(move || {
-                child.kill().unwrap();
-            })),
+            kill,
         )
     }
 

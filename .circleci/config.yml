@@ -39,12 +39,12 @@ jobs:
       # container api test
       - restore_cache:
          keys:
-          - wasm-utils-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
+          - container-api-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
       - run:
          name: test container api
          command: nix-shell --run hc-test-container-api
       - save_cache:
-         key: wasm-utils-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
+         key: container-api-v1-{{ checksum "container_api/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml" }}
          paths:
           - container_api/target
           - container_api/wasm-test/target
@@ -52,15 +52,51 @@ jobs:
       # core test
       - restore_cache:
          keys:
-          - wasm-utils-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
+          - core-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
       - run:
          name: test core
          command: nix-shell --run hc-test-core
       - save_cache:
-         key: wasm-utils-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
+         key: core-v1-{{ checksum "core/Cargo.toml" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}
          paths:
           - core/target
           - core/src/nucleus/actions/wasm-test/target
+
+      # cas implementations test
+      - restore_cache:
+         keys:
+          - cas-implementations-v1-{{ checksum "cas_implementations/Cargo.toml" }}
+      - run:
+         name: test cas implementations
+         command: nix-shell --run hc-test-cas-implementations
+      - save_cache:
+         key: cas-implementations-v1-{{ checksum "cas_implementations/Cargo.toml" }}
+         paths:
+          - cas_implementations/target
+
+      # dna c binding test
+      - restore_cache:
+         keys:
+          - dna-c-binding-v1-{{ checksum "dna_c_binding/Cargo.toml" }}
+      - run:
+         name: test dna c binding
+         command: nix-shell --run hc-test-dna-c-binding
+      - save_cache:
+         key: dna-c-binding-v1-{{ checksum "dna_c_binding/Cargo.toml" }}
+         paths:
+          - dna_c_binding/target
+
+      # net connection test
+      - restore_cache:
+         keys:
+          - net-connection-v1-{{ checksum "net_connection/Cargo.toml" }}
+      - run:
+         name: test net connection
+         command: nix-shell --run hc-test-net-connection
+      - save_cache:
+         key: net-connection-v1-{{ checksum "net_connection/Cargo.toml" }}
+         paths:
+          - net_connection/target
 
 
       - run:

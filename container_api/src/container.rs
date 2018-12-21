@@ -139,7 +139,13 @@ impl Container {
     }
 
     pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
-        let network_config = self.config.clone().network.ok_or(HolochainError::ErrorGeneric("attempt to spawn network when not configured".to_string()))?;
+        let network_config = self
+            .config
+            .clone()
+            .network
+            .ok_or(HolochainError::ErrorGeneric(
+                "attempt to spawn network when not configured".to_string(),
+            ))?;
 
         println!(
             "spawn network (workdir: {})",
@@ -214,8 +220,10 @@ impl Container {
             // or we use that uri value that was created from previous calls!
             if self.network_ipc_uri.is_none() {
                 self.network_ipc_uri = self
-                    .config.clone()
-                    .network.unwrap() // unwrap safe because of check above
+                    .config
+                    .clone()
+                    .network
+                    .unwrap() // unwrap safe because of check above
                     .n3h_ipc_uri
                     .clone()
                     .or_else(|| self.spawn_network().ok());

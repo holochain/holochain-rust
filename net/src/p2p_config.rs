@@ -90,9 +90,30 @@ impl P2pConfig {
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
-    pub fn default_ipc() -> Self {
-        P2pConfig::from_str(P2pConfig::DEFAULT_IPC_CONFIG)
+    pub fn default_ipc_spawn() -> Self {
+        P2pConfig::from_str(P2pConfig::DEFAULT_IPC_SPAWN_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")
+    }
+
+    pub fn default_ipc_uri(maybe_ipc_binding: Option<&str>) -> Self {
+        match maybe_ipc_binding {
+            None =>{
+                P2pConfig::from_str(P2pConfig::DEFAULT_IPC_URI_CONFIG)
+                    .expect("Invalid backend_config json on P2pConfig creation.")
+            },
+            Some(ipc_binding) => {
+                let backend_config =json!({
+                "backend_kind": "IPC",
+                "backend_config": {
+                    "socketType": "zmq",
+                    "blockConnect": false,
+                    "ipcUri": ipc_binding
+                }}).to_string();
+                println!("config_str = {}", backend_config);
+                P2pConfig::from_str(&backend_config)
+                    .expect("Invalid backend_config json on P2pConfig creation.")
+            },
+        }
     }
 }
 
@@ -103,7 +124,7 @@ impl P2pConfig {
     "backend_config": ""
     }"#;
 
-    pub const DEFAULT_IPC_CONFIG: &'static str = r#"
+    pub const DEFAULT_IPC_SPAWN_CONFIG: &'static str = r#"
     {
       "backend_kind": "IPC",
       "backend_config": {
@@ -115,6 +136,16 @@ impl P2pConfig {
             "N3H_IPC_SOCKET": "tcp://127.0.0.1:*"
           }
         }
+      }
+    }"#;
+
+    pub const DEFAULT_IPC_URI_CONFIG: &'static str = r#"
+    {
+      "backend_kind": "IPC",
+      "backend_config": {
+        "socketType": "zmq",
+        "ipcUri": "tcp://127.0.0.1:0",
+        "blockConnect": false
       }
     }"#;
 }

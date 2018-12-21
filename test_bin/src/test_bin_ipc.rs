@@ -57,6 +57,8 @@ struct IpcNode {
     pub receiver: mpsc::Receiver<Protocol>,
 }
 
+static TIMEOUT_MS: usize = 5000;
+
 impl IpcNode {
     // See if there is a message to receive
     #[cfg_attr(tarpaulin, skip)]
@@ -80,6 +82,7 @@ impl IpcNode {
         &mut self,
         predicate: Box<dyn Fn(&ProtocolWrapper) -> bool>,
     ) -> NetResult<ProtocolWrapper> {
+        let mut time_ms: usize = 0;
         loop {
             let mut did_something = false;
 
@@ -92,6 +95,10 @@ impl IpcNode {
 
             if !did_something {
                 std::thread::sleep(std::time::Duration::from_millis(10));
+                time_ms += 10;
+                if time_ms > TIMEOUT_MS {
+                    panic!("TIMEOUT");
+                }
             }
         }
     }
@@ -105,11 +112,10 @@ impl IpcNode {
 
 #[cfg_attr(tarpaulin, skip)]
 fn create_config(n3h_path: &str, maybe_config_filepath: Option<&str>) -> (P2pConfig, tempfile::TempDir) {
-
     // Create temp directory
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
-
+    // Create config
     let config = match maybe_config_filepath {
         Some(filepath) => {
             // Get config from file
@@ -163,9 +169,35 @@ fn create_config(n3h_path: &str, maybe_config_filepath: Option<&str>) -> (P2pCon
     return (config, dir_ref);
 }
 
-// Spawn an IPC node that uses n3h and a temp folder
+// Create an IPC node that uses an existing n3h process and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
+fn create_borrowed_connection(ipc_binding: &str) -> NetResult<IpcNode> {
+    // Create Config
+    let p2p_config= P2pConfig::default_ipc_uri(Some(ipc_binding));
+    // Create channel
+    let (sender, receiver) = mpsc::channel::<Protocol>();
+    // Create P2pNetwork
+    let p2p_node = P2pNetwork::new(
+        Box::new(move |r| {
+            sender.send(r?)?;
+            Ok(())
+        }),
+        &p2p_config,
+    )?;
+    // Create temp directory
+    let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
+    // Create IpcNode
+    Ok(IpcNode {
+        dir: dir_ref.path().to_string_lossy().to_string(),
+        temp_dir_ref: dir_ref,
+        p2p_connection: p2p_node,
+        receiver,
+    })
+}
+
+// Create an IPC node that spawns and uses a n3h process and a temp folder
+#[cfg_attr(tarpaulin, skip)]
+fn create_spawned_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
     // Create Config
     let (p2p_config, dir_ref) = create_config(n3h_path, maybe_config_filepath);
     // Create channel
@@ -187,31 +219,58 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
     })
 }
 
+// do general test with hackmode
+fn launch_test_with_ipc_mock(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
+    // Create two nodes
+    let mut node1 = create_spawned_connection(n3h_path, Some(config_filepath))?;
+    let mut node2 = create_borrowed_connection(&node1.p2p_connection.endpoint())?;
+
+    general_test(&mut node1, &mut node2, false)?;
+
+    // Kill nodes
+    node1.stop();
+    node2.stop();
+
+    Ok(())
+}
+
+// Do general test with config
+fn launch_test_with_config(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
+    // Create two nodes
+    let mut node1 = create_spawned_connection(n3h_path, Some(config_filepath))?;
+    let mut node2 = create_spawned_connection(n3h_path, Some(config_filepath))?;
+
+    general_test(&mut node1, &mut node2, true)?;
+
+    // Kill nodes
+    node1.stop();
+    node2.stop();
+
+    Ok(())
+}
+
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-fn general_test(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
+fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -> NetResult<()> {
     static DNA_HASH: &'static str = "TEST_DNA_HASH";
     static AGENT_1: &'static str = "1_TEST_AGENT_1";
     static AGENT_2: &'static str = "2_TEST_AGENT_2";
-
-    // Create two nodes
-    let mut node1 = spawn_connection(n3h_path, Some(config_filepath))?;
-    let mut node2 = spawn_connection(n3h_path, Some(config_filepath))?;
-    println!("node1 path: {}", node1.dir);
-    println!("node2 path: {}", node2.dir);
 
     // Get each node's current state
     let node1_state = node1.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
     let node2_state = node2.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
 
-    // get node IDs from their state
+    // get ipcServer IDs for each node from the IpcServer's state
     let node1_id;
-    let node2_binding;
+    let mut node2_binding= String::new();
     one_let!(ProtocolWrapper::State(state) = node1_state {
         node1_id = state.id
     });
     one_let!(ProtocolWrapper::State(state) = node2_state {
-        node2_binding = state.bindings[0].clone();
+        // No bindings in mock mode
+        if !state.bindings.is_empty() {
+            node2_binding = state.bindings[0].clone();
+        }
     });
 
     // Send TrackApp message on both nodes
@@ -235,24 +294,25 @@ fn general_test(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
     println!("self connected result 2: {:?}", connect_result_2);
 
     // Connect nodes between them
-    println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
-    node1.p2p_connection.send(
-        ProtocolWrapper::Connect(ConnectData {
-            address: node2_binding,
-        })
-        .into(),
-    )?;
-    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
-    println!("got connect result 1: {:?}", result_1);
-    one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
-        assert_eq!(d.agent_id, AGENT_2);
-    });
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
-    println!("got connect result 2: {:?}", result_2);
-    one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
-        assert_eq!(d.agent_id, AGENT_1);
-    });
-
+    if can_test_connect {
+        println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
+        node1.p2p_connection.send(
+            ProtocolWrapper::Connect(ConnectData {
+                address: node2_binding,
+            })
+                .into(),
+        )?;
+        let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+        println!("got connect result 1: {:?}", result_1);
+        one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
+            assert_eq!(d.agent_id, AGENT_2);
+        });
+        let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+        println!("got connect result 2: {:?}", result_2);
+        one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
+            assert_eq!(d.agent_id, AGENT_1);
+        });
+    }
     // Send a generic message
     node1.p2p_connection.send(
         ProtocolWrapper::SendMessage(MessageData {
@@ -377,10 +437,6 @@ fn general_test(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 
-    // Kill nodes
-    node1.stop();
-    node2.stop();
-
     // Done
     Ok(())
 }
@@ -397,9 +453,11 @@ fn main() {
     if n3h_path == "" {
         usage();
     }
-    // Launch normal test
-    let config_filepath = "test_bin/src/network_config.json";
-    let res = general_test(&n3h_path, config_filepath);
-    assert!(res.is_ok());
+    // Launch hackmode test
+     let res = launch_test_with_config(&n3h_path, "test_bin/src/network_config.json");
+     assert!(res.is_ok());
 
+    // Launch mock test
+    let res = launch_test_with_ipc_mock(&n3h_path, "test_bin/src/mock_network_config.json");
+    assert!(res.is_ok());
 }

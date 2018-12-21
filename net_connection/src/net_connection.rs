@@ -28,6 +28,11 @@ pub trait NetWorker {
     fn tick(&mut self) -> NetResult<bool> {
         Ok(false)
     }
+
+    fn endpoint(&self) -> Option<String> 
+    {
+        None
+    }
 }
 
 /// closure for instantiating a NetWorker

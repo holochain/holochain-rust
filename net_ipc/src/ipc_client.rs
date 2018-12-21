@@ -14,12 +14,15 @@ use holochain_net_connection::{
 // for the holochain ipc protocol, the server is always 4 0x24 bytes
 static SRV_ID: &'static [u8] = &[0x24, 0x24, 0x24, 0x24];
 
+static mut g_node_count: u8 = 1;
+
 /// NetWorker for messaging with an ipc p2p node
 pub struct IpcClient {
     handler: NetHandler,
     socket: Box<IpcSocket>,
     last_recv_millis: f64,
     last_send_millis: f64,
+    id: u8,
 }
 
 impl NetWorker for IpcClient {
@@ -37,32 +40,29 @@ impl NetWorker for IpcClient {
     /// perform upkeep (like ping/pong messages) on the underlying ipc socket
     fn tick(&mut self) -> NetResult<bool> {
         let mut did_something = false;
-
         if let Some(msg) = self.priv_proc_message()? {
             did_something = true;
-
             if let Protocol::Ping(ref p) = msg {
                 self.priv_send(&Protocol::Pong(PongData {
                     orig: p.sent,
                     recv: get_millis(),
                 }))?;
             }
-
             (self.handler)(Ok(msg))?;
         }
-
         let now = get_millis();
-
         if now - self.last_recv_millis > 2000.0 {
-            bail!("ipc connection timeout");
+            bail!(format!("[{}] ipc connection timeout", self.id))
         }
-
         if now - self.last_send_millis > 500.0 {
             self.priv_ping()?;
             did_something = true;
         }
-
         Ok(did_something)
+    }
+
+    fn endpoint(&self) -> Option<String> {
+        self.socket.endpoint()
     }
 }
 
@@ -101,11 +101,14 @@ impl IpcClient {
             }
         }
 
+        let id = unsafe {g_node_count};
+        unsafe { g_node_count += 1 };
         Ok(Self {
             handler,
             socket,
             last_recv_millis: get_millis(),
             last_send_millis: 0.0,
+            id,
         })
     }
 
@@ -133,6 +136,7 @@ impl IpcClient {
 
         let msg: Protocol = msg.into();
 
+        // println!("[{}] priv_proc_message() msg = {:?}", self.id, msg);
         Ok(Some(msg))
     }
 
@@ -145,6 +149,7 @@ impl IpcClient {
     fn priv_send(&mut self, data: &Protocol) -> NetResult<()> {
         let data: NamedBinaryData = data.into();
 
+        // println!("[{}] priv_send() data = {:?}", self.id, data.name);
         self.socket.send(&[SRV_ID, &[], &data.name, &data.data])?;
 
         // sent message, update our ping timer

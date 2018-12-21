@@ -197,8 +197,8 @@ fn exec() -> NetResult<()> {
     }
 
     // Create two nodes
-    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"), vec![])?;
-    let mut node2 = spawn_connection(&n3h_path, None, vec![])?;
+    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"), vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()])?;
+    let mut node2 = spawn_connection(&n3h_path, None, vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()])?;
     println!("node1 path: {}", node1.dir);
     println!("node2 path: {}", node2.dir);
 

@@ -1,5 +1,5 @@
 use crate::{
-    config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration},
+    config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration, NetworkConfig},
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
     Holochain,
@@ -137,6 +137,7 @@ impl Container {
     }
 
     pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
+        println!("spawn network (workdir: {})", self.config.network.n3h_persistence_path);
         let SpawnResult {
             kill,
             ipc_binding,
@@ -155,25 +156,33 @@ impl Container {
             },
             true,
         )
-        .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))?;
+        .map_err(|error| {
+            println!("!!!! {:?}", error);
+            HolochainError::ErrorGeneric(error.to_string())
+        })?;
         self.network_child_process = kill;
+        println!("spawned with binding: {:?}", ipc_binding);
         Ok(ipc_binding)
     }
 
-    fn instance_network_config(&self) -> Result<JsonString, HolochainError> {
+    fn instance_network_config(&self, net_config: &NetworkConfig) -> Result<JsonString, HolochainError> {
         match self.network_ipc_uri {
-            Some(ref uri) => Ok(JsonString::from(format!(
-                r#"
-                {{
-                    "backend_kind": "IPC",
-                    "backend_config": {{
-                        "socketType": "zmq",
-                        "ipcUri": {}
-                    }}
-                }}
-        "#,
-                uri.clone()
-            ))),
+            Some(ref uri) => {
+                let tmp = JsonString::from(json!(
+                    {
+                        "backend_kind": "IPC",
+                        "backend_config": {
+                            "socketType": "zmq",
+                            "bootstrapNodes": net_config.bootstrap_nodes,
+                            "ipcUri": uri.clone()
+                        }
+                    }
+                ));
+
+                println!("NET CONFIG: {}", tmp.to_string());
+
+                Ok(tmp)
+            },
             None => Err(HolochainError::ErrorGeneric(
                 "Network IPC URI missing".to_string(),
             )),
@@ -194,6 +203,7 @@ impl Container {
                 .n3h_ipc_uri
                 .clone()
                 .or_else(|| self.spawn_network().ok());
+            println!("got network_ipc_uri: {:?}", self.network_ipc_uri);
         }
 
         let config = self.config.clone();
@@ -238,7 +248,7 @@ impl Container {
                 context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 // Network config:
-                context_builder.with_network_config(self.instance_network_config()?);
+                context_builder.with_network_config(self.instance_network_config(&config.network)?);
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {

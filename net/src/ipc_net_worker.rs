@@ -14,7 +14,7 @@ use holochain_net_connection::{
         NetConnection, NetConnectionRelay, NetHandler, NetShutdown, NetWorker, NetWorkerFactory,
     },
     protocol::Protocol,
-    protocol_wrapper::{ConfigData, ProtocolWrapper, StateData},
+    protocol_wrapper::{ConfigData, ProtocolWrapper, StateData, ConnectData},
     NetResult,
 };
 
@@ -96,6 +96,7 @@ impl IpcNetWorker {
                 Ok(out)
             }),
             None,
+            vec![],
         )
     }
 
@@ -105,6 +106,9 @@ impl IpcNetWorker {
             bail!("unexpected socketType: {}", config["socketType"]);
         }
         let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
+        let empty = vec![];
+        let bootstrap_nodes: Vec<String> = config["bootstrapNodes"].as_array().unwrap_or(&empty).iter().map(|s| s.as_str().unwrap().to_string()).collect();
+        println!("BS NODES!: {:?}", bootstrap_nodes);
         if config["ipcUri"].as_str().is_none() {
             if let Some(s) = config["spawn"].as_object() {
                 if s["cmd"].is_string()
@@ -130,6 +134,7 @@ impl IpcNetWorker {
                         s["workDir"].as_str().unwrap().to_string(),
                         env,
                         block_connect,
+                        bootstrap_nodes,
                     );
                 } else {
                     bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
@@ -147,6 +152,7 @@ impl IpcNetWorker {
                 Ok(out)
             }),
             None,
+            vec![],
         )
     }
 
@@ -160,6 +166,7 @@ impl IpcNetWorker {
         work_dir: String,
         env: HashMap<String, String>,
         block_connect: bool,
+        bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, env, block_connect)?;
 
@@ -175,6 +182,7 @@ impl IpcNetWorker {
                 Ok(out)
             }),
             kill,
+            bootstrap_nodes,
         )
     }
 
@@ -183,8 +191,20 @@ impl IpcNetWorker {
         handler: NetHandler,
         factory: NetWorkerFactory,
         done: NetShutdown,
+        bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         let (ipc_sender, ipc_relay_receiver) = mpsc::channel::<Protocol>();
+
+        // send our connection messages right away,
+        // they should get picked up when ready
+        for bs_node in bootstrap_nodes {
+            ipc_sender.send(
+                ProtocolWrapper::Connect(ConnectData {
+                    address: bs_node,
+                })
+                .into(),
+            )?;
+        }
 
         let ipc_relay = NetConnectionRelay::new(
             Box::new(move |r| {

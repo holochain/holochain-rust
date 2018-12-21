@@ -36,8 +36,8 @@ impl PartialEq for EavFileStorage {
 #[warn(unused_must_use)]
 pub fn add_eav_to_hashset(parent_dir : String,dir_entry: DirEntry, hash:HashString,set: &mut HashMap<HashString,HcResult<String>>) {
     let path = dir_entry.path();
-    let hash_list = read_from_hash_list(parent_dir,hash).expect("Could not read index file");
-    println!("read from hash {:?}",hash);
+    let hash_list = read_from_hash_list(parent_dir,hash.clone()).expect("Could not read index file");
+    println!("read from hash {:?}",hash.clone());
     let dir_entry_name = HashString::from(dir_entry.file_name().to_str().expect("into string failed"));
     if(hash_list.iter().find(|x|**x==dir_entry_name).is_some())
     {
@@ -122,7 +122,7 @@ impl EavFileStorage {
     {
         let path =
             vec![self.dir_path.clone(), self.current_hash.to_string()].join(&MAIN_SEPARATOR.to_string());
-        let file = OpenOptions::new()
+        let mut file = OpenOptions::new()
                    .write(true)
                    .create(true)
                    .append(true)
@@ -152,10 +152,10 @@ impl EavFileStorage {
             .into_iter()
             .for_each(|dir_entry| match dir_entry {
                 Ok(eav_content) => {
-                    add_eav_to_hashset(self.dir_path,eav_content,self.current_hash,&mut set);
+                    add_eav_to_hashset(self.dir_path.clone(),eav_content,self.current_hash.clone(),&mut set);
                 }
                 Err(_) => {
-                    set.insert(hash,Err(HolochainError::IoError(format!(
+                    set.insert(hash.clone(),Err(HolochainError::IoError(format!(
                         "Could not obtain directory{:?}",
                         full_path
                     ))));
@@ -183,11 +183,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
         value: Option<Value>,
     ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
-        let entity_set = self.read_from_dir::<Entity>(self.current_hash,ENTITY_DIR.to_string(), entity);
+        let entity_set = self.read_from_dir::<Entity>(self.current_hash.clone(),ENTITY_DIR.to_string(), entity);
         let attribute_set = self
-            .read_from_dir::<Attribute>(self.current_hash,ATTRIBUTE_DIR.to_string(), attribute)
+            .read_from_dir::<Attribute>(self.current_hash.clone(),ATTRIBUTE_DIR.to_string(), attribute)
             .clone();
-        let value_set = self.read_from_dir::<Value>(self.current_hash,VALUE_DIR.to_string(), value);
+        let value_set = self.read_from_dir::<Value>(self.current_hash.clone(),VALUE_DIR.to_string(), value);
 
         let attribute_value_inter = attribute_set.intersection(value_set);
         let entity_attribute_value_inter= entity_set
@@ -202,8 +202,8 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 .cloned()
                 .map(|(maybe_eav_content,_)|
                     // errors filtered out above... unwrap is safe.
-                    (self.current_hash,Content::from(maybe_eav_content)))
-                .map(|content| (self.current_hash,EntityAttributeValue::try_from_content(&content.1)))
+                    (self.current_hash.clone(),Content::from(maybe_eav_content)))
+                .map(|content| (self.current_hash.clone(),EntityAttributeValue::try_from_content(&content.1)))
                 .collect::<HashMap<HashString,HcResult<EntityAttributeValue>>>();
 
             let maybe_first_error = hopefully_eavs.iter().find(|e| e.1.is_err());
@@ -214,7 +214,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                     .iter()
                     .map(|eav|
                         // errors filtered out above... unwrap is safe
-                         (self.current_hash,eav.1.unwrap()))
+                         (self.current_hash.clone(),eav.1.clone().unwrap()))
                     .collect()
                   )
             }

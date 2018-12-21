@@ -36,7 +36,7 @@ impl EavMemoryStorage {
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let mut map = self.storage.write()?;
-        map.insert(self.current_hash,eav.clone());
+        map.insert(self.current_hash.clone(),eav.clone());
         Ok(())
     }
 
@@ -46,7 +46,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
-        let map = self.storage.read()?;
+        let map = self.storage.read()?.clone();
         Ok(map
             .into_iter()
             //.cloned()

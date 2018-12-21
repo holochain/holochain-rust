@@ -168,19 +168,21 @@ impl Container {
                 // Agent:
                 let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
                 let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
-                context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
+                context_builder =
+                    context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 // Network config:
-                instance_config.network.map(|network_config| {
-                    context_builder.with_network_config(JsonString::from(network_config))
-                });
+                if let Some(network_config) = instance_config.network {
+                    context_builder =
+                        context_builder.with_network_config(JsonString::from(network_config))
+                };
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
-                    context_builder.with_file_storage(path).map_err(|hc_err| {
+                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
                         format!("Error creating context: {}", hc_err.to_string())
-                    })?;
-                }
+                    })?
+                };
 
                 // Container API
                 let mut api_builder = ContainerApiBuilder::new();
@@ -203,7 +205,10 @@ impl Container {
                     api_builder = api_builder
                         .with_named_instance_config(bridge.handle.clone(), callee_config);
                 }
-                context_builder.with_container_api(api_builder.spawn());
+                context_builder = context_builder.with_container_api(api_builder.spawn());
+                if let Some(signal_tx) = self.signal_tx.clone() {
+                    context_builder = context_builder.with_signals(signal_tx);
+                }
 
                 // Spawn context
                 let context = context_builder.spawn();
@@ -219,16 +224,7 @@ impl Container {
                     },
                 )?;
 
-                match self.signal_tx {
-                    Some(ref signal_tx) => Holochain::new_with_signals(
-                        dna,
-                        Arc::new(context),
-                        signal_tx.clone(),
-                        |_| true,
-                    ),
-                    None => Holochain::new(dna, Arc::new(context)),
-                }
-                .map_err(|hc_err| hc_err.to_string())
+                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
             })
     }
 

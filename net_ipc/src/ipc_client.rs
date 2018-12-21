@@ -1,13 +1,13 @@
 //! implements a net_connection::NetWorker for messaging with an ipc p2p node
 
 use crate::{socket::IpcSocket, util::get_millis};
-use std::{thread, time};
 use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::{NamedBinaryData, PingData, PongData, Protocol},
     NetResult,
 };
 use snowflake::ProcessUniqueId;
+use std::{thread, time};
 
 // with two zmq "ROUTER" sockets, one side must have a well-known id
 // for the holochain ipc protocol, the server is always 4 0x24 bytes

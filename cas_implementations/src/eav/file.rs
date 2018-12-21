@@ -202,20 +202,19 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 .cloned()
                 .map(|(maybe_eav_content,_)|
                     // errors filtered out above... unwrap is safe.
-                    Content::from(maybe_eav_content))
-                .map(|content| EntityAttributeValue::try_from_content(&content))
-                .collect::<HashSet<HcResult<EntityAttributeValue>>>();
+                    (self.current_hash,Content::from(maybe_eav_content)))
+                .map(|content| (self.current_hash,EntityAttributeValue::try_from_content(&content.1)))
+                .collect::<HashMap<HashString,HcResult<EntityAttributeValue>>>();
 
-            let maybe_first_error = hopefully_eavs.iter().find(|e| e.is_err());
-            if let Some(Err(first_error)) = maybe_first_error {
+            let maybe_first_error = hopefully_eavs.iter().find(|e| e.1.is_err());
+            if let Some((_,Err(first_error))) = maybe_first_error {
                 return Err(first_error.to_owned());
             } else {
                 Ok(hopefully_eavs
                     .iter()
-                    .cloned()
                     .map(|eav|
                         // errors filtered out above... unwrap is safe
-                        eav.unwrap())
+                         (self.current_hash,eav.1.unwrap()))
                     .collect()
                   )
             }

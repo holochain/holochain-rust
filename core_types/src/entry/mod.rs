@@ -1,3 +1,8 @@
+//! This module contains all the necessary definitions for Entry, which broadly speaking
+//! refers to any data which will be written into the ContentAddressableStorage, or the EntityAttributeValueStorage.
+//! It defines serialization behaviour for entries. Here you can find the complete list of
+//! entry_types, and special entries, like deletion_entry and cap_entry.
+
 pub mod cap_entries;
 pub mod deletion_entry;
 pub mod entry_type;

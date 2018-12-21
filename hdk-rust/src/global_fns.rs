@@ -1,3 +1,6 @@
+//! This file contains small helper functions relating to WASM memory management
+//! and serialization used throughout the HDK.
+
 use crate::globals::G_MEM_STACK;
 use holochain_core_types::json::JsonString;
 pub use holochain_wasm_utils::api_serialization::validation::*;

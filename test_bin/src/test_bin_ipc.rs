@@ -83,7 +83,11 @@ impl IpcNode {
 
 // Spawn an IPC node that uses n3h and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>, bootstrap_nodes: Vec<String>) -> NetResult<IpcNode> {
+fn spawn_connection(
+    n3h_path: &str,
+    maybe_config_filepath: Option<&str>,
+    bootstrap_nodes: Vec<String>,
+) -> NetResult<IpcNode> {
     let dir_ref = tempfile::tempdir()?;
     let dir = dir_ref.path().to_string_lossy().to_string();
 
@@ -197,8 +201,16 @@ fn exec() -> NetResult<()> {
     }
 
     // Create two nodes
-    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"), vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()])?;
-    let mut node2 = spawn_connection(&n3h_path, None, vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()])?;
+    let mut node1 = spawn_connection(
+        &n3h_path,
+        Some("test_bin/src/network_config.json"),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
+    let mut node2 = spawn_connection(
+        &n3h_path,
+        None,
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
     println!("node1 path: {}", node1.dir);
     println!("node2 path: {}", node2.dir);
 

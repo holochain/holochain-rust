@@ -1,5 +1,7 @@
 use crate::{
-    config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration, NetworkConfig},
+    config::{
+        Configuration, InterfaceConfiguration, InterfaceDriver, NetworkConfig, StorageConfiguration,
+    },
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
     Holochain,
@@ -23,8 +25,8 @@ use std::{
     thread,
 };
 
-use holochain_net_connection::net_connection::NetShutdown;
 use holochain_net::p2p_config::P2pConfig;
+use holochain_net_connection::net_connection::NetShutdown;
 use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
 use interface_impls;
@@ -137,7 +139,10 @@ impl Container {
     }
 
     pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
-        println!("spawn network (workdir: {})", self.config.network.n3h_persistence_path);
+        println!(
+            "spawn network (workdir: {})",
+            self.config.network.n3h_persistence_path
+        );
         let SpawnResult {
             kill,
             ipc_binding,
@@ -165,7 +170,10 @@ impl Container {
         Ok(ipc_binding)
     }
 
-    fn instance_network_config(&self, net_config: &NetworkConfig) -> Result<JsonString, HolochainError> {
+    fn instance_network_config(
+        &self,
+        net_config: &NetworkConfig,
+    ) -> Result<JsonString, HolochainError> {
         match self.network_ipc_uri {
             Some(ref uri) => {
                 let tmp = JsonString::from(json!(
@@ -182,7 +190,7 @@ impl Container {
                 println!("NET CONFIG: {}", tmp.to_string());
 
                 Ok(tmp)
-            },
+            }
             None => Err(HolochainError::ErrorGeneric(
                 "Network IPC URI missing".to_string(),
             )),
@@ -249,7 +257,8 @@ impl Container {
                     context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 // Network config:
-                context_builder = context_builder.with_network_config(self.instance_network_config(&config.network)?);
+                context_builder = context_builder
+                    .with_network_config(self.instance_network_config(&config.network)?);
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {

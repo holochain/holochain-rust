@@ -2,12 +2,7 @@
 //! This process is expected to output some specific messages on its stdout
 //! that we can process to know its launch state
 
-use holochain_net_connection::{
-    net_connection::{
-        NetShutdown,
-    },
-    NetResult,
-};
+use holochain_net_connection::{net_connection::NetShutdown, NetResult};
 
 use std::{collections::HashMap, io::Read};
 

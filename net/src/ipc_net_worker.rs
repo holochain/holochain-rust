@@ -5,8 +5,8 @@ use holochain_core_types::json::JsonString;
 use holochain_net_ipc::{
     ipc_client::IpcClient,
     socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
-    util::get_millis,
     spawn,
+    util::get_millis,
 };
 
 use holochain_net_connection::{
@@ -14,7 +14,7 @@ use holochain_net_connection::{
         NetConnection, NetConnectionRelay, NetHandler, NetShutdown, NetWorker, NetWorkerFactory,
     },
     protocol::Protocol,
-    protocol_wrapper::{ConfigData, ProtocolWrapper, StateData, ConnectData},
+    protocol_wrapper::{ConfigData, ConnectData, ProtocolWrapper, StateData},
     NetResult,
 };
 
@@ -107,7 +107,12 @@ impl IpcNetWorker {
         }
         let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
         let empty = vec![];
-        let bootstrap_nodes: Vec<String> = config["bootstrapNodes"].as_array().unwrap_or(&empty).iter().map(|s| s.as_str().unwrap().to_string()).collect();
+        let bootstrap_nodes: Vec<String> = config["bootstrapNodes"]
+            .as_array()
+            .unwrap_or(&empty)
+            .iter()
+            .map(|s| s.as_str().unwrap().to_string())
+            .collect();
         println!("BS NODES!: {:?}", bootstrap_nodes);
         if config["ipcUri"].as_str().is_none() {
             if let Some(s) = config["spawn"].as_object() {
@@ -198,12 +203,7 @@ impl IpcNetWorker {
         // send our connection messages right away,
         // they should get picked up when ready
         for bs_node in bootstrap_nodes {
-            ipc_sender.send(
-                ProtocolWrapper::Connect(ConnectData {
-                    address: bs_node,
-                })
-                .into(),
-            )?;
+            ipc_sender.send(ProtocolWrapper::Connect(ConnectData { address: bs_node }).into())?;
         }
 
         let ipc_relay = NetConnectionRelay::new(

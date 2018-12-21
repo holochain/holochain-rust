@@ -25,5 +25,5 @@ pub mod context;
 pub mod socket;
 pub mod util;
 
-pub mod spawn;
 pub mod ipc_client;
+pub mod spawn;

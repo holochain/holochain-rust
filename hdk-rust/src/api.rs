@@ -1,3 +1,7 @@
+//! This file contains many of the structs, enums, and functions relevant for Zome
+//! developers! Detailed references and examples can be found here for how to use the
+//! HDK exposed functions to access powerful Holochain functions.
+
 use crate::{
     error::{ZomeApiError, ZomeApiResult},
     globals::*,
@@ -168,7 +172,7 @@ impl Default for GetEntryMask {
 //    }
 //}
 
-// Allowed input for close_bundle()
+/// Allowed input for close_bundle()
 pub enum BundleOnClose {
     Commit,
     Discard,
@@ -212,7 +216,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     Ok(())
 }
 
-/// Call an exposed function from another zome.
+/// Call an exposed function from another zome or another (bridged) instance running
+/// on the same agent in the same container.
 /// Arguments for the called function are passed as `JsonString`.
 /// Returns the value that's returned by the given function as a json str.
 /// # Examples
@@ -329,7 +334,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call("summer", "main", "test_token", "sum", call_input.into())
+///     hdk::call(hdk::THIS_INSTANCE, "summer", "main", "test_token", "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -353,6 +358,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # }
 /// ```
 pub fn call<S: Into<String>>(
+    instance_handle: S,
     zome_name: S,
     cap_name: S, //temporary...
     cap_token: S,
@@ -368,6 +374,7 @@ pub fn call<S: Into<String>>(
     let allocation_of_input = store_as_json(
         &mut mem_stack,
         ZomeFnCallArgs {
+            instance_handle: instance_handle.into(),
             zome_name: zome_name.into(),
             cap: Some(CapabilityCall::new(
                 cap_name.into(),
@@ -384,16 +391,18 @@ pub fn call<S: Into<String>>(
     unsafe {
         encoded_allocation_of_result = hc_call(allocation_of_input.encode() as u32);
     }
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_string(encoded_allocation_of_result as u32)?;
-
-    // Free result & input allocations.
+    // Deserialize complex result stored in wasm memory
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-
     // Done
-    Ok(result.into())
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -654,7 +663,7 @@ pub fn link_entries<S: Into<String>>(
     }
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 // Returns a DNA property, which are defined by the DNA developer.
 // They are custom values that are defined in the DNA file
 // that can be used in the zome code for defining configurable behaviors.
@@ -730,12 +739,12 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
     }
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn sign<S: Into<String>>(_doc: S) -> ZomeApiResult<String> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn verify_signature<S: Into<String>>(
     _signature: S,
     _data: S,
@@ -779,7 +788,7 @@ pub fn update_entry(new_entry: Entry, address: Address) -> ZomeApiResult<Address
     }
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn update_agent() -> ZomeApiResult<Address> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
@@ -998,12 +1007,12 @@ pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
     }
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-/// Not Yet Available
+/// NOT YET AVAILABLE
 pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
@@ -1012,6 +1021,7 @@ pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
 // Helpers
 //--------------------------------------------------------------------------------------------------
 
+#[doc(hidden)]
 pub fn check_for_ribosome_error(encoded_allocation: u32) -> ZomeApiResult<()> {
     // Check for error from Ribosome
     let rib_result = decode_encoded_allocation(encoded_allocation);

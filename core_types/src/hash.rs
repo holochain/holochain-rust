@@ -1,3 +1,7 @@
+//! The HashString type is defined here. It is used for type safety throughout the codebase
+//! to keep track of places where a string is the product of a hash function,
+//! and as a base type for Address to use.
+
 use crate::{
     error::error::HolochainError,
     json::{default_try_from_json, JsonString},

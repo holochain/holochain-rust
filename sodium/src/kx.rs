@@ -132,7 +132,14 @@ mod tests {
             let mut srv_tx = srv_tx.read_lock();
             println!("srv_rx : {:?}",srv_rx);
             println!("srv_tx : {:?}",srv_tx);
-            assert_eq!(32, srv_tx.len());
+        }
+        {
+            let cli_rx = cli_rx.read_lock();
+            let cli_tx = cli_tx.read_lock();
+            let srv_rx = srv_rx.read_lock();
+            let srv_tx = srv_tx.read_lock();
+            assert_eq!(format!("{:?}", *cli_rx), format!("{:?}", *srv_tx));
+            assert_eq!(format!("{:?}", *cli_tx), format!("{:?}", *srv_rx));
         }
     }
 }

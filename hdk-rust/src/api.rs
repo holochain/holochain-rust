@@ -909,7 +909,7 @@ pub fn get_links_and_load<S: Into<String>>(
     let entries = get_links_result
     .into_iter()
     .map(|get_result| {
-        let get_type = get_result.unwrap().result;
+        let get_type = get_result?.result;
         match get_type {
             GetEntryResultType::Single(elem) => Ok(elem.entry.unwrap().to_owned()),
             GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string()))

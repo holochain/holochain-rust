@@ -461,9 +461,8 @@ fn can_roundtrip_links() {
             &format!(r#"{{"address": "{}"}}"#, address),
         );
 
-        let result_load = hc.call(
-            "test_zome",
-            "test_cap",
+        let result_load = make_test_call(
+            &mut hc,
             "links_roundtrip_get_and_load",
             &format!(r#"{{"address": "{}"}}"#, address),
         );

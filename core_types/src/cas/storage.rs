@@ -252,7 +252,6 @@ impl EavTestSuite {
         .expect("Could create entityAttributeValue");
 
         let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
-
         for eav_storage in two_stores.iter() {
             assert_eq!(
                 HashMap::new(),
@@ -269,7 +268,9 @@ impl EavTestSuite {
         eav_storage.add_eav(&eav).expect("could not add eav");
 
         let mut expected = HashMap::new();
-        expected.insert(HashString::from(""),eav.clone());
+        let hash = eav_storage.get_hash();
+        let key = vec![hash.to_string(),eav.address().to_string()].join("_");
+        expected.insert(HashString::from(key),eav.clone());
 
         for eav_storage in two_stores.iter() {
             // some examples of constraints that should all return the eav
@@ -329,7 +330,7 @@ impl EavTestSuite {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
             eav_storage.add_eav(&eav).expect("could not add eav");
-            let hash = HashString::from("");
+            let hash = eav_storage.get_hash();
             let key = vec![hash.to_string(),eav.address().to_string()].join("_");
             expected.insert(HashString::from(key),eav);
         }
@@ -360,7 +361,7 @@ impl EavTestSuite {
             let eav = EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
                     .expect("Could not create eav");
             let hash = HashString::from("");
-            let key = vec![hash.to_string(),eav.address().to_string()].join("_");
+            let key = vec![eav_storage.get_hash().to_string(),eav.address().to_string()].join("_");
             expected_one.insert(
                 HashString::from(key),
                 eav,
@@ -400,7 +401,7 @@ impl EavTestSuite {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
             let hash = HashString::from("");
-            let key = vec![hash.to_string(),eav.address().to_string()].join("_");
+            let key = vec![eav_storage.get_hash().to_string(),eav.address().to_string()].join("_");
             eav_storage.add_eav(&eav).expect("could not add eav");
             expected.insert(HashString::from(key),eav);
         }
@@ -431,7 +432,7 @@ impl EavTestSuite {
             let eav = EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
                     .expect("Could not create eav");
             let hash = HashString::from("");
-            let key = vec![hash.to_string(),eav.address().to_string()].join("_");
+            let key = vec![eav_storage.get_hash().to_string(),eav.address().to_string()].join("_");
             expected_one.insert(
                 HashString::from(key),
                 eav,

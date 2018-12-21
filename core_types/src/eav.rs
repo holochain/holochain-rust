@@ -126,6 +126,8 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError>;
+
+    fn get_hash(&self)->HashString;
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -209,6 +211,11 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             .read()
             .unwrap()
             .unthreadable_fetch_eav(entity, attribute, value)
+    }
+
+    fn get_hash(&self)->HashString
+    {
+        HashString::from("")
     }
 }
 

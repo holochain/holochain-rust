@@ -176,6 +176,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .and_then(|_| self.write_to_hash_file(eav))
     }
 
+    fn get_hash(&self)->HashString
+    {
+        self.current_hash.clone()
+    }
+
     fn fetch_eav(
         &self,
         entity: Option<Entity>,

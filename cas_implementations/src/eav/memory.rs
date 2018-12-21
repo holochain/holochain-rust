@@ -42,6 +42,11 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         Ok(())
     }
 
+    fn get_hash(&self)->HashString
+    {
+        self.current_hash.clone()
+    }
+
     fn fetch_eav(
         &self,
         entity: Option<Entity>,

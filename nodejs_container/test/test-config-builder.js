@@ -1,39 +1,39 @@
 const test = require('tape')
 
 const { ConfigBuilder } = require('..')
-const H = ConfigBuilder
+const C = ConfigBuilder
 
 test('agent construction', t => {
     const name = 'alice'
-    const agent = H.agent(name)
+    const agent = C.agent(name)
     t.deepEqual(agent, { name })
     t.end()
 })
 
 test('DNA construction', t => {
     const path = 'path/to/dna'
-    const dna = H.dna(path)
+    const dna = C.dna(path)
     t.deepEqual(dna, { path })
     t.end()
 })
 
 test('instance construction', t => {
     const path = 'path/to/dna'
-    const agent = H.agent('allison')
-    const dna = H.dna(path)
-    const instance = H.instance(agent, dna)
+    const agent = C.agent('allison')
+    const dna = C.dna(path)
+    const instance = C.instance(agent, dna)
     t.deepEqual(instance, { agent, dna })
     t.end()
 })
 
 test('config construction', t => {
     const path = 'path/to/dna'
-    const agent1 = H.agent('alessia')
-    const agent2 = H.agent('bartolini')
-    const dna = H.dna(path)
-    const config = H.container(
-        H.instance(agent1, dna),
-        H.instance(agent2, dna),
+    const agent1 = C.agent('alessia')
+    const agent2 = C.agent('bartolini')
+    const dna = C.dna(path)
+    const config = C.container(
+        C.instance(agent1, dna),
+        C.instance(agent2, dna),
     )
     t.deepEqual(
         config.agents.map(a => a.id).sort(),

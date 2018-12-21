@@ -18,7 +18,7 @@ const config = (() => {
   return ConfigBuilder.container(instanceAlice, instanceBob)
 })()
 
-// Initialize the Container (Container)
+// Initialize the Container
 const container = new Container(config)
 container.start()
 

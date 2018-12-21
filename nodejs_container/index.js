@@ -8,11 +8,10 @@ const binding_path = binary.find(path.resolve(path.join(__dirname, './package.js
 const { ConfigBuilder, Habitat } = require(binding_path);
 
 Habitat.prototype._call = Habitat.prototype.call
-Habitat.prototype.call = function (id, zome, trait, fn, params, callback) {
+
+Habitat.prototype.call = function (id, zome, trait, fn, params) {
     const stringInput = JSON.stringify(params);
-    const rawResult = callback
-        ? this._call(id, zome, trait, fn, stringInput, callback)
-        : this._call(id, zome, trait, fn, stringInput)
+    const rawResult = this._call(id, zome, trait, fn, stringInput);
     let result;
     try {
         result = JSON.parse(rawResult);
@@ -23,19 +22,18 @@ Habitat.prototype.call = function (id, zome, trait, fn, params, callback) {
     console.log('here it comes: ', result);
     return result;
 }
+
+Habitat.prototype.callWithPromise = function (...args) {
+    const promise = new Promise((fulfill, reject) => {
+        this.register_callback(() => fulfill(result))
+    }).then(() => console.log("HEY you promised!!"))
+    const result = this.call(...args)
+    return [result, promise]
+}
+
 Habitat.prototype.callSync = function (...args) {
-    // TODO: this doesn't work because the return value is not getting passed to fulfill
-    // either need to pass the result through channels to get to the final callback,
-    // or do this in two steps (add another neon function to register the callback)
-    return new Promise((fulfill, reject) => {
-        this.call(...args, (err, val) => {
-            if (err) reject(err)
-            else fulfill(val)
-        })
-    }).then(r => {
-        console.log('as promised: ', r);
-        return r;
-    })
+    const [result, promise] = this.callWithPromise(...args)
+    return promise.then(() => result)
 }
 
 module.exports = {

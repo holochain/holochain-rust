@@ -12,8 +12,10 @@ use std::{
     cell::RefCell,
     collections::{HashMap},
     sync::{
-        mpsc::{Receiver, SyncSender},
+        mpsc::{Receiver, SyncSender, RecvTimeoutError},
+        Arc, Mutex, RwLock,
     },
+    time::Duration,
 };
 
 type ControlSender = SyncSender<ControlMsg>;
@@ -55,12 +57,20 @@ impl CallFxChecker {
         self.conditions.retain(|condition| !condition(aw));
         println!("{}/{}", size, self.conditions.len());
         if self.conditions.is_empty() && !was_empty {
-            log("STOP!!");
-            self.tx.send(ControlMsg::Stop).unwrap();
+            self.stop();
             return false;
         } else {
             return true;
         }
+    }
+
+    pub fn shutdown(&mut self) {
+        self.conditions.clear();
+        self.stop();
+    }
+
+    fn stop(&mut self) {
+        self.tx.send(ControlMsg::Stop).unwrap();
     }
 }
 
@@ -213,29 +223,40 @@ pub enum ControlMsg {
     Stop,
 }
 
-pub struct HabitatSignalTask {
+pub struct MainBackgroundTask {
     signal_rx: SignalReceiver,
     waiter: RefCell<Waiter>,
+    is_running: Arc<Mutex<bool>>,
 }
 
-impl HabitatSignalTask {
-    pub fn new(signal_rx: SignalReceiver, sender_rx: Receiver<ControlSender>) -> Self {
+impl MainBackgroundTask {
+    pub fn new(signal_rx: SignalReceiver, sender_rx: Receiver<ControlSender>, is_running: Arc<Mutex<bool>>) -> Self {
         let this = Self {
             signal_rx,
             waiter: RefCell::new(Waiter::new(sender_rx)),
+            is_running,
         };
         this
     }
 }
 
-impl Task for HabitatSignalTask {
+impl Task for MainBackgroundTask {
     type Output = ();
     type Error = String;
     type JsEvent = JsNumber;
 
     fn perform(&self) -> Result<(), String> {
-        while let Ok(sig) = self.signal_rx.recv() {
-            self.waiter.borrow_mut().process_signal(sig);
+        while *self.is_running.lock().unwrap() {
+            // TODO: could use channels more intelligently to stop immediately 
+            // rather than waiting for timeout, but it's complicated.
+            match self.signal_rx.recv_timeout(Duration::from_millis(250)) {
+                Ok(sig) => self.waiter.borrow_mut().process_signal(sig),
+                Err(RecvTimeoutError::Timeout) => continue,
+                Err(err) => return Err(err.to_string()),
+            }
+        }
+        for (_, checker) in self.waiter.borrow_mut().checkers.iter_mut() {
+            checker.shutdown();
         }
         Ok(())
     }

@@ -13,6 +13,7 @@ use holochain_core_types::{
 use neon::{context::Context, prelude::*};
 use snowflake::ProcessUniqueId;
 use std::{
+    collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
     sync::{
@@ -25,18 +26,20 @@ use tempfile::tempdir;
 
 use crate::{
     config::{ConfigBuilder, JsConfigBuilder},
-    waiter::{CallBlockingTask, ControlMsg, HabitatSignalTask, Waiter},
+    waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask, Waiter},
 };
 
 pub struct Habitat {
     container: Container,
     sender_tx: SyncSender<SyncSender<ControlMsg>>,
+    is_running: Arc<Mutex<bool>>,
 }
 
 fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
     panic!("hey, this never should happen");
     Ok(cx.null())
 }
+
 
 // fn function_handle(mut cx: &FunctionContext, jsf: JsFunction) -> Handle<JsFunction> {
 //     jsf.unwrap()
@@ -63,26 +66,23 @@ declare_types! {
             };
             let mut container = Container::from_config(config);
 
-            let result = {
-                let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
-                    .unwrap()
-                    .as_value(&mut cx)
-                    .downcast_or_throw(&mut cx)
-                    .unwrap();
-                let (signal_tx, signal_rx) = signal_channel();
-                let (sender_tx, sender_rx) = sync_channel(1);
-                let signal_task = HabitatSignalTask::new(signal_rx, sender_rx);
-                signal_task.schedule(js_callback);
+            let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
+                .unwrap()
+                .as_value(&mut cx)
+                .downcast_or_throw(&mut cx)
+                .unwrap();
+            let (signal_tx, signal_rx) = signal_channel();
+            let (sender_tx, sender_rx) = sync_channel(1);
+            let is_running = Arc::new(Mutex::new(true));
+            let background_task = MainBackgroundTask::new(signal_rx, sender_rx, is_running.clone());
+            background_task.schedule(js_callback);
 
-                container.load_config_with_signal(Some(signal_tx)).map(|_| sender_tx.clone())
-            };
-
-            let sender_tx = result.or_else(|e| {
+            let result = container.load_config_with_signal(Some(signal_tx)).or_else(|e| {
                 let error_string = cx.string(format!("unable to initialize habitat: {}", e));
                 cx.throw(error_string)
             })?;
 
-            Ok(Habitat { container, sender_tx })
+            Ok(Habitat { container, sender_tx, is_running })
         }
 
         method start(mut cx) {
@@ -109,7 +109,10 @@ declare_types! {
             let stop_result: Result<(), String> = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
-                hab.container.stop_all_instances().map_err(|e| e.to_string())
+                let result = hab.container.stop_all_instances().map_err(|e| e.to_string());
+                let mut is_running = hab.is_running.lock().unwrap();
+                *is_running = false;
+                result
             };
 
             stop_result.or_else(|e| {
@@ -126,7 +129,7 @@ declare_types! {
             let cap_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
             let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
             let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
-            let maybe_callback = cx.argument_opt(5);
+            // let maybe_task_id = cx.argument_opt(5);
 
             let mut this = cx.this();
 
@@ -141,21 +144,7 @@ declare_types! {
                 let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
-                match maybe_callback {
-                    Some(v) => {
-                        println!("\nHere we go, some callback");
-                        let js_callback: Handle<JsFunction> = v.downcast().unwrap();
-                        let (tx, rx) = sync_channel(0);
-                        let task = CallBlockingTask { rx };
-                        task.schedule(js_callback);
-                        hab.sender_tx.send(tx).expect("Could not send to sender channel");
-                        println!("FYI was able to send sender.");
-                    },
-                    None =>
-                        println!("\nnoooo callback")
-                };
-                let val = instance.call(&zome, cap, &fn_name, &params);
-                val
+                instance.call(&zome, cap, &fn_name, &params)
             };
 
             let res_string = call_result.or_else(|e| {
@@ -167,6 +156,21 @@ declare_types! {
 
             // let completion_callback =
             Ok(cx.string(result_string).upcast())
+        }
+
+        method register_callback(mut cx) {
+            let js_callback: Handle<JsFunction> = cx.argument(0)?;
+            let this = cx.this();
+            {
+                let guard = cx.lock();
+                let hab = &*this.borrow(&guard);
+                
+                let (tx, rx) = sync_channel(0);
+                let task = CallBlockingTask { rx };
+                task.schedule(js_callback);
+                hab.sender_tx.send(tx).expect("Could not send to sender channel");
+            }
+            Ok(cx.undefined().upcast())
         }
 
         method agent_id(mut cx) {

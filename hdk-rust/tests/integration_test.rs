@@ -21,6 +21,7 @@ use holochain_core_types::{
     dna::{
         capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
         entry_types::{EntryTypeDef, LinksTo},
+        zome::{ZomeCapabilities, ZomeFnDeclarations},
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
@@ -36,6 +37,7 @@ use holochain_wasm_utils::api_serialization::{
     QueryResult,
 };
 use std::{
+    collections::BTreeMap,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -83,15 +85,24 @@ pub fn __list_capabilities(_: u32) -> u32 {
     0
 }
 
-pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
+pub fn create_test_defs_with_fn_names(
+    fn_names: Vec<&str>,
+) -> (ZomeFnDeclarations, ZomeCapabilities) {
     let mut capability = Capability::new(CapabilityType::Public);
+    let mut functions = BTreeMap::new();
 
     for fn_name in fn_names {
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);
         capability.functions.push(fn_decl);
+
+        let mut fn_decl = FnDeclaration::new();
+        fn_decl.name = String::from(fn_name);
+        functions.insert(fn_name.to_string(), fn_decl);
     }
-    capability
+    let mut capabilities = BTreeMap::new();
+    capabilities.insert("test_cap".to_string(), capability);
+    (functions, capabilities)
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
@@ -140,7 +151,7 @@ fn start_holochain_instance<T: Into<String>>(
     // Setup the holochain instance
     let wasm =
         create_wasm_from_file("wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm");
-    let capabability = create_test_cap_with_fn_names(vec![
+    let defs = create_test_defs_with_fn_names(vec![
         "check_global",
         "check_commit_entry",
         "check_commit_entry_macro",
@@ -162,7 +173,7 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_modified_entry_ok",
         "send_message",
     ]);
-    let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
+    let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
 
     // TODO: construct test DNA using the auto-generated JSON feature

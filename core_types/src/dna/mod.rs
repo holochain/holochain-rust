@@ -135,6 +135,13 @@ pub mod tests {
                                 ]
                             }
                         },
+                                "functions": {
+                                    "test": {
+                                        "name": "test",
+                                        "inputs": [],
+                                        "outputs": []
+                                    }
+                                },
                         "code": {
                             "code": "AAECAw=="
                         },

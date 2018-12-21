@@ -212,7 +212,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
-        create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
+        create_test_defs_with_fn_name, create_test_dna_with_defs, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
 
@@ -438,8 +438,8 @@ mod tests {
     #[test]
     fn can_call_test() {
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("round_trip_test");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("round_trip_test");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         let (context, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -464,8 +464,8 @@ mod tests {
     fn can_call_commit() {
         // Setup the holochain instance
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("commit_test");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("commit_test");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         let (context, _) = test_context("alex");
         let (signal_tx, signal_rx) = signal_channel();
         let mut hc =
@@ -514,8 +514,8 @@ mod tests {
     fn can_call_commit_err() {
         // Setup the holochain instance
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("commit_fail_test");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("commit_fail_test");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         let (context, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -552,8 +552,8 @@ mod tests {
     fn can_call_debug() {
         // Setup the holochain instance
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("debug_hello");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("debug_hello");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
         let (context, test_logger) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -590,8 +590,8 @@ mod tests {
     fn can_call_debug_multiple() {
         // Setup the holochain instance
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("debug_multiple");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("debug_multiple");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
         let (context, test_logger) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -645,9 +645,8 @@ mod tests {
         let wasm = include_bytes!(
             "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
         );
-        let capability = test_utils::create_test_cap_with_fn_name("commit_test");
-        let mut dna =
-            test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
+        let defs = test_utils::create_test_defs_with_fn_name("commit_test");
+        let mut dna = test_utils::create_test_dna_with_defs("test_zome", defs, wasm);
         dna.uuid = "can_receive_action_signals".into();
         let context = test_utils::test_context("alex");
         let timeout = 1000;

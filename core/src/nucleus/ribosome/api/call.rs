@@ -227,7 +227,7 @@ pub mod tests {
                 },
                 Defn,
             },
-            tests::test_capability_call,
+            tests::{test_capability_call, test_capability_name},
         },
         workflows::author_entry::author_entry,
     };
@@ -245,11 +245,14 @@ pub mod tests {
 
     use futures::executor::block_on;
     use serde_json;
-    use std::sync::{
-        mpsc::{channel, RecvTimeoutError},
-        Arc,
+    use std::{
+        collections::BTreeMap,
+        sync::{
+            mpsc::{channel, RecvTimeoutError},
+            Arc,
+        },
     };
-    use test_utils::create_test_dna_with_cap;
+    use test_utils::create_test_dna_with_defs;
 
     /// dummy commit args from standard test entry
     #[cfg_attr(tarpaulin, skip)]
@@ -357,7 +360,7 @@ pub mod tests {
 
     #[test]
     fn test_call_no_zome() {
-        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", &test_capability_name(), None);
         let test_setup = setup_test(dna);
         let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
@@ -368,12 +371,18 @@ pub mod tests {
     fn setup_dna_for_cap_test(cap_type: CapabilityType) -> Dna {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
         let mut capability = Capability::new(cap_type);
-        capability.functions = vec![FnDeclaration {
-            name: "test".into(),
+        let fn_decl = FnDeclaration {
+            name: test_function_name(),
             inputs: Vec::new(),
             outputs: Vec::new(),
-        }];
-        create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm)
+        };
+        capability.functions = vec![fn_decl.clone()];
+        let mut capabilities = BTreeMap::new();
+        capabilities.insert(test_capability_name(), capability);
+        let mut functions = BTreeMap::new();
+        functions.insert(test_function_name(), fn_decl);
+
+        create_test_dna_with_defs(&test_zome_name(), (functions, capabilities), &wasm)
     }
 
     #[test]

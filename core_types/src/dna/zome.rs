@@ -55,6 +55,7 @@ impl Config {
 
 pub type ZomeEntryTypes = BTreeMap<EntryType, EntryTypeDef>;
 pub type ZomeCapabilities = BTreeMap<String, capabilities::Capability>;
+pub type ZomeFnDeclarations = BTreeMap<String, capabilities::FnDeclaration>;
 
 /// Represents an individual "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
@@ -79,6 +80,10 @@ pub struct Zome {
     #[serde(default)]
     pub capabilities: ZomeCapabilities,
 
+    /// An array of functions declared in this this zome.
+    #[serde(default)]
+    pub functions: ZomeFnDeclarations,
+
     /// Validation code for this entry_type.
     #[serde(default)]
     pub code: DnaWasm,
@@ -97,6 +102,7 @@ impl Default for Zome {
             description: String::new(),
             config: Config::new(),
             entry_types: BTreeMap::new(),
+            functions: BTreeMap::new(),
             capabilities: BTreeMap::new(),
             code: DnaWasm::new(),
             bridges: Vec::new(),
@@ -110,6 +116,7 @@ impl Zome {
         description: &str,
         config: &Config,
         entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
+        functions: &BTreeMap<String, capabilities::FnDeclaration>,
         capabilities: &BTreeMap<String, capabilities::Capability>,
         code: &DnaWasm,
     ) -> Zome {
@@ -117,6 +124,7 @@ impl Zome {
             description: description.into(),
             config: config.clone(),
             entry_types: entry_types.to_owned(),
+            functions: functions.to_owned(),
             capabilities: capabilities.to_owned(),
             code: code.clone(),
             bridges: Vec::new(),
@@ -152,6 +160,7 @@ pub mod tests {
                     "error_handling": "throw-errors"
                 },
                 "entry_types": {},
+                "functions": {},
                 "capabilities": {}
             }"#,
         )
@@ -173,7 +182,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"},\"bridges\":[]}";
+        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"functions\":{},\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from(expected.clone()),

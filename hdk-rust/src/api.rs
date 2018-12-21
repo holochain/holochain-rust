@@ -2,7 +2,6 @@ use crate::{
     error::{ZomeApiError, ZomeApiResult},
     globals::*,
 };
-use std::convert::TryFrom;
 use holochain_core_types::{
     cas::content::Address,
     entry::Entry,
@@ -804,18 +803,27 @@ pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
     res
 }
 
-/// Retrieves data about entries linked to a base address with a given tag. This is the most general verion of get_links
-/// and can return the linked addresses, entries, headers and sources. Also supports CRUD status_request
-/// The data returned is configurable with the GetEntryOptions argument which is identical to that used in get_entry_result.
+/// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
+/// used to describe the relationship between the `base` and other entries you wish to lookup. Returns a list of addresses of other
+/// entries which matched as being linked by the given `tag`. Links are created in the first place using the Zome API function [link_entries](fn.link_entries.html).
+/// Once you have the addresses, there is a good likelihood that you will wish to call [get_entry](fn.get_entry.html) for each of them.
 /// # Examples
 /// ```rust
-/// // TODO: write example
+/// # extern crate hdk;
+/// # extern crate holochain_core_types;
+/// # extern crate holochain_wasm_utils;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::cas::content::Address;
+/// # use hdk::error::ZomeApiResult;
+/// # use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
+///
+/// # fn main() {
+/// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
+///     hdk::get_links(&agent, "authored_posts")
+/// }
+/// # }
 /// ```
-pub fn get_links_result<S: Into<String>>(
-    base: &Address,
-    tag: S,
-    options: GetLinksOptions
-) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
+pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLinksResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
 
@@ -840,76 +848,54 @@ pub fn get_links_result<S: Into<String>>(
         .expect("deallocate failed");
 
     if result.ok {
-        let get_links_result = GetLinksResult::try_from(JsonString::try_from(result.value)?)?;
-        let result = get_links_result
-            .addresses()
-            .iter()
-            .map(|address| {
-                get_entry_result(address.to_owned(), options.clone())
-            })
-            .collect();
-        Ok(result)
+        Ok(JsonString::from(result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
 }
 
-/// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
-/// used to describe the relationship between the `base` and other entries you wish to lookup. Returns a list of addresses of other
-/// entries which matched as being linked by the given `tag`. Links are created in the first place using the Zome API function [link_entries](fn.link_entries.html).
-/// Once you have the addresses, there is a good likelihood that you will wish to call [get_entry](fn.get_entry.html) for each of them.
+/// Retrieves data about entries linked to a base address with a given tag. This is the most general verion of the various get_links
+/// helpers (such as get_links_and_load) and can return the linked addresses, entries, headers and sources. Also supports CRUD status_request.
+/// The data returned is configurable with the GetEntryOptions argument which is identical to that used in get_entry_result.
 /// # Examples
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
 /// # extern crate holochain_wasm_utils;
-/// # use holochain_core_types::json::JsonString;
-/// # use holochain_core_types::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
-///
+/// # use holochain_core_types::cas::content::Address;
+/// # use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetEntryResult};
+/// 
 /// # fn main() {
-/// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-///     hdk::get_links(&agent, "authored_posts")
+/// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
+///    hdk::get_links_result(&address, "test-tag", GetEntryOptions::default())
 /// }
 /// # }
 /// ```
-pub fn get_links<S: Into<String>>(
-    base: &Address, 
-    tag: S
-) -> ZomeApiResult<GetLinksResult> {
-    
-    let get_links_result = get_links_result(base, tag, GetLinksOptions{
-        status_request: StatusRequestKind::default(),
-        entry: false,
-        header: false,
-        sources: false
-    })?;
-
-    let addresses: Vec<Address> = get_links_result
-    .into_iter()
-    .map(|get_result| {
-        let get_type = get_result.unwrap().result;
-        match get_type {
-            GetEntryResultType::Single(elem) => Ok(elem.meta.unwrap().address.to_owned()),
-            GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string()))
-        }
-    })
-    .filter_map(Result::ok)
-    .collect();
-
-    Ok(GetLinksResult::new(addresses))
+pub fn get_links_result<S: Into<String>>(
+    base: &Address,
+    tag: S,
+    options: GetLinksOptions
+) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
+    let get_links_result = get_links(base, tag)?;
+    let result = get_links_result
+        .addresses()
+        .iter()
+        .map(|address| {
+            get_entry_result(address.to_owned(), options.clone())
+        })
+        .collect();
+    Ok(result)
 }
-
 
 /// Helper function for get_links. Returns a vector of the entries themselves
 pub fn get_links_and_load<S: Into<String>>(
  base: &HashString,
  tag: S
-) -> ZomeApiResult<Vec<Entry>>  {
+) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>>  {
     let get_links_result = get_links_result(base, tag, GetLinksOptions::default())?;
 
-    let entries: Vec<Entry> = get_links_result
+    let entries = get_links_result
     .into_iter()
     .map(|get_result| {
         let get_type = get_result.unwrap().result;
@@ -918,7 +904,6 @@ pub fn get_links_and_load<S: Into<String>>(
             GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string()))
         }
     })
-    .filter_map(Result::ok)
     .collect();
 
     Ok(entries)

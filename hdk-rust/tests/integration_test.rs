@@ -484,13 +484,13 @@ fn can_roundtrip_links() {
         let entry_1 = Entry::App(
             "testEntryType".into(),
             EntryStruct {
-                stuff: "entry1".into(),
+                stuff: "entry2".into(),
             }.into(),
         );
         let entry_2 = Entry::App(
             "testEntryType".into(),
             EntryStruct {
-                stuff: "entry2".into(),
+                stuff: "entry3".into(),
             }.into(),
         );
 
@@ -499,8 +499,8 @@ fn can_roundtrip_links() {
             address_1.clone(),
             address_2.clone(),
         ]));
-        let expected_entries: ZomeApiResult<Vec<Entry>> = Ok(
-            vec![entry_1.clone(), entry_2.clone()]
+        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> = Ok(
+            vec![Ok(entry_1.clone()), Ok(entry_2.clone())]
         );
 
         println!(
@@ -509,20 +509,19 @@ fn can_roundtrip_links() {
         );
 
         let ordering1: bool = result_string == JsonString::from(expected);
-        let _entries_ordering1: bool = entries_result_string == JsonString::from(expected_entries);
-
-        assert!(_entries_ordering1);
+        let entries_ordering1: bool = entries_result_string == JsonString::from(expected_entries);
 
         let expected: Result<GetLinksResult, HolochainError> =
             Ok(GetLinksResult::new(vec![address_2, address_1]));
 
-        let expected_entries: ZomeApiResult<Vec<Entry>> = Ok(
-            vec!(entry_2, entry_1)
+        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> = Ok(
+            vec![Ok(entry_2.clone()), Ok(entry_1.clone())]
         );
-        let ordering2: bool = result_string == JsonString::from(expected);
-        let _entries_ordering2: bool = entries_result_string == JsonString::from(expected_entries);
 
-        both_links_present = ordering1 || ordering2;
+        let ordering2: bool = result_string == JsonString::from(expected);
+        let entries_ordering2: bool = entries_result_string == JsonString::from(expected_entries);
+
+        both_links_present = (ordering1 || ordering2) && (entries_ordering1 || entries_ordering2);
         if !both_links_present {
             // Wait for links to be validated and propagated
             thread::sleep(Duration::from_millis(500));

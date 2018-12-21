@@ -18,7 +18,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use std::{collections::HashMap, convert::TryFrom, io::Read, sync::mpsc};
+use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
 
 use serde_json;
 

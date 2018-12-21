@@ -40,7 +40,6 @@ pub const SALTBYTES:usize = rust_sodium_sys::crypto_pwhash_SALTBYTES as usize;
 pub fn hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:Option<&mut SecBuf>,hash:&mut SecBuf){
     // TODO: fix opts
     // let mut hash = SecBuf::with_secure(HASHBYTES);
-
     match salt {
         Some(salt) => {
             let mut password = password.write_lock();
@@ -55,8 +54,6 @@ pub fn hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:Opti
             let mut salt = salt.write_lock();
             let mut hash = hash.write_lock();
             create_hash(&mut password,ops_limit,mem_limit,alg,&mut salt,&mut hash);
-
-
         },
     };
     // return (hash);
@@ -94,13 +91,15 @@ mod tests {
     fn it_should_generate_with_salt() {
         let mut password = SecBuf::with_secure(HASHBYTES);
         let mut pw2_hash = SecBuf::with_secure(HASHBYTES);
-        buf(&mut password);
+        {
+            let mut password = password.write_lock();
+            password[0] = 42;
+            password[1] = 222;
+        }
         let mut salt = SecBuf::with_insecure(SALTBYTES);
         hash(&mut password,OPSLIMIT_SENSITIVE,MEMLIMIT_SENSITIVE,ALG_ARGON2ID13,Some(&mut salt),&mut pw2_hash);
-        let mut pw2_hash = pw2_hash.write_lock();
-        println!("pw 2 : {:?}",pw2_hash);
-        let mut password = password.write_lock();
-        assert_eq!(HASHBYTES, password.len());
+        let mut pw2_hash = pw2_hash.read_lock();
+        assert_eq!("[84, 166, 168, 46, 130, 222, 122, 144, 123, 49, 206, 167, 35, 180, 246, 154, 25, 43, 218, 177, 95, 218, 12, 241, 234, 207, 230, 93, 127, 174, 221, 106]",  format!("{:?}", *pw2_hash));
     }
     #[test]
     fn it_should_generate_consistantly() {
@@ -109,16 +108,12 @@ mod tests {
         let mut pw2_hash = SecBuf::with_secure(HASHBYTES);
         buf(&mut password);
         let mut salt = SecBuf::with_insecure(SALTBYTES);
+        buf(&mut salt);
         hash(&mut password,OPSLIMIT_SENSITIVE,MEMLIMIT_SENSITIVE,ALG_ARGON2ID13,Some(&mut salt),&mut pw1_hash);
         hash(&mut password,OPSLIMIT_SENSITIVE,MEMLIMIT_SENSITIVE,ALG_ARGON2ID13,Some(&mut salt),&mut pw2_hash);
-        let mut pw1_hash = pw1_hash.write_lock();
-        let mut pw2_hash = pw2_hash.write_lock();
-        let mut password = password.write_lock();
-        println!("password : {:?}",password);
-        println!("pw 1 : {:?}",pw1_hash);
-        println!("pw 2 : {:?}",pw2_hash);
-        let mut password = password.write_lock();
-        assert_eq!(HASHBYTES, password.len());
+        let mut pw1_hash = pw1_hash.read_lock();
+        let mut pw2_hash = pw2_hash.read_lock();
+        assert_eq!(format!("{:?}", *pw1_hash), format!("{:?}", *pw2_hash));
     }
 
 }

@@ -185,7 +185,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1//test/test""#));
+        assert!(result.contains(r#""test-instance-1/greeter/public/hello""#));
         assert!(!result.contains(r#""test-instance-2//test/test""#));
     }
 
@@ -205,7 +205,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store//test/test""#));
+        assert!(result.contains(r#""happ-store/greeter/public/hello""#));
         assert!(!result.contains(r#""test-instance-1//test/test""#));
     }
 }

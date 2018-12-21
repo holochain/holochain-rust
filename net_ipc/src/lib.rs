@@ -17,6 +17,7 @@ extern crate rmp_serde;
 extern crate serde;
 extern crate serde_bytes;
 extern crate zmq;
+extern crate snowflake;
 
 #[macro_use]
 pub mod errors;

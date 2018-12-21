@@ -12,5 +12,6 @@ serde = "1.0"
 serde_bytes = "0.10.4"
 serde_derive = "1.0"
 zmq = "0.9.0"
+snowflake = "1.2"
 
 [dev-dependencies]

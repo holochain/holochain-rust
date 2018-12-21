@@ -57,8 +57,15 @@ impl IpcSocket for ZmqIpcSocket {
     }
 
     fn connect(&mut self, endpoint: &str) -> Result<()> {
+        // Attempt connection
         self.socket.connect(endpoint)?;
-        self.maybe_endpoint = Some(endpoint.to_string());
+        // Retrieve the last endpoint this socket was bound to otherwise use the requested one
+        let maybe_last_endpoint = self.socket.get_last_endpoint()?;
+        let last_endpoint = match maybe_last_endpoint {
+            Ok(last_endpoint) => last_endpoint,
+            Err(_) => endpoint.to_string(),
+        };
+        self.maybe_endpoint = Some(last_endpoint);
         Ok(())
     }
 

@@ -1,7 +1,8 @@
 use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
-    hash::HashString
+    hash::HashString,
+    cas::content::AddressableContent
 };
 use im::hashmap::HashMap;
 use std::{
@@ -36,7 +37,8 @@ impl EavMemoryStorage {
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let mut map = self.storage.write()?;
-        map.insert(self.current_hash.clone(),eav.clone());
+        let key = vec![self.current_hash.clone().to_string(),eav.address().to_string()].join("_");
+        map.insert(HashString::from(key),eav.clone());
         Ok(())
     }
 
@@ -50,7 +52,11 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         Ok(map
             .into_iter()
             //.cloned()
-            .filter(|(k,a)|*k==self.current_hash.clone())
+            .filter(|(k,a)|{
+                let key = k.to_string();
+                let hash = &*self.current_hash.clone().to_string();
+                key.starts_with(hash)
+                })
             .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref()))
             .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))

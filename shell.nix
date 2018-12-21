@@ -22,6 +22,7 @@ let
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
   ${wasmBuild "core/src/nucleus/actions/wasm-test"}
+  ${wasmBuild "container_api/test-bridge-caller"}
   ${wasmBuild "container_api/wasm-test"}
   ${wasmBuild "hdk-rust/wasm-test"}
   ${wasmBuild "wasm_utils/wasm-test/integration-test"}

@@ -212,7 +212,8 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     Ok(())
 }
 
-/// Call an exposed function from another zome.
+/// Call an exposed function from another zome or another (bridged) instance running
+/// on the same agent in the same container.
 /// Arguments for the called function are passed as `JsonString`.
 /// Returns the value that's returned by the given function as a json str.
 /// # Examples
@@ -329,7 +330,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call("summer", "main", "test_token", "sum", call_input.into())
+///     hdk::call(hdk::THIS_INSTANCE, "summer", "main", "test_token", "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -353,6 +354,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # }
 /// ```
 pub fn call<S: Into<String>>(
+    instance_handle: S,
     zome_name: S,
     cap_name: S, //temporary...
     cap_token: S,
@@ -368,6 +370,7 @@ pub fn call<S: Into<String>>(
     let allocation_of_input = store_as_json(
         &mut mem_stack,
         ZomeFnCallArgs {
+            instance_handle: instance_handle.into(),
             zome_name: zome_name.into(),
             cap: Some(CapabilityCall::new(
                 cap_name.into(),
@@ -384,16 +387,18 @@ pub fn call<S: Into<String>>(
     unsafe {
         encoded_allocation_of_result = hc_call(allocation_of_input.encode() as u32);
     }
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_string(encoded_allocation_of_result as u32)?;
-
-    // Free result & input allocations.
+    // Deserialize complex result stored in wasm memory
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    // Free result & input allocations
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
-
     // Done
-    Ok(result.into())
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Attempts to commit an entry to your local source chain. The entry

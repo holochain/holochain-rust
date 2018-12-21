@@ -33,11 +33,11 @@ impl PartialEq for EavFileStorage {
 }
 
 #[warn(unused_must_use)]
-pub fn add_eav_to_hashset(dir_entry: DirEntry, hash:HashString,set: &mut HashSet<HcResult<String>>) {
+pub fn add_eav_to_hashset(parent_dir : String,dir_entry: DirEntry, hash:HashString,set: &mut HashMap<HashString,HcResult<String>>) {
     let path = dir_entry.path();
-    let hash = read_from_hash_list(hash).expect("Could not read index file");
+    let hash_list = read_from_hash_list(parent_dir,hash).expect("Could not read index file");
     println!("read from hash {:?}",hash);
-    if(hash.find(dir_entry))
+    if(hash_list.find(dir_entry))
     {
         match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {
@@ -59,7 +59,7 @@ pub fn add_eav_to_hashset(dir_entry: DirEntry, hash:HashString,set: &mut HashSet
                 });
         }
         Err(_) => {
-            set.insert(Err(HolochainError::IoError(format!(
+            set.insert(hash,Err(HolochainError::IoError(format!(
                 "Could not read from path {:?}",
                 path
             ))));
@@ -76,9 +76,10 @@ pub fn add_eav_to_hashset(dir_entry: DirEntry, hash:HashString,set: &mut HashSet
  fn read_from_hash_list(dir_path:String,current_hash:HashString)-> Result<Vec<HashString>,HolochainError>
     {
         let path =
-            vec![dir_path.clone(), current_hash].join(&MAIN_SEPARATOR.to_string());
-        let file = OpenOptions::new().read(true).open(path)?;
-        let file_contents = file.read_to_string()?;
+            vec![dir_path.clone(), current_hash.to_string()].join(&MAIN_SEPARATOR.to_string());
+        let mut file = OpenOptions::new().read(true).open(path)?;
+        let mut file_contents = String::new();
+        file.read_to_string(&mut file_contents)?;
         Ok(file_contents.split("\n")
                         .map(|s|{
                             HashString::from(s)
@@ -91,6 +92,7 @@ impl EavFileStorage {
             dir_path,
             id: Uuid::new_v4(),
             lock: Arc::new(RwLock::new(())),
+            current_hash : HashString::from("")
         })
     }
 
@@ -114,15 +116,15 @@ impl EavFileStorage {
         Ok(())
     }
 
-    fn write_to_hash_file(&self,eav:EntityAttributeValue) -> Result<(),HolochainError>
+    fn write_to_hash_file(&self,eav:&EntityAttributeValue) -> Result<(),HolochainError>
     {
         let path =
-            vec![self.dir_path.clone(), self.current_hash].join(&MAIN_SEPARATOR.to_string());
+            vec![self.dir_path.clone(), self.current_hash.to_string()].join(&MAIN_SEPARATOR.to_string());
         let file = OpenOptions::new()
                    .write(true)
                    .create(true)
                    .append(true)
-                   .open(path);
+                   .open(path)?;
         writeln!(file,"{}",eav.address())?;
         Ok(())
     }
@@ -143,12 +145,12 @@ impl EavFileStorage {
             .unwrap_or(String::new());
         let full_path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
-        let mut set = HashSet::new();
+        let mut set = HashMap::new();
         WalkDir::new(full_path.clone())
             .into_iter()
             .for_each(|dir_entry| match dir_entry {
                 Ok(eav_content) => {
-                    add_eav_to_hashset(eav_content, &mut set);
+                    add_eav_to_hashset(self.dir_path,eav_content,self.current_hash,&mut set);
                 }
                 Err(_) => {
                     set.insert(hash,Err(HolochainError::IoError(format!(
@@ -177,13 +179,13 @@ impl EntityAttributeValueStorage for EavFileStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashSring,EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
-        let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity);
+        let entity_set = self.read_from_dir::<Entity>(self.current_hash,ENTITY_DIR.to_string(), entity);
         let attribute_set = self
-            .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)
+            .read_from_dir::<Attribute>(self.current_hash,ATTRIBUTE_DIR.to_string(), attribute)
             .clone();
-        let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value);
+        let value_set = self.read_from_dir::<Value>(self.current_hash,VALUE_DIR.to_string(), value);
 
         let attribute_value_inter = attribute_set.intersection(&value_set).cloned().collect();
         let entity_attribute_value_inter: HashSet<Result<String, HolochainError>> = entity_set

@@ -1,3 +1,7 @@
+//! This module defines structs that are used in the interchange
+//! of data that is used for validation of chain modifying
+//! agent actions between Holochain and Zomes.
+
 extern crate serde_json;
 use crate::{
     chain_header::ChainHeader, entry::Entry, error::HolochainError, hash::HashString,

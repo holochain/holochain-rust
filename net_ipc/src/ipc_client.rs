@@ -14,6 +14,7 @@ use holochain_net_connection::{
 // for the holochain ipc protocol, the server is always 4 0x24 bytes
 static SRV_ID: &'static [u8] = &[0x24, 0x24, 0x24, 0x24];
 
+#[allow(non_upper_case_globals)]
 static mut g_node_count: u8 = 1;
 
 /// NetWorker for messaging with an ipc p2p node

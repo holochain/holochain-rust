@@ -29,9 +29,9 @@ pub trait NetWorker {
         Ok(false)
     }
 
-    fn endpoint(&self) -> Option<String> 
-    {
-        None
+    /// Getter of the connection's endpoint
+    fn endpoint(&self) -> Option<String> {
+        Some(String::new())
     }
 }
 

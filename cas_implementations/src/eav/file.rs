@@ -2,9 +2,10 @@ use holochain_core_types::{
     cas::content::{AddressableContent, Content},
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::{HcResult, HolochainError},
+    hash::HashString,
 };
 use std::{
-    collections::HashSet,
+    collections::{HashMap,HashSet},
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
     path::MAIN_SEPARATOR,
@@ -35,6 +36,7 @@ impl PartialEq for EavFileStorage {
 pub fn add_eav_to_hashset(dir_entry: DirEntry, hash:HashString,set: &mut HashSet<HcResult<String>>) {
     let path = dir_entry.path();
     let hash = read_from_hash_list(hash).expect("Could not read index file");
+    println!("read from hash {:?}",hash);
     if(hash.find(dir_entry))
     {
         match OpenOptions::new().read(true).open(path) {
@@ -53,7 +55,7 @@ pub fn add_eav_to_hashset(dir_entry: DirEntry, hash:HashString,set: &mut HashSet
                     }
                 })
                 .map(|e| {
-                    set.insert(e);
+                    set.insert(hash,e);
                 });
         }
         Err(_) => {
@@ -70,6 +72,18 @@ pub fn add_eav_to_hashset(dir_entry: DirEntry, hash:HashString,set: &mut HashSet
     }
     
 }
+
+ fn read_from_hash_list(dir_path:String,current_hash:HashString)-> Result<Vec<HashString>,HolochainError>
+    {
+        let path =
+            vec![dir_path.clone(), current_hash].join(&MAIN_SEPARATOR.to_string());
+        let file = OpenOptions::new().read(true).open(path)?;
+        let file_contents = file.read_to_string()?;
+        Ok(file_contents.split("\n")
+                        .map(|s|{
+                            HashString::from(s)
+                        }).collect::<Vec<HashString>>())
+    }
 
 impl EavFileStorage {
     pub fn new(dir_path: String) -> HcResult<EavFileStorage> {
@@ -104,34 +118,23 @@ impl EavFileStorage {
     {
         let path =
             vec![self.dir_path.clone(), self.current_hash].join(&MAIN_SEPARATOR.to_string());
-        let file = OpenOptions::()
+        let file = OpenOptions::new()
                    .write(true)
                    .create(true)
                    .append(true)
                    .open(path);
-        writeln!(file,"{}",eav)?;
+        writeln!(file,"{}",eav.address())?;
         Ok(())
     }
 
-    fn read_from_hash_list(current_hash:HashString)-> Result<Vec<HashString>,HolochainError>
-    {
-        let path =
-            vec![self.dir_path.clone(), self.current_hash].join(&MAIN_SEPARATOR.to_string());
-        let file = OpenOptions::new().read(true).open(path)?
-        let file_contents = file.read_to_string()?;
-        ok(file_contents.split("\n")
-                        .map(|s|{
-                            HashString::from(s)
-                        }).collect::<Vec<HashString>())
-
-    }
+   
 
     fn read_from_dir<T>(
         &self,
         hash:HashString,
         subscript: String,
         eav_constraint: Option<T>,
-    ) -> HashSet<HcResult<String>>
+    ) -> HashMap<HashString,HcResult<String>>
     where
         T: ToString,
     {
@@ -148,7 +151,7 @@ impl EavFileStorage {
                     add_eav_to_hashset(eav_content, &mut set);
                 }
                 Err(_) => {
-                    set.insert(Err(HolochainError::IoError(format!(
+                    set.insert(hash,Err(HolochainError::IoError(format!(
                         "Could not obtain directory{:?}",
                         full_path
                     ))));
@@ -174,7 +177,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<HashSring,EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
         let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity);
         let attribute_set = self
@@ -211,9 +214,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
                     .map(|eav|
                         // errors filtered out above... unwrap is safe
                         eav.unwrap())
-                    .filter(|eav|{
-                        hash.find(eav.content())
-                    })
                     .collect())
             }
         }

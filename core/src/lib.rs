@@ -39,6 +39,7 @@ extern crate holochain_core_types;
 extern crate holochain_core_types_derive;
 extern crate base64;
 extern crate holochain_net_connection;
+extern crate im;
 
 pub mod action;
 pub mod agent;

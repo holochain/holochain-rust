@@ -3,9 +3,12 @@ use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     eav::{EntityAttributeValue, EntityAttributeValueStorage},
     error::HolochainError,
+    hash::HashString,
 };
+
+use im::hashmap::HashMap;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{ HashSet},
     sync::{Arc, RwLock},
 };
 
@@ -51,7 +54,7 @@ impl DhtStore {
         &self,
         address: Address,
         tag: String,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
         self.meta_storage
             .read()?
             .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)

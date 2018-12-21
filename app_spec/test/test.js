@@ -16,7 +16,7 @@ test('call', (t) => {
   const params = {num1, num2}
   const result = app.call("blog", "main", "check_sum", params)
 
-  t.equal(result.Ok.value, JSON.stringify({"sum":"4"}))
+  t.deepEqual(result.Ok, {"sum":"4"})
 })
 
 test('hash_post', (t) => {

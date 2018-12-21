@@ -37,7 +37,8 @@ pub fn add_eav_to_hashset(parent_dir : String,dir_entry: DirEntry, hash:HashStri
     let path = dir_entry.path();
     let hash_list = read_from_hash_list(parent_dir,hash).expect("Could not read index file");
     println!("read from hash {:?}",hash);
-    if(hash_list.find(dir_entry))
+    let dir_entry_name = HashString::from(dir_entry.file_name().to_str().expect("into string failed"));
+    if(hash_list.iter().find(|x|**x==dir_entry_name).is_some())
     {
         match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {

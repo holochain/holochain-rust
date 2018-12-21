@@ -48,11 +48,9 @@ mod tests {
             let mut out2 = out2.write_lock();
             derive(&mut out2,3,&mut context,&mut parent);
         }
-        let mut out1 = out1.write_lock();
-        let mut out2 = out2.write_lock();
-        println!("op1: {:?}",out1 );
-        println!("op2: {:?}",out2 );
-        assert_eq!(32, out1.len());
+        let mut out1 = out1.read_lock();
+        let mut out2 = out2.read_lock();
+        assert_eq!(format!("{:?}", *out1), format!("{:?}", *out2));
     }
 
 }

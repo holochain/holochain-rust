@@ -58,7 +58,7 @@ declare_types! {
             Ok(neon_serde::to_value(&mut cx, &obj)?)
         }
 
-        method habitat(mut cx) {
+        method container(mut cx) {
             let mut i = 0;
             let mut instances = Vec::<InstanceData>::new();
             while let Some(arg) = cx.argument_opt(i) {

@@ -31,7 +31,7 @@ test('config construction', t => {
     const agent1 = H.agent('alessia')
     const agent2 = H.agent('bartolini')
     const dna = H.dna(path)
-    const config = H.habitat(
+    const config = H.container(
         H.instance(agent1, dna),
         H.instance(agent2, dna),
     )

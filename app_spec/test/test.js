@@ -1,7 +1,7 @@
 const test = require('tape')
 const { pollFor } = require('./util')
 
-const { ConfigBuilder, Habitat } = require('../../nodejs_container')
+const { ConfigBuilder, Container } = require('../../nodejs_container')
 
 const dnaPath = "./dist/app_spec.hcpkg"
 
@@ -15,12 +15,12 @@ const config = (() => {
   const instanceAlice = ConfigBuilder.instance(agentAlice, dna)
   const instanceBob = ConfigBuilder.instance(agentBob, dna)
 
-  return ConfigBuilder.habitat(instanceAlice, instanceBob)
+  return ConfigBuilder.container(instanceAlice, instanceBob)
 })()
 
-// Initialize the Container (Habitat)
-const hab = new Habitat(config)
-hab.start()
+// Initialize the Container (Container)
+const container = new Container(config)
+container.start()
 
 // This function is a bit of temporary boilerplate to construct a convenient object
 // for testing. These objects will be created automatically with the new Scenario API,
@@ -28,8 +28,8 @@ hab.start()
 const makeCaller = (agentId) => {
   const instanceId = agentId + '-' + dnaPath
   return {
-    call: (zome, cap, fn, params) => hab.call(instanceId, zome, cap, fn, params),
-    agentId: hab.agent_id(instanceId)
+    call: (zome, cap, fn, params) => container.call(instanceId, zome, cap, fn, params),
+    agentId: container.agent_id(instanceId)
   }
 }
 

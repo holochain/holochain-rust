@@ -1,6 +1,6 @@
 const test = require('tape');
 
-const { Habitat } = require('..')
+const { Container } = require('..')
 
 const toml = `
 [[agents]]
@@ -52,7 +52,7 @@ id = "test/instance/2"
 `
 
 test('can create config from TOML', t => {
-    const hab = new Habitat(toml)
+    const hab = new Container(toml)
     hab.start()
     t.throws(
         () => hab.call('x', 'x', 'x', 'x', 'x'),

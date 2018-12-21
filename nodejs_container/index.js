@@ -6,10 +6,10 @@ const path = require('path');
 // deals with ensuring the correct version for the machine/node version
 const binding_path = binary.find(path.resolve(path.join(__dirname, './package.json')));
 
-const { ConfigBuilder, Habitat } = require(binding_path);
+const { ConfigBuilder, Container } = require(binding_path);
 
-Habitat.prototype.callRaw = Habitat.prototype.call
-Habitat.prototype.call = function (id, zome, trait, fn, params) {
+Container.prototype.callRaw = Container.prototype.call
+Container.prototype.call = function (id, zome, trait, fn, params) {
     const stringInput = JSON.stringify(params);
     const rawResult = this.callRaw(id, zome, trait, fn, stringInput);
     let result;
@@ -24,5 +24,5 @@ Habitat.prototype.call = function (id, zome, trait, fn, params) {
 
 module.exports = {
     ConfigBuilder: new ConfigBuilder(),
-    Habitat: Habitat,
+    Container: Container,
 };

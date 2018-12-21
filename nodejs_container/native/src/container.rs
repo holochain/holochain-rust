@@ -1,6 +1,6 @@
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::Container,
+    container::{Container as RustContainer},
 };
 use holochain_core::{
     logger::Logger,
@@ -21,17 +21,17 @@ impl Logger for NullLogger {
     fn log(&mut self, _msg: String) {}
 }
 
-pub struct Habitat {
-    container: Container,
+pub struct NodeContainer {
+    container: RustContainer,
     _signal_rx: SignalReceiver,
 }
 
 declare_types! {
 
-    /// A Habitat can be initialized either by:
+    /// A Container can be initialized either by:
     /// - an Object representation of a Configuration struct
     /// - a string representing TOML
-    pub class JsHabitat for Habitat {
+    pub class JsContainer for NodeContainer {
         init(mut cx) {
             let config_arg: Handle<JsValue> = cx.argument(0)?;
             let config: Configuration = if config_arg.is_a::<JsObject>() {
@@ -43,8 +43,8 @@ declare_types! {
                 panic!("Invalid type specified for config, must be object or string");
             };
             let (signal_tx, _signal_rx) = signal_channel();
-            let container = Container::from_config(config).with_signal_channel(signal_tx);
-            Ok(Habitat { container, _signal_rx })
+            let container = RustContainer::from_config(config).with_signal_channel(signal_tx);
+            Ok(NodeContainer { container, _signal_rx })
         }
 
         method start(mut cx) {
@@ -59,7 +59,7 @@ declare_types! {
             };
 
             start_result.or_else(|e| {
-                let error_string = cx.string(format!("unable to start habitat: {}", e));
+                let error_string = cx.string(format!("unable to start container: {}", e));
                 cx.throw(error_string)
             })?;
 
@@ -76,7 +76,7 @@ declare_types! {
             };
 
             stop_result.or_else(|e| {
-                let error_string = cx.string(format!("unable to stop habitat: {}", e));
+                let error_string = cx.string(format!("unable to stop container: {}", e));
                 cx.throw(error_string)
             })?;
 
@@ -140,7 +140,7 @@ declare_types! {
 }
 
 register_module!(mut cx, {
-    cx.export_class::<JsHabitat>("Habitat")?;
+    cx.export_class::<JsContainer>("Container")?;
     cx.export_class::<JsConfigBuilder>("ConfigBuilder")?;
     Ok(())
 });

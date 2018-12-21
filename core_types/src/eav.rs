@@ -143,7 +143,9 @@ impl ExampleEntityAttributeValueStorageNonSync {
     }
 
     fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        self.storage.insert(HashString::from(""),eav.clone());
+        let hash = HashString::from("");
+        let key = vec![hash.to_string(),eav.address().to_string()].join("_");
+        self.storage.insert(HashString::from(key),eav.clone());
         Ok(())
     }
 

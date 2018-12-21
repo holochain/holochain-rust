@@ -329,7 +329,9 @@ impl EavTestSuite {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
             eav_storage.add_eav(&eav).expect("could not add eav");
-            expected.insert(HashString::from(""),eav);
+            let hash = HashString::from("");
+            let key = vec![hash.to_string(),eav.address().to_string()].join("_");
+            expected.insert(HashString::from(key),eav);
         }
 
         // throw an extra thing referencing many to show fetch ignores it
@@ -355,10 +357,13 @@ impl EavTestSuite {
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let mut expected_one = HashMap::new();
+            let eav = EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
+                    .expect("Could not create eav");
+            let hash = HashString::from("");
+            let key = vec![hash.to_string(),eav.address().to_string()].join("_");
             expected_one.insert(
-                HashString::from(""),
-                EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
-                    .expect("Could not create eav"),
+                HashString::from(key),
+                eav,
             );
             assert_eq!(
                 expected_one,

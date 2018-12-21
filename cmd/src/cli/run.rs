@@ -19,7 +19,7 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
-    let agent = AgentId::generate_fake("developer_test_agent");
+    let agent = AgentId::generate_fake("testAgent");
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent.nick,

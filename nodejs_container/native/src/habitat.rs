@@ -25,7 +25,7 @@ use tempfile::tempdir;
 
 use crate::{
     config::{ConfigBuilder, JsConfigBuilder},
-    waiter::{CallBlockingTask, ControlMsg, HabitatSignalTask, JsCallback, Waiter},
+    waiter::{CallBlockingTask, ControlMsg, HabitatSignalTask, Waiter},
 };
 
 pub struct Habitat {
@@ -34,12 +34,7 @@ pub struct Habitat {
 }
 
 fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
-    panic!("never should happen");
-    Ok(cx.null())
-}
-
-fn promise_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
-    panic!("callback called!!");
+    panic!("hey, this never should happen");
     Ok(cx.null())
 }
 

@@ -180,7 +180,6 @@ test('get_post with non-existant address returns null', (t) => {
 })
 
 test('scenario test create & publish post -> get from other instance', async (t) => {
-  t.plan(3)
 
   const content = "Holo world"
   const in_reply_to = null
@@ -202,4 +201,5 @@ test('scenario test create & publish post -> get from other instance', async (t)
   const result = app2.call("blog", "main", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, content)
+  t.end()
 })

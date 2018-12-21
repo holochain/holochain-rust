@@ -1,25 +1,20 @@
 use holochain_core::{
     action::{Action, ActionWrapper},
-    context::{mock_network_config, Context as HolochainContext},
     nucleus::ZomeFnCall,
-    signal::{signal_channel, Signal, SignalReceiver},
+    signal::{Signal, SignalReceiver},
 };
 use holochain_core_types::{
     entry::Entry,
     link::{link_add::LinkAdd, Link},
 };
 use neon::{context::Context, prelude::*};
-use snowflake::ProcessUniqueId;
 use std::{
     cell::RefCell,
-    collections::{HashMap, HashSet},
+    collections::{HashMap},
     sync::{
-        mpsc::{sync_channel, Receiver, SyncSender},
-        Arc, Mutex, RwLock,
+        mpsc::{Receiver, SyncSender},
     },
 };
-
-use crate::config::*;
 
 type ControlSender = SyncSender<ControlMsg>;
 type ControlReceiver = Receiver<ControlMsg>;
@@ -239,7 +234,6 @@ impl Task for HabitatSignalTask {
     type JsEvent = JsNumber;
 
     fn perform(&self) -> Result<(), String> {
-        use std::io::{self, Write};
         while let Ok(sig) = self.signal_rx.recv() {
             self.waiter.borrow_mut().process_signal(sig);
         }

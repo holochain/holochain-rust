@@ -1,6 +1,5 @@
 
 const binary = require('node-pre-gyp');
-const fs = require('fs');
 const path = require('path');
 
 // deals with ensuring the correct version for the machine/node version

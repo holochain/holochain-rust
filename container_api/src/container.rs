@@ -125,7 +125,7 @@ impl Container {
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
     pub fn load_config_with_signal(
         &mut self,
-        signal_tx: Option<SyncSender<Signal>>,
+        signal_tx: Option<SignalSender>,
     ) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
         let config = self.config.clone();
@@ -134,8 +134,7 @@ impl Container {
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
-                // TODO: must add signal_tx to context (from next merge)
-                .instantiate_from_config(&id, &config)
+                .instantiate_from_config(&id, &config, signal_tx.clone())
                 .map_err(|error| {
                     format!(
                         "Error while trying to create instance \"{}\": {}",
@@ -155,6 +154,7 @@ impl Container {
         &mut self,
         id: &String,
         config: &Configuration,
+        signal_tx: Option<SignalSender>,
     ) -> Result<Holochain, String> {
         let _ = config.check_consistency()?;
 
@@ -173,8 +173,12 @@ impl Container {
 
                 // Network config:
                 if let Some(network_config) = instance_config.network {
-                    context_builder =
-                        context_builder.with_network_config(JsonString::from(network_config))
+                    context_builder = context_builder.with_network_config(JsonString::from(network_config))
+                };
+
+                // Signal config:
+                if let Some(tx) = signal_tx {
+                    context_builder = context_builder.with_signals(tx)
                 };
 
                 // Storage:

@@ -469,7 +469,7 @@ fn can_roundtrip_links() {
 
         assert!(result.is_ok(), "result = {:?}", result);
         assert!(result_load.is_ok(), ";load result = {:?}", result_load);
-        
+
         result_string = result.unwrap();
         let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
         let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
@@ -479,23 +479,23 @@ fn can_roundtrip_links() {
             "testEntryType".into(),
             EntryStruct {
                 stuff: "entry2".into(),
-            }.into(),
+            }
+            .into(),
         );
         let entry_2 = Entry::App(
             "testEntryType".into(),
             EntryStruct {
                 stuff: "entry3".into(),
-            }.into(),
+            }
+            .into(),
         );
-
 
         let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
             address_1.clone(),
             address_2.clone(),
         ]));
-        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> = Ok(
-            vec![Ok(entry_1.clone()), Ok(entry_2.clone())]
-        );
+        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
+            Ok(vec![Ok(entry_1.clone()), Ok(entry_2.clone())]);
 
         println!(
             "can_roundtrip_links result_string - try {}:\n {:?}\n expecting:\n {:?}",
@@ -508,9 +508,8 @@ fn can_roundtrip_links() {
         let expected: Result<GetLinksResult, HolochainError> =
             Ok(GetLinksResult::new(vec![address_2, address_1]));
 
-        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> = Ok(
-            vec![Ok(entry_2.clone()), Ok(entry_1.clone())]
-        );
+        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
+            Ok(vec![Ok(entry_2.clone()), Ok(entry_1.clone())]);
 
         let ordering2: bool = result_string == JsonString::from(expected);
         let entries_ordering2: bool = entries_result_string == JsonString::from(expected_entries);

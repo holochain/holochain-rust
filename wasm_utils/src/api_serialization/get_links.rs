@@ -1,5 +1,5 @@
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
 use crate::api_serialization::get_entry::GetEntryOptions;
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {
@@ -28,7 +28,7 @@ impl GetLinksResult {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GetLinksLoadElement<T> {
     pub address: Address,
-    pub entry: T
+    pub entry: T,
 }
 
 pub type GetLinksLoadResult<T> = Vec<GetLinksLoadElement<T>>;

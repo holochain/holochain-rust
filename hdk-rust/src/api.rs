@@ -13,9 +13,9 @@ use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{
             EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
-            StatusRequestKind
+            StatusRequestKind,
         },
-        get_links::{GetLinksArgs, GetLinksResult, GetLinksOptions},
+        get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         link_entries::LinkEntriesArgs,
         send::SendArgs,
         QueryArgs, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
@@ -876,7 +876,7 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::cas::content::Address;
 /// # use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetEntryResult};
-/// 
+///
 /// # fn main() {
 /// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
 ///    hdk::get_links_result(&address, "test-tag", GetEntryOptions::default())
@@ -886,24 +886,22 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 pub fn get_links_result<S: Into<String>>(
     base: &Address,
     tag: S,
-    options: GetLinksOptions
+    options: GetLinksOptions,
 ) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
     let get_links_result = get_links(base, tag)?;
     let result = get_links_result
         .addresses()
         .iter()
-        .map(|address| {
-            get_entry_result(address.to_owned(), options.clone())
-        })
+        .map(|address| get_entry_result(address.to_owned(), options.clone()))
         .collect();
     Ok(result)
 }
 
 /// Helper function for get_links. Returns a vector of the entries themselves
 pub fn get_links_and_load<S: Into<String>>(
- base: &HashString,
- tag: S
-) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>>  {
+    base: &HashString,
+    tag: S,
+) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
     let get_links_result = get_links_result(base, tag, GetLinksOptions::default())?;
 
     let entries = get_links_result

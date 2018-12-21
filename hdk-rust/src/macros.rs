@@ -80,7 +80,7 @@ macro_rules! load_string {
 /// # #[no_mangle]
 /// # pub fn hc_send(_: u32) -> u32 { 0 }
 /// # fn main() {
-/// 
+///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 /// pub struct Post {
 ///     content: String,

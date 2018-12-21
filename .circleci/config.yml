@@ -3,7 +3,7 @@ version: 2
 jobs:
  integration-tests:
   docker:
-   - image: holochain/holochain-rust:circle-incremental
+   - image: holochain/holochain-rust:circle-rustwarm
   steps:
    - checkout
 

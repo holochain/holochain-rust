@@ -3,8 +3,9 @@ use holochain_core_types::{
     error::HolochainError,
     hash::HashString
 };
+use im::hashmap::HashMap;
 use std::{
-    collections::{HashMap,HashSet},
+    collections::{HashSet},
     sync::{Arc, RwLock},
 };
 use uuid::Uuid;

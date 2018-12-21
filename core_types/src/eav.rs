@@ -6,8 +6,9 @@ use crate::{
     hash::HashString,
 };
 use objekt;
+use im::hashmap::HashMap;
 use std::{
-    collections::{HashSet,HashMap},
+    collections::{HashSet},
     convert::TryInto,
     sync::{Arc, RwLock},
 };

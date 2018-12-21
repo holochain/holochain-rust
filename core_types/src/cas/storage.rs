@@ -7,8 +7,9 @@ use crate::{
     hash::HashString
 };
 use objekt;
+use im::hashmap::HashMap;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashSet},
     convert::TryFrom,
     fmt::Debug,
     sync::{mpsc::channel, Arc, RwLock},

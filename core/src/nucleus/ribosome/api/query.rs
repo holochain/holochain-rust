@@ -80,7 +80,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         }
     };
     let result = match addresses {
-        // TODO: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
+        // TODO #793: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
         // Perhaps return chain().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
         Ok(result) => Ok(result),

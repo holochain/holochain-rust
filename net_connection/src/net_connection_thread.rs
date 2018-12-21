@@ -1,5 +1,3 @@
-//! ?
-
 use super::NetResult;
 
 use super::{

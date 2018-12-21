@@ -1,4 +1,4 @@
-//! ?
+//! This file contains defitions for Zome errors and also Zome Results.
 
 use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
@@ -85,7 +85,6 @@ impl fmt::Display for ZomeApiError {
     }
 }
 
-/// ?
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
 
 #[cfg(test)]

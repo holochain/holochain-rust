@@ -1,5 +1,3 @@
-//! ?
-
 #[derive(Debug, Fail)]
 pub enum NetworkError {
     #[fail(display = "Network error: {}", error)]

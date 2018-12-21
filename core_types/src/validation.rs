@@ -8,7 +8,6 @@ use crate::{
     json::JsonString,
 };
 
-/// ?
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson, Default)]
 pub struct ValidationPackage {
     pub chain_header: Option<ChainHeader>,
@@ -28,7 +27,6 @@ impl ValidationPackage {
     }
 }
 
-/// ?
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub enum ValidationPackageDefinition {
     /// sending only the entry
@@ -65,7 +63,6 @@ pub struct ValidationData {
     pub action: EntryAction,
 }
 
-/// ?
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EntryLifecycle {
     Chain,
@@ -79,7 +76,6 @@ impl Default for EntryLifecycle {
     }
 }
 
-/// ?
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum EntryAction {
     Create,
@@ -93,7 +89,6 @@ impl Default for EntryAction {
     }
 }
 
-/// ?
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum LinkAction {
     Create,

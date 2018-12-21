@@ -1,4 +1,4 @@
-//! ?
+//! This file contains the define_zome! macro, and smaller helper macros.
 
 #[doc(hidden)]
 #[macro_export]

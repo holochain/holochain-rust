@@ -1,4 +1,7 @@
-//! ?
+//! This file contains the "secret" functions that get added to Zomes, by the HDK.
+//! These functions match expectations that Holochain has... every Zome technically needs these functions,
+//! but not every developer should have to write them. A notable function defined here is
+//! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
 use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::{
@@ -31,7 +34,6 @@ struct PartialZome {
     capabilities: ZomeCapabilities,
 }
 
-/// ?
 #[allow(improper_ctypes)]
 pub struct ZomeDefinition {
     pub entry_types: Vec<ValidatingEntryType>,
@@ -56,7 +58,6 @@ extern "C" {
     fn __list_capabilities() -> ZomeCapabilities;
 }
 
-/// ?
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     encoded_allocation_of_input: u32,
@@ -89,7 +90,6 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     }
 }
 
-/// ?
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> u32 {
     crate::global_fns::init_global_memory(encoded_allocation_of_input);
@@ -127,7 +127,6 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     }
 }
 
-/// ?
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_input: u32) -> u32 {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
@@ -162,7 +161,6 @@ pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_in
         .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)
 }
 
-/// ?
 #[no_mangle]
 pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
@@ -207,7 +205,6 @@ pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
         .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)
 }
 
-/// ?
 #[no_mangle]
 pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
     crate::global_fns::init_global_memory(encoded_allocation_of_input);

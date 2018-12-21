@@ -1,4 +1,6 @@
-//! ?
+//! This file contains many of the structs, enums, and functions relevant for Zome
+//! developers! Detailed references and examples can be found here for how to use the
+//! HDK exposed functions to access powerful Holochain functions.
 
 use crate::{
     error::{ZomeApiError, ZomeApiResult},
@@ -106,7 +108,6 @@ impl From<AGENT_LATEST_HASH> for JsonString {
 
 // HC.GetMask
 bitflags! {
-  /// ?
   pub struct GetEntryMask: u8 {
     const ENTRY      = 1 << 0;
     const ENTRY_TYPE = 1 << 1;

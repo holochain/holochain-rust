@@ -27,6 +27,7 @@ impl EavMemoryStorage {
         EavMemoryStorage {
             storage: Arc::new(RwLock::new(HashMap::new())),
             id: Uuid::new_v4(),
+            current_hash : HashString::from("")
         }
     }
 }
@@ -46,9 +47,9 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
     ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?;
         Ok(map
-            .iter()
-            .cloned()
-            .filter(|(k,a)|k==self.current_hash)
+            .into_iter()
+            //.cloned()
+            .filter(|(k,a)|*k==self.current_hash.clone())
             .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref()))
             .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))

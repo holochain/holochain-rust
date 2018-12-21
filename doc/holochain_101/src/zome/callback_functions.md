@@ -23,4 +23,4 @@ Parameters: none
 
 Called the first time an agent launches an instance of a DNA with Holochain. Within genesis an app develop has the ability whether the given agent should be allowed to successfully join the Holochain network for this particular DNA, by implenting rules, or preconditions that must be met. If `genesis` comes back from the Zome with a fail, the agent will not be able to join.
 
-[View in Rust hdk](https://holochain.github.io/rust-api/0.0.1/hdk/macro.define_zome.html)
+[View it in the Rust HDK](https://developer.holochain.org/api/latest/hdk/macro.define_zome.html)

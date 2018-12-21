@@ -14,8 +14,9 @@ use holochain_net_connection::{
 // for the holochain ipc protocol, the server is always 4 0x24 bytes
 static SRV_ID: &'static [u8] = &[0x24, 0x24, 0x24, 0x24];
 
+/// static node counter for identifiying nodes in multinode scenarios
 #[allow(non_upper_case_globals)]
-static mut g_node_count: u8 = 1;
+static mut g_node_count: usize = 1;
 
 /// NetWorker for messaging with an ipc p2p node
 pub struct IpcClient {
@@ -23,7 +24,7 @@ pub struct IpcClient {
     socket: Box<IpcSocket>,
     last_recv_millis: f64,
     last_send_millis: f64,
-    id: u8,
+    id: usize,
 }
 
 impl NetWorker for IpcClient {
@@ -101,7 +102,6 @@ impl IpcClient {
                 thread::sleep(time::Duration::from_millis(backoff));
             }
         }
-
         let id = unsafe { g_node_count };
         unsafe { g_node_count += 1 };
         Ok(Self {
@@ -137,6 +137,7 @@ impl IpcClient {
 
         let msg: Protocol = msg.into();
 
+        // TODO: use logger instead
         // println!("[{}] priv_proc_message() msg = {:?}", self.id, msg);
         Ok(Some(msg))
     }
@@ -150,6 +151,7 @@ impl IpcClient {
     fn priv_send(&mut self, data: &Protocol) -> NetResult<()> {
         let data: NamedBinaryData = data.into();
 
+        // TODO: use logger instead
         // println!("[{}] priv_send() data = {:?}", self.id, data.name);
         self.socket.send(&[SRV_ID, &[], &data.name, &data.data])?;
 

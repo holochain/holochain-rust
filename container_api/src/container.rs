@@ -139,9 +139,11 @@ impl Container {
     }
 
     pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
+        let network_config = self.config.clone().network.ok_or(HolochainError::ErrorGeneric("attempt to spawn network when not configured".to_string()))?;
+
         println!(
             "spawn network (workdir: {})",
-            self.config.network.n3h_persistence_path
+            network_config.n3h_persistence_path
         );
         let SpawnResult {
             kill,
@@ -151,12 +153,12 @@ impl Container {
             "node".to_string(),
             vec![format!(
                 "{}/packages/n3h/bin/n3h",
-                self.config.network.n3h_path.clone()
+                network_config.n3h_path.clone()
             )],
-            self.config.network.n3h_persistence_path.clone(),
+            network_config.n3h_persistence_path.clone(),
             hashmap! {
                 String::from("N3H_HACK_MODE") => String::from("1"),
-                String::from("N3H_WORK_DIR") => self.config.network.n3h_persistence_path.clone(),
+                String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
             },
             true,
@@ -204,14 +206,21 @@ impl Container {
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
     pub fn load_config(&mut self) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
-        if self.network_ipc_uri.is_none() {
-            self.network_ipc_uri = self
-                .config
-                .network
-                .n3h_ipc_uri
-                .clone()
-                .or_else(|| self.spawn_network().ok());
-            println!("got network_ipc_uri: {:?}", self.network_ipc_uri);
+
+        // if there's no NetworkConfig then assume the mock network
+        if self.config.network.is_some() {
+            // if there is a config then either we need to spawn a process and get the
+            // ipc_uri for it and save it for future calls to `load_config`
+            // or we use that uri value that was created from previous calls!
+            if self.network_ipc_uri.is_none() {
+                self.network_ipc_uri = self
+                    .config.clone()
+                    .network.unwrap() // unwrap safe because of check above
+                    .n3h_ipc_uri
+                    .clone()
+                    .or_else(|| self.spawn_network().ok());
+                println!("got network_ipc_uri: {:?}", self.network_ipc_uri);
+            }
         }
 
         let config = self.config.clone();
@@ -256,9 +265,11 @@ impl Container {
                 context_builder =
                     context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
-                // Network config:
-                context_builder = context_builder
-                    .with_network_config(self.instance_network_config(&config.network)?);
+                // Network config (if it exists)
+                if let Some(network_config) = config.clone().network {
+                    context_builder = context_builder
+                        .with_network_config(self.instance_network_config(&network_config)?);
+                }
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {

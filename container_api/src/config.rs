@@ -45,7 +45,7 @@ pub struct Configuration {
     pub bridges: Vec<Bridge>,
     /// Configuration options for the network module n3h
     #[serde(default)]
-    pub network: NetworkConfig,
+    pub network: Option<NetworkConfig>,
 }
 
 impl Configuration {
@@ -502,7 +502,7 @@ pub mod tests {
             Some("{\"backend_kind\":\"special\"}".to_string())
         );
         assert_eq!(
-            config.network,
+            config.network.unwrap(),
             NetworkConfig {
                 bootstrap_nodes: vec![String::from(
                     "/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"

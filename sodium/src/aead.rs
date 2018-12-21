@@ -59,12 +59,10 @@ pub fn dec(decrypted_message: &mut SecBuf,nonce: &mut SecBuf, cipher: &mut SecBu
 mod tests {
     use super::*;
     #[test]
-    fn it_should_encrypt_and_decrypt() {
+    fn it_should_with_auth_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(16);
         let mut secret = SecBuf::with_secure(32);
-        // let mut nonce = SecBuf::with_secure(NONCEBYTES);
         let mut nonce = SecBuf::with_secure(32);
-        // let mut cipher = SecBuf::with_secure(message.len() + ABYTES);
         let mut cipher = SecBuf::with_secure(32);
         let mut adata = SecBuf::with_secure(16);
         buf(&mut message);
@@ -77,16 +75,31 @@ mod tests {
             let mut decrypted_message = decrypted_message.write_lock();
             dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,&mut adata);
         }
-        let mut message = message.write_lock();
-        let mut decrypted_message = decrypted_message.write_lock();
-        println!("Message: {:?}",message);
-        println!("Decrypted Message: {:?}",decrypted_message);
-        let _mess_len = message.len() as u8;
-        // TODO : run through the buffer and compare with the decrypted code
-        // for x in 0.._mess_len {
-        //     assert_eq!(decrypted_message.b[x], message.b[x]);
-        // }
-        assert_eq!(16, message.len());
+        let mut message = message.read_lock();
+        let mut decrypted_message = decrypted_message.read_lock();
+        assert_eq!(format!("{:?}", *message), format!("{:?}", *decrypted_message));
     }
-
+    #[test]
+    fn it_should_with_bad_aead_encrypt_and_decrypt() {
+        let mut message = SecBuf::with_secure(16);
+        let mut secret = SecBuf::with_secure(32);
+        let mut nonce = SecBuf::with_secure(32);
+        let mut cipher = SecBuf::with_secure(32);
+        let mut adata = SecBuf::with_secure(16);
+        let mut adata1 = SecBuf::with_secure(16);
+        buf(&mut adata1);
+        buf(&mut message);
+        {
+            let mut message = message.write_lock();
+            enc(&mut message,&mut nonce,&mut cipher,&mut secret,&mut adata);
+        }
+        let mut decrypted_message = SecBuf::with_secure(16);
+        {
+            let mut decrypted_message = decrypted_message.write_lock();
+            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,&mut adata1);
+        }
+        let mut message = message.read_lock();
+        let mut decrypted_message = decrypted_message.read_lock();
+        assert_eq!("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", format!("{:?}", *decrypted_message));
+    }
 }

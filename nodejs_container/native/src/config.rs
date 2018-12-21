@@ -25,7 +25,7 @@ pub struct InstanceData {
 
 /// Provides functions for create the building blocks of configuration.
 /// These pieces can be assembled together to create different configurations
-/// which can be used to create Habitats
+/// which can be used to create Containers
 pub struct ConfigBuilder;
 
 declare_types! {

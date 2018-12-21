@@ -1,13 +1,18 @@
 # holochain-rust Makefile
 # currently only supports 'debug' builds
 
-# run `make` to build all the libraries and binaries
-# run `make test` to execute all the tests
-# run `make clean` to clean up the build environment
-# run `make test_holochain` to test holochain builds
-# run `make test_cmd` to test the command line tool builds
-
+.PHONY: all help
 all: lint build_holochain build_cmd
+
+help:
+	@echo "run 'make' to build all the libraries and binaries"
+	@echo "run 'make test' to execute all the tests"
+	@echo "run 'make test_app_spec' to build and test app_spec API tests"
+	@echo "run 'make clean' to clean up the build environment"
+	@echo "run 'make test_holochain' to test holochain builds"
+	@echo "run 'make test_cmd' to build and test the command line tool builds"
+	@echo "run 'make install_cmd' to build and install the command line tool builds"
+	@echo "run 'make test-something' to run cargo tests matching 'something'"
 
 SHELL = /bin/bash
 CORE_RUST_VERSION ?= nightly-2018-11-28
@@ -51,14 +56,14 @@ RUST_VERSION = $(CORE_RUST_VERSION)
 .PHONY: version_rustup
 
 version_rustup:
-	@if which rustup; then \
-	    echo "\033[0;93m## Current Rust version installed (need: '$(RUST_VERSION)'): ##\033[0m"; \
+	@if which rustup >/dev/null; then \
+	    echo -e "\033[0;93m## Current Rust version installed (need: '$(RUST_VERSION)'): ##\033[0m"; \
 	    if ! rustup override list 2>/dev/null | grep "^$(PWD)\s*$(RUST_VERSION)"; then \
 		rustup show; rustup override list; \
-		echo "\033[0;93m## Change $(PWD) Rust version override to '$(RUST_VERSION)' ##\033[0m"; \
+		echo -e "\033[0;93m## Change $(PWD) Rust version override to '$(RUST_VERSION)' ##\033[0m"; \
 		[ -t 1 ] && [ -t 0 ] && [[ "$(CI)" == "" ]] && read -p "Continue? (Y/n) " yes; \
 		if [[ "$${yes:0:1}" != "n" ]] && [[ "$${yes:0:1}" != "N" ]]; then \
-		    echo "\033[0;93m## Selecting Rust version '$(RUST_VERSION)'... ##\033[0m"; \
+		    echo -e "\033[0;93m## Selecting Rust version '$(RUST_VERSION)'... ##\033[0m"; \
 		    rustup override set $(RUST_VERSION); \
 		fi; \
 	    fi; \
@@ -68,8 +73,8 @@ version_rustup:
 # Actual installation of Rust $(RUST_VERSION) via curl
 .PHONY: curl_rustup
 curl_rustup:
-	@if ! which rustup ; then \
-	    echo "\033[0;93m## Installing Rust $(RUST_VERSION)... ##\033[0m"; \
+	@if ! which rustup >/dev/null; then \
+	    echo -e "\033[0;93m## Installing Rust $(RUST_VERSION)... ##\033[0m"; \
 	    curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(RUST_VERSION) -y; \
 	fi
 
@@ -91,20 +96,20 @@ install_rustup_tools: version_rustup curl_rustup
 # we need to install a newer version than is otherwise available
 .PHONY: install_system_libzmq
 install_system_libzmq:
-	@if ! (pkg-config libzmq --libs) ; then \
+	@if ! (pkg-config libzmq --libs >/dev/null) ; then \
 		if ! which apt-get ; then \
 			if which brew ; then \
-				echo "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
+				echo -e "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
 				brew install zmq; \
 			else \
-				echo "\033[0;93m## libzmq couldn't be installed, build probably won't work ##\033[0m"; \
+				echo -e "\033[0;93m## libzmq couldn't be installed, build probably won't work ##\033[0m"; \
 			fi; \
 		else \
 			if [ "x${TRAVIS}" = "x" ]; then \
-				echo "\033[0;93m## Attempting to install libzmq3-dev with apt-get ##\033[0m"; \
+				echo -e "\033[0;93m## Attempting to install libzmq3-dev with apt-get ##\033[0m"; \
 				sudo apt-get install -y libzmq3-dev; \
 			else \
-				echo "\033[0;93m## Attempting to install libzmq3-dev on UBUNTU TRUSTY ##\033[0m"; \
+				echo -e "\033[0;93m## Attempting to install libzmq3-dev on UBUNTU TRUSTY ##\033[0m"; \
 				echo "deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./" >> /etc/apt/sources.list; \
 				wget https://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key -O- | sudo apt-key add; \
 				sudo apt-get update -qq; \
@@ -137,27 +142,28 @@ ensure_wasm_target: core_toolchain
 # install the component without specifying which toolchain version to use)
 .PHONY: install_rust_tools
 install_rust_tools: tools_toolchain
-	# rust format
-	if ! rustup component list | grep 'rustfmt-preview.*(installed)'; then \
+	@if ! rustup component list | grep -q 'rustfmt-preview.*(installed)'; then \
+		echo -e "\033[0;93m## Installing rustfmt (rust formatting) tools ##\033[0m"; \
 		rustup component add rustfmt-preview; \
 	fi
-	# clippy
-	if ! rustup component list | grep 'clippy-preview.*(installed)'; then \
+	@if ! rustup component list | grep -q 'clippy-preview.*(installed)'; then \
+		echo -e "\033[0;93m## Installing clippy (rust linting) tools ##\033[0m"; \
 		rustup component add clippy-preview; \
 	fi
 
 # idempotent installation of code coverage CI/testing tools
 .PHONY: install_ci
 install_ci: core_toolchain
-	# tarpaulin (code coverage)
-	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
-		 $(CARGO_TARPULIN_INSTALL) install cargo-tarpaulin --force; \
+	@if ! $(CARGO) install --list | grep -q 'cargo-tarpaulin'; then \
+		echo -e "\033[0;93m## Installing cargo-tarpaulin (code coverage) tools ##\033[0m"; \
+		$(CARGO_TARPULIN_INSTALL) install cargo-tarpaulin --force; \
 	fi
 
 .PHONY: install_mdbook
 install_mdbook: tools_toolchain
-	if ! $(CARGO_TOOLS) install --list | grep 'mdbook'; then \
-	    $(CARGO_TOOLS) install mdbook --vers "^0.2.2"; \
+	@if ! $(CARGO_TOOLS) install --list | grep -q 'mdbook'; then \
+		echo -e "\033[0;93m## Installing mdbook (documentation generation) tools ##\033[0m"; \
+		$(CARGO_TOOLS) install mdbook --vers "^0.2.2"; \
 	fi
 
 # list all our found "C" binding tests

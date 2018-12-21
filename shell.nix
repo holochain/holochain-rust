@@ -76,25 +76,24 @@ let
     circleci-cli local execute
   '';
 
-  test = test-p: test-path: wasm-path:
+  build-wasm = wasm-path: "cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir \"$HC_TARGET_PREFIX\"${wasm-path}/target;";
+  test = test-p: test-path: wasm-paths:
   ''
-   if [ ${wasm-path} != "none" ]; then
-    cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir "$HC_TARGET_PREFIX"${wasm-path}/target;
-   fi;
-   cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX"${test-path}/target
+   ${nixpkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
+   cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX"${test-path}/target;
   '';
-  hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" "hdk-rust/wasm-test"}";
-  hc-test-wasm-utils = nixpkgs.writeShellScriptBin "hc-test-wasm-utils" "${test "holochain_wasm_utils" "wasm_utils" "wasm_utils/wasm-test/integration-test"}";
-  hc-test-container-api = nixpkgs.writeShellScriptBin "hc-test-container-api" "${test "holochain_container_api" "container_api" "container_api/wasm-test"}";
-  hc-test-core = nixpkgs.writeShellScriptBin "hc-test-core" "${test "holochain_core" "core" "core/src/nucleus/actions/wasm-test"}";
-  hc-test-cas-implementations = nixpkgs.writeShellScriptBin "hc-test-cas-implementations" "${test "holochain_cas_implementations" "cas_implementations" "none"}";
-  hc-test-dna-c-binding = nixpkgs.writeShellScriptBin "hc-test-dna-c-binding" "${test "holochain_dna_c_binding" "dna_c_binding" "none"}";
-  hc-test-net-connection = nixpkgs.writeShellScriptBin "hc-test-net-connection" "${test "holochain_net_connection" "net_connection" "none"}";
-  hc-test-sodium = nixpkgs.writeShellScriptBin "hc-test-sodium" "${test "holochain_sodium" "sodium" "none"}";
-  hc-test-hc = nixpkgs.writeShellScriptBin "hc-test-hc" "${test "hc" "cmd" "none"}";
-  hc-test-core-types = nixpkgs.writeShellScriptBin "hc-test-core-types" "${test "holochain_core_types" "core_types" "none"}";
-  hc-test-net = nixpkgs.writeShellScriptBin "hc-test-net" "${test "holochain_net" "net" "none"}";
-  hc-test-net-ipc = nixpkgs.writeShellScriptBin "hc-test-net-ipc" "${test "holochain_net_ipc" "net_ipc" "none"}";
+  hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" [ "hdk-rust/wasm-test" ]}";
+  hc-test-wasm-utils = nixpkgs.writeShellScriptBin "hc-test-wasm-utils" "${test "holochain_wasm_utils" "wasm_utils" [ "wasm_utils/wasm-test/integration-test" ]}";
+  hc-test-container-api = nixpkgs.writeShellScriptBin "hc-test-container-api" "${test "holochain_container_api" "container_api" [ "container_api/wasm-test" "container_api/test-bridge-caller" ]}";
+  hc-test-core = nixpkgs.writeShellScriptBin "hc-test-core" "${test "holochain_core" "core" [ "core/src/nucleus/actions/wasm-test" ]}";
+  hc-test-cas-implementations = nixpkgs.writeShellScriptBin "hc-test-cas-implementations" "${test "holochain_cas_implementations" "cas_implementations" [] }";
+  hc-test-dna-c-binding = nixpkgs.writeShellScriptBin "hc-test-dna-c-binding" "${test "holochain_dna_c_binding" "dna_c_binding" []}";
+  hc-test-net-connection = nixpkgs.writeShellScriptBin "hc-test-net-connection" "${test "holochain_net_connection" "net_connection" []}";
+  hc-test-sodium = nixpkgs.writeShellScriptBin "hc-test-sodium" "${test "holochain_sodium" "sodium" []}";
+  hc-test-hc = nixpkgs.writeShellScriptBin "hc-test-hc" "${test "hc" "cmd" []}";
+  hc-test-core-types = nixpkgs.writeShellScriptBin "hc-test-core-types" "${test "holochain_core_types" "core_types" []}";
+  hc-test-net = nixpkgs.writeShellScriptBin "hc-test-net" "${test "holochain_net" "net" []}";
+  hc-test-net-ipc = nixpkgs.writeShellScriptBin "hc-test-net-ipc" "${test "holochain_net_ipc" "net_ipc" []}";
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
   hc-test-hdk \

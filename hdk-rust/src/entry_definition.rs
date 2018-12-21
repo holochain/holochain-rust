@@ -1,3 +1,6 @@
+//! This file contains the macros used for creating validating entry type definitions,
+//! and validating links definitions within those.
+
 use holochain_core_types::{
     dna::entry_types::EntryTypeDef,
     entry::{entry_type::EntryType, Entry},
@@ -7,7 +10,9 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
+
 pub type Validator = Box<FnMut(Entry, ValidationData) -> Result<(), String> + Sync>;
+
 pub type LinkValidator =
     Box<FnMut(HashString, HashString, ValidationData) -> Result<(), String> + Sync>;
 

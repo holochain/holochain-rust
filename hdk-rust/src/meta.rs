@@ -1,3 +1,8 @@
+//! This file contains the "secret" functions that get added to Zomes, by the HDK.
+//! These functions match expectations that Holochain has... every Zome technically needs these functions,
+//! but not every developer should have to write them. A notable function defined here is
+//! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
+
 use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::{
     dna::{

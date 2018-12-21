@@ -62,7 +62,9 @@ impl NetConnectionThread {
             let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
 
             let endpoint = worker.endpoint();
-            send_endpoint.send(endpoint).expect("Sending endpoint address should work.");
+            send_endpoint
+                .send(endpoint)
+                .expect("Sending endpoint address should work.");
             // Loop as long NetConnectionThread wants to
             let mut sleep_duration_us = 100_u64;
             while can_keep_running_shared.load(Ordering::Relaxed) {
@@ -104,9 +106,12 @@ impl NetConnectionThread {
             worker.stop().unwrap_or_else(|e| panic!("{:?}", e));
         });
 
-        let endpoint = recv_endpoint.recv()
+        let endpoint = recv_endpoint
+            .recv()
             .expect("Failed to receive endpoint address from net worker");
-        let endpoint = endpoint.expect("Should have an endpoint address").to_string();
+        let endpoint = endpoint
+            .expect("Should have an endpoint address")
+            .to_string();
 
         // Done
         Ok(NetConnectionThread {

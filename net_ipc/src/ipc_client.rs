@@ -102,7 +102,7 @@ impl IpcClient {
             }
         }
 
-        let id = unsafe {g_node_count};
+        let id = unsafe { g_node_count };
         unsafe { g_node_count += 1 };
         Ok(Self {
             handler,

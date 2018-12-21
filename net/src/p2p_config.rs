@@ -97,22 +97,21 @@ impl P2pConfig {
 
     pub fn default_ipc_uri(maybe_ipc_binding: Option<&str>) -> Self {
         match maybe_ipc_binding {
-            None =>{
-                P2pConfig::from_str(P2pConfig::DEFAULT_IPC_URI_CONFIG)
-                    .expect("Invalid backend_config json on P2pConfig creation.")
-            },
+            None => P2pConfig::from_str(P2pConfig::DEFAULT_IPC_URI_CONFIG)
+                .expect("Invalid backend_config json on P2pConfig creation."),
             Some(ipc_binding) => {
-                let backend_config =json!({
+                let backend_config = json!({
                 "backend_kind": "IPC",
                 "backend_config": {
                     "socketType": "zmq",
                     "blockConnect": false,
                     "ipcUri": ipc_binding
-                }}).to_string();
+                }})
+                .to_string();
                 println!("config_str = {}", backend_config);
                 P2pConfig::from_str(&backend_config)
                     .expect("Invalid backend_config json on P2pConfig creation.")
-            },
+            }
         }
     }
 }

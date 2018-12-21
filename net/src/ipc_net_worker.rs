@@ -89,10 +89,9 @@ impl NetWorker for IpcNetWorker {
 }
 
 impl IpcNetWorker {
-
     // Constructor with MockIpcSocket on local network
     pub fn new_test(handler: NetHandler, test_struct: TestStruct) -> NetResult<Self> {
-        let default_local_endpoint ="tcp://127.0.0.1:0";
+        let default_local_endpoint = "tcp://127.0.0.1:0";
         IpcNetWorker::priv_new(
             handler,
             Box::new(move |h| {
@@ -125,9 +124,9 @@ impl IpcNetWorker {
                 && spawn_config["args"].is_array()
                 && spawn_config["workDir"].is_string()
                 && spawn_config["env"].is_object())
-                {
-                    bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
-                }
+            {
+                bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
+            }
             let env: HashMap<String, String> = spawn_config["env"]
                 .as_object()
                 .unwrap()
@@ -147,7 +146,7 @@ impl IpcNetWorker {
                 spawn_config["workDir"].as_str().unwrap().to_string(),
                 env,
                 block_connect,
-                );
+            );
         }
         // create a new IpcNetWorker that connects to the given 'ipcUri'
         let uri = config["ipcUri"].as_str().unwrap().to_string();
@@ -279,7 +278,7 @@ impl IpcNetWorker {
             is_ready: false,
             state: "undefined".to_string(),
             last_state_millis: 0.0_f64,
-            endpoint
+            endpoint,
         })
     }
 
@@ -341,8 +340,7 @@ mod tests {
     fn it_ipc_networker_zmq_create() {
         IpcNetWorker::new(
             Box::new(|_r| Ok(())),
-            &JsonString::from(IpcNetWorker::ZMQ_URI_CONFIG)
-            .into(),
+            &JsonString::from(IpcNetWorker::ZMQ_URI_CONFIG).into(),
         )
         .unwrap();
     }

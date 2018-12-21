@@ -21,7 +21,6 @@ use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 
 use std::{convert::TryFrom, sync::mpsc};
 
-
 macro_rules! one_let {
     ($p:pat = $enum:ident $code:tt) => {
         if let $p = $enum {
@@ -111,7 +110,10 @@ impl IpcNode {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-fn create_config(n3h_path: &str, maybe_config_filepath: Option<&str>) -> (P2pConfig, tempfile::TempDir) {
+fn create_config(
+    n3h_path: &str,
+    maybe_config_filepath: Option<&str>,
+) -> (P2pConfig, tempfile::TempDir) {
     // Create temp directory
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
@@ -163,7 +165,7 @@ fn create_config(n3h_path: &str, maybe_config_filepath: Option<&str>) -> (P2pCon
                 }
             },
             }}))
-                .unwrap()
+            .unwrap()
         }
     };
     return (config, dir_ref);
@@ -173,7 +175,7 @@ fn create_config(n3h_path: &str, maybe_config_filepath: Option<&str>) -> (P2pCon
 #[cfg_attr(tarpaulin, skip)]
 fn create_borrowed_connection(ipc_binding: &str) -> NetResult<IpcNode> {
     // Create Config
-    let p2p_config= P2pConfig::default_ipc_uri(Some(ipc_binding));
+    let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
     // Create channel
     let (sender, receiver) = mpsc::channel::<Protocol>();
     // Create P2pNetwork
@@ -197,7 +199,10 @@ fn create_borrowed_connection(ipc_binding: &str) -> NetResult<IpcNode> {
 
 // Create an IPC node that spawns and uses a n3h process and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn create_spawned_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
+fn create_spawned_connection(
+    n3h_path: &str,
+    maybe_config_filepath: Option<&str>,
+) -> NetResult<IpcNode> {
     // Create Config
     let (p2p_config, dir_ref) = create_config(n3h_path, maybe_config_filepath);
     // Create channel
@@ -262,7 +267,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
 
     // get ipcServer IDs for each node from the IpcServer's state
     let node1_id;
-    let mut node2_binding= String::new();
+    let mut node2_binding = String::new();
     one_let!(ProtocolWrapper::State(state) = node1_state {
         node1_id = state.id
     });
@@ -300,7 +305,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
             ProtocolWrapper::Connect(ConnectData {
                 address: node2_binding,
             })
-                .into(),
+            .into(),
         )?;
         let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
         println!("got connect result 1: {:?}", result_1);
@@ -454,8 +459,8 @@ fn main() {
         usage();
     }
     // Launch hackmode test
-     let res = launch_test_with_config(&n3h_path, "test_bin/src/network_config.json");
-     assert!(res.is_ok());
+    let res = launch_test_with_config(&n3h_path, "test_bin/src/network_config.json");
+    assert!(res.is_ok());
 
     // Launch mock test
     let res = launch_test_with_ipc_mock(&n3h_path, "test_bin/src/mock_network_config.json");

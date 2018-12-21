@@ -277,8 +277,10 @@ fn handle_check_call() -> ZomeApiResult<JsonString> {
     hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty))?;
 
     let maybe_hash = hdk::call(
+        hdk::THIS_INSTANCE,
         "test_zome",
         "test_cap",
+        "test_token",
         "check_app_entry_address",
         empty_dumpty,
     );
@@ -294,8 +296,10 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
     }
 
     hdk::call(
+        hdk::THIS_INSTANCE,
         "test_zome",
         "test_cap",
+        "test_token",
         "check_commit_entry_macro",
         JsonString::from(CommitEntryInput {
             entry: hdk_test_entry(),
@@ -348,11 +352,8 @@ fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
-fn handle_send_message(to_agent: Address, message: String) -> String {
-    match hdk::send(to_agent, message) {
-        Ok(response) => response,
-        Err(error) => error.to_string(),
-    }
+fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
+    hdk::send(to_agent, message)
 }
 
 define_zome! {
@@ -566,7 +567,7 @@ define_zome! {
 
             send_message: {
                 inputs: |to_agent: Address, message: String|,
-                outputs: |response: String|,
+                outputs: |response: ZomeApiResult<String>|,
                 handler: handle_send_message
             }
         }

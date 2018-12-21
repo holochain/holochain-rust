@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    signal::{Signal, SignalSender},
+    signal::Signal,
     state::State,
 };
 use std::{
@@ -22,9 +22,7 @@ pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<State>>,
     action_channel: Option<SyncSender<ActionWrapper>>,
-    signal_channel: Option<SyncSender<Signal>>,
     observer_channel: Option<SyncSender<Observer>>,
-    signal_filter: Arc<Box<Fn(&Action) -> bool + Send + Sync>>,
 }
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
@@ -50,12 +48,6 @@ impl Instance {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
-    }
-
-    pub fn signal_channel(&self) -> &SyncSender<Signal> {
-        self.signal_channel
-            .as_ref()
-            .expect("Signal channel not initialized")
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {
@@ -177,7 +169,7 @@ impl Instance {
             *state = new_state;
         }
 
-        self.maybe_emit_action_signal(action_wrapper.action().clone());
+        self.maybe_emit_action_signal(context, action_wrapper.action().clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -202,13 +194,13 @@ impl Instance {
 
     /// Given an `Action` that is being processed, decide whether or not it should be
     /// emitted as a `Signal::Internal`, and if so, send it
-    fn maybe_emit_action_signal(&self, action: Action) {
-        if let Some(ref tx) = self.signal_channel {
-            if (self.signal_filter)(&action) {
-                let signal = Signal::Internal(action);
-                tx.send(signal).unwrap_or(())
-                // @TODO: once logging is implemented, kick out a warning for SendErrors
-            }
+    fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: Action) {
+        if let Some(ref tx) = context.signal_tx {
+            // @TODO: if needed for performance, could add a filter predicate here
+            // to prevent emitting too many unneeded signals
+            let signal = Signal::Internal(action);
+            tx.send(signal).unwrap_or(())
+            // @TODO: once logging is implemented, kick out a warning for SendErrors
         }
     }
 
@@ -218,19 +210,7 @@ impl Instance {
             state: Arc::new(RwLock::new(State::new(context))),
             action_channel: None,
             observer_channel: None,
-            signal_channel: None,
-            signal_filter: Arc::new(Box::new(|_| false)),
         }
-    }
-
-    /// Creates a new Instance with only the signal channel set up.
-    pub fn with_signals<F>(mut self, signal_tx: SignalSender, signal_filter: F) -> Self
-    where
-        F: Fn(&Action) -> bool + 'static + Send + Sync,
-    {
-        self.signal_channel = Some(signal_tx);
-        self.signal_filter = Arc::new(Box::new(signal_filter));
-        self
     }
 
     pub fn from_state(state: State) -> Self {
@@ -238,8 +218,6 @@ impl Instance {
             state: Arc::new(RwLock::new(state)),
             action_channel: None,
             observer_channel: None,
-            signal_channel: None,
-            signal_filter: Arc::new(Box::new(|_| false)),
         }
     }
 
@@ -411,6 +389,8 @@ pub mod tests {
                         .unwrap(),
                 )),
                 mock_network_config(),
+                None,
+                None,
             )),
             logger,
         )
@@ -470,6 +450,8 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
+            None,
         );
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -492,6 +474,8 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
+            None,
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();

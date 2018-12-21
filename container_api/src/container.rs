@@ -4,17 +4,14 @@ use crate::{
     error::HolochainInstanceError,
     Holochain,
 };
-use holochain_core::{
-    action::Action,
-    logger::Logger,
-    signal::{signal_channel, Signal, SignalReceiver},
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,
     error::HolochainError,
     json::JsonString,
 };
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 
 use std::{
     clone::Clone,
@@ -27,7 +24,7 @@ use std::{
 };
 
 use holochain_net::p2p_config::P2pConfig;
-use interface::{ContainerApiDispatcher, InstanceMap, Interface};
+use interface::{ContainerApiBuilder, InstanceMap, Interface};
 use interface_impls;
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
@@ -71,6 +68,10 @@ impl Container {
         }
         self.signal_tx = Some(signal_tx);
         self
+    }
+
+    pub fn config(&self) -> Configuration {
+        self.config.clone()
     }
 
     pub fn start_all_interfaces(&mut self) {
@@ -126,41 +127,105 @@ impl Container {
     /// @TODO: clean up the container creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config(&mut self) -> Result<SignalReceiver, String> {
+    pub fn load_config(&mut self) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
-        self.shutdown().map_err(|e| e.to_string())?;
         let config = self.config.clone();
-        let mut instances = HashMap::new();
-        let (signal_tx, signal_rx) = signal_channel();
+        self.shutdown().map_err(|e| e.to_string())?;
+        self.instances = HashMap::new();
 
-        let errors: Vec<_> = config
-            .instance_ids()
-            .clone()
-            .into_iter()
-            .map(|id| {
-                (
-                    id.clone(),
-                    instantiate_from_config(&id, &config, &mut self.dna_loader, signal_tx.clone()),
-                )
-            })
-            .filter_map(|(id, maybe_holochain)| match maybe_holochain {
-                Ok(holochain) => {
-                    instances.insert(id.clone(), Arc::new(RwLock::new(holochain)));
-                    None
-                }
-                Err(error) => Some(format!(
-                    "Error while trying to create instance \"{}\": {}",
-                    id, error
-                )),
-            })
-            .collect();
+        for id in config.instance_ids_sorted_by_bridge_dependencies()? {
+            let instance = self
+                .instantiate_from_config(&id, &config)
+                .map_err(|error| {
+                    format!(
+                        "Error while trying to create instance \"{}\": {}",
+                        id, error
+                    )
+                })?;
 
-        if errors.len() == 0 {
-            self.instances = instances;
-            Ok(signal_rx)
-        } else {
-            Err(errors.iter().nth(0).unwrap().clone())
+            self.instances
+                .insert(id.clone(), Arc::new(RwLock::new(instance)));
         }
+        Ok(())
+    }
+
+    /// Creates one specific Holochain instance from a given Configuration,
+    /// id string and DnaLoader.
+    pub fn instantiate_from_config(
+        &mut self,
+        id: &String,
+        config: &Configuration,
+    ) -> Result<Holochain, String> {
+        let _ = config.check_consistency()?;
+
+        config
+            .instance_by_id(&id)
+            .ok_or(String::from("Instance not found in config"))
+            .and_then(|instance_config| {
+                // Build context:
+                let mut context_builder = ContextBuilder::new();
+
+                // Agent:
+                let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
+                let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
+                context_builder =
+                    context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
+
+                // Network config:
+                if let Some(network_config) = instance_config.network {
+                    context_builder =
+                        context_builder.with_network_config(JsonString::from(network_config))
+                };
+
+                // Storage:
+                if let StorageConfiguration::File { path } = instance_config.storage {
+                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
+                        format!("Error creating context: {}", hc_err.to_string())
+                    })?
+                };
+
+                // Container API
+                let mut api_builder = ContainerApiBuilder::new();
+                // Bridges:
+                let id = instance_config.id.clone();
+                for bridge in config.bridge_dependencies(id.clone()) {
+                    assert_eq!(bridge.caller_id, id.clone());
+                    let callee_config = config
+                        .instance_by_id(&bridge.callee_id)
+                        .expect("config.check_consistency()? jumps out if config is broken");
+                    let callee_instance = self.instances.get(&bridge.callee_id).expect(
+                        r#"
+                            We have to create instances ordered by bridge dependencies such that we
+                            can expect the callee to be present here because we need it to create
+                            the bridge API"#,
+                    );
+
+                    api_builder = api_builder
+                        .with_named_instance(bridge.handle.clone(), callee_instance.clone());
+                    api_builder = api_builder
+                        .with_named_instance_config(bridge.handle.clone(), callee_config);
+                }
+                context_builder = context_builder.with_container_api(api_builder.spawn());
+                if let Some(signal_tx) = self.signal_tx.clone() {
+                    context_builder = context_builder.with_signals(signal_tx);
+                }
+
+                // Spawn context
+                let context = context_builder.spawn();
+
+                // Get DNA
+                let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
+                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_config.file).map_err(
+                    |_| {
+                        HolochainError::ConfigError(format!(
+                            "Could not load DNA file \"{}\"",
+                            dna_config.file
+                        ))
+                    },
+                )?;
+
+                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+            })
     }
 
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
@@ -180,26 +245,31 @@ impl Container {
         Dna::try_from(JsonString::from(contents))
     }
 
-    fn make_dispatcher(&self, interface_config: &InterfaceConfiguration) -> ContainerApiDispatcher {
+    fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
         let instance_ids: Vec<String> = interface_config
             .instances
             .iter()
             .map(|i| i.id.clone())
             .collect();
+
         let instance_subset: InstanceMap = self
             .instances
             .iter()
             .filter(|(id, _)| instance_ids.contains(&id))
             .map(|(id, val)| (id.clone(), val.clone()))
             .collect();
-        ContainerApiDispatcher::new(&self.config, instance_subset)
+
+        ContainerApiBuilder::new()
+            .with_instances(instance_subset)
+            .with_instance_configs(self.config.instances.clone())
+            .spawn()
     }
 
     fn spawn_interface_thread(
         &self,
         interface_config: InterfaceConfiguration,
     ) -> InterfaceThreadHandle {
-        let dispatcher = self.make_dispatcher(&interface_config);
+        let dispatcher = self.make_interface_handler(&interface_config);
         thread::spawn(move || {
             let iface = make_interface(&interface_config);
             iface.run(dispatcher)
@@ -219,68 +289,12 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 }
 
 /// This can eventually be dependency injected for third party Interface definitions
-fn make_interface(
-    interface_config: &InterfaceConfiguration,
-) -> Box<Interface<ContainerApiDispatcher>> {
+fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => {
             Box::new(interface_impls::websocket::WebsocketInterface::new(port))
         }
         _ => unimplemented!(),
-    }
-}
-
-/// Creates one specific Holochain instance from a given Configuration,
-/// id string and DnaLoader.
-pub fn instantiate_from_config(
-    id: &String,
-    config: &Configuration,
-    dna_loader: &mut DnaLoader,
-    signal_tx: SignalSender,
-) -> Result<Holochain, String> {
-    let _ = config.check_consistency()?;
-
-    config
-        .instance_by_id(&id)
-        .ok_or(String::from("Instance not found in config"))
-        .and_then(|instance_config| {
-            let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
-            let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
-            let dna = Arc::get_mut(dna_loader).unwrap()(&dna_config.file).map_err(|_| {
-                HolochainError::ConfigError(format!(
-                    "Could not load DNA file \"{}\"",
-                    dna_config.file
-                ))
-            })?;
-
-            let mut context_builder = ContextBuilder::new();
-
-            let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
-            context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
-
-            instance_config.network.map(|network_config| {
-                context_builder.with_network_config(JsonString::from(network_config))
-            });
-
-            if let StorageConfiguration::File { path } = instance_config.storage {
-                context_builder
-                    .with_file_storage(path)
-                    .map_err(|hc_err| format!("Error creating context: {}", hc_err.to_string()))?;
-            }
-
-            let context = context_builder.spawn();
-            Holochain::new_with_signals(dna, Arc::new(context), signal_tx, signal_filter)
-                .map_err(|hc_err| hc_err.to_string())
-        })
-}
-
-/// This function defines which Actions to filter out for internal signals
-fn signal_filter(action: &Action) -> bool {
-    use self::Action::InitApplication;
-
-    match action {
-        InitApplication(_) => false,
-        _ => true,
     }
 }
 
@@ -295,14 +309,21 @@ impl Logger for NullLogger {
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
-    //use holochain_core_types::agent::AgentId;
+
+    use holochain_core::signal::signal_channel;
+    use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use std::{fs::File, io::Write};
 
     use tempfile::tempdir;
+    use test_utils::*;
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader = Box::new(|_path: &String| {
-            Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
+        let loader = Box::new(|path: &String| {
+            Ok(match path.as_ref() {
+                "bridge/callee.dna" => callee_dna(),
+                "bridge/caller.dna" => caller_dna(),
+                _ => Dna::try_from(JsonString::from(example_dna_string())).unwrap(),
+            })
         }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
         Arc::new(loader)
     }
@@ -321,14 +342,30 @@ pub mod tests {
     public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
     key_file = "holo_tester.key"
 
+    [[agents]]
+    id = "test-agent-3"
+    name = "Holo Tester 3"
+    public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+    key_file = "holo_tester.key"
+
     [[dnas]]
     id = "test-dna"
     file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
+    [[dnas]]
+    id = "bridge-callee"
+    file = "bridge/callee.dna"
+    hash = "Qm328wyq38924y"
+
+    [[dnas]]
+    id = "bridge-caller"
+    file = "bridge/caller.dna"
+    hash = "Qm328wyq38924y"
+
     [[instances]]
     id = "test-instance-1"
-    dna = "test-dna"
+    dna = "bridge-callee"
     agent = "test-agent-1"
     [instances.logger]
     type = "simple"
@@ -346,6 +383,16 @@ pub mod tests {
     [instances.storage]
     type = "memory"
 
+    [[instances]]
+    id = "bridge-caller"
+    dna = "bridge-caller"
+    agent = "test-agent-3"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "memory"
+
     [[interfaces]]
     id = "test-interface"
     [interfaces.driver]
@@ -355,11 +402,26 @@ pub mod tests {
     id = "test-instance-1"
     [[interfaces.instances]]
     id = "test-instance-2"
+
+    [[bridges]]
+    caller_id = "test-instance-2"
+    callee_id = "test-instance-1"
+    handle = "DPKI"
+
+    [[bridges]]
+    caller_id = "bridge-caller"
+    callee_id = "test-instance-2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "bridge-caller"
+    callee_id = "test-instance-1"
+    handle = "test-callee"
     "#
         .to_string()
     }
 
-    fn test_container() -> Container {
+    pub fn test_container() -> Container {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
@@ -397,9 +459,7 @@ pub mod tests {
                         },
                         "capabilities": {
                             "test": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "functions": [
                                     {
                                         "name": "test",
@@ -429,22 +489,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_instantiate_from_config() {
-        // Used this to created syntatically valid public addresses for the config fixture above:
-        //println!("{}", JsonString::from(AgentId::generate_fake("HoloTester2")));
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let (tx, _) = signal_channel();
-        let maybe_holochain = instantiate_from_config(
-            &"test-instance-1".to_string(),
-            &config,
-            &mut test_dna_loader(),
-            tx,
-        );
-
-        assert_eq!(maybe_holochain.err(), None);
-    }
-
-    #[test]
     fn test_default_dna_loader() {
         let tempdir = tempdir().unwrap();
         let file_path = tempdir.path().join("test.dna.json");
@@ -461,7 +505,7 @@ pub mod tests {
     #[test]
     fn test_container_load_config() {
         let mut container = test_container();
-        assert_eq!(container.instances.len(), 2);
+        assert_eq!(container.instances.len(), 3);
 
         container.start_all_instances().unwrap();
         container.start_all_interfaces();
@@ -478,7 +522,7 @@ pub mod tests {
         assert_eq!(
             maybe_container.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
+                "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"bridge/callee.dna\"".to_string()
             )
         );
     }
@@ -487,8 +531,7 @@ pub mod tests {
     fn test_rpc_info_instances() {
         let container = test_container();
         let interface_config = &container.config.interfaces[0];
-        let dispatcher = container.make_dispatcher(&interface_config);
-        let io = dispatcher.io;
+        let io = container.make_interface_handler(&interface_config);
 
         let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
         let response = io
@@ -500,16 +543,180 @@ pub mod tests {
 
     #[test]
     fn container_signal_handler() {
-        use std::sync::mpsc::TryRecvError;
+        use holochain_core::action::Action;
         let (signal_tx, signal_rx) = signal_channel();
         let _container = test_container_with_signals(signal_tx);
 
-        // NB: this is a pretty poor test, but it's the best we can do for now
-        // since this container is not hooked up to a real DNA
-        match signal_rx.try_recv() {
-            Err(TryRecvError::Empty) => (),
-            _ => panic!("Got unexpected result recv'ing from empty channel"),
-        }
+        test_utils::expect_action(&signal_rx, |action| match action {
+            Action::InitApplication(_) => true,
+            _ => false,
+        })
+        .unwrap();
+
+        // expect one InitNetwork for each instance
+
+        test_utils::expect_action(&signal_rx, |action| match action {
+            Action::InitNetwork(_) => true,
+            _ => false,
+        })
+        .unwrap();
+
+        test_utils::expect_action(&signal_rx, |action| match action {
+            Action::InitNetwork(_) => true,
+            _ => false,
+        })
+        .unwrap();
+    }
+
+    pub fn callee_wat() -> String {
+        r#"
+(module
+
+    (memory 1)
+    (export "memory" (memory 0))
+
+    (func
+        (export "__hdk_validate_app_entry")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+    (func
+        (export "__hdk_validate_link")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+
+    (func
+        (export "__hdk_get_validation_package_for_entry_type")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
+
+    (func
+        (export "__hdk_get_validation_package_for_link")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
+
+    (func
+        (export "__list_capabilities")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+    (func
+        (export "hello")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Holo World" into memory
+        (i32.store (i32.const 0) (i32.const 72))
+        (i32.store (i32.const 1) (i32.const 111))
+        (i32.store (i32.const 2) (i32.const 108))
+        (i32.store (i32.const 3) (i32.const 111))
+        (i32.store (i32.const 4) (i32.const 32))
+        (i32.store (i32.const 5) (i32.const 87))
+        (i32.store (i32.const 6) (i32.const 111))
+        (i32.store (i32.const 7) (i32.const 114))
+        (i32.store (i32.const 8) (i32.const 108))
+        (i32.store (i32.const 9) (i32.const 100))
+
+        (i32.const 10)
+    )
+)
+                "#
+        .to_string()
+    }
+
+    fn callee_dna() -> Dna {
+        let wat = &callee_wat();
+        let mut dna = create_test_dna_with_wat("greeter", "public", Some(wat));
+        dna.uuid = String::from("basic_bridge_call");
+        dna.zomes
+            .get_mut("greeter")
+            .unwrap()
+            .capabilities
+            .get_mut("public")
+            .unwrap()
+            .functions
+            .push(dna::capabilities::FnDeclaration {
+                name: String::from("hello"),
+                inputs: vec![],
+                outputs: vec![dna::capabilities::FnParameter {
+                    name: String::from("greeting"),
+                    parameter_type: String::from("String"),
+                }],
+            });
+        dna
+    }
+
+    fn caller_dna() -> Dna {
+        let wasm = create_wasm_from_file(
+            "test-bridge-caller/target/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
+        );
+        let capabability = create_test_cap_with_fn_name("call_bridge");
+        let mut dna = create_test_dna_with_cap("main", "main", &capabability, &wasm);
+        dna.uuid = String::from("basic_bridge_call");
+        dna
+    }
+
+    #[test]
+    fn basic_bridge_call_roundtrip() {
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let mut container = Container::from_config(config.clone());
+        container.dna_loader = test_dna_loader();
+        container.load_config().expect("Test config must be sane");
+        container
+            .start_all_instances()
+            .expect("Instances must be spawnable");
+        let caller_instance = container.instances["bridge-caller"].clone();
+        let result = caller_instance
+            .write()
+            .unwrap()
+            .call(
+                "main",
+                Some(dna::capabilities::CapabilityCall::new(
+                    String::from("main"),
+                    Address::from("fake_token"),
+                    None,
+                )),
+                "call_bridge",
+                "{}",
+            )
+            .unwrap();
+
+        // "Holo World" comes for the callee_wat above which runs in the callee instance
+        assert_eq!(result, JsonString::from(RawString::from("Holo World")));
     }
 
 }

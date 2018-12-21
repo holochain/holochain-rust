@@ -25,7 +25,7 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
         num1: num1,
         num2: num2,
     };
-    hdk::call("summer", "main", "sum", call_input.into())
+    hdk::call(hdk::THIS_INSTANCE, "summer", "main", "test_token", "sum", call_input.into())
 }
 
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {

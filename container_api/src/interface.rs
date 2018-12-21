@@ -1,4 +1,5 @@
 use holochain_core::state::State;
+use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value};
@@ -130,7 +131,16 @@ impl ContainerApiBuilder {
                                         jsonrpc_core::Error::invalid_params(e.to_string())
                                     })?;
                                 let response = hc
-                                    .call(&zome_name, &cap_name, &func_name, &params_string)
+                                    .call(
+                                        &zome_name,
+                                        Some(CapabilityCall::new(
+                                            cap_name.clone(),
+                                            Address::from("fake_token"),
+                                            None,
+                                        )),
+                                        &func_name,
+                                        &params_string,
+                                    )
                                     .map_err(|e| {
                                         jsonrpc_core::Error::invalid_params(e.to_string())
                                     })?;
@@ -175,7 +185,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1//test/test""#));
+        assert!(result.contains(r#""test-instance-1/greeter/public/hello""#));
         assert!(!result.contains(r#""test-instance-2//test/test""#));
     }
 
@@ -195,7 +205,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store//test/test""#));
+        assert!(result.contains(r#""happ-store/greeter/public/hello""#));
         assert!(!result.contains(r#""test-instance-1//test/test""#));
     }
 }

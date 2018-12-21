@@ -16,8 +16,9 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     json::JsonString,
 };
+use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{convert::TryFrom, fs::File, io::prelude::*};
+use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
 use toml;
 
 /// Main container configuration struct
@@ -73,6 +74,27 @@ impl Configuration {
             }
         }
 
+        for ref bridge in self.bridges.iter() {
+            self.instance_by_id(&bridge.callee_id)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "Instance configuration \"{}\" not found, mentioned in bridge",
+                        bridge.callee_id
+                    )
+                })?;
+            self.instance_by_id(&bridge.caller_id)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "Instance configuration \"{}\" not found, mentioned in bridge",
+                        bridge.caller_id
+                    )
+                })?;
+        }
+
+        let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
+
         Ok(())
     }
 
@@ -101,6 +123,79 @@ impl Configuration {
         self.instances
             .iter()
             .map(|instance| instance.id.clone())
+            .collect()
+    }
+
+    /// This function uses the petgraph crate to model the bridge connections in this config
+    /// as a graph and then create a topological sorting of the nodes, which are instances.
+    /// The sorting gets reversed to get those instances first that do NOT depend on others
+    /// such that this ordering of instances can be used to spawn them and simultaneously create
+    /// initialize the bridges and be able to assert that any callee already exists (which makes
+    /// this task much easier).
+    pub fn instance_ids_sorted_by_bridge_dependencies(
+        &self,
+    ) -> Result<Vec<String>, HolochainError> {
+        let mut graph = DiGraph::<&str, &str>::new();
+
+        // Add instance ids to the graph which returns the indices the graph is using.
+        // Storing those in a map from ids to create edges from bridges below.
+        let index_map: HashMap<_, _> = self
+            .instances
+            .iter()
+            .map(|instance| (instance.id.clone(), graph.add_node(&instance.id)))
+            .collect();
+
+        // Reverse of graph indices to instance ids to create the return vector below.
+        let reverse_map: HashMap<_, _> = self
+            .instances
+            .iter()
+            .map(|instance| (index_map.get(&instance.id).unwrap(), instance.id.clone()))
+            .collect();
+
+        // Create vector of edges (with node indices) from bridges:
+        let edges: Vec<(&NodeIndex<u32>, &NodeIndex<u32>)> = self.bridges
+            .iter()
+            .map(|bridge| -> Result<(&NodeIndex<u32>, &NodeIndex<u32>), HolochainError> {
+                let start = index_map.get(&bridge.caller_id);
+                let end = index_map.get(&bridge.callee_id);
+                if start.is_none() || end.is_none() {
+                    Err(HolochainError::ConfigError(format!(
+                        "Instance configuration not found, mentioned in bridge configuration: {} -> {}",
+                        bridge.caller_id, bridge.callee_id,
+                    )))
+                } else {
+                    Ok((start.unwrap(), end.unwrap()))
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // Add edges to graph:
+        for &(node_a, node_b) in edges.iter() {
+            graph.add_edge(node_a.clone(), node_b.clone(), "");
+        }
+
+        // Sort with petgraph::algo::toposort
+        let mut sorted_nodes = toposort(&graph, None).map_err(|_cycle_error| {
+            HolochainError::ConfigError("Cyclic dependency in bridge configuration".to_string())
+        })?;
+
+        // REVERSE order because we want to get the instance with NO dependencies first
+        // since that is the instance we should spawn first.
+        sorted_nodes.reverse();
+
+        // Map sorted vector of node indices back to instance ids
+        Ok(sorted_nodes
+            .iter()
+            .map(|node_index| reverse_map.get(node_index).unwrap())
+            .cloned()
+            .collect())
+    }
+
+    pub fn bridge_dependencies(&self, caller_instance_id: String) -> Vec<Bridge> {
+        self.bridges
+            .iter()
+            .filter(|bridge| bridge.caller_id == caller_instance_id)
+            .cloned()
             .collect()
     }
 }
@@ -216,8 +311,19 @@ pub struct InstanceReferenceConfiguration {
 /// It is basically an internal interface.
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct Bridge {
+    /// ID of the instance that calls the other one.
+    /// This instance depends on the callee.
     pub caller_id: String,
+
+    /// ID of the instance that exposes capabilities through this bridge.
+    /// This instance is used by the caller.
     pub callee_id: String,
+
+    /// The caller's local handle of this bridge and the callee.
+    /// A caller can have many bridges to other DNAs and those DNAs could
+    /// by bound dynamically.
+    /// Callers reference callees by this arbitrary but unique local name.
+    pub handle: String,
 }
 
 /// Use this function to load a `Configuration` from a string.
@@ -541,5 +647,179 @@ pub mod tests {
         } else {
             panic!("Should have failed!")
         }
+    }
+
+    fn bridges_config(bridges: &str) -> String {
+        format!(
+            r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app-spec-rust.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app1"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[instances]]
+    id = "app2"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[instances]]
+    id = "app3"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    {}
+    "#, bridges)
+    }
+
+    #[test]
+    fn test_bridge_config() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app3"
+    handle = "DPKI"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(config.check_consistency(), Ok(()));
+
+        // "->": calls
+        // app1 -> app2 -> app3
+        // app3 has no dependency so it can be instantiated first.
+        // app2 depends on (calls) only app3, so app2 is next.
+        // app1 should be last.
+        assert_eq!(
+            config.instance_ids_sorted_by_bridge_dependencies(),
+            Ok(vec![
+                String::from("app3"),
+                String::from("app2"),
+                String::from("app1")
+            ])
+        );
+    }
+
+    #[test]
+    fn test_bridge_cycle() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app3"
+    handle = "DPKI"
+
+    [[bridges]]
+    caller_id = "app3"
+    callee_id = "app1"
+    handle = "something"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("Cyclic dependency in bridge configuration".to_string())
+        );
+    }
+
+    #[test]
+    fn test_bridge_non_existent() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app3"
+    handle = "DPKI"
+
+    [[bridges]]
+    caller_id = "app9000"
+    callee_id = "app1"
+    handle = "something"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("Instance configuration \"app9000\" not found, mentioned in bridge".to_string())
+        );
+    }
+
+    #[test]
+    fn test_bridge_dependencies() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app3"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app1"
+    handle = "happ-store"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        let bridged_ids: Vec<_> = config
+            .bridge_dependencies(String::from("app1"))
+            .iter()
+            .map(|bridge| bridge.callee_id.clone())
+            .collect();
+        assert_eq!(
+            bridged_ids,
+            vec![String::from("app2"), String::from("app3"),]
+        );
     }
 }

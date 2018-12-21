@@ -60,12 +60,10 @@
 use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
-    action::Action,
     context::Context,
     instance::Instance,
     nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
-    signal::SignalSender,
     state::State,
     workflows::application,
 };
@@ -88,22 +86,6 @@ impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
         let instance = Instance::new(context.clone());
-        Self::from_dna_and_context_and_instance(dna, context, instance)
-    }
-
-    /// Create a new Holochain instance with a signal channel, specifying a
-    /// predicate closure to define which Actions should result in signals being emitted.
-    /// Caller takes ownership of the Receiver for the signal channel.
-    pub fn new_with_signals<F>(
-        dna: Dna,
-        context: Arc<Context>,
-        signal_tx: SignalSender,
-        signal_filter_func: F,
-    ) -> HolochainResult<Self>
-    where
-        F: Fn(&Action) -> bool + 'static + Send + Sync,
-    {
-        let instance = Instance::new(context.clone()).with_signals(signal_tx, signal_filter_func);
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 
@@ -202,7 +184,7 @@ mod tests {
         action::Action,
         context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
-        signal::{signal_channel, Signal},
+        signal::{signal_channel, Signal, SignalReceiver},
     };
     use holochain_core_types::{
         agent::AgentId,
@@ -220,19 +202,28 @@ mod tests {
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
-    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
+    fn test_context(
+        agent_name: &str,
+    ) -> (
+        Arc<Context>,
+        Arc<Mutex<test_utils::TestLogger>>,
+        SignalReceiver,
+    ) {
         let agent = AgentId::generate_fake(agent_name);
+        let (signal_tx, signal_rx) = signal_channel();
         let logger = test_utils::test_logger();
         (
             Arc::new(
                 ContextBuilder::new()
                     .with_agent(agent)
                     .with_logger(logger.clone())
+                    .with_signals(signal_tx)
                     .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                     .unwrap()
                     .spawn(),
             ),
             logger,
+            signal_rx,
         )
     }
 
@@ -258,7 +249,7 @@ mod tests {
     fn can_instantiate() {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
-        let (context, test_logger) = test_context("bob");
+        let (context, test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_ok());
         let hc = result.unwrap();
@@ -284,7 +275,7 @@ mod tests {
     #[test]
     fn can_load() {
         let path = write_agent_state_to_file();
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let result = Holochain::load(path, context.clone());
         assert!(result.is_ok());
         let loaded_holo = result.unwrap();
@@ -317,7 +308,7 @@ mod tests {
             ),
         );
 
-        let (context, _test_logger) = test_context("bob");
+        let (context, _test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_err());
         assert_eq!(
@@ -345,7 +336,7 @@ mod tests {
         //     ),
         // );
         //
-        // let (context, _test_logger) = test_context("bob");
+        // let (context, _test_logger, _) = test_context("bob");
         // let result = Holochain::new(dna.clone(), context.clone());
         // assert!(result.is_err());
         // assert_eq!(
@@ -359,7 +350,7 @@ mod tests {
     #[test]
     fn can_start_and_stop() {
         let dna = Dna::new();
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         assert!(!hc.active());
 
@@ -403,7 +394,7 @@ mod tests {
  )
 "#;
         let dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.call("test_zome", example_capability_call(), "main", "");
@@ -427,7 +418,7 @@ mod tests {
     #[test]
     fn can_get_state() {
         let dna = Dna::new();
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();
@@ -440,7 +431,7 @@ mod tests {
         let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("round_trip_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         hc.start().expect("couldn't start");
@@ -466,10 +457,8 @@ mod tests {
         let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("alex");
-        let (signal_tx, signal_rx) = signal_channel();
-        let mut hc =
-            Holochain::new_with_signals(dna.clone(), context, signal_tx, |_| true).unwrap();
+        let (context, _, signal_rx) = test_context("alex");
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -516,7 +505,7 @@ mod tests {
         let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("alex");
+        let (context, _, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -555,7 +544,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_hello");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, test_logger) = test_context("alex");
+        let (context, test_logger, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -593,7 +582,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_multiple");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, test_logger) = test_context("alex");
+        let (context, test_logger, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -649,15 +638,9 @@ mod tests {
         let mut dna =
             test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
         dna.uuid = "can_receive_action_signals".into();
-        let context = test_utils::test_context("alex");
+        let (context, _, signal_rx) = test_context("alex");
         let timeout = 1000;
-        let (tx, rx) = signal_channel();
-        let mut hc =
-            Holochain::new_with_signals(dna.clone(), context, tx, move |action| match action {
-                Action::InitApplication(_) => false,
-                _ => true,
-            })
-            .unwrap();
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
         hc.start().expect("couldn't start");
         hc.call(
             "test_zome",
@@ -668,12 +651,12 @@ mod tests {
         .unwrap();
 
         'outer: loop {
-            let msg_publish = rx
+            let msg_publish = signal_rx
                 .recv_timeout(Duration::from_millis(timeout))
                 .expect("no more signals to receive (outer)");
             if let Signal::Internal(Action::Publish(address)) = msg_publish {
                 loop {
-                    let msg_hold = rx
+                    let msg_hold = signal_rx
                         .recv_timeout(Duration::from_millis(timeout))
                         .expect("no more signals to receive (inner)");
                     if let Signal::Internal(Action::Hold(entry)) = msg_hold {

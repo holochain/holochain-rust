@@ -277,6 +277,7 @@ fn handle_check_call() -> ZomeApiResult<JsonString> {
     hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty))?;
 
     let maybe_hash = hdk::call(
+        hdk::THIS_INSTANCE,
         "test_zome",
         "test_cap",
         "test_token",
@@ -295,6 +296,7 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
     }
 
     hdk::call(
+        hdk::THIS_INSTANCE,
         "test_zome",
         "test_cap",
         "test_token",

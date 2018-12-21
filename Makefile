@@ -159,6 +159,7 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 wasm_build: ensure_wasm_target
 	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd container_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd container_api/test-bridge-caller && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 

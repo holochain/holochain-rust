@@ -34,7 +34,7 @@ pub mod globals;
 pub mod init_globals;
 pub mod macros;
 
-pub use holochain_wasm_utils::api_serialization::validation::*;
+pub use holochain_wasm_utils::api_serialization::{validation::*, THIS_INSTANCE};
 
 pub mod meta;
 

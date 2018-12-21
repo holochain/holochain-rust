@@ -79,11 +79,11 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
         let agent_name = instance.agent.name;
         let dna_path = PathBuf::from(instance.dna.path);
         let agent = agent_configs.entry(agent_name.clone()).or_insert_with(|| {
-            let agent_id = AgentId::generate_fake(&agent_name);
+            let agent_key = AgentId::generate_fake(&agent_name);
             AgentConfiguration {
                 id: agent_name.clone(),
                 name: agent_name.clone(),
-                public_address: agent_id.key,
+                public_address: agent_key.key,
                 key_file: format!("fake/key/{}", agent_name),
             }
         });

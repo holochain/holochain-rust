@@ -312,7 +312,7 @@ impl Logger for NullLogger {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{config::load_configuration, interface::DispatchRpc};
+    use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
 
     use std::{fs::File, io::Write};

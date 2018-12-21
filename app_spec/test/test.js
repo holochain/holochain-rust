@@ -1,34 +1,47 @@
-const test = require('tape');
-const { pollFor } = require('./util');
+const test = require('tape')
+const { pollFor } = require('./util')
 
-const { ConfigBuilder, Habitat } = require('../../nodejs_container');
+const { ConfigBuilder, Habitat } = require('../../nodejs_container')
 
-const agentAlice = ConfigBuilder.agent("alice");
-const agentBob = ConfigBuilder.agent("bob");
+const dnaPath = "./dist/app_spec.hcpkg"
 
-const dnaPath = "./dist/app_spec.hcpkg";
-const dna = ConfigBuilder.dna(dnaPath);
+// IIFE to keep config-only stuff out of test scope
+const config = (() => {
+  const agentAlice = ConfigBuilder.agent("alice")
+  const agentBob = ConfigBuilder.agent("bob")
 
-const instanceAlice = ConfigBuilder.instance(agentAlice, dna);
-const instanceBob = ConfigBuilder.instance(agentBob, dna);
+  const dna = ConfigBuilder.dna(dnaPath)
 
-const config = ConfigBuilder.habitat(instanceAlice, instanceBob);
+  const instanceAlice = ConfigBuilder.instance(agentAlice, dna)
+  const instanceBob = ConfigBuilder.instance(agentBob, dna)
 
-const hab = new Habitat(config);
-hab.start();
+  return ConfigBuilder.habitat(instanceAlice, instanceBob)
+})()
 
-const caller = (id, method) => (zome, cap, fn, params) => {
-  return hab[method](id, zome, cap, fn, params)
+// Initialize the Container (Habitat)
+const hab = new Habitat(config)
+hab.start()
+
+// This function is a bit of temporary boilerplate to construct a convenient object
+// for testing. These objects will be created automatically with the new Scenario API,
+// and then this function will go away. (TODO)
+const makeCaller = (agentId) => {
+  const instanceId = agentId + '-' + dnaPath
+  return {
+    call: (...args) => hab.call(instanceId, ...args),
+    callSync: (...args) => hab.callSync(instanceId, ...args),
+    agentId: hab.agent_id(instanceId)
+  }
 }
 
-const app = {
-  call: caller('alice-' + dnaPath, 'call'),
-  callSync: caller('alice-' + dnaPath, 'callSync')
-}
-const app2 = {
-  call: caller('bob-' + dnaPath, 'call'),
-  callSync: caller('bob-' + dnaPath, 'callSync')
-}
+const app = makeCaller('alice')
+const app2 = makeCaller('bob')
+
+test('agentId', (t) => {
+  t.plan(2)
+  t.ok(app.agentId)
+  t.notEqual(app.agentId, app2.agentId)
+})
 
 test('call', (t) => {
   t.plan(1)

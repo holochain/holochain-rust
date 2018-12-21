@@ -6,6 +6,10 @@ use holochain_core::{
     action::{Action, ActionWrapper},
     signal::{signal_channel, SignalReceiver},
 };
+use holochain_core_types::{
+    cas::content::Address,
+    dna::{capabilities::CapabilityCall},
+};
 use neon::{context::Context, prelude::*};
 use snowflake::ProcessUniqueId;
 use std::{
@@ -124,7 +128,7 @@ declare_types! {
         method call(mut cx) {
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let zome = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
-            let cap = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
+            let cap_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
             let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
             let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
             let maybe_callback = cx.argument_opt(5);
@@ -134,6 +138,11 @@ declare_types! {
             let call_result = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
+                let cap = Some(CapabilityCall::new(
+                    cap_name.to_string(),
+                    Address::from(""), //FIXME
+                    None,
+                ));
                 let instance_arc = hab.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
@@ -150,7 +159,7 @@ declare_types! {
                     None =>
                         println!("\nnoooo callback")
                 };
-                let val = instance.call(&zome, &cap, &fn_name, &params);
+                let val = instance.call(&zome, cap, &fn_name, &params);
                 val
             };
 
@@ -163,6 +172,29 @@ declare_types! {
 
             // let completion_callback =
             Ok(cx.string(result_string).upcast())
+        }
+
+        method agent_id(mut cx) {
+            let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+            let this = cx.this();
+            let result = {
+                let guard = cx.lock();
+                let hab = this.borrow(&guard);
+                let instance = hab.container.instances().get(&instance_id)
+                    .expect(&format!("No instance with id: {}", instance_id))
+                    .read().unwrap();
+                let out = instance.context().state().ok_or("No state?".to_string())
+                    .and_then(|state| state
+                        .agent().get_agent_address()
+                        .map_err(|e| e.to_string()));
+                out
+            };
+
+            let hash = result.or_else(|e: String| {
+                let error_string = cx.string(format!("unable to call zome function: {:?}", &e));
+                cx.throw(error_string)
+            })?;
+            Ok(cx.string(hash.to_string()).upcast())
         }
     }
 }

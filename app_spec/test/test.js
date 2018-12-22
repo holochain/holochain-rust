@@ -8,6 +8,19 @@ app.start()
 const app2 = Container.instanceFromNameAndDna("alice", "dist/app_spec.hcpkg")
 app2.start()
 
+test('show_env', (t) => {
+    t.plan(1)
+
+    const result = app.call("blog", "main", "show_env", {})
+
+    t.deepEqual(result.Ok, {
+        "dna_hash": "QmXR92KZ1ZcwnpxYk4hGHv14RnCdu6zQ55ANx7Vy982pcQ",
+        "dna_name": "HDK-spec-rust",
+        "agent_address": "bob-------------------------------------------------------------------------------AAAOsqqVCf",
+        "agent_id": '{"nick":"bob","key":"bob-------------------------------------------------------------------------------AAAOsqqVCf"}'
+    })
+})
+
 test('call', (t) => {
   t.plan(1)
 

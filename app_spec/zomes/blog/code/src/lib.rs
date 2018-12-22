@@ -18,6 +18,7 @@ use hdk::{
     holochain_core_types::{cas::content::Address, entry::Entry, json::JsonString},
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
 };
+use blog::Env;
 
 define_zome! {
     entries: [
@@ -30,6 +31,12 @@ define_zome! {
 
     functions: {
         main (Public) {
+            show_env: {
+                inputs: | |,
+                outputs: |sum: ZomeApiResult<Env>|,
+                handler: blog::handle_show_env
+            }
+
             check_sum: {
                 inputs: |num1: u32, num2: u32|,
                 outputs: |sum: ZomeApiResult<JsonString>|,

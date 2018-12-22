@@ -1,3 +1,8 @@
+//! Implements a definition of what AddressableContent is by defining Content,
+//! defining Address, and defining the relationship between them. AddressableContent is a trait,
+//! meaning that it can be implemented for other structs.
+//! A test suite for AddressableContent is also implemented here.
+
 use crate::{
     cas::storage::ContentAddressableStorage, error::error::HolochainError, hash::HashString,
     json::JsonString,

@@ -50,7 +50,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_store_dht(dht_data, context.clone())
             }
             Ok(ProtocolWrapper::StoreDhtMeta(dht_meta_data)) => {
-                if !is_me(&context, &dht_meta_data.dna_hash, &dht_meta_data.agent_id) {
+                if !is_me(&context, &dht_meta_data.dna_hash, "") {
                     return Ok(());
                 }
                 handle_store_dht_meta(dht_meta_data, context.clone())

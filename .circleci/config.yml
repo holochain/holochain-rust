@@ -6,7 +6,9 @@ jobs:
   machine: true
   steps:
    - checkout
-   - run: . build-circle
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f Dockerfile.circle.base -t holochain/holochain-rust:circle-base .
+   - run: docker push holochain/holochain-rust:circle-base
 
  integration-tests:
   docker:

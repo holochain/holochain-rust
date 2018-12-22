@@ -628,6 +628,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(windows))]
     fn can_receive_action_signals() {
         use holochain_core::action::Action;
         use std::time::Duration;

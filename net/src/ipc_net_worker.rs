@@ -230,7 +230,12 @@ impl IpcNetWorker {
         println!("bs nodes {:?}", &self.bootstrap_nodes);
         for bs_node in &self.bootstrap_nodes {
             println!("try connect bootstrap {:?}", bs_node);
-            self.ipc_relay.send(ProtocolWrapper::Connect(ConnectData { address: bs_node.clone() }).into())?;
+            self.ipc_relay.send(
+                ProtocolWrapper::Connect(ConnectData {
+                    address: bs_node.clone(),
+                })
+                .into(),
+            )?;
         }
 
         Ok(())

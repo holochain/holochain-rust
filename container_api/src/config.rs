@@ -33,7 +33,7 @@ pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
     /// List of DNAs, for each a path to the DNA file. Required.
-    pub dnas: Vec<DNAConfiguration>,
+    pub dnas: Vec<DnaConfiguration>,
     /// List of instances, includes references to an agent and a DNA. Required.
     #[serde(default)]
     pub instances: Vec<InstanceConfiguration>,
@@ -104,7 +104,7 @@ impl Configuration {
     }
 
     /// Returns the DNA configuration with the given ID if present
-    pub fn dna_by_id(&self, id: &str) -> Option<DNAConfiguration> {
+    pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
     }
 
@@ -219,15 +219,15 @@ impl From<AgentConfiguration> for AgentId {
 /// A DNA is represented by a DNA file.
 /// A hash has to be provided for sanity check.
 #[derive(Deserialize, Serialize, Clone)]
-pub struct DNAConfiguration {
+pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     pub hash: String,
 }
 
-impl TryFrom<DNAConfiguration> for Dna {
+impl TryFrom<DnaConfiguration> for Dna {
     type Error = HolochainError;
-    fn try_from(dna_config: DNAConfiguration) -> Result<Self, Self::Error> {
+    fn try_from(dna_config: DnaConfiguration) -> Result<Self, Self::Error> {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;

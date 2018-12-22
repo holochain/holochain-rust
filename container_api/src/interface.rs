@@ -169,7 +169,11 @@ pub mod tests {
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let container = test_container();
-        let holochain = container.instances.get("test-instance-1").unwrap().clone();
+        let holochain = container
+            .instances()
+            .get("test-instance-1")
+            .unwrap()
+            .clone();
         let mut instances = InstanceMap::new();
         instances.insert("test-instance-1".into(), holochain);
         (container.config(), instances)

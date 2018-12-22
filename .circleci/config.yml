@@ -1,6 +1,13 @@
 version: 2
 
 jobs:
+ # https://circleci.com/docs/2.0/building-docker-images/
+ build-docker:
+  machine: true
+  steps:
+   - checkout
+   - run: . build-circle
+
  integration-tests:
   docker:
    - image: holochain/holochain-rust:circle-rustwarm

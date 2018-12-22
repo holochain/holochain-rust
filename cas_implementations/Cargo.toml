@@ -14,7 +14,7 @@ lazy_static = "1.1.0"
 snowflake = "1.2"
 walkdir = "2"
 uuid = { version = "0.7", features = ["v4"] }
-im = "12.2.0"
+im = "^12.2"
 
 [dev-dependencies]
 holochain_core_types = { path = "../core_types" }

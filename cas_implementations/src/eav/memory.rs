@@ -1,20 +1,18 @@
 use holochain_core_types::{
+    cas::content::AddressableContent,
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
     error::HolochainError,
     hash::HashString,
-    cas::content::AddressableContent
 };
 use im::hashmap::HashMap;
-use std::{
-    collections::{HashSet},
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
+
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct EavMemoryStorage {
-    storage: Arc<RwLock<HashMap<HashString,EntityAttributeValue>>>,
-    current_hash : HashString,
+    storage: Arc<RwLock<HashMap<HashString, EntityAttributeValue>>>,
+    current_hash: HashString,
     id: Uuid,
 }
 
@@ -29,7 +27,7 @@ impl EavMemoryStorage {
         EavMemoryStorage {
             storage: Arc::new(RwLock::new(HashMap::new())),
             id: Uuid::new_v4(),
-            current_hash : HashString::from(Uuid::new_v4().to_string().replace("-","_"))
+            current_hash: HashString::from(Uuid::new_v4().to_string().replace("-", "_")),
         }
     }
 }
@@ -37,13 +35,16 @@ impl EavMemoryStorage {
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let mut map = self.storage.write()?;
-        let key = vec![self.current_hash.clone().to_string(),eav.address().to_string()].join("_");
-        map.insert(HashString::from(key),eav.clone());
+        let key = vec![
+            self.current_hash.clone().to_string(),
+            eav.address().to_string(),
+        ]
+        .join("_");
+        map.insert(HashString::from(key), eav.clone());
         Ok(())
     }
 
-    fn get_hash(&self)->HashString
-    {
+    fn get_hash(&self) -> HashString {
         self.current_hash.clone()
     }
 
@@ -52,20 +53,22 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?.clone();
         Ok(map
             .into_iter()
             //.cloned()
-            .filter(|(k,a)|{
+            .filter(|(k, _)| {
                 let key = k.to_string();
                 let hash = &*self.current_hash.clone().to_string();
                 key.starts_with(hash)
-                })
-            .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref()))
-            .filter(|(_,e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-            .collect::<HashMap<HashString,EntityAttributeValue>>())
+            })
+            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
+            .filter(|(_, e)| {
+                EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
+            })
+            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
+            .collect::<HashMap<HashString, EntityAttributeValue>>())
     }
 }
 

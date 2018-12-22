@@ -2,13 +2,12 @@ use crate::{
     cas::content::{Address, AddressableContent, Content},
     entry::{test_entry_a, test_entry_b, Entry},
     error::{HcResult, HolochainError},
-    json::JsonString,
     hash::HashString,
+    json::JsonString,
 };
-use objekt;
 use im::hashmap::HashMap;
+use objekt;
 use std::{
-    collections::{HashSet},
     convert::TryInto,
     sync::{Arc, RwLock},
 };
@@ -115,7 +114,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// eavs are retrieved through constraint based lookups
     /// @see fetch_eav
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError>;
-    /// fetches the set of EntityAttributeValues that match constraints
+    /// fetches the set of EntityAttributeValues that match constraints with the latest hash
     /// None = no constraint
     /// Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
     /// Some(Attribute) = requires the given attribute (e.g. all links)
@@ -125,16 +124,16 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError>;
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>;
 
-    fn get_hash(&self)->HashString;
+    fn get_hash(&self) -> HashString;
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
-    storage: HashMap<HashString,EntityAttributeValue>,
+    storage: HashMap<HashString, EntityAttributeValue>,
 }
 
 impl ExampleEntityAttributeValueStorageNonSync {
@@ -146,8 +145,8 @@ impl ExampleEntityAttributeValueStorageNonSync {
 
     fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let hash = HashString::from("");
-        let key = vec![hash.to_string(),eav.address().to_string()].join("_");
-        self.storage.insert(HashString::from(key),eav.clone());
+        let key = vec![hash.to_string(), eav.address().to_string()].join("_");
+        self.storage.insert(HashString::from(key), eav.clone());
         Ok(())
     }
 
@@ -156,24 +155,25 @@ impl ExampleEntityAttributeValueStorageNonSync {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
-        let filtered = self.clone()
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
+        let filtered = self
+            .clone()
             .storage
             .into_iter()
-          // .cloned()
-            .filter(|(_,eav)| match entity {
+            // .cloned()
+            .filter(|(_, eav)| match entity {
                 Some(ref e) => &eav.entity() == e,
                 None => true,
             })
-            .filter(|(_,eav)| match attribute {
+            .filter(|(_, eav)| match attribute {
                 Some(ref a) => &eav.attribute() == a,
                 None => true,
             })
-            .filter(|(_,eav)| match value {
+            .filter(|(_, eav)| match value {
                 Some(ref v) => &eav.value() == v,
                 None => true,
             })
-            .collect::<HashMap<HashString,EntityAttributeValue>>();
+            .collect::<HashMap<HashString, EntityAttributeValue>>();
         Ok(filtered)
     }
 }
@@ -206,15 +206,14 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
         self.content
             .read()
             .unwrap()
             .unthreadable_fetch_eav(entity, attribute, value)
     }
 
-    fn get_hash(&self)->HashString
-    {
+    fn get_hash(&self) -> HashString {
         HashString::from("")
     }
 }
@@ -276,7 +275,7 @@ pub fn eav_round_trip_test_runner(
     eav_storage.add_eav(&eav).expect("could not add eav");
 
     let mut expected = HashMap::new();
-    expected.insert(HashString::from(""),eav.clone());
+    expected.insert(HashString::from(""), eav.clone());
     // some examples of constraints that should all return the eav
     for (e, a, v) in vec![
         // constrain all

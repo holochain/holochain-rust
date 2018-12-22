@@ -9,7 +9,7 @@ use holochain_core_types::{
     hash::HashString,
 };
 use im::hashmap::HashMap;
-use std::{collections::HashSet, convert::TryInto, str::FromStr, sync::Arc};
+use std::{convert::TryInto, str::FromStr, sync::Arc};
 
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
@@ -45,10 +45,10 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let has_deleted = status_eavs
         .iter()
         .cloned()
-        .filter(|(_,e)| {
+        .filter(|(_, e)| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
         })
-        .collect::<HashMap<HashString,EntityAttributeValue>>()
+        .collect::<HashMap<HashString, EntityAttributeValue>>()
         .len()
         > 0;
     if has_deleted {
@@ -57,10 +57,10 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         let has_modified = status_eavs
             .iter()
             .cloned()
-            .filter(|(_,e)| {
+            .filter(|(_, e)| {
                 CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
             })
-            .collect::<HashMap<HashString,EntityAttributeValue>>()
+            .collect::<HashMap<HashString, EntityAttributeValue>>()
             .len()
             > 0;
         if has_modified {

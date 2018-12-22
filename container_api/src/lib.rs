@@ -57,10 +57,10 @@
 ///     println!("Using config path: {}", config_path_str);
 ///     match bootstrap_from_config(config_path_str) {
 ///         Ok(mut container) => {
-///             if container.instances.len() > 0 {
+///             if container.instances().len() > 0 {
 ///                 println!(
 ///                     "Successfully loaded {} instance configurations",
-///                     container.instances.len()
+///                     container.instances().len()
 ///                 );
 ///                 println!("Starting all of them...");
 ///                 container.start_all_instances();

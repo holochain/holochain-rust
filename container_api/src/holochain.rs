@@ -172,6 +172,10 @@ impl Holochain {
     pub fn state(&self) -> Result<State, HolochainInstanceError> {
         Ok(self.instance.state().clone())
     }
+
+    pub fn context(&self) -> &Arc<Context> {
+        &self.context
+    }
 }
 
 #[cfg(test)]

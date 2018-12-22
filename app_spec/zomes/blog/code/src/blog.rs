@@ -2,10 +2,7 @@ use hdk::{
     self,
     error::ZomeApiResult,
     holochain_core_types::{
-        cas::content::Address,
-        entry::Entry,
-        error::HolochainError,
-        json::JsonString,
+        cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{
         get_entry::GetEntryOptions, get_links::GetLinksResult,
@@ -29,18 +26,12 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
 }
 
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
-    let post_entry = Entry::App(
-        "post".into(),
-        Post::new(&content, "now").into(),
-    );
+    let post_entry = Entry::App("post".into(), Post::new(&content, "now").into());
     hdk::entry_address(&post_entry)
 }
 
 pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
-    let post_entry = Entry::App(
-        "post".into(),
-        Post::new(&content, "now").into(),
-    );
+    let post_entry = Entry::App("post".into(), Post::new(&content, "now").into());
 
     let address = hdk::commit_entry(&post_entry)?;
 

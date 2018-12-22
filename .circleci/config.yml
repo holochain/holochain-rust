@@ -41,21 +41,21 @@ jobs:
        name: app spec tests
        command: nix-shell --run hc-test-app-spec
 
-  # https://circleci.com/docs/2.0/building-docker-images/
-  docker.0:
-   machine: true
-   steps:
-    - checkout
-    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-    - run: docker build -f .circleci/Dockerfile.00.start -t holochain/holochain-rust:circle.00.start .
-    - run: docker push holochain/holochain-rust:circle.00.start
-  docker.1:
-   machine: true
-   steps:
-    - checkout
-    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-    - run: docker build -f .circleci/Dockerfile.01.warm.nix -t holochain/holochain-rust:circle.01.warm.nix .
-    - run: docker push holochain/holochain-rust:circle.01.warm.nix
+ # https://circleci.com/docs/2.0/building-docker-images/
+ docker.0:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.00.start -t holochain/holochain-rust:circle.00.start .
+   - run: docker push holochain/holochain-rust:circle.00.start
+ docker.1:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.01.warm.nix -t holochain/holochain-rust:circle.01.warm.nix .
+   - run: docker push holochain/holochain-rust:circle.01.warm.nix
 
 workflows:
  version: 2

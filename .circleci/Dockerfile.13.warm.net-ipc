@@ -1,0 +1,3 @@
+FROM holochain/holochain-rust:circle.12.warm.net
+
+RUN nix-shell --run hc-test-net-ipc

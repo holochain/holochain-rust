@@ -4,3 +4,4 @@ ENV NIX_PATH nixpkgs=https://github.com/NixOS/nixpkgs/archive/47f008676fe3b77b9c
 ENV HC_TARGET_PREFIX /holochain-rust/build/
 
 WORKDIR /holochain-rust/build
+COPY . .

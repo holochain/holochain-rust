@@ -27,7 +27,7 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         key_file: "hc_run.key".into(),
     };
 
-    let dna_config = DNAConfiguration {
+    let dna_config = DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: package::DEFAULT_BUNDLE_FILE_NAME.into(),
         hash: "Qm328wyq38924ybogus".into(),

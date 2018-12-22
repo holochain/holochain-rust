@@ -33,7 +33,7 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         Ok(links) => Ok(GetLinksResult::new(
             links
                 .iter()
-                .map(|(_,eav)| eav.value())
+                .map(|(_, eav)| eav.value())
                 .collect::<Vec<Address>>(),
         )),
         Err(hc_err) => Err(hc_err),

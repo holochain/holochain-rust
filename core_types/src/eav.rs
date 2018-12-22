@@ -274,7 +274,12 @@ pub fn eav_round_trip_test_runner(
     eav_storage.add_eav(&eav).expect("could not add eav");
 
     let mut expected = HashMap::new();
-    expected.insert(HashString::from(""), eav.clone());
+    let key = vec![
+        eav_storage.get_hash().to_string(),
+        eav.address().to_string(),
+    ]
+    .join("_");
+    expected.insert(HashString::from(key), eav.clone());
     // some examples of constraints that should all return the eav
     for (e, a, v) in vec![
         // constrain all

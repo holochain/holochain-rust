@@ -11,10 +11,10 @@ use holochain_core_types::{
     eav::EntityAttributeValue,
     entry::Entry,
     error::HolochainError,
-    hash::HashString
+    hash::HashString,
 };
 use im::hashmap::HashMap;
-use std::{ convert::TryFrom, str::FromStr, sync::Arc};
+use std::{convert::TryFrom, str::FromStr, sync::Arc};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -246,8 +246,10 @@ fn reduce_remove_entry_inner(
     let status_eavs = status_eavs
         .iter()
         .cloned()
-        .filter(|(_,e)| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))
-        .collect::<HashMap<HashString,EntityAttributeValue>>();
+        .filter(|(_, e)| {
+            CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live)
+        })
+        .collect::<HashMap<HashString, EntityAttributeValue>>();
     if !status_eavs.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "entry_status != CrudStatus::Live",

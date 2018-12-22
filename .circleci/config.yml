@@ -42,20 +42,111 @@ jobs:
        command: nix-shell --run hc-test-app-spec
 
  # https://circleci.com/docs/2.0/building-docker-images/
- docker.0:
+ docker.00:
   machine: true
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
    - run: docker build -f .circleci/Dockerfile.00.start -t holochain/holochain-rust:circle.00.start .
    - run: docker push holochain/holochain-rust:circle.00.start
- docker.1:
+ docker.01:
   machine: true
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
    - run: docker build -f .circleci/Dockerfile.01.warm.nix -t holochain/holochain-rust:circle.01.warm.nix .
    - run: docker push holochain/holochain-rust:circle.01.warm.nix
+ docker.02:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.02.warm.hdk -t holochain/holochain-rust:circle.02.warm.hdk .
+   - run: docker push holochain/holochain-rust:circle.02.warm.hdk
+ docker.03:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.03.warm.wasm-utils -t holochain/holochain-rust:circle.03.warm.wasm-utils .
+   - run: docker push holochain/holochain-rust:circle.03.warm.wasm-utils
+ docker.04:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.04.warm.container-api -t holochain/holochain-rust:circle.04.warm.container-api .
+   - run: docker push holochain/holochain-rust:circle.04.warm.container-api
+ docker.05:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.05.warm.core -t holochain/holochain-rust:circle.05.warm.core .
+   - run: docker push holochain/holochain-rust:circle.05.warm.core
+ docker.06:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.06.warm.cas-implementations -t holochain/holochain-rust:circle.06.warm.cas-implementations .
+   - run: docker push holochain/holochain-rust:circle.06.warm.cas-implementations
+ docker.07:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.07.warm.dna-c-binding -t holochain/holochain-rust:circle.07.warm.dna-c-binding .
+   - run: docker push holochain/holochain-rust:circle.07.warm.dna-c-binding
+ docker.08:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.08.warm.net-connection -t holochain/holochain-rust:circle.08.warm.net-connection .
+   - run: docker push holochain/holochain-rust:circle.08.warm.net-connection
+ docker.09:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.09.warm.sodium -t holochain/holochain-rust:circle.09.warm.sodium .
+   - run: docker push holochain/holochain-rust:circle.09.warm.sodium
+ docker.10:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.10.warm.hc -t holochain/holochain-rust:circle.10.warm.hc .
+   - run: docker push holochain/holochain-rust:circle.10.warm.hc
+ docker.11:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.11.warm.core-types -t holochain/holochain-rust:circle.11.warm.core-types .
+   - run: docker push holochain/holochain-rust:circle.11.warm.core-types
+ docker.12:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.12.warm.net -t holochain/holochain-rust:circle.12.warm.net .
+   - run: docker push holochain/holochain-rust:circle.12.warm.net
+ docker.13:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.13.warm.net-ipc -t holochain/holochain-rust:circle.13.warm.net-ipc .
+   - run: docker push holochain/holochain-rust:circle.13.warm.net-ipc
+ docker.99:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.99.warm.end -t holochain/holochain-rust:circle.99.warm.end .
+   - run: docker push holochain/holochain-rust:circle.99.warm.end
 
 workflows:
  version: 2
@@ -63,5 +154,17 @@ workflows:
   jobs:
    - build
    - integration-tests
-   - docker.0
-   - docker.1
+   - docker.01
+   - docker.02
+   - docker.03
+   - docker.04
+   - docker.05
+   - docker.06
+   - docker.07
+   - docker.08
+   - docker.09
+   - docker.10
+   - docker.11
+   - docker.12
+   - docker.13
+   - docker.99

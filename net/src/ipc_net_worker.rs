@@ -30,6 +30,7 @@ pub struct IpcNetWorker {
     is_ready: bool,
     state: String,
     last_state_millis: f64,
+    bootstrap_nodes: Vec<String>,
 }
 
 impl NetWorker for IpcNetWorker {
@@ -78,6 +79,7 @@ impl NetWorker for IpcNetWorker {
             if !self.is_ready && &self.state == "ready" {
                 self.is_ready = true;
                 (self.handler)(Ok(Protocol::P2pReady))?;
+                self.priv_send_connects()?;
             }
         }
 
@@ -157,7 +159,7 @@ impl IpcNetWorker {
                 Ok(out)
             }),
             None,
-            vec![],
+            bootstrap_nodes,
         )
     }
 
@@ -200,12 +202,6 @@ impl IpcNetWorker {
     ) -> NetResult<Self> {
         let (ipc_sender, ipc_relay_receiver) = mpsc::channel::<Protocol>();
 
-        // send our connection messages right away,
-        // they should get picked up when ready
-        for bs_node in bootstrap_nodes {
-            ipc_sender.send(ProtocolWrapper::Connect(ConnectData { address: bs_node }).into())?;
-        }
-
         let ipc_relay = NetConnectionRelay::new(
             Box::new(move |r| {
                 ipc_sender.send(r?)?;
@@ -225,7 +221,19 @@ impl IpcNetWorker {
             state: "undefined".to_string(),
 
             last_state_millis: 0.0_f64,
+
+            bootstrap_nodes,
         })
+    }
+
+    fn priv_send_connects(&mut self) -> NetResult<()> {
+        println!("bs nodes {:?}", &self.bootstrap_nodes);
+        for bs_node in &self.bootstrap_nodes {
+            println!("try connect bootstrap {:?}", bs_node);
+            self.ipc_relay.send(ProtocolWrapper::Connect(ConnectData { address: bs_node.clone() }).into())?;
+        }
+
+        Ok(())
     }
 
     /// send a ping twice per second

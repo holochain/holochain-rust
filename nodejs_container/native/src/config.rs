@@ -8,21 +8,13 @@ use neon::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct AgentData(String);
-
-impl AgentData {
-    pub fn name(&self) -> String {
-        self.0.clone()
-    }
+pub struct AgentData {
+    pub name: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DnaData(PathBuf);
-
-impl DnaData {
-    pub fn path(&self) -> PathBuf {
-        self.0.clone()
-    }
+pub struct DnaData {
+    pub path: PathBuf
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -47,8 +39,8 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
     let mut dna_configs = HashMap::new();
     let mut instance_configs = Vec::new();
     for instance in instance_data {
-        let agent_name = instance.agent.name();
-        let dna_path = PathBuf::from(instance.dna.path());
+        let agent_name = instance.agent.name;
+        let dna_path = PathBuf::from(instance.dna.path);
         let agent = agent_configs.entry(agent_name.clone()).or_insert_with(|| {
             let agent_key = AgentId::generate_fake(&agent_name);
             AgentConfiguration {

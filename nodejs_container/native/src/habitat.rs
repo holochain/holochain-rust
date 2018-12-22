@@ -24,7 +24,7 @@ use crate::{
 
 pub struct Habitat {
     container: Container,
-    sender_tx: SyncSender<SyncSender<ControlMsg>>,
+    sender_tx: Option<SyncSender<SyncSender<ControlMsg>>>,
     is_running: Arc<Mutex<bool>>,
 }
 
@@ -51,33 +51,35 @@ declare_types! {
                 panic!("Invalid type specified for config, must be object or string");
             };
             let mut container = Container::from_config(config);
+            let is_running = Arc::new(Mutex::new(false));
 
-            let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
-                .unwrap()
-                .as_value(&mut cx)
-                .downcast_or_throw(&mut cx)
-                .unwrap();
-            let (signal_tx, signal_rx) = signal_channel();
-            let (sender_tx, sender_rx) = sync_channel(1);
-            let is_running = Arc::new(Mutex::new(true));
-            let background_task = MainBackgroundTask::new(signal_rx, sender_rx, is_running.clone());
-            background_task.schedule(js_callback);
-
-            container.load_config_with_signal(Some(signal_tx)).or_else(|e| {
-                let error_string = cx.string(format!("unable to initialize habitat: {}", e));
-                cx.throw(error_string)
-            })?;
-
-            Ok(Habitat { container, sender_tx, is_running })
+            Ok(Habitat { container, sender_tx: None, is_running })
         }
 
         method start(mut cx) {
+            let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
+                    .unwrap()
+                    .as_value(&mut cx)
+                    .downcast_or_throw(&mut cx)
+                    .unwrap();
             let mut this = cx.this();
+
+            let (signal_tx, signal_rx) = signal_channel();
+            let (sender_tx, sender_rx) = sync_channel(1);
 
             let start_result: Result<(), String> = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
-                hab.container.start_all_instances().map_err(|e| e.to_string())
+                hab.sender_tx = Some(sender_tx);
+                {
+                    let mut is_running = hab.is_running.lock().unwrap();
+                    *is_running = true;
+                }
+                let background_task = MainBackgroundTask::new(signal_rx, sender_rx, hab.is_running.clone());
+                background_task.schedule(js_callback);
+                hab.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
+                    hab.container.start_all_instances().map_err(|e| e.to_string())
+                })
             };
 
             start_result.or_else(|e| {
@@ -153,7 +155,12 @@ declare_types! {
                 let (tx, rx) = sync_channel(0);
                 let task = CallBlockingTask { rx };
                 task.schedule(js_callback);
-                hab.sender_tx.send(tx).expect("Could not send to sender channel");
+                hab
+                    .sender_tx
+                    .as_ref()
+                    .expect("Container sender channel not initialized")
+                    .send(tx)
+                    .expect("Could not send to sender channel");
             }
             Ok(cx.undefined().upcast())
         }

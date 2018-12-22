@@ -188,7 +188,7 @@ mod tests {
         action::Action,
         context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
-        signal::{signal_channel, Signal, SignalReceiver},
+        signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{
         agent::AgentId,
@@ -635,7 +635,6 @@ mod tests {
     #[test]
     fn can_receive_action_signals() {
         use holochain_core::action::Action;
-        use std::time::Duration;
         let wasm = include_bytes!(
             "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
         );
@@ -644,7 +643,6 @@ mod tests {
             test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
         dna.uuid = "can_receive_action_signals".into();
         let (context, _, signal_rx) = test_context("alex");
-        let timeout = 1000;
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         hc.start().expect("couldn't start");
         hc.call(
@@ -656,7 +654,7 @@ mod tests {
         .unwrap();
 
         let mut entry_address: HashString = "".into();
-        let aw_publish = expect_action(&rx, |action| match action {
+        let _aw_publish = expect_action(&signal_rx, |action| match action {
             Action::Publish(address) => {
                 entry_address = address.clone();
                 true
@@ -664,7 +662,7 @@ mod tests {
             _ => false,
         });
 
-        let aw_hold = expect_action(&rx, |action| match action {
+        let _aw_hold = expect_action(&signal_rx, |action| match action {
             Action::Hold(entry) => {
                 assert_eq!(entry_address, entry.address());
                 true

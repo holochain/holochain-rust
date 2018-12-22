@@ -154,46 +154,20 @@ workflows:
   jobs:
    - build
    - integration-tests
+ dockers:
+  jobs:
    - docker.start
-   - docker.01:
-    requires:
-     - docker.start
+   - docker.01
    - docker.02
-    requires:
-     - docker.01
    - docker.03
-    requires:
-     - docker.02
    - docker.04
-    requires:
-     - docker.03
    - docker.05
-    requires:
-     - docker.04
    - docker.06
-    requires:
-     - docker.05
    - docker.07
-    requires:
-     - docker.06
    - docker.08
-    requires:
-     - docker.07
    - docker.09
-    requires:
-     - docker.08
    - docker.10
-    requires:
-     - docker.09
    - docker.11
-    requires:
-     - docker.10
    - docker.12
-    requires:
-     - docker.11
    - docker.13
-    requires:
-     - docker.12
    - docker.end
-    requires:
-     - docker.13

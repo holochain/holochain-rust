@@ -252,6 +252,7 @@ impl EavTestSuite {
         .expect("Could create entityAttributeValue");
 
         let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
+
         for eav_storage in two_stores.iter() {
             assert_eq!(
                 HashMap::new(),
@@ -271,7 +272,7 @@ impl EavTestSuite {
         let hash = eav_storage.get_hash();
         let key = vec![hash.to_string(),eav.address().to_string()].join("_");
         expected.insert(HashString::from(key),eav.clone());
-
+        println!("expected");
         for eav_storage in two_stores.iter() {
             // some examples of constraints that should all return the eav
             for (e, a, v) in vec![

@@ -29,7 +29,7 @@ impl EavMemoryStorage {
         EavMemoryStorage {
             storage: Arc::new(RwLock::new(HashMap::new())),
             id: Uuid::new_v4(),
-            current_hash : HashString::from("")
+            current_hash : HashString::from(Uuid::new_v4().to_string().replace("-","_"))
         }
     }
 }

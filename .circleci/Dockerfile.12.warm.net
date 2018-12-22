@@ -1,4 +1,3 @@
-# FROM holochain/holochain-rust:circle.11.warm.core-types
-FROM holochain/holochain-rust:circle.02.warm.hdk
+FROM holochain/holochain-rust:circle.11.warm.core-types
 
 RUN nix-shell --run hc-test-net

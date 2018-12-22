@@ -1,4 +1,3 @@
-# FROM holochain/holochain-rust:circle.04.warm.container-api
-FROM holochain/holochain-rust:circle.02.warm.hdk
+FROM holochain/holochain-rust:circle.04.warm.container-api
 
-RUN nix-shell --run hc-test-container-api
+RUN nix-shell --run hc-test-core

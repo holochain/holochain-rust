@@ -1,4 +1,3 @@
-# FROM holochain/holochain-rust:circle.05.warm.core
-FROM holochain/holochain-rust:circle.02.warm.hdk
+FROM holochain/holochain-rust:circle.05.warm.core
 
 RUN nix-shell --run hc-test-cas-implementations

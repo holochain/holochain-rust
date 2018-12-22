@@ -1,4 +1,3 @@
-# FROM holochain/holochain-rust:circle.08.warm.net-connection
-FROM holochain/holochain-rust:circle.02.warm.hdk
+FROM holochain/holochain-rust:circle.08.warm.net-connection
 
 RUN nix-shell --run hc-test-sodium

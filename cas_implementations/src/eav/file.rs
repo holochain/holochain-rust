@@ -41,7 +41,6 @@ pub fn add_eav_to_hashset(parent_dir : String,dir_entry: DirEntry, hash:HashStri
     let dir_entry_name = HashString::from(dir_entry.file_name().to_str().expect("into string failed"));
     if(hash_list.iter().find(|x|**x==dir_entry_name).is_some())
     {
-        println!("matched hash{:?}",hash_list);
         match OpenOptions::new().read(true).open(path) {
         Ok(mut file) => {
             let mut content: String = String::new();
@@ -58,8 +57,10 @@ pub fn add_eav_to_hashset(parent_dir : String,dir_entry: DirEntry, hash:HashStri
                     }
                 })
                 .map(|e| {
-                    println!("error {:?}",e);
-                    set.insert(hash,e);
+                    //find key to use here that is persistent use e
+                    let key = [hash.to_string(),e.clone().unwrap_or(String::from(""))].join("_");
+                    let new_hash = HashString::from(key);
+                    set.insert(new_hash,e);
                 });
         }
         Err(err) => {
@@ -218,6 +219,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
     ) -> Result<HashMap<HashString,EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
         let entity_set = self.read_from_dir::<Entity>(self.current_hash.clone(),ENTITY_DIR.to_string(), entity);
+        println!("entity_set {:?}",entity_set);
         let attribute_set = self
             .read_from_dir::<Attribute>(self.current_hash.clone(),ATTRIBUTE_DIR.to_string(), attribute)
             .clone();
@@ -228,7 +230,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
 
         let entity_attribute_value_inter= entity_set
             .intersection(attribute_value_inter);
-  
         let maybe_first_error = entity_attribute_value_inter.iter().find(|(_,e)| e.is_err());
         if let Some((_,Err(first_error))) = maybe_first_error {
           
@@ -242,7 +243,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
            
                     // errors filtered out above... unwrap is safe.
                     (hash,Content::from(maybe_eav_content.unwrap()))})
-                .map(|(hash,content)|{println!("content {:?}",content); (hash,EntityAttributeValue::try_from_content(&content))})
+                .map(|(hash,content)|{(hash,EntityAttributeValue::try_from_content(&content))})
                 .collect::<HashMap<HashString,HcResult<EntityAttributeValue>>>();
 
             let maybe_first_error = hopefully_eavs.iter().find(|e| e.1.is_err());

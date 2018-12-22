@@ -4,5 +4,5 @@ docker login -u $DOCKER_USER -p $DOCKER_PASS
 docker build -f Dockerfile.circle.base -t holochain/holochain-rust:circle-base .
 docker push holochain/holochain-rust:circle-base
 
-# docker build -f Dockerfile.circle.nixwarm -t holochain/holochain-rust:circle-nixwarm .
-# docker build -f Dockerfile.circle.rustwarm -t holochain/holochain-rust:circle-rustwarm .
+# docker build -f Dockerfile.circle.nix-warm -t holochain/holochain-rust:circle-nix-warm .
+# docker build -f Dockerfile.circle.rust-warm -t holochain/holochain-rust:circle-rust-warm .

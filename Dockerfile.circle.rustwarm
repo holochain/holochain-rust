@@ -1,4 +1,4 @@
-FROM holochain/holochain-rust:circle-nixwarm
+FROM holochain/holochain-rust:circle-nix-warm
 
 # pop the test suite off once to warm the incremental rust cache
 COPY . .

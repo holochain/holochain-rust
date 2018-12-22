@@ -18,7 +18,7 @@ use std::{
 };
 
 use crate::{
-    config::{JsConfigBuilder},
+    config::{js_make_config},
     waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask},
 };
 
@@ -183,8 +183,8 @@ declare_types! {
     }
 }
 
-register_module!(mut cx, {
-    cx.export_class::<JsHabitat>("Habitat")?;
-    cx.export_class::<JsConfigBuilder>("ConfigBuilder")?;
+register_module!(mut m, {
+    m.export_function("makeConfig", js_make_config)?;
+    m.export_class::<JsHabitat>("Habitat")?;
     Ok(())
 });

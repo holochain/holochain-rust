@@ -1,22 +1,21 @@
 const test = require('tape')
 const { pollFor } = require('./util')
 
-const { ConfigBuilder, Habitat } = require('../../nodejs_container')
+const { Config, Habitat } = require('../../nodejs_container')
 
 const dnaPath = "./dist/app_spec.hcpkg"
 
 // IIFE to keep config-only stuff out of test scope
-const config = (() => {
-  const agentAlice = ConfigBuilder.agent("alice")
-  const agentBob = ConfigBuilder.agent("bob")
 
-  const dna = ConfigBuilder.dna(dnaPath)
+const agentAlice = Config.agent("alice")
+const agentBob = Config.agent("bob")
 
-  const instanceAlice = ConfigBuilder.instance(agentAlice, dna)
-  const instanceBob = ConfigBuilder.instance(agentBob, dna)
+const dna = Config.dna(dnaPath)
 
-  return ConfigBuilder.habitat(instanceAlice, instanceBob)
-})()
+const instanceAlice = Config.instance(agentAlice, dna)
+const instanceBob = Config.instance(agentBob, dna)
+
+const config = Config.build(instanceAlice, instanceBob)
 
 // Initialize the Container (Habitat)
 const hab = new Habitat(config)

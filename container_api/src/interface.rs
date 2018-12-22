@@ -169,7 +169,11 @@ pub mod tests {
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let container = test_container();
-        let holochain = container.instances.get("test-instance-1").unwrap().clone();
+        let holochain = container
+            .instances()
+            .get("test-instance-1")
+            .unwrap()
+            .clone();
         let mut instances = InstanceMap::new();
         instances.insert("test-instance-1".into(), holochain);
         (container.config(), instances)
@@ -185,7 +189,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1//test/test""#));
+        assert!(result.contains(r#""test-instance-1/greeter/public/hello""#));
         assert!(!result.contains(r#""test-instance-2//test/test""#));
     }
 
@@ -205,7 +209,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store//test/test""#));
+        assert!(result.contains(r#""happ-store/greeter/public/hello""#));
         assert!(!result.contains(r#""test-instance-1//test/test""#));
     }
 }

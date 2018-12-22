@@ -1,3 +1,6 @@
+//! The JsonString type is defined here. It is used throughout Holochain
+//! to enforce a standardized serialization of data to/from json.
+
 use crate::error::{HcResult, HolochainError};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json;

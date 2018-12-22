@@ -1,3 +1,8 @@
+//! EAV stands for entity-attribute-value. It is a pattern implemented here
+//! for adding metadata about entries in the DHT, additionally
+//! being used to define relationships between AddressableContent values.
+//! See [wikipedia](https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model) to learn more about this pattern.
+
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     entry::{test_entry_a, test_entry_b, Entry},
@@ -14,15 +19,11 @@ use std::{
 
 use regex::RegexBuilder;
 use std::fmt::Debug;
-/// EAV (entity-attribute-value) data
-/// ostensibly for metadata about entries in the DHT
-/// defines relationships between AddressableContent values
-/// implemented on top of cas::storage::ContentAddressableStorage
-/// @see https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model
+
 /// Address of AddressableContent representing the EAV entity
 pub type Entity = Address;
 
-/// using String for EAV attributes (not e.g. an enum) keeps it simple and open
+/// Using String for EAV attributes (not e.g. an enum) keeps it simple and open
 pub type Attribute = String;
 
 /// Address of AddressableContent representing the EAV value
@@ -36,7 +37,8 @@ pub type Value = Address;
 // @TODO do we need this?
 // source agent asserting the meta
 // type Source ...
-
+/// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
+/// including the necessary serialization inherited.
 #[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct EntityAttributeValue {
     entity: Entity,
@@ -104,21 +106,18 @@ impl EntityAttributeValue {
     }
 }
 
-/// eav storage
-/// does NOT provide storage for AddressableContent
-/// use cas::storage::ContentAddressableStorage to store AddressableContent
-/// provides a simple and flexible interface to define relationships between AddressableContent
+/// This provides a simple and flexible interface to define relationships between AddressableContent.
+/// It does NOT provide storage for AddressableContent.
+/// Use cas::storage::ContentAddressableStorage to store AddressableContent.
 pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
-    /// adds the given EntityAttributeValue to the EntityAttributeValueStorage
-    /// append only storage
-    /// eavs are retrieved through constraint based lookups
-    /// @see fetch_eav
+    /// Adds the given EntityAttributeValue to the EntityAttributeValueStorage
+    /// append only storage.
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError>;
-    /// fetches the set of EntityAttributeValues that match constraints with the latest hash
-    /// None = no constraint
-    /// Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
-    /// Some(Attribute) = requires the given attribute (e.g. all links)
-    /// Some(Value) = requires the given value (e.g. all entities referencing an Address)
+    /// Fetch the set of EntityAttributeValues that match constraints according to the latest hash version
+    /// - None = no constraint
+    /// - Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
+    /// - Some(Attribute) = requires the given attribute (e.g. all links)
+    /// - Some(Value) = requires the given value (e.g. all entities referencing an Address)
     fn fetch_eav(
         &self,
         entity: Option<Entity>,

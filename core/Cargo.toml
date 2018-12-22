@@ -32,6 +32,8 @@ holochain_net_connection = { path = "../net_connection" }
 base64 = "*"
 boolinator = "2.4.0"
 jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+jsonrpc-lite = "0.5.0"
+globset = "0.4.2"
 im = "^12.2"
 
 [dev-dependencies]

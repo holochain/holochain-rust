@@ -25,7 +25,6 @@ use std::{
 
 use holochain_net::p2p_config::P2pConfig;
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
-use interface_impls;
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
 
@@ -37,7 +36,7 @@ use interface_impls;
 /// and also enable easier testing, a DnaLoader ()which is a closure that returns a
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
-    pub instances: InstanceMap,
+    instances: InstanceMap,
     config: Configuration,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     dna_loader: DnaLoader,
@@ -114,6 +113,10 @@ impl Container {
             .map(|_| ())
     }
 
+    pub fn instances(&self) -> &InstanceMap {
+        &self.instances
+    }
+
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
         self.stop_all_instances()?;
@@ -168,19 +171,21 @@ impl Container {
                 // Agent:
                 let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
                 let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
-                context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
+                context_builder =
+                    context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 // Network config:
-                instance_config.network.map(|network_config| {
-                    context_builder.with_network_config(JsonString::from(network_config))
-                });
+                if let Some(network_config) = instance_config.network {
+                    context_builder =
+                        context_builder.with_network_config(JsonString::from(network_config))
+                };
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
-                    context_builder.with_file_storage(path).map_err(|hc_err| {
+                    context_builder = context_builder.with_file_storage(path).map_err(|hc_err| {
                         format!("Error creating context: {}", hc_err.to_string())
-                    })?;
-                }
+                    })?
+                };
 
                 // Container API
                 let mut api_builder = ContainerApiBuilder::new();
@@ -203,7 +208,10 @@ impl Container {
                     api_builder = api_builder
                         .with_named_instance_config(bridge.handle.clone(), callee_config);
                 }
-                context_builder.with_container_api(api_builder.spawn());
+                context_builder = context_builder.with_container_api(api_builder.spawn());
+                if let Some(signal_tx) = self.signal_tx.clone() {
+                    context_builder = context_builder.with_signals(signal_tx);
+                }
 
                 // Spawn context
                 let context = context_builder.spawn();
@@ -219,16 +227,7 @@ impl Container {
                     },
                 )?;
 
-                match self.signal_tx {
-                    Some(ref signal_tx) => Holochain::new_with_signals(
-                        dna,
-                        Arc::new(context),
-                        signal_tx.clone(),
-                        |_| true,
-                    ),
-                    None => Holochain::new(dna, Arc::new(context)),
-                }
-                .map_err(|hc_err| hc_err.to_string())
+                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
             })
     }
 
@@ -294,10 +293,9 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 
 /// This can eventually be dependency injected for third party Interface definitions
 fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
+    use interface_impls::websocket::WebsocketInterface;
     match interface_config.driver {
-        InterfaceDriver::Websocket { port } => {
-            Box::new(interface_impls::websocket::WebsocketInterface::new(port))
-        }
+        InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
         _ => unimplemented!(),
     }
 }
@@ -313,15 +311,19 @@ impl Logger for NullLogger {
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
-
-    use holochain_core::signal::signal_channel;
+    use holochain_core::{action::Action, signal::signal_channel};
+    use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use std::{fs::File, io::Write};
-
     use tempfile::tempdir;
+    use test_utils::*;
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader = Box::new(|_path: &String| {
-            Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
+        let loader = Box::new(|path: &String| {
+            Ok(match path.as_ref() {
+                "bridge/callee.dna" => callee_dna(),
+                "bridge/caller.dna" => caller_dna(),
+                _ => Dna::try_from(JsonString::from(example_dna_string())).unwrap(),
+            })
         }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
         Arc::new(loader)
     }
@@ -351,9 +353,19 @@ pub mod tests {
     file = "app_spec.hcpkg"
     hash = "Qm328wyq38924y"
 
+    [[dnas]]
+    id = "bridge-callee"
+    file = "bridge/callee.dna"
+    hash = "Qm328wyq38924y"
+
+    [[dnas]]
+    id = "bridge-caller"
+    file = "bridge/caller.dna"
+    hash = "Qm328wyq38924y"
+
     [[instances]]
     id = "test-instance-1"
-    dna = "test-dna"
+    dna = "bridge-callee"
     agent = "test-agent-1"
     [instances.logger]
     type = "simple"
@@ -372,8 +384,8 @@ pub mod tests {
     type = "memory"
 
     [[instances]]
-    id = "test-instance-3"
-    dna = "test-dna"
+    id = "bridge-caller"
+    dna = "bridge-caller"
     agent = "test-agent-3"
     [instances.logger]
     type = "simple"
@@ -397,14 +409,14 @@ pub mod tests {
     handle = "DPKI"
 
     [[bridges]]
-    caller_id = "test-instance-3"
+    caller_id = "bridge-caller"
     callee_id = "test-instance-2"
     handle = "happ-store"
 
     [[bridges]]
-    caller_id = "test-instance-3"
+    caller_id = "bridge-caller"
     callee_id = "test-instance-1"
-    handle = "DPKI"
+    handle = "test-callee"
     "#
         .to_string()
     }
@@ -510,7 +522,7 @@ pub mod tests {
         assert_eq!(
             maybe_container.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"app_spec.hcpkg\"".to_string()
+                "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"bridge/callee.dna\"".to_string()
             )
         );
     }
@@ -530,8 +542,7 @@ pub mod tests {
     }
 
     #[test]
-    fn container_signal_handler() {
-        use holochain_core::action::Action;
+    fn test_container_signal_handler() {
         let (signal_tx, signal_rx) = signal_channel();
         let _container = test_container_with_signals(signal_tx);
 
@@ -554,6 +565,157 @@ pub mod tests {
             _ => false,
         })
         .unwrap();
+    }
+
+    pub fn callee_wat() -> String {
+        r#"
+(module
+
+    (memory 1)
+    (export "memory" (memory 0))
+
+    (func
+        (export "__hdk_validate_app_entry")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+    (func
+        (export "__hdk_validate_link")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+
+    (func
+        (export "__hdk_get_validation_package_for_entry_type")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
+
+    (func
+        (export "__hdk_get_validation_package_for_link")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Entry" into memory
+        (i32.store (i32.const 0) (i32.const 34))
+        (i32.store (i32.const 1) (i32.const 69))
+        (i32.store (i32.const 2) (i32.const 110))
+        (i32.store (i32.const 3) (i32.const 116))
+        (i32.store (i32.const 4) (i32.const 114))
+        (i32.store (i32.const 5) (i32.const 121))
+        (i32.store (i32.const 6) (i32.const 34))
+
+        (i32.const 7)
+    )
+
+    (func
+        (export "__list_capabilities")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+    (func
+        (export "hello")
+        (param $allocation i32)
+        (result i32)
+
+        ;; This writes "Holo World" into memory
+        (i32.store (i32.const 0) (i32.const 72))
+        (i32.store (i32.const 1) (i32.const 111))
+        (i32.store (i32.const 2) (i32.const 108))
+        (i32.store (i32.const 3) (i32.const 111))
+        (i32.store (i32.const 4) (i32.const 32))
+        (i32.store (i32.const 5) (i32.const 87))
+        (i32.store (i32.const 6) (i32.const 111))
+        (i32.store (i32.const 7) (i32.const 114))
+        (i32.store (i32.const 8) (i32.const 108))
+        (i32.store (i32.const 9) (i32.const 100))
+
+        (i32.const 10)
+    )
+)
+                "#
+        .to_string()
+    }
+
+    fn callee_dna() -> Dna {
+        let wat = &callee_wat();
+        let mut dna = create_test_dna_with_wat("greeter", "public", Some(wat));
+        dna.uuid = String::from("basic_bridge_call");
+        dna.zomes
+            .get_mut("greeter")
+            .unwrap()
+            .capabilities
+            .get_mut("public")
+            .unwrap()
+            .functions
+            .push(dna::capabilities::FnDeclaration {
+                name: String::from("hello"),
+                inputs: vec![],
+                outputs: vec![dna::capabilities::FnParameter {
+                    name: String::from("greeting"),
+                    parameter_type: String::from("String"),
+                }],
+            });
+        dna
+    }
+
+    fn caller_dna() -> Dna {
+        let wasm = create_wasm_from_file(
+            "test-bridge-caller/target/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
+        );
+        let capabability = create_test_cap_with_fn_name("call_bridge");
+        let mut dna = create_test_dna_with_cap("main", "main", &capabability, &wasm);
+        dna.uuid = String::from("basic_bridge_call");
+        dna
+    }
+
+    #[test]
+    fn basic_bridge_call_roundtrip() {
+        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        let mut container = Container::from_config(config.clone());
+        container.dna_loader = test_dna_loader();
+        container.load_config().expect("Test config must be sane");
+        container
+            .start_all_instances()
+            .expect("Instances must be spawnable");
+        let caller_instance = container.instances["bridge-caller"].clone();
+        let result = caller_instance
+            .write()
+            .unwrap()
+            .call(
+                "main",
+                Some(dna::capabilities::CapabilityCall::new(
+                    String::from("main"),
+                    Address::from("fake_token"),
+                    None,
+                )),
+                "call_bridge",
+                "{}",
+            )
+            .unwrap();
+
+        // "Holo World" comes for the callee_wat above which runs in the callee instance
+        assert_eq!(result, JsonString::from(RawString::from("Holo World")));
     }
 
 }

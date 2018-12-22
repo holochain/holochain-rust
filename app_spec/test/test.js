@@ -14,7 +14,7 @@ test('show_env', (t) => {
     const result = app.call("blog", "main", "show_env", {})
 
     t.deepEqual(result.Ok, {
-        "dna_hash": "Qme17TmUTKAXEk4KRAsy2L6b4LqvSxTzmmHJUuz5EtjoRS",
+        "dna_hash": "QmUeMBSxTDTkusasKrUD1je18zvrQcwqG97ZLSUQoxxXTf",
         "dna_name": "HDK-spec-rust",
         "agent_address": "bob-------------------------------------------------------------------------------AAAOsqqVCf",
         "agent_id": '{"nick":"bob","key":"bob-------------------------------------------------------------------------------AAAOsqqVCf"}'

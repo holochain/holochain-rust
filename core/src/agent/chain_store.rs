@@ -1,3 +1,4 @@
+use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     cas::{
         content::{Address, AddressableContent},
@@ -5,8 +6,12 @@ use holochain_core_types::{
     },
     chain_header::ChainHeader,
     entry::entry_type::EntryType,
+    error::RibosomeErrorCode::{self, *},
 };
-use std::sync::{Arc, RwLock};
+use std::{
+    str::FromStr,
+    sync::{Arc, RwLock},
+};
 
 #[derive(Debug, Clone)]
 pub struct ChainStore {
@@ -37,6 +42,9 @@ impl ChainStore {
         ChainStoreIterator::new(self.content_storage.clone(), start_chain_header.clone())
     }
 
+    /// Scans the local chain for the first Entry of EntryType, and then creates a
+    /// ChainStoreTypeIter to return the sequence of all Entrys with the same EntryType. Requires a
+    /// single EntryType.
     pub fn iter_type(
         &self,
         start_chain_header: &Option<ChainHeader>,
@@ -52,23 +60,92 @@ impl ChainStore {
     pub fn query(
         &self,
         start_chain_header: &Option<ChainHeader>,
-        entry_type: &EntryType,
+        entry_type_names: &[&str],
         start: u32,
         limit: u32,
-    ) -> Vec<Address> {
-        let base_iter = self
-            .iter_type(start_chain_header, entry_type)
-            .map(|header| header.entry_address().clone())
-            .skip(start as usize);
-
-        if limit > 0 {
-            base_iter.take(limit as usize).collect()
-        } else {
-            base_iter.collect()
+    ) -> Result<Vec<Address>, RibosomeErrorCode> {
+        // Get entry_type name(s), if any.  If empty/blank, returns the complete source chain.  A
+        // single matching entry type name with no glob pattern matching will use the single
+        // entry_type optimization.  Otherwise, we'll construct a GlobSet match and scan the list to
+        // create a pattern-match engine to select the EntryTypes we want.
+        fn is_glob(c: &char) -> bool {
+            "./*[]{}".chars().any(|y| y == *c)
         }
+        fn is_glob_str(s: &str) -> bool {
+            s.chars().any(|c| is_glob(&c))
+        }
+
+        Ok(match entry_type_names {
+            [] | [""] => {
+                // No filtering desired; uses bare .iter()
+                let base_iter = self
+                    .iter(start_chain_header)
+                    .skip(start as usize)
+                    .map(|header| header.entry_address().clone());
+                if limit > 0 {
+                    base_iter.take(limit as usize).collect()
+                } else {
+                    base_iter.collect()
+                }
+            }
+            [one] if !is_glob_str(one) => {
+                // Single EntryType without "glob" pattern; uses .iter_type()
+                let entry_type = match EntryType::from_str(&one) {
+                    Ok(inner) => inner,
+                    Err(..) => return Err(UnknownEntryType),
+                };
+                let base_iter = self
+                    .iter_type(start_chain_header, &entry_type)
+                    .skip(start as usize)
+                    .map(|header| header.entry_address().clone());
+                if limit > 0 {
+                    base_iter.take(limit as usize).collect()
+                } else {
+                    base_iter.collect()
+                }
+            }
+            rest => {
+                // 1 or more EntryTypes, may or may not include glob wildcards.  Create a
+                // GlobSetBuilder and add all the EntryType name patterns to it; this will recognize
+                // all matching EntryTypes using a single regex machine invocation.  In order to
+                // support .../... EntryType namespaces, force the '/' path separator to match
+                // literally.
+                let mut builder = GlobSetBuilder::new();
+                for name in rest {
+                    builder.add(
+                        GlobBuilder::new(name)
+                            .literal_separator(true)
+                            .build()
+                            .map_err(|_| UnknownEntryType)?,
+                    );
+                }
+                let globset = builder.build().map_err(|_| UnknownEntryType)?;
+                let base_iter = self
+                    .iter(start_chain_header)
+                    .filter(|header| {
+                        globset
+                            .matches(String::from((*header.entry_type()).clone()))
+                            .len()
+                            > 0
+                    })
+                    .skip(start as usize)
+                    .map(|header| header.entry_address().clone());
+                if limit > 0 {
+                    base_iter.take(limit as usize).collect()
+                } else {
+                    base_iter.collect()
+                }
+            }
+        })
     }
 }
 
+/// Access each Entry
+///
+/// # Remarks
+///
+/// Locates the next Entry by following ChainHeader's .link
+///
 pub struct ChainStoreIterator {
     content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     current: Option<ChainHeader>,
@@ -86,6 +163,7 @@ impl ChainStoreIterator {
     }
 }
 
+/// Follows ChainHeader.link through every previous Entry (of any EntryType) in the chain
 impl Iterator for ChainStoreIterator {
     type Item = ChainHeader;
 
@@ -114,6 +192,15 @@ impl Iterator for ChainStoreIterator {
     }
 }
 
+/// Quickly access each Entry of a single known EntryType
+///
+/// # Remarks
+///
+/// Iterates over subsequent instances of the same EntryType using .link_same_type.
+///
+/// This Iterator will only work with a single EntryType; it cannot handle None (wildcard) or
+/// multiple EntryType queries.
+///
 pub struct ChainStoreTypeIterator {
     content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     current: Option<ChainHeader>,
@@ -131,6 +218,7 @@ impl ChainStoreTypeIterator {
     }
 }
 
+/// Follows ChainHeader.link_same_type through every previous Entry of the same EntryType in the chain
 impl Iterator for ChainStoreTypeIterator {
     type Item = ChainHeader;
 
@@ -145,7 +233,9 @@ impl Iterator for ChainStoreTypeIterator {
             // @TODO should this panic?
             // @see https://github.com/holochain/holochain-rust/issues/146
             .and_then(|linked_chain_header_address| {
-                (*storage.read().unwrap())
+                storage
+                    .read()
+                    .unwrap()
                     .fetch(linked_chain_header_address)
                     .expect("failed to fetch from CAS")
                     .map(|content| {
@@ -166,14 +256,17 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::{test_chain_header, test_sources, ChainHeader},
-        entry::{test_entry, test_entry_b, test_entry_c},
-        signature::{test_signature_b, test_signature_c, test_signatures},
+        entry::{
+            entry_type::{test_entry_type_b, AppEntryType},
+            test_entry, test_entry_b, test_entry_c, Entry,
+        },
+        json::JsonString,
+        signature::{test_signature_b, test_signature_c, test_signatures, Signature},
         time::test_iso_8601,
     };
-    use std::sync::{Arc, RwLock};
 
     pub fn test_chain_store() -> ChainStore {
-        ChainStore::new(Arc::new(RwLock::new(
+        ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap())
                 .expect("could not create chain store"),
         )))
@@ -300,6 +393,7 @@ pub mod tests {
     fn query_test() {
         let chain_store = test_chain_store();
 
+        // Two entries w/ the same EntryType "testEntryTypeB".
         let chain_header_a = test_chain_header();
         let entry = test_entry_b();
         let chain_header_b = ChainHeader::new(
@@ -307,8 +401,8 @@ pub mod tests {
             &entry.address(),
             &test_sources(),
             &vec![test_signature_b()],
-            &Some(chain_header_a.address()),
-            &None,
+            &Some(chain_header_a.address()), // .link                (to previous entry)
+            &None, // .link_same_type      (to previous entry of same type)
             &None,
             &test_iso_8601(),
         );
@@ -323,6 +417,34 @@ pub mod tests {
             &None,
             &test_iso_8601(),
         );
+        let entry = Entry::App(
+            AppEntryType::from("another/something"),
+            JsonString::from("Hello, World!"),
+        );
+        let chain_header_d = ChainHeader::new(
+            &entry.entry_type(),
+            &entry.address(),
+            &test_sources(),
+            &vec![Signature::from("sig-d")],
+            &Some(chain_header_c.address()),
+            &None,
+            &None,
+            &test_iso_8601(),
+        );
+        let entry = Entry::App(
+            AppEntryType::from("another/different"),
+            JsonString::from("Kthxbye"),
+        );
+        let chain_header_e = ChainHeader::new(
+            &entry.entry_type(),
+            &entry.address(),
+            &test_sources(),
+            &vec![Signature::from("sig-e")],
+            &Some(chain_header_d.address()),
+            &None,
+            &None,
+            &test_iso_8601(),
+        );
 
         let storage = chain_store.content_storage.clone();
         (*storage.write().unwrap())
@@ -334,17 +456,293 @@ pub mod tests {
         (*storage.write().unwrap())
             .add(&chain_header_c)
             .expect("could not add header to cas");
+        (*storage.write().unwrap())
+            .add(&chain_header_d)
+            .expect("could not add header to cas");
+        (*storage.write().unwrap())
+            .add(&chain_header_e)
+            .expect("could not add header to cas");
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), &entry.entry_type(), 0, 0);
+        // First, lets see if we can find the EntryType "testEntryTypeB" Entries
+        let found = chain_store
+            .query(
+                &Some(chain_header_e.clone()),
+                &vec![test_entry_type_b().to_string().as_ref()],
+                0,
+                0,
+            )
+            .unwrap();
         let expected = vec![
             chain_header_c.entry_address().clone(),
             chain_header_b.entry_address().clone(),
         ];
         assert_eq!(expected, found);
 
-        let found = chain_store.query(&Some(chain_header_c.clone()), &entry.entry_type(), 0, 1);
+        // Then, limit to 1 at a time, starting from the 0'th match
+        let found = chain_store
+            .query(
+                &Some(chain_header_e.clone()),
+                &vec![test_entry_type_b().to_string().as_ref()],
+                0,
+                1,
+            )
+            .unwrap();
         let expected = vec![chain_header_c.entry_address().clone()];
         assert_eq!(expected, found);
+
+        // Now query for all EntryTypes via entry_type == None
+        let found = chain_store
+            .query(&Some(chain_header_e.clone()), &[], 0, 0)
+            .unwrap();
+        let expected = vec![
+            chain_header_e.entry_address().clone(),
+            chain_header_d.entry_address().clone(),
+            chain_header_c.entry_address().clone(),
+            chain_header_b.entry_address().clone(),
+            chain_header_a.entry_address().clone(),
+        ];
+        assert_eq!(expected, found);
+
+        // Test Glob matching, namespacing.
+
+        // Wildcard glob, all paths
+        let found = chain_store
+            .query(
+                &Some(chain_header_e.clone()),
+                &vec!["**".to_string().as_ref()],
+                0,
+                0,
+            )
+            .unwrap();
+        assert_eq!(expected, found);
+
+        // Globbing plus some arbitrary EntryType names, thus matches everything again
+        let found = chain_store
+            .query(
+                &Some(chain_header_e.clone()),
+                &vec!["another/*".to_string().as_ref(), "testEntryType*"],
+                0,
+                0,
+            )
+            .unwrap();
+        assert_eq!(expected, found);
+
+        // Just globbing
+        let found = chain_store
+            .query(
+                &Some(chain_header_e.clone()),
+                &vec!["another/*".to_string().as_ref()],
+                0,
+                0,
+            )
+            .unwrap();
+        let expected = vec![
+            chain_header_e.entry_address().clone(),
+            chain_header_d.entry_address().clone(),
+        ];
+        assert_eq!(expected, found);
+
+        let entry = Entry::App(AppEntryType::from("ns/one"), JsonString::from("1"));
+        let chain_header_f = ChainHeader::new(
+            &entry.entry_type(),
+            &entry.address(),
+            &test_sources(),
+            &vec![Signature::from("sig-f")],
+            &Some(chain_header_e.address()),
+            &None,
+            &None,
+            &test_iso_8601(),
+        );
+        let entry = Entry::App(AppEntryType::from("ns/sub/two"), JsonString::from("2"));
+        let chain_header_g = ChainHeader::new(
+            &entry.entry_type(),
+            &entry.address(),
+            &test_sources(),
+            &vec![Signature::from("sig-g")],
+            &Some(chain_header_f.address()),
+            &None,
+            &None,
+            &test_iso_8601(),
+        );
+        let entry = Entry::App(AppEntryType::from("ns/sub/three"), JsonString::from("3"));
+        let chain_header_h = ChainHeader::new(
+            &entry.entry_type(),
+            &entry.address(),
+            &test_sources(),
+            &vec![Signature::from("sig-g")],
+            &Some(chain_header_g.address()),
+            &None,
+            &None,
+            &test_iso_8601(),
+        );
+        (*storage.write().unwrap())
+            .add(&chain_header_f)
+            .expect("could not add header to cas");
+        (*storage.write().unwrap())
+            .add(&chain_header_g)
+            .expect("could not add header to cas");
+        (*storage.write().unwrap())
+            .add(&chain_header_h)
+            .expect("could not add header to cas");
+
+        // Multiple complex globs.  The leading '**/' matches 0 or more leading .../ segments, so returns
+        let found = chain_store
+            .query(
+                &Some(chain_header_h.clone()),
+                &vec!["another/*", "ns/**/t*"],
+                0,
+                0,
+            )
+            .unwrap();
+        let expected = vec![
+            chain_header_h.entry_address().clone(),
+            chain_header_g.entry_address().clone(),
+            chain_header_e.entry_address().clone(),
+            chain_header_d.entry_address().clone(),
+        ];
+        assert_eq!(expected, found);
+
+        // So, we should be able to find EntryType names by suffix at any depth
+        let found = chain_store
+            .query(&Some(chain_header_h.clone()), &vec!["**/*{e,B}"], 0, 0)
+            .unwrap();
+        let expected = vec![
+            chain_header_h.entry_address().clone(), // .../three
+            chain_header_f.entry_address().clone(), // .../one
+            chain_header_c.entry_address().clone(), // testEntryTypeB
+            chain_header_b.entry_address().clone(), // testEntryTypeB
+            chain_header_a.entry_address().clone(), // testEntryType
+        ];
+        assert_eq!(expected, found);
+
+        let entry = Entry::App(
+            AppEntryType::from("%system_entry_type"),
+            JsonString::from("System Entry"),
+        );
+        let chain_header_i = ChainHeader::new(
+            &entry.entry_type(),
+            &entry.address(),
+            &test_sources(),
+            &vec![Signature::from("sig-i")],
+            &Some(chain_header_h.address()),
+            &None,
+            &None,
+            &test_iso_8601(),
+        );
+        (*storage.write().unwrap())
+            .add(&chain_header_i)
+            .expect("could not add header to cas");
+
+        // Find EntryTypes which are/not System (start with '%'), and end in 'e'
+        let found = chain_store
+            .query(&Some(chain_header_i.clone()), &vec!["[!%]*e"], 0, 0)
+            .unwrap();
+        let expected = vec![
+            chain_header_a.entry_address().clone(), // testEntryType
+        ];
+        assert_eq!(expected, found);
+        // Including all namespaced EntryTypes
+        let found = chain_store
+            .query(&Some(chain_header_i.clone()), &vec!["**/[!%]*e"], 0, 0)
+            .unwrap();
+        let expected = vec![
+            chain_header_h.entry_address().clone(), // .../three
+            chain_header_f.entry_address().clone(), // .../one
+            chain_header_a.entry_address().clone(), // testEntryType
+        ];
+        assert_eq!(expected, found);
+        let found = chain_store
+            .query(&Some(chain_header_i.clone()), &vec!["%*e"], 0, 0)
+            .unwrap();
+        let expected = vec![
+            chain_header_i.entry_address().clone(), // %system_entry_type
+        ];
+        assert_eq!(expected, found);
+    }
+
+    use globset::{Glob, GlobBuilder, GlobSetBuilder};
+
+    #[test]
+    /// show query() globbing implementation
+    fn glob_query_test() {
+        let glob = match Glob::new("*.rs") {
+            Ok(pat) => pat.compile_matcher(),
+            Err(_) => panic!("Couldn't craete new Glob"),
+        };
+        assert!(glob.is_match("foo.rs"));
+        assert!(glob.is_match("foo/bar.rs")); // separators not specially handled
+        assert!(!glob.is_match("Cargo.toml"));
+
+        let glob = match GlobBuilder::new("*.rs").literal_separator(true).build() {
+            Ok(pat) => pat.compile_matcher(),
+            Err(_) => panic!("Couldn't craete new Glob"),
+        };
+        assert!(glob.is_match("foo.rs"));
+        assert!(!glob.is_match("foo/bar.rs")); // separators now are special
+        assert!(!glob.is_match("Cargo.toml"));
+
+        let mut builder = GlobSetBuilder::new();
+        // A GlobBuilder can be used to configure each glob's match semantics
+        // independently.  Either using simple Glob::new (default semantics):
+        builder.add(match Glob::new("*.rs") {
+            Ok(pat) => pat,
+            Err(_) => panic!("Couldn't craete new Glob"),
+        });
+        builder.add(match Glob::new("src/lib.rs") {
+            Ok(pat) => pat,
+            Err(_) => panic!("Couldn't craete new Glob"),
+        });
+        builder.add(match Glob::new("src/**/foo.rs") {
+            Ok(pat) => pat,
+            Err(_) => panic!("Couldn't craete new Glob"),
+        });
+        let set = match builder.build() {
+            Ok(globset) => globset,
+            Err(_) => panic!("Couldn't build GlobSetBuilder"),
+        };
+        assert_eq!(set.matches("src/bar/baz/foo.rs"), vec![0, 2]); // separators are not treated specially; '*' matches them
+
+        // Or using GlobBuilder::new for specific modifiers on each pattern's behaviour
+        let mut builder = GlobSetBuilder::new();
+        builder.add(
+            match GlobBuilder::new("*.rs").literal_separator(true).build() {
+                Ok(pat) => pat,
+                Err(_) => panic!("Couldn't craete new Glob"),
+            },
+        );
+        builder.add(
+            match GlobBuilder::new("src/lib.rs")
+                .literal_separator(true)
+                .build()
+            {
+                Ok(pat) => pat,
+                Err(_) => panic!("Couldn't craete new Glob"),
+            },
+        );
+        builder.add(
+            match GlobBuilder::new("src/**/foo.rs")
+                .literal_separator(true)
+                .build()
+            {
+                Ok(pat) => pat,
+                Err(_) => panic!("Couldn't craete new Glob"),
+            },
+        );
+        builder.add(
+            match GlobBuilder::new("**/foo.rs")
+                .literal_separator(true)
+                .build()
+            {
+                Ok(pat) => pat,
+                Err(_) => panic!("Couldn't craete new Glob"),
+            },
+        );
+        let set = match builder.build() {
+            Ok(globset) => globset,
+            Err(_) => panic!("Couldn't build GlobSetBuilder"),
+        };
+        assert_eq!(set.matches("src/bar/baz/foo.rs"), vec![2, 3]); // *.rs no longer matches, due to '/' separators
+        assert_eq!(set.matches("foo.rs"), vec![0, 3]); // but, any number of leading '/' are matched by a '**/...'
     }
 
 }

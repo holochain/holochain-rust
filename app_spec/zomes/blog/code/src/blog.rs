@@ -70,7 +70,7 @@ pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
     // This allows for pagination.
     // Future versions will also include more parameters for more complex
     // queries.
-    hdk::query("post", 0, 0)
+    hdk::query( "post".into(), 0, 0)
 }
 
 pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {

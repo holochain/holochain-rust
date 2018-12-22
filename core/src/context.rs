@@ -196,7 +196,8 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, Stri
         .nucleus()
         .dna()
         .ok_or("Network::start() called without DNA".to_string())?;
-    let dna_hash = base64::encode(&dna.multihash()?);
+    let multihash = dna.multihash()?;
+    let dna_hash = base64::encode(&multihash);
     Ok((dna_hash, agent_id))
 }
 

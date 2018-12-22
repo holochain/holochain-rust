@@ -15,36 +15,34 @@ const dna = Config.dna(dnaPath)
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 
-const config = Config.build(instanceAlice, instanceBob)
-
 const scenario = Config.scenario(instanceAlice, instanceBob)
 
-// test('scenario test create & publish post -> get from other instance', (t) => {
-//   scenario.run(stop => async (alice, bob) => {
-//     const initialContent = "Holo world"
-//     const params = { content: "Holo world", in_reply_to: null }
-//     const create_result = await alice.callSync("blog", "main", "create_post", params)
-//     console.log("create_result: ", create_result)
+test('scenario.run()', t => {
+  scenario.run(stop => async (alice, bob) => {
+    const initialContent = "Holo world"
+    const params = { content: "Holo world", in_reply_to: null }
+    const create_result = await alice.callSync("blog", "main", "create_post", params)
+    console.log("create_result: ", create_result)
 
-//     const params2 = { content: "post 2", in_reply_to: null }
-//     const create_result2 = await bob.callSync("blog", "main", "create_post", params2)
-//     console.log("create_result2: ", create_result2)
+    const params2 = { content: "post 2", in_reply_to: null }
+    const create_result2 = await bob.callSync("blog", "main", "create_post", params2)
+    console.log("create_result2: ", create_result2)
 
-//     t.equal(create_result.Ok.length, 46)
-//     t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+    t.equal(create_result.Ok.length, 46)
+    t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 
-//     const post_address = create_result.Ok
-//     const params_get = { post_address }
+    const post_address = create_result.Ok
+    const params_get = { post_address }
 
-//     const result = bob.call("blog", "main", "get_post", params_get)
-//     const value = JSON.parse(result.Ok.App[1])
-//     t.equal(value.content, initialContent)
-//     t.end()
-//     stop()
-//   })
-// })
+    const result = bob.call("blog", "main", "get_post", params_get)
+    const value = JSON.parse(result.Ok.App[1])
+    t.equal(value.content, initialContent)
+    t.end()
+    stop()
+  })
+})
 
-scenario.runTape(test, 'scenario test create & publish post -> get from other instance', t => async (alice, bob) => {
+scenario.runTape(test, 'scenario.runTape()', t => async (alice, bob) => {
   const initialContent = "Holo world"
   const params = { content: "Holo world", in_reply_to: null }
   const create_result = await alice.callSync("blog", "main", "create_post", params)
@@ -64,9 +62,11 @@ scenario.runTape(test, 'scenario test create & publish post -> get from other in
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
 })
-return
+
+///// Previous tests:
 
 // Initialize the Container (Habitat)
+const config = Config.build(instanceAlice, instanceBob)
 const hab = new Habitat(config)
 hab.start()
 

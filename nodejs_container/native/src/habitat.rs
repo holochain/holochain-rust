@@ -3,30 +3,23 @@ use holochain_container_api::{
     container::Container,
 };
 use holochain_core::{
-    action::{Action, ActionWrapper},
-    signal::{signal_channel, SignalReceiver},
+    signal::{signal_channel},
 };
 use holochain_core_types::{
     cas::content::Address,
     dna::{capabilities::CapabilityCall},
 };
 use neon::{context::Context, prelude::*};
-use snowflake::ProcessUniqueId;
 use std::{
-    collections::HashMap,
-    convert::TryFrom,
-    path::PathBuf,
     sync::{
-        mpsc::{sync_channel, Receiver, SyncSender},
-        Arc, Mutex, RwLock,
+        mpsc::{sync_channel, SyncSender},
+        Arc, Mutex,
     },
-    thread,
 };
-use tempfile::tempdir;
 
 use crate::{
-    config::{ConfigBuilder, JsConfigBuilder},
-    waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask, Waiter},
+    config::{JsConfigBuilder},
+    waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask},
 };
 
 pub struct Habitat {
@@ -36,17 +29,10 @@ pub struct Habitat {
 }
 
 fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
-    panic!("hey, this never should happen");
+    println!("Background task shut down");
     Ok(cx.null())
 }
 
-
-// fn function_handle(mut cx: &FunctionContext, jsf: JsFunction) -> Handle<JsFunction> {
-//     jsf.unwrap()
-//         .as_value(&mut cx)
-//         .downcast_or_throw(&mut cx)
-//         .unwrap();
-// }
 
 declare_types! {
 
@@ -77,7 +63,7 @@ declare_types! {
             let background_task = MainBackgroundTask::new(signal_rx, sender_rx, is_running.clone());
             background_task.schedule(js_callback);
 
-            let result = container.load_config_with_signal(Some(signal_tx)).or_else(|e| {
+            container.load_config_with_signal(Some(signal_tx)).or_else(|e| {
                 let error_string = cx.string(format!("unable to initialize habitat: {}", e));
                 cx.throw(error_string)
             })?;
@@ -86,7 +72,6 @@ declare_types! {
         }
 
         method start(mut cx) {
-            let js_callback = JsFunction::new(&mut cx, signal_callback).unwrap();
             let mut this = cx.this();
 
             let start_result: Result<(), String> = {

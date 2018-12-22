@@ -19,7 +19,6 @@ Habitat.prototype.call = function (id, zome, trait, fn, params) {
         console.log("JSON.parse failed to parse the result. The raw value is: ", rawResult);
         result = { error: "JSON.parse failed to parse the result", rawResult };
     }
-    console.log('here it comes: ', result);
     return result;
 }
 
@@ -33,7 +32,9 @@ Habitat.prototype.callWithPromise = function (...args) {
 
 Habitat.prototype.callSync = function (...args) {
     const [result, promise] = this.callWithPromise(...args)
-    return promise.then(() => result)
+    return promise
+        .catch(err => console.error("Error with scenario test system: ", err))
+        .then(() => { return result })
 }
 
 module.exports = {

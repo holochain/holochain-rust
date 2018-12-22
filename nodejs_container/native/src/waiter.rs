@@ -1,11 +1,8 @@
 use holochain_core::{
     action::{Action, ActionWrapper},
+    network::direct_message::DirectMessage,
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
-};
-use holochain_core_types::{
-    entry::Entry,
-    link::{link_add::LinkAdd, Link},
 };
 use neon::{context::Context, prelude::*};
 use std::{
@@ -13,10 +10,11 @@ use std::{
     collections::{HashMap},
     sync::{
         mpsc::{Receiver, SyncSender, RecvTimeoutError},
-        Arc, Mutex, RwLock,
+        Arc, Mutex,
     },
     time::Duration,
 };
+use colored::*;
 
 type ControlSender = SyncSender<ControlMsg>;
 type ControlReceiver = Receiver<ControlMsg>;
@@ -49,13 +47,16 @@ impl CallFxChecker {
         F: Fn(&ActionWrapper) -> bool + 'static + Send,
     {
         self.conditions.push(Box::new(f));
+        println!("\n*** Condition {}: {} -> {}", "ADDED".green(), self.conditions.len() - 1, self.conditions.len());
     }
 
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
         let was_empty = self.conditions.is_empty();
         let size = self.conditions.len();
         self.conditions.retain(|condition| !condition(aw));
-        println!("{}/{}", size, self.conditions.len());
+        if size != self.conditions.len() {
+            println!("\n*** Condition {}: {} -> {}", "REMOVED".red(), size, size - 1);
+        }
         if self.conditions.is_empty() && !was_empty {
             self.stop();
             return false;
@@ -104,7 +105,7 @@ impl Task for CallBlockingTask {
 }
 
 fn log(msg: &str) {
-    println!("\nLOG:\n{}\n", msg);
+    println!("{}:\n{}\n", "(((LOG)))".bold(), msg);
 }
 
 /// A singleton which runs in a Task and is the receiver for the Signal channel.
@@ -133,7 +134,6 @@ impl Waiter {
                         match self.sender_rx.try_recv() {
                             Ok(sender) => {
                                 self.add_call(call.clone(), sender);
-                                log("Waiter: add_call");
                                 self.current_checker().unwrap().add(move |aw| {
                                     if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
                                         r.call() == call
@@ -151,37 +151,32 @@ impl Waiter {
                     }
                     Action::ReturnZomeFunctionResult(_) => true,
                     Action::Commit((entry, _)) => match self.current_checker() {
+                        // TODO: is there a possiblity that this can get messed up if the same
+                        // entry is committed multiple times?
                         Some(checker) => {
                             checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
                             true
                         }
                         None => false,
                     },
-                    Action::AddLink(link) => match self.current_checker() {
-                        Some(checker) => {
-                            let entry = Entry::LinkAdd(LinkAdd::new(
-                                link.base(),
-                                link.target(),
-                                link.tag(),
-                            ));
-                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
-                            true
+                    Action::SendDirectMessage(data) => {
+                        let msg_id = data.msg_id;
+                        match (self.current_checker(), data.message) {
+                            (Some(checker), DirectMessage::Custom(_)) => {
+                                checker.add(move |aw| {
+                                    [
+                                        Action::ResolveDirectConnection(msg_id.clone()),
+                                        Action::SendDirectMessageTimeout(msg_id.clone()),
+                                    ]
+                                    .contains(aw.action())
+                                });
+                                true    
+                            },
+                            _ => false,
                         }
-                        None => false,
                     },
-                    // Action::SendDirectMessage(data) => {
-                    //     let msg_id = data.msg_id;
-                    //     match self.current_checker() {
-                    //         Some(checker) => checker.add(move |aw| {
-                    //             [
-                    //                 Action::ResolveDirectConnection(msg_id.clone()),
-                    //                 Action::SendDirectMessageTimeout(msg_id.clone()),
-                    //             ]
-                    //             .contains(aw.action())
-                    //         }),
-                    //         None => (),
-                    //     }
-                    // },
+                    Action::ResolveDirectConnection(_) => true,
+                    Action::SendDirectMessageTimeout(_) => true,
                     Action::Hold(_) => true,
                     _ => false,
                 };
@@ -192,14 +187,18 @@ impl Waiter {
             _ => false,
         };
         if do_log {
-            let mut s = format!(":::SIG {:?}", sig);
-            s.truncate(300);
-            println!("{}", s);
+            println!("{} {:?}", ":::SIG".cyan(), sig);
         }
     }
 
     fn run_checks(&mut self, aw: &ActionWrapper) {
-        self.checkers.retain(|_, checker| checker.run_checks(aw));
+        let size = self.checkers.len();
+        self.checkers.retain(|_, checker| {
+            checker.run_checks(aw)
+        });
+        if size != self.checkers.len() {
+            println!("\n{}: {} -> {}", "Num checkers".italic(), size, self.checkers.len());
+        }
     }
 
     fn current_checker(&mut self) -> Option<&mut CallFxChecker> {
@@ -210,6 +209,8 @@ impl Waiter {
 
     fn add_call(&mut self, call: ZomeFnCall, tx: ControlSender) {
         let checker = CallFxChecker::new(tx);
+
+        log("Waiter: add_call...");
         self.checkers.insert(call.clone(), checker);
         self.current = Some(call);
     }
@@ -243,12 +244,12 @@ impl MainBackgroundTask {
 impl Task for MainBackgroundTask {
     type Output = ();
     type Error = String;
-    type JsEvent = JsNumber;
+    type JsEvent = JsUndefined;
 
     fn perform(&self) -> Result<(), String> {
         while *self.is_running.lock().unwrap() {
             // TODO: could use channels more intelligently to stop immediately 
-            // rather than waiting for timeout, but it's complicated.
+            // rather than waiting for timeout, but it's more complicated.
             match self.signal_rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(sig) => self.waiter.borrow_mut().process_signal(sig),
                 Err(RecvTimeoutError::Timeout) => continue,
@@ -256,12 +257,13 @@ impl Task for MainBackgroundTask {
             }
         }
         for (_, checker) in self.waiter.borrow_mut().checkers.iter_mut() {
+            println!("{}", "Shutting down lingering checker...".magenta().bold());
             checker.shutdown();
         }
         Ok(())
     }
 
-    fn complete(self, mut cx: TaskContext, _result: Result<(), String>) -> JsResult<JsNumber> {
-        Ok(cx.number(17))
+    fn complete(self, mut cx: TaskContext, _result: Result<(), String>) -> JsResult<JsUndefined> {
+        Ok(cx.undefined())
     }
 }

@@ -60,6 +60,10 @@ impl ZomeFnCall {
         }
     }
 
+    pub fn id(&self) -> &snowflake::ProcessUniqueId {
+        &self.id
+    }
+
     pub fn same_fn_as(&self, fn_call: &ZomeFnCall) -> bool {
         self.zome_name == fn_call.zome_name
             && self.cap == fn_call.cap

@@ -4,8 +4,13 @@ pub mod store;
 
 use crate::{
     context::Context,
-    network::handler::{get::*, send::*, store::*},
+    network::{
+        actions::publish::publish,
+        handler::{get::*, send::*, store::*},
+    },
 };
+use futures::executor::block_on;
+use holochain_core_types::hash::HashString;
 use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolWrapper};
 use std::{convert::TryFrom, sync::Arc};
 
@@ -83,8 +88,36 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_send_result(message_data, context.clone())
             }
+            Ok(ProtocolWrapper::PeerConnected(peer_data)) => {
+                // if is not my DNA ignore
+                if !is_me(&context, &peer_data.dna_hash, "") {
+                    return Ok(());
+                }
+                // if this is the peer connection of myself, also ignore
+                if is_me(&context, &peer_data.dna_hash, &peer_data.agent_id) {
+                    return Ok(());
+                }
+                // Total hack in lieu of a world-model.  Just republish everything
+                // when a new person comes on-line!!
+                republish_all_public_chain_entries(&context);
+            }
             _ => {}
         }
         Ok(())
     })
+}
+
+fn republish_all_public_chain_entries(context: &Arc<Context>) {
+    let chain = context.state().unwrap().agent().chain();
+    let top_header = context.state().unwrap().agent().top_chain_header();
+    chain
+        .iter(&top_header)
+        .filter(|ref chain_header| chain_header.entry_type().can_publish())
+        .for_each(|chain_header| {
+            let hash = HashString::from(chain_header.entry_address().to_string());
+            match block_on(publish(hash.clone(), context)) {
+                Err(e) => context.log(format!("unable to publish {:?}, got error: {:?}", hash, e)),
+                _ => {}
+            }
+        });
 }

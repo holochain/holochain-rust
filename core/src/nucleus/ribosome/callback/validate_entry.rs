@@ -61,6 +61,14 @@ pub fn validate_entry(
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(CallbackResult::Pass),
 
+        EntryType::AgentId => Ok(
+            CallbackResult::Pass, /*            validate_agent_id(
+                                  entry.clone(),
+                                  validation_data,
+                                  context,
+                                  )?*/
+        ),
+
         _ => Ok(CallbackResult::NotImplemented),
     }
 }

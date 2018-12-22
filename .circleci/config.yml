@@ -11,11 +11,11 @@ jobs:
    - run: docker build -f Dockerfile.circle.base -t holochain/holochain-rust:circle-base .
    - run: docker push holochain/holochain-rust:circle-base
 
-   - run: docker build -f Dockerfile.circle.nixwarm -t holochain/holochain-rust:circle-nixwarm .
+   - run: docker build -f Dockerfile.circle.nixwarm -t holochain/holochain-rust:circle-nix-warm .
    - run: docker push holochain/holochain-rust:circle-nix-warm
 
-   - run: docker build -f Dockerfile.circle.rustwarm -t holochain/holochain-rust:circle-rustwarm .
-   - run: docker push holochain/holochain-rust:circle-rustwarm
+   - run: docker build -f Dockerfile.circle.rustwarm -t holochain/holochain-rust:circle-rust-warm .
+   - run: docker push holochain/holochain-rust:circle-rust-warm
 
  integration-tests:
   docker:

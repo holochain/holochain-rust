@@ -173,7 +173,8 @@ impl Container {
 
                 // Network config:
                 if let Some(network_config) = instance_config.network {
-                    context_builder = context_builder.with_network_config(JsonString::from(network_config))
+                    context_builder =
+                        context_builder.with_network_config(JsonString::from(network_config))
                 };
 
                 // Signal config:

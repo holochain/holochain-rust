@@ -1,9 +1,4 @@
-use crate::{
-    action::{Action, ActionWrapper},
-    context::Context,
-    signal::Signal,
-    state::State,
-};
+use crate::{action::ActionWrapper, context::Context, signal::Signal, state::State};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},

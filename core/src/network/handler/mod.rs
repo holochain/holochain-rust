@@ -27,11 +27,14 @@ fn is_me(c: &Arc<Context>, dna_hash: &str, agent_id: &str) -> bool {
     if my_dna_hash != dna_hash {
         return false;
     }
-    if agent_id != "" && c.agent_id.key != agent_id {
-        return false;
+    if (my_dna_hash != dna_hash) || (agent_id != "" && c.agent_id.key != agent_id) {
+        c.log("HANDLE: ignoring, wasn't for me");
+        false
+    } else {
+        true
     }
-    true
 }
+
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
@@ -39,6 +42,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();
+        context.log(format!("HANDLE: {:?}", message));
         let protocol_wrapper = ProtocolWrapper::try_from(message);
         match protocol_wrapper {
             Ok(ProtocolWrapper::StoreDht(dht_data)) => {

@@ -1,3 +1,4 @@
-FROM holochain/holochain-rust:circle.07.warm.dna-c-binding
+# FROM holochain/holochain-rust:circle.07.warm.dna-c-binding
+FROM holochain/holochain-rust:circle.02.warm.hdk
 
 RUN nix-shell --run hc-test-net-connection

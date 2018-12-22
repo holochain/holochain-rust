@@ -56,7 +56,7 @@ fn interpolate_cargo_template(
 impl RustScaffold {
     pub fn new(package_name: String) -> RustScaffold {
         let artifact_name = format!(
-            "target/wasm32-unknown-unknown/release/{}.wasm",
+            "/tmp/holochain/target/wasm32-unknown-unknown/release/{}.wasm",
             package_name
         );
         RustScaffold {

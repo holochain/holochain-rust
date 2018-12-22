@@ -38,7 +38,7 @@ impl Logger for TestLogger {
 
 fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
     hc_setup_and_call_zome_fn(
-        "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
+        "/tmp/holochain/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
         fn_name)
 }
 

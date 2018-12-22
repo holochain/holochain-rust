@@ -6,5 +6,5 @@
       "--target=wasm32-unknown-unknown"
     ]
   },
-  "artifact": "target/wasm32-unknown-unknown/release/code.wasm"
+  "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/code.wasm"
 }

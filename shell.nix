@@ -76,11 +76,12 @@ let
     circleci-cli local execute
   '';
 
-  build-wasm = wasm-path: "cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir \"$HC_TARGET_PREFIX\"${wasm-path}/target;";
+  build-wasm = wasm-path: "cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir /tmp/holochain/target;";
   test = test-p: test-path: wasm-paths:
   ''
    ${nixpkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
-   cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX"${test-path}/target;
+   # cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX"${test-path}/target;
+   cargo test -p ${test-p} --release --target-dir /tmp/holochain/target;
   '';
   hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" [ "hdk-rust/wasm-test" ]}";
   hc-test-wasm-utils = nixpkgs.writeShellScriptBin "hc-test-wasm-utils" "${test "holochain_wasm_utils" "wasm_utils" [ "wasm_utils/wasm-test/integration-test" ]}";
@@ -109,6 +110,20 @@ let
   && hc-test-net \
   && hc-test-net-ipc \
   ;
+  '';
+
+  flush = nixpkgs.writeShellScriptBin "flush"
+  ''
+  rm -rf target
+  rm -rf .cargo
+  rm -rf **/target
+  rm -rf **/.cargo
+  rm -rf **/**/target
+  rm -rf **/**/.cargo
+  rm -rf **/**/**/target
+  rm -rf **/**/**/.cargo
+  rm -rf **/**/**/**/target
+  rm -rf **/**/**/**/.cargo
   '';
 
 in
@@ -173,7 +188,7 @@ stdenv.mkDerivation rec {
     hc-test-core-types
     hc-test-net
     hc-test-net-ipc
-
+    flush
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md

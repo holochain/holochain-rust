@@ -33,8 +33,9 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_dna() -> Dna {
         // Setup the holochain instance
-        let wasm =
-            create_wasm_from_file("/tmp/holochain/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm");
+        let wasm = create_wasm_from_file(
+            "/tmp/holochain/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
+        );
 
         let mut dna = create_test_dna_with_cap(
             "test_zome",

@@ -1,6 +1,8 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
+use holochain_wasm_utils::api_serialization::get_links::{
+    GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -21,6 +23,21 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+
+    if input.options.status_request != LinksStatusRequestKind::Live {
+        runtime
+            .context
+            .log("get links status request other than Live not implemented!");
+        return ribosome_error_code!(Unspecified);
+    }
+
+    if input.options.sources {
+        runtime
+            .context
+            .log("get links retrieve sources not implemented!");
+        return ribosome_error_code!(Unspecified);
+    }
+
     // Get links from DHT
     let maybe_links = runtime
         .context

@@ -21,7 +21,7 @@ impl Default for StatusRequestKind {
 
 /// Structure used to specify what should be returned to a call to get_entry_result()
 /// The default is to return the latest entry.
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, PartialEq, Clone)]
 pub struct GetEntryOptions {
     pub status_request: StatusRequestKind,
     pub entry: bool,

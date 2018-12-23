@@ -818,10 +818,13 @@ pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
     res
 }
 
-/// Consumes two values, the first of which is the address of an entry, `base`, and the second of which is a string, `tag`,
-/// used to describe the relationship between the `base` and other entries you wish to lookup. Returns a list of addresses of other
-/// entries which matched as being linked by the given `tag`. Links are created in the first place using the Zome API function [link_entries](fn.link_entries.html).
-/// Once you have the addresses, there is a good likelihood that you will wish to call [get_entry](fn.get_entry.html) for each of them.
+/// Consumes three values, the address of an entry get get links from (the base); the tag of the links
+/// to be retrieved, and an options struct for selecting what meta data, and crud staus links to retrieve.
+/// Note: the tag is intended to describe the relationship between the `base` and other entries you wish to lookup.
+/// This function returns a list of addresses of other entries which matched as being linked by the given `tag`.
+/// Links are created using the Zome API function [link_entries](fn.link_entries.html).
+/// If you also need the content of the entry consider using one of the helper functions:
+/// [get_links_result](fn.get_links_result) or [get_links_and_load](fn._get_links_and_load)
 /// # Examples
 /// ```rust
 /// # extern crate hdk;
@@ -830,15 +833,19 @@ pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_wasm_utils::api_serialization::get_links::GetLinksResult;
+/// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, GetLinksOptions};
 ///
 /// # fn main() {
 /// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
-///     hdk::get_links(&agent, "authored_posts")
+///     hdk::get_links_with_options(&agent, "authored_posts", GetLinksOptions::default())
 /// }
 /// # }
 /// ```
-pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLinksResult> {
+pub fn get_links_with_options<S: Into<String>>(
+    base: &Address,
+    tag: S,
+    options: GetLinksOptions,
+) -> ZomeApiResult<GetLinksResult> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     // Put args in struct and serialize into memory
 
@@ -847,6 +854,7 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
         GetLinksArgs {
             entry_address: base.clone(),
             tag: tag.into(),
+            options: options,
         },
     )?;
 
@@ -869,9 +877,14 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
     }
 }
 
-/// Retrieves data about entries linked to a base address with a given tag. This is the most general verion of the various get_links
+/// Helper function for get_links. Returns a vector with the default return results.
+pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLinksResult> {
+    get_links_with_options(base, tag, GetLinksOptions::default())
+}
+
+/// Retrieves data about entries linked to a base address with a given tag. This is the most general version of the various get_links
 /// helpers (such as get_links_and_load) and can return the linked addresses, entries, headers and sources. Also supports CRUD status_request.
-/// The data returned is configurable with the GetEntryOptions argument which is identical to that used in get_entry_result.
+/// The data returned is configurable with the GetLinksOptions to specify links options and GetEntryOptions argument wto specify options when loading the entries.
 /// # Examples
 /// ```rust
 /// # extern crate hdk;
@@ -879,11 +892,13 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 /// # extern crate holochain_wasm_utils;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::cas::content::Address;
-/// # use holochain_wasm_utils::api_serialization::get_entry::{GetEntryOptions, GetEntryResult};
+/// # use holochain_wasm_utils::api_serialization::{
+/// #    get_entry::{GetEntryOptions, GetEntryResult},
+/// #    get_links::GetLinksOptions};
 ///
 /// # fn main() {
 /// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-///    hdk::get_links_result(&address, "test-tag", GetEntryOptions::default())
+///    hdk::get_links_result(&address, "test-tag", GetLinksOptions::default(), GetEntryOptions::default())
 /// }
 /// # }
 /// ```
@@ -891,12 +906,13 @@ pub fn get_links_result<S: Into<String>>(
     base: &Address,
     tag: S,
     options: GetLinksOptions,
+    get_entry_options: GetEntryOptions,
 ) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
-    let get_links_result = get_links(base, tag)?;
+    let get_links_result = get_links_with_options(base, tag, options)?;
     let result = get_links_result
         .addresses()
         .iter()
-        .map(|address| get_entry_result(address.to_owned(), options.clone()))
+        .map(|address| get_entry_result(address.to_owned(), get_entry_options.clone()))
         .collect();
     Ok(result)
 }
@@ -906,7 +922,12 @@ pub fn get_links_and_load<S: Into<String>>(
     base: &HashString,
     tag: S,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
-    let get_links_result = get_links_result(base, tag, GetLinksOptions::default())?;
+    let get_links_result = get_links_result(
+        base,
+        tag,
+        GetLinksOptions::default(),
+        GetEntryOptions::default(),
+    )?;
 
     let entries = get_links_result
     .into_iter()

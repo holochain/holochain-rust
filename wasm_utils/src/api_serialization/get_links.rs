@@ -1,14 +1,37 @@
-use crate::api_serialization::get_entry::GetEntryOptions;
 use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {
     pub entry_address: Address,
     pub tag: String,
+    pub options: GetLinksOptions,
 }
 
-// options for get links is the same as get entry for now. May change later
-pub type GetLinksOptions = GetEntryOptions;
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Eq, Hash)]
+pub enum LinksStatusRequestKind {
+    Live,
+    Deleted,
+    All,
+}
+impl Default for LinksStatusRequestKind {
+    fn default() -> Self {
+        LinksStatusRequestKind::Live
+    }
+}
+
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
+pub struct GetLinksOptions {
+    pub status_request: LinksStatusRequestKind,
+    pub sources: bool,
+}
+impl Default for GetLinksOptions {
+    fn default() -> Self {
+        GetLinksOptions {
+            status_request: LinksStatusRequestKind::default(),
+            sources: false,
+        }
+    }
+}
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]
 pub struct GetLinksResult {
@@ -24,11 +47,3 @@ impl GetLinksResult {
         &self.addresses
     }
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GetLinksLoadElement<T> {
-    pub address: Address,
-    pub entry: T,
-}
-
-pub type GetLinksLoadResult<T> = Vec<GetLinksLoadElement<T>>;

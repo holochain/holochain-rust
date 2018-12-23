@@ -169,7 +169,7 @@ impl Instance {
             *state = new_state;
         }
 
-        // @TODO: add a big fat debug logger here
+        context.log(format!("emitting action as signal: {:?}", action_wrapper));
         self.maybe_emit_action_signal(context, action_wrapper.action().clone());
 
         // Add new observers

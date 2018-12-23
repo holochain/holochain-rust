@@ -261,7 +261,7 @@ mod tests {
         assert_eq!(network_state.dna_hash.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
+        assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"");
     }
 
     fn write_agent_state_to_file() -> String {
@@ -564,10 +564,9 @@ mod tests {
 
         assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(
-            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
-            format!("{:?}", test_logger.log),
-        );
+        assert!(format!("{:?}", test_logger.log).contains(
+            "\"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\""));
+
         // Check in holochain instance's history that the debug event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
@@ -605,10 +604,8 @@ mod tests {
 
         let test_logger = test_logger.lock().unwrap();
 
-        assert_eq!(
-            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
-            format!("{:?}", test_logger.log),
-        );
+        assert!(format!("{:?}", test_logger.log).contains(
+            "\"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\""));
 
         // Check in holochain instance's history that the deb event has been processed
         // @TODO don't use history length in tests

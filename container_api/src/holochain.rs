@@ -261,7 +261,7 @@ mod tests {
         assert_eq!(network_state.dna_hash.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(format!("{:?}", *test_logger), "\"TestApp instantiated\"");
+        assert!(format!("{:?}", *test_logger).contains("\"TestApp instantiated\""));
     }
 
     fn write_agent_state_to_file() -> String {

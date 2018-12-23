@@ -21,7 +21,7 @@ impl Default for StatusRequestKind {
 
 /// Structure used to specify what should be returned to a call to get_entry_result()
 /// The default is to return the latest entry.
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, PartialEq, Clone)]
 pub struct GetEntryOptions {
     pub status_request: StatusRequestKind,
     pub entry: bool,
@@ -122,13 +122,13 @@ impl EntryHistory {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub enum GetEntryResultType {
     Single(GetEntryResultItem),
     All(EntryHistory),
 }
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson)]
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct GetEntryResult {
     pub result: GetEntryResultType,
     // pub header: Option<ChainHeader>,   // header if requested in options

@@ -15,11 +15,15 @@ neon-build = "0.2.0"
 
 [dependencies]
 neon = "0.2.0"
+neon-serde = "0.1.1"
 base64 = "0.9"
-serde_json = "1.0"
+serde = "^1.0"
+serde_derive = "^1.0"
+serde_json = "^1.0"
 tempfile="3"
-holochain_container_api = { git = "https://github.com/holochain/holochain-rust" , rev = "15b1892e8544db241e188d2918688ecbc533a45f" }
-holochain_core = { git = "https://github.com/holochain/holochain-rust" , rev = "15b1892e8544db241e188d2918688ecbc533a45f" }
-holochain_net = { git = "https://github.com/holochain/holochain-rust" , rev = "15b1892e8544db241e188d2918688ecbc533a45f" }
-holochain_core_types = { git = "https://github.com/holochain/holochain-rust" , rev = "15b1892e8544db241e188d2918688ecbc533a45f" }
-holochain_cas_implementations = { git = "https://github.com/holochain/holochain-rust" , rev = "15b1892e8544db241e188d2918688ecbc533a45f" }
+holochain_container_api = { path = "../../container_api" }
+holochain_core = { path = "../../core" }
+holochain_net = { path = "../../net" }
+holochain_core_types = { path = "../../core_types" }
+holochain_cas_implementations = { path = "../../cas_implementations" }
+

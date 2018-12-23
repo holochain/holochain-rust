@@ -22,14 +22,17 @@
   ],
   "scripts": {
     "compile": "neon build --release",
-    "clean": "neon clean"
+    "clean": "neon clean",
+    "test": "tape test/*"
   },
   "dependencies": {
     "node-pre-gyp": "^0.11.0",
     "neon-cli": "^0.2.0"
   },
   "devDependencies": {
-    "shelljs": "^0.8.2"
+    "neon-cli": "^0.2.0",
+    "shelljs": "^0.8.2",
+    "tape": "^4.9.1"
   },
   "binary": {
     "module_name": "index",

@@ -16,6 +16,7 @@ use std::{
         Arc, Mutex,
     },
 };
+use colored::*;
 
 use crate::{
     config::{js_make_config},
@@ -29,7 +30,7 @@ pub struct Habitat {
 }
 
 fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
-    println!("Background task shut down");
+    println!("{}", "Background task shut down\n".bold().yellow());
     Ok(cx.null())
 }
 
@@ -50,18 +51,19 @@ declare_types! {
             } else {
                 panic!("Invalid type specified for config, must be object or string");
             };
-            let mut container = Container::from_config(config);
+            let container = Container::from_config(config);
             let is_running = Arc::new(Mutex::new(false));
 
             Ok(Habitat { container, sender_tx: None, is_running })
         }
 
         method start(mut cx) {
-            let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
-                    .unwrap()
-                    .as_value(&mut cx)
-                    .downcast_or_throw(&mut cx)
-                    .unwrap();
+            let js_callback: Handle<JsFunction> = cx.argument(0)?;
+            // let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
+            //         .unwrap()
+            //         .as_value(&mut cx)
+            //         .downcast_or_throw(&mut cx)
+            //         .unwrap();
             let mut this = cx.this();
 
             let (signal_tx, signal_rx) = signal_channel();

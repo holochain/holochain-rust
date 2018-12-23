@@ -1,4 +1,4 @@
-const test = require('tape')
+const tape = require('tape')
 const { pollFor } = require('./util')
 
 const { Config, Habitat } = require('../../nodejs_container')
@@ -15,34 +15,154 @@ const dna = Config.dna(dnaPath)
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 
-const scenario = Config.scenario(instanceAlice, instanceBob)
+const scenario1 = Config.scenario(instanceAlice)
+const scenario2 = Config.scenario(instanceAlice, instanceBob)
 
-test('scenario.run()', t => {
-  scenario.run(stop => async (alice, bob) => {
-    const initialContent = "Holo world"
-    const params = { content: "Holo world", in_reply_to: null }
-    const create_result = await alice.callSync("blog", "main", "create_post", params)
-    console.log("create_result: ", create_result)
-
-    const params2 = { content: "post 2", in_reply_to: null }
-    const create_result2 = await bob.callSync("blog", "main", "create_post", params2)
-    console.log("create_result2: ", create_result2)
-
-    t.equal(create_result.Ok.length, 46)
-    t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-
-    const post_address = create_result.Ok
-    const params_get = { post_address }
-
-    const result = bob.call("blog", "main", "get_post", params_get)
-    const value = JSON.parse(result.Ok.App[1])
-    t.equal(value.content, initialContent)
-    t.end()
-    stop()
-  })
+scenario2.runTape(tape, 'agentId', async (t, { alice, bob }) => {
+  t.plan(2)
+  t.ok(alice.agentId)
+  t.notEqual(alice.agentId, bob.agentId)
 })
 
-scenario.runTape(test, 'scenario.runTape()', t => async (alice, bob) => {
+scenario1.runTape(tape, 'call', async (t, { alice }) => {
+  t.plan(1)
+
+  const num1 = 2
+  const num2 = 2
+  const params = { num1, num2 }
+  const result = alice.call("blog", "main", "check_sum", params)
+
+  t.deepEqual(result.Ok, { "sum": "4" })
+})
+
+scenario1.runTape(tape, 'hash_post', async (t, { alice }) => {
+  t.plan(1)
+
+  const params = { content: "Holo world" }
+  const result = alice.call("blog", "main", "post_address", params)
+
+  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+scenario1.runTape(tape, 'create_post', async (t, { alice }) => {
+  t.plan(3)
+
+  const content = "Holo world"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const result = alice.call("blog", "main", "create_post", params)
+
+  t.ok(result.Ok)
+  t.notOk(result.Err)
+  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
+})
+
+scenario1.runTape(tape, 'create_post with bad reply to', async (t, { alice }) => {
+  t.plan(5)
+
+  const content = "Holo world"
+  const in_reply_to = "bad"
+  const params = { content, in_reply_to }
+  const result = alice.call("blog", "main", "create_post", params)
+
+  // bad in_reply_to is an error condition
+  t.ok(result.Err)
+  t.notOk(result.Ok)
+  const error = JSON.parse(result.Err.Internal)
+  t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
+  t.ok(error.file)
+  t.equal(error.line, "86")
+})
+
+scenario1.runTape(tape, 'post max content size 280 characters', async (t, { alice }) => {
+  t.plan(5)
+
+  const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const result = alice.call("blog", "main", "create_post", params)
+
+  // result should be an error
+  t.ok(result.Err);
+  t.notOk(result.Ok)
+
+  const inner = JSON.parse(result.Err.Internal)
+
+  t.ok(inner.file)
+  t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
+  t.equals(inner.line, "86")
+})
+
+scenario1.runTape(tape, 'posts_by_agent', async (t, { alice }) => {
+  t.plan(1)
+
+  const agent = "Bob"
+  const params = { agent }
+
+  const result = alice.call("blog", "main", "posts_by_agent", params)
+
+  t.deepEqual(result.Ok, { "addresses": [] })
+})
+
+scenario1.runTape(tape, 'my_posts', async (t, { alice }) => {
+  t.plan(1)
+
+  alice.call("blog", "main", "create_post",
+    { "content": "Holo world", "in_reply_to": "" }
+  )
+
+  alice.call("blog", "main", "create_post",
+    { "content": "Another post", "in_reply_to": "" }
+  )
+
+  const result = await pollFor(
+    () => alice.call("blog", "main", "my_posts", {}),
+    (result) => {
+      return result &&
+        result.Ok &&
+        result.Ok.addresses &&
+        result.Ok.addresses.length === 2
+    }
+  ).catch(t.fail)
+
+  t.equal(result.Ok.addresses.length, 2)
+})
+
+scenario1.runTape(tape, 'create/get_post roundtrip', async (t, { alice }) => {
+  t.plan(2)
+
+  const content = "Holo world"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const create_post_result = alice.call("blog", "main", "create_post", params)
+  const post_address = create_post_result.Ok
+
+  const params_get = { post_address }
+  const result = alice.call("blog", "main", "get_post", params_get)
+
+  const entry_value = JSON.parse(result.Ok.App[1])
+  t.comment("get_post() entry_value = " + entry_value + "")
+  t.equal(entry_value.content, content)
+  t.equal(entry_value.date_created, "now")
+
+})
+
+scenario1.runTape(tape, 'get_post with non-existant address returns null', async (t, { alice }) => {
+  t.plan(1)
+
+  const post_address = "RANDOM"
+  const params_get = { post_address }
+  const result = alice.call("blog", "main", "get_post", params_get)
+
+  // should be Ok value but null
+  // lookup did not error
+  // successfully discovered the entry does not exity
+  const entry = result.Ok
+  t.same(entry, null)
+})
+
+scenario2.runTape(tape, 'scenario test create & publish post -> get from other instance', async (t, { alice, bob }) => {
+
   const initialContent = "Holo world"
   const params = { content: "Holo world", in_reply_to: null }
   const create_result = await alice.callSync("blog", "main", "create_post", params)
@@ -61,196 +181,5 @@ scenario.runTape(test, 'scenario.runTape()', t => async (alice, bob) => {
   const result = bob.call("blog", "main", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})
-
-///// Previous tests:
-
-// Initialize the Container (Habitat)
-const config = Config.build(instanceAlice, instanceBob)
-const hab = new Habitat(config)
-hab.start()
-
-// This function is a bit of temporary boilerplate to construct a convenient object
-// for testing. These objects will be created automatically with the new Scenario API,
-// and then this function will go away. (TODO)
-const makeCaller = (agentId) => {
-  const instanceId = agentId + '-' + dnaPath
-  return {
-    call: (...args) => hab.call(instanceId, ...args),
-    callSync: (...args) => hab.callSync(instanceId, ...args),
-    callWithPromise: (...args) => hab.callWithPromise(instanceId, ...args),
-    agentId: hab.agent_id(instanceId)
-  }
-}
-
-const app = makeCaller('alice')
-const app2 = makeCaller('bob')
-
-test('agentId', (t) => {
-  t.plan(2)
-  t.ok(app.agentId)
-  t.notEqual(app.agentId, app2.agentId)
-})
-
-test('call', (t) => {
-  t.plan(1)
-
-  const num1 = 2
-  const num2 = 2
-  const params = { num1, num2 }
-  const result = app.call("blog", "main", "check_sum", params)
-
-  t.deepEqual(result.Ok, { "sum": "4" })
-})
-
-test('hash_post', (t) => {
-  t.plan(1)
-
-  const params = { content: "Holo world" }
-  const result = app.call("blog", "main", "post_address", params)
-
-  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-})
-
-test('create_post', (t) => {
-  t.plan(3)
-
-  const content = "Holo world"
-  const in_reply_to = null
-  const params = { content, in_reply_to }
-  const result = app.call("blog", "main", "create_post", params)
-
-  t.ok(result.Ok)
-  t.notOk(result.Err)
-  t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-})
-
-test('create_post with bad reply to', (t) => {
-  t.plan(5)
-
-  const content = "Holo world"
-  const in_reply_to = "bad"
-  const params = { content, in_reply_to }
-  const result = app.call("blog", "main", "create_post", params)
-
-  // bad in_reply_to is an error condition
-  t.ok(result.Err)
-  t.notOk(result.Ok)
-  const error = JSON.parse(result.Err.Internal)
-  t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
-  t.ok(error.file)
-  t.equal(error.line, "86")
-})
-
-test('post max content size 280 characters', (t) => {
-  t.plan(5)
-
-  const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
-  const in_reply_to = null
-  const params = { content, in_reply_to }
-  const result = app.call("blog", "main", "create_post", params)
-
-  // result should be an error
-  t.ok(result.Err);
-  t.notOk(result.Ok)
-
-  const inner = JSON.parse(result.Err.Internal)
-
-  t.ok(inner.file)
-  t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
-  t.equals(inner.line, "86")
-})
-
-test('posts_by_agent', (t) => {
-  t.plan(1)
-
-  const agent = "Bob"
-  const params = { agent }
-
-  const result = app.call("blog", "main", "posts_by_agent", params)
-
-  t.deepEqual(result.Ok, { "addresses": [] })
-})
-
-test('my_posts', async (t) => {
-  t.plan(1)
-
-  app.call("blog", "main", "create_post",
-    { "content": "Holo world", "in_reply_to": "" }
-  )
-
-  app.call("blog", "main", "create_post",
-    { "content": "Another post", "in_reply_to": "" }
-  )
-
-  const result = await pollFor(
-    () => app.call("blog", "main", "my_posts", {}),
-    (result) => {
-      return result &&
-        result.Ok &&
-        result.Ok.addresses &&
-        result.Ok.addresses.length === 2
-    }
-  ).catch(t.fail)
-
-  t.equal(result.Ok.addresses.length, 2)
-})
-
-test('create/get_post roundtrip', (t) => {
-  t.plan(2)
-
-  const content = "Holo world"
-  const in_reply_to = null
-  const params = { content, in_reply_to }
-  const create_post_result = app.call("blog", "main", "create_post", params)
-  const post_address = create_post_result.Ok
-
-  const params_get = { post_address }
-  const result = app.call("blog", "main", "get_post", params_get)
-
-  const entry_value = JSON.parse(result.Ok.App[1])
-  t.comment("get_post() entry_value = " + entry_value + "")
-  t.equal(entry_value.content, content)
-  t.equal(entry_value.date_created, "now")
-
-})
-
-test('get_post with non-existant address returns null', (t) => {
-  t.plan(1)
-
-  const post_address = "RANDOM"
-  const params_get = { post_address }
-  const result = app.call("blog", "main", "get_post", params_get)
-
-  // should be Ok value but null
-  // lookup did not error
-  // successfully discovered the entry does not exity
-  const entry = result.Ok
-  t.same(entry, null)
-})
-
-test('scenario test create & publish post -> get from other instance', async (t) => {
-
-  const initialContent = "Holo world"
-  const params = { content: "Holo world", in_reply_to: null }
-  const create_result = await app.callSync("blog", "main", "create_post", params)
-  console.log("create_result: ", create_result)
-
-  const params2 = { content: "post 2", in_reply_to: null }
-  const create_result2 = await app2.callSync("blog", "main", "create_post", params2)
-  console.log("create_result2: ", create_result2)
-
-  t.equal(create_result.Ok.length, 46)
-  t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-
-  const post_address = create_result.Ok
-  const params_get = { post_address }
-
-  const result = app2.call("blog", "main", "get_post", params_get)
-  const value = JSON.parse(result.Ok.App[1])
-  t.equal(value.content, initialContent)
   t.end()
-
-  // TODO: remove once scenario() api is added
-  hab.stop()
 })

@@ -7,11 +7,32 @@ const binding_path = binary.find(path.resolve(path.join(__dirname, './package.js
 
 const { makeConfig, Habitat } = require(binding_path);
 
-Habitat.prototype._call = Habitat.prototype.call
+const promiser = (fulfill, reject) => (err, val) => {
+    if (err) {
+        reject(err)
+    } else {
+        fulfill(val)
+    }
+}
 
-Habitat.prototype.call = function (id, zome, trait, fn, params) {
+Habitat.prototype._start = Habitat.prototype.start
+Habitat.prototype._stop = Habitat.prototype.stop
+Habitat.prototype._callRaw = Habitat.prototype.call
+
+Habitat.prototype.start = function () {
+    this._stopPromise = new Promise((fulfill, reject) => {
+        this._start(promiser(fulfill, reject))
+    })
+}
+
+Habitat.prototype.stop = function () {
+    this._stop()
+    return this._stopPromise
+}
+
+Habitat.prototype._call = function (id, zome, trait, fn, params) {
     const stringInput = JSON.stringify(params);
-    const rawResult = this._call(id, zome, trait, fn, stringInput);
+    const rawResult = this._callRaw(id, zome, trait, fn, stringInput);
     let result;
     try {
         result = JSON.parse(rawResult);
@@ -22,11 +43,16 @@ Habitat.prototype.call = function (id, zome, trait, fn, params) {
     return result;
 }
 
+Habitat.prototype.call = function (...args) {
+    this.register_callback(() => console.log("Another call well done"))
+    return this._call(...args)
+}
+
 Habitat.prototype.callWithPromise = function (...args) {
     const promise = new Promise((fulfill, reject) => {
         this.register_callback(() => fulfill(result))
-    }).then(() => console.log("HEY you promised!!"))
-    const result = this.call(...args)
+    })
+    const result = this._call(...args)
     return [result, promise]
 }
 
@@ -60,29 +86,32 @@ class Scenario {
      *          stop()
      *      })
      */
-    run(outerFn) {
+    run(fn) {
         const hab = new Habitat(this.config)
         hab.start()
-        const innerFn = outerFn(() => hab.stop())
-        const callers = this.instances.map(instance => {
+        const callers = {}
+        this.instances.forEach(instance => {
             const id = `${instance.agent.name}-${instance.dna.path}`
-            return {
+            const name = instance.name
+            if (name in callers) {
+                throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
+            }
+            callers[name] = {
                 call: (...args) => hab.call(id, ...args),
                 callSync: (...args) => hab.callSync(id, ...args),
                 callWithPromise: (...args) => hab.callWithPromise(id, ...args),
                 agentId: hab.agent_id(id)
             }
         })
-        innerFn(...callers)
+        fn(() => hab.stop(), callers)
     }
 
-    runTape(tape, description, outerFn) {
+    runTape(tape, description, fn) {
         tape(description, t => {
-            const innerFn = outerFn(t)
-            this.run(stop => async (...instances) => {
-                await innerFn(...instances)
+            this.run(async (stop, instances) => {
+                await fn(t, instances)
                 t.end()
-                stop()
+                await stop()
             })
         })
     }
@@ -90,8 +119,13 @@ class Scenario {
 
 const Config = {
     agent: name => ({ name }),
-    dna: path => ({ path }),
-    instance: (agent, dna) => ({ agent, dna }),
+    dna: (path) => ({ path }),
+    instance: (agent, dna, name) => {
+        if (!name) {
+            name = agent.name
+        }
+        return { agent, dna, name }
+    },
     build: (...instances) => makeConfig(...instances),
     scenario: (...instances) => new Scenario(instances),
 }

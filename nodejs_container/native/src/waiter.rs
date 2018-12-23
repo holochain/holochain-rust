@@ -1,3 +1,4 @@
+use colored::*;
 use holochain_core::{
     action::{Action, ActionWrapper},
     network::direct_message::DirectMessage,
@@ -7,14 +8,13 @@ use holochain_core::{
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,
-    collections::{HashMap},
+    collections::HashMap,
     sync::{
-        mpsc::{Receiver, SyncSender, RecvTimeoutError},
+        mpsc::{Receiver, RecvTimeoutError, SyncSender},
         Arc, Mutex,
     },
     time::Duration,
 };
-use colored::*;
 
 type ControlSender = SyncSender<ControlMsg>;
 type ControlReceiver = Receiver<ControlMsg>;
@@ -47,7 +47,12 @@ impl CallFxChecker {
         F: Fn(&ActionWrapper) -> bool + 'static + Send,
     {
         self.conditions.push(Box::new(f));
-        println!("\n*** Condition {}: {} -> {}", "ADDED".green(), self.conditions.len() - 1, self.conditions.len());
+        println!(
+            "\n*** Condition {}: {} -> {}",
+            "ADDED".green(),
+            self.conditions.len() - 1,
+            self.conditions.len()
+        );
     }
 
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
@@ -55,7 +60,12 @@ impl CallFxChecker {
         let size = self.conditions.len();
         self.conditions.retain(|condition| !condition(aw));
         if size != self.conditions.len() {
-            println!("\n*** Condition {}: {} -> {}", "REMOVED".red(), size, size - 1);
+            println!(
+                "\n*** Condition {}: {} -> {}",
+                "REMOVED".red(),
+                size,
+                size - 1
+            );
         }
         if self.conditions.is_empty() && !was_empty {
             self.stop();
@@ -170,11 +180,11 @@ impl Waiter {
                                     ]
                                     .contains(aw.action())
                                 });
-                                true    
-                            },
+                                true
+                            }
                             _ => false,
                         }
-                    },
+                    }
                     Action::ResolveDirectConnection(_) => true,
                     Action::SendDirectMessageTimeout(_) => true,
                     Action::Hold(_) => true,
@@ -193,11 +203,14 @@ impl Waiter {
 
     fn run_checks(&mut self, aw: &ActionWrapper) {
         let size = self.checkers.len();
-        self.checkers.retain(|_, checker| {
-            checker.run_checks(aw)
-        });
+        self.checkers.retain(|_, checker| checker.run_checks(aw));
         if size != self.checkers.len() {
-            println!("\n{}: {} -> {}", "Num checkers".italic(), size, self.checkers.len());
+            println!(
+                "\n{}: {} -> {}",
+                "Num checkers".italic(),
+                size,
+                self.checkers.len()
+            );
         }
     }
 
@@ -231,7 +244,11 @@ pub struct MainBackgroundTask {
 }
 
 impl MainBackgroundTask {
-    pub fn new(signal_rx: SignalReceiver, sender_rx: Receiver<ControlSender>, is_running: Arc<Mutex<bool>>) -> Self {
+    pub fn new(
+        signal_rx: SignalReceiver,
+        sender_rx: Receiver<ControlSender>,
+        is_running: Arc<Mutex<bool>>,
+    ) -> Self {
         let this = Self {
             signal_rx,
             waiter: RefCell::new(Waiter::new(sender_rx)),
@@ -248,7 +265,7 @@ impl Task for MainBackgroundTask {
 
     fn perform(&self) -> Result<(), String> {
         while *self.is_running.lock().unwrap() {
-            // TODO: could use channels more intelligently to stop immediately 
+            // TODO: could use channels more intelligently to stop immediately
             // rather than waiting for timeout, but it's more complicated.
             match self.signal_rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(sig) => self.waiter.borrow_mut().process_signal(sig),
@@ -256,14 +273,24 @@ impl Task for MainBackgroundTask {
                 Err(err) => return Err(err.to_string()),
             }
         }
+
+        println!("{}", "\nHOW ABOUT LET'S STOP?".red().bold());
+
         for (_, checker) in self.waiter.borrow_mut().checkers.iter_mut() {
             println!("{}", "Shutting down lingering checker...".magenta().bold());
             checker.shutdown();
         }
+        println!("{}", "ONLY NOW ARE WE ACTUALLY sTOPPED\n".magenta().bold());
         Ok(())
     }
 
-    fn complete(self, mut cx: TaskContext, _result: Result<(), String>) -> JsResult<JsUndefined> {
+    fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsUndefined> {
+        println!("{}", "Background task shutting down...".bold().magenta());
+        result.or_else(|e| {
+            let error_string = cx.string(format!("unable to shut down background task: {}", e));
+            cx.throw(error_string)
+        })?;
+        println!("{}", "...with no errors".bold().magenta());
         Ok(cx.undefined())
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::{tests::test_context, Instance},
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
     nucleus::actions::initialize::initialize_application,
@@ -14,7 +14,7 @@ pub fn test_instance_with_spoofed_dna(
     dna: Dna,
     spoofed_dna_hash: String,
     name: &str,
-) -> Result<(Instance, Arc<Context>), String> {
+) -> Result<(Instance, Arc<ContextStateful>), String> {
     // Create instance and plug in our DNA
     let context = test_context(name);
     let mut instance = Instance::new(context.clone());

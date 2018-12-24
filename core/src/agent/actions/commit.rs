@@ -2,7 +2,7 @@ extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     agent::state::ActionResponse,
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action,
 };
 use futures::{
@@ -24,7 +24,7 @@ use std::{
 pub async fn commit_entry(
     entry: Entry,
     maybe_crud_link: Option<Address>,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> Result<Address, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::Commit((entry, maybe_crud_link)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -37,7 +37,7 @@ pub async fn commit_entry(
 /// CommitFuture resolves to ActionResponse
 /// Tracks the state for a response to its ActionWrapper
 pub struct CommitFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     action: ActionWrapper,
 }
 
@@ -52,14 +52,7 @@ impl Future for CommitFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        match self
-            .context
-            .state()
-            .unwrap()
-            .agent()
-            .actions()
-            .get(&self.action)
-        {
+        match self.context.state().agent().actions().get(&self.action) {
             Some(ActionResponse::Commit(result)) => match result {
                 Ok(address) => Poll::Ready(Ok(address.clone())),
                 Err(error) => Poll::Ready(Err(error.clone())),

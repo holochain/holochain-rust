@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::ribosome::callback::{self, CallbackResult},
 };
 use futures::{
@@ -31,7 +31,7 @@ use std::{
 pub fn validate_entry<'a>(
     entry: Entry,
     validation_data: ValidationData,
-    context: &'a Arc<Context>,
+    context: &'a Arc<ContextStateful>,
 ) -> FutureObj<'a, Result<HashString, HolochainError>> {
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
@@ -40,7 +40,6 @@ pub fn validate_entry<'a>(
         EntryType::App(app_entry_type) => {
             if context
                 .state()
-                .unwrap()
                 .nucleus()
                 .dna()
                 .unwrap()
@@ -122,7 +121,7 @@ pub fn validate_entry<'a>(
 /// ValidationFuture resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 /// Tracks the state for ValidationResults.
 pub struct ValidationFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     key: (snowflake::ProcessUniqueId, HashString),
 }
 
@@ -137,14 +136,13 @@ impl Future for ValidationFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        if let Some(state) = self.context.state() {
+        let state = self.context.state();
+        {
             match state.nucleus().validation_results.get(&self.key) {
                 Some(Ok(())) => Poll::Ready(Ok(self.key.1.clone())),
                 Some(Err(e)) => Poll::Ready(Err(HolochainError::ValidationFailed(e.clone()))),
                 None => Poll::Pending,
             }
-        } else {
-            Poll::Pending
         }
     }
 }

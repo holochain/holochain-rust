@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::ContextStateful,
     network::{handler::create_handler, state::NetworkState},
 };
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
@@ -14,8 +14,8 @@ use std::{
 };
 
 pub fn reduce_init(
-    context: Arc<Context>,
-    state: &mut NetworkState,
+    context: Arc<ContextStateful>,
+    network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
@@ -33,9 +33,9 @@ pub fn reduce_init(
             .into(),
         )
         .and_then(|_| {
-            state.network = Some(Arc::new(Mutex::new(network)));
-            state.dna_hash = Some(network_settings.dna_hash.clone());
-            state.agent_id = Some(network_settings.agent_id.clone());
+            network_state.network = Some(Arc::new(Mutex::new(network)));
+            network_state.dna_hash = Some(network_settings.dna_hash.clone());
+            network_state.agent_id = Some(network_settings.agent_id.clone());
             Ok(())
         });
 }

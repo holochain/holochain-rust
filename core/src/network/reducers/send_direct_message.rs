@@ -1,6 +1,6 @@
 use crate::{
     action::{ActionWrapper, DirectMessageData},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
@@ -35,7 +35,7 @@ fn inner(
 }
 
 pub fn reduce_send_direct_message(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -47,7 +47,7 @@ pub fn reduce_send_direct_message(
 }
 
 pub fn reduce_send_direct_message_timeout(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

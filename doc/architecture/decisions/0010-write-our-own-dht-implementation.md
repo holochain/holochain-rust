@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 For the Go based prototype we used IPFS' Kademlia DHT implementations with edits.
 

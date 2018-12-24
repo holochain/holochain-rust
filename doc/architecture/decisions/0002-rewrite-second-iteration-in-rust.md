@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 We want to have holochain run in the browser (for Holo).
 

@@ -47,7 +47,7 @@ pub mod tests {
     /// Committing a LinkEntry to source chain should work
     #[test]
     fn can_commit_link() {
-        // Create Context, Agent, Dna, and Commit AgentIdEntry Action
+        // Create ContextStateful, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let link = create_example_link();
         let link_list = LinkList::new(&[link]);
@@ -78,7 +78,7 @@ pub mod tests {
     /// Committing a LinkList to source chain should work
     #[test]
     fn can_commit_multilink() {
-        // Create Context, Agent, Dna, and Commit AgentIdEntry Action
+        // Create ContextStateful, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let link_a = create_test_link_a();
         let link_b = create_test_link_b();

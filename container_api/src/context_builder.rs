@@ -5,7 +5,7 @@ use holochain_cas_implementations::{
 };
 
 use holochain_core::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     logger::{Logger, SimpleLogger},
     persister::SimplePersister,
     signal::SignalSender,
@@ -18,7 +18,7 @@ use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::sync::{Arc, Mutex, RwLock};
 
-/// This type helps building [context objects](struct.Context.html) that need to be
+/// This type helps building [context objects](struct.ContextStateful.html) that need to be
 /// passed in to Holochain intances.
 ///
 /// This is typically needed in any container implementation but also in almost every test.
@@ -114,7 +114,7 @@ impl ContextBuilder {
     /// Defaults to memory storages, a mock network config and a fake agent called "alice".
     /// The logger gets set to SimpleLogger.
     /// The persister gets set to SimplePersister based on the chain storage.
-    pub fn spawn(self) -> Context {
+    pub fn spawn(self) -> ContextOnly {
         let chain_storage = self
             .chain_storage
             .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
@@ -124,7 +124,7 @@ impl ContextBuilder {
         let eav_storage = self
             .eav_storage
             .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
-        Context::new(
+        ContextOnly::new(
             self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
             self.logger.unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),

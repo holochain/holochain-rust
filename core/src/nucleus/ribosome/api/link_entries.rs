@@ -44,7 +44,7 @@ pub mod tests {
 
     use crate::{
         agent::actions::commit::commit_entry,
-        context::Context,
+        context::{ContextOnly, ContextStateful},
         instance::{
             tests::{test_context_and_logger, test_instance},
             Instance,
@@ -105,7 +105,7 @@ pub mod tests {
         JsonString::from(test_entry()).into_bytes()
     }
 
-    fn create_test_instance() -> (Instance, Arc<Context>) {
+    fn create_test_instance() -> (Instance, Arc<ContextStateful>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),

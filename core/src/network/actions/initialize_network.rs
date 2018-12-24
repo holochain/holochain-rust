@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
-    context::{get_dna_and_agent, Context},
+    context::{get_dna_and_agent, ContextStateful},
     instance::dispatch_action,
 };
 use futures::{
@@ -16,10 +16,10 @@ use std::{
 };
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
-pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
+pub async fn initialize_network(context: &Arc<ContextStateful>) -> HcResult<()> {
     let (dna_hash, agent_id) = await!(get_dna_and_agent(context))?;
     let network_settings = NetworkSettings {
-        config: context.network_config.clone(),
+        config: context.network_config().clone(),
         dna_hash,
         agent_id,
     };
@@ -34,7 +34,7 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
 #[cfg(test)]
 pub async fn initialize_network_with_spoofed_dna(
     dna_hash: String,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> HcResult<()> {
     let (_, agent_id) = await!(get_dna_and_agent(context))?;
     let network_settings = NetworkSettings {
@@ -51,7 +51,7 @@ pub async fn initialize_network_with_spoofed_dna(
 }
 
 pub struct InitNetworkFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
 }
 
 impl Unpin for InitNetworkFuture {}
@@ -65,7 +65,8 @@ impl Future for InitNetworkFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        if let Some(state) = self.context.state() {
+        {
+            let state = self.context.state();
             if state.network().network.is_some()
                 || state.network().dna_hash.is_some()
                 || state.network().agent_id.is_some()
@@ -74,8 +75,6 @@ impl Future for InitNetworkFuture {
             } else {
                 Poll::Pending
             }
-        } else {
-            Poll::Pending
         }
     }
 }

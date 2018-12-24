@@ -27,7 +27,7 @@ Accepted
   as [core_api](core_api/src/lib.rs) being a library it (and instances created by it)
   can not exist as a process themselves.
 
-## Context
+## ContextStateful
 
 * We have several different roles for using a Holochain app (through a *container*):
   * local, QML based UI components

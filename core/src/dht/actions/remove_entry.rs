@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action,
 };
 use futures::{
@@ -19,7 +19,7 @@ use std::{
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(HolochainError).
 pub fn remove_entry(
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
     action_channel: &SyncSender<ActionWrapper>,
     deleted_address: Address,
     deletion_address: Address,
@@ -36,7 +36,7 @@ pub fn remove_entry(
 /// RemoveEntryFuture resolves to ActionResponse
 /// Tracks the state for a response to its ActionWrapper
 pub struct RemoveEntryFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     action: ActionWrapper,
 }
 
@@ -51,14 +51,10 @@ impl Future for RemoveEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        if let Some(state) = self.context.state() {
-            match state.dht().actions().get(&self.action) {
-                Some(Ok(_)) => Poll::Ready(Ok(())),
-                Some(Err(e)) => Poll::Ready(Err(e.clone())),
-                None => Poll::Pending,
-            }
-        } else {
-            Poll::Pending
+        match self.context.state().dht().actions().get(&self.action) {
+            Some(Ok(_)) => Poll::Ready(Ok(())),
+            Some(Err(e)) => Poll::Ready(Err(e.clone())),
+            None => Poll::Pending,
         }
     }
 }

@@ -22,16 +22,106 @@ use std::{
     time::Duration,
 };
 
-/// Context holds the components that parts of a Holochain instance need in order to operate.
+#[derive(Clone)]
+pub struct ContextStateful {
+    state: Arc<RwLock<State>>,
+    ctx: Arc<ContextOnly>,
+}
+
+impl ContextStateful {
+    pub fn new(ctx: Arc<ContextOnly>, state: Arc<RwLock<State>>) -> Self {
+        Self { ctx, state }
+    }
+    pub fn agent_id(&self) -> &AgentId {
+        &self.ctx.agent_id
+    }
+    pub fn logger(&self) -> Arc<Mutex<Logger>> {
+        self.ctx.logger.clone()
+    }
+    pub fn persister(&self) -> Arc<Mutex<Persister>> {
+        self.ctx.persister.clone()
+    }
+    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+        self.ctx.action_channel()
+    }
+    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+        self.ctx.observer_channel()
+    }
+    pub fn chain_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
+        self.ctx.chain_storage.clone()
+    }
+    pub fn dht_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
+        self.ctx.dht_storage.clone()
+    }
+    pub fn eav_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
+        self.ctx.eav_storage.clone()
+    }
+    pub fn network_config(&self) -> &JsonString {
+        &self.ctx.network_config
+    }
+    pub fn container_api(&self) -> Option<&Arc<RwLock<IoHandler>>> {
+        self.ctx.container_api.as_ref()
+    }
+    pub fn signal_tx(&self) -> Option<&SyncSender<Signal>> {
+        self.ctx.signal_tx.as_ref()
+    }
+    pub fn state(&self) -> RwLockReadGuard<State> {
+        self.state.read().unwrap()
+    }
+
+    pub fn log<T: Into<String>>(&self, msg: T) {
+        self.log(msg)
+    }
+
+    pub fn context_only(&self) -> Arc<ContextOnly> {
+        self.ctx.clone()
+    }
+
+    pub fn get_dna(&self) -> Option<Dna> {
+        use std::{thread, time::Duration};
+        // In the case of genesis we encounter race conditions with regards to setting the DNA.
+        // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
+        // the state, which can result in this code being executed first.
+        // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
+        // TODO: use a future here
+        let mut dna = None;
+        let mut done = false;
+        let mut tries = 0;
+        while !done {
+            {
+                dna = self.state.read().unwrap().nucleus().dna();
+            }
+            match dna {
+                Some(_) => done = true,
+                None => {
+                    if tries > 10 {
+                        done = true;
+                    } else {
+                        thread::sleep(Duration::from_millis(10));
+                        tries += 1;
+                    }
+                }
+            }
+        }
+        dna
+    }
+
+    pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
+        let dna = self.get_dna().expect("Callback called without DNA set!");
+        dna.get_wasm_from_zome_name(zome)
+            .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
+    }
+}
+
+/// ContextOnly holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
 /// but also the store of the instance that gets injected before passing on the context
 /// to inner components/reducers.
 #[derive(Clone)]
-pub struct Context {
+pub struct ContextOnly {
     pub agent_id: AgentId,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
-    state: Option<Arc<RwLock<State>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub observer_channel: Option<SyncSender<Observer>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
@@ -42,7 +132,7 @@ pub struct Context {
     pub signal_tx: Option<SyncSender<Signal>>,
 }
 
-impl Context {
+impl ContextOnly {
     pub fn default_channel_buffer_size() -> usize {
         100
     }
@@ -58,11 +148,10 @@ impl Context {
         container_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
     ) -> Self {
-        Context {
+        ContextOnly {
             agent_id,
             logger,
             persister,
-            state: None,
             action_channel: None,
             signal_tx: signal_tx,
             observer_channel: None,
@@ -84,12 +173,11 @@ impl Context {
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
-    ) -> Result<Context, HolochainError> {
-        Ok(Context {
+    ) -> Result<ContextOnly, HolochainError> {
+        Ok(ContextOnly {
             agent_id,
             logger,
             persister,
-            state: None,
             action_channel,
             signal_tx,
             observer_channel,
@@ -111,55 +199,7 @@ impl Context {
         logger.log(msg.into());
     }
 
-    pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
-        self.state = Some(state);
-    }
-
-    pub fn state(&self) -> Option<RwLockReadGuard<State>> {
-        match self.state {
-            None => None,
-            Some(ref s) => Some(s.read().unwrap()),
-        }
-    }
-
-    pub fn get_dna(&self) -> Option<Dna> {
-        // In the case of genesis we encounter race conditions with regards to setting the DNA.
-        // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
-        // the state, which can result in this code being executed first.
-        // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
-        // TODO: use a future here
-        let mut dna = None;
-        let mut done = false;
-        let mut tries = 0;
-        while !done {
-            {
-                let state = self
-                    .state()
-                    .expect("Callback called without application state!");
-                dna = state.nucleus().dna();
-            }
-            match dna {
-                Some(_) => done = true,
-                None => {
-                    if tries > 10 {
-                        done = true;
-                    } else {
-                        sleep(Duration::from_millis(10));
-                        tries += 1;
-                    }
-                }
-            }
-        }
-        dna
-    }
-
-    pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
-        let dna = self.get_dna().expect("Callback called without DNA set!");
-        dna.get_wasm_from_zome_name(zome)
-            .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
-    }
-
-    // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
+    // @NB: these three getters smell bad because previously Instance and ContextOnly had SyncSenders
     // rather than Option<SyncSenders>, but these would be initialized by default to broken channels
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
@@ -170,10 +210,8 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_tx(&self) -> &SyncSender<Signal> {
-        self.signal_tx
-            .as_ref()
-            .expect("Signal channel not initialized")
+    pub fn signal_tx(&self) -> Option<&SyncSender<Signal>> {
+        self.signal_tx.as_ref()
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {
@@ -181,12 +219,35 @@ impl Context {
             .as_ref()
             .expect("Observer channel not initialized")
     }
+
+    pub fn agent_id(&self) -> &AgentId {
+        &self.agent_id
+    }
+    pub fn logger(&self) -> Arc<Mutex<Logger>> {
+        self.logger.clone()
+    }
+    pub fn persister(&self) -> Arc<Mutex<Persister>> {
+        self.persister.clone()
+    }
+    pub fn chain_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
+        self.chain_storage.clone()
+    }
+    pub fn dht_storage(&self) -> Arc<RwLock<ContentAddressableStorage>> {
+        self.dht_storage.clone()
+    }
+    pub fn eav_storage(&self) -> Arc<RwLock<EntityAttributeValueStorage>> {
+        self.eav_storage.clone()
+    }
+    pub fn network_config(&self) -> &JsonString {
+        &self.network_config
+    }
+    pub fn container_api(&self) -> Option<&Arc<RwLock<IoHandler>>> {
+        self.container_api.as_ref()
+    }
 }
 
-pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, String)> {
-    let state = context
-        .state()
-        .ok_or("Network::start() could not get application state".to_string())?;
+pub async fn get_dna_and_agent(context: &Arc<ContextStateful>) -> HcResult<(String, String)> {
+    let state = context.state();
     let agent_state = state.agent();
 
     let agent = await!(agent_state.get_agent(&context))?;
@@ -222,69 +283,6 @@ pub mod tests {
 
     #[test]
     fn default_buffer_size_test() {
-        assert_eq!(Context::default_channel_buffer_size(), 100);
-    }
-
-    #[test]
-    fn state_test() {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let mut maybe_context = Context::new(
-            AgentId::generate_fake("Terence"),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-            None,
-            None,
-        );
-
-        assert!(maybe_context.state().is_none());
-
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(maybe_context.clone()))));
-        maybe_context.set_state(global_state.clone());
-
-        {
-            let _read_lock = global_state.read().unwrap();
-            assert!(maybe_context.state().is_some());
-        }
-    }
-
-    #[test]
-    #[should_panic]
-    #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
-    fn test_deadlock() {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let mut context = Context::new(
-            AgentId::generate_fake("Terence"),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-            None,
-            None,
-        );
-
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
-        context.set_state(global_state.clone());
-
-        {
-            let _write_lock = global_state.write().unwrap();
-            // This line panics because we would enter into a deadlock
-            context.state();
-        }
+        assert_eq!(ContextOnly::default_channel_buffer_size(), 100);
     }
 }

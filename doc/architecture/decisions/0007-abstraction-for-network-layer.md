@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 In switching to Rust, we can no longer use libp2p directly, and we want our own Kademlia implementation anyways (see ADR: 0010)
 What we want from a network library:

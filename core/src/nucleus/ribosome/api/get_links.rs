@@ -42,7 +42,6 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let maybe_links = runtime
         .context
         .state()
-        .unwrap()
         .dht()
         .get_links(input.entry_address, input.tag);
 

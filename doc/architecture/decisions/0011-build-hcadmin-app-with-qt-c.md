@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 proposed
 
-## Context
+## ContextStateful
 
 In the alpha version we had *hcd* that runs a single Holochain app/agent as a background demon.
 

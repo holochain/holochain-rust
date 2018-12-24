@@ -6,7 +6,7 @@ pub mod state;
 
 use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},
-    context::Context,
+    context::ContextStateful,
     instance::{dispatch_action_with_observer, Observer},
     nucleus::{
         ribosome::api::call::{reduce_call, validate_call},
@@ -184,7 +184,7 @@ impl ExecuteZomeFnResponse {
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_return_initialization_result(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -208,7 +208,7 @@ fn reduce_return_initialization_result(
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_init_application(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -233,7 +233,7 @@ fn reduce_init_application(
 }
 
 pub(crate) fn launch_zome_fn_call(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     zome_call: ZomeFnCall,
     wasm: &DnaWasm,
     dna_name: String,
@@ -265,7 +265,7 @@ pub(crate) fn launch_zome_fn_call(
 /// Execute an exposed Zome function in a separate thread and send the result in
 /// a ReturnZomeFunctionResult Action on success or failure
 fn reduce_execute_zome_function(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -312,7 +312,7 @@ fn reduce_execute_zome_function(
 }
 
 fn reduce_return_validation_result(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -328,7 +328,7 @@ fn reduce_return_validation_result(
 #[allow(unknown_lints)]
 #[allow(needless_pass_by_value)]
 fn reduce_return_zome_function_result(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -340,7 +340,7 @@ fn reduce_return_zome_function_result(
 }
 
 fn reduce_return_validation_package(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -368,7 +368,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
 /// Reduce state of Nucleus according to action.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     old_state: Arc<NucleusState>,
     action_wrapper: &ActionWrapper,
 ) -> Arc<NucleusState> {

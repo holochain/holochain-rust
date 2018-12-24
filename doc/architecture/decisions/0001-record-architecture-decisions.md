@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 We need to record the architectural decisions made on this project.
 

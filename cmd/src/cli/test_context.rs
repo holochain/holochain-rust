@@ -1,5 +1,5 @@
 use holochain_container_api::context_builder::ContextBuilder;
-use holochain_core::{context::Context, logger::Logger};
+use holochain_core::{context::ContextOnly, logger::Logger};
 use holochain_core_types::agent::AgentId;
 use std::sync::{Arc, Mutex};
 
@@ -24,7 +24,7 @@ pub fn test_logger() -> Arc<Mutex<TestLogger>> {
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_context(agent_name: &str) -> Arc<Context> {
+pub fn test_context(agent_name: &str) -> Arc<ContextOnly> {
     let agent = AgentId::generate_fake(agent_name);
     Arc::new(
         ContextBuilder::new()

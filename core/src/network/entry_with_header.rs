@@ -1,4 +1,4 @@
-use crate::{agent::find_chain_header, context::Context};
+use crate::{agent::find_chain_header, context::ContextStateful};
 use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
 };
@@ -18,10 +18,10 @@ impl EntryWithHeader {
 
 fn fetch_entry_from_cas(
     address: &Address,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> Result<Entry, HolochainError> {
     let json = context
-        .dht_storage
+        .dht_storage()
         .read()?
         .fetch(address)?
         .ok_or("Entry not found".to_string())?;
@@ -31,7 +31,7 @@ fn fetch_entry_from_cas(
 
 pub fn fetch_entry_with_header(
     address: &Address,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> Result<EntryWithHeader, HolochainError> {
     let entry = fetch_entry_from_cas(address, &context)?;
     let header =

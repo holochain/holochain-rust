@@ -1,6 +1,6 @@
 use crate::{
     agent::actions::commit::commit_entry,
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     network::actions::publish::publish,
     nucleus::actions::{
         build_validation_package::build_validation_package, validate::validate_entry,
@@ -18,7 +18,7 @@ use std::sync::Arc;
 pub async fn author_entry<'a>(
     entry: &'a Entry,
     maybe_crud_link: Option<Address>,
-    context: &'a Arc<Context>,
+    context: &'a Arc<ContextStateful>,
 ) -> Result<Address, HolochainError> {
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(&entry, &context))?;
@@ -66,7 +66,7 @@ pub mod tests {
         while json.is_none() && tries < 120 {
             tries = tries + 1;
             {
-                let state = &context2.state().unwrap();
+                let state = &context2.state();
                 json = state
                     .dht()
                     .content_storage()

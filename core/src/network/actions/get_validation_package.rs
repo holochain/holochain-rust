@@ -1,7 +1,7 @@
 extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::ContextStateful,
     instance::dispatch_action,
 };
 use futures::{
@@ -25,7 +25,7 @@ use std::{
 /// If that is None this means that we couldn't get a validation package from the source.
 pub async fn get_validation_package(
     header: ChainHeader,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> HcResult<Option<ValidationPackage>> {
     let entry_address = header.entry_address().clone();
     let action_wrapper = ActionWrapper::new(Action::GetValidationPackage(header));
@@ -40,7 +40,7 @@ pub async fn get_validation_package(
 /// which would be None if the source responded with None, indicating that it
 /// is not the source.
 pub struct GetValidationPackageFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     address: Address,
 }
 
@@ -50,7 +50,7 @@ impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        let state = self.context.state().unwrap().network();
+        let state = self.context.state().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));
         }

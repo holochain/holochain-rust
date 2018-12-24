@@ -1,6 +1,6 @@
 use crate::{
     action::ActionWrapper,
-    context::Context,
+    context::ContextStateful,
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
@@ -22,7 +22,7 @@ fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), Holo
 }
 
 pub fn reduce_get_entry(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -40,7 +40,7 @@ pub fn reduce_get_entry(
 }
 
 pub fn reduce_get_entry_timeout(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

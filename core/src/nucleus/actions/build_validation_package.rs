@@ -3,7 +3,7 @@ extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
     agent::{self, find_chain_header},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
@@ -26,14 +26,16 @@ use std::{
     thread,
 };
 
-pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> ValidationPackageFuture {
+pub fn build_validation_package(
+    entry: &Entry,
+    context: &Arc<ContextStateful>,
+) -> ValidationPackageFuture {
     let id = snowflake::ProcessUniqueId::new();
 
     match entry.entry_type() {
         EntryType::App(app_entry_type) => {
             if context
                 .state()
-                .unwrap()
                 .nucleus()
                 .dna()
                 .unwrap()
@@ -91,7 +93,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
-            agent::state::create_new_chain_header(&entry, context.clone(), &None),
+            agent::state::create_new_chain_header(&entry, &context, &None),
         );
 
         thread::spawn(move || {
@@ -152,9 +154,9 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
     }
 }
 
-fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
-    let chain = context.state().unwrap().agent().chain();
-    let top_header = context.state().unwrap().agent().top_chain_header();
+fn all_public_chain_entries(context: &Arc<ContextStateful>) -> Vec<Entry> {
+    let chain = context.state().agent().chain();
+    let top_header = context.state().agent().top_chain_header();
     chain
         .iter(&top_header)
         .filter(|ref chain_header| chain_header.entry_type().can_publish())
@@ -170,9 +172,9 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
         .collect::<Vec<_>>()
 }
 
-fn all_public_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
-    let chain = context.state().unwrap().agent().chain();
-    let top_header = context.state().unwrap().agent().top_chain_header();
+fn all_public_chain_headers(context: &Arc<ContextStateful>) -> Vec<ChainHeader> {
+    let chain = context.state().agent().chain();
+    let top_header = context.state().agent().top_chain_header();
     chain
         .iter(&top_header)
         .filter(|ref chain_header| chain_header.entry_type().can_publish())
@@ -181,7 +183,7 @@ fn all_public_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
 
 /// ValidationPackageFuture resolves to the ValidationPackage or a HolochainError.
 pub struct ValidationPackageFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     key: snowflake::ProcessUniqueId,
     error: Option<HolochainError>,
 }
@@ -200,14 +202,16 @@ impl Future for ValidationPackageFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        if let Some(state) = self.context.state() {
-            match state.nucleus().validation_packages.get(&self.key) {
-                Some(Ok(validation_package)) => Poll::Ready(Ok(validation_package.clone())),
-                Some(Err(error)) => Poll::Ready(Err(error.clone())),
-                None => Poll::Pending,
-            }
-        } else {
-            Poll::Pending
+        match self
+            .context
+            .state()
+            .nucleus()
+            .validation_packages
+            .get(&self.key)
+        {
+            Some(Ok(validation_package)) => Poll::Ready(Ok(validation_package.clone())),
+            Some(Err(error)) => Poll::Ready(Err(error.clone())),
+            None => Poll::Pending,
         }
     }
 }

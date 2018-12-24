@@ -1,7 +1,7 @@
 extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action,
     network::actions::ActionResponse,
 };
@@ -20,7 +20,7 @@ use std::{
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an ActionResponse.
-pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Address> {
+pub async fn publish(address: Address, context: &Arc<ContextStateful>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::Publish(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     await!(PublishFuture {
@@ -32,7 +32,7 @@ pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Addre
 /// PublishFuture resolves to ActionResponse
 /// Tracks the state for a response to its ActionWrapper
 pub struct PublishFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     action: ActionWrapper,
 }
 
@@ -42,7 +42,7 @@ impl Future for PublishFuture {
     type Output = HcResult<Address>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        let state = self.context.state().unwrap().network();
+        let state = self.context.state().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));
         }

@@ -1,6 +1,6 @@
 use crate::{
-    agent::state::{AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS},
-    context::Context,
+    agent::state::{AgentState, AgentStateSnapshot, AGENT_SNAPSHOT_ADDRESS},
+    context::{ContextOnly, ContextStateful},
     state::State,
 };
 use holochain_core_types::{
@@ -21,8 +21,8 @@ pub trait Persister: Send {
     // snowflake is only unique across a single process, not a reboot save/load round trip
     // we'd need real UUIDs for persistant uniqueness
     // @see https://github.com/holochain/holochain-rust/issues/203
-    fn save(&mut self, state: State) -> Result<(), HolochainError>;
-    fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError>;
+    fn save(&mut self, state: &AgentState) -> Result<(), HolochainError>;
+    fn load(&self, context: Arc<ContextOnly>) -> Result<Option<State>, HolochainError>;
 }
 
 #[derive(Clone)]
@@ -37,13 +37,13 @@ impl PartialEq for SimplePersister {
 }
 
 impl Persister for SimplePersister {
-    fn save(&mut self, state: State) -> Result<(), HolochainError> {
+    fn save(&mut self, state: &AgentState) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();
         let mut store = lock.write().unwrap();
         let snapshot = AgentStateSnapshot::try_from(state)?;
         Ok(store.add(&snapshot)?)
     }
-    fn load(&self, context: Arc<Context>) -> Result<Option<State>, HolochainError> {
+    fn load(&self, context: Arc<ContextOnly>) -> Result<Option<State>, HolochainError> {
         let lock = &*self.storage.clone();
         let store = lock.write().unwrap();
         let address = Address::from(AGENT_SNAPSHOT_ADDRESS);
@@ -81,7 +81,7 @@ mod tests {
         let context = test_context_with_agent_state();
         File::create(temp_path.clone()).unwrap();
         let mut persistance = SimplePersister::new(context.dht_storage.clone());
-        let state = context.state().unwrap().clone();
+        let state = context.state().clone();
         persistance.save(state.clone()).unwrap();
         let state_from_file = persistance.load(context).unwrap().unwrap();
         assert_eq!(state.agent(), state_from_file.agent());

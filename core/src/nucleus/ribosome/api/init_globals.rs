@@ -15,7 +15,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
     let mut globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
         dna_hash: HashString::from(""),
-        agent_id_str: JsonString::from(runtime.context.agent_id.clone()).to_string(),
+        agent_id_str: JsonString::from(runtime.context.agent_id().clone()).to_string(),
         // TODO #233 - Implement agent pub key hash
         agent_address: Address::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
         agent_initial_hash: HashString::from(""),
@@ -23,7 +23,8 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
     };
 
     // Update fields
-    if let Some(state) = runtime.context.state() {
+    let state = runtime.context.state().clone();
+    {
         // Update dna_hash
         if let Some(dna) = state.nucleus().dna() {
             globals.dna_hash =

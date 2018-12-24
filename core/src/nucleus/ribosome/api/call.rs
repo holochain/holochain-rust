@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::RECV_DEFAULT_TIMEOUT_MS,
     nucleus::{
         is_fn_public, launch_zome_fn_call,
@@ -109,7 +109,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let container_api =
         runtime
             .context
-            .container_api
+            .container_api()
             .clone()
             .ok_or(HolochainError::ConfigError(
                 "No container API in context".to_string(),
@@ -153,7 +153,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
 }
 
 pub fn validate_call(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     state: &NucleusState,
     fn_call: &ZomeFnCall,
 ) -> Result<Dna, HolochainError> {
@@ -208,7 +208,7 @@ pub fn validate_call(
 ///   2. Execute the exposed Zome function in a separate thread
 /// Send the result in a ReturnZomeFunctionResult Action on success or failure like ExecuteZomeFunction
 pub(crate) fn reduce_call(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     state: &mut NucleusState,
     action_wrapper: &ActionWrapper,
 ) {
@@ -237,16 +237,16 @@ pub(crate) fn reduce_call(
 }
 
 // TODO: check the signature too
-fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bool {
+fn is_token_the_agent(context: Arc<ContextStateful>, cap: &Option<CapabilityCall>) -> bool {
     match cap {
         None => false,
-        Some(call) => context.agent_id.key == call.cap_token.to_string(),
+        Some(call) => context.agent_id().key == call.cap_token.to_string(),
     }
 }
 
 /// checks to see if a given function call is allowable according to the capabilities
 /// that have been registered to callers in the chain.
-fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
+fn check_capability(context: Arc<ContextStateful>, fn_call: &ZomeFnCall) -> bool {
     // the agent can always do everything
     if is_token_the_agent(context.clone(), &fn_call.cap) {
         return true;
@@ -255,7 +255,7 @@ fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     match fn_call.cap.clone() {
         None => false,
         Some(call) => {
-            let chain = &context.chain_storage;
+            let chain = &context.chain_storage();
             let maybe_json = chain.read().unwrap().fetch(&call.cap_token).unwrap();
             let grant = match maybe_json {
                 Some(content) => CapTokenGrant::try_from(content).unwrap(),
@@ -273,7 +273,7 @@ pub mod tests {
     extern crate wabt;
 
     use crate::{
-        context::Context,
+        context::{ContextOnly, ContextStateful},
         instance::{tests::test_instance_and_context, Instance, Observer, RECV_DEFAULT_TIMEOUT_MS},
         nucleus::{
             ribosome::{
@@ -345,7 +345,7 @@ pub mod tests {
     }
 
     struct TestSetup {
-        context: Arc<Context>,
+        context: Arc<ContextOnly>,
         instance: Instance,
     }
 
@@ -456,7 +456,7 @@ pub mod tests {
 
         // Expecting timeout since there is no function in wasm to call
         let expected = Err(RecvTimeoutError::Disconnected);
-        let agent_token_str = test_setup.context.agent_id.key.clone();
+        let agent_token_str = test_setup.context.agent_id().key.clone();
         test_reduce_call(
             &test_setup,
             &agent_token_str,
@@ -489,7 +489,7 @@ pub mod tests {
 
         // Expecting timeout since there is no function in wasm to call
         let expected = Err(RecvTimeoutError::Disconnected);
-        let agent_token_str = test_setup.context.agent_id.key.clone();
+        let agent_token_str = test_setup.context.agent_id().key.clone();
         test_reduce_call(
             &test_setup,
             &agent_token_str,
@@ -519,7 +519,7 @@ pub mod tests {
     fn test_agent_as_token() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
         let test_setup = setup_test(dna);
-        let agent_token = Address::from(test_setup.context.agent_id.key.clone());
+        let agent_token = Address::from(test_setup.context.agent_id().key.clone());
         let context = test_setup.context.clone();
         let cap_call = CapabilityCall::new("foo".to_string(), agent_token, None);
         assert!(is_token_the_agent(context.clone(), &Some(cap_call)));

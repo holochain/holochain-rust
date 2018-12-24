@@ -1,5 +1,5 @@
 use crate::{
-    context::Context,
+    context::ContextStateful,
     dht::actions::hold::hold_entry,
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(
     entry_with_header: &'a EntryWithHeader,
-    context: &'a Arc<Context>,
+    context: &'a Arc<ContextStateful>,
 ) -> Result<Address, HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
 

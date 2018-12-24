@@ -1,4 +1,4 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use crate::{action::ActionWrapper, context::ContextStateful, network::state::NetworkState};
 use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::DhtData;
 use std::sync::Arc;
@@ -19,7 +19,7 @@ fn inner(
 }
 
 pub fn reduce_handle_get_result(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

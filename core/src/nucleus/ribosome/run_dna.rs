@@ -1,5 +1,5 @@
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::{
         ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
         ZomeFnCall, ZomeFnResult,
@@ -21,7 +21,7 @@ use wasmi::{
 /// panics if wasm binary isn't valid.
 pub fn run_dna(
     dna_name: &str,
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     wasm: Vec<u8>,
     zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,

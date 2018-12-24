@@ -1,4 +1,7 @@
-use crate::{context::Context, workflows::get_entry_result::get_entry_result_workflow};
+use crate::{
+    context::{ContextOnly, ContextStateful},
+    workflows::get_entry_result::get_entry_result_workflow,
+};
 use futures::executor::block_on;
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
@@ -11,7 +14,7 @@ use std::sync::Arc;
 /// Retrieves the base and target entries of the link and returns both.
 pub fn get_link_entries(
     link: &Link,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> Result<(Entry, Entry), HolochainError> {
     let base_address = link.base();
     let target_address = link.target();
@@ -73,7 +76,7 @@ pub fn find_link_definition_in_dna(
     base_type: &EntryType,
     tag: &String,
     target_type: &EntryType,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> Result<LinkDefinitionPath, HolochainError> {
     let dna = context.get_dna().expect("No DNA found?!");
     match base_type {

@@ -1,5 +1,5 @@
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::{
         ribosome::{
             self,
@@ -16,7 +16,7 @@ use std::sync::Arc;
 struct ReceiveReturnValue(Result<String, String>);
 
 pub fn receive(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     zome: &str,
     // we ignore params for genesis
     params: &CallbackParams,

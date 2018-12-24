@@ -1,5 +1,5 @@
 use crate::{
-    context::Context,
+    context::ContextStateful,
     network::entry_with_header::EntryWithHeader,
     workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
@@ -12,7 +12,7 @@ use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData};
 use std::{sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry.
-pub fn handle_store_dht(dht_data: DhtData, context: Arc<Context>) {
+pub fn handle_store_dht(dht_data: DhtData, context: Arc<ContextStateful>) {
     let entry_with_header: EntryWithHeader =
         serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap()).unwrap();
     thread::spawn(move || {
@@ -25,7 +25,7 @@ pub fn handle_store_dht(dht_data: DhtData, context: Arc<Context>) {
 
 /// The network requests us to store meta information (links/CRUD/etc) for an
 /// entry that we hold.
-pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
+pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<ContextStateful>) {
     match dht_meta_data.attribute.as_ref() {
         "link" => {
             let entry_with_header: EntryWithHeader = serde_json::from_str(

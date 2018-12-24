@@ -6,7 +6,7 @@ Date: 2018-07-19
 
 Accepted
 
-## Context
+## ContextStateful
 
 Rust as a language, in my opinion, does not lend itself to rapid prototyping. Writing efficient Rust code, while absolutely possible, is a problem domain unto itself, and takes time. E.g. Is it worth returning borrowed references in this case to save memory? Am I able to craft the lifetimes appropriately given all the other api usages of my struct? What about synchronization? These questions are implementation details, not architectural. If we are still working out the details with the underlying architecture, we don't want to be spending brainpower on * how * we accomplish our experiments.
 

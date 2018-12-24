@@ -1,5 +1,5 @@
 extern crate serde_json;
-use crate::context::Context;
+use crate::context::{ContextOnly, ContextStateful};
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
@@ -11,10 +11,10 @@ use holochain_core_types::{
 use std::{collections::HashSet, convert::TryInto, str::FromStr, sync::Arc};
 
 pub(crate) fn get_entry_from_dht(
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
     address: Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let dht = context.state().unwrap().dht().content_storage();
+    let dht = context.state().dht().content_storage();
     let storage = &dht.clone();
     let json = (*storage.read().unwrap()).fetch(&address)?;
     let entry: Option<Entry> = json
@@ -24,10 +24,10 @@ pub(crate) fn get_entry_from_dht(
 }
 
 pub(crate) fn get_entry_crud_meta_from_dht(
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
     address: Address,
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
-    let dht = context.state().unwrap().dht().meta_storage();
+    let dht = context.state().dht().meta_storage();
     let storage = &dht.clone();
     // Get crud-status
     let status_eavs = (*storage.read().unwrap()).fetch_eav(
@@ -84,7 +84,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn get_entry_with_meta<'a>(
-    context: &'a Arc<Context>,
+    context: &'a Arc<ContextStateful>,
     address: Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. try to get the entry
@@ -120,7 +120,7 @@ pub mod tests {
         let context = test_context_with_state();
         let result = super::get_entry_from_dht(&context, entry.address());
         assert_eq!(Ok(None), result);
-        let storage = &context.state().unwrap().dht().content_storage().clone();
+        let storage = &context.state().dht().content_storage().clone();
         (*storage.write().unwrap()).add(&entry).unwrap();
         let result = super::get_entry_from_dht(&context, entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);

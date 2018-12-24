@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper, DirectMessageData},
-    context::Context,
+    context::ContextStateful,
     instance::dispatch_action,
     network::direct_message::DirectMessage,
     nucleus::actions::build_validation_package::build_validation_package,
@@ -9,10 +9,9 @@ use crate::{
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::{convert::TryFrom, sync::Arc};
 
-fn get_entry(address: &Address, context: &Arc<Context>) -> Result<Entry, HolochainError> {
+fn get_entry(address: &Address, context: &Arc<ContextStateful>) -> Result<Entry, HolochainError> {
     let raw = context
         .state()
-        .unwrap()
         .agent()
         .chain()
         .content_storage()
@@ -28,7 +27,7 @@ pub async fn respond_validation_package_request(
     to_agent_id: Address,
     msg_id: String,
     requested_entry_address: Address,
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
 ) {
     let maybe_validation_package = match get_entry(&requested_entry_address, &context) {
         Ok(entry) => await!(build_validation_package(&entry, &context)).ok(),

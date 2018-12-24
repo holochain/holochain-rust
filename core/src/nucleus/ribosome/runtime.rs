@@ -1,5 +1,5 @@
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::{
         ribosome::{
             api::{ZomeApiFunction, ZomeApiResult},
@@ -22,8 +22,8 @@ use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 pub struct Runtime {
     /// Memory state tracker between ribosome and wasm.
     pub memory_manager: SinglePageManager,
-    /// Context of Holochain. Required for operating.
-    pub context: Arc<Context>,
+    /// ContextStateful of Holochain. Required for operating.
+    pub context: Arc<ContextStateful>,
     /// Name of the DNA that is being hosted.
     pub dna_name: String,
     /// The zome function call that initiated the Ribosome.

@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 For Holo, we need to have user agent's keys and source chain on the client machine and the rest of the Holochain agent (the DHT shard etc.) be held by HoloPorts.
 

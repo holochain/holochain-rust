@@ -189,7 +189,7 @@ pub mod tests {
     extern crate test_utils;
     use super::ZomeApiFunction;
     use crate::{
-        context::Context,
+        context::{ContextOnly, ContextStateful},
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{self, Defn},
@@ -361,7 +361,7 @@ pub mod tests {
     /// returns the runtime after the call completes
     pub fn test_zome_api_function_call(
         dna_name: &str,
-        context: Arc<Context>,
+        context: Arc<ContextStateful>,
         _instance: &Instance,
         wasm: &Vec<u8>,
         args_bytes: Vec<u8>,
@@ -390,7 +390,7 @@ pub mod tests {
     pub fn test_zome_api_function(
         canonical_name: &str,
         args_bytes: Vec<u8>,
-    ) -> (JsonString, Arc<Context>) {
+    ) -> (JsonString, Arc<ContextStateful>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),

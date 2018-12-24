@@ -44,7 +44,6 @@ pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     let dna = runtime
         .context
         .state()
-        .unwrap()
         .nucleus()
         .dna()
         .expect("Should have DNA");

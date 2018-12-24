@@ -10,7 +10,7 @@ use holochain_core_types::{
     cas::content::Address,
     dna::{capabilities::CapabilityCall},
 };
-use neon::{context::Context, prelude::*};
+use neon::{context::{ContextOnly, ContextStateful}, prelude::*};
 
 use crate::config::*;
 

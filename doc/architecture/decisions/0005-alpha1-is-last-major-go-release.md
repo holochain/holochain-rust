@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 A complete Rust rewrite is planned (see ADR #0002)
 

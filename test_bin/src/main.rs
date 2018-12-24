@@ -32,7 +32,7 @@ fn main() {
         usage();
     }
 
-    // Create Context for Holochain Core
+    // Create ContextStateful for Holochain Core
     // let dna = holochain_core_types::dna::from_package_file("mydna.hcpkg");
     let tempdir = tempdir().unwrap();
     let dna = Dna::new();

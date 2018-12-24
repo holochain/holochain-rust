@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper, DirectMessageData},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
     nucleus::ribosome::callback::{receive::receive, CallbackParams, CallbackResult},
@@ -13,7 +13,7 @@ pub async fn handle_custom_direct_message(
     to_agent_id: Address,
     msg_id: String,
     custom_direct_message: CustomDirectMessage,
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
 ) -> Result<(), HolochainError> {
     let zome = custom_direct_message.zome.clone();
     let payload = custom_direct_message

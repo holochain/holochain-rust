@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 There is a WASM intepretor in Rust.
 There seems to be a lot of momentum behind WASM: 

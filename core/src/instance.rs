@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     signal::Signal,
     state::State,
 };
@@ -39,7 +39,7 @@ impl Instance {
         100
     }
 
-    // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
+    // @NB: these three getters smell bad because previously Instance and ContextStateful had SyncSenders
     // rather than Option<SyncSenders>, but these would be initialized by default to broken channels
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
@@ -107,20 +107,16 @@ impl Instance {
         (rx_action, rx_observer)
     }
 
-    pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
-        let mut sub_context = (*context).clone();
-        sub_context.set_state(self.state.clone());
-        sub_context.action_channel = self.action_channel.clone();
-        sub_context.observer_channel = self.observer_channel.clone();
-        Arc::new(sub_context)
+    pub fn initialize_context(&self, context: Arc<ContextOnly>) -> Arc<ContextStateful> {
+        Arc::new(ContextStateful::new(context, self.state.clone()))
     }
 
     /// Start the Event Loop on a separate thread
-    pub fn start_action_loop(&mut self, context: Arc<Context>) {
+    pub fn start_action_loop(&mut self, context_only: Arc<ContextOnly>) {
         let (rx_action, rx_observer) = self.initialize_channels();
 
         let sync_self = self.clone();
-        let sub_context = self.initialize_context(context);
+        let sub_context = self.initialize_context(context_only);
 
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
@@ -142,7 +138,7 @@ impl Instance {
         action_wrapper: ActionWrapper,
         mut state_observers: Vec<Observer>,
         rx_observer: &Receiver<Observer>,
-        context: &Arc<Context>,
+        context: &Arc<ContextStateful>,
     ) -> Vec<Observer> {
         // Mutate state
         {
@@ -170,7 +166,7 @@ impl Instance {
         }
 
         // @TODO: add a big fat debug logger here
-        self.maybe_emit_action_signal(context, action_wrapper.action().clone());
+        self.maybe_emit_action_signal(&context.context_only(), action_wrapper.action().clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -195,8 +191,8 @@ impl Instance {
 
     /// Given an `Action` that is being processed, decide whether or not it should be
     /// emitted as a `Signal::Internal`, and if so, send it
-    fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: Action) {
-        if let Some(ref tx) = context.signal_tx {
+    fn maybe_emit_action_signal(&self, context: &Arc<ContextOnly>, action: Action) {
+        if let Some(ref tx) = context.signal_tx() {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals
             let signal = Signal::Internal(action);
@@ -206,16 +202,16 @@ impl Instance {
     }
 
     /// Creates a new Instance with no channels set up.
-    pub fn new(context: Arc<Context>) -> Self {
-        Instance {
-            state: Arc::new(RwLock::new(State::new(context))),
+    pub fn new(context_only: Arc<ContextOnly>) -> Self {
+        Self {
+            state: Arc::new(RwLock::new(State::new(context_only))),
             action_channel: None,
             observer_channel: None,
         }
     }
 
     pub fn from_state(state: State) -> Self {
-        Instance {
+        Self {
             state: Arc::new(RwLock::new(state)),
             action_channel: None,
             observer_channel: None,
@@ -227,10 +223,14 @@ impl Instance {
             .read()
             .expect("owners of the state RwLock shouldn't panic")
     }
+
+    pub fn state_arc(&self) -> Arc<RwLock<State>> {
+        self.state.clone()
+    }
 }
 
 /*impl Default for Instance {
-    fn default(context:Context) -> Self {
+    fn default(context:ContextStateful) -> Self {
         Self::new(context)
     }
 }*/
@@ -315,7 +315,7 @@ pub mod tests {
             chain_store::ChainStore,
             state::{ActionResponse, AgentState},
         },
-        context::{mock_network_config, Context},
+        context::{mock_network_config, ContextStateful},
     };
     use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -372,14 +372,14 @@ pub mod tests {
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    pub fn test_context_and_logger(agent_name: &str) -> (Arc<ContextOnly>, Arc<Mutex<TestLogger>>) {
         let agent = AgentId::generate_fake(agent_name);
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let logger = test_logger();
         (
-            Arc::new(Context::new(
+            Arc::new(ContextOnly::new(
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
@@ -399,7 +399,7 @@ pub mod tests {
 
     /// create a test context
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context(agent_name: &str) -> Arc<Context> {
+    pub fn test_context(agent_name: &str) -> Arc<ContextOnly> {
         let (context, _) = test_context_and_logger(agent_name);
         context
     }
@@ -410,14 +410,14 @@ pub mod tests {
         agent_name: &str,
         action_channel: &SyncSender<ActionWrapper>,
         observer_channel: &SyncSender<Observer>,
-    ) -> Arc<Context> {
+    ) -> Arc<ContextOnly> {
         let agent = AgentId::generate_fake(agent_name);
         let logger = test_logger();
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         Arc::new(
-            Context::new_with_channels(
+            ContextOnly::new_with_channels(
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
@@ -436,11 +436,11 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_with_state() -> Arc<Context> {
+    pub fn test_context_with_state() -> Arc<ContextOnly> {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
-        let mut context = Context::new(
+        let mut context = ContextOnly::new(
             AgentId::generate_fake("Florence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
@@ -460,11 +460,11 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_with_agent_state() -> Arc<Context> {
+    pub fn test_context_with_agent_state() -> Arc<ContextOnly> {
         let file_system =
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
-        let mut context = Context::new(
+        let mut context = ContextOnly::new(
             AgentId::generate_fake("Florence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
@@ -489,7 +489,7 @@ pub mod tests {
 
     #[test]
     fn default_buffer_size_test() {
-        assert_eq!(Context::default_channel_buffer_size(), 100);
+        assert_eq!(ContextOnly::default_channel_buffer_size(), 100);
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -499,7 +499,7 @@ pub mod tests {
 
     /// create a canonical test instance
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
+    pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<ContextOnly>), String> {
         test_instance_and_context_by_name(dna, "jane")
     }
 
@@ -508,7 +508,7 @@ pub mod tests {
     pub fn test_instance_and_context_by_name(
         dna: Dna,
         name: &str,
-    ) -> Result<(Instance, Arc<Context>), String> {
+    ) -> Result<(Instance, Arc<ContextOnly>), String> {
         // Create instance and plug in our DNA
         let context = test_context(name);
         let mut instance = Instance::new(context.clone());
@@ -784,7 +784,7 @@ pub mod tests {
     /// Committing a DnaEntry to source chain should work
     #[test]
     fn can_commit_dna() {
-        // Create Context, Agent, Dna, and Commit AgentIdEntry Action
+        // Create ContextStateful, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let dna_entry = Entry::Dna(dna);
@@ -816,7 +816,7 @@ pub mod tests {
     /// Committing an AgentIdEntry to source chain should work
     #[test]
     fn can_commit_agent() {
-        // Create Context, Agent and Commit AgentIdEntry Action
+        // Create ContextStateful, Agent and Commit AgentIdEntry Action
         let context = test_context("alex");
         let agent_entry = Entry::AgentId(context.agent_id.clone());
         let commit_agent_action = ActionWrapper::new(Action::Commit((agent_entry.clone(), None)));

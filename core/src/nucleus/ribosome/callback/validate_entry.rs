@@ -1,6 +1,6 @@
 extern crate serde_json;
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::{
         ribosome::{
             self,
@@ -34,7 +34,7 @@ use std::sync::Arc;
 pub fn validate_entry(
     entry: Entry,
     validation_data: ValidationData,
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
 ) -> Result<CallbackResult, HolochainError> {
     match entry.entry_type() {
         // DNA entries are not validated currently and always valid
@@ -68,7 +68,7 @@ pub fn validate_entry(
 fn validate_link_entry(
     entry: Entry,
     validation_data: ValidationData,
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
 ) -> Result<CallbackResult, HolochainError> {
     let link_add = match entry {
         Entry::LinkAdd(link_add) => link_add,
@@ -116,7 +116,7 @@ fn validate_app_entry(
     entry: Entry,
     app_entry_type: AppEntryType,
     validation_data: ValidationData,
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
 ) -> Result<CallbackResult, HolochainError> {
     let dna = context.get_dna().expect("Callback called without DNA set!");
     let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
@@ -165,7 +165,7 @@ fn build_validation_call(
 }
 
 fn run_validation_callback(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     fc: ZomeFnCall,
     wasm: &DnaWasm,
     dna_name: String,

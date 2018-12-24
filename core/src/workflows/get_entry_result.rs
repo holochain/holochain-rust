@@ -1,4 +1,7 @@
-use crate::{context::Context, network, nucleus};
+use crate::{
+    context::{ContextOnly, ContextStateful},
+    network, nucleus,
+};
 
 use holochain_core_types::{
     cas::content::Address, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
@@ -10,7 +13,7 @@ use std::sync::Arc;
 
 /// Get Entry workflow
 pub async fn get_entry_with_meta_workflow<'a>(
-    context: &'a Arc<Context>,
+    context: &'a Arc<ContextStateful>,
     address: &'a Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
@@ -25,7 +28,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
 
 /// Get GetEntryResult workflow
 pub async fn get_entry_result_workflow<'a>(
-    context: &'a Arc<Context>,
+    context: &'a Arc<ContextStateful>,
     args: &'a GetEntryArgs,
 ) -> Result<GetEntryResult, HolochainError> {
     if args.options.sources || args.options.header {
@@ -95,10 +98,10 @@ pub async fn get_entry_result_workflow<'a>(
 //        };
 //        let maybe_entry_history = block_on(super::get_entry_result_workflow(&context, &args));
 ////        assert_eq!(0, maybe_entry_history.unwrap().entries.len());
-////        let content_storage = &context.state().unwrap().dht().content_storage().clone();
+////        let content_storage = &context.state().dht().content_storage().clone();
 ////        (*content_storage.write().unwrap()).add(&entry).unwrap();
 ////        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
-////        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
+////        let meta_storage = &context.state().dht().meta_storage().clone();
 ////        (*meta_storage.write().unwrap())
 ////            .add_eav(&status_eav)
 ////            .unwrap();

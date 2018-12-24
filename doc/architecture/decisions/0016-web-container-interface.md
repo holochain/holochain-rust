@@ -6,7 +6,7 @@ Date: 2018-09-14
 
 Accepted
 
-## Context
+## ContextStateful
 * We have an implementation of a Holochain container that can load QML based UIs: https://github.com/holochain/holosqape
 * We also want to support HTML/JS/CSS based UIs
 * We need to enable pure Web clients to connect to a HoloPort for the Holo use-case

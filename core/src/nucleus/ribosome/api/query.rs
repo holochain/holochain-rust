@@ -55,7 +55,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     };
 
     // Perform query
-    let agent = runtime.context.state().unwrap().agent();
+    let agent = runtime.context.state().agent();
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");

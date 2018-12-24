@@ -1,6 +1,6 @@
 use crate::{
     action::ActionWrapper,
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     network::{
         actions::ActionResponse,
         entry_with_header::{fetch_entry_with_header, EntryWithHeader},
@@ -105,7 +105,7 @@ fn publish_link_meta(
 }
 
 fn reduce_publish_inner(
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
     network_state: &mut NetworkState,
     address: &Address,
 ) -> Result<(), HolochainError> {
@@ -146,7 +146,7 @@ fn reduce_publish_inner(
 }
 
 pub fn reduce_publish(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

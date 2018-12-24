@@ -1,7 +1,7 @@
 extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action,
 };
 use futures::{
@@ -22,7 +22,7 @@ use std::{
 ///
 /// Returns a future that resolves to an ActionResponse.
 pub async fn get_entry<'a>(
-    context: &'a Arc<Context>,
+    context: &'a Arc<ContextStateful>,
     address: &'a Address,
 ) -> HcResult<Option<EntryWithMeta>> {
     let action_wrapper = ActionWrapper::new(Action::GetEntry(address.clone()));
@@ -41,7 +41,7 @@ pub async fn get_entry<'a>(
 /// GetEntryFuture resolves to a HcResult<Entry>.
 /// Tracks the state of the network module
 pub struct GetEntryFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     address: Address,
 }
 
@@ -51,7 +51,7 @@ impl Future for GetEntryFuture {
     type Output = HcResult<Option<EntryWithMeta>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        let state = self.context.state().unwrap().network();
+        let state = self.context.state().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));
         }

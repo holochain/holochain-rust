@@ -4,7 +4,7 @@ Date: 2018-06-5
 ## Status
 Accepted
 
-## Context
+## ContextStateful
 Distributed applications, like centralized ones, often need a source of randomness.  Having confidence and verifiability of that randomness poses particular challenges in the the distributed context. Specifically, we need a source of randomness with some of the following properties:
  1. It is outside their control or influence so it can be used for a dice roll, card deck shuffle, or something where they may have an interest in skewing the results.
  2. It is predictably reproducable, so that other nodes, whether players in a game, or validating nodes later, can reproduce the SAME random seed to reach the same random output for purposes of validation.

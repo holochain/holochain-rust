@@ -60,7 +60,7 @@
 use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::Instance,
     nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
@@ -78,20 +78,20 @@ use std::sync::Arc;
 pub struct Holochain {
     instance: Instance,
     #[allow(dead_code)]
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     active: bool,
 }
 
 impl Holochain {
     /// create a new Holochain instance
-    pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
+    pub fn new(dna: Dna, context: Arc<ContextOnly>) -> HolochainResult<Self> {
         let instance = Instance::new(context.clone());
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 
     fn from_dna_and_context_and_instance(
         dna: Dna,
-        context: Arc<Context>,
+        context: Arc<ContextOnly>,
         mut instance: Instance,
     ) -> HolochainResult<Self> {
         let name = dna.name.clone();
@@ -115,8 +115,8 @@ impl Holochain {
         }
     }
 
-    pub fn load(_path: String, context: Arc<Context>) -> Result<Self, HolochainError> {
-        let persister = SimplePersister::new(context.dht_storage.clone());
+    pub fn load(_path: String, context: Arc<ContextOnly>) -> Result<Self, HolochainError> {
+        let persister = SimplePersister::new(context.dht_storage());
         let loaded_state = persister
             .load(context.clone())?
             .unwrap_or(State::new(context.clone()));
@@ -173,7 +173,7 @@ impl Holochain {
         Ok(self.instance.state().clone())
     }
 
-    pub fn context(&self) -> &Arc<Context> {
+    pub fn context(&self) -> &Arc<ContextStateful> {
         &self.context
     }
 }
@@ -186,7 +186,7 @@ mod tests {
     use context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
-        context::Context,
+        context::{ContextOnly, ContextStateful},
         nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
@@ -205,7 +205,7 @@ mod tests {
     fn test_context(
         agent_name: &str,
     ) -> (
-        Arc<Context>,
+        Arc<ContextStateful>,
         Arc<Mutex<test_utils::TestLogger>>,
         SignalReceiver,
     ) {
@@ -256,7 +256,7 @@ mod tests {
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
         assert!(!hc.active);
         assert_eq!(hc.context.agent_id.nick, "bob".to_string());
-        let network_state = hc.context.state().unwrap().network().clone();
+        let network_state = hc.context.state().network().clone();
         assert_eq!(network_state.agent_id.is_some(), true);
         assert_eq!(network_state.dna_hash.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
@@ -281,7 +281,7 @@ mod tests {
         let loaded_holo = result.unwrap();
         assert!(!loaded_holo.active);
         assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
-        let network_state = loaded_holo.context.state().unwrap().network().clone();
+        let network_state = loaded_holo.context.state().network().clone();
         assert_eq!(network_state.agent_id.is_some(), true);
         assert_eq!(network_state.dna_hash.is_some(), true);
         assert!(loaded_holo.instance.state().nucleus().has_initialized());

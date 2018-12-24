@@ -1,12 +1,12 @@
 use super::call;
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult},
 };
 use std::sync::Arc;
 
 pub fn genesis(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     zome: &str,
     // we ignore params for genesis
     params: &CallbackParams,

@@ -1,8 +1,8 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use crate::{action::ActionWrapper, context::ContextStateful, network::state::NetworkState};
 use std::sync::Arc;
 
 pub fn reduce_handle_get_validation_package(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action,
     network::direct_message::DirectMessage,
     workflows::{
@@ -16,7 +16,7 @@ use holochain_net_connection::protocol_wrapper::MessageData;
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
-pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
+pub fn handle_send(message_data: MessageData, context: Arc<ContextStateful>) {
     let message: DirectMessage =
         serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
 
@@ -55,13 +55,12 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
 
 /// We got a ProtocolWrapper::HandleSendResult, this means somebody has responded to our message
 /// -> we called and this is the answer
-pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
+pub fn handle_send_result(message_data: MessageData, context: Arc<ContextStateful>) {
     let response: DirectMessage =
         serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
 
     let initial_message = context
         .state()
-        .unwrap()
         .network()
         .as_ref()
         .direct_message_connections

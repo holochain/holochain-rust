@@ -11,7 +11,7 @@ pub mod send_direct_message;
 
 use crate::{
     action::{Action, ActionWrapper, NetworkReduceFn},
-    context::Context,
+    context::ContextStateful,
     network::{
         direct_message::DirectMessage,
         reducers::{
@@ -57,7 +57,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
 }
 
 pub fn reduce(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     old_state: Arc<NetworkState>,
     action_wrapper: &ActionWrapper,
 ) -> Arc<NetworkState> {

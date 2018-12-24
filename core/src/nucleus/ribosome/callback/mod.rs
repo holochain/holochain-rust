@@ -8,7 +8,7 @@ pub mod validate_entry;
 pub mod validation_package;
 
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::{
         ribosome::{
             self,
@@ -73,8 +73,13 @@ impl Callback {
     #[cfg_attr(tarpaulin, skip)]
     pub fn as_fn(
         &self,
-    ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {
-        fn noop(_context: Arc<Context>, _zome: &str, _params: &CallbackParams) -> CallbackResult {
+    ) -> fn(context: Arc<ContextStateful>, zome: &str, params: &CallbackParams) -> CallbackResult
+    {
+        fn noop(
+            _context: Arc<ContextStateful>,
+            _zome: &str,
+            _params: &CallbackParams,
+        ) -> CallbackResult {
             CallbackResult::Pass
         }
 
@@ -179,7 +184,7 @@ impl From<RibosomeReturnCode> for CallbackResult {
 }
 
 pub(crate) fn run_callback(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     fc: ZomeFnCall,
     wasm: &DnaWasm,
     dna_name: String,
@@ -203,7 +208,7 @@ pub(crate) fn run_callback(
 }
 
 pub fn call(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     zome: &str,
     function: &Callback,
     params: &CallbackParams,

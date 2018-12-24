@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 Mobile is the main platform today. We want to reach as many users as possible.
 Mobile use has two big constraints:  battery life (and consequent sleeping of apps), and bandwidth because of costs

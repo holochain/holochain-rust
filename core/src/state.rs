@@ -4,14 +4,14 @@ use crate::{
         chain_store::ChainStore,
         state::{AgentState, AgentStateSnapshot},
     },
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     dht::dht_store::DhtStore,
     network::state::NetworkState,
     nucleus::state::NucleusState,
 };
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
-    dna::Dna,
+    dna::{wasm::DnaWasm, Dna},
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
@@ -36,13 +36,13 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(context: Arc<Context>) -> Self {
+    pub fn new(context_only: Arc<ContextOnly>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let chain_cas = &(*context).chain_storage;
-        let dht_cas = &(*context).dht_storage;
-        let eav = context.eav_storage.clone();
+        let chain_cas = (context_only).chain_storage();
+        let dht_cas = (context_only).dht_storage();
+        let eav = context_only.eav_storage();
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(ChainStore::new(chain_cas.clone()))),
@@ -52,12 +52,12 @@ impl State {
         }
     }
 
-    pub fn new_with_agent(context: Arc<Context>, agent_state: Arc<AgentState>) -> Self {
+    pub fn new_with_agent(context_only: Arc<ContextOnly>, agent_state: Arc<AgentState>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let cas = context.dht_storage.clone();
-        let eav = context.eav_storage.clone();
+        let cas = context_only.dht_storage();
+        let eav = context_only.eav_storage();
 
         fn get_dna(
             agent_state: &Arc<AgentState>,
@@ -96,7 +96,7 @@ impl State {
         }
     }
 
-    pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
+    pub fn reduce(&self, context: Arc<ContextStateful>, action_wrapper: ActionWrapper) -> Self {
         let mut new_state = State {
             nucleus: crate::nucleus::reduce(
                 Arc::clone(&context),
@@ -142,11 +142,11 @@ impl State {
     }
 
     pub fn try_from_agent_snapshot(
-        context: Arc<Context>,
+        context: Arc<ContextOnly>,
         snapshot: AgentStateSnapshot,
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
-            ChainStore::new(context.dht_storage.clone()),
+            ChainStore::new(context.dht_storage().clone()),
             snapshot.top_chain_header().clone(),
         );
         Ok(State::new_with_agent(
@@ -154,8 +154,43 @@ impl State {
             Arc::new(agent_state),
         ))
     }
+
+    pub fn get_dna(&self) -> Option<Dna> {
+        use std::{thread, time::Duration};
+        // In the case of genesis we encounter race conditions with regards to setting the DNA.
+        // Genesis gets called asynchronously right after dispatching an action that sets the DNA in
+        // the state, which can result in this code being executed first.
+        // But we can't run anything if there is no DNA which holds the WASM, so we have to wait here.
+        // TODO: use a future here
+        let mut dna = None;
+        let mut done = false;
+        let mut tries = 0;
+        while !done {
+            {
+                dna = self.nucleus().dna();
+            }
+            match dna {
+                Some(_) => done = true,
+                None => {
+                    if tries > 10 {
+                        done = true;
+                    } else {
+                        thread::sleep(Duration::from_millis(10));
+                        tries += 1;
+                    }
+                }
+            }
+        }
+        dna
+    }
+
+    pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
+        let dna = self.get_dna().expect("Callback called without DNA set!");
+        dna.get_wasm_from_zome_name(zome)
+            .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
+    }
 }
 
-pub fn test_store(context: Arc<Context>) -> State {
+pub fn test_store(context: Arc<ContextOnly>) -> State {
     State::new(context)
 }

@@ -1,5 +1,5 @@
 use crate::{
-    context::{get_dna_and_agent, Context},
+    context::{get_dna_and_agent, ContextOnly, ContextStateful},
     network::actions::initialize_network,
 };
 
@@ -12,8 +12,8 @@ use holochain_core_types::{dna::Dna, error::HcResult};
 pub async fn initialize(
     instance: &Instance,
     dna: Option<Dna>,
-    context: Arc<Context>,
-) -> HcResult<Arc<Context>> {
+    context: Arc<ContextOnly>,
+) -> HcResult<Arc<ContextStateful>> {
     let instance_context = instance.initialize_context(context.clone());
     await!(get_dna_and_agent(&instance_context)
         .map_ok(|_| ())

@@ -6,7 +6,7 @@ extern crate holochain_core_types;
 extern crate holochain_net;
 
 use holochain_container_api::{context_builder::ContextBuilder, Holochain};
-use holochain_core::context::Context;
+use holochain_core::context::ContextOnly;
 use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainError};
 
 use std::sync::Arc;
@@ -56,7 +56,7 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
     }
 }
 
-fn get_context(path: &String) -> Result<Context, HolochainError> {
+fn get_context(path: &String) -> Result<ContextOnly, HolochainError> {
     let agent = AgentId::generate_fake("c_bob");
     Ok(ContextBuilder::new()
         .with_agent(agent)

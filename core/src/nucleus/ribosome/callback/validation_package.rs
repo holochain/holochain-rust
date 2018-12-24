@@ -1,6 +1,6 @@
 extern crate serde_json;
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     nucleus::{
         ribosome::{
             self,
@@ -20,7 +20,7 @@ use std::{convert::TryFrom, sync::Arc};
 
 pub fn get_validation_package_definition(
     entry: &Entry,
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
 ) -> Result<CallbackResult, HolochainError> {
     let dna = context.get_dna().expect("Callback called without DNA set!");
     let result = match entry.entry_type().clone() {

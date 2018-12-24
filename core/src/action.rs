@@ -1,11 +1,12 @@
 use crate::{
     agent::state::AgentState,
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     network::{direct_message::DirectMessage, state::NetworkState},
     nucleus::{
         state::{NucleusState, ValidationResult},
         ExecuteZomeFnResponse, ZomeFnCall,
     },
+    state::State,
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -198,7 +199,7 @@ pub enum Action {
 pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
-pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
+pub type ReduceFn<S> = fn(Arc<ContextStateful>, &mut S, &ActionWrapper);
 
 /// Everything the network module needs to know in order to send a
 /// direct message.

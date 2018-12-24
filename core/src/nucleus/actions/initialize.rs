@@ -2,7 +2,7 @@ extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     agent::actions::commit::commit_entry,
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action_and_wait,
     nucleus::{
         ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
@@ -34,9 +34,9 @@ const INITIALIZATION_TIMEOUT: u64 = 30;
 /// Use futures::executor::block_on to wait for an initialized instance.
 pub async fn initialize_application(
     dna: Dna,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> Result<NucleusStatus, HolochainError> {
-    if context.state().unwrap().nucleus().status != NucleusStatus::New {
+    if context.state().nucleus().status != NucleusStatus::New {
         return Err(HolochainError::new(
             "Can't trigger initialization: Nucleus status is not New",
         ));
@@ -69,7 +69,7 @@ pub async fn initialize_application(
     }
 
     // Commit AgentId to chain
-    let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
+    let agent_id_entry = Entry::AgentId(context_clone.agent_id().clone());
     let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone,));
 
     // Let initialization fail if AgentId could not be committed.
@@ -120,7 +120,7 @@ pub async fn initialize_application(
 /// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).
 /// Tracks the nucleus status.
 pub struct InitializationFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     created_at: Instant,
 }
 
@@ -143,17 +143,13 @@ impl Future for InitializationFuture {
                 "Timeout while initializing".to_string(),
             )));
         }
-        if let Some(state) = self.context.state() {
-            match state.nucleus().status {
-                NucleusStatus::New => Poll::Pending,
-                NucleusStatus::Initializing => Poll::Pending,
-                NucleusStatus::Initialized => Poll::Ready(Ok(NucleusStatus::Initialized)),
-                NucleusStatus::InitializationFailed(ref error) => {
-                    Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
-                }
+        match self.context.state().nucleus().status {
+            NucleusStatus::New => Poll::Pending,
+            NucleusStatus::Initializing => Poll::Pending,
+            NucleusStatus::Initialized => Poll::Ready(Ok(NucleusStatus::Initialized)),
+            NucleusStatus::InitializationFailed(ref error) => {
+                Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
             }
-        } else {
-            Poll::Pending
         }
     }
 }

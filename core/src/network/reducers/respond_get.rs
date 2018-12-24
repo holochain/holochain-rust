@@ -1,6 +1,6 @@
 use crate::{
     action::ActionWrapper,
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
 };
 use holochain_core_types::{entry::EntryWithMeta, error::HolochainError};
@@ -27,7 +27,7 @@ fn reduce_respond_get_inner(
 }
 
 pub fn reduce_respond_get(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {

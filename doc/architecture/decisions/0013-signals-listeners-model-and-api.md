@@ -6,7 +6,7 @@ Date: 2018-05-16
 
 Accepted
 
-## Context
+## ContextStateful
 
 In the go code we used polling from the UI to discover local state changes, be they in the source-chain or in the DHT.  We want to change this to an event based model where UI (or other clients, like bridged apps) can become listeners to signals.  Additionally there are system level signals (like warrants) as well as other app level definable signals that we want consumers of exposed holochain app APIs to be able to access on a push (i.e. listening) basis.
 

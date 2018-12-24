@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::ContextStateful,
     instance::dispatch_action,
 };
 use futures::{
@@ -23,7 +23,7 @@ use std::{
 /// if that is not the case.
 ///
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
-pub fn add_link(link: &Link, context: &Arc<Context>) -> AddLinkFuture {
+pub fn add_link(link: &Link, context: &Arc<ContextStateful>) -> AddLinkFuture {
     let action_wrapper = ActionWrapper::new(Action::AddLink(link.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
@@ -34,7 +34,7 @@ pub fn add_link(link: &Link, context: &Arc<Context>) -> AddLinkFuture {
 }
 
 pub struct AddLinkFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     action: ActionWrapper,
 }
 
@@ -49,14 +49,10 @@ impl Future for AddLinkFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        if let Some(state) = self.context.state() {
-            match state.dht().actions().get(&self.action) {
-                Some(Ok(_)) => Poll::Ready(Ok(())),
-                Some(Err(e)) => Poll::Ready(Err(e.clone())),
-                None => Poll::Pending,
-            }
-        } else {
-            Poll::Pending
+        match self.context.state().dht().actions().get(&self.action) {
+            Some(Ok(_)) => Poll::Ready(Ok(())),
+            Some(Err(e)) => Poll::Ready(Err(e.clone())),
+            None => Poll::Pending,
         }
     }
 }

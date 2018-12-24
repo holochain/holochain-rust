@@ -2,7 +2,7 @@
 
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::ContextStateful,
     dht::dht_store::DhtStore,
 };
 use holochain_core_types::{
@@ -16,12 +16,12 @@ use holochain_core_types::{
 use std::{collections::HashSet, convert::TryFrom, str::FromStr, sync::Arc};
 
 // A function that might return a mutated DhtStore
-type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
+type DhtReducer = fn(Arc<ContextStateful>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
 pub fn reduce(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     old_store: Arc<DhtStore>,
     action_wrapper: &ActionWrapper,
 ) -> Arc<DhtStore> {
@@ -54,7 +54,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
 
 //
 pub(crate) fn reduce_hold_entry(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -94,7 +94,7 @@ pub(crate) fn reduce_hold_entry(
 
 //
 pub(crate) fn reduce_add_link(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -130,7 +130,7 @@ pub(crate) fn reduce_add_link(
 
 //
 pub(crate) fn reduce_update_entry(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -187,7 +187,7 @@ pub(crate) fn reduce_update_entry(
 }
 
 pub(crate) fn reduce_remove_entry(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -204,7 +204,7 @@ pub(crate) fn reduce_remove_entry(
 
 //
 fn reduce_remove_entry_inner(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     new_store: &mut DhtStore,
     latest_deleted_address: &Address,
     deletion_address: &Address,
@@ -274,7 +274,7 @@ fn reduce_remove_entry_inner(
 //
 #[allow(dead_code)]
 pub(crate) fn reduce_get_links(
-    _context: Arc<Context>,
+    _context: Arc<ContextStateful>,
     _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {

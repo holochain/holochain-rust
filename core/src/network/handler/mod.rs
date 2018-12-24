@@ -3,7 +3,7 @@ pub mod send;
 pub mod store;
 
 use crate::{
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     network::handler::{get::*, send::*, store::*},
 };
 use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolWrapper};
@@ -12,7 +12,7 @@ use std::{convert::TryFrom, sync::Arc};
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
-pub fn create_handler(c: &Arc<Context>) -> NetHandler {
+pub fn create_handler(c: &Arc<ContextStateful>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();

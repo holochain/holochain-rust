@@ -7,7 +7,7 @@ pub mod validate;
 pub mod tests {
     use crate::{
         agent::actions::commit::commit_entry,
-        context::Context,
+        context::{ContextOnly, ContextStateful},
         instance::{tests::test_instance_and_context_by_name, Instance},
     };
     use futures::executor::block_on;
@@ -26,7 +26,7 @@ pub mod tests {
     use test_utils::*;
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn instance() -> (Instance, Arc<Context>) {
+    pub fn instance() -> (Instance, Arc<ContextStateful>) {
         instance_by_name("jane", test_dna())
     }
 
@@ -68,7 +68,7 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
+    pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<ContextStateful>) {
         let (instance, context) =
             test_instance_and_context_by_name(dna, name).expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
@@ -96,13 +96,13 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
-        let chain = context.state().unwrap().agent().chain();
+    pub fn commit(entry: Entry, context: &Arc<ContextStateful>) -> ChainHeader {
+        let chain = context.state().agent().chain();
 
         let commit_result = block_on(commit_entry(entry.clone(), None, &context.clone()));
         assert!(commit_result.is_ok());
 
-        let top_header = context.state().unwrap().agent().top_chain_header();
+        let top_header = context.state().agent().top_chain_header();
         chain
             .iter(&top_header)
             .find(|ref header| *header.entry_address() == entry.address())

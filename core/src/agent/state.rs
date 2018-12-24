@@ -1,8 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
     agent::chain_store::ChainStore,
-    context::Context,
-    state::State,
+    context::ContextStateful,
     workflows::get_entry_result::get_entry_result_workflow,
 };
 use holochain_core_types::{
@@ -73,7 +72,7 @@ impl AgentState {
             ))
     }
 
-    pub async fn get_agent<'a>(&'a self, context: &'a Arc<Context>) -> HcResult<AgentId> {
+    pub async fn get_agent<'a>(&'a self, context: &'a Arc<ContextStateful>) -> HcResult<AgentId> {
         let agent_entry_address = self.get_agent_address()?;
         let entry_args = GetEntryArgs {
             address: agent_entry_address,
@@ -116,11 +115,10 @@ impl AgentStateSnapshot {
     }
 }
 
-impl TryFrom<State> for AgentStateSnapshot {
+impl TryFrom<&AgentState> for AgentStateSnapshot {
     type Error = HolochainError;
 
-    fn try_from(state: State) -> Result<Self, Self::Error> {
-        let agent = &*(state.agent());
+    fn try_from(agent: &AgentState) -> Result<Self, Self::Error> {
         let top_chain = agent
             .top_chain_header()
             .ok_or_else(|| HolochainError::ErrorGeneric("Could not serialize".to_string()))?;
@@ -158,16 +156,13 @@ pub enum ActionResponse {
 
 pub fn create_new_chain_header(
     entry: &Entry,
-    context: Arc<Context>,
+    context: &Arc<ContextStateful>,
     crud_link: &Option<Address>,
 ) -> ChainHeader {
-    let agent_state = context
-        .state()
-        .expect("create_new_chain_header called without state")
-        .agent();
+    let agent_state = context.state().agent();
     let agent_address = agent_state
         .get_agent_address()
-        .unwrap_or(context.agent_id.address());
+        .unwrap_or(context.agent_id().address());
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
@@ -198,36 +193,35 @@ pub fn create_new_chain_header(
 /// @TODO Better error handling in the state persister section
 /// https://github.com/holochain/holochain-rust/issues/555
 fn reduce_commit_entry(
-    context: Arc<Context>,
-    state: &mut AgentState,
+    context: Arc<ContextStateful>,
+    agent_state: &mut AgentState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let (entry, maybe_crud_link) = unwrap_to!(action => Action::Commit);
-    let chain_header = create_new_chain_header(&entry, context.clone(), &maybe_crud_link);
+    let chain_header = create_new_chain_header(&entry, &context, &maybe_crud_link);
 
     fn response(
-        state: &mut AgentState,
+        agent_state: &mut AgentState,
         entry: &Entry,
         chain_header: &ChainHeader,
     ) -> Result<Address, HolochainError> {
-        let storage = &state.chain.content_storage().clone();
+        let storage = &agent_state.chain.content_storage().clone();
         storage.write().unwrap().add(entry)?;
         storage.write().unwrap().add(chain_header)?;
         Ok(entry.address())
     }
-    let result = response(state, &entry, &chain_header);
-    state.top_chain_header = Some(chain_header);
-    let con = context.clone();
+    let result = response(agent_state, &entry, &chain_header);
+    agent_state.top_chain_header = Some(chain_header);
 
     #[allow(unused_must_use)]
-    con.state().map(|global_state_lock| {
-        let persis_lock = context.clone().persister.clone();
+    {
+        let persis_lock = context.clone().persister().clone();
         let persister = &mut *persis_lock.lock().unwrap();
-        persister.save(global_state_lock.clone());
-    });
+        persister.save(agent_state);
+    };
 
-    state
+    agent_state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
 }
@@ -242,7 +236,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<AgentReduceFn> {
 
 /// Reduce Agent's state according to provided Action
 pub fn reduce(
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     old_state: Arc<AgentState>,
     action_wrapper: &ActionWrapper,
 ) -> Arc<AgentState> {

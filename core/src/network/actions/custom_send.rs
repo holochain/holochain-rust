@@ -1,7 +1,7 @@
 extern crate futures;
 use crate::{
     action::{Action, ActionWrapper, DirectMessageData},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
 };
@@ -24,7 +24,7 @@ use std::{
 pub async fn custom_send(
     to_agent: Address,
     custom_direct_message: CustomDirectMessage,
-    context: &Arc<Context>,
+    context: &Arc<ContextStateful>,
 ) -> Result<String, HolochainError> {
     let id = ProcessUniqueId::new().to_string();
     let direct_message = DirectMessage::Custom(custom_direct_message);
@@ -51,7 +51,7 @@ pub async fn custom_send(
 
 /// SendResponseFuture waits for a result to show up in NetworkState::custom_direct_message_replys
 pub struct SendResponseFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     id: String,
 }
 
@@ -61,7 +61,7 @@ impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        let state = self.context.state().unwrap().network();
+        let state = self.context.state().network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(HolochainError::ErrorGeneric(error.to_string())));
         }

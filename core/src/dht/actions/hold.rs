@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
-    context::Context,
+    context::{ContextOnly, ContextStateful},
     instance::dispatch_action,
 };
 use futures::{
@@ -21,7 +21,7 @@ use std::{
 
 pub async fn hold_entry<'a>(
     entry: &'a Entry,
-    context: &'a Arc<Context>,
+    context: &'a Arc<ContextStateful>,
 ) -> Result<Address, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::Hold(entry.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -33,7 +33,7 @@ pub async fn hold_entry<'a>(
 }
 
 pub struct HoldEntryFuture {
-    context: Arc<Context>,
+    context: Arc<ContextStateful>,
     address: Address,
 }
 
@@ -48,19 +48,17 @@ impl Future for HoldEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        if let Some(state) = self.context.state() {
-            if state
-                .dht()
-                .content_storage()
-                .read()
-                .unwrap()
-                .contains(&self.address)
-                .unwrap()
-            {
-                Poll::Ready(Ok(self.address.clone()))
-            } else {
-                Poll::Pending
-            }
+        if self
+            .context
+            .state()
+            .dht()
+            .content_storage()
+            .read()
+            .unwrap()
+            .contains(&self.address)
+            .unwrap()
+        {
+            Poll::Ready(Ok(self.address.clone()))
         } else {
             Poll::Pending
         }

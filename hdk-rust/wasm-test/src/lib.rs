@@ -168,6 +168,10 @@ fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult>
     hdk::get_links(&address, "test-tag")
 }
 
+fn handle_links_roundtrip_get_and_load(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
+    hdk::get_links_and_load(&address, "test-tag")
+}
+
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     println!("handle_check_query");
     fn err(s: &str) -> ZomeApiResult<Vec<Address>> {
@@ -517,6 +521,12 @@ define_zome! {
                 handler: handle_links_roundtrip_get
             }
 
+            links_roundtrip_get_and_load: {
+                inputs: |address: Address|,
+                outputs: |result: ZomeApiResult<Vec<ZomeApiResult<Entry>>>|,
+                handler: handle_links_roundtrip_get_and_load
+            }
+
             link_validation: {
                 inputs: |stuff1: String, stuff2: String|,
                 outputs: |result: JsonString|,
@@ -576,7 +586,6 @@ define_zome! {
                 outputs: |response: TweetResponse|,
                 handler: handle_send_tweet
             }
-
             send_message: {
                 inputs: |to_agent: Address, message: String|,
                 outputs: |response: ZomeApiResult<String>|,

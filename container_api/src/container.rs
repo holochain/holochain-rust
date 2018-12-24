@@ -4,7 +4,7 @@ use crate::{
     error::HolochainInstanceError,
     Holochain,
 };
-use holochain_core::{logger::Logger, signal::Signal};
+use holochain_core::{context::ContextOnly, logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,
@@ -12,6 +12,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use std::sync::mpsc::sync_channel;
 
 use std::{
     clone::Clone,
@@ -209,9 +210,13 @@ impl Container {
                         .with_named_instance_config(bridge.handle.clone(), callee_config);
                 }
                 context_builder = context_builder.with_container_api(api_builder.spawn());
-                if let Some(signal_tx) = self.signal_tx.clone() {
-                    context_builder = context_builder.with_signals(signal_tx);
-                }
+
+                let (action_tx, action_rx) =
+                    sync_channel(ContextOnly::default_channel_buffer_size());
+                let (observer_tx, observer_rx) =
+                    sync_channel(ContextOnly::default_channel_buffer_size());
+                let signal_tx = self.signal_tx.clone();
+                context_builder = context_builder.with_signals((action_tx, observer_tx, signal_tx));
 
                 // Spawn context
                 let context = context_builder.spawn();
@@ -227,7 +232,8 @@ impl Container {
                     },
                 )?;
 
-                Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
+                Holochain::new(dna, Arc::new(context), (action_rx, observer_rx))
+                    .map_err(|hc_err| hc_err.to_string())
             })
     }
 

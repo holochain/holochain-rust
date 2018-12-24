@@ -6,8 +6,9 @@ extern crate holochain_core_types;
 extern crate holochain_net;
 
 use holochain_container_api::{context_builder::ContextBuilder, Holochain};
-use holochain_core::context::ContextOnly;
+use holochain_core::context::{ContextOnly, ContextReceivers};
 use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainError};
+use std::sync::mpsc::sync_channel;
 
 use std::sync::Arc;
 
@@ -28,13 +29,12 @@ impl Logger for NullLogger {
 #[no_mangle]
 pub unsafe extern "C" fn holochain_new(ptr: *mut Dna, storage_path: CStrPtr) -> *mut Holochain {
     let path = CStr::from_ptr(storage_path).to_string_lossy().into_owned();
-    let context = get_context(&path);
 
     assert!(!ptr.is_null());
     let dna = Box::from_raw(ptr);
 
-    match context {
-        Ok(con) => match Holochain::new(*dna, Arc::new(con)) {
+    match get_context(&path) {
+        Ok((con, rxs)) => match Holochain::new(*dna, Arc::new(con), rxs) {
             Ok(hc) => Box::into_raw(Box::new(hc)),
             Err(_) => std::ptr::null_mut(),
         },
@@ -45,10 +45,9 @@ pub unsafe extern "C" fn holochain_new(ptr: *mut Dna, storage_path: CStrPtr) -> 
 #[no_mangle]
 pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain {
     let path = CStr::from_ptr(storage_path).to_string_lossy().into_owned();
-    let context = get_context(&path);
 
-    match context {
-        Ok(con) => match Holochain::load(path, Arc::new(con)) {
+    match get_context(&path) {
+        Ok((con, rxs)) => match Holochain::load(path, Arc::new(con), rxs) {
             Ok(hc) => Box::into_raw(Box::new(hc)),
             Err(_) => std::ptr::null_mut(),
         },
@@ -56,12 +55,17 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
     }
 }
 
-fn get_context(path: &String) -> Result<ContextOnly, HolochainError> {
+fn get_context(path: &String) -> Result<(ContextOnly, ContextReceivers), HolochainError> {
     let agent = AgentId::generate_fake("c_bob");
-    Ok(ContextBuilder::new()
+    let (action_tx, action_rx) = sync_channel(ContextOnly::default_channel_buffer_size());
+    let (observer_tx, observer_rx) = sync_channel(ContextOnly::default_channel_buffer_size());
+    let signal_tx = None;
+    let hc = ContextBuilder::new()
         .with_agent(agent)
+        .with_signals((action_tx, observer_tx, signal_tx))
         .with_file_storage(path.clone())?
-        .spawn())
+        .spawn();
+    Ok((hc, (action_rx, observer_rx)))
 }
 
 #[no_mangle]

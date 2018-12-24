@@ -107,16 +107,17 @@ impl Instance {
         (rx_action, rx_observer)
     }
 
-    pub fn initialize_context(&self, context: &mut Arc<ContextOnly>) -> Arc<ContextStateful> {
-        let mut ctx = Arc::get_mut(context).unwrap();
-        ctx.action_channel = self.action_channel.clone();
-        ctx.observer_channel = self.observer_channel.clone();
+    pub fn initialize_context(&self, context: Arc<ContextOnly>) -> Arc<ContextStateful> {
         Arc::new(ContextStateful::new(context.clone(), self.state.clone()))
     }
 
     /// Start the Event Loop on a separate thread
-    pub fn start_action_loop(&mut self, context_only: &mut Arc<ContextOnly>) {
-        let (rx_action, rx_observer) = self.initialize_channels();
+    pub fn start_action_loop(
+        &mut self,
+        context_only: Arc<ContextOnly>,
+        rxs: (Receiver<ActionWrapper>, Receiver<Observer>),
+    ) {
+        let (rx_action, rx_observer) = rxs;
 
         let sync_self = self.clone();
         let sub_context = self.initialize_context(context_only);
@@ -207,7 +208,7 @@ impl Instance {
     /// Creates a new Instance with no channels set up.
     pub fn new(context_only: Arc<ContextOnly>) -> Self {
         Self {
-            state: Arc::new(RwLock::new(State::new(context_only))),
+            state: Arc::new(RwLock::new(State::new(&*context_only))),
             action_channel: None,
             observer_channel: None,
         }
@@ -318,7 +319,7 @@ pub mod tests {
             chain_store::ChainStore,
             state::{ActionResponse, AgentState},
         },
-        context::{mock_network_config, ContextStateful},
+        context::{mock_network_config, ContextReceivers, ContextStateful},
     };
     use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -375,11 +376,16 @@ pub mod tests {
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_and_logger(agent_name: &str) -> (Arc<ContextOnly>, Arc<Mutex<TestLogger>>) {
+    pub fn test_context_and_logger(
+        agent_name: &str,
+    ) -> (Arc<ContextOnly>, Arc<Mutex<TestLogger>>, ContextReceivers) {
         let agent = AgentId::generate_fake(agent_name);
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
+
+        let (atx, arx) = sync_channel(ContextOnly::default_channel_buffer_size());
+        let (otx, orx) = sync_channel(ContextOnly::default_channel_buffer_size());
         let logger = test_logger();
         (
             Arc::new(ContextOnly::new(
@@ -394,17 +400,20 @@ pub mod tests {
                 )),
                 mock_network_config(),
                 None,
+                atx,
+                otx,
                 None,
             )),
             logger,
+            (arx, orx),
         )
     }
 
     /// create a test context
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context(agent_name: &str) -> Arc<ContextOnly> {
-        let (context, _) = test_context_and_logger(agent_name);
-        context
+    pub fn test_context(agent_name: &str) -> (Arc<ContextOnly>, ContextReceivers) {
+        let (context, _, rxs) = test_context_and_logger(agent_name);
+        (context, rxs)
     }
 
     /// create a test context
@@ -424,9 +433,9 @@ pub mod tests {
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                Some(action_channel.clone()),
+                action_channel.clone(),
                 None,
-                Some(observer_channel.clone()),
+                observer_channel.clone(),
                 file_storage.clone(),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
@@ -438,51 +447,37 @@ pub mod tests {
         )
     }
 
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_with_state() -> Arc<ContextOnly> {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let mut context = ContextOnly::new(
-            AgentId::generate_fake("Florence"),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-            None,
-            None,
-        );
-        Arc::new(context.into())
-    }
+    // #[cfg_attr(tarpaulin, skip)]
+    // pub fn test_context_with_state() -> Arc<ContextOnly> {
+    //     let file_storage = Arc::new(RwLock::new(
+    //         FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+    //     ));
+    //     let mut context = ContextOnly::new(
+    //         AgentId::generate_fake("Florence"),
+    //         test_logger(),
+    //         Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+    //         file_storage.clone(),
+    //         file_storage.clone(),
+    //         Arc::new(RwLock::new(
+    //             EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+    //                 .unwrap(),
+    //         )),
+    //         mock_network_config(),
+    //         None,
+    //         None,
+    //     );
+    //     Arc::new(context.into())
+    // }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_agent_state() -> Arc<ContextStateful> {
         let file_system =
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
-        let cas = Arc::new(RwLock::new(file_system.clone()));
-        let mut context = ContextOnly::new(
-            AgentId::generate_fake("Florence"),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
-            cas.clone(),
-            cas.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-            None,
-            None,
-        );
-        let chain_store = ChainStore::new(cas.clone());
+        let (context, _rxs) = test_context("Florence");
+        let chain_store = ChainStore::new(context.chain_storage());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
-        let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
+        let state = State::new_with_agent(&context, Arc::new(agent_state));
         let global_state = Arc::new(RwLock::new(state));
         Arc::new(context.as_stateful(global_state.clone()))
     }
@@ -510,9 +505,10 @@ pub mod tests {
         name: &str,
     ) -> Result<(Instance, Arc<ContextStateful>), String> {
         // Create instance and plug in our DNA
-        let context = test_context(name);
+        let (context, rxs) = test_context(name);
         let mut instance = Instance::new(context.clone());
-        instance.start_action_loop(context.clone());
+
+        instance.start_action_loop(context.clone(), rxs);
         let context = instance.initialize_context(context);
         block_on(
             async {

@@ -137,7 +137,6 @@ fn start_holochain_instance<T: Into<String>>(
     uuid: T,
     agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
-    println!("hmmmmm 1");
     // Setup the holochain instance
     let wasm =
         create_wasm_from_file("wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm");
@@ -164,10 +163,8 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_modified_entry_ok",
         "send_message",
     ]);
-    println!("hmmmmm 2");
     let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
     dna.uuid = uuid.into();
-    println!("hmmmmm 3");
 
     // TODO: construct test DNA using the auto-generated JSON feature
     // The code below is fragile!
@@ -190,7 +187,6 @@ fn start_holochain_instance<T: Into<String>>(
             tag: String::from("test-tag"),
         });
     }
-    println!("hmmmmm 4");
 
     {
         let entry_types = &mut dna.zomes.get_mut("test_zome").unwrap().entry_types;
@@ -202,15 +198,11 @@ fn start_holochain_instance<T: Into<String>>(
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
 
-    let (context, test_logger) = test_context_and_logger(&agent_name.into());
-    println!("hmmmmm 5");
-    let mut hc =
-        Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
+    let (context, test_logger, mut hc) =
+        test_context_and_logger_and_holochain(&agent_name.into(), dna.clone());
 
-    println!("hmmmmm 6");
     // Run the holochain instance
     hc.start().expect("couldn't start");
-    println!("hmmmmm 7");
     (hc, test_logger)
 }
 

@@ -60,8 +60,9 @@
 use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
+    action::ActionWrapper,
     context::{ContextOnly, ContextStateful},
-    instance::Instance,
+    instance::{Instance, Observer},
     nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
@@ -72,7 +73,10 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use std::sync::Arc;
+use std::sync::{
+    mpsc::{sync_channel, Receiver},
+    Arc,
+};
 
 /// contains a Holochain application instance
 pub struct Holochain {
@@ -84,18 +88,14 @@ pub struct Holochain {
 
 impl Holochain {
     /// create a new Holochain instance
-    pub fn new(dna: Dna, context: Arc<ContextOnly>) -> HolochainResult<Self> {
-        let instance = Instance::new(context.clone());
-        Self::from_dna_and_context_and_instance(dna, context, instance)
-    }
-
-    fn from_dna_and_context_and_instance(
+    pub fn new(
         dna: Dna,
         context: Arc<ContextOnly>,
-        mut instance: Instance,
+        rxs: (Receiver<ActionWrapper>, Receiver<Observer>),
     ) -> HolochainResult<Self> {
+        let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
-        instance.start_action_loop(&mut context);
+        instance.start_action_loop(context.clone(), rxs);
         let result = block_on(application::initialize(
             &instance,
             Some(dna),
@@ -115,19 +115,38 @@ impl Holochain {
         }
     }
 
-    pub fn load(_path: String, context: Arc<ContextOnly>) -> Result<Self, HolochainError> {
+    pub fn new_with_unsafe_channels(dna: Dna, context: Arc<ContextOnly>) -> HolochainResult<Self> {
+        let (_, o) = sync_channel(0);
+        let (_, a) = sync_channel(0);
+        let rxs = (a, o);
+        Self::new(dna, context, rxs)
+    }
+
+    pub fn load(
+        _path: String,
+        context: Arc<ContextOnly>,
+        rxs: (Receiver<ActionWrapper>, Receiver<Observer>),
+    ) -> Result<Self, HolochainError> {
         let persister = SimplePersister::new(context.dht_storage());
-        let loaded_state = persister
-            .load(&*context)?
-            .unwrap_or(State::new(context.clone()));
+        let loaded_state = persister.load(&*context)?.unwrap_or(State::new(&*context));
         let mut instance = Instance::from_state(loaded_state.clone());
-        instance.start_action_loop(&mut context);
+        instance.start_action_loop(context.clone(), rxs);
         let new_context = block_on(application::initialize(&instance, None, context.clone()))?;
         Ok(Holochain {
             instance,
             context: new_context.clone(),
             active: false,
         })
+    }
+
+    pub fn load_with_unsafe_channels(
+        _path: String,
+        context: Arc<ContextOnly>,
+    ) -> Result<Self, HolochainError> {
+        let (_, o) = sync_channel(0);
+        let (_, a) = sync_channel(0);
+        let rxs = (a, o);
+        Self::load(_path, context, rxs)
     }
 
     /// activate the Holochain instance
@@ -210,13 +229,15 @@ mod tests {
         SignalReceiver,
     ) {
         let agent = AgentId::generate_fake(agent_name);
+        let (action_tx, _) = sync_channel(0);
+        let (observer_tx, _) = sync_channel(0);
         let (signal_tx, signal_rx) = signal_channel();
         let logger = test_utils::test_logger();
         let context = Arc::new(
             ContextBuilder::new()
                 .with_agent(agent)
                 .with_logger(logger.clone())
-                .with_signals(signal_tx)
+                .with_signals((action_tx, observer_tx, Some(signal_tx)))
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                 .unwrap()
                 .spawn(),
@@ -247,7 +268,7 @@ mod tests {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
         let (context, test_logger, _) = test_context("bob");
-        let result = Holochain::new(dna.clone(), context.context_only());
+        let result = Holochain::new_with_unsafe_channels(dna.clone(), context.context_only());
         assert!(result.is_ok());
         let hc = result.unwrap();
         assert_eq!(hc.instance.state().nucleus().dna(), Some(dna));
@@ -273,7 +294,7 @@ mod tests {
     fn can_load() {
         let path = write_agent_state_to_file();
         let (context, _, _) = test_context("bob");
-        let result = Holochain::load(path, context.context_only());
+        let result = Holochain::load_with_unsafe_channels(path, context.context_only());
         assert!(result.is_ok());
         let loaded_holo = result.unwrap();
         assert!(!loaded_holo.active);
@@ -306,7 +327,7 @@ mod tests {
         );
 
         let (context, _test_logger, _) = test_context("bob");
-        let result = Holochain::new(dna.clone(), context.context_only());
+        let result = Holochain::new_with_unsafe_channels(dna.clone(), context.context_only());
         assert!(result.is_err());
         assert_eq!(
             HolochainInstanceError::from(HolochainError::ErrorGeneric("\"Genesis\"".to_string())),
@@ -334,7 +355,7 @@ mod tests {
         // );
         //
         // let (context, _test_logger, _) = test_context("bob");
-        // let result = Holochain::new(dna.clone(), context.clone());
+        // let result = Holochain::new_with_unsafe_channels(dna.clone(), context.clone());
         // assert!(result.is_err());
         // assert_eq!(
         //     HolochainInstanceError::from(HolochainError::ErrorGeneric(
@@ -348,7 +369,8 @@ mod tests {
     fn can_start_and_stop() {
         let dna = Dna::new();
         let (context, _, _) = test_context("bob");
-        let mut hc = Holochain::new(dna.clone(), context.context_only()).unwrap();
+        let mut hc =
+            Holochain::new_with_unsafe_channels(dna.clone(), context.context_only()).unwrap();
         assert!(!hc.active());
 
         // stop when not active returns error
@@ -392,7 +414,8 @@ mod tests {
 "#;
         let dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
         let (context, _, _) = test_context("bob");
-        let mut hc = Holochain::new(dna.clone(), context.context_only()).unwrap();
+        let mut hc =
+            Holochain::new_with_unsafe_channels(dna.clone(), context.context_only()).unwrap();
 
         let result = hc.call("test_zome", example_capability_call(), "main", "");
         assert!(result.is_err());
@@ -416,7 +439,7 @@ mod tests {
     fn can_get_state() {
         let dna = Dna::new();
         let (context, _, _) = test_context("bob");
-        let hc = Holochain::new(dna.clone(), context.context_only()).unwrap();
+        let hc = Holochain::new_with_unsafe_channels(dna.clone(), context.context_only()).unwrap();
 
         let result = hc.state();
         assert!(result.is_ok());
@@ -429,7 +452,8 @@ mod tests {
         let capability = create_test_cap_with_fn_name("round_trip_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _, _) = test_context("bob");
-        let mut hc = Holochain::new(dna.clone(), context.context_only()).unwrap();
+        let mut hc =
+            Holochain::new_with_unsafe_channels(dna.clone(), context.context_only()).unwrap();
 
         hc.start().expect("couldn't start");
 
@@ -455,7 +479,8 @@ mod tests {
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _, signal_rx) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context.context_only()).unwrap();
+        let mut hc =
+            Holochain::new_with_unsafe_channels(dna.clone(), context.context_only()).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -503,7 +528,8 @@ mod tests {
         let capability = create_test_cap_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
         let (context, _, _) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context.context_only()).unwrap();
+        let mut hc =
+            Holochain::new_with_unsafe_channels(dna.clone(), context.context_only()).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -542,7 +568,8 @@ mod tests {
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
         let (context, test_logger, _) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context.context_only()).unwrap();
+        let mut hc =
+            Holochain::new_with_unsafe_channels(dna.clone(), context.context_only()).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -580,7 +607,8 @@ mod tests {
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
         let (context, test_logger, _) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context.context_only()).unwrap();
+        let mut hc =
+            Holochain::new_with_unsafe_channels(dna.clone(), context.context_only()).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");

@@ -3,6 +3,10 @@ use holochain_cas_implementations::{
     eav::{file::EavFileStorage, memory::EavMemoryStorage},
     path::create_path_if_not_exists,
 };
+use holochain_core::{
+    action::ActionWrapper, context::ContextSenders, instance::Observer, signal::Signal,
+};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
 use holochain_core::{
     context::{ContextOnly, ContextStateful},
@@ -37,7 +41,7 @@ pub struct ContextBuilder {
     eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
     network_config: Option<JsonString>,
     container_api: Option<Arc<RwLock<IoHandler>>>,
-    signal_tx: Option<SignalSender>,
+    txs: Option<ContextSenders>,
 }
 
 impl ContextBuilder {
@@ -50,7 +54,7 @@ impl ContextBuilder {
             eav_storage: None,
             network_config: None,
             container_api: None,
-            signal_tx: None,
+            txs: None,
         }
     }
 
@@ -105,8 +109,8 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_signals(mut self, signal_tx: SignalSender) -> Self {
-        self.signal_tx = Some(signal_tx);
+    pub fn with_signals(mut self, txs: ContextSenders) -> Self {
+        self.txs = Some(txs);
         self
     }
 
@@ -124,6 +128,11 @@ impl ContextBuilder {
         let eav_storage = self
             .eav_storage
             .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
+        let (action_tx, observer_tx, signal_tx) = self.txs.unwrap_or_else(|| {
+            let (a, _) = sync_channel(0);
+            let (o, _) = sync_channel(0);
+            (a, o, None)
+        });
         ContextOnly::new(
             self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
             self.logger.unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
@@ -135,7 +144,9 @@ impl ContextBuilder {
                 P2pConfig::DEFAULT_MOCK_CONFIG,
             ))),
             self.container_api,
-            self.signal_tx,
+            action_tx,
+            observer_tx,
+            signal_tx,
         )
     }
 }

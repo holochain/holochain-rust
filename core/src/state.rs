@@ -189,5 +189,5 @@ impl State {
 }
 
 pub fn test_store(context: Arc<ContextOnly>) -> State {
-    State::new(context)
+    State::new(&*context)
 }

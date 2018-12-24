@@ -68,22 +68,24 @@ mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
     use crate::{
+        context::ContextStateful,
         instance::tests::test_context_with_agent_state,
         persister::{Persister, SimplePersister},
     };
-    use std::fs::File;
+    use std::{fs::File, sync::Arc};
 
     #[test]
     fn persistance_round_trip() {
         let dir = tempdir().unwrap();
         let temp_path = dir.path().join("test");
         let _tempfile = temp_path.to_str().unwrap();
-        let context = test_context_with_agent_state();
+        let (context, rxs) = test_context_with_agent_state();
+        let context = Arc::new(ContextStateful::from(context));
         File::create(temp_path.clone()).unwrap();
         let mut persistance = SimplePersister::new(context.dht_storage().clone());
         let state = context.state().clone();
         persistance.save(&state.agent()).unwrap();
-        let state_from_file = persistance.load(context.context_only()).unwrap().unwrap();
+        let state_from_file = persistance.load(&*context.context_only()).unwrap().unwrap();
         assert_eq!(state.agent(), state_from_file.agent());
         assert_eq!(state.nucleus(), state_from_file.nucleus());
         assert_eq!(state.dht(), state_from_file.dht());

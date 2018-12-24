@@ -7,8 +7,12 @@ extern crate serde_json;
 extern crate tempfile;
 
 use holochain_container_api::{context_builder::ContextBuilder, *};
+use holochain_core::context::ContextOnly;
 use holochain_core_types::{agent::AgentId, dna::Dna};
-use std::{env, sync::Arc};
+use std::{
+    env,
+    sync::{mpsc::sync_channel, Arc},
+};
 
 use tempfile::tempdir;
 
@@ -37,15 +41,19 @@ fn main() {
     let tempdir = tempdir().unwrap();
     let dna = Dna::new();
     let agent = AgentId::generate_fake(identity);
+
+    let (action_tx, action_rx) = sync_channel(ContextOnly::default_channel_buffer_size());
+    let (observer_tx, observer_rx) = sync_channel(ContextOnly::default_channel_buffer_size());
+    let rxs = (action_rx, observer_rx);
     let context = ContextBuilder::new()
         .with_agent(agent)
+        .with_signals((action_tx, observer_tx, None))
         .with_file_storage(tempdir.path().to_str().unwrap())
         .expect("Tempdir must be accessible")
         .spawn();
-
     // Create Holochain Instance
     let mut hc =
-        Holochain::new(dna, Arc::new(context)).expect("Holochain instance creation failed.");
+        Holochain::new(dna, Arc::new(context), rxs).expect("Holochain instance creation failed.");
     println!("Created a new instance with identity: {}", identity);
 
     // start up the holochain instance

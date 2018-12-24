@@ -306,7 +306,7 @@ pub mod tests {
 
     #[test]
     fn reduce_hold_entry_test() {
-        let context = test_context("bob");
+        let (context, rxs) = test_context("bob");
         let store = test_store(context.clone());
 
         // test_entry is not sys so should do nothing
@@ -341,7 +341,7 @@ pub mod tests {
 
     #[test]
     fn can_add_links() {
-        let context = test_context("bob");
+        let (context, rxs) = test_context("bob");
         let store = test_store(context.clone());
         let entry = test_entry();
 
@@ -378,7 +378,7 @@ pub mod tests {
 
     #[test]
     fn does_not_add_link_for_missing_base() {
-        let context = test_context("bob");
+        let (context, rxs) = test_context("bob");
         let store = test_store(context.clone());
         let entry = test_entry();
 
@@ -412,7 +412,7 @@ pub mod tests {
 
     #[test]
     pub fn reduce_hold_test() {
-        let context = test_context("bill");
+        let (context, rxs) = test_context("bill");
         let store = test_store(context.clone());
         let context = Arc::new(context.as_stateful(Arc::new(RwLock::new(store.clone()))));
 

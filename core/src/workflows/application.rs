@@ -14,14 +14,12 @@ pub async fn initialize(
     dna: Option<Dna>,
     mut context: Arc<ContextOnly>,
 ) -> HcResult<Arc<ContextStateful>> {
-    let instance_context = instance.initialize_context(&mut context);
-    println!("hmmmmm 5.1.1");
+    let instance_context = instance.initialize_context(context);
     await!(get_dna_and_agent(&instance_context)
         .map_ok(|_| ())
         .or_else(
             |_| initialize_application(dna.unwrap_or(Dna::new()), &instance_context).map_ok(|_| ())
         ))?;
-    println!("hmmmmm 5.1.2");
     await!(initialize_network::initialize_network(&instance_context))?;
     Ok(instance_context)
 }

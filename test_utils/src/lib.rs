@@ -22,6 +22,7 @@ use holochain_core_types::{
     entry::entry_type::{AppEntryType, EntryType},
     json::JsonString,
 };
+use std::sync::mpsc::sync_channel;
 
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
@@ -201,6 +202,29 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<ContextOnly>, Arc<Mutex
     )
 }
 
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_context_and_logger_and_holochain(
+    agent_name: &str,
+    dna: Dna,
+) -> (Arc<ContextOnly>, Arc<Mutex<TestLogger>>, Holochain) {
+    let agent = AgentId::generate_fake(agent_name);
+    let logger = test_logger();
+    let (atx, arx) = sync_channel(ContextOnly::default_channel_buffer_size());
+    let (otx, orx) = sync_channel(ContextOnly::default_channel_buffer_size());
+    let context = Arc::new(
+        ContextBuilder::new()
+            .with_agent(agent)
+            .with_logger(logger.clone())
+            .with_signals((atx, otx, None))
+            .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+            .expect("Tempdir must be accessible")
+            .spawn(),
+    );
+    let rxs = (arx, orx);
+    let holochain = Holochain::new(dna, context.clone(), rxs).unwrap();
+    (context, logger, holochain)
+}
+
 pub fn test_context(agent_name: &str) -> Arc<ContextOnly> {
     let (context, _) = test_context_and_logger(agent_name);
     context
@@ -224,7 +248,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
     let context = create_test_context("alex");
-    let mut hc = Holochain::new(dna.clone(), context).unwrap();
+    let mut hc = Holochain::new_with_unsafe_channels(dna.clone(), context).unwrap();
 
     // Run the holochain instance
     hc.start().expect("couldn't start");

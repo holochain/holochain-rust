@@ -158,24 +158,23 @@ impl ContextOnly {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
         container_api: Option<Arc<RwLock<IoHandler>>>,
-        signal_tx: Option<SignalSender>,
-    ) -> (Self, Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (action_tx, action_rx) = sync_channel(100);
-        let (observer_tx, observer_rx) = sync_channel(100);
-        let ctx = ContextOnly {
+        action_channel: SyncSender<ActionWrapper>,
+        observer_channel: SyncSender<Observer>,
+        signal_tx: Option<SyncSender<Signal>>,
+    ) -> Self {
+        ContextOnly {
             agent_id,
             logger,
             persister,
-            action_channel: action_tx,
-            signal_tx: signal_tx,
-            observer_channel: observer_tx,
             chain_storage,
             dht_storage,
             eav_storage: eav,
             network_config,
             container_api,
-        };
-        (ctx, action_rx, observer_rx)
+            action_channel,
+            observer_channel,
+            signal_tx,
+        }
     }
 
     pub fn new_with_channels(
@@ -224,9 +223,7 @@ impl ContextOnly {
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
     pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
-        self.action_channel
-            .as_ref()
-            .expect("Action channel not initialized")
+        &self.action_channel
     }
 
     pub fn signal_tx(&self) -> Option<&SyncSender<Signal>> {
@@ -234,9 +231,7 @@ impl ContextOnly {
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {
-        self.observer_channel
-            .as_ref()
-            .expect("Observer channel not initialized")
+        &self.observer_channel
     }
 
     pub fn agent_id(&self) -> &AgentId {
@@ -264,6 +259,14 @@ impl ContextOnly {
         self.container_api.as_ref()
     }
 }
+
+pub type ContextSenders = (
+    SyncSender<ActionWrapper>,
+    SyncSender<Observer>,
+    Option<SyncSender<Signal>>,
+);
+
+pub type ContextReceivers = (Receiver<ActionWrapper>, Receiver<Observer>);
 
 pub async fn get_dna_and_agent(context: &Arc<ContextStateful>) -> HcResult<(String, String)> {
     let state = context.state();

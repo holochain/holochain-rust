@@ -107,12 +107,15 @@ impl Instance {
         (rx_action, rx_observer)
     }
 
-    pub fn initialize_context(&self, context: Arc<ContextOnly>) -> Arc<ContextStateful> {
-        Arc::new(ContextStateful::new(context, self.state.clone()))
+    pub fn initialize_context(&self, context: &mut Arc<ContextOnly>) -> Arc<ContextStateful> {
+        let mut ctx = Arc::get_mut(context).unwrap();
+        ctx.action_channel = self.action_channel.clone();
+        ctx.observer_channel = self.observer_channel.clone();
+        Arc::new(ContextStateful::new(context.clone(), self.state.clone()))
     }
 
     /// Start the Event Loop on a separate thread
-    pub fn start_action_loop(&mut self, context_only: Arc<ContextOnly>) {
+    pub fn start_action_loop(&mut self, context_only: &mut Arc<ContextOnly>) {
         let (rx_action, rx_observer) = self.initialize_channels();
 
         let sync_self = self.clone();
@@ -454,13 +457,11 @@ pub mod tests {
             None,
             None,
         );
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
-        context.set_state(global_state.clone());
-        Arc::new(context)
+        Arc::new(context.into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_with_agent_state() -> Arc<ContextOnly> {
+    pub fn test_context_with_agent_state() -> Arc<ContextStateful> {
         let file_system =
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
@@ -483,8 +484,7 @@ pub mod tests {
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
         let state = State::new_with_agent(Arc::new(context.clone()), Arc::new(agent_state));
         let global_state = Arc::new(RwLock::new(state));
-        context.set_state(global_state.clone());
-        Arc::new(context)
+        Arc::new(context.as_stateful(global_state.clone()))
     }
 
     #[test]
@@ -499,7 +499,7 @@ pub mod tests {
 
     /// create a canonical test instance
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<ContextOnly>), String> {
+    pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<ContextStateful>), String> {
         test_instance_and_context_by_name(dna, "jane")
     }
 
@@ -508,7 +508,7 @@ pub mod tests {
     pub fn test_instance_and_context_by_name(
         dna: Dna,
         name: &str,
-    ) -> Result<(Instance, Arc<ContextOnly>), String> {
+    ) -> Result<(Instance, Arc<ContextStateful>), String> {
         // Create instance and plug in our DNA
         let context = test_context(name);
         let mut instance = Instance::new(context.clone());

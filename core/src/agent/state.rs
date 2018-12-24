@@ -299,11 +299,8 @@ pub mod tests {
     fn test_reduce_commit_entry() {
         let mut agent_state = test_agent_state();
         let context = test_context("bob");
-        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
-        let mut context = test_context("bob");
-        Arc::get_mut(&mut context)
-            .unwrap()
-            .set_state(Arc::new(RwLock::new(state)));
+        let state = State::new_with_agent(context.clone(), Arc::new(agent_state.clone()));
+        let context = Arc::new(context.as_stateful(Arc::new(RwLock::new(state))));
         let action_wrapper = test_action_wrapper_commit();
 
         reduce_commit_entry(context, &mut agent_state, &action_wrapper);

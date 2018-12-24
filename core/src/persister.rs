@@ -22,7 +22,7 @@ pub trait Persister: Send {
     // we'd need real UUIDs for persistant uniqueness
     // @see https://github.com/holochain/holochain-rust/issues/203
     fn save(&mut self, state: &AgentState) -> Result<(), HolochainError>;
-    fn load(&self, context: Arc<ContextOnly>) -> Result<Option<State>, HolochainError>;
+    fn load(&self, context: &ContextOnly) -> Result<Option<State>, HolochainError>;
 }
 
 #[derive(Clone)]
@@ -43,7 +43,7 @@ impl Persister for SimplePersister {
         let snapshot = AgentStateSnapshot::try_from(state)?;
         Ok(store.add(&snapshot)?)
     }
-    fn load(&self, context: Arc<ContextOnly>) -> Result<Option<State>, HolochainError> {
+    fn load(&self, context: &ContextOnly) -> Result<Option<State>, HolochainError> {
         let lock = &*self.storage.clone();
         let store = lock.write().unwrap();
         let address = Address::from(AGENT_SNAPSHOT_ADDRESS);
@@ -80,10 +80,10 @@ mod tests {
         let _tempfile = temp_path.to_str().unwrap();
         let context = test_context_with_agent_state();
         File::create(temp_path.clone()).unwrap();
-        let mut persistance = SimplePersister::new(context.dht_storage.clone());
+        let mut persistance = SimplePersister::new(context.dht_storage().clone());
         let state = context.state().clone();
-        persistance.save(state.clone()).unwrap();
-        let state_from_file = persistance.load(context).unwrap().unwrap();
+        persistance.save(&state.agent()).unwrap();
+        let state_from_file = persistance.load(context.context_only()).unwrap().unwrap();
         assert_eq!(state.agent(), state_from_file.agent());
         assert_eq!(state.nucleus(), state_from_file.nucleus());
         assert_eq!(state.dht(), state_from_file.dht());

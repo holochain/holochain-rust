@@ -34,11 +34,11 @@ pub mod tests {
 
         // Create Entry & crud-status metadata, and store it.
         let entry = test_entry();
-        let result = context1.dht_storage.write().unwrap().add(&entry);
+        let result = context1.dht_storage().write().unwrap().add(&entry);
         assert!(result.is_ok());
         let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live)
             .expect("Could not create EAV");
-        let result = context1.eav_storage.write().unwrap().add_eav(&status_eav);
+        let result = context1.eav_storage().write().unwrap().add_eav(&status_eav);
         assert!(result.is_ok());
 
         // Get it.
@@ -91,7 +91,7 @@ pub mod tests {
         let entry = test_entry();
         block_on(author_entry(&entry, None, &context1)).expect("Could not author entry");
 
-        let agent1_state = context1.state().unwrap().agent();
+        let agent1_state = context1.state().agent();
         let header = agent1_state
             .get_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");

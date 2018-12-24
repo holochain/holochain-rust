@@ -70,6 +70,7 @@ pub fn reduce_get_entry_timeout(
 #[cfg(test)]
 mod tests {
 
+    use super::*;
     use crate::{
         action::{Action, ActionWrapper, NetworkSettings},
         context::mock_network_config,
@@ -84,13 +85,12 @@ mod tests {
 
     #[test]
     pub fn reduce_get_entry_without_network_initialized() {
-        let context = test_context("alice");
-        let store = test_store(context.clone());
+        let context = Arc::new(ContextStateful::from(test_context("alice")));
 
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::GetEntry(entry.address()));
 
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = context.state().reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
             .get_entry_with_meta_results
@@ -108,15 +108,14 @@ mod tests {
 
     #[test]
     pub fn reduce_get_entry_test() {
-        let context = test_context("alice");
-        let store = test_store(context.clone());
+        let context = Arc::new(ContextStateful::from(test_context("alice")));
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: mock_network_config(),
             dna_hash: String::from("abcd"),
             agent_id: String::from("abcd"),
         }));
-        let store = store.reduce(context.clone(), action_wrapper);
+        let store = context.state().reduce(context.clone(), action_wrapper);
 
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::GetEntry(entry.address()));
@@ -132,11 +131,10 @@ mod tests {
 
     #[test]
     pub fn reduce_get_entry_timeout_test() {
-        let mut context = test_context("alice");
+        let context = test_context("alice");
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
-
-        Arc::get_mut(&mut context).unwrap().set_state(store.clone());
+        let context = Arc::new(context.as_stateful(store.clone()));
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: mock_network_config(),

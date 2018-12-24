@@ -36,12 +36,12 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(context_only: Arc<ContextOnly>) -> Self {
+    pub fn new(context_only: &ContextOnly) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let chain_cas = (context_only).chain_storage();
-        let dht_cas = (context_only).dht_storage();
+        let chain_cas = context_only.chain_storage();
+        let dht_cas = context_only.dht_storage();
         let eav = context_only.eav_storage();
         State {
             nucleus: Arc::new(NucleusState::new()),
@@ -52,7 +52,7 @@ impl State {
         }
     }
 
-    pub fn new_with_agent(context_only: Arc<ContextOnly>, agent_state: Arc<AgentState>) -> Self {
+    pub fn new_with_agent(context_only: &ContextOnly, agent_state: Arc<AgentState>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
@@ -142,17 +142,14 @@ impl State {
     }
 
     pub fn try_from_agent_snapshot(
-        context: Arc<ContextOnly>,
+        context: &ContextOnly,
         snapshot: AgentStateSnapshot,
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
             ChainStore::new(context.dht_storage().clone()),
             snapshot.top_chain_header().clone(),
         );
-        Ok(State::new_with_agent(
-            context.clone(),
-            Arc::new(agent_state),
-        ))
+        Ok(State::new_with_agent(context, Arc::new(agent_state)))
     }
 
     pub fn get_dna(&self) -> Option<Dna> {

@@ -1,5 +1,5 @@
 use crate::{
-    context::{ContextOnly, ContextStateful},
+    context::ContextStateful,
     dht::actions::add_link::add_link,
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,

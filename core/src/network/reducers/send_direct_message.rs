@@ -78,11 +78,10 @@ mod tests {
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {
-        let mut context = test_context("alice");
+        let context = test_context("alice");
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
-
-        Arc::get_mut(&mut context).unwrap().set_state(store.clone());
+        let context = Arc::new(context.as_stateful(store.clone()));
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: mock_network_config(),

@@ -17,7 +17,10 @@ use holochain_core_types::{
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
-    sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{
+        mpsc::{sync_channel, Receiver, SyncSender},
+        Arc, Mutex, RwLock, RwLockReadGuard,
+    },
     thread::sleep,
     time::Duration,
 };
@@ -26,6 +29,15 @@ use std::{
 pub struct ContextStateful {
     state: Arc<RwLock<State>>,
     ctx: Arc<ContextOnly>,
+}
+
+impl From<Arc<ContextOnly>> for ContextStateful {
+    fn from(ctx: Arc<ContextOnly>) -> ContextStateful {
+        ContextStateful {
+            ctx: ctx.clone(),
+            state: Arc::new(RwLock::new(State::new(&*ctx))),
+        }
+    }
 }
 
 impl ContextStateful {
@@ -70,7 +82,7 @@ impl ContextStateful {
     }
 
     pub fn log<T: Into<String>>(&self, msg: T) {
-        self.log(msg)
+        self.ctx.log(msg)
     }
 
     pub fn context_only(&self) -> Arc<ContextOnly> {
@@ -122,8 +134,8 @@ pub struct ContextOnly {
     pub agent_id: AgentId,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
-    pub action_channel: Option<SyncSender<ActionWrapper>>,
-    pub observer_channel: Option<SyncSender<Observer>>,
+    pub action_channel: SyncSender<ActionWrapper>,
+    pub observer_channel: SyncSender<Observer>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -147,29 +159,32 @@ impl ContextOnly {
         network_config: JsonString,
         container_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
-    ) -> Self {
-        ContextOnly {
+    ) -> (Self, Receiver<ActionWrapper>, Receiver<Observer>) {
+        let (action_tx, action_rx) = sync_channel(100);
+        let (observer_tx, observer_rx) = sync_channel(100);
+        let ctx = ContextOnly {
             agent_id,
             logger,
             persister,
-            action_channel: None,
+            action_channel: action_tx,
             signal_tx: signal_tx,
-            observer_channel: None,
+            observer_channel: observer_tx,
             chain_storage,
             dht_storage,
             eav_storage: eav,
             network_config,
             container_api,
-        }
+        };
+        (ctx, action_rx, observer_rx)
     }
 
     pub fn new_with_channels(
         agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        action_channel: Option<SyncSender<ActionWrapper>>,
+        action_channel: SyncSender<ActionWrapper>,
         signal_tx: Option<SyncSender<Signal>>,
-        observer_channel: Option<SyncSender<Observer>>,
+        observer_channel: SyncSender<Observer>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
@@ -187,6 +202,10 @@ impl ContextOnly {
             network_config,
             container_api: None,
         })
+    }
+
+    pub fn as_stateful(&self, state: Arc<RwLock<State>>) -> ContextStateful {
+        ContextStateful::new(Arc::new(self.clone()), state)
     }
 
     // helper function to make it easier to call the logger
@@ -271,16 +290,7 @@ pub fn mock_network_config() -> JsonString {
 pub mod tests {
     extern crate tempfile;
     extern crate test_utils;
-    use self::tempfile::tempdir;
     use super::*;
-    use crate::{
-        context::mock_network_config, instance::tests::test_logger, persister::SimplePersister,
-        state::State,
-    };
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::agent::AgentId;
-    use std::sync::{Arc, Mutex, RwLock};
-
     #[test]
     fn default_buffer_size_test() {
         assert_eq!(ContextOnly::default_channel_buffer_size(), 100);

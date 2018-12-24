@@ -345,7 +345,7 @@ pub mod tests {
     }
 
     struct TestSetup {
-        context: Arc<ContextOnly>,
+        context: Arc<ContextStateful>,
         instance: Instance,
     }
 

@@ -38,7 +38,7 @@ pub async fn initialize_network_with_spoofed_dna(
 ) -> HcResult<()> {
     let (_, agent_id) = await!(get_dna_and_agent(context))?;
     let network_settings = NetworkSettings {
-        config: context.network_config.clone(),
+        config: context.network_config().clone(),
         dna_hash,
         agent_id,
     };

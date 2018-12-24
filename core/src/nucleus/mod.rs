@@ -511,7 +511,7 @@ pub mod tests {
         let action = action_wrapper.action();
         let fr = unwrap_to!(action => Action::ReturnZomeFunctionResult);
 
-        reduce_return_zome_function_result(context, &mut state, &action_wrapper);
+        reduce_return_zome_function_result(Arc::new(context.into()), &mut state, &action_wrapper);
 
         assert!(state.zome_calls.contains_key(&fr.call()));
     }
@@ -524,10 +524,10 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer);
+        let context = Arc::new(test_context_with_channels("jimmy", &sender, &tx_observer).into());
 
         // Reduce Init action
-        let reduced_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
+        let reduced_nucleus = reduce(context, nucleus.clone(), &action_wrapper);
 
         assert_eq!(reduced_nucleus.has_initialized(), false);
         assert_eq!(reduced_nucleus.has_initialization_failed(), false);
@@ -544,7 +544,11 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer).clone();
+        let context = Arc::new(ContextStateful::from(test_context_with_channels(
+            "jimmy",
+            &sender,
+            &tx_observer,
+        )));
 
         // Reduce Init action
         let initializing_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
@@ -614,7 +618,7 @@ pub mod tests {
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
         let context = test_context_with_channels("jimmy", &sender, &tx_observer);
 
-        let reduced_nucleus = reduce(context, nucleus.clone(), &action_wrapper);
+        let reduced_nucleus = reduce(Arc::new(context.into()), nucleus.clone(), &action_wrapper);
         assert_eq!(nucleus, reduced_nucleus);
     }
 

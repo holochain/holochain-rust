@@ -315,7 +315,7 @@ pub mod tests {
         let sys_entry = test_sys_entry();
 
         let new_dht_store = reduce_hold_entry(
-            Arc::clone(&context),
+            Arc::new(context.into()),
             &store.dht(),
             &ActionWrapper::new(Action::Hold(sys_entry.clone())),
         )
@@ -347,9 +347,8 @@ pub mod tests {
 
         let locked_state = Arc::new(RwLock::new(store));
 
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let storage = context.dht_storage.clone();
+        let context = context.as_stateful(locked_state.clone());
+        let storage = context.dht_storage();
         let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
@@ -385,9 +384,7 @@ pub mod tests {
 
         let locked_state = Arc::new(RwLock::new(store));
 
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let context = Arc::new(context);
+        let context = Arc::new(context.as_stateful(locked_state.clone()));
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
@@ -417,13 +414,15 @@ pub mod tests {
     pub fn reduce_hold_test() {
         let context = test_context("bill");
         let store = test_store(context.clone());
+        let context = Arc::new(context.as_stateful(Arc::new(RwLock::new(store.clone()))));
 
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::Hold(entry.clone()));
 
         store.reduce(context.clone(), action_wrapper);
 
-        let cas = context.dht_storage.read().unwrap();
+        let dht = context.dht_storage();
+        let cas = dht.read().unwrap();
 
         let maybe_json = cas.fetch(&entry.address()).unwrap();
         let result_entry = match maybe_json {

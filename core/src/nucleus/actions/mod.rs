@@ -71,7 +71,7 @@ pub mod tests {
     pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<ContextStateful>) {
         let (instance, context) =
             test_instance_and_context_by_name(dna, name).expect("Could not create test instance");
-        let initialized_context = instance.initialize_context(context);
+        let initialized_context = instance.initialize_context(context.context_only());
         (instance, initialized_context)
     }
 

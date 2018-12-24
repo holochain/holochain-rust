@@ -46,7 +46,7 @@ pub mod tests {
         assert_eq!(JsonString::null(), call_result,);
         assert_eq!(
             JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]"),
-            JsonString::from(format!("{}", (*context.logger.lock().unwrap()).dump())),
+            JsonString::from(format!("{}", (*context.logger().lock().unwrap()).dump())),
         );
     }
 }

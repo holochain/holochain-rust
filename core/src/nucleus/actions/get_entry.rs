@@ -111,13 +111,14 @@ pub fn get_entry_with_meta<'a>(
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use crate::instance::tests::test_context_with_state;
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
 
     #[test]
     fn get_entry_from_dht_cas() {
         let entry = test_entry();
-        let context = test_context_with_state();
+        let context = Arc::new(test_context_with_state().into());
         let result = super::get_entry_from_dht(&context, entry.address());
         assert_eq!(Ok(None), result);
         let storage = &context.state().dht().content_storage().clone();

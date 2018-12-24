@@ -166,22 +166,22 @@ pub fn reduce_publish(
 #[cfg(test)]
 mod tests {
 
+    use super::*;
     use crate::{
         action::{Action, ActionWrapper},
         instance::tests::test_context,
-        state::test_store,
     };
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use std::sync::Arc;
 
     #[test]
     pub fn reduce_publish_test() {
-        let context = test_context("alice");
-        let store = test_store(context.clone());
+        let context = Arc::new(ContextStateful::from(test_context("alice")));
 
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::Publish(entry.address()));
 
-        store.reduce(context.clone(), action_wrapper);
+        context.state().reduce(context.clone(), action_wrapper);
     }
 
 }

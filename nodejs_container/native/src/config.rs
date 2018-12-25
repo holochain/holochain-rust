@@ -115,6 +115,7 @@ pub fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
         instances: instance_configs,
         interfaces: Vec::new(),
         bridges: Vec::new(),
+        ..Default::default()
     };
     config
 }

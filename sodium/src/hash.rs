@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn it_should_sha256() {
         let mut input = SecBuf::with_insecure(2);
-        let mut output = SecBuf::with_insecure(2);
+        let mut output = SecBuf::with_insecure(32);
         {
             let mut input = input.write_lock();
             input[0] = 42;
@@ -71,12 +71,13 @@ mod tests {
             sha256(&mut input,&mut output);
         }
         let mut output = output.read_lock();
-        assert_eq!("[193, 152]", format!("{:?}", *output));
+        assert_eq!("[193, 152, 204, 150, 33, 27, 103, 169, 2, 6, 174, 153, 35, 55, 117, 177, 84, 115, 121, 1, 166, 185, 242, 227, 116, 245, 129, 11, 9, 35, 188, 36]", format!("{:?}", *output));
     }
+
     #[test]
     fn it_should_sha512() {
         let mut input = SecBuf::with_insecure(2);
-        let mut output = SecBuf::with_insecure(2);
+        let mut output = SecBuf::with_insecure(64);
         {
             let mut input = input.write_lock();
             input[0] = 42;
@@ -87,6 +88,6 @@ mod tests {
             sha512(&mut input,&mut output);
         }
         let mut output = output.write_lock();
-        assert_eq!("[193, 152]", format!("{:?}", *output));
+        assert_eq!("[193, 152, 204, 150, 33, 27, 103, 169, 2, 6, 174, 153, 35, 55, 117, 177, 84, 115, 121, 1, 166, 185, 242, 227, 116, 245, 129, 11, 9, 35, 188, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", format!("{:?}", *output));
     }
 }

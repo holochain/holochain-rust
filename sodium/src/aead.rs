@@ -47,10 +47,8 @@ pub fn encrypt(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secre
         let mut k = k.read_lock();
         let mut nonce = nonce.read_lock();
         let mut cipher = cipher.write_lock();
-        let mut ci_len = cipher.len();
-        let mut len : *mut libc::c_ulonglong;
-        len = ci_len as *mut libc::c_ulonglong;
-        rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_encrypt(raw_ptr_char!(cipher),len,raw_ptr_char_immut!(message),_mess_len,raw_ptr_char_immut!(adata),ad_len,raw_ptr_char_immut!(secret),raw_ptr_char_immut!(nonce),raw_ptr_char_immut!(k));
+        let mut ci_len = cipher.len() as libc::c_ulonglong;
+        rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_encrypt(raw_ptr_char!(cipher),&mut ci_len,raw_ptr_char_immut!(message),_mess_len,raw_ptr_char_immut!(adata),ad_len,raw_ptr_char_immut!(secret),raw_ptr_char_immut!(nonce),raw_ptr_char_immut!(k));
     }
 }
 

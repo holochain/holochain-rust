@@ -14,10 +14,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
 };
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_entry<'a>(
     entry: &'a Entry,
@@ -36,8 +33,6 @@ pub struct HoldEntryFuture {
     context: Arc<Context>,
     address: Address,
 }
-
-impl Unpin for HoldEntryFuture {}
 
 impl Future for HoldEntryFuture {
     type Output = Result<Address, HolochainError>;

@@ -13,6 +13,7 @@ use holochain_net_connection::{
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
+    mem,
     sync::{mpsc, Mutex, MutexGuard},
 };
 
@@ -257,6 +258,11 @@ fn get_mock<'a>() -> NetResult<MutexGuard<'a, MockSingleton>> {
         Ok(s) => Ok(s),
         Err(_) => bail!("mock singleton mutex fail"),
     }
+}
+
+/// Replace the MockSingleton with a fresh one. Necessary when stopping a mock network
+pub fn reset_mock_singleton() {
+    mem::replace(&mut *MOCK.lock().unwrap(), MockSingleton::new());
 }
 
 /// a p2p worker for mocking in-memory scenario tests

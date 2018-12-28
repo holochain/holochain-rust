@@ -10,10 +10,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 //use core::mem::PinMut;
 
 /// Commit Action Creator
@@ -40,8 +37,6 @@ pub struct CommitFuture {
     context: Arc<Context>,
     action: ActionWrapper,
 }
-
-impl Unpin for CommitFuture {}
 
 impl Future for CommitFuture {
     type Output = Result<Address, HolochainError>;

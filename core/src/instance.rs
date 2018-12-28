@@ -125,12 +125,16 @@ impl Instance {
         thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
             for action_wrapper in rx_action {
+                let do_shutdown = *action_wrapper.action() == Action::Shutdown;
                 state_observers = sync_self.process_action(
-                    action_wrapper,
+                    &action_wrapper,
                     state_observers,
                     &rx_observer,
                     &sub_context,
                 );
+                if do_shutdown {
+                    break;
+                }
             }
         });
     }
@@ -139,7 +143,7 @@ impl Instance {
     /// returns the new vector of observers
     pub(crate) fn process_action(
         &self,
-        action_wrapper: ActionWrapper,
+        action_wrapper: &ActionWrapper,
         mut state_observers: Vec<Observer>,
         rx_observer: &Receiver<Observer>,
         context: &Arc<Context>,

@@ -1,3 +1,6 @@
+//! The JsonString type is defined here. It is used throughout Holochain
+//! to enforce a standardized serialization of data to/from json.
+
 use crate::error::{HcResult, HolochainError};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
@@ -24,6 +27,10 @@ impl JsonString {
         JsonString::from("null")
     }
 
+    pub fn empty_object() -> JsonString {
+        JsonString::from("{}")
+    }
+
     pub fn is_null(&self) -> bool {
         self == &Self::null()
     }
@@ -42,6 +49,19 @@ impl From<String> for JsonString {
             // remove null characters from both ends
             .trim_matches(char::from(0));
         JsonString(cleaned.to_owned())
+    }
+}
+
+impl From<u32> for JsonString {
+    fn from(u: u32) -> JsonString {
+        default_to_json(u)
+    }
+}
+
+impl TryFrom<JsonString> for u32 {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
     }
 }
 
@@ -81,9 +101,44 @@ impl<T: Serialize> From<Vec<T>> for JsonString {
     }
 }
 
-impl<T: Serialize, E: Serialize> From<Result<T, E>> for JsonString {
+/// signifies type can be converted to JsonString in Err from some Result
+/// can't use std::error::Error for this because String has Error as a reserved future trait
+pub trait JsonError {}
+
+impl JsonError for HolochainError {}
+
+impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
-        JsonString::from(serde_json::to_string(&result).expect("could not Jsonify result"))
+        let is_ok = result.is_ok();
+        let inner_json: JsonString = match result {
+            Ok(inner) => inner.into(),
+            Err(inner) => inner.into(),
+        };
+        let inner_string = String::from(inner_json);
+        format!(
+            "{{\"{}\":{}}}",
+            if is_ok { "Ok" } else { "Err" },
+            inner_string
+        )
+        .into()
+    }
+}
+
+impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
+    fn from(result: Result<T, String>) -> JsonString {
+        let is_ok = result.is_ok();
+        let inner_json: JsonString = match result {
+            Ok(inner) => inner.into(),
+            // strings need this special handling c.f. Error
+            Err(inner) => RawString::from(inner).into(),
+        };
+        let inner_string = String::from(inner_json);
+        format!(
+            "{{\"{}\":{}}}",
+            if is_ok { "Ok" } else { "Err" },
+            inner_string
+        )
+        .into()
     }
 }
 
@@ -247,6 +302,24 @@ pub mod tests {
     #[test]
     fn json_into_bytes_test() {
         assert_eq!(JsonString::from("foo").into_bytes(), vec![102, 111, 111],);
+    }
+
+    #[test]
+    fn json_result_round_trip_test() {
+        let result: Result<String, HolochainError> =
+            Err(HolochainError::ErrorGeneric("foo".into()));
+
+        assert_eq!(
+            JsonString::from(result),
+            JsonString::from("{\"Err\":{\"ErrorGeneric\":\"foo\"}}"),
+        );
+
+        let result: Result<String, String> = Err(String::from("foo"));
+
+        assert_eq!(
+            JsonString::from(result),
+            JsonString::from("{\"Err\":\"foo\"}"),
+        )
     }
 
     #[test]

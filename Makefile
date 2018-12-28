@@ -10,10 +10,10 @@
 all: lint build_holochain build_cmd
 
 CORE_RUST_VERSION ?= nightly-2018-11-28
-TOOLS_RUST_VERSION ?= nightly-2018-10-12
+TOOLS_RUST_VERSION ?= nightly-2018-11-28
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
-CARGO_TARPULIN = RUSTFLAGS="--cfg procmacro2_semver_exempt -Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
+CARGO_TARPULIN_INSTALL = RUSTFLAGS="--cfg procmacro2_semver_exempt -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)
 
 # list all the "C" binding tests that have been written
 C_BINDING_DIRS = $(sort $(dir $(wildcard c_binding_tests/*/)))
@@ -116,7 +116,7 @@ install_rust_tools: tools_toolchain
 install_ci: core_toolchain
 	# tarpaulin (code coverage)
 	if ! $(CARGO) install --list | grep 'cargo-tarpaulin'; then \
-		 $(CARGO_TARPULIN) install cargo-tarpaulin --force; \
+		 $(CARGO_TARPULIN_INSTALL) install cargo-tarpaulin --force; \
 	fi
 
 .PHONY: install_mdbook
@@ -159,6 +159,7 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 wasm_build: ensure_wasm_target
 	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd container_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd container_api/test-bridge-caller && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
@@ -176,11 +177,11 @@ install_cmd: build_cmd
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci
-	$(CARGO) tarpaulin --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc
+	$(CARGO) tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive
 
 .PHONY: code_coverage_crate
 code_coverage_crate: core_toolchain wasm_build install_ci
-	$(CARGO) tarpaulin --timeout 600 --skip-clean -v -p $(CRATE)
+	$(CARGO) tarpaulin --ignore-tests --timeout 600 --skip-clean -v -p $(CRATE)
 
 fmt_check: install_rust_tools
 	$(CARGO_TOOLS) fmt -- --check

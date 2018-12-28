@@ -13,7 +13,7 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{dna::Dna, entry::ToEntry, error::HolochainError};
+use holochain_core_types::{dna::Dna, entry::Entry, error::HolochainError};
 use std::{
     pin::{Pin, Unpin},
     sync::Arc,
@@ -46,21 +46,21 @@ pub async fn initialize_application(
 
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
     dispatch_action_and_wait(
-        &context_clone.action_channel,
-        &context_clone.observer_channel,
+        &context_clone.action_channel(),
+        &context_clone.observer_channel(),
         action_wrapper.clone(),
     );
 
     // Commit DNA to chain
-    let dna_entry = dna.to_entry();
-    let dna_commit = await!(commit_entry(dna_entry, &context_clone));
+    let dna_entry = Entry::Dna(dna.clone());
+    let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
         // Let initialization fail if DNA could not be committed.
         // Currently this cannot happen since ToEntry for Dna always creates
         // an entry from a Dna object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
         context_clone
-            .action_channel
+            .action_channel()
             .send(ActionWrapper::new(Action::ReturnInitializationResult(
                 Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
             )))
@@ -69,8 +69,8 @@ pub async fn initialize_application(
     }
 
     // Commit AgentId to chain
-    let agent_id_entry = context_clone.agent.to_entry();
-    let agent_id_commit = await!(commit_entry(agent_id_entry, &context_clone,));
+    let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
+    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone,));
 
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates
@@ -79,7 +79,7 @@ pub async fn initialize_application(
 
     if agent_id_commit.is_err() {
         context_clone
-            .action_channel
+            .action_channel()
             .send(ActionWrapper::new(Action::ReturnInitializationResult(
                 Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
             )))
@@ -105,7 +105,7 @@ pub async fn initialize_application(
     });
 
     context_clone
-        .action_channel
+        .action_channel()
         .send(ActionWrapper::new(Action::ReturnInitializationResult(
             maybe_error,
         )))

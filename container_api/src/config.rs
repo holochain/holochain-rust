@@ -11,13 +11,14 @@
 /// * bridges, which are
 use boolinator::*;
 use holochain_core_types::{
-    agent::Agent,
+    agent::AgentId,
     dna::Dna,
     error::{HcResult, HolochainError},
     json::JsonString,
 };
+use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{convert::TryFrom, fs::File, io::prelude::*};
+use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
 use toml;
 
 /// Main container configuration struct
@@ -32,7 +33,7 @@ pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
     /// List of DNAs, for each a path to the DNA file. Required.
-    pub dnas: Vec<DNAConfiguration>,
+    pub dnas: Vec<DnaConfiguration>,
     /// List of instances, includes references to an agent and a DNA. Required.
     #[serde(default)]
     pub instances: Vec<InstanceConfiguration>,
@@ -73,6 +74,27 @@ impl Configuration {
             }
         }
 
+        for ref bridge in self.bridges.iter() {
+            self.instance_by_id(&bridge.callee_id)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "Instance configuration \"{}\" not found, mentioned in bridge",
+                        bridge.callee_id
+                    )
+                })?;
+            self.instance_by_id(&bridge.caller_id)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "Instance configuration \"{}\" not found, mentioned in bridge",
+                        bridge.caller_id
+                    )
+                })?;
+        }
+
+        let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
+
         Ok(())
     }
 
@@ -82,7 +104,7 @@ impl Configuration {
     }
 
     /// Returns the DNA configuration with the given ID if present
-    pub fn dna_by_id(&self, id: &str) -> Option<DNAConfiguration> {
+    pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
     }
 
@@ -103,18 +125,93 @@ impl Configuration {
             .map(|instance| instance.id.clone())
             .collect()
     }
+
+    /// This function uses the petgraph crate to model the bridge connections in this config
+    /// as a graph and then create a topological sorting of the nodes, which are instances.
+    /// The sorting gets reversed to get those instances first that do NOT depend on others
+    /// such that this ordering of instances can be used to spawn them and simultaneously create
+    /// initialize the bridges and be able to assert that any callee already exists (which makes
+    /// this task much easier).
+    pub fn instance_ids_sorted_by_bridge_dependencies(
+        &self,
+    ) -> Result<Vec<String>, HolochainError> {
+        let mut graph = DiGraph::<&str, &str>::new();
+
+        // Add instance ids to the graph which returns the indices the graph is using.
+        // Storing those in a map from ids to create edges from bridges below.
+        let index_map: HashMap<_, _> = self
+            .instances
+            .iter()
+            .map(|instance| (instance.id.clone(), graph.add_node(&instance.id)))
+            .collect();
+
+        // Reverse of graph indices to instance ids to create the return vector below.
+        let reverse_map: HashMap<_, _> = self
+            .instances
+            .iter()
+            .map(|instance| (index_map.get(&instance.id).unwrap(), instance.id.clone()))
+            .collect();
+
+        // Create vector of edges (with node indices) from bridges:
+        let edges: Vec<(&NodeIndex<u32>, &NodeIndex<u32>)> = self.bridges
+            .iter()
+            .map(|bridge| -> Result<(&NodeIndex<u32>, &NodeIndex<u32>), HolochainError> {
+                let start = index_map.get(&bridge.caller_id);
+                let end = index_map.get(&bridge.callee_id);
+                if start.is_none() || end.is_none() {
+                    Err(HolochainError::ConfigError(format!(
+                        "Instance configuration not found, mentioned in bridge configuration: {} -> {}",
+                        bridge.caller_id, bridge.callee_id,
+                    )))
+                } else {
+                    Ok((start.unwrap(), end.unwrap()))
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // Add edges to graph:
+        for &(node_a, node_b) in edges.iter() {
+            graph.add_edge(node_a.clone(), node_b.clone(), "");
+        }
+
+        // Sort with petgraph::algo::toposort
+        let mut sorted_nodes = toposort(&graph, None).map_err(|_cycle_error| {
+            HolochainError::ConfigError("Cyclic dependency in bridge configuration".to_string())
+        })?;
+
+        // REVERSE order because we want to get the instance with NO dependencies first
+        // since that is the instance we should spawn first.
+        sorted_nodes.reverse();
+
+        // Map sorted vector of node indices back to instance ids
+        Ok(sorted_nodes
+            .iter()
+            .map(|node_index| reverse_map.get(node_index).unwrap())
+            .cloned()
+            .collect())
+    }
+
+    pub fn bridge_dependencies(&self, caller_instance_id: String) -> Vec<Bridge> {
+        self.bridges
+            .iter()
+            .filter(|bridge| bridge.caller_id == caller_instance_id)
+            .cloned()
+            .collect()
+    }
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
 #[derive(Deserialize, Serialize, Clone)]
 pub struct AgentConfiguration {
     pub id: String,
+    pub name: String,
+    pub public_address: String,
     pub key_file: String,
 }
 
-impl From<AgentConfiguration> for Agent {
+impl From<AgentConfiguration> for AgentId {
     fn from(config: AgentConfiguration) -> Self {
-        Agent::try_from(JsonString::try_from(config.id).expect("bad agent json"))
+        AgentId::try_from(JsonString::try_from(config.id).expect("bad agent json"))
             .expect("bad agent json")
     }
 }
@@ -122,15 +219,15 @@ impl From<AgentConfiguration> for Agent {
 /// A DNA is represented by a DNA file.
 /// A hash has to be provided for sanity check.
 #[derive(Deserialize, Serialize, Clone)]
-pub struct DNAConfiguration {
+pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     pub hash: String,
 }
 
-impl TryFrom<DNAConfiguration> for Dna {
+impl TryFrom<DnaConfiguration> for Dna {
     type Error = HolochainError;
-    fn try_from(dna_config: DNAConfiguration) -> Result<Self, Self::Error> {
+    fn try_from(dna_config: DnaConfiguration) -> Result<Self, Self::Error> {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
@@ -139,7 +236,7 @@ impl TryFrom<DNAConfiguration> for Dna {
 }
 
 /// An instance combines a DNA with an agent.
-/// Each instance has its own storage and logger configuration.
+/// Each instance has its own network, storage and logger configuration.
 #[derive(Deserialize, Serialize, Clone)]
 pub struct InstanceConfiguration {
     pub id: String,
@@ -147,6 +244,7 @@ pub struct InstanceConfiguration {
     pub agent: String,
     pub logger: LoggerConfiguration,
     pub storage: StorageConfiguration,
+    pub network: Option<String>,
 }
 
 /// There might be different kinds of loggers in the future.
@@ -213,8 +311,19 @@ pub struct InstanceReferenceConfiguration {
 /// It is basically an internal interface.
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct Bridge {
+    /// ID of the instance that calls the other one.
+    /// This instance depends on the callee.
     pub caller_id: String,
+
+    /// ID of the instance that exposes capabilities through this bridge.
+    /// This instance is used by the caller.
     pub callee_id: String,
+
+    /// The caller's local handle of this bridge and the callee.
+    /// A caller can have many bridges to other DNAs and those DNAs could
+    /// by bound dynamically.
+    /// Callers reference callees by this arbitrary but unique local name.
+    pub handle: String,
 }
 
 /// Use this function to load a `Configuration` from a string.
@@ -229,18 +338,26 @@ where
 
 #[cfg(test)]
 pub mod tests {
+    use crate::config::{load_configuration, Configuration};
+    use holochain_core::context::mock_network_config;
 
-    use crate::config::{load_configuration, Configuration, InterfaceDriver, StorageConfiguration};
+    pub fn example_serialized_network_config() -> String {
+        String::from(mock_network_config())
+    }
 
     #[test]
     fn test_agent_load() {
         let toml = r#"
     [[agents]]
     id = "bob"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file="file/to/serialize"
 
     [[agents]]
     id="alex"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file="another/file"
 
     [[dnas]]
@@ -269,6 +386,8 @@ pub mod tests {
         let toml = r#"
     [[agents]]
     id="agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file="whatever"
 
     [[dnas]]
@@ -285,10 +404,74 @@ pub mod tests {
 
     #[test]
     fn test_load_complete_config() {
+        let toml = &format!(
+            r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app_spec.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    network = "{}"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[interfaces]]
+    id = "app spec websocket interface"
+    [interfaces.driver]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec domainsocket interface"
+    [interfaces.driver]
+    type = "domainsocket"
+    file = "/tmp/holochain.sock"
+    [[interfaces.instances]]
+    id = "app spec instance"
+    "#,
+            "{\\\"backend_kind\\\":\\\"special\\\"}"
+        );
+
+        let config = load_configuration::<Configuration>(toml).unwrap();
+
+        assert_eq!(config.check_consistency(), Ok(()));
+        let dnas = config.dnas;
+        let dna_config = dnas.get(0).expect("expected at least 1 DNA");
+        assert_eq!(dna_config.id, "app spec rust");
+        assert_eq!(dna_config.file, "app_spec.hcpkg");
+        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+
+        let instances = config.instances;
+        let instance_config = instances.get(0).unwrap();
+        assert_eq!(
+            instance_config.network,
+            Some("{\"backend_kind\":\"special\"}".to_string())
+        );
+    }
+
+    #[test]
+    fn test_load_complete_config_default_network() {
         let toml = r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -322,8 +505,8 @@ pub mod tests {
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
-
     "#;
+
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(config.check_consistency(), Ok(()));
@@ -338,33 +521,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        let logger_config = &instance_config.logger;
-        assert_eq!(logger_config.logger_type, "simple");
-        assert_eq!(logger_config.file, Some(String::from("app_spec.log")));
-        if let StorageConfiguration::File { path } = &instance_config.storage {
-            assert_eq!(path, "app_spec_storage");
-        } else {
-            panic!("Wrong enum type");
-        }
-
-        let interfaces = config.interfaces;
-        let interface_config_0 = interfaces.get(0).unwrap();
-        let interface_config_1 = interfaces.get(1).unwrap();
-        if let InterfaceDriver::Websocket { port } = interface_config_0.driver {
-            assert_eq!(port, 8888);
-        } else {
-            panic!("Wrong enum type");
-        }
-        if let InterfaceDriver::DomainSocket { ref file } = interface_config_1.driver {
-            assert_eq!(file, "/tmp/holochain.sock");
-        } else {
-            panic!("Wrong enum type");
-        }
-        assert_eq!(interface_config_0.admin, false);
-        let instance_ref = interface_config_0.instances.get(0).unwrap();
-        assert_eq!(instance_ref.id, "app spec instance");
-
-        assert_eq!(config.bridges, vec![]);
+        assert_eq!(instance_config.network, None);
     }
 
     #[test]
@@ -372,7 +529,8 @@ pub mod tests {
         let toml = r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -392,7 +550,9 @@ pub mod tests {
     path = "app_spec_storage"
 
     "#;
-        let config: Configuration = load_configuration(toml).unwrap();
+
+        let config: Configuration =
+            load_configuration(toml).expect("Failed to load config from toml string");
 
         assert_eq!(config.check_consistency(), Err("DNA configuration \"WRONG DNA ID\" not found, mentioned in instance \"app spec instance\"".to_string()));
     }
@@ -402,7 +562,8 @@ pub mod tests {
         let toml = r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -428,8 +589,8 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "WRONG INSTANCE ID"
-
     "#;
+
         let config = load_configuration::<Configuration>(toml).unwrap();
 
         assert_eq!(
@@ -443,10 +604,12 @@ pub mod tests {
 
     #[test]
     fn test_invalid_toml_1() {
-        let toml = r#"
+        let toml = &format!(
+            r#"
     [[agents]]
     id = "test agent"
-    name = "Holo Tester"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
     key_file = "holo_tester.key"
 
     [[dnas]]
@@ -458,6 +621,7 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
+    network = "{}"
     [instances.logger]
     type = "simple"
     file = "app_spec.log"
@@ -472,8 +636,9 @@ pub mod tests {
     port = 8888
     [[interfaces.instances]]
     id = "app spec instance"
-
-    "#;
+    "#,
+            example_serialized_network_config()
+        );
         if let Err(e) = load_configuration::<Configuration>(toml) {
             assert!(
                 true,
@@ -482,5 +647,179 @@ pub mod tests {
         } else {
             panic!("Should have failed!")
         }
+    }
+
+    fn bridges_config(bridges: &str) -> String {
+        format!(
+            r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app-spec-rust.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app1"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[instances]]
+    id = "app2"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[instances]]
+    id = "app3"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.logger]
+    type = "simple"
+    file = "app_spec.log"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    {}
+    "#, bridges)
+    }
+
+    #[test]
+    fn test_bridge_config() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app3"
+    handle = "DPKI"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(config.check_consistency(), Ok(()));
+
+        // "->": calls
+        // app1 -> app2 -> app3
+        // app3 has no dependency so it can be instantiated first.
+        // app2 depends on (calls) only app3, so app2 is next.
+        // app1 should be last.
+        assert_eq!(
+            config.instance_ids_sorted_by_bridge_dependencies(),
+            Ok(vec![
+                String::from("app3"),
+                String::from("app2"),
+                String::from("app1")
+            ])
+        );
+    }
+
+    #[test]
+    fn test_bridge_cycle() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app3"
+    handle = "DPKI"
+
+    [[bridges]]
+    caller_id = "app3"
+    callee_id = "app1"
+    handle = "something"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("Cyclic dependency in bridge configuration".to_string())
+        );
+    }
+
+    #[test]
+    fn test_bridge_non_existent() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app3"
+    handle = "DPKI"
+
+    [[bridges]]
+    caller_id = "app9000"
+    callee_id = "app1"
+    handle = "something"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("Instance configuration \"app9000\" not found, mentioned in bridge".to_string())
+        );
+    }
+
+    #[test]
+    fn test_bridge_dependencies() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app3"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app1"
+    handle = "happ-store"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        let bridged_ids: Vec<_> = config
+            .bridge_dependencies(String::from("app1"))
+            .iter()
+            .map(|bridge| bridge.callee_id.clone())
+            .collect();
+        assert_eq!(
+            bridged_ids,
+            vec![String::from("app2"), String::from("app3"),]
+        );
     }
 }

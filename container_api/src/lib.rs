@@ -57,10 +57,10 @@
 ///     println!("Using config path: {}", config_path_str);
 ///     match bootstrap_from_config(config_path_str) {
 ///         Ok(mut container) => {
-///             if container.instances.len() > 0 {
+///             if container.instances().len() > 0 {
 ///                 println!(
 ///                     "Successfully loaded {} instance configurations",
-///                     container.instances.len()
+///                     container.instances().len()
 ///                 );
 ///                 println!("Starting all of them...");
 ///                 container.start_all_instances();
@@ -99,10 +99,10 @@ extern crate serde;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
 extern crate boolinator;
 extern crate jsonrpc_ws_server;
+extern crate petgraph;
+extern crate serde_json;
 #[cfg(test)]
 extern crate test_utils;
 extern crate tiny_http;
@@ -110,6 +110,7 @@ extern crate toml;
 
 pub mod config;
 pub mod container;
+pub mod context_builder;
 pub mod error;
 pub mod holochain;
 pub mod interface;

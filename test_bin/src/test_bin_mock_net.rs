@@ -12,7 +12,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use holochain_net::p2p_network::P2pNetwork;
+use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 
 use std::{convert::TryFrom, sync::mpsc};
 
@@ -41,10 +41,7 @@ fn exec() -> NetResult<()> {
             sender1.send(r?)?;
             Ok(())
         }),
-        &json!({
-            "backend": "mock"
-        })
-        .into(),
+        &P2pConfig::default_mock(),
     )?;
 
     let (sender2, receiver2) = mpsc::channel::<Protocol>();
@@ -54,10 +51,7 @@ fn exec() -> NetResult<()> {
             sender2.send(r?)?;
             Ok(())
         }),
-        &json!({
-            "backend": "mock"
-        })
-        .into(),
+        &P2pConfig::default_mock(),
     )?;
 
     con1.send(

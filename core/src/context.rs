@@ -1,19 +1,23 @@
 use crate::{
-    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister, state::State,
+    action::ActionWrapper,
+    instance::Observer,
+    logger::Logger,
+    persister::Persister,
+    signal::{Signal, SignalSender},
+    state::State,
 };
 use holochain_core_types::{
-    agent::Agent,
+    agent::AgentId,
     cas::storage::ContentAddressableStorage,
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
-    error::HolochainError,
+    error::{HcResult, HolochainError},
     json::JsonString,
 };
+use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
-    sync::{
-        mpsc::{sync_channel, SyncSender},
-        Arc, Mutex, RwLock, RwLockReadGuard,
-    },
+    sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
     time::Duration,
 };
@@ -24,15 +28,18 @@ use std::{
 /// to inner components/reducers.
 #[derive(Clone)]
 pub struct Context {
-    pub agent: Agent,
+    pub agent_id: AgentId,
     pub logger: Arc<Mutex<Logger>>,
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
-    pub action_channel: SyncSender<ActionWrapper>,
-    pub observer_channel: SyncSender<Observer>,
-    pub file_storage: Arc<RwLock<ContentAddressableStorage>>,
+    pub action_channel: Option<SyncSender<ActionWrapper>>,
+    pub observer_channel: Option<SyncSender<Observer>>,
+    pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
+    pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
+    pub container_api: Option<Arc<RwLock<IoHandler>>>,
+    pub signal_tx: Option<SyncSender<Signal>>,
 }
 
 impl Context {
@@ -41,55 +48,67 @@ impl Context {
     }
 
     pub fn new(
-        agent: Agent,
+        agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        cas: Arc<RwLock<ContentAddressableStorage>>,
+        chain_storage: Arc<RwLock<ContentAddressableStorage>>,
+        dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
-    ) -> Result<Context, HolochainError> {
-        let (tx_action, _) = sync_channel(Self::default_channel_buffer_size());
-        let (tx_observer, _) = sync_channel(Self::default_channel_buffer_size());
-        Ok(Context {
-            agent,
+        container_api: Option<Arc<RwLock<IoHandler>>>,
+        signal_tx: Option<SignalSender>,
+    ) -> Self {
+        Context {
+            agent_id,
             logger,
             persister,
             state: None,
-            action_channel: tx_action,
-            observer_channel: tx_observer,
-            file_storage: cas,
+            action_channel: None,
+            signal_tx: signal_tx,
+            observer_channel: None,
+            chain_storage,
+            dht_storage,
             eav_storage: eav,
             network_config,
-        })
+            container_api,
+        }
     }
 
     pub fn new_with_channels(
-        agent: Agent,
+        agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
-        action_channel: SyncSender<ActionWrapper>,
-        observer_channel: SyncSender<Observer>,
+        action_channel: Option<SyncSender<ActionWrapper>>,
+        signal_tx: Option<SyncSender<Signal>>,
+        observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
-            agent,
+            agent_id,
             logger,
             persister,
             state: None,
             action_channel,
+            signal_tx,
             observer_channel,
-            file_storage: cas,
+            chain_storage: cas.clone(),
+            dht_storage: cas,
             eav_storage: eav,
             network_config,
+            container_api: None,
         })
     }
+
     // helper function to make it easier to call the logger
-    pub fn log(&self, msg: &str) -> Result<(), HolochainError> {
-        let mut logger = self.logger.lock().or(Err(HolochainError::LoggingError))?;
-        logger.log(msg.to_string());
-        Ok(())
+    pub fn log<T: Into<String>>(&self, msg: T) {
+        let mut logger = self
+            .logger
+            .lock()
+            .or(Err(HolochainError::LoggingError))
+            .expect("Logger should work");;
+        logger.log(msg.into());
     }
 
     pub fn set_state(&mut self, state: Arc<RwLock<State>>) {
@@ -139,12 +158,52 @@ impl Context {
         dna.get_wasm_from_zome_name(zome)
             .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
     }
+
+    // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
+    // rather than Option<SyncSenders>, but these would be initialized by default to broken channels
+    // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
+    // that potential failure mode.
+    // @see https://github.com/holochain/holochain-rust/issues/739
+    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+        self.action_channel
+            .as_ref()
+            .expect("Action channel not initialized")
+    }
+
+    pub fn signal_tx(&self) -> &SyncSender<Signal> {
+        self.signal_tx
+            .as_ref()
+            .expect("Signal channel not initialized")
+    }
+
+    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+        self.observer_channel
+            .as_ref()
+            .expect("Observer channel not initialized")
+    }
+}
+
+pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, String)> {
+    let state = context
+        .state()
+        .ok_or("Network::start() could not get application state".to_string())?;
+    let agent_state = state.agent();
+
+    let agent = await!(agent_state.get_agent(&context))?;
+    let agent_id = agent.key;
+
+    let dna = state
+        .nucleus()
+        .dna()
+        .ok_or("Network::start() called without DNA".to_string())?;
+    let dna_hash = base64::encode(&dna.multihash()?);
+    Ok((dna_hash, agent_id))
 }
 
 /// create a test network
 #[cfg_attr(tarpaulin, skip)]
 pub fn mock_network_config() -> JsonString {
-    json!({"backend": "mock"}).into()
+    JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)
 }
 
 #[cfg(test)]
@@ -158,7 +217,7 @@ pub mod tests {
         state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::agent::Agent;
+    use holochain_core_types::agent::AgentId;
     use std::sync::{Arc, Mutex, RwLock};
 
     #[test]
@@ -172,17 +231,19 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut maybe_context = Context::new(
-            Agent::generate_fake("Terence"),
+            AgentId::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+            None,
+            None,
+        );
 
         assert!(maybe_context.state().is_none());
 
@@ -203,17 +264,19 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
-            Agent::generate_fake("Terence"),
+            AgentId::generate_fake("Terence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
             file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+            None,
+            None,
+        );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());

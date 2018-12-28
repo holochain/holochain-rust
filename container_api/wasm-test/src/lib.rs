@@ -8,11 +8,12 @@ extern crate holochain_wasm_utils;
 extern crate serde_json;
 
 use holochain_core_types::{
-    cas::content::Address, entry::SerializedEntry, error::HolochainError,
+    cas::content::Address, error::HolochainError,
     error::RibosomeReturnCode, error::ZomeApiInternalResult, json::JsonString, json::RawString,
 };
 use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 use std::convert::TryInto;
+use holochain_core_types::entry::Entry;
 
 //-------------------------------------------------------------------------------------------------
 // HC DEBUG Function Call
@@ -111,8 +112,11 @@ fn hdk_commit(
     entry_value: &str,
 ) -> Result<Address, String> {
     // Put args in struct and serialize into memory
-    let serialized_entry = SerializedEntry::new(entry_type_name, entry_value);
-    let allocation_of_input = store_as_json(mem_stack, JsonString::from(serialized_entry))?;
+    let entry = Entry::App(
+        entry_type_name.to_owned().into(),
+        entry_value.to_owned().into(),
+    );
+    let allocation_of_input = store_as_json(mem_stack, JsonString::from(entry))?;
 
     // Call WASMI-able commit
     let encoded_allocation_of_result: i32;
@@ -211,6 +215,11 @@ pub extern "C" fn commit_fail_test(encoded_allocation_of_input: usize) -> i32 {
         SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     let result = hdk_commit_fail(&mut mem_stack);
     store_as_json_into_encoded_allocation(&mut mem_stack, result)
+}
+
+#[no_mangle]
+pub extern "C" fn __hdk_validate_app_entry(_encoded_allocation_of_input: u32) -> u32 {
+    0
 }
 
 #[no_mangle]

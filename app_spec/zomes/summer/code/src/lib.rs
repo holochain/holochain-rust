@@ -25,7 +25,7 @@ define_zome! {
         main (Public) {
             sum: {
                 inputs: |num1: u32, num2: u32|,
-                outputs: |post: JsonString|,
+                outputs: |sum: JsonString|,
                 handler: handle_sum
             }
         }

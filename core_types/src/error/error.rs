@@ -35,7 +35,7 @@ impl Error for CoreError {
         self.kind.description()
     }
     fn cause(&self) -> Option<&Error> {
-        self.kind.cause()
+        self.kind.source()
     }
 }
 impl CoreError {
@@ -94,11 +94,12 @@ pub enum HolochainError {
     IoError(String),
     SerializationError(String),
     InvalidOperationOnSysEntry,
-    DoesNotHaveCapabilityToken,
+    CapabilityCheckFailed,
     ValidationFailed(String),
     Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
     ConfigError(String),
+    Timeout,
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -126,11 +127,12 @@ impl Error for HolochainError {
             IoError(err_msg) => &err_msg,
             SerializationError(err_msg) => &err_msg,
             InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
-            DoesNotHaveCapabilityToken => "Caller does not have Capability to make that call",
+            CapabilityCheckFailed => "Caller does not have Capability to make that call",
             ValidationFailed(fail_msg) => &fail_msg,
             Ribosome(err_code) => err_code.as_str(),
             RibosomeFailed(fail_msg) => &fail_msg,
             ConfigError(err_msg) => &err_msg,
+            Timeout => "timeout",
         }
     }
 }
@@ -143,7 +145,13 @@ impl From<HolochainError> for String {
 
 impl From<String> for HolochainError {
     fn from(error: String) -> Self {
-        HolochainError::ErrorGeneric(error)
+        HolochainError::new(&error)
+    }
+}
+
+impl From<&'static str> for HolochainError {
+    fn from(error: &str) -> Self {
+        HolochainError::new(error)
     }
 }
 
@@ -176,13 +184,13 @@ impl From<SerdeError> for HolochainError {
 
 impl From<base64::DecodeError> for HolochainError {
     fn from(error: base64::DecodeError) -> Self {
-        HolochainError::SerializationError(error.to_string())
+        HolochainError::ErrorGeneric(format!("base64 decode error: {}", error.to_string()))
     }
 }
 
 impl From<reed_solomon::DecoderError> for HolochainError {
     fn from(error: reed_solomon::DecoderError) -> Self {
-        HolochainError::SerializationError(format!("{:?}", error))
+        HolochainError::ErrorGeneric(format!("reed_solomon decode error: {:?}", error))
     }
 }
 
@@ -306,9 +314,10 @@ mod tests {
                 "operation cannot be done on a system entry type",
             ),
             (
-                HolochainError::DoesNotHaveCapabilityToken,
+                HolochainError::CapabilityCheckFailed,
                 "Caller does not have Capability to make that call",
             ),
+            (HolochainError::Timeout, "timeout"),
         ] {
             assert_eq!(output, input.description());
         }

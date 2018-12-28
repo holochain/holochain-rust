@@ -31,8 +31,11 @@ holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_net_connection = { path = "../net_connection" }
 base64 = "*"
 boolinator = "2.4.0"
+jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+jsonrpc-lite = "0.5.0"
+globset = "0.4.2"
 
 [dev-dependencies]
-wabt = { git = 'https://github.com/ddd-mtl/wabt-rs.git'  }
+wabt = "0.7.2"
 test_utils = { path = "../test_utils"}
 tempfile="3"

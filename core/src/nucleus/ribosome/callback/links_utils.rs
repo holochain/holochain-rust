@@ -1,11 +1,11 @@
-use crate::{context::Context, nucleus::actions::get_entry::get_entry};
+use crate::{context::Context, workflows::get_entry_result::get_entry_result_workflow};
 use futures::executor::block_on;
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     link::Link,
 };
-use holochain_wasm_utils::api_serialization::validation::LinkDirection;
+use holochain_wasm_utils::api_serialization::{get_entry::*, validation::LinkDirection};
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
@@ -15,13 +15,32 @@ pub fn get_link_entries(
 ) -> Result<(Entry, Entry), HolochainError> {
     let base_address = link.base();
     let target_address = link.target();
-    let base = block_on(get_entry(&context, base_address.clone()))?.ok_or(
-        HolochainError::ErrorGeneric(String::from("Base for link not found")),
-    )?;
-    let target = block_on(get_entry(&context, target_address.clone()))?.ok_or(
-        HolochainError::ErrorGeneric(String::from("Target for link not found")),
-    )?;
-    Ok((base, target))
+    let entry_args = &GetEntryArgs {
+        address: base_address.clone(),
+        options: GetEntryOptions::default(),
+    };
+    let base_entry_get_result = block_on(get_entry_result_workflow(&context, entry_args))?;
+    if !base_entry_get_result.found() {
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "Base for link not found",
+        )));
+    }
+    let base_entry = base_entry_get_result.latest().unwrap();
+    let entry_args = &GetEntryArgs {
+        address: target_address.clone(),
+        options: GetEntryOptions::default(),
+    };
+    let target_entry_get_result = block_on(get_entry_result_workflow(&context, entry_args))?;
+    if !target_entry_get_result.found() {
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "Target for link not found",
+        )));
+    }
+
+    Ok((
+        base_entry.clone(),
+        target_entry_get_result.latest().unwrap(),
+    ))
 }
 
 /// This is a "path" in the DNA tree.
@@ -59,7 +78,7 @@ pub fn find_link_definition_in_dna(
     let dna = context.get_dna().expect("No DNA found?!");
     match base_type {
         EntryType::App(app_entry_type) => dna
-            .get_entry_type_def(&app_entry_type)
+            .get_entry_type_def(&app_entry_type.to_string())
             .ok_or(HolochainError::ErrorGeneric(String::from(
                 "Unknown entry type",
             )))?
@@ -70,8 +89,8 @@ pub fn find_link_definition_in_dna(
             })
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
-                    zome_name: dna.get_zome_name_for_entry_type(app_entry_type)?,
-                    entry_type_name: app_entry_type.clone(),
+                    zome_name: dna.get_zome_name_for_app_entry_type(app_entry_type)?,
+                    entry_type_name: app_entry_type.to_string(),
                     direction: LinkDirection::To,
                     tag: link_def.tag.clone(),
                 })
@@ -80,7 +99,7 @@ pub fn find_link_definition_in_dna(
     }
     .or(match target_type {
         EntryType::App(app_entry_type) => dna
-            .get_entry_type_def(&app_entry_type)
+            .get_entry_type_def(&app_entry_type.to_string())
             .ok_or(HolochainError::ErrorGeneric(String::from(
                 "Unknown entry type",
             )))?
@@ -91,8 +110,8 @@ pub fn find_link_definition_in_dna(
             })
             .and_then(|link_def| {
                 Some(LinkDefinitionPath {
-                    zome_name: dna.get_zome_name_for_entry_type(app_entry_type)?,
-                    entry_type_name: app_entry_type.clone(),
+                    zome_name: dna.get_zome_name_for_app_entry_type(app_entry_type)?,
+                    entry_type_name: app_entry_type.to_string(),
                     direction: LinkDirection::From,
                     tag: link_def.tag.clone(),
                 })

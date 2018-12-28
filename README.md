@@ -146,7 +146,6 @@ or
 make fmt
 ```
 
-
 #### Compiler warnings
 
 Compilation warnings are NOT OK in shared/production level code.

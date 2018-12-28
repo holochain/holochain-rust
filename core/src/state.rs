@@ -12,7 +12,7 @@ use crate::{
 use holochain_core_types::{
     cas::storage::ContentAddressableStorage,
     dna::Dna,
-    entry::{entry_type::EntryType, Entry, SerializedEntry, ToEntry},
+    entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
 use std::{
@@ -40,12 +40,13 @@ impl State {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let cas = &(*context).file_storage;
+        let chain_cas = &(*context).chain_storage;
+        let dht_cas = &(*context).dht_storage;
         let eav = context.eav_storage.clone();
         State {
             nucleus: Arc::new(NucleusState::new()),
-            agent: Arc::new(AgentState::new(ChainStore::new(cas.clone()))),
-            dht: Arc::new(DhtStore::new(cas.clone(), eav)),
+            agent: Arc::new(AgentState::new(ChainStore::new(chain_cas.clone()))),
+            dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
             network: Arc::new(NetworkState::new()),
             history: HashSet::new(),
         }
@@ -55,13 +56,13 @@ impl State {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let cas = context.file_storage.clone();
+        let cas = context.dht_storage.clone();
         let eav = context.eav_storage.clone();
 
         fn get_dna(
             agent_state: &Arc<AgentState>,
             cas: Arc<RwLock<dyn ContentAddressableStorage>>,
-        ) -> Result<Dna, HolochainError> {
+        ) -> HcResult<Dna> {
             let dna_entry_header = agent_state
                 .chain()
                 .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
@@ -71,13 +72,17 @@ impl State {
                         .to_string(),
                 ))?;
             let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
-            let serialized_entry: SerializedEntry =
+            let entry: Entry =
                 json.map(|e| e.try_into())
                     .ok_or(HolochainError::ErrorGeneric(
                         "No DNA entry found in storage while creating state from agent".to_string(),
                     ))??;
-            let entry: Entry = serialized_entry.into();
-            Ok(Dna::from_entry(&entry))
+            match entry {
+                Entry::Dna(dna) => Ok(dna),
+                _ => Err(HolochainError::SerializationError(
+                    "Tried to get Dna from non-Dna Entry".into(),
+                )),
+            }
         }
 
         let mut nucleus_state = NucleusState::new();
@@ -141,7 +146,7 @@ impl State {
         snapshot: AgentStateSnapshot,
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
-            ChainStore::new(context.file_storage.clone()),
+            ChainStore::new(context.dht_storage.clone()),
             snapshot.top_chain_header().clone(),
         );
         Ok(State::new_with_agent(

@@ -11,8 +11,7 @@ pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     // TODO #502 - log in logger as DEBUG log-level
     runtime
         .context
-        .log(&format!("zome_log:DEBUG: '{}'", payload))
-        .expect("Logger should work");
+        .log(format!("zome_log:DEBUG: '{}'", payload));
     // Done
     ribosome_success!()
 }

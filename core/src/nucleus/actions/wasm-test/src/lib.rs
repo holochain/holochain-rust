@@ -1,3 +1,4 @@
+#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 extern crate serde;
@@ -5,29 +6,33 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+#[macro_use]
+extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
-use hdk::holochain_core_types::dna::zome::entry_types::Sharing;
+use hdk::holochain_core_types::dna::entry_types::Sharing;
+use hdk::holochain_core_types::json::JsonString;
+use hdk::holochain_core_types::json::RawString;
+use hdk::holochain_core_types::error::HolochainError;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, DefaultJson, Debug)]
 struct TestEntryType {
     stuff: String,
 }
-
 
 define_zome! {
     entries: [
         entry!(
             name: "testEntryType",
-            description: "asdfda",
+            description: "asdfdaz",
             sharing: Sharing::Public,
 
             validation_package: || {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |entry: String, _ctx: hdk::ValidationData| {
-                (entry != "FAIL")
+            validation: |s: RawString, _ctx: hdk::ValidationData| {
+                (String::from(s) != String::from("FAIL"))
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             }
         ),

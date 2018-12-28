@@ -53,7 +53,6 @@ pub struct SinglePageAllocation {
 }
 
 #[allow(unknown_lints)]
-#[allow(cast_lossless)]
 impl SinglePageAllocation {
     pub fn new(offset: u16, length: u16) -> Result<Self, RibosomeErrorCode> {
         if (offset as u32 + length as u32) > U16_MAX {
@@ -103,12 +102,10 @@ pub struct SinglePageStack {
     top: u16,
 }
 
-#[allow(unknown_lints)]
-#[allow(cast_lossless)]
 impl SinglePageStack {
     // A stack can be initialized by giving the last know allocation on this stack
     pub fn new(last_allocation: SinglePageAllocation) -> Self {
-        assert!(last_allocation.offset as u32 + last_allocation.length as u32 <= U16_MAX);
+        assert!(u32::from(last_allocation.offset) + u32::from(last_allocation.length) <= U16_MAX);
         SinglePageStack {
             top: last_allocation.offset + last_allocation.length,
         }
@@ -118,11 +115,9 @@ impl SinglePageStack {
     pub fn from_encoded_allocation(
         encoded_last_allocation: u32,
     ) -> Result<Self, RibosomeErrorCode> {
-        let maybe_allocation = decode_encoded_allocation(encoded_last_allocation as u32);
-        if let Err(_) = maybe_allocation {
-            return Err(RibosomeErrorCode::NotAnAllocation);
-        }
-        return Ok(SinglePageStack::new(maybe_allocation.unwrap()));
+        decode_encoded_allocation(encoded_last_allocation as u32)
+            .map(SinglePageStack::new)
+            .map_err(|_| RibosomeErrorCode::NotAnAllocation)
     }
 
     pub fn allocate(&mut self, size: u16) -> u16 {

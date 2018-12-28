@@ -1,5 +1,5 @@
-use colored::*;
 use crate::{cli::package, error::DefaultResult, util};
+use colored::*;
 use std::{fs, path::PathBuf};
 
 pub const TEST_DIR_NAME: &str = "test";
@@ -40,36 +40,41 @@ pub fn test(
     // npm install, if no node_modules yet
     let node_modules_path = tests_path.join("node_modules");
     if !node_modules_path.exists() {
+        // CLI feedback
         println!("{}", "Installing node_modules".green().bold());
         util::run_cmd(
             tests_path.clone(),
             "npm".to_string(),
-            vec!["install".to_string(), "--silent".to_string()],
+            &["install", "--silent"],
         )?;
     }
 
     // execute the built test file using node
+    // CLI feedback
     println!("{} tests in {}", "Running".green().bold(), testfile,);
     util::run_cmd(
         path.to_path_buf(),
         "node".to_string(),
-        vec![testfile.to_string()],
+        &[testfile.to_string().as_str()],
     )?;
 
     Ok(())
 }
 
 #[cfg(test)]
+#[cfg(feature = "broken-tests")]
 pub mod tests {
     use super::*;
-    use assert_cmd::prelude::*;
     use crate::cli::package;
+    use assert_cmd::prelude::*;
     use std::process::Command;
     use tempfile::{Builder, TempDir};
 
+    #[cfg(feature = "broken-tests")]
     const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
 
-    fn gen_dir() -> TempDir {
+    #[cfg(feature = "broken-tests")]
+    pub fn gen_dir() -> TempDir {
         Builder::new()
             .prefix(HOLOCHAIN_TEST_PREFIX)
             .tempdir()
@@ -77,6 +82,8 @@ pub mod tests {
     }
 
     #[test]
+    // flagged as broken for taking 60+ seconds
+    #[cfg(feature = "broken-tests")]
     fn test_command_basic_test() {
         let temp_space = gen_dir();
         let temp_dir_path = temp_space.path();
@@ -93,22 +100,20 @@ pub mod tests {
             .unwrap_or_else(|e| panic!("test call failed: {}", e));
 
         // check success of packaging step
-        assert!(
-            temp_dir_path_buf
-                .join(&DIST_DIR_NAME)
-                .join(package::DEFAULT_BUNDLE_FILE_NAME)
-                .exists()
-        );
+        assert!(temp_dir_path_buf
+            .join(&DIST_DIR_NAME)
+            .join(package::DEFAULT_BUNDLE_FILE_NAME)
+            .exists());
         // check success of npm install step
-        assert!(
-            temp_dir_path_buf
-                .join(&TEST_DIR_NAME)
-                .join("node_modules")
-                .exists()
-        );
+        assert!(temp_dir_path_buf
+            .join(&TEST_DIR_NAME)
+            .join("node_modules")
+            .exists());
     }
 
     #[test]
+    // flagged broken for taking 60+ seconds to run
+    #[cfg(feature = "broken-tests")]
     fn test_command_no_test_folder() {
         let temp_space = gen_dir();
         let temp_dir_path = temp_space.path();

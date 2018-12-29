@@ -164,10 +164,10 @@ workflows:
   #       only:
   #        - develop
   jobs:
-   - docker.start
-   - docker.01:
-      requires:
-       - docker.start
+   # - docker.start
+   # - docker.01:
+   #    requires:
+   #     - docker.start
    - docker.02:
       requires:
        - docker.01

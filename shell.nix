@@ -80,7 +80,6 @@ let
   test = test-p: test-path: wasm-paths:
   ''
    ${nixpkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
-   # cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX"${test-path}/target;
    cargo test -p ${test-p} --release --target-dir /tmp/holochain/${test-path}/target;
   '';
   hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" [ "hdk-rust/wasm-test" ]}";

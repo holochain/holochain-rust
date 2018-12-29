@@ -152,6 +152,7 @@ fn start_holochain_instance<T: Into<String>>(
         "link_two_entries",
         "links_roundtrip_create",
         "links_roundtrip_get",
+        "links_roundtrip_get_and_load",
         "link_validation",
         "check_query",
         "check_app_entry_address",
@@ -460,26 +461,61 @@ fn can_roundtrip_links() {
             "links_roundtrip_get",
             &format!(r#"{{"address": "{}"}}"#, address),
         );
+
+        let result_load = make_test_call(
+            &mut hc,
+            "links_roundtrip_get_and_load",
+            &format!(r#"{{"address": "{}"}}"#, address),
+        );
+
         assert!(result.is_ok(), "result = {:?}", result);
+        assert!(result_load.is_ok(), ";load result = {:?}", result_load);
+
         result_string = result.unwrap();
         let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
         let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
 
-        println!(
-            "can_roundtrip_links result_string - try {}: {:?}",
-            tries, result_string
+        let entries_result_string = result_load.unwrap();
+        let entry_1 = Entry::App(
+            "testEntryType".into(),
+            EntryStruct {
+                stuff: "entry2".into(),
+            }
+            .into(),
         );
+        let entry_2 = Entry::App(
+            "testEntryType".into(),
+            EntryStruct {
+                stuff: "entry3".into(),
+            }
+            .into(),
+        );
+
         let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
             address_1.clone(),
             address_2.clone(),
         ]));
+        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
+            Ok(vec![Ok(entry_1.clone()), Ok(entry_2.clone())]);
+
+        println!(
+            "can_roundtrip_links result_string - try {}:\n {:?}\n expecting:\n {:?}",
+            tries, entries_result_string, &expected_entries
+        );
+
         let ordering1: bool = result_string == JsonString::from(expected);
+        let entries_ordering1: bool = entries_result_string == JsonString::from(expected_entries);
 
         let expected: Result<GetLinksResult, HolochainError> =
             Ok(GetLinksResult::new(vec![address_2, address_1]));
-        let ordering2: bool = result_string == JsonString::from(expected);
 
-        both_links_present = ordering1 || ordering2;
+        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
+            Ok(vec![Ok(entry_2.clone()), Ok(entry_1.clone())]);
+
+        let ordering2: bool = result_string == JsonString::from(expected);
+        let entries_ordering2: bool = entries_result_string == JsonString::from(expected_entries);
+
+        both_links_present = (ordering1 || ordering2) && (entries_ordering1 || entries_ordering2);
         if !both_links_present {
             // Wait for links to be validated and propagated
             thread::sleep(Duration::from_millis(500));
@@ -524,7 +560,7 @@ fn can_check_query() {
     let result = make_test_call(
         &mut hc,
         "check_query",
-        r#"{ "entry_type_name": "testEntryType", "limit": "0" }"#,
+        r#"{ "entry_type_names": ["testEntryType"], "limit": "0" }"#,
     );
     assert!(result.is_ok(), "result = {:?}", result);
 

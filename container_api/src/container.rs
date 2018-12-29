@@ -25,7 +25,6 @@ use std::{
 
 use holochain_net::p2p_config::P2pConfig;
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
-use interface_impls;
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
 
@@ -37,7 +36,7 @@ use interface_impls;
 /// and also enable easier testing, a DnaLoader ()which is a closure that returns a
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
-    pub instances: InstanceMap,
+    instances: InstanceMap,
     config: Configuration,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     dna_loader: DnaLoader,
@@ -112,6 +111,10 @@ impl Container {
             })
             .collect::<Result<Vec<()>, _>>()
             .map(|_| ())
+    }
+
+    pub fn instances(&self) -> &InstanceMap {
+        &self.instances
     }
 
     /// Stop and clear all instances
@@ -290,10 +293,9 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 
 /// This can eventually be dependency injected for third party Interface definitions
 fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
+    use interface_impls::websocket::WebsocketInterface;
     match interface_config.driver {
-        InterfaceDriver::Websocket { port } => {
-            Box::new(interface_impls::websocket::WebsocketInterface::new(port))
-        }
+        InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
         _ => unimplemented!(),
     }
 }
@@ -309,11 +311,9 @@ impl Logger for NullLogger {
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
-
-    use holochain_core::signal::signal_channel;
+    use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use std::{fs::File, io::Write};
-
     use tempfile::tempdir;
     use test_utils::*;
 
@@ -542,8 +542,7 @@ pub mod tests {
     }
 
     #[test]
-    fn container_signal_handler() {
-        use holochain_core::action::Action;
+    fn test_container_signal_handler() {
         let (signal_tx, signal_rx) = signal_channel();
         let _container = test_container_with_signals(signal_tx);
 

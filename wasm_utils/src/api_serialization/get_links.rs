@@ -4,6 +4,33 @@ use holochain_core_types::{cas::content::Address, error::HolochainError, json::*
 pub struct GetLinksArgs {
     pub entry_address: Address,
     pub tag: String,
+    pub options: GetLinksOptions,
+}
+
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Eq, Hash)]
+pub enum LinksStatusRequestKind {
+    Live,
+    Deleted,
+    All,
+}
+impl Default for LinksStatusRequestKind {
+    fn default() -> Self {
+        LinksStatusRequestKind::Live
+    }
+}
+
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
+pub struct GetLinksOptions {
+    pub status_request: LinksStatusRequestKind,
+    pub sources: bool,
+}
+impl Default for GetLinksOptions {
+    fn default() -> Self {
+        GetLinksOptions {
+            status_request: LinksStatusRequestKind::default(),
+            sources: false,
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, DefaultJson)]

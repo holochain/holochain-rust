@@ -69,7 +69,7 @@ fn call_store_as_json_str_ok() {
 fn call_store_as_json_obj_ok() {
     let call_result = call_zome_function_with_hc("test_store_as_json_obj_ok");
     assert_eq!(
-        JsonString::from("{\"value\":\"fish\"}"),
+        JsonString::from("{\"value\":\"fish\",\"list\":[\"hello\",\"world!\"]}"),
         call_result.unwrap()
     );
 }
@@ -115,7 +115,7 @@ fn call_load_json_from_raw_err() {
 fn call_load_json_ok() {
     let call_result = call_zome_function_with_hc("test_load_json_ok");
     assert_eq!(
-        JsonString::from("{\"value\":\"fish\"}"),
+        JsonString::from("{\"value\":\"fish\",\"list\":[\"hello\",\"world!\"]}"),
         call_result.unwrap()
     );
 }
@@ -125,6 +125,7 @@ fn call_load_json_err_test() {
     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
     struct TestStruct {
         value: String,
+        list: Vec<String>,
     }
     type TestResult = Result<TestStruct, HolochainError>;
 
@@ -170,7 +171,7 @@ fn call_stacked_json_str() {
 fn call_stacked_json_obj() {
     let call_result = call_zome_function_with_hc("test_stacked_json_obj");
     assert_eq!(
-        JsonString::from("{\"value\":\"first\"}"),
+        JsonString::from("{\"value\":\"first\",\"list\":[\"hello\",\"world!\"]}"),
         call_result.unwrap()
     );
 }

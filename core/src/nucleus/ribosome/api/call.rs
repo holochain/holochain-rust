@@ -168,7 +168,7 @@ pub fn validate_call(
             return Err(HolochainError::Dna(DnaError::ZomeNotFound(format!(
                 "Zome '{}' not found",
                 fn_call.zome_name.clone()
-            ))))
+            ))));
         }
         Some(zome) => zome,
     };

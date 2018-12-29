@@ -1,4 +1,3 @@
-use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
@@ -107,10 +106,7 @@ impl ContainerApiBuilder {
         instance: Arc<RwLock<Holochain>>,
     ) -> Self {
         let hc_lock = instance.clone();
-        let hc = hc_lock.read().unwrap();
-        let state: State = hc.state().unwrap();
-        let nucleus = state.nucleus();
-        let dna = nucleus.dna();
+        let dna = hc_lock.read().unwrap().state().unwrap().nucleus().dna();
         match dna {
             Some(dna) => {
                 for (zome_name, zome) in dna.zomes {

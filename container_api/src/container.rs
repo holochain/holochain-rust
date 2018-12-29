@@ -82,11 +82,26 @@ impl Container {
             .collect()
     }
 
-    pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
+    pub fn stop_all_interfaces(&mut self) -> Result<(), String> {
+        for (_, t) in self.interface_threads.drain() {
+            t.join().expect("Interface panicked!")?;
+        }
+        Ok(())
+    }
+
+    pub fn start_interface_by_id(&mut self, id: &str) -> Result<(), String> {
         self.config
-            .interface_by_id(&id)
+            .interface_by_id(id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
+    }
+
+    pub fn stop_interface_by_id(&mut self, id: &str) -> Result<(), String> {
+        if let Some(t) = self.interface_threads.remove(id) {
+            t.join().expect("Interface panicked!")
+        } else {
+            Ok(())
+        }
     }
 
     /// Starts all instances
@@ -104,7 +119,7 @@ impl Container {
     /// Stops all instances
     pub fn stop_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
         self.instances
-            .iter_mut()
+            .drain()
             .map(|(id, hc)| {
                 println!("Stopping instance \"{}\"...", id);
                 hc.write().unwrap().stop()
@@ -119,9 +134,9 @@ impl Container {
 
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
+        self.stop_all_interfaces()
+            .map_err(|e| HolochainInstanceError::InternalFailure(e.into()))?;
         self.stop_all_instances()?;
-        // @TODO: also stop all interfaces
-        self.instances = HashMap::new();
         Ok(())
     }
 

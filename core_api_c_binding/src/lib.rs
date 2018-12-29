@@ -127,7 +127,7 @@ pub unsafe extern "C" fn holochain_call(
     ) {
         Ok(json_string_result) => {
             let string_result = String::from(json_string_result);
-            let string_trim = string_result.trim_right_matches(char::from(0));
+            let string_trim = string_result.trim_end_matches(char::from(0));
             match CString::new(string_trim) {
                 Ok(s) => s.into_raw(),
                 Err(_) => std::ptr::null_mut(),

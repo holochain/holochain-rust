@@ -12,10 +12,7 @@ use holochain_core_types::{
     cas::content::Address, chain_header::ChainHeader, error::HcResult,
     validation::ValidationPackage,
 };
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// GetValidationPackage Action Creator
 /// This triggers the network module to retrieve the validation package for the
@@ -43,8 +40,6 @@ pub struct GetValidationPackageFuture {
     context: Arc<Context>,
     address: Address,
 }
-
-impl Unpin for GetValidationPackageFuture {}
 
 impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;

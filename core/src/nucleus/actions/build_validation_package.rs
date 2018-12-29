@@ -19,12 +19,7 @@ use holochain_core_types::{
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{
-    convert::TryInto,
-    pin::{Pin, Unpin},
-    sync::Arc,
-    thread,
-};
+use std::{convert::TryInto, pin::Pin, sync::Arc, thread};
 
 pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> ValidationPackageFuture {
     let id = snowflake::ProcessUniqueId::new();
@@ -185,8 +180,6 @@ pub struct ValidationPackageFuture {
     key: snowflake::ProcessUniqueId,
     error: Option<HolochainError>,
 }
-
-impl Unpin for ValidationPackageFuture {}
 
 impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;

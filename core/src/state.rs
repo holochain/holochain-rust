@@ -156,12 +156,18 @@ impl State {
         ))
     }
 
-    // TODO: next
-    // fn cleanup(&mut self) -> Result<(), String> {
-    //     mem::replace(&mut *self.network, NetworkState::new())
-    //         .stop()
-    //         .map_err(|e| e.to_string())
-    // }
+    fn cleanup(&mut self) -> Result<(), String> {
+        // TODO: properly drop/destruct rest of state (requires moving out of Arc)
+        mem::replace(&mut self.network, NetworkState::new())
+            .stop()
+            .map_err(|e| e.to_string())
+    }
+}
+
+impl Drop for State {
+    fn drop(&mut self) {
+        self.cleanup().expect("Could not drop State");
+    }
 }
 
 pub fn test_store(context: Arc<Context>) -> State {

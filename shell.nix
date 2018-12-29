@@ -76,12 +76,12 @@ let
     circleci-cli local execute
   '';
 
-  build-wasm = wasm-path: "cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir /holochain/${wasm-path}/target;";
+  build-wasm = wasm-path: "cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir /tmp/holochain/${wasm-path}/target;";
   test = test-p: test-path: wasm-paths:
   ''
    ${nixpkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
    # cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX"${test-path}/target;
-   cargo test -p ${test-p} --release --target-dir /holochain/${test-path}/target;
+   cargo test -p ${test-p} --release --target-dir /tmp/holochain/${test-path}/target;
   '';
   hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" [ "hdk-rust/wasm-test" ]}";
   hc-test-wasm-utils = nixpkgs.writeShellScriptBin "hc-test-wasm-utils" "${test "holochain_wasm_utils" "wasm_utils" [ "wasm_utils/wasm-test/integration-test" ]}";

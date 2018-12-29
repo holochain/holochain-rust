@@ -67,6 +67,13 @@ impl P2pNetwork {
     }
 }
 
+// @TODO next
+// impl Drop for P2pNetwork {
+//     fn drop(&mut self) {
+//         self.stop()
+//     }
+// }
+
 #[cfg(test)]
 mod tests {
     use super::*;

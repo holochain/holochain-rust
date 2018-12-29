@@ -1,3 +1,5 @@
 FROM holochain/holochain-rust:circle.06.warm.cas-implementations
 
 RUN nix-shell --run hc-test-dna-c-binding
+
+CMD nix-shell --run hc-test-dna-c-binding

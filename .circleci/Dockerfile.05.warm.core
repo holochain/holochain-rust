@@ -1,3 +1,5 @@
 FROM holochain/holochain-rust:circle.04.warm.container-api
 
 RUN nix-shell --run hc-test-core
+
+CMD nix-shell --run hc-test-core

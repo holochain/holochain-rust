@@ -8,6 +8,7 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
+use holochain_net_connection::NetResult;
 use snowflake;
 use std::{
     collections::HashMap,
@@ -92,8 +93,12 @@ impl NetworkState {
         )
     }
 
-    pub fn shutdown(self) {
-        if let Some(network_mutex) = &self.network {
+    pub fn stop(mut self) -> NetResult<()> {
+        self.cleanup()
+    }
+
+    fn cleanup(&mut self) -> NetResult<()> {
+        self.network.as_ref().map_or(Ok(()), |network_mutex| {
             let mut network = network_mutex.lock().unwrap();
 
             // @TODO: can we avoid creating a new network just so we have something to swap out?
@@ -101,7 +106,15 @@ impl NetworkState {
                 P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::default_mock()).unwrap();
 
             // hot-swap the real network with a short-lived mock network so we can shut down the real one
-            mem::replace(&mut *network, mock_network).stop().unwrap();
-        }
+            mem::replace(&mut *network, mock_network).stop()
+        })
+    }
+}
+
+impl Drop for NetworkState {
+    fn drop(&mut self) {
+        self.cleanup()
+            // NB: panicking is necessary here since Drop can't deal with Results
+            .expect("Could not stop network");
     }
 }

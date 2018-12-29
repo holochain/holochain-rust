@@ -18,6 +18,7 @@ use holochain_core_types::{
 use std::{
     collections::HashSet,
     convert::TryInto,
+    mem,
     sync::{Arc, RwLock},
 };
 
@@ -154,6 +155,13 @@ impl State {
             Arc::new(agent_state),
         ))
     }
+
+    // TODO: next
+    // fn cleanup(&mut self) -> Result<(), String> {
+    //     mem::replace(&mut *self.network, NetworkState::new())
+    //         .stop()
+    //         .map_err(|e| e.to_string())
+    // }
 }
 
 pub fn test_store(context: Arc<Context>) -> State {

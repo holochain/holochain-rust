@@ -29,11 +29,11 @@ impl NetConnection for NetConnectionThread {
 }
 
 impl NetConnectionThread {
-    /// stop (join) the worker thread
-    pub fn stop(self) -> NetResult<()> {
+    /// join the worker thread
+    pub fn join(self) -> NetResult<()> {
         self.can_keep_running.store(false, Ordering::Relaxed);
         if self.thread.join().is_err() {
-            bail!("NetConnectionThread failed to join on stop() call");
+            bail!("NetConnectionThread failed to join on join() call");
         }
         if let Some(done) = self.done {
             done();
@@ -118,7 +118,7 @@ mod tests {
         .unwrap();
 
         con.send("test".into()).unwrap();
-        con.stop().unwrap();
+        con.join().unwrap();
     }
 
     struct Worker {
@@ -166,7 +166,7 @@ mod tests {
 
         assert_eq!("test".to_string(), String::from(res.as_json_string()));
 
-        con.stop().unwrap();
+        con.join().unwrap();
     }
 
     #[test]
@@ -187,6 +187,6 @@ mod tests {
 
         assert_eq!("tick".to_string(), String::from(res.as_json_string()));
 
-        con.stop().unwrap();
+        con.join().unwrap();
     }
 }

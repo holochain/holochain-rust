@@ -406,7 +406,7 @@ pub mod tests {
         state_observers.push(observer);
         let (_, rx_observer) = channel::<Observer>();
         test_setup.instance.process_action(
-            zome_call_action,
+            &zome_call_action,
             state_observers,
             &rx_observer,
             &test_setup.context,

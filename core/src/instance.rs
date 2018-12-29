@@ -608,7 +608,7 @@ pub mod tests {
 
         let action_wrapper = test_action_wrapper_commit();
         let new_observers = instance.process_action(
-            action_wrapper.clone(),
+            &action_wrapper.clone(),
             Vec::new(), // start with no observers
             &rx_observer,
             &context,
@@ -799,7 +799,7 @@ pub mod tests {
         let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        instance.process_action(commit_action, state_observers, &rx_observer, &context);
+        instance.process_action(&commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());
@@ -830,7 +830,12 @@ pub mod tests {
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);
+        instance.process_action(
+            &commit_agent_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());

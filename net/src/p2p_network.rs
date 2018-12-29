@@ -63,16 +63,9 @@ impl P2pNetwork {
 
     /// stop the network module (disconnect any sockets, join any threads, etc)
     pub fn stop(self) -> NetResult<()> {
-        self.connection.stop()
+        self.connection.join()
     }
 }
-
-// @TODO next
-// impl Drop for P2pNetwork {
-//     fn drop(&mut self) {
-//         self.stop()
-//     }
-// }
 
 #[cfg(test)]
 mod tests {

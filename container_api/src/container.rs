@@ -681,7 +681,7 @@ pub mod tests {
 
     fn caller_dna() -> Dna {
         let wasm = create_wasm_from_file(
-            "/tmp/holochain/target/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
+            "/tmp/holochain/container_api/test-bridge-caller/target/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
         );
         let capabability = create_test_cap_with_fn_name("call_bridge");
         let mut dna = create_test_dna_with_cap("main", "main", &capabability, &wasm);

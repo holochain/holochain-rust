@@ -168,11 +168,7 @@ impl Instance {
             .expect("owners of the state RwLock shouldn't panic")
     }
 
-    pub fn stop(mut self) {
-        self.cleanup()
-    }
-
-    fn cleanup(&mut self) {
+    pub fn shutdown(&mut self) {
         // send shutdown signal
         if let Some(ref tx) = self.action_channel {
             tx.send(ActionWrapper::new(Action::Shutdown)).unwrap();
@@ -186,7 +182,7 @@ impl Instance {
 
 impl Drop for Instance {
     fn drop(&mut self) {
-        self.cleanup()
+        self.shutdown()
     }
 }
 

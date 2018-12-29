@@ -80,6 +80,8 @@ pub struct Holochain {
     #[allow(dead_code)]
     context: Arc<Context>,
     active: bool,
+    // to prevent restarting a Holochain until we can safely stop and restart all subsystems
+    stopped: bool,
 }
 
 impl Holochain {
@@ -108,6 +110,7 @@ impl Holochain {
                     instance,
                     context: new_context.clone(),
                     active: false,
+                    stopped: false,
                 };
                 Ok(hc)
             }
@@ -127,11 +130,16 @@ impl Holochain {
             instance,
             context: new_context.clone(),
             active: false,
+            stopped: false,
         })
     }
 
     /// activate the Holochain instance
     pub fn start(&mut self) -> Result<(), HolochainInstanceError> {
+        if self.stopped {
+            // @TODO: remove once it's safe to restart
+            panic!("Restarting a Holochain is undefined behavior.");
+        }
         if self.active {
             return Err(HolochainInstanceError::InstanceAlreadyActive);
         }
@@ -145,6 +153,8 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
         self.active = false;
+        self.stopped = true;
+        self.instance.shutdown();
         Ok(())
     }
 
@@ -175,6 +185,12 @@ impl Holochain {
 
     pub fn context(&self) -> &Arc<Context> {
         &self.context
+    }
+}
+
+impl Drop for Holochain {
+    fn drop(&mut self) {
+        self.stop().expect("Could not stop Holochain")
     }
 }
 

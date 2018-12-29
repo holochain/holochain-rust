@@ -174,10 +174,10 @@ workflows:
    # - docker.03:
    #    requires:
    #     - docker.02
-   - docker.03
-   - docker.04:
-      requires:
-       - docker.03
+   - docker.04
+   # - docker.04:
+   #    requires:
+   #     - docker.03
    - docker.05:
       requires:
        - docker.04

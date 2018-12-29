@@ -12,7 +12,7 @@ use futures::{
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use std::{
-    pin::{Pin, Unpin},
+    pin::Pin,
     sync::{mpsc::SyncSender, Arc},
 };
 
@@ -39,8 +39,6 @@ pub struct UpdateEntryFuture {
     context: Arc<Context>,
     action: ActionWrapper,
 }
-
-impl Unpin for UpdateEntryFuture {}
 
 impl Future for UpdateEntryFuture {
     type Output = Result<Address, HolochainError>;

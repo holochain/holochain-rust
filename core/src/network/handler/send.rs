@@ -63,7 +63,6 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
         .state()
         .unwrap()
         .network()
-        .as_ref()
         .direct_message_connections
         .get(&message_data.msg_id)
         .cloned();

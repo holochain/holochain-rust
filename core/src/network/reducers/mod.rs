@@ -61,15 +61,15 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
 
 pub fn reduce(
     context: Arc<Context>,
-    old_state: Arc<NetworkState>,
+    old_state: NetworkState,
     action_wrapper: &ActionWrapper,
-) -> Arc<NetworkState> {
+) -> NetworkState {
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
-            let mut new_state: NetworkState = (*old_state).clone();
+            let mut new_state: NetworkState = old_state.clone();
             f(context, &mut new_state, &action_wrapper);
-            Arc::new(new_state)
+            new_state
         }
         None => old_state,
     }

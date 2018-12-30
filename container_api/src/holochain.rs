@@ -230,7 +230,10 @@ mod tests {
     use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     fn example_api_wasm_path() -> String {
-        "/tmp/holochain/container_api/wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm".into()
+        format!(
+            "{}container_api/wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
+        )
     }
 
     fn example_api_wasm() -> Vec<u8> {
@@ -633,7 +636,10 @@ mod tests {
         use holochain_core::action::Action;
         use std::time::Duration;
         let wasm = include_bytes!(
-            "/tmp/holochain/container_api/wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
+            format!(
+                "{}container_api/wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+                std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
+            )
         );
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
         let mut dna =

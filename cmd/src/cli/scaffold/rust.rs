@@ -59,8 +59,7 @@ impl RustScaffold {
         let target_dir = format!("{}target", prefix);
         let artifact_name = format!(
             "{}/wasm32-unknown-unknown/release/{}.wasm",
-            target_dir,
-            package_name
+            target_dir, package_name
         );
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(

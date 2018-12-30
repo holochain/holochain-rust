@@ -635,12 +635,10 @@ mod tests {
     fn can_receive_action_signals() {
         use holochain_core::action::Action;
         use std::time::Duration;
-        let wasm = include_bytes!(
-            format!(
-                "{}container_api/wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-                std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
-            )
-        );
+        let wasm = include_bytes!(format!(
+            "{}container_api/wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
+        ));
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
         let mut dna =
             test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);

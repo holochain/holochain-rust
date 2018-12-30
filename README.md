@@ -108,7 +108,7 @@ Not everything in the Makefile is implemented in nix, and a lot of things don't 
 
 If you have a nix friendly system, this is probably the fastest way to develop and test.
 
-e.g. `nix-shell shell.core.nix --run "hc-wasm-build && hc-test"`
+e.g. `nix-shell --run hc-test`
 
 #### Running tests
 

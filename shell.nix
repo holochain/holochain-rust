@@ -24,12 +24,6 @@ let
   rm -rf ~/.cargo/git;
   '';
 
-  hc-build = nixpkgs.writeShellScriptBin "hc-build"
-  ''
-  hc-wasm-build
-  cargo build --release --all
-  '';
-
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
   ''
   . ./scripts/build_nodejs_container.sh;
@@ -55,7 +49,6 @@ let
   hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
   ''
     hc-install-tarpaulin && \
-    hc-build && \
     hc-tarpaulin && \
     bash <(curl -s https://codecov.io/bash);
   '';
@@ -139,7 +132,6 @@ stdenv.mkDerivation rec {
 
     hc-flush-cargo-registry
 
-    hc-build
     hc-test
 
     hc-install-tarpaulin

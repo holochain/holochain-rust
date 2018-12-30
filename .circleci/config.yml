@@ -140,6 +140,20 @@ jobs:
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
    - run: docker build -f .circleci/Dockerfile.13.warm.net-ipc -t holochain/holochain-rust:circle.13.warm.net-ipc .
    - run: docker push holochain/holochain-rust:circle.13.warm.net-ipc
+ docker.14:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.14.warm.cmd -t holochain/holochain-rust:circle.14.warm.cmd .
+   - run: docker push holochain/holochain-rust:circle.14.warm.cmd
+ docker.15:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.15.warm.node-container -t holochain/holochain-rust:circle.15.warm.node-container .
+   - run: docker push holochain/holochain-rust:circle.15.warm.node-container
  docker.end:
   machine: true
   steps:
@@ -164,20 +178,19 @@ workflows:
   #       only:
   #        - develop
   jobs:
-   # - docker.start
-   # - docker.01:
-   #    requires:
-   #     - docker.start
-   # - docker.02:
-   #    requires:
-   #     - docker.01
-   # - docker.03:
-   #    requires:
-   #     - docker.02
-   - docker.04
-   # - docker.04:
-   #    requires:
-   #     - docker.03
+   - docker.start
+   - docker.01:
+      requires:
+       - docker.start
+   - docker.02:
+      requires:
+       - docker.01
+   - docker.03:
+      requires:
+       - docker.02
+   - docker.04:
+      requires:
+       - docker.03
    - docker.05:
       requires:
        - docker.04
@@ -205,6 +218,12 @@ workflows:
    - docker.13:
       requires:
        - docker.12
-   - docker.end:
+   - docker.14:
       requires:
        - docker.13
+   - docker.15:
+      requires:
+       - docker.14
+   - docker.end:
+      requires:
+       - docker.15

@@ -1,4 +1,4 @@
-FROM holochain/holochain-rust:circle.13.warm.net-ipc
+FROM holochain/holochain-rust:circle.15.warm.node-container
 
 # the default command can be the unit tests, why not?
 # if the build works properly this should be fast in incremental compilation

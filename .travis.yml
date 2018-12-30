@@ -197,8 +197,9 @@ jobs:
        - WASM_PATH=hdk-rust/wasm-test
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows wasm_utils"
       <<: *_windows_template_lite
@@ -208,8 +209,9 @@ jobs:
        - WASM_PATH=wasm_utils/wasm-test/integration-test
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows container_api"
       <<: *_windows_template_lite
@@ -219,9 +221,10 @@ jobs:
        - WASM_PATH=container_api/wasm-test
        - WASM_PATH_2=container_api/test-bridge-caller
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
-       - WASM_TARGET_DIR_2=/tmp/holochain/$WASM_PATH_2/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
+       - WASM_TARGET_DIR_2=$HC_TARGET_PREFIX$WASM_PATH_2/target
 
     - name: "windows core"
       <<: *_windows_template_lite
@@ -231,18 +234,9 @@ jobs:
        - WASM_PATH=core/src/nucleus/actions/wasm-test
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
-
-    # contains no tests
-    # quick to build, good for basic debugging
-    # @see https://travis-ci.com/holochain/holochain-rust/jobs/166081895
-    # - name: "windows core_types_derive"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_core_types_derive
-    #    - TEST_PATH=core_types_derive
-    #    - CARGO_TARGET_DIR=$TEST_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows holochain_cas_implementations"
       <<: *_windows_template_lite
@@ -252,8 +246,9 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows dna_c_binding"
       <<: *_windows_template_lite
@@ -263,8 +258,9 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows holochain_net_connection"
       <<: *_windows_template_lite
@@ -274,8 +270,9 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows holochain_sodium"
       <<: *_windows_template_lite
@@ -285,8 +282,9 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows hc"
       <<: *_windows_template_lite
@@ -296,32 +294,9 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
-
-    # no tests
-    # https://travis-ci.com/holochain/holochain-rust/jobs/166086955
-    # - name: "windows holochain_container"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_container
-    #    - TEST_PATH=container
-    #    - WASM_PATH=none
-    #    # boilerplate
-    #    - CARGO_TARGET_DIR=$TEST_PATH/target
-    #    - WASM_TARGET_DIR=$WASM_PATH/target
-
-    # no tests
-    # https://travis-ci.com/holochain/holochain-rust/jobs/166086957
-    # - name: "windows core_api_c_binding"
-    #   <<: *_windows_template_lite
-    #   env:
-    #    - TEST_P=holochain_core_api_c_binding
-    #    - TEST_PATH=core_api_c_binding
-    #    - WASM_PATH=none
-    #    # boilerplate
-    #    - CARGO_TARGET_DIR=$TEST_PATH/target
-    #    - WASM_TARGET_DIR=$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows core_types"
       <<: *_windows_template_lite
@@ -331,8 +306,9 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows holochain_net"
       <<: *_windows_template_lite
@@ -342,8 +318,9 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     - name: "windows holochain_net_ipc"
       <<: *_windows_template_lite
@@ -353,8 +330,9 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - CARGO_TARGET_DIR=/tmp/holochain/$TEST_PATH/target
-       - WASM_TARGET_DIR=/tmp/holochain/$WASM_PATH/target
+       - HC_TARGET_PREFIX=/tmp/holochain/
+       - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
+       - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
     # no tests
     # https://travis-ci.com/holochain/holochain-rust/jobs/166086961

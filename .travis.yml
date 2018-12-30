@@ -183,7 +183,7 @@ _windows_template_lite: &_windows_template_lite
     - if [ $WASM_PATH != "none" ]; then cargo build --manifest-path $WASM_PATH/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR; fi;
     - if [ $WASM_PATH_2 != "none" ]; then cargo build --manifest-path $WASM_PATH_2/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR_2; fi;
   script:
-    - cargo test -p $TEST_P --target-dir $CARGO_TARGET_DIR
+    - cargo test -p $TEST_P --release --target-dir $CARGO_TARGET_DIR -- --nocapture
 
 jobs:
   # test builds are ordered from slowest to quickest

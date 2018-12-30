@@ -18,16 +18,6 @@ let
     };
   });
 
-  wasmBuild = path: "CARGO_HOME=${path}/.cargo CARGO_TARGET_DIR=${path}/target cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
-  hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
-  ''
-  ${wasmBuild "core/src/nucleus/actions/wasm-test"}
-  ${wasmBuild "container_api/test-bridge-caller"}
-  ${wasmBuild "container_api/wasm-test"}
-  ${wasmBuild "hdk-rust/wasm-test"}
-  ${wasmBuild "wasm_utils/wasm-test/integration-test"}
-  '';
-
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
   rm -rf ~/.cargo/registry;
@@ -145,8 +135,6 @@ stdenv.mkDerivation rec {
     yarn
 
     hc-flush-cargo-registry
-
-    hc-wasm-build
 
     hc-build
     hc-test

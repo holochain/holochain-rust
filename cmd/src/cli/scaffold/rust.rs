@@ -62,7 +62,7 @@ impl RustScaffold {
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(
                 "cargo",
-                &["build", "--release", "--target=wasm32-unknown-unknown"],
+                &["build", "--release", "--target=wasm32-unknown-unknown", "--target-dir=/tmp/holochain/target"],
             ),
             package_name: package_name,
         }

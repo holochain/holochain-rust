@@ -55,8 +55,11 @@ fn interpolate_cargo_template(
 
 impl RustScaffold {
     pub fn new(package_name: String) -> RustScaffold {
+        let prefix = std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new());
+        let target_dir = format!("{}target", prefix);
         let artifact_name = format!(
-            "/tmp/holochain/target/wasm32-unknown-unknown/release/{}.wasm",
+            "{}/wasm32-unknown-unknown/release/{}.wasm",
+            target_dir,
             package_name
         );
         RustScaffold {
@@ -66,7 +69,7 @@ impl RustScaffold {
                     "build",
                     "--release",
                     "--target=wasm32-unknown-unknown",
-                    "--target-dir=/tmp/holochain/target",
+                    &format!("--target-dir={}", target_dir),
                 ],
             ),
             package_name: package_name,

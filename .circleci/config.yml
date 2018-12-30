@@ -22,20 +22,9 @@ jobs:
        name: install cmd
        command: nix-shell --run hc-install-cmd
 
-   # test the node container build
-   # todo - this cache doesn't stop recompilation of rust on node container
-   - restore_cache:
-       keys:
-         - v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
    - run:
        name: install node container
        command: nix-shell --run hc-install-node-container
-   - save_cache:
-       key: v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
-       paths:
-         - "./nodejs_container/native/target"
-         - "./nodejs_container/node_modules"
-         - "./nodejs_container/native/Cargo.lock"
 
    - run:
        name: app spec tests

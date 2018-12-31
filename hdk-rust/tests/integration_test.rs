@@ -139,7 +139,8 @@ fn start_holochain_instance<T: Into<String>>(
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(&format!(
-        "{}hdk-rust/wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm",
+        // "{}hdk-rust/wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm",
+        "{}wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm",
         std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
     ));
     let capabability = create_test_cap_with_fn_names(vec![

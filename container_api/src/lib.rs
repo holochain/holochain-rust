@@ -100,13 +100,13 @@ extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+#[cfg(test)]
+extern crate holochain_wasm_utils;
 extern crate jsonrpc_ws_server;
 extern crate petgraph;
 extern crate serde_json;
 #[cfg(test)]
 extern crate test_utils;
-#[cfg(test)]
-extern crate holochain_wasm_utils;
 extern crate tiny_http;
 extern crate toml;
 

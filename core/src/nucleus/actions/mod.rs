@@ -22,9 +22,9 @@ pub mod tests {
         entry::Entry,
         json::RawString,
     };
+    use holochain_wasm_utils::wasm_target_dir;
     use std::sync::Arc;
     use test_utils::*;
-    use holochain_wasm_utils::wasm_target_dir;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
@@ -34,12 +34,10 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_dna() -> Dna {
         // Setup the holochain instance
-        let wasm = create_wasm_from_file(
-            &format!(
-                "{}/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
-                wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
-            )
-        );
+        let wasm = create_wasm_from_file(&format!(
+            "{}/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
+            wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
+        ));
 
         let mut dna = create_test_dna_with_cap(
             "test_zome",

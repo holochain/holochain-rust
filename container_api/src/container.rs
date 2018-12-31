@@ -313,9 +313,9 @@ pub mod tests {
     use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
+    use holochain_wasm_utils::wasm_target_dir;
     use std::{fs::File, io::Write};
     use tempfile::tempdir;
-    use holochain_wasm_utils::wasm_target_dir;
     use test_utils::*;
 
     pub fn test_dna_loader() -> DnaLoader {
@@ -681,12 +681,10 @@ pub mod tests {
     }
 
     fn caller_dna() -> Dna {
-        let wasm = create_wasm_from_file(
-            &format!(
-                "{}/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
-                wasm_target_dir("container_api/", "test-bridge-caller/"),
-            )
-        );
+        let wasm = create_wasm_from_file(&format!(
+            "{}/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
+            wasm_target_dir("container_api/", "test-bridge-caller/"),
+        ));
         let capabability = create_test_cap_with_fn_name("call_bridge");
         let mut dna = create_test_dna_with_cap("main", "main", &capabability, &wasm);
         dna.uuid = String::from("basic_bridge_call");

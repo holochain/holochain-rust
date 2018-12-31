@@ -191,13 +191,13 @@ mod tests {
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna};
+    use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
-    use holochain_wasm_utils::wasm_target_dir;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};

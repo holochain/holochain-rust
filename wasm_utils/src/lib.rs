@@ -19,10 +19,8 @@ pub mod memory_allocation;
 pub mod memory_serialization;
 
 pub fn wasm_target_dir(test_path: &str, wasm_path: &str) -> String {
-
     match std::env::var("HC_TARGET_PREFIX") {
         Ok(prefix) => format!("{}{}{}target", prefix, test_path, wasm_path),
         Err(_) => format!("{}target", wasm_path),
     }
-
 }

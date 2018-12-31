@@ -18,9 +18,9 @@ use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeErrorCode},
     json::{default_try_from_json, JsonString, RawString},
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{convert::TryFrom, error::Error};
 use test_utils::hc_setup_and_call_zome_fn;
-use holochain_wasm_utils::wasm_target_dir;
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {

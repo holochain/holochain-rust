@@ -4,13 +4,13 @@ use crate::{
     error::DefaultResult,
     util,
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
     path::Path,
 };
 use toml::{self, value::Value};
-use holochain_wasm_utils::wasm_target_dir;
 
 pub const CARGO_FILE_NAME: &str = "Cargo.toml";
 pub const LIB_RS_PATH: &str = "src/lib.rs";
@@ -59,8 +59,7 @@ impl RustScaffold {
         let target_dir = wasm_target_dir(&package_name, "");
         let artifact_name = format!(
             "{}/wasm32-unknown-unknown/release/{}.wasm",
-            &target_dir,
-            &package_name,
+            &target_dir, &package_name,
         );
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(

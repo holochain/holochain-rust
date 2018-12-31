@@ -40,6 +40,14 @@ use std::{
 use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
+pub fn wasm_target_dir(fallback: &str) -> String {
+    let target_prefix = std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new());
+    match std::env::var("WASM_TARGET_DIR") {
+        Ok(target_dir) => target_dir,
+        Err(_) => format!("{}{}/target", target_prefix, fallback),
+    }
+}
+
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
     println!("Creating wasm from {}", fname);

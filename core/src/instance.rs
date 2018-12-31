@@ -173,12 +173,13 @@ impl Instance {
         if self.is_shutdown() {
             return;
         }
-        self.action_channel = None;
 
         // send shutdown signal
         if let Some(ref tx) = self.action_channel {
             tx.send(ActionWrapper::new(Action::Shutdown)).unwrap();
         }
+
+        self.action_channel = None;
 
         // move action_thread out self so it can be joined into oblivion
         if let Some(t) = mem::replace(&mut self.action_thread, None) {

@@ -162,6 +162,9 @@ _windows_template_lite: &_windows_template_lite
    - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-Z thinlto -C codegen-units=16"
+   - ls $CARGO_TARGET_DIR
+   - ls $WASM_TARGET_DIR
+   - ls $WASM_TARGET_DIR_2
   cache:
    timeout: 1000
    directories:

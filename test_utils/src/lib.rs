@@ -42,7 +42,6 @@ use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
-    println!("Creating wasm from {}", fname);
     let mut file = File::open(fname).unwrap();
     let mut buf = Vec::new();
     file.read_to_end(&mut buf).unwrap();

@@ -62,7 +62,6 @@ let
   build-wasm = wasm-path:
   ''
   export WASM_PATH=${wasm-path}/
-  echo "$HC_TARGET_PREFIX""$TEST_PATH""$WASM_PATH"Cargo.toml
   cargo build --release --target wasm32-unknown-unknown --manifest-path "$TEST_PATH""$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$TEST_PATH""$WASM_PATH"target;
   '';
   test = test-p: test-path: wasm-paths:

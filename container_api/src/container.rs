@@ -315,6 +315,7 @@ pub mod tests {
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use std::{fs::File, io::Write};
     use tempfile::tempdir;
+    use holochain_wasm_utils::wasm_target_dir;
     use test_utils::*;
 
     pub fn test_dna_loader() -> DnaLoader {
@@ -682,8 +683,8 @@ pub mod tests {
     fn caller_dna() -> Dna {
         let wasm = create_wasm_from_file(
             &format!(
-                "{}container_api/test-bridge-caller/target/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
-                std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
+                "{}/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
+                wasm_target_dir("container_api/test-bridge-caller/target"),
             )
         );
         let capabability = create_test_cap_with_fn_name("call_bridge");

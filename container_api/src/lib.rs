@@ -105,6 +105,8 @@ extern crate petgraph;
 extern crate serde_json;
 #[cfg(test)]
 extern crate test_utils;
+#[cfg(test)]
+extern crate holochain_wasm_utils;
 extern crate tiny_http;
 extern crate toml;
 

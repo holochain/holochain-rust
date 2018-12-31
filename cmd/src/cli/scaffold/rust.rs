@@ -10,6 +10,7 @@ use std::{
     path::Path,
 };
 use toml::{self, value::Value};
+use holochain_wasm_utils::wasm_target_dir;
 
 pub const CARGO_FILE_NAME: &str = "Cargo.toml";
 pub const LIB_RS_PATH: &str = "src/lib.rs";
@@ -55,11 +56,11 @@ fn interpolate_cargo_template(
 
 impl RustScaffold {
     pub fn new(package_name: String) -> RustScaffold {
-        let prefix = std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new());
-        let target_dir = format!("{}target", prefix);
+        let target_dir = wasm_target_dir(&format!("{}target", &package_name));
         let artifact_name = format!(
             "{}/wasm32-unknown-unknown/release/{}.wasm",
-            target_dir, package_name
+            &target_dir,
+            &package_name,
         );
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(

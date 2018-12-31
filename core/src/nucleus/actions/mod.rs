@@ -24,6 +24,7 @@ pub mod tests {
     };
     use std::sync::Arc;
     use test_utils::*;
+    use holochain_wasm_utils::wasm_target_dir;
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance() -> (Instance, Arc<Context>) {
@@ -35,8 +36,8 @@ pub mod tests {
         // Setup the holochain instance
         let wasm = create_wasm_from_file(
             &format!(
-                "{}core/src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
-                std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
+                "{}/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
+                wasm_target_dir("core/src/nucleus/actions/wasm-test/target"),
             )
         );
 

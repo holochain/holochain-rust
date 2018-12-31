@@ -197,6 +197,7 @@ mod tests {
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
+    use holochain_wasm_utils::wasm_target_dir;
 
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
@@ -231,8 +232,8 @@ mod tests {
 
     fn example_api_wasm_path() -> String {
         format!(
-            "{}container_api/wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-            std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
+            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            wasm_target_dir("container_api/wasm-test/target"),
         )
     }
 
@@ -636,8 +637,8 @@ mod tests {
         use holochain_core::action::Action;
         use std::time::Duration;
         let wasm = include_bytes!(format!(
-            "{}container_api/wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-            std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
+            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            wasm_target_dir("container_api/wasm-test/target"),
         ));
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
         let mut dna =

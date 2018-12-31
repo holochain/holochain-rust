@@ -35,6 +35,7 @@ use holochain_wasm_utils::api_serialization::{
     get_links::GetLinksResult,
     QueryResult,
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{
     sync::{Arc, Mutex},
     thread,

@@ -20,6 +20,7 @@ use holochain_core_types::{
 };
 use std::{convert::TryFrom, error::Error};
 use test_utils::hc_setup_and_call_zome_fn;
+use test_utils::wasm_target_dir;
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {
@@ -39,8 +40,8 @@ impl Logger for TestLogger {
 fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
     hc_setup_and_call_zome_fn(
         &format!(
-            "{}wasm_utils/wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
-            std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new()),
+            "{}/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
+            wasm_target_dir("wasm-test/integration-test/target"),
         ),
         fn_name,
     )

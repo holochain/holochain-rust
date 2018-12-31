@@ -61,17 +61,20 @@ let
 
   build-wasm = wasm-path:
   ''
-  cargo build --release --target wasm32-unknown-unknown --manifest-path ${wasm-path}/Cargo.toml --target-dir "$HC_TARGET_PREFIX"${wasm-path}/target;
+  export WASM_PATH=${wasm-path}/
+  echo "$HC_TARGET_PREFIX""$TEST_PATH""$WASM_PATH"Cargo.toml
+  cargo build --release --target wasm32-unknown-unknown --manifest-path "$TEST_PATH""$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$TEST_PATH""$WASM_PATH"target;
   '';
   test = test-p: test-path: wasm-paths:
   ''
+   export TEST_PATH=${test-path}/;
    ${nixpkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
-   cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX"${test-path}/target -- --nocapture;
+   cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX""$TEST_PATH"target -- --nocapture;
   '';
-  hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" [ "hdk-rust/wasm-test" ]}";
-  hc-test-wasm-utils = nixpkgs.writeShellScriptBin "hc-test-wasm-utils" "${test "holochain_wasm_utils" "wasm_utils" [ "wasm_utils/wasm-test/integration-test" ]}";
-  hc-test-container-api = nixpkgs.writeShellScriptBin "hc-test-container-api" "${test "holochain_container_api" "container_api" [ "container_api/wasm-test" "container_api/test-bridge-caller" ]}";
-  hc-test-core = nixpkgs.writeShellScriptBin "hc-test-core" "${test "holochain_core" "core" [ "core/src/nucleus/actions/wasm-test" ]}";
+  hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" [ "wasm-test" ]}";
+  hc-test-wasm-utils = nixpkgs.writeShellScriptBin "hc-test-wasm-utils" "${test "holochain_wasm_utils" "wasm_utils" [ "wasm-test/integration-test" ]}";
+  hc-test-container-api = nixpkgs.writeShellScriptBin "hc-test-container-api" "${test "holochain_container_api" "container_api" [ "wasm-test" "test-bridge-caller" ]}";
+  hc-test-core = nixpkgs.writeShellScriptBin "hc-test-core" "${test "holochain_core" "core" [ "src/nucleus/actions/wasm-test" ]}";
   hc-test-cas-implementations = nixpkgs.writeShellScriptBin "hc-test-cas-implementations" "${test "holochain_cas_implementations" "cas_implementations" [] }";
   hc-test-dna-c-binding = nixpkgs.writeShellScriptBin "hc-test-dna-c-binding" "${test "holochain_dna_c_binding" "dna_c_binding" []}";
   hc-test-net-connection = nixpkgs.writeShellScriptBin "hc-test-net-connection" "${test "holochain_net_connection" "net_connection" []}";

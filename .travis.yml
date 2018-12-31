@@ -162,6 +162,10 @@ _windows_template_lite: &_windows_template_lite
    - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-Z thinlto -C codegen-units=16"
+  env:
+   - CACHE_TARGET=$HC_TARGET_PREFIX$TEST_PATHtarget
+   - CACHE_WASM_TARGET=$HC_TARGET_PREFIX$TEST_PATH$WASM_PATHtarget
+   - CACHE_WASM_TARGET_2=$HC_TARGET_PREFIX$TEST_PATH$WASM_PATH_2target
   cache:
    timeout: 1000
    directories:
@@ -173,9 +177,9 @@ _windows_template_lite: &_windows_template_lite
     # as we do CARGO_INCREMENTAL and keep the targets, the newly downloaded
     # crates don't recompile, so we save *a lot* of time there
     - target
-    - "$HC_TARGET_PREFIX""$TEST_PATH"target
-    - "$HC_TARGET_PREFIX""$TEST_PATH""$WASM_PATH"target
-    - "$HC_TARGET_PREFIX""$TEST_PATH""$WASM_PATH_2"target
+    - $CACHE_TARGET
+    - $CACHE_WASM_TARGET
+    - $CACHE_WASM_TARGET_2
   install:
     # "none" is a hack here to avoid "" ending up in the cache, potentially
     # caching everything in the repo (we never want to accidentally do that)

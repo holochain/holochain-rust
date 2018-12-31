@@ -188,12 +188,6 @@ impl Instance {
     }
 }
 
-impl Drop for Instance {
-    fn drop(&mut self) {
-        self.shutdown()
-    }
-}
-
 /// Calls the reducers for an action and calls the observers with the new state
 /// returns the new vector of observers
 pub fn process_action(

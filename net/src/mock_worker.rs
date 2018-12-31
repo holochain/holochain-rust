@@ -121,7 +121,9 @@ impl MockSingleton {
     fn priv_send_one(&mut self, dna_hash: &str, agent_id: &str, data: Protocol) -> NetResult<()> {
         if let Some(sender) = self.senders.get_mut(&cat_dna_agent(dna_hash, agent_id)) {
             // NB: ignoring send failure here
-            sender.send(data).unwrap_or(());
+            sender
+                .send(data)
+                .unwrap_or_else(|_| println!("priv_send_one ignoring send failure"));
         }
         Ok(())
     }
@@ -131,7 +133,9 @@ impl MockSingleton {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_hash) {
             for val in arr.iter_mut() {
                 // NB: ignoring send failure here
-                (*val).send(data.clone()).unwrap_or(());
+                (*val)
+                    .send(data.clone())
+                    .unwrap_or_else(|_| println!("priv_send_all ignoring send failure"));
             }
         }
         Ok(())

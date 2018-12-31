@@ -24,7 +24,10 @@ impl NetConnection for NetConnectionThread {
     /// send a message to the worker within this NetConnectionThread instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         // NB: ignoring send failure here
-        self.send_channel.send(data).or(Ok(()))
+        self.send_channel
+            .send(data)
+            .unwrap_or_else(|_| println!("NetConnection ignoring send failure"));
+        Ok(())
     }
 }
 

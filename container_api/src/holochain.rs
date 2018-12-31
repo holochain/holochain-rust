@@ -163,7 +163,10 @@ impl Holochain {
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
         use std::mem;
         self.is_shutdown = false;
-        self.stop()?;
+        self.stop().or_else(|err| match err {
+            HolochainInstanceError::InstanceNotActiveYet => Ok(()),
+            other => Err(other),
+        })?;
         self.instance.shutdown();
         if let Some(state) = self.context.state_raw("I know this is bad") {
             let new_context = self.context.clone();

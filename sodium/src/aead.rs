@@ -20,19 +20,6 @@ pub const ABYTES : usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_A
 /// @param {SecBuf} cipher - Empty Buffer to be used as output
 
 pub fn enc(message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>,nonce: &mut SecBuf,cipher: &mut SecBuf)->SodiumResult<()>{
-    /*
-    {
-        // Checking output Buffers
-        let n = nonce.len();
-        let c = cipher.len();
-        if check_buf_len(n){
-            return Err(SodiumError::OutputLength(format!("Invalid nonce Buffer length:{}", n)));
-        }else if check_buf_len(c){
-            return Err(SodiumError::OutputLength(format!("Invalid cipher Buffer length:{}", c)));
-        }
-    }
-    */
-
     let mut my_adata_locker;
     let mut my_adata = std::ptr::null();
     let mut my_ad_len = 0 as libc::c_ulonglong;
@@ -195,27 +182,5 @@ mod tests {
         let mut message = message.read_lock();
         let mut decrypted_message = decrypted_message.read_lock();
         assert_eq!("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", format!("{:?}", *decrypted_message));
-    }
-    #[test]
-    fn it_should_return_Error_with_bad_cipher() {
-        let mut message = SecBuf::with_secure(16);
-        let mut secret = SecBuf::with_secure(32);
-        buf(&mut message);
-        let mut nonce = SecBuf::with_insecure(NONCEBYTES);
-        let mut message = message.write_lock();
-        let cip_len = message.len() + ABYTES;
-        let mut cipher = SecBuf::with_insecure(cip_len);
-        {
-            let mut message = message.write_lock();
-            let output  = enc(&mut message,&mut secret,None,&mut nonce,&mut cipher);
-            match output{
-                Ok(k)=>{
-                    assert!(false)
-                }
-                Err(e)=>{
-                    assert!(true)
-                }
-            }
-        }
     }
 }

@@ -16,30 +16,14 @@ pub const ALG_ARGON2ID13:i8 = rust_sodium_sys::crypto_pwhash_ALG_ARGON2ID13 as i
 pub const HASHBYTES:usize = 32 as usize;
 pub const SALTBYTES:usize = rust_sodium_sys::crypto_pwhash_SALTBYTES as usize;
 
-// fn _fixOpts (opts) {
-//
-// }
-
 /// Calculate a password hash
-/// @example
-/// const { salt, hash } = mosodium.pwhash.hash(passphrase)
-/// @example
-/// const { salt, hash } = mosodium.pwhash.hash(passphrase, {
-///   opslimit: mosodium.pwhash.OPSLIMIT_MODERATE,
-///   memlimit: mosodium.pwhash.MEMLIMIT_MODERATE,
-///   salt: mysalt
-/// })
 /// @param {SecBuf} password - the password to hash
-/// @param {object} opts
-/// @param {number} opts.opslimit - operation scaling for hashing algorithm
-/// @param {number} opts.memlimit - memory scaling for hashing algorithm
-/// @param {number} opts.algorithm - which hashing algorithm
-/// @param {Buffer} [opts.salt] - predefined salt (random if not included)
-/// @return {object} - { salt / the salt used /, hash / the hash generated / }
-
+/// @param {u64} opslimit - operation scaling for hashing algorithm
+/// @param {usize} memlimit - memory scaling for hashing algorithm
+/// @param {i8} algorithm - which hashing algorithm
+/// @param {SecBuf} salt - optional predefined salt (random if not included)
+/// @param {SecBuf} hash - the hash generated
 pub fn hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:Option<&mut SecBuf>,hash:&mut SecBuf){
-    // TODO: fix opts
-    // let mut hash = SecBuf::with_secure(HASHBYTES);
     match salt {
         Some(salt) => {
             let mut password = password.write_lock();
@@ -56,7 +40,6 @@ pub fn hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:Opti
             create_hash(&mut password,ops_limit,mem_limit,alg,&mut salt,&mut hash);
         },
     };
-    // return (hash);
 }
 
 pub fn create_hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:&mut SecBuf,hash :&mut SecBuf){

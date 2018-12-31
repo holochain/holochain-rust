@@ -54,3 +54,4 @@ pub mod aead;
 pub mod kdf;
 pub mod pwhash;
 pub mod kx;
+pub mod error;

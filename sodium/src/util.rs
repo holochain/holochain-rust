@@ -35,6 +35,15 @@ pub fn compare(a: &mut SecBuf,b: &mut SecBuf) -> i32 {
         rust_sodium_sys::sodium_compare(raw_ptr_char!(a),raw_ptr_char!(b), a.len())
     }
 }
+/// Check if lenght of buffer is of approprate size
+/// it should be either or size 8,16,32 or 64
+pub fn check_buf_len(sb: usize) -> bool{
+    if sb != 8 && sb != 16 && sb != 32 && sb != 64 {
+        return true;
+    }
+    else {return false};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

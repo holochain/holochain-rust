@@ -2,6 +2,11 @@
 
 use super::secbuf::SecBuf;
 use super::random::buf;
+use crate::error::{
+    SodiumResult,
+    SodiumError,
+};
+use crate::util::check_buf_len;
 
 pub const NONCEBYTES : usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_NPUBBYTES as usize;
 pub const ABYTES : usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_ABYTES as usize;
@@ -16,8 +21,20 @@ pub const ABYTES : usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_A
 /// @param {Buffer} adata - optional additional authenticated data
 /// @return {object} - { nonce, cipher }
 
+pub fn enc(message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>,nonce: &mut SecBuf,cipher: &mut SecBuf)->SodiumResult<()>{
+    {
+        // Checking output Buffers
+        let mut nonce = nonce.write_lock();
+        let mut cipher = cipher.write_lock();
+        let n = nonce.len();
+        let c = cipher.len();
+        if check_buf_len(n){
+            return Err(SodiumError::OutputLength(format!("Invalid nonce Buffer length:{}", n)));
 
-pub fn enc(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>){
+        }else if check_buf_len(c){
+            return Err(SodiumError::OutputLength(format!("Invalid cipher Buffer length:{}", c)));
+        }
+    }
     match adata {
         Some(adata) => {
             let mut message = message.write_lock();
@@ -26,7 +43,8 @@ pub fn enc(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secret: &
             let mut secret = secret.write_lock();
             let mut adata = adata.write_lock();
             let ad_len = adata.len() as libc::c_ulonglong;
-            encrypt(&mut message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
+            encrypt(&mut message,&mut secret,&mut adata,ad_len,&mut nonce,&mut cipher);
+            Ok(())
         }
         None => {
             let mut adata = SecBuf::with_insecure(1);
@@ -37,13 +55,14 @@ pub fn enc(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secret: &
             let mut nonce = nonce.write_lock();
             let mut cipher = cipher.write_lock();
             let mut secret = secret.write_lock();
-            encrypt(&mut message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
+            encrypt(&mut message,&mut secret,&mut adata,ad_len,&mut nonce,&mut cipher);
+            Ok(())
         }
     }
 }
 
 
-pub fn encrypt(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secret: &mut SecBuf,adata: &mut SecBuf, ad_len: libc::c_ulonglong) {
+pub fn encrypt(message: &mut SecBuf,secret: &mut SecBuf,adata: &mut SecBuf, ad_len: libc::c_ulonglong,nonce: &mut SecBuf,cipher: &mut SecBuf)->SodiumResult<()>{
     unsafe {
         let mut secret = secret.read_lock();
         let mut message = message.read_lock();
@@ -55,6 +74,7 @@ pub fn encrypt(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secre
         let mut cipher = cipher.write_lock();
         let mut ci_len = cipher.len() as libc::c_ulonglong;
         rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_encrypt(raw_ptr_char!(cipher),&mut ci_len,raw_ptr_char_immut!(message),_mess_len,raw_ptr_char_immut!(adata),ad_len,raw_ptr_char_immut!(secret),raw_ptr_char_immut!(nonce),raw_ptr_char_immut!(k));
+        Ok(())
     }
 }
 
@@ -69,7 +89,7 @@ pub fn encrypt(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secre
 /// @param {Buffer} adata - optional additional authenticated data
 /// @return {Buffer} - decrypted_message
 
-pub fn dec(decrypted_message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>){
+pub fn dec(decrypted_message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>,nonce: &mut SecBuf,cipher: &mut SecBuf)->SodiumResult<()>{
     match adata {
         Some(adata) => {
             let mut decrypted_message = decrypted_message.write_lock();
@@ -78,7 +98,8 @@ pub fn dec(decrypted_message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf
             let mut secret = secret.write_lock();
             let mut adata = adata.write_lock();
             let ad_len = adata.len() as libc::c_ulonglong;
-            decrypt(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
+            decrypt(&mut decrypted_message,&mut secret,&mut adata,ad_len,&mut nonce,&mut cipher);
+            Ok(())
         }
         None => {
             let mut adata = SecBuf::with_insecure(1);
@@ -89,11 +110,12 @@ pub fn dec(decrypted_message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf
             let mut nonce = nonce.write_lock();
             let mut cipher = cipher.write_lock();
             let mut secret = secret.write_lock();
-            decrypt(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
+            decrypt(&mut decrypted_message,&mut secret,&mut adata,ad_len,&mut nonce,&mut cipher);
+            Ok(())
         }
     }
 }
-pub fn decrypt(decrypted_message: &mut SecBuf,nonce: &mut SecBuf, cipher: &mut SecBuf, secret: &mut SecBuf, adata: &mut SecBuf, ad_len: libc::c_ulonglong){
+pub fn decrypt(decrypted_message: &mut SecBuf, secret: &mut SecBuf, adata: &mut SecBuf, ad_len: libc::c_ulonglong,nonce: &mut SecBuf, cipher: &mut SecBuf)->SodiumResult<()>{
     unsafe {
         let mut secret = secret.write_lock();
         let mut cipher = cipher.read_lock();
@@ -104,6 +126,7 @@ pub fn decrypt(decrypted_message: &mut SecBuf,nonce: &mut SecBuf, cipher: &mut S
         let mut nonce = nonce.read_lock();
         let mut decrypted_message = decrypted_message.write_lock();
         rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_decrypt(raw_ptr_char!(decrypted_message),std::ptr::null_mut(),raw_ptr_char!(secret),raw_ptr_char_immut!(cipher),cipher_len,raw_ptr_char_immut!(adata),ad_len,raw_ptr_char_immut!(nonce),raw_ptr_char_immut!(k));
+        Ok(())
     }
 }
 
@@ -111,21 +134,42 @@ pub fn decrypt(decrypted_message: &mut SecBuf,nonce: &mut SecBuf, cipher: &mut S
 mod tests {
     use super::*;
     #[test]
+    fn it_should_return_Error_with_bad_cipher() {
+        let mut message = SecBuf::with_secure(16);
+        let mut secret = SecBuf::with_secure(32);
+        let mut nonce = SecBuf::with_secure(32);
+        let mut cipher = SecBuf::with_insecure(2);
+        buf(&mut message);
+        {
+            let mut message = message.write_lock();
+            let output  = enc(&mut message,&mut secret,None,&mut nonce,&mut cipher);
+            match output{
+                Ok(k)=>{
+                    assert!(false)
+                }
+                Err(e)=>{
+                    assert!(true)
+                }
+            }
+        }
+    }
+    #[test]
     fn it_should_with_auth_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(16);
         let mut secret = SecBuf::with_secure(32);
+        buf(&mut secret);
         let mut nonce = SecBuf::with_secure(32);
         let mut cipher = SecBuf::with_secure(32);
         let mut adata = SecBuf::with_secure(16);
         buf(&mut message);
         {
             let mut message = message.write_lock();
-            enc(&mut message,&mut nonce,&mut cipher,&mut secret,Some(&mut adata));
+            enc(&mut message,&mut secret,Some(&mut adata),&mut nonce,&mut cipher);
         }
         let mut decrypted_message = SecBuf::with_secure(16);
         {
             let mut decrypted_message = decrypted_message.write_lock();
-            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,Some(&mut adata));
+            dec(&mut decrypted_message,&mut secret,Some(&mut adata),&mut nonce,&mut cipher);
         }
         let mut message = message.read_lock();
         let mut decrypted_message = decrypted_message.read_lock();
@@ -143,12 +187,12 @@ mod tests {
         buf(&mut message);
         {
             let mut message = message.write_lock();
-            enc(&mut message,&mut nonce,&mut cipher,&mut secret,Some(&mut adata));
+            enc(&mut message,&mut secret,Some(&mut adata),&mut nonce,&mut cipher);
         }
         let mut decrypted_message = SecBuf::with_secure(16);
         {
             let mut decrypted_message = decrypted_message.write_lock();
-            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,Some(&mut adata1));
+            dec(&mut decrypted_message,&mut secret,Some(&mut adata1),&mut nonce,&mut cipher);
         }
         let mut message = message.read_lock();
         let mut decrypted_message = decrypted_message.read_lock();
@@ -160,16 +204,15 @@ mod tests {
         let mut secret = SecBuf::with_secure(32);
         let mut nonce = SecBuf::with_secure(32);
         let mut cipher = SecBuf::with_secure(32);
-        // let mut adata = SecBuf::with_secure(16);
         buf(&mut message);
         {
             let mut message = message.write_lock();
-            enc(&mut message,&mut nonce,&mut cipher,&mut secret,None);
+            enc(&mut message,&mut secret,None,&mut nonce,&mut cipher);
         }
         let mut decrypted_message = SecBuf::with_secure(16);
         {
             let mut decrypted_message = decrypted_message.write_lock();
-            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,None);
+            dec(&mut decrypted_message,&mut secret,None,&mut nonce,&mut cipher);
         }
         let mut message = message.read_lock();
         let mut decrypted_message = decrypted_message.read_lock();

@@ -72,14 +72,16 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use std::sync::Arc;
-
+use std::{mem, sync::Arc};
 /// contains a Holochain application instance
 pub struct Holochain {
     instance: Instance,
     #[allow(dead_code)]
     context: Arc<Context>,
     active: bool,
+    // to prevent restarting a Holochain until we can safely stop and restart all subsystems
+    stopped: bool,
+    is_shutdown: bool,
 }
 
 impl Holochain {
@@ -108,6 +110,8 @@ impl Holochain {
                     instance,
                     context: new_context.clone(),
                     active: false,
+                    stopped: false,
+                    is_shutdown: false,
                 };
                 Ok(hc)
             }
@@ -127,11 +131,17 @@ impl Holochain {
             instance,
             context: new_context.clone(),
             active: false,
+            stopped: false,
+            is_shutdown: false,
         })
     }
 
     /// activate the Holochain instance
     pub fn start(&mut self) -> Result<(), HolochainInstanceError> {
+        if self.stopped {
+            // @TODO: remove once it's safe to restart
+            panic!("Restarting a Holochain is undefined behavior.");
+        }
         if self.active {
             return Err(HolochainInstanceError::InstanceAlreadyActive);
         }
@@ -145,7 +155,31 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
         self.active = false;
+        self.stopped = true;
         Ok(())
+    }
+
+    pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
+        self.is_shutdown = false;
+
+        // If instance hasn't been started yet, still let it stop()
+        self.stop().or_else(|err| match err {
+            HolochainInstanceError::InstanceNotActiveYet => Ok(()),
+            other => Err(other),
+        })?;
+
+        // Shut down the instance
+        self.instance.shutdown();
+
+        // "Stop" the state
+        if let Some(state) = self.context.state_raw("I acknowledge that this is bad") {
+            let new_context = self.context.clone();
+            mem::replace(&mut *state.write().unwrap(), State::new(new_context))
+                .stop()
+                .or(Err(HolochainInstanceError::InstanceShutdownFailure))
+        } else {
+            Ok(())
+        }
     }
 
     /// call a function in a zome
@@ -175,6 +209,13 @@ impl Holochain {
 
     pub fn context(&self) -> &Arc<Context> {
         &self.context
+    }
+}
+
+impl Drop for Holochain {
+    fn drop(&mut self) {
+        self.shutdown()
+            .expect("Could not shut down Holochain instance")
     }
 }
 

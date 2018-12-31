@@ -1,7 +1,7 @@
 use colored::*;
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::Container as RustContainer,
+    container::Container,
 };
 use holochain_core::signal::signal_channel;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
@@ -22,7 +22,7 @@ pub struct Habitat {
     is_running: Arc<Mutex<bool>>,
 }
 
-fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
+fn _signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
     println!("{}", "Background task shut down\n".bold().yellow());
     Ok(cx.null())
 }
@@ -32,7 +32,7 @@ declare_types! {
     /// A Container can be initialized either by:
     /// - an Object representation of a Configuration struct
     /// - a string representing TOML
-    pub class JsContainer for NodeContainer {
+    pub class JsHabitat for Habitat {
         init(mut cx) {
             let config_arg: Handle<JsValue> = cx.argument(0)?;
             let config: Configuration = if config_arg.is_a::<JsObject>() {
@@ -51,7 +51,7 @@ declare_types! {
 
         method start(mut cx) {
             let js_callback: Handle<JsFunction> = cx.argument(0)?;
-            // let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, signal_callback)
+            // let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, _signal_callback)
             //         .unwrap()
             //         .as_value(&mut cx)
             //         .downcast_or_throw(&mut cx)

@@ -18,6 +18,7 @@ use holochain_core_types::{
 use std::{
     collections::HashSet,
     convert::TryInto,
+    mem,
     sync::{Arc, RwLock},
 };
 
@@ -29,7 +30,10 @@ pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
     dht: Arc<DhtStore>,
-    network: Arc<NetworkState>,
+    // @NB: NetworkState is not in an Arc as an experiment, since it contains the `P2pNetwork` instance
+    // which should not have dangling references. The hypothesis is that each of these substates does
+    // not really need to be in an Arc, @TODO: find out if that is true
+    network: NetworkState,
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
@@ -39,7 +43,6 @@ impl State {
     pub fn new(context: Arc<Context>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
-
         let chain_cas = &(*context).chain_storage;
         let dht_cas = &(*context).dht_storage;
         let eav = context.eav_storage.clone();
@@ -47,7 +50,7 @@ impl State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(ChainStore::new(chain_cas.clone()))),
             dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
-            network: Arc::new(NetworkState::new()),
+            network: NetworkState::new(),
             history: HashSet::new(),
         }
     }
@@ -58,7 +61,6 @@ impl State {
 
         let cas = context.dht_storage.clone();
         let eav = context.eav_storage.clone();
-
         fn get_dna(
             agent_state: &Arc<AgentState>,
             cas: Arc<RwLock<dyn ContentAddressableStorage>>,
@@ -91,7 +93,7 @@ impl State {
             nucleus: Arc::new(nucleus_state),
             agent: agent_state,
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
-            network: Arc::new(NetworkState::new()),
+            network: NetworkState::new(),
             history: HashSet::new(),
         }
     }
@@ -115,7 +117,7 @@ impl State {
             ),
             network: crate::network::reducers::reduce(
                 Arc::clone(&context),
-                Arc::clone(&self.network),
+                self.network.clone(),
                 &action_wrapper,
             ),
             history: self.history.clone(),
@@ -137,8 +139,8 @@ impl State {
         Arc::clone(&self.dht)
     }
 
-    pub fn network(&self) -> Arc<NetworkState> {
-        Arc::clone(&self.network)
+    pub fn network(&self) -> &NetworkState {
+        &self.network
     }
 
     pub fn try_from_agent_snapshot(
@@ -153,6 +155,17 @@ impl State {
             context.clone(),
             Arc::new(agent_state),
         ))
+    }
+
+    pub fn stop(mut self) -> Result<(), String> {
+        self.shutdown()
+    }
+
+    fn shutdown(&mut self) -> Result<(), String> {
+        // TODO: properly drop/destruct rest of state (requires moving out of Arc)
+        mem::replace(&mut self.network, NetworkState::new())
+            .stop()
+            .map_err(|e| e.to_string())
     }
 }
 

@@ -45,7 +45,8 @@ impl Future for GetValidationPackageFuture {
     type Output = HcResult<Option<ValidationPackage>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        let state = self.context.state().unwrap().network();
+        let state = self.context.state().unwrap();
+        let state = state.network();
         if let Err(error) = state.initialized() {
             return Poll::Ready(Err(error));
         }

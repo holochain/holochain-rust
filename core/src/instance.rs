@@ -1,5 +1,11 @@
-use crate::{action::ActionWrapper, context::Context, signal::Signal, state::State};
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    signal::Signal,
+    state::State,
+};
 use std::{
+    mem,
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
         Arc, RwLock, RwLockReadGuard,
@@ -12,12 +18,13 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
 /// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)
 /// Holds the Event loop and processes it with the redux pattern.
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
-    state: Arc<RwLock<State>>,
+    pub(crate) state: Arc<RwLock<State>>,
     action_channel: Option<SyncSender<ActionWrapper>>,
     observer_channel: Option<SyncSender<Observer>>,
+    action_thread: Option<thread::JoinHandle<()>>,
 }
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
@@ -114,90 +121,27 @@ impl Instance {
     pub fn start_action_loop(&mut self, context: Arc<Context>) {
         let (rx_action, rx_observer) = self.initialize_channels();
 
-        let sync_self = self.clone();
+        let state = self.state.clone();
         let sub_context = self.initialize_context(context);
 
-        thread::spawn(move || {
+        let action_thread = thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
             for action_wrapper in rx_action {
-                state_observers = sync_self.process_action(
-                    action_wrapper,
+                let do_shutdown = *action_wrapper.action() == Action::Shutdown;
+                state_observers = process_action_via_state(
+                    state.clone(),
+                    &action_wrapper,
                     state_observers,
                     &rx_observer,
                     &sub_context,
                 );
-            }
-        });
-    }
 
-    /// Calls the reducers for an action and calls the observers with the new state
-    /// returns the new vector of observers
-    pub(crate) fn process_action(
-        &self,
-        action_wrapper: ActionWrapper,
-        mut state_observers: Vec<Observer>,
-        rx_observer: &Receiver<Observer>,
-        context: &Arc<Context>,
-    ) -> Vec<Observer> {
-        // Mutate state
-        {
-            let new_state: State;
-
-            {
-                // Only get a read lock first so code in reducers can read state as well
-                let state = self
-                    .state
-                    .read()
-                    .expect("owners of the state RwLock shouldn't panic");
-
-                // Create new state by reducing the action on old state
-                new_state = state.reduce(context.clone(), action_wrapper.clone());
-            }
-
-            // Get write lock
-            let mut state = self
-                .state
-                .write()
-                .expect("owners of the state RwLock shouldn't panic");
-
-            // Change the state
-            *state = new_state;
-        }
-
-        // @TODO: add a big fat debug logger here
-        self.maybe_emit_action_signal(context, action_wrapper.clone());
-
-        // Add new observers
-        state_observers.extend(rx_observer.try_iter());
-
-        // Run all observer closures
-        {
-            let state = self
-                .state
-                .read()
-                .expect("owners of the state RwLock shouldn't panic");
-            let mut i = 0;
-            while i != state_observers.len() {
-                if (&mut state_observers[i].sensor)(&state) {
-                    state_observers.remove(i);
-                } else {
-                    i += 1;
+                if do_shutdown {
+                    break;
                 }
             }
-        }
-        state_observers
-    }
-
-    /// Given an `Action` that is being processed, decide whether or not it should be
-    /// emitted as a `Signal::Internal`, and if so, send it
-    fn maybe_emit_action_signal(&self, context: &Arc<Context>, aw: ActionWrapper) {
-        if let Some(ref tx) = context.signal_tx {
-            // @TODO: if needed for performance, could add a filter predicate here
-            // to prevent emitting too many unneeded signals
-            let signal = Signal::Internal(aw);
-            tx.send(signal).unwrap_or(())
-            // @TODO: once logging is implemented, kick out a warning for SendErrors
-        }
+        });
+        self.action_thread = Some(action_thread);
     }
 
     /// Creates a new Instance with no channels set up.
@@ -206,6 +150,7 @@ impl Instance {
             state: Arc::new(RwLock::new(State::new(context))),
             action_channel: None,
             observer_channel: None,
+            action_thread: None,
         }
     }
 
@@ -214,6 +159,7 @@ impl Instance {
             state: Arc::new(RwLock::new(state)),
             action_channel: None,
             observer_channel: None,
+            action_thread: None,
         }
     }
 
@@ -221,6 +167,110 @@ impl Instance {
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")
+    }
+
+    pub fn shutdown(&mut self) {
+        if self.is_shutdown() {
+            return;
+        }
+        self.action_channel = None;
+
+        // send shutdown signal
+        if let Some(ref tx) = self.action_channel {
+            tx.send(ActionWrapper::new(Action::Shutdown)).unwrap();
+        }
+
+        // move action_thread out self so it can be joined into oblivion
+        if let Some(t) = mem::replace(&mut self.action_thread, None) {
+            t.join().unwrap()
+        }
+    }
+
+    fn is_shutdown(&self) -> bool {
+        self.action_thread.is_none() && self.action_channel.is_none()
+    }
+}
+
+pub fn process_action(
+    instance: &Instance,
+    action_wrapper: &ActionWrapper,
+    state_observers: Vec<Observer>,
+    rx_observer: &Receiver<Observer>,
+    context: &Arc<Context>,
+) -> Vec<Observer> {
+    process_action_via_state(
+        instance.state.clone(),
+        action_wrapper,
+        state_observers,
+        rx_observer,
+        context,
+    )
+}
+
+/// Calls the reducers for an action and calls the observers with the new state
+/// returns the new vector of observers
+pub fn process_action_via_state(
+    state_arc: Arc<RwLock<State>>,
+    action_wrapper: &ActionWrapper,
+    mut state_observers: Vec<Observer>,
+    rx_observer: &Receiver<Observer>,
+    context: &Arc<Context>,
+) -> Vec<Observer> {
+    // Mutate state
+    {
+        let new_state: State;
+
+        {
+            // Only get a read lock first so code in reducers can read state as well
+            let state = state_arc
+                .read()
+                .expect("owners of the state RwLock shouldn't panic");
+
+            // Create new state by reducing the action on old state
+            new_state = state.reduce(context.clone(), action_wrapper.clone());
+        }
+
+        // Get write lock
+        let mut state = state_arc
+            .write()
+            .expect("owners of the state RwLock shouldn't panic");
+
+        // Change the state
+        *state = new_state;
+    }
+
+    // @TODO: add a big fat debug logger here
+    maybe_emit_action_signal(context, action_wrapper.clone());
+
+    // Add new observers
+    state_observers.extend(rx_observer.try_iter());
+
+    // Run all observer closures
+    {
+        let state = state_arc
+            .read()
+            .expect("owners of the state RwLock shouldn't panic");
+        let mut i = 0;
+        while i != state_observers.len() {
+            if (&mut state_observers[i].sensor)(&state) {
+                state_observers.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+    }
+    state_observers
+}
+
+/// Given an `Action` that is being processed, decide whether or not it should be
+/// emitted as a `Signal::Internal`, and if so, send it
+fn maybe_emit_action_signal(context: &Arc<Context>, aw: ActionWrapper) {
+    if let Some(ref tx) = context.signal_tx {
+        // @TODO: if needed for performance, could add a filter predicate here
+        // to prevent emitting too many unneeded signals
+        let signal = Signal::Internal(aw);
+        tx.send(signal).unwrap_or(())
+        // @TODO: once logging is implemented, kick out a warning for SendErrors
     }
 }
 
@@ -598,8 +648,9 @@ pub mod tests {
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
-        let new_observers = instance.process_action(
-            action_wrapper.clone(),
+        let new_observers = process_action(
+            &instance,
+            &action_wrapper.clone(),
             Vec::new(), // start with no observers
             &rx_observer,
             &context,
@@ -790,7 +841,13 @@ pub mod tests {
         let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        instance.process_action(commit_action, state_observers, &rx_observer, &context);
+        process_action(
+            &instance,
+            &commit_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());
@@ -821,7 +878,13 @@ pub mod tests {
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(commit_agent_action, state_observers, &rx_observer, &context);
+        process_action(
+            &instance,
+            &commit_agent_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
 
         // Check if AgentIdEntry is found
         assert_eq!(1, instance.state().history.iter().count());

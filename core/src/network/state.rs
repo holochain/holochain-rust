@@ -7,10 +7,12 @@ use holochain_core_types::{
     cas::content::Address, entry::EntryWithMeta, error::HolochainError,
     validation::ValidationPackage,
 };
-use holochain_net::p2p_network::P2pNetwork;
+use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
+use holochain_net_connection::NetResult;
 use snowflake;
 use std::{
     collections::HashMap,
+    mem,
     sync::{Arc, Mutex},
 };
 
@@ -89,5 +91,22 @@ impl NetworkState {
         (self.network.is_some() && self.dna_hash.is_some() & self.agent_id.is_some()).ok_or(
             HolochainError::ErrorGeneric("Network not initialized".to_string()),
         )
+    }
+
+    pub fn stop(mut self) -> NetResult<()> {
+        self.shutdown()
+    }
+
+    fn shutdown(&mut self) -> NetResult<()> {
+        self.network.as_ref().map_or(Ok(()), |network_mutex| {
+            let mut network = network_mutex.lock().unwrap();
+
+            // @TODO: can we avoid creating a new network just so we have something to swap out?
+            let dummy_network = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::default_mock())
+                .expect("Could not create dummy network");
+
+            // hot-swap the real network with a short-lived mock network so we can shut down the real one
+            mem::replace(&mut *network, dummy_network).stop()
+        })
     }
 }

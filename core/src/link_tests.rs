@@ -6,7 +6,7 @@ pub mod tests {
     extern crate test_utils;
     use crate::{
         action::{Action, ActionWrapper},
-        instance::{tests::test_context, Instance, Observer},
+        instance::{process_action, tests::test_context, Instance, Observer},
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
@@ -58,7 +58,13 @@ pub mod tests {
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(commit_action, state_observers, &rx_observer, &context);
+        process_action(
+            &instance,
+            &commit_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
         // Check if LinkEntry is found
         assert_eq!(1, instance.state().history.iter().count());
         instance
@@ -92,7 +98,13 @@ pub mod tests {
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
-        instance.process_action(commit_action, state_observers, &rx_observer, &context);
+        process_action(
+            &instance,
+            &commit_action,
+            state_observers,
+            &rx_observer,
+            &context,
+        );
         // Check if LinkEntry is found
         assert_eq!(1, instance.state().history.iter().count());
         instance

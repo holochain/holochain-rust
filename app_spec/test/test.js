@@ -5,8 +5,6 @@ const { Config, Habitat } = require('../../nodejs_container')
 
 const dnaPath = "./dist/app_spec.hcpkg"
 
-// IIFE to keep config-only stuff out of test scope
-
 const agentAlice = Config.agent("alice")
 const agentBob = Config.agent("bob")
 

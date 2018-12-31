@@ -1,25 +1,18 @@
+use colored::*;
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::Container,
+    container::Container as RustContainer,
 };
-use holochain_core::{
-    signal::{signal_channel},
-};
-use holochain_core_types::{
-    cas::content::Address,
-    dna::{capabilities::CapabilityCall},
-};
+use holochain_core::signal::signal_channel;
+use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use neon::{context::Context, prelude::*};
-use std::{
-    sync::{
-        mpsc::{sync_channel, SyncSender},
-        Arc, Mutex,
-    },
+use std::sync::{
+    mpsc::{sync_channel, SyncSender},
+    Arc, Mutex,
 };
-use colored::*;
 
 use crate::{
-    config::{js_make_config},
+    config::js_make_config,
     waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask},
 };
 
@@ -34,13 +27,12 @@ fn signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
     Ok(cx.null())
 }
 
-
 declare_types! {
 
-    /// A Habitat can be initialized either by:
+    /// A Container can be initialized either by:
     /// - an Object representation of a Configuration struct
     /// - a string representing TOML
-    pub class JsHabitat for Habitat {
+    pub class JsContainer for NodeContainer {
         init(mut cx) {
             let config_arg: Handle<JsValue> = cx.argument(0)?;
             let config: Configuration = if config_arg.is_a::<JsObject>() {
@@ -85,7 +77,7 @@ declare_types! {
             };
 
             start_result.or_else(|e| {
-                let error_string = cx.string(format!("unable to start habitat: {}", e));
+                let error_string = cx.string(format!("unable to start container: {}", e));
                 cx.throw(error_string)
             })?;
 
@@ -105,7 +97,7 @@ declare_types! {
             };
 
             stop_result.or_else(|e| {
-                let error_string = cx.string(format!("unable to stop habitat: {}", e));
+                let error_string = cx.string(format!("unable to stop container: {}", e));
                 cx.throw(error_string)
             })?;
 
@@ -153,7 +145,7 @@ declare_types! {
             {
                 let guard = cx.lock();
                 let hab = &*this.borrow(&guard);
-                
+
                 let (tx, rx) = sync_channel(0);
                 let task = CallBlockingTask { rx };
                 task.schedule(js_callback);

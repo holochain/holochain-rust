@@ -1,6 +1,6 @@
 const test = require('tape');
 
-const { Habitat } = require('..')
+const { Container } = require('..')
 
 const toml = `
 [[agents]]
@@ -52,14 +52,14 @@ id = "test/instance/2"
 `
 
 test('can create config from TOML', t => {
-    const hab = new Habitat(toml)
-    hab.start()
+    const container = new Container(toml)
+    container.start()
     t.throws(
-        () => hab.call('x', 'x', 'x', 'x', 'x'),
+        () => container.call('x', 'x', 'x', 'x', 'x'),
         /No instance with id/
     )
     t.throws(
-        () => hab.call(
+        () => container.call(
             'test/instance/1', 'blog', 'main', 'not-a-function', 'param'
         ),
         /Zome function .*? not found/

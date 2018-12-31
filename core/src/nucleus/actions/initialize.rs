@@ -14,11 +14,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{dna::Dna, entry::Entry, error::HolochainError};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-    time::*,
-};
+use std::{pin::Pin, sync::Arc, time::*};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -123,8 +119,6 @@ pub struct InitializationFuture {
     context: Arc<Context>,
     created_at: Instant,
 }
-
-impl Unpin for InitializationFuture {}
 
 impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;

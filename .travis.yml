@@ -162,9 +162,6 @@ _windows_template_lite: &_windows_template_lite
    - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-Z thinlto -C codegen-units=16"
-   - ls $CARGO_TARGET_DIR
-   - ls $WASM_TARGET_DIR
-   - ls $WASM_TARGET_DIR_2
   cache:
    timeout: 1000
    directories:
@@ -185,6 +182,12 @@ _windows_template_lite: &_windows_template_lite
     - if [ $WASM_PATH != "none" ]; then rustup target add wasm32-unknown-unknown; fi;
     - if [ $WASM_PATH != "none" ]; then cargo build --manifest-path $WASM_PATH/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR; fi;
     - if [ $WASM_PATH_2 != "none" ]; then cargo build --manifest-path $WASM_PATH_2/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR_2; fi;
+    - echo $CARGO_TARGET_DIR
+    - ls $CARGO_TARGET_DIR
+    - echo $WASM_TARGET_DIR
+    - ls $WASM_TARGET_DIR
+    - echo $WASM_TARGET_DIR_2
+    - ls $WASM_TARGET_DIR_2
   script:
     - cargo test -p $TEST_P --target-dir $CARGO_TARGET_DIR
 

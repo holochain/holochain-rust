@@ -140,7 +140,7 @@ fn start_holochain_instance<T: Into<String>>(
     // Setup the holochain instance
     let wasm = create_wasm_from_file(&format!(
         "{}/wasm32-unknown-unknown/release/test_globals.wasm",
-        wasm_target_dir("hdk-rust/wasm-test"),
+        wasm_target_dir("wasm-test"),
     ));
     let capabability = create_test_cap_with_fn_names(vec![
         "check_global",

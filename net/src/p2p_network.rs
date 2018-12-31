@@ -25,6 +25,7 @@ impl std::fmt::Debug for P2pNetwork {
 impl NetConnection for P2pNetwork {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
+        // NB: ignoring send failure here
         self.connection.send(data)
     }
 }

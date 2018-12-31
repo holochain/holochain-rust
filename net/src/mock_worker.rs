@@ -120,7 +120,8 @@ impl MockSingleton {
     /// send a message to the appropriate channel based on dna_hash::agent_id
     fn priv_send_one(&mut self, dna_hash: &str, agent_id: &str, data: Protocol) -> NetResult<()> {
         if let Some(sender) = self.senders.get_mut(&cat_dna_agent(dna_hash, agent_id)) {
-            sender.send(data)?;
+            // NB: ignoring send failure here
+            sender.send(data).unwrap_or(());
         }
         Ok(())
     }
@@ -129,7 +130,8 @@ impl MockSingleton {
     fn priv_send_all(&mut self, dna_hash: &str, data: Protocol) -> NetResult<()> {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_hash) {
             for val in arr.iter_mut() {
-                (*val).send(data.clone())?;
+                // NB: ignoring send failure here
+                (*val).send(data.clone()).unwrap_or(());
             }
         }
         Ok(())

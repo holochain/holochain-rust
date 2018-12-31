@@ -23,8 +23,8 @@ pub struct NetConnectionThread {
 impl NetConnection for NetConnectionThread {
     /// send a message to the worker within this NetConnectionThread instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        self.send_channel.send(data)?;
-        Ok(())
+        // NB: ignoring send failure here
+        self.send_channel.send(data).or(Ok(()))
     }
 }
 

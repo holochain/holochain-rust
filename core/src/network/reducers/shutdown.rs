@@ -9,6 +9,7 @@ pub fn reduce_shutdown(
     state: &mut NetworkState,
     _action_wrapper: &ActionWrapper,
 ) {
+    println!(">>          SHUTDOWN REDUCER CALLED");
     match (&state.network, &state.dna_hash, &state.agent_id) {
         (Some(network), Some(dna_hash), Some(agent_id)) => {
             network

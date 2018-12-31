@@ -122,6 +122,18 @@ impl Container {
             .map(|_| ())
     }
 
+    /// Shutdown all instances
+    pub fn shutdown_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+        self.instances
+            .drain()
+            .map(|(id, hc)| {
+                println!("Shutting down instance \"{}\"...", id);
+                hc.write().unwrap().shutdown()
+            })
+            .collect::<Result<Vec<()>, _>>()
+            .map(|_| ())
+    }
+
     pub fn instances(&self) -> &InstanceMap {
         &self.instances
     }
@@ -130,7 +142,7 @@ impl Container {
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
         self.shutdown_all_interfaces()
             .map_err(|e| HolochainInstanceError::InternalFailure(e.into()))?;
-        self.stop_all_instances()?;
+        self.shutdown_all_instances()?;
         Ok(())
     }
 

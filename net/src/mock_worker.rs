@@ -60,9 +60,11 @@ impl MockSingleton {
 
     /// de-register a data handler with the singleton (for message routing)
     pub fn deregister(&mut self, dna_hash: &str, agent_id: &str) -> () {
+        println!("DEREGISTERING APP");
         self.senders.remove(&cat_dna_agent(dna_hash, agent_id));
         self.senders_by_dna.remove(dna_hash);
         if self.senders.is_empty() && self.senders_by_dna.is_empty() {
+            println!("\n*** *** *** ***\nRESET MOCK SINGLETON\n*** *** *** ***\n");
             reset_mock_singleton();
         }
     }
@@ -299,12 +301,14 @@ impl NetWorker for MockWorker {
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
             match wrap {
                 ProtocolWrapper::TrackApp(app) => {
+                    println!(">>                    REG!\n");
                     let (tx, rx) = mpsc::channel();
                     self.mock_msgs.push(rx);
                     mock.register(&app.dna_hash, &app.agent_id, tx);
                     return Ok(());
                 }
                 ProtocolWrapper::DropApp(app) => {
+                    println!(">>                    DE-REG!\n");
                     mock.deregister(&app.dna_hash, &app.agent_id);
                     return Ok(());
                 }

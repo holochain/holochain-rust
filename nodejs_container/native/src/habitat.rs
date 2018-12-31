@@ -90,9 +90,11 @@ declare_types! {
             let stop_result: Result<(), String> = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
-                let result = hab.container.stop_all_instances().map_err(|e| e.to_string());
+
                 let mut is_running = hab.is_running.lock().unwrap();
                 *is_running = false;
+
+                let result = hab.container.shutdown().map_err(|e| e.to_string());
                 result
             };
 

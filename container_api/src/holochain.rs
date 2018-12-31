@@ -176,7 +176,11 @@ impl Holochain {
             let new_context = self.context.clone();
             mem::replace(&mut *state.write().unwrap(), State::new(new_context))
                 .stop()
-                .or(Err(HolochainInstanceError::InstanceShutdownFailure))
+                .or_else(|e| {
+                    Err(HolochainInstanceError::InternalFailure(
+                        format!("Holochain instance failed to shut down: {}", e).into(),
+                    ))
+                })
         } else {
             Ok(())
         }

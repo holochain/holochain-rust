@@ -5,7 +5,7 @@ use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
         DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData,
-        ProtocolWrapper,
+        ProtocolWrapper, TrackAppData,
     },
     NetResult,
 };
@@ -13,13 +13,17 @@ use holochain_net_connection::{
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
-    mem,
     sync::{mpsc, Mutex, MutexGuard},
 };
 
 /// hash connections by dna::agent_id
 fn cat_dna_agent(dna_hash: &str, agent_id: &str) -> String {
     format!("{}::{}", dna_hash, agent_id)
+}
+
+/// hash connections by dna::agent_id
+fn app_id(app_data: &TrackAppData) -> String {
+    cat_dna_agent(&app_data.dna_hash, &app_data.agent_id)
 }
 
 /// a lazy_static! singleton for routing messages in-memory
@@ -40,15 +44,9 @@ impl MockSingleton {
     }
 
     /// register a data handler with the singleton (for message routing)
-    pub fn register(
-        &mut self,
-        dna_hash: &str,
-        agent_id: &str,
-        sender: mpsc::Sender<Protocol>,
-    ) -> () {
-        self.senders
-            .insert(cat_dna_agent(dna_hash, agent_id), sender.clone());
-        match self.senders_by_dna.entry(dna_hash.to_string()) {
+    pub fn register(&mut self, app_data: &TrackAppData, sender: mpsc::Sender<Protocol>) -> () {
+        self.senders.insert(app_id(app_data), sender.clone());
+        match self.senders_by_dna.entry(app_data.dna_hash.to_string()) {
             Entry::Occupied(mut e) => {
                 e.get_mut().push(sender.clone());
             }
@@ -59,13 +57,12 @@ impl MockSingleton {
     }
 
     /// de-register a data handler with the singleton (for message routing)
-    pub fn deregister(&mut self, dna_hash: &str, agent_id: &str) -> () {
+    pub fn deregister(&mut self, app_data: &TrackAppData) -> () {
         println!("DEREGISTERING APP");
-        self.senders.remove(&cat_dna_agent(dna_hash, agent_id));
-        self.senders_by_dna.remove(dna_hash);
+        self.senders.remove(&app_id(app_data));
+        self.senders_by_dna.remove(&app_data.dna_hash);
         if self.senders.is_empty() && self.senders_by_dna.is_empty() {
-            println!("\n*** *** *** ***\nRESET MOCK SINGLETON\n*** *** *** ***\n");
-            reset_mock_singleton();
+            println!("\n-----------------\nMockSingleton Emptied!\n-----------------\n");
         }
     }
 
@@ -132,6 +129,7 @@ impl MockSingleton {
 
     /// send a message to all nodes connected with this dna hash
     fn priv_send_all(&mut self, dna_hash: &str, data: Protocol) -> NetResult<()> {
+        println!("\nSENDBYDNA\n{:?}", self.senders_by_dna);
         if let Some(arr) = self.senders_by_dna.get_mut(dna_hash) {
             for val in arr.iter_mut() {
                 // NB: ignoring send failure here
@@ -276,15 +274,10 @@ fn get_mock<'a>() -> NetResult<MutexGuard<'a, MockSingleton>> {
     }
 }
 
-/// Replace the MockSingleton with a fresh one. Necessary when stopping a mock network
-pub fn reset_mock_singleton() {
-    mem::replace(&mut *MOCK.lock().unwrap(), MockSingleton::new());
-}
-
 /// a p2p worker for mocking in-memory scenario tests
 pub struct MockWorker {
     handler: NetHandler,
-    mock_msgs: Vec<mpsc::Receiver<Protocol>>,
+    mock_msgs: HashMap<String, mpsc::Receiver<Protocol>>,
 }
 
 impl NetWorker for MockWorker {
@@ -303,13 +296,14 @@ impl NetWorker for MockWorker {
                 ProtocolWrapper::TrackApp(app) => {
                     println!(">>                    REG!\n");
                     let (tx, rx) = mpsc::channel();
-                    self.mock_msgs.push(rx);
-                    mock.register(&app.dna_hash, &app.agent_id, tx);
+                    self.mock_msgs.insert(app_id(&app), rx);
+                    mock.register(&app, tx);
                     return Ok(());
                 }
                 ProtocolWrapper::DropApp(app) => {
                     println!(">>                    DE-REG!\n");
-                    mock.deregister(&app.dna_hash, &app.agent_id);
+                    self.mock_msgs.remove(&app_id(&app));
+                    mock.deregister(&app);
                     return Ok(());
                 }
                 _ => (),
@@ -324,7 +318,7 @@ impl NetWorker for MockWorker {
     fn tick(&mut self) -> NetResult<bool> {
         let mut did_something = false;
 
-        for msg in self.mock_msgs.iter_mut() {
+        for msg in self.mock_msgs.values_mut() {
             if let Ok(data) = msg.try_recv() {
                 did_something = true;
                 (self.handler)(Ok(data))?;
@@ -340,7 +334,7 @@ impl MockWorker {
     pub fn new(handler: NetHandler) -> NetResult<Self> {
         Ok(MockWorker {
             handler,
-            mock_msgs: Vec::new(),
+            mock_msgs: HashMap::new(),
         })
     }
 }
@@ -348,12 +342,69 @@ impl MockWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::mpsc::Sender;
 
     use holochain_net_connection::protocol_wrapper::{SuccessResultData, TrackAppData};
 
     static DNA_HASH: &'static str = "blabladnahash";
     static AGENT_ID_1: &'static str = "agent-hash-test-1";
     static AGENT_ID_2: &'static str = "agent-hash-test-2";
+
+    fn make_worker(tx: Sender<Protocol>) -> Box<MockWorker> {
+        Box::new(
+            MockWorker::new(Box::new(move |r| {
+                tx.send(r?)?;
+                Ok(())
+            }))
+            .unwrap(),
+        )
+    }
+
+    fn check<F>(f: F)
+    where
+        F: FnOnce(MutexGuard<MockSingleton>) -> (),
+    {
+        f(get_mock().unwrap())
+    }
+
+    #[test]
+    fn it_registers_and_deregisters() {
+        let (tx1, _rx1) = mpsc::channel::<Protocol>();
+        let (tx2, _rx2) = mpsc::channel::<Protocol>();
+
+        let mut cli1 = make_worker(tx1);
+        let mut cli2 = make_worker(tx2);
+
+        let appdata1 = TrackAppData {
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_ID_1.to_string(),
+        };
+        let appdata2 = TrackAppData {
+            dna_hash: DNA_HASH.to_string(),
+            agent_id: AGENT_ID_2.to_string(),
+        };
+
+        check(|mock| assert_eq!(mock.senders.len(), 0));
+
+        cli1.receive(ProtocolWrapper::TrackApp(appdata1.clone()).into())
+            .unwrap();
+
+        cli2.receive(ProtocolWrapper::TrackApp(appdata2.clone()).into())
+            .unwrap();
+
+        check(|mock| assert_eq!(mock.senders.len(), 2));
+
+        cli1.receive(ProtocolWrapper::DropApp(appdata1.clone()).into())
+            .unwrap();
+
+        cli2.receive(ProtocolWrapper::DropApp(appdata2.clone()).into())
+            .unwrap();
+
+        check(|mock| assert_eq!(mock.senders.len(), 0));
+
+        cli1.stop().unwrap();
+        cli2.stop().unwrap();
+    }
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
@@ -362,13 +413,7 @@ mod tests {
 
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
 
-        let mut cli1 = Box::new(
-            MockWorker::new(Box::new(move |r| {
-                handler_send_1.send(r?)?;
-                Ok(())
-            }))
-            .unwrap(),
-        );
+        let mut cli1 = make_worker(handler_send_1);
 
         cli1.receive(
             ProtocolWrapper::TrackApp(TrackAppData {
@@ -383,13 +428,7 @@ mod tests {
 
         let (handler_send_2, handler_recv_2) = mpsc::channel::<Protocol>();
 
-        let mut cli2 = Box::new(
-            MockWorker::new(Box::new(move |r| {
-                handler_send_2.send(r?)?;
-                Ok(())
-            }))
-            .unwrap(),
-        );
+        let mut cli2 = make_worker(handler_send_2);
 
         cli2.receive(
             ProtocolWrapper::TrackApp(TrackAppData {

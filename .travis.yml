@@ -200,7 +200,7 @@ jobs:
        - WASM_PATH=hdk-rust/wasm-test
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -212,7 +212,7 @@ jobs:
        - WASM_PATH=wasm_utils/wasm-test/integration-test
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -224,7 +224,7 @@ jobs:
        - WASM_PATH=container_api/wasm-test
        - WASM_PATH_2=container_api/test-bridge-caller
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
        - WASM_TARGET_DIR_2=$HC_TARGET_PREFIX$WASM_PATH_2/target
@@ -237,7 +237,7 @@ jobs:
        - WASM_PATH=core/src/nucleus/actions/wasm-test
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -249,7 +249,7 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -261,7 +261,7 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -273,7 +273,7 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -285,7 +285,7 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -297,7 +297,7 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -309,7 +309,7 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -321,7 +321,7 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 
@@ -333,7 +333,7 @@ jobs:
        - WASM_PATH=none
        - WASM_PATH_2=none
        # boilerplate
-       - HC_TARGET_PREFIX=/tmp/holochain/
+       - HC_TARGET_PREFIX=
        - CARGO_TARGET_DIR=$HC_TARGET_PREFIX$TEST_PATH/target
        - WASM_TARGET_DIR=$HC_TARGET_PREFIX$WASM_PATH/target
 

@@ -200,8 +200,8 @@ jobs:
        - TEST_P=hdk
        - TEST_PATH=hdk-rust/
        - WASM_PATH=wasm-test/
-       - TEST_TARGET=$HC_TARGET_PREFIX$TEST_PATHtarget
-       - WASM_TARGET=$HC_TARGET_PREFIX$TEST_PATH$WASM_PATHtarget
+       - TEST_TARGET=${HC_TARGET_PREFIX}${TEST_PATH}target
+       - WASM_TARGET=${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH}target
 
     - name: "windows wasm_utils"
       <<: *_windows_template_lite

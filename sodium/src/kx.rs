@@ -1,50 +1,53 @@
 //! This module provides access to libsodium
+/// Recomended to use secure SecBuf for return values in these functions
 
 use super::secbuf::SecBuf;
 use super::random::buf;
-
+use crate::error::{
+    SodiumResult,
+    SodiumError,
+};
 pub const PUBLICKEYBYTES:usize = rust_sodium_sys::crypto_kx_PUBLICKEYBYTES as usize;
 pub const SECRETKEYBYTES:usize = rust_sodium_sys::crypto_kx_SECRETKEYBYTES as usize;
 pub const SESSIONKEYBYTES:usize = rust_sodium_sys::crypto_kx_SESSIONKEYBYTES as usize;
 
 /// Generate a fresh, random keyexchange keypair
-/// @example
-/// const { publicKey, secretKey } = mosodium.kx.keypair()
-/// @return {object} { publicKey, secretKey }
-pub fn keypair(pk: &mut SecBuf,sk:&mut SecBuf){
+/// ****
+/// @param {SecBuf} pk - Empty Buffer to be used as publicKey
+/// @param {SecBuf} sk - Empty Buffer to be used as secretKey
+pub fn keypair(pk: &mut SecBuf,sk:&mut SecBuf)->SodiumResult<()>{
     unsafe{
         let mut pk = pk.write_lock();
         let mut sk = sk.write_lock();
         rust_sodium_sys::crypto_kx_keypair(raw_ptr_char!(pk),raw_ptr_char!(sk));
+        Ok(())
     }
 }
 
 
 /// Generate a fresh, keyexchange keypair, based off a seed
-/// @example
-/// const { publicKey, secretKey } = mosodium.kx.seedKeypair(seed)
-/// @param {SecBuf} seed - the seed to derive a keypair from
-/// @return {object} { publicKey, secretKey }
-pub fn seed_keypair(seed: &mut SecBuf,pk: &mut SecBuf,sk: &mut SecBuf){
+/// ****
+/// @param {SecBuf} seed - seed to derive the pk and sk
+/// @param {SecBuf} pk - Empty Buffer to be used as publicKey return
+/// @param {SecBuf} sk - Empty Buffer to be used as secretKey return
+pub fn seed_keypair(seed: &mut SecBuf,pk: &mut SecBuf,sk: &mut SecBuf)->SodiumResult<()>{
     unsafe{
         let mut seed = seed.read_lock();
         let mut pk = pk.write_lock();
         let mut sk = sk.write_lock();
         rust_sodium_sys::crypto_kx_seed_keypair(raw_ptr_char!(pk),raw_ptr_char!(sk),raw_ptr_char_immut!(seed));
+        Ok(())
     }
 }
 
-/**
- * Given a server's public key, derive shared secrets.
- * @example
- * const { rx, tx } = mosodium.kx.clientSession(cliPub, cliSec, srvPub)
- *
- * @param {Buffer} cliPublic - client's public key
- * @param {SecBuf} cliSecret - client's secret key
- * @param {Buffer} srvPublic - server's public key
- * @return {object} { rx /receive key/, tx /transmit key/ }
- */
-pub fn client_session(client_pk: &mut SecBuf,client_sk: &mut SecBuf,server_pk: &mut SecBuf,rx: &mut SecBuf,tx: &mut SecBuf){
+/// Given a server's public key, derive shared secrets.
+/// ****
+/// @param {SecBuf} cliPublic - client's public key
+/// @param {SecBuf} cliSecret - client's secret key
+/// @param {SecBuf} srvPublic - server's public key
+/// @param {SecBuf} rx - Empty Buffer to be used as secretKey return
+/// @param {SecBuf} tx - Empty Buffer to be used as secretKey return
+ pub fn client_session(client_pk: &mut SecBuf,client_sk: &mut SecBuf,server_pk: &mut SecBuf,rx: &mut SecBuf,tx: &mut SecBuf)->SodiumResult<()>{
     unsafe{
         let mut rx = rx.write_lock();
         let mut tx = tx.write_lock();
@@ -52,20 +55,18 @@ pub fn client_session(client_pk: &mut SecBuf,client_sk: &mut SecBuf,server_pk: &
         let mut client_pk = client_pk.read_lock();
         let mut server_pk = server_pk.read_lock();
         rust_sodium_sys::crypto_kx_client_session_keys(raw_ptr_char!(rx),raw_ptr_char!(tx),raw_ptr_char_immut!(client_pk),raw_ptr_char_immut!(client_sk),raw_ptr_char_immut!(server_pk));
+        Ok(())
     }
 }
 
-/**
- * Given a client's public key, derive shared secrets.
- * @example
- * const { rx, tx } = mosodium.kx.serverSession(srvPub, srvSec, cliPub)
- *
- * @param {Buffer} srvPublic - server's public key
- * @param {SecBuf} srvSecret - server's secret key
- * @param {Buffer} cliPublic - client's public key
- * @return {object} { rx /receive key/, tx /transmit key/ }
- */
- pub fn server_session(server_pk: &mut SecBuf,server_sk: &mut SecBuf,client_pk: &mut SecBuf,rx: &mut SecBuf,tx: &mut SecBuf){
+/// Given a client's public key, derive shared secrets.
+/// ****
+/// @param {SecBuf} srvPublic - server's public key
+/// @param {SecBuf} srvSecret - server's secret key
+/// @param {SecBuf} cliPublic - client's public key
+/// @param {SecBuf} rx - Empty Buffer to be used as secretKey return
+/// @param {SecBuf} tx - Empty Buffer to be used as secretKey return
+ pub fn server_session(server_pk: &mut SecBuf,server_sk: &mut SecBuf,client_pk: &mut SecBuf,rx: &mut SecBuf,tx: &mut SecBuf)->SodiumResult<()>{
      unsafe{
          let mut rx = rx.write_lock();
          let mut tx = tx.write_lock();
@@ -73,6 +74,7 @@ pub fn client_session(client_pk: &mut SecBuf,client_sk: &mut SecBuf,server_pk: &
          let mut server_sk = server_sk.read_lock();
          let mut server_pk = server_pk.read_lock();
          rust_sodium_sys::crypto_kx_server_session_keys(raw_ptr_char!(rx),raw_ptr_char!(tx),raw_ptr_char_immut!(server_pk),raw_ptr_char_immut!(server_sk),raw_ptr_char_immut!(client_pk));
+         Ok(())
      }
  }
 

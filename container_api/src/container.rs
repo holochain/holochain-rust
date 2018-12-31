@@ -684,7 +684,7 @@ pub mod tests {
         let wasm = create_wasm_from_file(
             &format!(
                 "{}/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
-                wasm_target_dir("container_api/test-bridge-caller/target"),
+                wasm_target_dir("container_api/", "test-bridge-caller/"),
             )
         );
         let capabability = create_test_cap_with_fn_name("call_bridge");

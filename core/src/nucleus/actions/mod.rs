@@ -37,7 +37,7 @@ pub mod tests {
         let wasm = create_wasm_from_file(
             &format!(
                 "{}/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
-                wasm_target_dir("core/src/nucleus/actions/wasm-test/target"),
+                wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
             )
         );
 

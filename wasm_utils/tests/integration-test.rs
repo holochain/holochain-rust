@@ -41,7 +41,7 @@ fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
     hc_setup_and_call_zome_fn(
         &format!(
             "{}/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
-            wasm_target_dir("wasm-test/integration-test/target"),
+            wasm_target_dir("wasm_utils/", "wasm-test/integration-test/"),
         ),
         fn_name,
     )

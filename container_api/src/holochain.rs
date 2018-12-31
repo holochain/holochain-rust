@@ -233,7 +233,7 @@ mod tests {
     fn example_api_wasm_path() -> String {
         format!(
             "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-            wasm_target_dir("container_api/wasm-test/target"),
+            wasm_target_dir("container_api/", "wasm-test/"),
         )
     }
 
@@ -638,7 +638,7 @@ mod tests {
         use std::time::Duration;
         let wasm = include_bytes!(format!(
             "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
-            wasm_target_dir("container_api/wasm-test/target"),
+            wasm_target_dir("container_api/", "wasm-test/"),
         ));
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
         let mut dna =

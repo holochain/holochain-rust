@@ -56,7 +56,7 @@ fn interpolate_cargo_template(
 
 impl RustScaffold {
     pub fn new(package_name: String) -> RustScaffold {
-        let target_dir = wasm_target_dir(&format!("{}target", &package_name));
+        let target_dir = wasm_target_dir(&package_name, "");
         let artifact_name = format!(
             "{}/wasm32-unknown-unknown/release/{}.wasm",
             &target_dir,

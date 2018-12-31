@@ -18,13 +18,11 @@ pub mod macros;
 pub mod memory_allocation;
 pub mod memory_serialization;
 
-pub fn wasm_target_dir(fallback: &str) -> String {
+pub fn wasm_target_dir(test_path: &str, wasm_path: &str) -> String {
+
     match std::env::var("HC_TARGET_PREFIX") {
-        Ok(target_prefix) => {
-            let test_path = std::env::var("TEST_PATH").unwrap_or(String::new());
-            let wasm_path = std::env::var("WASM_PATH").unwrap_or(String::new());
-            format!("{}{}{}target", target_prefix, test_path, wasm_path)
-        },
-        Err(_) => fallback.to_string(),
+        Ok(prefix) => format!("{}{}{}target", prefix, test_path, wasm_path),
+        Err(_) => format!("{}target", wasm_path),
     }
+
 }

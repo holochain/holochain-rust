@@ -13,13 +13,11 @@ pub const ABYTES : usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_A
 
 /// Generate symmetric cipher text given a message, secret, and optional auth data
 /// ****
-/// @example
-/// const cipher = mosodium.aead.enc(Buffer.from('hello'), secret)
-/// ****
-/// @param {Buffer} message - data to encrypt
+/// @param {SecBuf} message - data to encrypt
 /// @param {SecBuf} secret - symmetric secret key
-/// @param {Buffer} adata - optional additional authenticated data
-/// @return {object} - { nonce, cipher }
+/// @param {SecBuf} adata - optional additional authenticated data
+/// @param {SecBuf} nonce - Empty Buffer to be used as output
+/// @param {SecBuf} cipher - Empty Buffer to be used as output
 
 pub fn enc(message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>,nonce: &mut SecBuf,cipher: &mut SecBuf)->SodiumResult<()>{
     {
@@ -80,14 +78,11 @@ pub fn encrypt(message: &mut SecBuf,secret: &mut SecBuf,adata: &mut SecBuf, ad_l
 
 /// Decrypt symmetric cipher text given a nonce, secret, and optional auth data
 /// ****
-/// @example
-/// const decrypted_message = mosodium.aead.dec(nonce, cipher, secret)
-/// ****
-/// @param {Buffer} nonce - sometimes called initialization vector (iv)
-/// @param {Buffer} cipher - the cipher text
+/// @param {SecBuf} decrypted_message - Empty Buffer to be used as output to return the result
 /// @param {SecBuf} secret - symmetric secret key
 /// @param {Buffer} adata - optional additional authenticated data
-/// @return {Buffer} - decrypted_message
+/// @param {Buffer} nonce - sometimes called initialization vector (iv)
+/// @param {Buffer} cipher - the cipher text
 
 pub fn dec(decrypted_message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>,nonce: &mut SecBuf,cipher: &mut SecBuf)->SodiumResult<()>{
     match adata {

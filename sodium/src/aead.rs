@@ -29,9 +29,15 @@ pub fn enc(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secret: &
             encrypt(&mut message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
         }
         None => {
-            // let mut adata = adata.write_lock();
-            // let ad_len = std::ptr::null_mut();
-            // encrypt(&mut message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
+            let mut adata = SecBuf::with_insecure(1);
+            let mut adata = adata.write_lock();
+            let ad_len : *const u64 = std::ptr::null();
+            let ad_len = ad_len as u64;
+            let mut message = message.write_lock();
+            let mut nonce = nonce.write_lock();
+            let mut cipher = cipher.write_lock();
+            let mut secret = secret.write_lock();
+            encrypt(&mut message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
         }
     }
 }
@@ -62,13 +68,37 @@ pub fn encrypt(message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secre
 /// @param {SecBuf} secret - symmetric secret key
 /// @param {Buffer} adata - optional additional authenticated data
 /// @return {Buffer} - decrypted_message
-pub fn dec(decrypted_message: &mut SecBuf,nonce: &mut SecBuf, cipher: &mut SecBuf, secret: &mut SecBuf, adata: &mut SecBuf){
+
+pub fn dec(decrypted_message: &mut SecBuf,nonce: &mut SecBuf,cipher: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>){
+    match adata {
+        Some(adata) => {
+            let mut decrypted_message = decrypted_message.write_lock();
+            let mut nonce = nonce.write_lock();
+            let mut cipher = cipher.write_lock();
+            let mut secret = secret.write_lock();
+            let mut adata = adata.write_lock();
+            let ad_len = adata.len() as libc::c_ulonglong;
+            decrypt(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
+        }
+        None => {
+            let mut adata = SecBuf::with_insecure(1);
+            let mut adata = adata.write_lock();
+            let ad_len : *const u64 = std::ptr::null();
+            let ad_len = ad_len as u64;
+            let mut decrypted_message = decrypted_message.write_lock();
+            let mut nonce = nonce.write_lock();
+            let mut cipher = cipher.write_lock();
+            let mut secret = secret.write_lock();
+            decrypt(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,&mut adata,ad_len)
+        }
+    }
+}
+pub fn decrypt(decrypted_message: &mut SecBuf,nonce: &mut SecBuf, cipher: &mut SecBuf, secret: &mut SecBuf, adata: &mut SecBuf, ad_len: libc::c_ulonglong){
     unsafe {
         let mut secret = secret.write_lock();
         let mut cipher = cipher.read_lock();
         let cipher_len = cipher.len() as libc::c_ulonglong;
         let mut adata = adata.read_lock();
-        let ad_len = adata.len() as libc::c_ulonglong;
         let mut k = SecBuf::with_secure(32);
         let mut k = k.read_lock();
         let mut nonce = nonce.read_lock();
@@ -87,23 +117,19 @@ mod tests {
         let mut nonce = SecBuf::with_secure(32);
         let mut cipher = SecBuf::with_secure(32);
         let mut adata = SecBuf::with_secure(16);
-        println!("----------------");
         buf(&mut message);
         {
             let mut message = message.write_lock();
             enc(&mut message,&mut nonce,&mut cipher,&mut secret,Some(&mut adata));
         }
-        println!("----------------");
         let mut decrypted_message = SecBuf::with_secure(16);
         {
             let mut decrypted_message = decrypted_message.write_lock();
-            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,&mut adata);
+            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,Some(&mut adata));
         }
-        println!("----------------");
         let mut message = message.read_lock();
         let mut decrypted_message = decrypted_message.read_lock();
         assert_eq!(format!("{:?}", *message), format!("{:?}", *decrypted_message));
-        println!("----------------");
     }
     #[test]
     fn it_should_with_bad_aead_encrypt_and_decrypt() {
@@ -122,10 +148,31 @@ mod tests {
         let mut decrypted_message = SecBuf::with_secure(16);
         {
             let mut decrypted_message = decrypted_message.write_lock();
-            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,&mut adata1);
+            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,Some(&mut adata1));
         }
         let mut message = message.read_lock();
         let mut decrypted_message = decrypted_message.read_lock();
         assert_eq!("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", format!("{:?}", *decrypted_message));
+    }
+    #[test]
+    fn it_should_with_NONE_aead_encrypt_and_decrypt() {
+        let mut message = SecBuf::with_secure(16);
+        let mut secret = SecBuf::with_secure(32);
+        let mut nonce = SecBuf::with_secure(32);
+        let mut cipher = SecBuf::with_secure(32);
+        // let mut adata = SecBuf::with_secure(16);
+        buf(&mut message);
+        {
+            let mut message = message.write_lock();
+            enc(&mut message,&mut nonce,&mut cipher,&mut secret,None);
+        }
+        let mut decrypted_message = SecBuf::with_secure(16);
+        {
+            let mut decrypted_message = decrypted_message.write_lock();
+            dec(&mut decrypted_message,&mut nonce,&mut cipher,&mut secret,None);
+        }
+        let mut message = message.read_lock();
+        let mut decrypted_message = decrypted_message.read_lock();
+        assert_eq!(format!("{:?}", *message), format!("{:?}", *decrypted_message));
     }
 }

@@ -14,13 +14,10 @@ pub const CONTEXTBYTES: usize = rust_sodium_sys::crypto_kdf_CONTEXTBYTES as usiz
 
 /// Derive a subkey from a parent key
 /// ****
-/// @example
-/// const subkey = mosodium.kdf.derive(1, Buffer.from('eightchr'), pk)
-/// ****
+/// @param {SecBuf} out - Empty Buffer to be used as output
 /// @param {number} index - subkey index
 /// @param {Buffer} context - eight bytes context
 /// @param {SecBuf} parent - the parent key to derive from
-/// @return {SecBuf}
 
 pub fn derive(out: &mut SecBuf, index: u64, context: &mut SecBuf, parent: &mut SecBuf)->SodiumResult<()> {
     {

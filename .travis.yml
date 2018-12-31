@@ -177,18 +177,18 @@ _windows_template_lite: &_windows_template_lite
     # as we do CARGO_INCREMENTAL and keep the targets, the newly downloaded
     # crates don't recompile, so we save *a lot* of time there
     - target
-    - $CACHE_TARGET
-    - $CACHE_WASM_TARGET
-    - $CACHE_WASM_TARGET_2
+    - $TEST_TARGET
+    - $WASM_TARGET
+    - $WASM_TARGET_2
   install:
     # "none" is a hack here to avoid "" ending up in the cache, potentially
     # caching everything in the repo (we never want to accidentally do that)
     - if [ ! -z "$WASM_PATH" ]; then rustup target add wasm32-unknown-unknown; fi;
-    - if [ ! -z "$WASM_PATH" ]; then cargo build --manifest-path $HC_TARGET_PREFIX$TEST_PATH$WASM_PATHCargo.toml --release --target wasm32-unknown-unknown --target-dir $HC_TARGET_PREFIX$TEST_PATH$WASM_PATHtarget; fi;
-    - if [ ! -z "$WASM_PATH_2" ]; then cargo build --manifest-path $HC_TARGET_PREFIX$TEST_PATH$WASM_PATH_2Cargo.toml --release --target wasm32-unknown-unknown --target-dir $HC_TARGET_PREFIX$TEST_PATH$WASM_PATH_2target; fi;
+    - if [ ! -z "$WASM_PATH" ]; then cargo build --manifest-path $HC_TARGET_PREFIX$TEST_PATH$WASM_PATHCargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET; fi;
+    - if [ ! -z "$WASM_PATH_2" ]; then cargo build --manifest-path $HC_TARGET_PREFIX$TEST_PATH$WASM_PATH_2Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_2; fi;
 
   script:
-    - cargo test -p $TEST_P --target-dir $HC_TARGET_PREFIX$TEST_PATHtarget
+    - cargo test -p $TEST_P --target-dir $TEST_TARGET
 
 jobs:
   # test builds are ordered from slowest to quickest
@@ -200,6 +200,8 @@ jobs:
        - TEST_P=hdk
        - TEST_PATH=hdk-rust/
        - WASM_PATH=wasm-test/
+       - TEST_TARGET=$HC_TARGET_PREFIX$TEST_PATHtarget
+       - WASM_TARGET=$HC_TARGET_PREFIX$TEST_PATH$WASM_PATHtarget
 
     - name: "windows wasm_utils"
       <<: *_windows_template_lite

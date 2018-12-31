@@ -19,8 +19,7 @@ use holochain_core_types::{
     json::{default_try_from_json, JsonString, RawString},
 };
 use std::{convert::TryFrom, error::Error};
-use test_utils::hc_setup_and_call_zome_fn;
-use test_utils::wasm_target_dir;
+use test_utils::{hc_setup_and_call_zome_fn, wasm_target_dir};
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {

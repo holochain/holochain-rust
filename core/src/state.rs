@@ -40,7 +40,6 @@ impl State {
     pub fn new(context: Arc<Context>) -> Self {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
-
         let chain_cas = &(*context).chain_storage;
         let dht_cas = &(*context).dht_storage;
         let eav = context.eav_storage.clone();
@@ -59,7 +58,6 @@ impl State {
 
         let cas = context.dht_storage.clone();
         let eav = context.eav_storage.clone();
-
         fn get_dna(
             agent_state: &Arc<AgentState>,
             cas: Arc<RwLock<dyn ContentAddressableStorage>>,
@@ -156,17 +154,15 @@ impl State {
         ))
     }
 
-    fn cleanup(&mut self) -> Result<(), String> {
+    pub fn stop(mut self) -> Result<(), String> {
+        self.shutdown()
+    }
+
+    fn shutdown(&mut self) -> Result<(), String> {
         // TODO: properly drop/destruct rest of state (requires moving out of Arc)
         mem::replace(&mut self.network, NetworkState::new())
             .stop()
             .map_err(|e| e.to_string())
-    }
-}
-
-impl Drop for State {
-    fn drop(&mut self) {
-        self.cleanup().expect("Could not drop State");
     }
 }
 

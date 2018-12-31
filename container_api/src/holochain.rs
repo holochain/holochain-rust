@@ -82,6 +82,7 @@ pub struct Holochain {
     active: bool,
     // to prevent restarting a Holochain until we can safely stop and restart all subsystems
     stopped: bool,
+    is_shutdown: bool,
 }
 
 impl Holochain {
@@ -111,6 +112,7 @@ impl Holochain {
                     context: new_context.clone(),
                     active: false,
                     stopped: false,
+                    is_shutdown: false,
                 };
                 Ok(hc)
             }
@@ -131,6 +133,7 @@ impl Holochain {
             context: new_context.clone(),
             active: false,
             stopped: false,
+            is_shutdown: false,
         })
     }
 
@@ -154,7 +157,20 @@ impl Holochain {
         }
         self.active = false;
         self.stopped = true;
+        Ok(())
+    }
+
+    pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
+        use std::mem;
+        self.is_shutdown = false;
+        self.stop()?;
         self.instance.shutdown();
+        if let Some(state) = self.context.state_raw("I know this is bad") {
+            let new_context = self.context.clone();
+            mem::replace(&mut *state.write().unwrap(), State::new(new_context))
+                .stop()
+                .unwrap();
+        }
         Ok(())
     }
 
@@ -190,7 +206,7 @@ impl Holochain {
 
 impl Drop for Holochain {
     fn drop(&mut self) {
-        self.stop().expect("Could not stop Holochain")
+        self.shutdown().expect("Could not shut down Holochain")
     }
 }
 

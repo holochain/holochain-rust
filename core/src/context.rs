@@ -122,6 +122,13 @@ impl Context {
         }
     }
 
+    pub fn state_raw(&self, acknowledgement: &str) -> Option<Arc<RwLock<State>>> {
+        if acknowledgement != "I know this is bad" {
+            panic!("access to state_raw without acknowledgement of naughtiness");
+        }
+        self.state.clone()
+    }
+
     pub fn get_dna(&self) -> Option<Dna> {
         // In the case of genesis we encounter race conditions with regards to setting the DNA.
         // Genesis gets called asynchronously right after dispatching an action that sets the DNA in

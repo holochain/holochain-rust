@@ -94,10 +94,10 @@ impl NetworkState {
     }
 
     pub fn stop(mut self) -> NetResult<()> {
-        self.cleanup()
+        self.shutdown()
     }
 
-    fn cleanup(&mut self) -> NetResult<()> {
+    fn shutdown(&mut self) -> NetResult<()> {
         self.network.as_ref().map_or(Ok(()), |network_mutex| {
             let mut network = network_mutex.lock().unwrap();
 
@@ -108,13 +108,5 @@ impl NetworkState {
             // hot-swap the real network with a short-lived mock network so we can shut down the real one
             mem::replace(&mut *network, mock_network).stop()
         })
-    }
-}
-
-impl Drop for NetworkState {
-    fn drop(&mut self) {
-        self.cleanup()
-            // NB: panicking is necessary here since Drop can't deal with Results
-            .expect("Could not stop network");
     }
 }

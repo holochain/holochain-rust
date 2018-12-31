@@ -10,6 +10,7 @@ pub trait Bufferable {
     fn new(s: usize) -> Box<Bufferable>
     where
         Self: Sized;
+    fn len(&self) -> usize;
     fn readable(&mut self);
     fn writable(&mut self);
     fn noaccess(&mut self);
@@ -27,6 +28,10 @@ impl Bufferable for RustBuf {
     fn new(s: usize) -> Box<Bufferable> {
         let b = vec![0; s].into_boxed_slice();
         Box::new(RustBuf { b })
+    }
+
+    fn len(&self) -> usize {
+        self.b.len()
     }
 
     fn readable(&mut self) {}
@@ -66,6 +71,10 @@ impl Bufferable for SodiumBuf {
             z
         };
         Box::new(SodiumBuf { z, s })
+    }
+
+    fn len(&self) -> usize {
+        self.s
     }
 
     fn readable(&mut self) {
@@ -146,6 +155,11 @@ impl SecBuf {
     /// what is the current memory protection state of this SecBuf?
     pub fn protect_state(&self) -> ProtectState {
         self.p.clone()
+    }
+
+    /// should be able to get size without messing with mem protection
+    pub fn len(&self) -> usize {
+        self.b.len()
     }
 
     /// make this SecBuf readable

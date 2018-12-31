@@ -2,55 +2,38 @@
 
 use super::secbuf::SecBuf;
 use super::random::buf;
+use crate::error::{
+    SodiumResult,
+};
 
-/// XOR an arbitrary length buffer (byteLength must be a multiple of 4)
-/// into an int32 sized javascript number
-/// ****
-/// @example
-/// const myInt = mosodium.hash.toInt(mosodium.hash.sha256(Buffer.from('hello')))
-/// ****
-/// @param {Buffer} input - the data to xor
-/// @return {number}
-// TODO : readInt32LE ()
-
-// pub fn toInt(input: &mut SecBuf,output: &mut SecBuf) {
-//     unsafe {
-//         let mut input = input.read_lock();
-//         let mut output = output.write_lock();
-//         let input_len = input.len() as libc::c_ulonglong;
-//     }
-// }
+pub const BYTES256 : usize = rust_sodium_sys::crypto_hash_sha256_BYTES as usize;
+pub const BYTES512 : usize = rust_sodium_sys::crypto_hash_sha512_BYTES as usize;
 
 /// Compute the sha256 hash of input buffer
 /// ****
-/// @example
-/// const hash = mosodium.hash.sha256(Buffer.from('hello'))
-/// ****
-/// @param {Buffer} input - the data to hash
-/// @return {Buffer}
-pub fn sha256(input: &mut SecBuf,output: &mut SecBuf) {
+/// @param {SecBuf} input - the data to hash
+/// @param {SecBuf} output - Empty Buffer to be used as output
+pub fn sha256(input: &mut SecBuf,output: &mut SecBuf)->SodiumResult<()> {
     unsafe {
         let input_len = input.len() as libc::c_ulonglong;
         let mut input = input.write_lock();
         let mut output = output.write_lock();
         rust_sodium_sys::crypto_hash_sha256(raw_ptr_char!(output),raw_ptr_char_immut!(input),input_len);
+        Ok(())
     }
 }
 
 /// Compute the sha512 hash of input buffer
 /// ****
-/// @example
-/// const hash = mosodium.hash.sha512(Buffer.from('hello'))
-/// ****
 /// @param {Buffer} input - the data to hash
-/// @return {Buffer}
-
-pub fn sha512(input: &mut SecBuf,output: &mut SecBuf) {
+/// @param {SecBuf} output - Empty Buffer to be used as output 
+pub fn sha512(input: &mut SecBuf,output: &mut SecBuf)->SodiumResult<()> {
     unsafe {
         let mut input = input.read_lock();
         let mut output = output.write_lock();
         let input_len = input.len() as libc::c_ulonglong;
         rust_sodium_sys::crypto_hash_sha256(raw_ptr_char!(output),raw_ptr_char_immut!(input),input_len);
+        Ok(())
     }
 }
 
@@ -60,7 +43,7 @@ mod tests {
     #[test]
     fn it_should_sha256() {
         let mut input = SecBuf::with_insecure(2);
-        let mut output = SecBuf::with_insecure(32);
+        let mut output = SecBuf::with_insecure(BYTES256);
         {
             let mut input = input.write_lock();
             input[0] = 42;
@@ -77,7 +60,7 @@ mod tests {
     #[test]
     fn it_should_sha512() {
         let mut input = SecBuf::with_insecure(2);
-        let mut output = SecBuf::with_insecure(64);
+        let mut output = SecBuf::with_insecure(BYTES512);
         {
             let mut input = input.write_lock();
             input[0] = 42;

@@ -41,10 +41,13 @@ use tempfile::tempdir;
 use wabt::Wat2Wasm;
 
 pub fn wasm_target_dir(fallback: &str) -> String {
-    let target_prefix = std::env::var("HC_TARGET_PREFIX").unwrap_or(String::new());
-    match std::env::var("WASM_TARGET_DIR") {
-        Ok(target_dir) => target_dir,
-        Err(_) => format!("{}{}/target", target_prefix, fallback),
+    match std::env::var("HC_TARGET_PREFIX") {
+        Ok(target_prefix) => {
+            let test_path = std::env::var("TEST_PATH").unwrap_or(String::new());
+            let wasm_path = std::env::var("WASM_PATH").unwrap_or(String::new());
+            format!("{}{}{}target", target_prefix, test_path, wasm_path)
+        },
+        Err(_) => fallback.to_string(),
     }
 }
 

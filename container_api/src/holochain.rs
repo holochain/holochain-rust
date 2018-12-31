@@ -72,8 +72,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use std::sync::Arc;
-
+use std::{mem, sync::Arc};
 /// contains a Holochain application instance
 pub struct Holochain {
     instance: Instance,
@@ -161,20 +160,26 @@ impl Holochain {
     }
 
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
-        use std::mem;
         self.is_shutdown = false;
+
+        // If instance hasn't been started yet, still let it stop()
         self.stop().or_else(|err| match err {
             HolochainInstanceError::InstanceNotActiveYet => Ok(()),
             other => Err(other),
         })?;
+
+        // Shut down the instance
         self.instance.shutdown();
-        if let Some(state) = self.context.state_raw("I know this is bad") {
+
+        // "Stop" the state
+        if let Some(state) = self.context.state_raw("I acknowledge that this is bad") {
             let new_context = self.context.clone();
             mem::replace(&mut *state.write().unwrap(), State::new(new_context))
                 .stop()
-                .unwrap();
+                .or(Err(HolochainInstanceError::InstanceShutdownFailure))
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     /// call a function in a zome
@@ -209,7 +214,8 @@ impl Holochain {
 
 impl Drop for Holochain {
     fn drop(&mut self) {
-        self.shutdown().expect("Could not shut down Holochain")
+        self.shutdown()
+            .expect("Could not shut down Holochain instance")
     }
 }
 

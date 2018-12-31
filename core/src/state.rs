@@ -30,6 +30,9 @@ pub struct State {
     nucleus: Arc<NucleusState>,
     agent: Arc<AgentState>,
     dht: Arc<DhtStore>,
+    // @NB: NetworkState is not in an Arc as an experiment, since it contains the `P2pNetwork` instance
+    // which should not have dangling references. The hypothesis is that each of these substates does
+    // not really need to be in an Arc, @TODO: find out if that is true
     network: NetworkState,
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166

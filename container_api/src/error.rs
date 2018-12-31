@@ -9,6 +9,7 @@ pub enum HolochainInstanceError {
     InternalFailure(HolochainError),
     InstanceNotActiveYet,
     InstanceAlreadyActive,
+    InstanceShutdownFailure,
 }
 
 impl Error for HolochainInstanceError {
@@ -18,6 +19,9 @@ impl Error for HolochainInstanceError {
             HolochainInstanceError::InstanceNotActiveYet => "Holochain instance is not active yet.",
             HolochainInstanceError::InstanceAlreadyActive => {
                 "Holochain instance is already active."
+            }
+            HolochainInstanceError::InstanceShutdownFailure => {
+                "Holochain instance failed to shut down."
             }
         }
     }
@@ -29,6 +33,7 @@ impl Error for HolochainInstanceError {
             HolochainInstanceError::InternalFailure(ref err)  => Some(err),
             HolochainInstanceError::InstanceNotActiveYet => None,
             HolochainInstanceError::InstanceAlreadyActive => None,
+            HolochainInstanceError::InstanceShutdownFailure => None,
         }
     }
 }

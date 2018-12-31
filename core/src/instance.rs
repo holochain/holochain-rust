@@ -128,7 +128,7 @@ impl Instance {
             let mut state_observers: Vec<Observer> = Vec::new();
             for action_wrapper in rx_action {
                 let do_shutdown = *action_wrapper.action() == Action::Shutdown;
-                state_observers = process_action(
+                state_observers = process_action_via_state(
                     state.clone(),
                     &action_wrapper,
                     state_observers,
@@ -172,11 +172,13 @@ impl Instance {
         if self.is_shutdown() {
             return;
         }
+        self.action_channel = None;
+
         // send shutdown signal
         if let Some(ref tx) = self.action_channel {
             tx.send(ActionWrapper::new(Action::Shutdown)).unwrap();
         }
-        self.action_channel = None;
+
         // move action_thread out self so it can be joined into oblivion
         if let Some(t) = mem::replace(&mut self.action_thread, None) {
             t.join().unwrap()
@@ -188,9 +190,25 @@ impl Instance {
     }
 }
 
+pub fn process_action(
+    instance: &Instance,
+    action_wrapper: &ActionWrapper,
+    state_observers: Vec<Observer>,
+    rx_observer: &Receiver<Observer>,
+    context: &Arc<Context>,
+) -> Vec<Observer> {
+    process_action_via_state(
+        instance.state.clone(),
+        action_wrapper,
+        state_observers,
+        rx_observer,
+        context,
+    )
+}
+
 /// Calls the reducers for an action and calls the observers with the new state
 /// returns the new vector of observers
-pub fn process_action(
+pub fn process_action_via_state(
     state_arc: Arc<RwLock<State>>,
     action_wrapper: &ActionWrapper,
     mut state_observers: Vec<Observer>,
@@ -630,7 +648,7 @@ pub mod tests {
 
         let action_wrapper = test_action_wrapper_commit();
         let new_observers = process_action(
-            instance.state.clone(),
+            &instance,
             &action_wrapper.clone(),
             Vec::new(), // start with no observers
             &rx_observer,
@@ -823,7 +841,7 @@ pub mod tests {
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         process_action(
-            instance.state.clone(),
+            &instance,
             &commit_action,
             state_observers,
             &rx_observer,
@@ -860,7 +878,7 @@ pub mod tests {
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
         process_action(
-            instance.state.clone(),
+            &instance,
             &commit_agent_action,
             state_observers,
             &rx_observer,

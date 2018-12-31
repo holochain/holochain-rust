@@ -82,9 +82,10 @@ impl Container {
             .collect()
     }
 
-    pub fn stop_all_interfaces(&mut self) -> Result<(), String> {
-        for (_, t) in self.interface_threads.drain() {
-            t.join().expect("Interface panicked!")?;
+    pub fn shutdown_all_interfaces(&mut self) -> Result<(), String> {
+        for (id, t) in self.interface_threads.drain() {
+            t.join()
+                .unwrap_or_else(|_| Err(format!("Interface '{}' panicked!", id)))?;
         }
         Ok(())
     }
@@ -96,9 +97,9 @@ impl Container {
             .and_then(|config| self.start_interface(&config))
     }
 
-    pub fn stop_interface_by_id(&mut self, id: &str) -> Result<(), String> {
+    pub fn shutdown_interface_by_id(&mut self, id: &str) -> Result<(), String> {
         if let Some(t) = self.interface_threads.remove(id) {
-            t.join().expect("Interface panicked!")
+            t.join().unwrap_or(Err("Interface panicked!".to_string()))
         } else {
             Ok(())
         }
@@ -134,7 +135,7 @@ impl Container {
 
     /// Stop and clear all instances
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
-        self.stop_all_interfaces()
+        self.shutdown_all_interfaces()
             .map_err(|e| HolochainInstanceError::InternalFailure(e.into()))?;
         self.stop_all_instances()?;
         Ok(())

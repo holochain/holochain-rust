@@ -59,7 +59,7 @@ pub mod tests {
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
         process_action(
-            instance.state.clone(),
+            &instance,
             &commit_action,
             state_observers,
             &rx_observer,
@@ -99,7 +99,7 @@ pub mod tests {
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
         process_action(
-            instance.state.clone(),
+            &instance,
             &commit_action,
             state_observers,
             &rx_observer,

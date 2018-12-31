@@ -102,11 +102,11 @@ impl NetworkState {
             let mut network = network_mutex.lock().unwrap();
 
             // @TODO: can we avoid creating a new network just so we have something to swap out?
-            let mock_network =
-                P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::default_mock()).unwrap();
+            let dummy_network = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::default_mock())
+                .expect("Could not create dummy network");
 
             // hot-swap the real network with a short-lived mock network so we can shut down the real one
-            mem::replace(&mut *network, mock_network).stop()
+            mem::replace(&mut *network, dummy_network).stop()
         })
     }
 }

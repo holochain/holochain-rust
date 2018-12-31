@@ -276,7 +276,6 @@ fn get_mock<'a>() -> NetResult<MutexGuard<'a, MockSingleton>> {
 
 /// Replace the MockSingleton with a fresh one. Necessary when stopping a mock network
 pub fn reset_mock_singleton() {
-    println!("RESET MOCK SINGLETON");
     mem::replace(&mut *MOCK.lock().unwrap(), MockSingleton::new());
 }
 

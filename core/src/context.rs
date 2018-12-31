@@ -122,8 +122,10 @@ impl Context {
         }
     }
 
+    // Access to the raw state. This is an awful abstraction leak, use with utmost care!
+    // (you have to acknowledge that this is bad to even use this function)
     pub fn state_raw(&self, acknowledgement: &str) -> Option<Arc<RwLock<State>>> {
-        if acknowledgement != "I know this is bad" {
+        if acknowledgement != "I acknowledge that this is bad" {
             panic!("access to state_raw without acknowledgement of naughtiness");
         }
         self.state.clone()
@@ -227,6 +229,26 @@ pub mod tests {
     use holochain_core_types::agent::AgentId;
     use std::sync::{Arc, Mutex, RwLock};
 
+    fn test_context() -> Context {
+        let file_storage = Arc::new(RwLock::new(
+            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
+        Context::new(
+            AgentId::generate_fake("Terence"),
+            test_logger(),
+            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+            file_storage.clone(),
+            file_storage.clone(),
+            Arc::new(RwLock::new(
+                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
+                    .unwrap(),
+            )),
+            mock_network_config(),
+            None,
+            None,
+        )
+    }
+
     #[test]
     fn default_buffer_size_test() {
         assert_eq!(Context::default_channel_buffer_size(), 100);
@@ -234,32 +256,16 @@ pub mod tests {
 
     #[test]
     fn state_test() {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let mut maybe_context = Context::new(
-            AgentId::generate_fake("Terence"),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-            None,
-            None,
-        );
+        let mut context = test_context();
 
-        assert!(maybe_context.state().is_none());
+        assert!(context.state().is_none());
 
-        let global_state = Arc::new(RwLock::new(State::new(Arc::new(maybe_context.clone()))));
-        maybe_context.set_state(global_state.clone());
+        let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
+        context.set_state(global_state.clone());
 
         {
             let _read_lock = global_state.read().unwrap();
-            assert!(maybe_context.state().is_some());
+            assert!(context.state().is_some());
         }
     }
 
@@ -267,23 +273,7 @@ pub mod tests {
     #[should_panic]
     #[cfg(not(windows))] // RwLock does not panic on windows since mutexes are recursive
     fn test_deadlock() {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        let mut context = Context::new(
-            AgentId::generate_fake("Terence"),
-            test_logger(),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-            None,
-            None,
-        );
+        let mut context = test_context();
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -294,4 +284,18 @@ pub mod tests {
             context.state();
         }
     }
+
+    #[test]
+    fn test_state_raw() {
+        let context = test_context();
+        context.state_raw("I acknowledge that this is bad");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_state_raw_panic() {
+        let context = test_context();
+        context.state_raw("Any string but the prescribed one");
+    }
+
 }

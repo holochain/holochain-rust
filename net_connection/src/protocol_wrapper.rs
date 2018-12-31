@@ -214,6 +214,10 @@ pub enum ProtocolWrapper {
     #[serde(rename = "trackApp")]
     TrackApp(TrackAppData),
 
+    /// [send] send out a "dropApp" request
+    #[serde(rename = "dropApp")]
+    DropApp(TrackAppData),
+
     /// [send / recv] report success for a messages with _id parameter
     #[serde(rename = "successResult")]
     SuccessResult(SuccessResultData),

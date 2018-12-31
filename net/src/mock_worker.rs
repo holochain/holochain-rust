@@ -45,7 +45,7 @@ impl MockSingleton {
         dna_hash: &str,
         agent_id: &str,
         sender: mpsc::Sender<Protocol>,
-    ) -> NetResult<()> {
+    ) -> () {
         self.senders
             .insert(cat_dna_agent(dna_hash, agent_id), sender.clone());
         match self.senders_by_dna.entry(dna_hash.to_string()) {
@@ -56,7 +56,15 @@ impl MockSingleton {
                 e.insert(vec![sender.clone()]);
             }
         };
-        Ok(())
+    }
+
+    /// de-register a data handler with the singleton (for message routing)
+    pub fn deregister(&mut self, dna_hash: &str, agent_id: &str) -> () {
+        self.senders.remove(&cat_dna_agent(dna_hash, agent_id));
+        self.senders_by_dna.remove(dna_hash);
+        if self.senders.is_empty() && self.senders_by_dna.is_empty() {
+            reset_mock_singleton();
+        }
     }
 
     /// process a message
@@ -283,11 +291,18 @@ impl NetWorker for MockWorker {
         let mut mock = get_mock()?;
 
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
-            if let ProtocolWrapper::TrackApp(app) = wrap {
-                let (tx, rx) = mpsc::channel();
-                self.mock_msgs.push(rx);
-                mock.register(&app.dna_hash, &app.agent_id, tx)?;
-                return Ok(());
+            match wrap {
+                ProtocolWrapper::TrackApp(app) => {
+                    let (tx, rx) = mpsc::channel();
+                    self.mock_msgs.push(rx);
+                    mock.register(&app.dna_hash, &app.agent_id, tx);
+                    return Ok(());
+                }
+                ProtocolWrapper::DropApp(app) => {
+                    mock.deregister(&app.dna_hash, &app.agent_id);
+                    return Ok(());
+                }
+                _ => (),
             }
         }
 

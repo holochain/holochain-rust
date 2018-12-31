@@ -2,7 +2,9 @@
 
 use super::secbuf::SecBuf;
 use super::random::buf;
-
+use crate::error::{
+    SodiumResult,
+};
 pub const OPSLIMIT_INTERACTIVE:u64 = rust_sodium_sys::crypto_pwhash_OPSLIMIT_INTERACTIVE as u64;
 pub const MEMLIMIT_INTERACTIVE:usize = rust_sodium_sys::crypto_pwhash_MEMLIMIT_INTERACTIVE as usize;
 pub const OPSLIMIT_MODERATE:u64 = rust_sodium_sys::crypto_pwhash_OPSLIMIT_MODERATE as u64;
@@ -23,7 +25,7 @@ pub const SALTBYTES:usize = rust_sodium_sys::crypto_pwhash_SALTBYTES as usize;
 /// @param {i8} algorithm - which hashing algorithm
 /// @param {SecBuf} salt - optional predefined salt (random if not included)
 /// @param {SecBuf} hash - the hash generated
-pub fn hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:Option<&mut SecBuf>,hash:&mut SecBuf){
+pub fn hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:Option<&mut SecBuf>,hash:&mut SecBuf)->SodiumResult<()>{
     match salt {
         Some(salt) => {
             let mut password = password.write_lock();
@@ -40,6 +42,7 @@ pub fn hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:Opti
             create_hash(&mut password,ops_limit,mem_limit,alg,&mut salt,&mut hash);
         },
     };
+    Ok(())
 }
 
 pub fn create_hash(password: &mut SecBuf,ops_limit:u64,mem_limit:usize,alg:i8,salt:&mut SecBuf,hash :&mut SecBuf){

@@ -5,7 +5,6 @@ use super::secbuf::SecBuf;
 use super::random::buf;
 use crate::error::{
     SodiumResult,
-    SodiumError,
 };
 pub const PUBLICKEYBYTES:usize = rust_sodium_sys::crypto_kx_PUBLICKEYBYTES as usize;
 pub const SECRETKEYBYTES:usize = rust_sodium_sys::crypto_kx_SECRETKEYBYTES as usize;
@@ -13,8 +12,8 @@ pub const SESSIONKEYBYTES:usize = rust_sodium_sys::crypto_kx_SESSIONKEYBYTES as 
 
 /// Generate a fresh, random keyexchange keypair
 /// ****
-/// @param {SecBuf} pk - Empty Buffer to be used as publicKey
-/// @param {SecBuf} sk - Empty Buffer to be used as secretKey
+/// @param {SecBuf} pk - Empty Buffer to be used as publicKey return
+/// @param {SecBuf} sk - Empty Buffer to be used as secretKey return
 pub fn keypair(pk: &mut SecBuf,sk:&mut SecBuf)->SodiumResult<()>{
     unsafe{
         let mut pk = pk.write_lock();

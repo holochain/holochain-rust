@@ -4,22 +4,35 @@ use super::check_init;
 use super::secbuf::{
     SecBuf,
 };
-
+use crate::error::{
+    SodiumResult,
+};
 use super::random::{
     buf,
 };
 
-pub fn seedKeypair(public_key: &mut SecBuf,secret_key: &mut SecBuf,seed: &mut SecBuf) {
+/// Generate a signing keypair from a seed buffer
+/// @param {SecBuf} publicKey - Empty Buffer to be used as publicKey return
+/// @param {SecBuf} privateKey - Empty Buffer to be used as secretKey return
+/// @param {SecBuf} seed - the seed to derive a keypair from
+/// @UseReturn {SecBuf} - { publicKey, privateKey }
+pub fn seedKeypair(public_key: &mut SecBuf,secret_key: &mut SecBuf,seed: &mut SecBuf)->SodiumResult<()> {
     check_init();
     unsafe {
         let mut seed = seed.read_lock();
         let mut secret_key = secret_key.write_lock();
         let mut public_key = public_key.write_lock();
         rust_sodium_sys::crypto_sign_seed_keypair(raw_ptr_char!(public_key),raw_ptr_char!(secret_key),raw_ptr_char_immut!(seed));
-        }
+        Ok(())
+    }
 }
 
-pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf,signature:&mut SecBuf){
+/// generate a signature
+/// @param {Buffer} message - the message to sign
+/// @param {SecBuf} secretKey - the secret key to sign with
+/// @param {SecBuf} signature - Empty Buffer to be used as signature return
+/// @UseReturn {SecBuf} {signature}
+pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf,signature:&mut SecBuf)->SodiumResult<()>{
     check_init();
     unsafe {
         let mut message = message.read_lock();
@@ -27,11 +40,15 @@ pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf,signature:&mut SecBuf){
         let mut signature = signature.write_lock();
         let mess_len = message.len() as libc::c_ulonglong;
         rust_sodium_sys::crypto_sign_detached(raw_ptr_char!(signature),std::ptr::null_mut(),raw_ptr_char_immut!(message),mess_len,raw_ptr_char_immut!(secret_key));
+        Ok(())
     }
 }
 
 
-
+/// verify a signature given the message and a publicKey
+/// @param {Buffer} signature
+/// @param {Buffer} message
+/// @param {Buffer} publicKey
 pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf)->i32{
     unsafe{
         let mut signature = signature.write_lock();

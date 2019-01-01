@@ -1,24 +1,26 @@
 //! This module provides access to libsodium
 
 use super::secbuf::SecBuf;
-use super::random::buf;
-use crate::error::{
-    SodiumResult,
-    SodiumError,
-};
-use crate::util::check_buf_len;
+use crate::error::SodiumResult;
 
+/// Used to set the size of nonce var in the enc fns
 pub const NONCEBYTES : usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_NPUBBYTES as usize;
+/// Used with the size of the message to set the size of the cipher and decripted message
+///
+/// Note: look at the test cases to see how it is used
 pub const ABYTES : usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_ABYTES as usize;
 
 /// Generate symmetric cipher text given a message, secret, and optional auth data
-/// ****
+///
 /// @param {SecBuf} message - data to encrypt
+///
 /// @param {SecBuf} secret - symmetric secret key
+///
 /// @param {SecBuf} adata - optional additional authenticated data
+///
 /// @param {SecBuf} nonce - Empty Buffer to be used as output
+///
 /// @param {SecBuf} cipher - Empty Buffer to be used as output
-
 pub fn enc(message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>,nonce: &mut SecBuf,cipher: &mut SecBuf)->SodiumResult<()>{
     let mut my_adata_locker;
     let mut my_adata = std::ptr::null();
@@ -48,18 +50,20 @@ pub fn enc(message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>,n
             raw_ptr_char_immut!(secret)
         );
     }
-
     Ok(())
 }
 
 /// Decrypt symmetric cipher text given a nonce, secret, and optional auth data
 /// ****
 /// @param {SecBuf} decrypted_message - Empty Buffer to be used as output to return the result
+///
 /// @param {SecBuf} secret - symmetric secret key
+///
 /// @param {Buffer} adata - optional additional authenticated data
+///
 /// @param {Buffer} nonce - sometimes called initialization vector (iv)
+///
 /// @param {Buffer} cipher - the cipher text
-
 pub fn dec(decrypted_message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut SecBuf>,nonce: &mut SecBuf,cipher: &mut SecBuf)->SodiumResult<()>{
     let mut my_adata_locker;
     let mut my_adata = std::ptr::null();
@@ -89,14 +93,13 @@ pub fn dec(decrypted_message: &mut SecBuf,secret: &mut SecBuf,adata: Option<&mut
             raw_ptr_char_immut!(secret)
         );
     }
-
-
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::random::buf;
 
     #[test]
     fn it_should_with_auth_aead_encrypt_and_decrypt() {
@@ -133,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn it_should_with_NONE_aead_encrypt_and_decrypt() {
+    fn it_should_with_none_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(16);
         let mut secret = SecBuf::with_secure(32);
         buf(&mut message);
@@ -143,17 +146,17 @@ mod tests {
         let mut cipher = SecBuf::with_insecure(cip_len);
         {
             let mut message = message.write_lock();
-            enc(&mut message,&mut secret,None,&mut nonce,&mut cipher);
+            enc(&mut message,&mut secret,None,&mut nonce,&mut cipher).unwrap();
         }
         let mut cipher = cipher.write_lock();
         let dec_len = cip_len - ABYTES;
         let mut decrypted_message = SecBuf::with_insecure(dec_len);
         {
             let mut decrypted_message = decrypted_message.write_lock();
-            dec(&mut decrypted_message,&mut secret,None,&mut nonce,&mut cipher);
+            dec(&mut decrypted_message,&mut secret,None,&mut nonce,&mut cipher).unwrap();;
         }
-        let mut message = message.read_lock();
-        let mut decrypted_message = decrypted_message.read_lock();
+        let message = message.read_lock();
+        let decrypted_message = decrypted_message.read_lock();
         assert_eq!(format!("{:?}", *message), format!("{:?}", *decrypted_message));
     }
     #[test]
@@ -170,17 +173,16 @@ mod tests {
         let mut cipher = SecBuf::with_insecure(cip_len);
         {
             let mut message = message.write_lock();
-            enc(&mut message,&mut secret,Some(&mut adata),&mut nonce,&mut cipher);
+            enc(&mut message,&mut secret,Some(&mut adata),&mut nonce,&mut cipher).unwrap();;
         }
         let mut cipher = cipher.write_lock();
         let dec_len = cip_len - ABYTES;
         let mut decrypted_message = SecBuf::with_insecure(dec_len);
         {
             let mut decrypted_message = decrypted_message.write_lock();
-            dec(&mut decrypted_message,&mut secret,Some(&mut adata1),&mut nonce,&mut cipher);
+            dec(&mut decrypted_message,&mut secret,Some(&mut adata1),&mut nonce,&mut cipher).unwrap();;
         }
-        let mut message = message.read_lock();
-        let mut decrypted_message = decrypted_message.read_lock();
+        let decrypted_message = decrypted_message.read_lock();
         assert_eq!("[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]", format!("{:?}", *decrypted_message));
     }
 }

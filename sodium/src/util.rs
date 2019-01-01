@@ -16,32 +16,38 @@ pub fn zero(b: &mut SecBuf) {
 /// Increments all memory within the provided SecBuf by 1
 pub fn increment(b: &mut SecBuf) {
     check_init();
-    unsafe{
+    unsafe {
         let mut b = b.write_lock();
         rust_sodium_sys::sodium_increment(raw_ptr_char!(b), b.len());
     }
 }
 
 /// Compares the Two SecBuf
+///
 /// Return :
+///
 /// | if a > b; return 1
+///
 /// | if a < b; return -1
+///
 /// | if a == b; return 0
-pub fn compare(a: &mut SecBuf,b: &mut SecBuf) -> i32 {
+pub fn compare(a: &mut SecBuf, b: &mut SecBuf) -> i32 {
     check_init();
-    unsafe{
+    unsafe {
         let mut a = a.write_lock();
         let mut b = b.write_lock();
-        rust_sodium_sys::sodium_compare(raw_ptr_char!(a),raw_ptr_char!(b), a.len())
+        rust_sodium_sys::sodium_compare(raw_ptr_char!(a), raw_ptr_char!(b), a.len())
     }
 }
 /// Check if lenght of buffer is of approprate size
+///
 /// it should be either or size 8,16,32 or 64
-pub fn check_buf_len(sb: usize) -> bool{
+pub fn check_buf_len(sb: usize) -> bool {
     if sb != 8 && sb != 16 && sb != 32 && sb != 64 {
         return true;
-    }
-    else {return false};
+    } else {
+        return false;
+    };
 }
 
 #[cfg(test)]
@@ -98,9 +104,9 @@ mod tests {
             c[0] = 45;
         }
 
-        let val_1 = compare(&mut a,&mut b);
-        let val_2 = compare(&mut b,&mut a);
-        let val_3 = compare(&mut b,&mut c);
+        let val_1 = compare(&mut a, &mut b);
+        let val_2 = compare(&mut b, &mut a);
+        let val_3 = compare(&mut b, &mut c);
         {
             assert_eq!(1, val_1);
             assert_eq!(-1, val_2);

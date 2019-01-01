@@ -42,18 +42,14 @@ impl Scaffold for AssemblyScriptScaffold {
         util::run_cmd(
             base_path.as_ref().to_path_buf(),
             "npm".into(),
-            vec!["init".to_owned(), "-y".to_owned()],
+            &["init", "-y"],
         )?;
 
         // add hdk-assemblyscript as a dependency
         util::run_cmd(
             base_path.as_ref().to_path_buf(),
             "npm".into(),
-            vec![
-                "install".to_owned(),
-                "--save".to_owned(),
-                "holochain/hdk-assemblyscript".to_owned(),
-            ],
+            &["install", "--save", "holochain/hdk-assemblyscript"],
         )?;
 
         // create a index.ts file

@@ -1,12 +1,18 @@
 //! holochain_core_types::dna::zome is a set of structs for working with holochain dna.
 
-pub mod capabilities;
-pub mod entry_types;
-
 use crate::{
-    dna::wasm::DnaWasm, entry::entry_type::EntryType, error::HolochainError, json::JsonString,
+    dna::{
+        bridges::{Bridge, BridgePresence},
+        wasm::DnaWasm,
+    },
+    entry::entry_type::EntryType,
+    error::HolochainError,
+    json::JsonString,
 };
-use dna::zome::entry_types::{deserialize_entry_types, serialize_entry_types, EntryTypeDef};
+use dna::{
+    capabilities,
+    entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef},
+};
 use std::collections::BTreeMap;
 
 /// Enum for "zome" "config" "error_handling" property.
@@ -76,6 +82,10 @@ pub struct Zome {
     /// Validation code for this entry_type.
     #[serde(default)]
     pub code: DnaWasm,
+
+    /// A list of bridges to other DNAs that this DNA can use or depends on.
+    #[serde(default)]
+    pub bridges: Vec<Bridge>,
 }
 
 impl Eq for Zome {}
@@ -89,6 +99,7 @@ impl Default for Zome {
             entry_types: BTreeMap::new(),
             capabilities: BTreeMap::new(),
             code: DnaWasm::new(),
+            bridges: Vec::new(),
         }
     }
 }
@@ -108,7 +119,16 @@ impl Zome {
             entry_types: entry_types.to_owned(),
             capabilities: capabilities.to_owned(),
             code: code.clone(),
+            bridges: Vec::new(),
         }
+    }
+
+    pub fn get_required_bridges(&self) -> Vec<Bridge> {
+        self.bridges
+            .iter()
+            .filter(|bridge| bridge.presence == BridgePresence::Required)
+            .cloned()
+            .collect()
     }
 }
 
@@ -153,7 +173,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"}}";
+        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from(expected.clone()),

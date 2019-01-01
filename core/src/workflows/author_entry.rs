@@ -31,9 +31,14 @@ pub async fn author_entry<'a>(
     // 2. Validate the entry
     await!(validate_entry(entry.clone(), validation_data, &context))?;
     // 3. Commit the entry
-    await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
+    let addr = await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
     // 4. Publish the valid entry to DHT. This will call Hold to itself
-    await!(publish(entry.address(), &context))
+    //TODO: missing a general public/private sharing check here, for now just
+    // using the entry_type can_publish() function which isn't enough
+    if entry.entry_type().can_publish() {
+        await!(publish(entry.address(), &context))?;
+    }
+    Ok(addr)
 }
 
 #[cfg(test)]
@@ -41,29 +46,40 @@ pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
     use futures::executor::block_on;
-    use holochain_core_types::entry::test_entry;
+    use holochain_core_types::{entry::test_entry, json::JsonString};
     use std::{thread, time};
 
     #[test]
+    #[cfg(not(windows))]
     /// test that a commit will publish and entry to the dht of a connected instance via the mock network
     fn test_commit_with_dht_publish() {
-        let dna = test_dna();
+        let mut dna = test_dna();
+        dna.uuid = "test_commit_with_dht_publish".to_string();
         let (_instance1, context1) = instance_by_name("jill", dna.clone());
         let (_instance2, context2) = instance_by_name("jack", dna);
 
-        let entry_address = block_on(author_entry(&test_entry(), None, &context1));
+        let entry_address = block_on(author_entry(&test_entry(), None, &context1)).unwrap();
+        thread::sleep(time::Duration::from_millis(500));
 
-        let entry_address = entry_address.unwrap();
-        thread::sleep(time::Duration::from_millis(1000));
-
-        let state = &context2.state().unwrap();
-        let json = state
-            .dht()
-            .content_storage()
-            .read()
-            .unwrap()
-            .fetch(&entry_address)
-            .expect("could not fetch from CAS");
+        let mut json: Option<JsonString> = None;
+        let mut tries = 0;
+        while json.is_none() && tries < 120 {
+            tries = tries + 1;
+            {
+                let state = &context2.state().unwrap();
+                json = state
+                    .dht()
+                    .content_storage()
+                    .read()
+                    .unwrap()
+                    .fetch(&entry_address)
+                    .expect("could not fetch from CAS");
+            }
+            println!("Try {}: {:?}", tries, json);
+            if json.is_none() {
+                thread::sleep(time::Duration::from_millis(1000));
+            }
+        }
 
         let x: String = json.unwrap().to_string();
         assert_eq!(

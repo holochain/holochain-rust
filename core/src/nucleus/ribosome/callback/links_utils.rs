@@ -1,4 +1,4 @@
-use crate::{context::Context, workflows::get_entry_history::get_entry_history_workflow};
+use crate::{context::Context, workflows::get_entry_result::get_entry_result_workflow};
 use futures::executor::block_on;
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
@@ -19,27 +19,28 @@ pub fn get_link_entries(
         address: base_address.clone(),
         options: GetEntryOptions::default(),
     };
-    let base_entry_history = block_on(get_entry_history_workflow(&context, entry_args))?;
-    if base_entry_history.entries.is_empty() {
+    let base_entry_get_result = block_on(get_entry_result_workflow(&context, entry_args))?;
+    if !base_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Base for link not found",
         )));
     }
-    assert!(base_entry_history.entries.len() == 1);
-    let base_entry = base_entry_history.entries.iter().next().unwrap();
+    let base_entry = base_entry_get_result.latest().unwrap();
     let entry_args = &GetEntryArgs {
         address: target_address.clone(),
         options: GetEntryOptions::default(),
     };
-    let target_entry_history = block_on(get_entry_history_workflow(&context, entry_args))?;
-    if target_entry_history.entries.is_empty() {
+    let target_entry_get_result = block_on(get_entry_result_workflow(&context, entry_args))?;
+    if !target_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Target for link not found",
         )));
     }
-    assert!(target_entry_history.entries.len() == 1);
-    let target_entry = target_entry_history.entries.iter().next().unwrap();
-    Ok((base_entry.clone(), target_entry.clone()))
+
+    Ok((
+        base_entry.clone(),
+        target_entry_get_result.latest().unwrap(),
+    ))
 }
 
 /// This is a "path" in the DNA tree.

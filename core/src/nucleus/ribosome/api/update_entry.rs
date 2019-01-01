@@ -4,7 +4,7 @@ use crate::{
         actions::{build_validation_package::*, validate::*},
         ribosome::{api::ZomeApiResult, Runtime},
     },
-    workflows::get_entry_history::get_entry_history_workflow,
+    workflows::get_entry_result::get_entry_result_workflow,
 };
 use futures::{
     executor::block_on,
@@ -45,16 +45,15 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: entry_args.address,
         options: GetEntryOptions::default(),
     };
-    let get_entry_history_result =
-        block_on(get_entry_history_workflow(&runtime.context, &get_args));
-    if let Err(_err) = get_entry_history_result {
+    let maybe_entry_result = block_on(get_entry_result_workflow(&runtime.context, &get_args));
+    if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
-    let entry_history = get_entry_history_result.unwrap();
-    if entry_history.entries.is_empty() {
+    let entry_result = maybe_entry_result.unwrap();
+    if !entry_result.found() {
         return ribosome_error_code!(Unspecified);
     }
-    let latest_entry = entry_history.entries.iter().next().unwrap().clone();
+    let latest_entry = entry_result.latest().unwrap();
 
     // Get latest entry's ChainHeader
     let agent_state = &runtime.context.state().unwrap().agent();
@@ -90,7 +89,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             .and_then(|new_address| {
                 update_entry(
                     &runtime.context,
-                    &runtime.context.action_channel,
+                    runtime.context.action_channel(),
                     latest_entry.address().clone(),
                     new_address,
                 )

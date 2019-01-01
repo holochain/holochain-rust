@@ -11,6 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 pub mod query;
 pub mod remove_entry;
+pub mod send;
 pub mod update_entry;
 
 use crate::nucleus::ribosome::{
@@ -19,12 +20,12 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
-        update_entry::invoke_update_entry,
+        send::invoke_send, update_entry::invoke_update_entry,
     },
     runtime::Runtime,
     Defn,
 };
-use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
+use holochain_core_types::dna::capabilities::ReservedCapabilityNames;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 
@@ -74,7 +75,7 @@ pub enum ZomeApiFunction {
     InitGlobals,
 
     /// Call a zome function in a different capability or zome
-    /// hc_call(zome_name: String, cap_name: String, fn_name: String, args: String);
+    /// hc_call(zome_name: String, cap_token: Address, fn_name: String, args: String);
     Call,
 
     LinkEntries,
@@ -85,6 +86,8 @@ pub enum ZomeApiFunction {
     /// the address algorithm is specific to the entry, typically sha256 but can differ
     /// entry_address(entry: Entry) -> Address
     EntryAddress,
+
+    Send,
 }
 
 impl Defn for ZomeApiFunction {
@@ -103,6 +106,7 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::GetLinks => "hc_get_links",
             ZomeApiFunction::Query => "hc_query",
             ZomeApiFunction::EntryAddress => "hc_entry_address",
+            ZomeApiFunction::Send => "hc_send",
         }
     }
 
@@ -140,6 +144,7 @@ impl FromStr for ZomeApiFunction {
             "hc_get_links" => Ok(ZomeApiFunction::GetLinks),
             "hc_query" => Ok(ZomeApiFunction::Query),
             "hc_entry_address" => Ok(ZomeApiFunction::EntryAddress),
+            "hc_send" => Ok(ZomeApiFunction::Send),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -171,6 +176,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::GetLinks => invoke_get_links,
             ZomeApiFunction::Query => invoke_query,
             ZomeApiFunction::EntryAddress => invoke_entry_address,
+            ZomeApiFunction::Send => invoke_send,
         }
     }
 }
@@ -187,12 +193,11 @@ pub mod tests {
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{self, Defn},
+            tests::{test_capability_call, test_capability_name},
             ZomeFnCall,
         },
     };
     use std::{str::FromStr, sync::Arc};
-
-    use holochain_core_types::dna::zome::capabilities::ReservedCapabilityNames;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
@@ -342,11 +347,6 @@ pub mod tests {
         "test_zome".to_string()
     }
 
-    /// dummy capability
-    pub fn test_capability() -> String {
-        ReservedCapabilityNames::MissingNo.as_str().to_string()
-    }
-
     /// dummy zome API function name
     pub fn test_function_name() -> String {
         "test".to_string()
@@ -368,7 +368,7 @@ pub mod tests {
     ) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
-            &test_capability(),
+            Some(test_capability_call()),
             &test_function_name(),
             test_parameters(),
         );
@@ -394,7 +394,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(canonical_name);
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
-            &test_capability(),
+            &test_capability_name(),
             wasm.clone(),
         );
 
@@ -423,6 +423,7 @@ pub mod tests {
             ("hc_get_links", ZomeApiFunction::GetLinks),
             ("hc_query", ZomeApiFunction::Query),
             ("hc_entry_address", ZomeApiFunction::EntryAddress),
+            ("hc_send", ZomeApiFunction::Send),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -451,6 +452,7 @@ pub mod tests {
             (ZomeApiFunction::GetLinks, "hc_get_links"),
             (ZomeApiFunction::Query, "hc_query"),
             (ZomeApiFunction::EntryAddress, "hc_entry_address"),
+            (ZomeApiFunction::Send, "hc_send"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -470,6 +472,7 @@ pub mod tests {
             ("hc_get_links", 10),
             ("hc_query", 11),
             ("hc_entry_address", 12),
+            ("hc_send", 13),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -489,6 +492,7 @@ pub mod tests {
             (10, ZomeApiFunction::GetLinks),
             (11, ZomeApiFunction::Query),
             (12, ZomeApiFunction::EntryAddress),
+            (13, ZomeApiFunction::Send),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

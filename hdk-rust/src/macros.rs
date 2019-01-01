@@ -1,8 +1,23 @@
+//! This file contains the define_zome! macro, and smaller helper macros.
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
         let maybe_input = $crate::holochain_wasm_utils::memory_serialization::load_json(
+            $encoded_allocation_of_input,
+        );
+        if let Err(hc_err) = maybe_input {
+            return $crate::global_fns::store_and_return_output(hc_err);
+        }
+        maybe_input
+    }};
+}
+#[doc(hidden)]
+#[macro_export]
+macro_rules! load_string {
+    ($encoded_allocation_of_input:ident) => {{
+        let maybe_input = $crate::holochain_wasm_utils::memory_serialization::load_string(
             $encoded_allocation_of_input,
         );
         if let Err(hc_err) = maybe_input {
@@ -41,11 +56,12 @@ macro_rules! load_json {
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::dna::zome::entry_types::Sharing;
 /// # use boolinator::Boolinator;
-/// # use hdk::error::ZomeApiResult;
-/// use holochain_core_types::cas::content::Address;
-///
+/// use hdk::error::ZomeApiResult;
+/// use holochain_core_types::{
+///     cas::content::Address,
+///     dna::entry_types::Sharing,
+/// };
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
 /// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
@@ -61,7 +77,8 @@ macro_rules! load_json {
 /// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
-///
+/// # #[no_mangle]
+/// # pub fn hc_send(_: u32) -> u32 { 0 }
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -71,7 +88,7 @@ macro_rules! load_json {
 /// }
 ///
 /// fn handle_post_address(content: String) -> ZomeApiResult<Address> {
-///     let post_entry = Entry::App(AppEntryType::from("post"), Post {
+///     let post_entry = Entry::App("post".into(), Post {
 ///         content,
 ///         date_created: "now".into(),
 ///     }.into());
@@ -132,6 +149,12 @@ macro_rules! define_zome {
             $genesis_expr:expr
         }
 
+        $(
+            receive : |$receive_param:ident| {
+                $receive_expr:expr
+            }
+        )*
+
         functions : {
             $(
                 $cap:ident ( $vis:ident ) {
@@ -169,14 +192,31 @@ macro_rules! define_zome {
             }
         }
 
-        use $crate::holochain_core_types::dna::zome::capabilities::Capability;
+        $(
+            #[no_mangle]
+            pub extern "C" fn receive(encoded_allocation_of_input: u32) -> u32 {
+                $crate::global_fns::init_global_memory(encoded_allocation_of_input);
+
+                // Deserialize input
+                let input = load_string!(encoded_allocation_of_input).unwrap();
+
+                fn execute(payload: String) -> String {
+                    let $receive_param = payload;
+                    $receive_expr
+                }
+
+                $crate::global_fns::store_and_return_output(execute(input))
+            }
+        )*
+
+        use $crate::holochain_core_types::dna::capabilities::Capability;
         use std::collections::HashMap;
 
         #[no_mangle]
         #[allow(unused_imports)]
         pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
 
-            use $crate::holochain_core_types::dna::zome::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
+            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType, FnParameter, FnDeclaration};
             use std::collections::BTreeMap;
 
             let return_value: $crate::holochain_core_types::dna::zome::ZomeCapabilities = {
@@ -184,8 +224,7 @@ macro_rules! define_zome {
 
                 $(
                     {
-                        let mut capability = Capability::new();
-                        capability.cap_type = CapabilityType { membrane: Membrane::$vis };
+                        let mut capability = Capability::new(CapabilityType::$vis);
                         capability.functions = vec![
                             $(
                                 FnDeclaration {

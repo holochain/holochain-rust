@@ -9,12 +9,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HcResult};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-    thread::sleep,
-    time::Duration,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// GetEntry Action Creator
 /// This is the network version of get_entry that makes the network module start
@@ -26,12 +21,12 @@ pub async fn get_entry<'a>(
     address: &'a Address,
 ) -> HcResult<Option<EntryWithMeta>> {
     let action_wrapper = ActionWrapper::new(Action::GetEntry(address.clone()));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
-    async {
+    dispatch_action(context.action_channel(), action_wrapper.clone());
+    /*    async {
         sleep(Duration::from_secs(60));
         let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(address.clone()));
-        dispatch_action(&context.action_channel, action_wrapper.clone());
-    };
+        dispatch_action(context.action_channel(), action_wrapper.clone());
+    };*/
     await!(GetEntryFuture {
         context: context.clone(),
         address: address.clone(),
@@ -44,8 +39,6 @@ pub struct GetEntryFuture {
     context: Arc<Context>,
     address: Address,
 }
-
-impl Unpin for GetEntryFuture {}
 
 impl Future for GetEntryFuture {
     type Output = HcResult<Option<EntryWithMeta>>;

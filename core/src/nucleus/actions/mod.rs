@@ -15,10 +15,12 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::ChainHeader,
         dna::{
-            zome::{capabilities::Capability, entry_types::EntryTypeDef},
+            capabilities::{Capability, CapabilityType},
+            entry_types::EntryTypeDef,
             Dna,
         },
-        entry::{entry_type::AppEntryType, Entry},
+        entry::Entry,
+        json::RawString,
     };
     use std::sync::Arc;
     use test_utils::*;
@@ -34,7 +36,12 @@ pub mod tests {
         let wasm =
             create_wasm_from_file("src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm");
 
-        let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &Capability::new(), &wasm);
+        let mut dna = create_test_dna_with_cap(
+            "test_zome",
+            "test_cap",
+            &Capability::new(CapabilityType::Public),
+            &wasm,
+        );
 
         dna.zomes
             .get_mut("test_zome")
@@ -70,31 +77,22 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_entry() -> Entry {
-        Entry::App(AppEntryType::from("package_entry"), "test value".into())
+        Entry::App("package_entry".into(), RawString::from("test value").into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_entries() -> Entry {
-        Entry::App(
-            AppEntryType::from("package_chain_entries"),
-            "test value".into(),
-        )
+        Entry::App("package_chain_entries".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_headers() -> Entry {
-        Entry::App(
-            AppEntryType::from("package_chain_headers"),
-            "test value".into(),
-        )
+        Entry::App("package_chain_headers".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_full() -> Entry {
-        Entry::App(
-            AppEntryType::from("package_chain_full"),
-            "test value".into(),
-        )
+        Entry::App("package_chain_full".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]

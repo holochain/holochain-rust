@@ -10,10 +10,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, error::HcResult};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// Publish Action Creator
 /// This is the high-level publish function that wraps the whole publish process and is what should
@@ -22,7 +19,7 @@ use std::{
 /// Returns a future that resolves to an ActionResponse.
 pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::Publish(address));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
     await!(PublishFuture {
         context: context.clone(),
         action: action_wrapper,
@@ -35,8 +32,6 @@ pub struct PublishFuture {
     context: Arc<Context>,
     action: ActionWrapper,
 }
-
-impl Unpin for PublishFuture {}
 
 impl Future for PublishFuture {
     type Output = HcResult<Address>;

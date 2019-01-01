@@ -1,17 +1,20 @@
+//! This file contains defitions for Zome errors and also Zome Results.
+
 use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
     json::{JsonError, JsonString},
 };
 use std::{error::Error, fmt};
 
-/// Error for DNA developers to use in their zome code.
-/// They do not have to send this error back to Ribosome unless its an InternalError.
+/// Error for DNA developers to use in their Zome code.
+/// This does not have to be sent back to Ribosome unless its an InternalError.
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,
     HashNotFound,
     ValidationFailed(String),
+    Timeout,
 }
 
 impl JsonError for ZomeApiError {}
@@ -35,6 +38,7 @@ impl From<HolochainError> for ZomeApiError {
     fn from(holochain_error: HolochainError) -> Self {
         match holochain_error {
             HolochainError::ValidationFailed(s) => ZomeApiError::ValidationFailed(s),
+            HolochainError::Timeout => ZomeApiError::Timeout,
             _ => ZomeApiError::Internal(holochain_error.description().into()),
         }
     }
@@ -66,6 +70,7 @@ impl Error for ZomeApiError {
             ZomeApiError::FunctionNotImplemented  => "Function not implemented",
             ZomeApiError::HashNotFound            => "Hash not found",
             ZomeApiError::ValidationFailed(msg)   => &msg,
+            ZomeApiError::Timeout                 => "Timeout",
         }
     }
 }

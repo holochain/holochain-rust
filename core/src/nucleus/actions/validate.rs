@@ -17,11 +17,7 @@ use holochain_core_types::{
     validation::ValidationData,
 };
 use snowflake;
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-    thread,
-};
+use std::{pin::Pin, sync::Arc, thread};
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -64,6 +60,10 @@ pub fn validate_entry<'a>(
             // FIXME
         }
 
+        EntryType::CapTokenGrant => {
+            // FIXME
+        }
+
         _ => {
             return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
                 format!(
@@ -100,7 +100,7 @@ pub fn validate_entry<'a>(
             };
 
             context
-                .action_channel
+                .action_channel()
                 .send(ActionWrapper::new(Action::ReturnValidationResult((
                     (id, address),
                     result,
@@ -121,8 +121,6 @@ pub struct ValidationFuture {
     context: Arc<Context>,
     key: (snowflake::ProcessUniqueId, HashString),
 }
-
-impl Unpin for ValidationFuture {}
 
 impl Future for ValidationFuture {
     type Output = Result<HashString, HolochainError>;

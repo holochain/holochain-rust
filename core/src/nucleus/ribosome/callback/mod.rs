@@ -19,7 +19,11 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    dna::{wasm::DnaWasm, zome::capabilities::ReservedCapabilityNames},
+    cas::content::Address,
+    dna::{
+        capabilities::{CapabilityCall, ReservedCapabilityNames},
+        wasm::DnaWasm,
+    },
     entry::Entry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
@@ -58,7 +62,7 @@ impl FromStr for Callback {
         match s {
             "genesis" => Ok(Callback::Genesis),
             "receive" => Ok(Callback::Receive),
-            "" => Ok(Callback::MissingNo),
+            other if other.is_empty() => Ok(Callback::MissingNo),
             _ => Err("Cannot convert string to Callback"),
         }
     }
@@ -122,9 +126,7 @@ impl Defn for Callback {
 pub enum CallbackParams {
     Genesis,
     ValidateCommit(Entry),
-    // @TODO call this from somewhere
-    // @see https://github.com/holochain/holochain-rust/issues/201
-    Receive,
+    Receive(String),
 }
 
 impl ToString for CallbackParams {
@@ -134,7 +136,7 @@ impl ToString for CallbackParams {
             CallbackParams::ValidateCommit(serialized_entry) => {
                 String::from(JsonString::from(serialized_entry.to_owned()))
             }
-            CallbackParams::Receive => String::new(),
+            CallbackParams::Receive(payload) => payload.clone(),
         }
     }
 }
@@ -145,6 +147,7 @@ pub enum CallbackResult {
     Fail(String),
     NotImplemented,
     ValidationPackageDefinition(ValidationPackageDefinition),
+    ReceiveResult(String),
 }
 
 impl From<CallbackResult> for JsonString {
@@ -207,7 +210,13 @@ pub fn call(
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,
-        &function.capability().as_str().to_string(),
+        Some(CapabilityCall::new(
+            function.capability().as_str().to_string(),
+            Address::from(""), //FIXME!!
+            None,
+        )),
+        //&function.capability().as_str().to_string(),
+        //"", //TODO: token?
         &function.as_str().to_string(),
         params,
     );

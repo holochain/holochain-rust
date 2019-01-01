@@ -14,11 +14,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{dna::Dna, entry::Entry, error::HolochainError};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-    time::*,
-};
+use std::{pin::Pin, sync::Arc, time::*};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -46,8 +42,8 @@ pub async fn initialize_application(
 
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
     dispatch_action_and_wait(
-        &context_clone.action_channel,
-        &context_clone.observer_channel,
+        &context_clone.action_channel(),
+        &context_clone.observer_channel(),
         action_wrapper.clone(),
     );
 
@@ -60,7 +56,7 @@ pub async fn initialize_application(
         // an entry from a Dna object. So I can't create a test for the code below.
         // Hence skipping it for codecov for now but leaving it in for resilience.
         context_clone
-            .action_channel
+            .action_channel()
             .send(ActionWrapper::new(Action::ReturnInitializationResult(
                 Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
             )))
@@ -79,7 +75,7 @@ pub async fn initialize_application(
 
     if agent_id_commit.is_err() {
         context_clone
-            .action_channel
+            .action_channel()
             .send(ActionWrapper::new(Action::ReturnInitializationResult(
                 Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
             )))
@@ -105,7 +101,7 @@ pub async fn initialize_application(
     });
 
     context_clone
-        .action_channel
+        .action_channel()
         .send(ActionWrapper::new(Action::ReturnInitializationResult(
             maybe_error,
         )))
@@ -123,8 +119,6 @@ pub struct InitializationFuture {
     context: Arc<Context>,
     created_at: Instant,
 }
-
-impl Unpin for InitializationFuture {}
 
 impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;

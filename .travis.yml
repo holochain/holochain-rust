@@ -35,7 +35,7 @@ _cargo_cache_template: &_cargo_cache_template
 _windows_template: &_windows_template
   os: windows
   language: rust
-  rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+  rust: nightly-2018-12-26-x86_64-pc-windows-msvc
   before_install:
   - choco install nodist
   - PATH="/c/Program Files (x86)/Nodist/bin:$PATH"
@@ -67,12 +67,12 @@ _unix_nodejs_container_template: &_unix_nodejs_container_template
 _linux_nodejs_template: &_linux_nodejs_template
   os: linux
   language: rust
-  rust: nightly
+  rust: nightly-2018-12-26
 
 _macosx_nodejs_template: &_macosx_nodejs_template
   os: osx
   language: rust
-  rust: nightly
+  rust: nightly-2018-12-26
 
 _to_deploy_template: &_to_deploy_template
   if: tag =~ /^holochain-nodejs-v\d+\.\d+\.\d+/
@@ -130,7 +130,7 @@ _windows_nodejs_container_template: &_windows_nodejs_container_template
 # holochain-cmd deploy template
 _cmd_deploy_template: &_cmd_deploy_template
   language: rust
-  rust: nightly-2018-10-12
+  rust: nightly-2018-12-26
   if: tag =~ /^holochain-cmd-v\d+\.\d+\.\d+/
   before_script:
     - make install_system_libzmq
@@ -150,25 +150,223 @@ _cmd_deploy_template: &_cmd_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
+env:
+ global:
+  - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+
+_windows_template_lite: &_windows_template_lite
+  os: windows
+  language: rust
+  rust: nightly-2018-12-26-x86_64-pc-windows-msvc
+  before_install:
+   - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
+   - CARGO_INCREMENTAL=1
+   - RUSTFLAGS="-Z thinlto -C codegen-units=16"
+  cache:
+   timeout: 1000
+   directories:
+    # only keep target directories
+    # as we don't keep .cargo everything will be redownloaded every time
+    # as travis downloads the cache every time, this doesn't make much
+    # difference, actually it can be a bit faster or slightly slower to pull
+    # the crates down vs. loading the cache - seems to be an overall benefit
+    # as we do CARGO_INCREMENTAL and keep the targets, the newly downloaded
+    # crates don't recompile, so we save *a lot* of time there
+    - target
+    - $CARGO_TARGET_DIR
+    - $WASM_TARGET_DIR
+    - $WASM_TARGET_DIR_2
+  install:
+    # "none" is a hack here to avoid "" ending up in the cache, potentially
+    # caching everything in the repo (we never want to accidentally do that)
+    - if [ $WASM_PATH != "none" ]; then rustup target add wasm32-unknown-unknown; fi;
+    - if [ $WASM_PATH != "none" ]; then cargo build --manifest-path $WASM_PATH/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR; fi;
+    - if [ $WASM_PATH_2 != "none" ]; then cargo build --manifest-path $WASM_PATH_2/Cargo.toml --release --target wasm32-unknown-unknown --target-dir $WASM_TARGET_DIR_2; fi;
+  script:
+    - cargo test -p $TEST_P --target-dir $CARGO_TARGET_DIR
+
 jobs:
+  # test builds are ordered from slowest to quickest
+  # this allows us to keep walltimes down
   include:
-    - name: "windows build & test all"
-      <<: *_windows_template
+    - name: "windows hdk"
+      <<: *_windows_template_lite
       env:
-        - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
-        - NODIST_X64=1
-        - TRAVIS_NODE_VERSION=8
-        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      install:
-        - rustup target add wasm32-unknown-unknown
-      script:
-        # Build WASMs
-        - cargo build --manifest-path core/src/nucleus/actions/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path container_api/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path hdk-rust/wasm-test/Cargo.toml --release --target wasm32-unknown-unknown
-        - cargo build --manifest-path wasm_utils/wasm-test/integration-test/Cargo.toml --release --target wasm32-unknown-unknown
-        # Build & test All
-        - cargo test --all
+       - TEST_P=hdk
+       - TEST_PATH=hdk-rust
+       - WASM_PATH=hdk-rust/wasm-test
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows wasm_utils"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_wasm_utils
+       - TEST_PATH=wasm_utils
+       - WASM_PATH=wasm_utils/wasm-test/integration-test
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows container_api"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_container_api
+       - TEST_PATH=container_api
+       - WASM_PATH=container_api/wasm-test
+       - WASM_PATH_2=container_api/test-bridge-caller
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+       - WASM_TARGET_DIR_2=$WASM_PATH_2/target
+
+    - name: "windows core"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_core
+       - TEST_PATH=core
+       - WASM_PATH=core/src/nucleus/actions/wasm-test
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    # contains no tests
+    # quick to build, good for basic debugging
+    # @see https://travis-ci.com/holochain/holochain-rust/jobs/166081895
+    # - name: "windows core_types_derive"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core_types_derive
+    #    - TEST_PATH=core_types_derive
+    #    - CARGO_TARGET_DIR=$TEST_PATH/target
+
+    - name: "windows holochain_cas_implementations"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_cas_implementations
+       - TEST_PATH=cas_implementations
+       - WASM_PATH=none
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows dna_c_binding"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_dna_c_binding
+       - TEST_PATH=dna_c_binding
+       - WASM_PATH=none
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows holochain_net_connection"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_net_connection
+       - TEST_PATH=net_connection
+       - WASM_PATH=none
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows holochain_sodium"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_sodium
+       - TEST_PATH=sodium
+       - WASM_PATH=none
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows hc"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=hc
+       - TEST_PATH=cmd
+       - WASM_PATH=none
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    # no tests
+    # https://travis-ci.com/holochain/holochain-rust/jobs/166086955
+    # - name: "windows holochain_container"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_container
+    #    - TEST_PATH=container
+    #    - WASM_PATH=none
+    #    # boilerplate
+    #    - CARGO_TARGET_DIR=$TEST_PATH/target
+    #    - WASM_TARGET_DIR=$WASM_PATH/target
+
+    # no tests
+    # https://travis-ci.com/holochain/holochain-rust/jobs/166086957
+    # - name: "windows core_api_c_binding"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_core_api_c_binding
+    #    - TEST_PATH=core_api_c_binding
+    #    - WASM_PATH=none
+    #    # boilerplate
+    #    - CARGO_TARGET_DIR=$TEST_PATH/target
+    #    - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows core_types"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_core_types
+       - TEST_PATH=core_types
+       - WASM_PATH=none
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows holochain_net"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_net
+       - TEST_PATH=net
+       - WASM_PATH=none
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    - name: "windows holochain_net_ipc"
+      <<: *_windows_template_lite
+      env:
+       - TEST_P=holochain_net_ipc
+       - TEST_PATH=net_ipc
+       - WASM_PATH=none
+       - WASM_PATH_2=none
+       # boilerplate
+       - CARGO_TARGET_DIR=$TEST_PATH/target
+       - WASM_TARGET_DIR=$WASM_PATH/target
+
+    # no tests
+    # https://travis-ci.com/holochain/holochain-rust/jobs/166086961
+    # - name: "windows holochain_test_bin"
+    #   <<: *_windows_template_lite
+    #   env:
+    #    - TEST_P=holochain_test_bin
+    #    - TEST_PATH=test_bin
+    #    - WASM_PATH=none
+    #    # boilerplate
+    #    - CARGO_TARGET_DIR=$TEST_PATH/target
+    #    - WASM_TARGET_DIR=$WASM_PATH/target
 
     - name: "C binding tests"
       <<: *_trusty_bash
@@ -196,13 +394,6 @@ jobs:
       script:
         - make test_cmd
 
-    - name: "Nodejs Container Test"
-      <<: *_trusty_nodejs
-      <<: *_cargo_cache_template
-      <<: *_unix_nodejs_container_template
-      env:
-      - TRAVIS_NODE_VERSION="8"
-
     # holochain-cmd releases section
     - name: "CMD DEPLOY - 64 bit Linux"
       <<: *_cmd_deploy_template
@@ -220,7 +411,7 @@ jobs:
     - name: "CMD DEPLOY - 64 bit Windows MSVC"
       <<: *_cmd_deploy_template
       os: windows
-      rust: nightly-2018-10-12-x86_64-pc-windows-msvc
+      rust: nightly-2018-12-26-x86_64-pc-windows-msvc
       env:
         - TARGET=x86_64-pc-windows-msvc
         - CRATE_NAME=hc
@@ -231,7 +422,7 @@ jobs:
     - name: "CMD DEPLOY - 64 bit Windows GNU"
       <<: *_cmd_deploy_template
       os: windows
-      rust: nightly-2018-10-12-x86_64-pc-windows-gnu
+      rust: nightly-2018-12-26-x86_64-pc-windows-gnu
       env:
         - TARGET=x86_64-pc-windows-gnu
         - CRATE_NAME=hc

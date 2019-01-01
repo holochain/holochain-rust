@@ -5,21 +5,17 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
 
-use holochain_cas_implementations::{
-    cas::file::FilesystemStorage, eav::file::EavFileStorage, path::create_path_if_not_exists,
-};
-use holochain_container_api::Holochain;
-use holochain_core::context::{mock_network_config, Context};
-use holochain_core_types::{dna::Dna, error::HolochainError};
+use holochain_container_api::{context_builder::ContextBuilder, Holochain};
+use holochain_core::context::Context;
+use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainError};
 
 use std::sync::Arc;
 
-use holochain_core::{logger::Logger, persister::SimplePersister};
-use holochain_core_types::agent::AgentId;
+use holochain_core::logger::Logger;
+use holochain_core_types::{agent::AgentId, dna::capabilities::CapabilityCall};
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
-    sync::{Mutex, RwLock},
 };
 
 #[derive(Clone, Debug)]
@@ -62,20 +58,10 @@ pub unsafe extern "C" fn holochain_load(storage_path: CStrPtr) -> *mut Holochain
 
 fn get_context(path: &String) -> Result<Context, HolochainError> {
     let agent = AgentId::generate_fake("c_bob");
-    let cas_path = format!("{}/cas", path);
-    let eav_path = format!("{}/eav", path);
-    let _agent_path = format!("{}/state", path);
-    create_path_if_not_exists(&cas_path)?;
-    create_path_if_not_exists(&eav_path)?;
-    let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-    Context::new(
-        agent,
-        Arc::new(Mutex::new(NullLogger {})),
-        Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-        Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?)),
-        Arc::new(RwLock::new(EavFileStorage::new(eav_path)?)),
-        mock_network_config(),
-    )
+    Ok(ContextBuilder::new()
+        .with_agent(agent)
+        .with_file_storage(path.clone())?
+        .spawn())
 }
 
 #[no_mangle]
@@ -109,6 +95,7 @@ pub unsafe extern "C" fn holochain_call(
     ptr: *mut Holochain,
     zome: CStrPtr,
     capability: CStrPtr,
+    token: CStrPtr,
     function: CStrPtr,
     parameters: CStrPtr,
 ) -> CStrPtr {
@@ -124,18 +111,23 @@ pub unsafe extern "C" fn holochain_call(
     let holochain = &mut *ptr;
     let zome = CStr::from_ptr(zome).to_string_lossy().into_owned();
     let capability = CStr::from_ptr(capability).to_string_lossy().into_owned();
+    let token = CStr::from_ptr(token).to_string_lossy().into_owned();
     let function = CStr::from_ptr(function).to_string_lossy().into_owned();
     let parameters = CStr::from_ptr(parameters).to_string_lossy().into_owned();
 
     match holochain.call(
         zome.as_str(),
-        capability.as_str(),
+        Some(CapabilityCall::new(
+            capability.to_string(),
+            Address::from(token.as_str()),
+            None,
+        )),
         function.as_str(),
         parameters.as_str(),
     ) {
         Ok(json_string_result) => {
             let string_result = String::from(json_string_result);
-            let string_trim = string_result.trim_right_matches(char::from(0));
+            let string_trim = string_result.trim_end_matches(char::from(0));
             match CString::new(string_trim) {
                 Ok(s) => s.into_raw(),
                 Err(_) => std::ptr::null_mut(),

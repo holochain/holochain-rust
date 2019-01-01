@@ -1,7 +1,12 @@
+//! This module holds the relevant constants and an enum required for Holochain to have 'status' metadata for entries.
+//! Since Holochain uses an append-only data structure, but still wishes to provide classical features of a data
+//! store such as "update" and "remove" (delete), metadata is created pointing entries forward to their 'latest' version,
+//! even including an entry being marked as deleted.
+
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     eav::EntityAttributeValue,
-    error::error::HolochainError,
+    error::error::{HcResult, HolochainError},
     hash::HashString,
     json::JsonString,
 };
@@ -9,10 +14,19 @@ use std::{convert::TryInto, str::FromStr};
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
+/// The [EAV](../eav/index.html) attribute name utilized for storing metadata about the lifecycle related status
+/// of an entry
 pub const STATUS_NAME: &str = "crud-status";
+/// The [EAV](../eav/index.html) attribute name utilized for storing metadata that indicates the address of an updated version of a given entry
 pub const LINK_NAME: &str = "crud-link";
 
-pub fn create_crud_status_eav(address: &Address, status: CrudStatus) -> EntityAttributeValue {
+/// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [STATUS_NAME](constant.STATUS_NAME.html) as the attribute
+/// and CrudStatus as the value.
+/// This will come to represent the lifecycle status of an entry, when it gets stored in an [EAV Storage](../eav/trait.EntityAttributeValueStorage.html)
+pub fn create_crud_status_eav(
+    address: &Address,
+    status: CrudStatus,
+) -> HcResult<EntityAttributeValue> {
     EntityAttributeValue::new(
         address,
         &STATUS_NAME.to_string(),
@@ -20,11 +34,13 @@ pub fn create_crud_status_eav(address: &Address, status: CrudStatus) -> EntityAt
     )
 }
 
-pub fn create_crud_link_eav(from: &Address, to: &Address) -> EntityAttributeValue {
+/// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [LINK_NAME](constant.LINK_NAME.html) as the attribute
+/// and a new entry address as the value
+pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValue> {
     EntityAttributeValue::new(from, &LINK_NAME.to_string(), to)
 }
 
-/// the CRUD status of a Pair is stored as EntryMeta in the hash table, NOT in the entry itself
+/// the CRUD status of a Pair is stored using an EAV, NOT in the entry itself
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, DefaultJson)]
 #[serde(rename_all = "lowercase")]
 pub enum CrudStatus {

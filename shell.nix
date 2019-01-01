@@ -4,7 +4,7 @@ let
     overlays = [ moz_overlay ];
   };
 
-  date = "2018-11-28";
+  date = "2018-12-26";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
@@ -18,13 +18,14 @@ let
     };
   });
 
-  wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
+  wasmBuild = path: "CARGO_HOME=${path}/.cargo CARGO_TARGET_DIR=${path}/target cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
-  ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
-  ${wasmBuild "container_api/wasm-test/Cargo.toml"}
-  ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
-  ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
+  ${wasmBuild "core/src/nucleus/actions/wasm-test"}
+  ${wasmBuild "container_api/test-bridge-caller"}
+  ${wasmBuild "container_api/wasm-test"}
+  ${wasmBuild "hdk-rust/wasm-test"}
+  ${wasmBuild "wasm_utils/wasm-test/integration-test"}
   '';
 
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
@@ -33,10 +34,15 @@ let
   rm -rf ~/.cargo/git;
   '';
 
+  hc-build = nixpkgs.writeShellScriptBin "hc-build"
+  ''
+  cargo build --all --exclude hc
+  '';
+
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
-  cargo build --all --exclude hc;
-  cargo test --all --exclude hc;
+  hc-build
+  cargo test --release --all --exclude hc;
   '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
@@ -55,25 +61,19 @@ let
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
 
   # runs all standard tests and reports code coverage
-  ci-codecov = nixpkgs.writeShellScriptBin "ci-codecov"
+  hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
   ''
-  hc-wasm-build && \
-  hc-install-tarpaulin && \
-  hc-tarpaulin && \
-  bash <(curl -s https://codecov.io/bash);
-  '';
-
-  # runs all app spec tests
-  ci-app-spec = nixpkgs.writeShellScriptBin "ci-app-spec"
-  ''
-  hc-wasm-build && \
-  hc-install-cmd && \
-  hc-install-node-container && \
-  hc-test-app-spec;
+    hc-install-tarpaulin && \
+    hc-build && \
+    hc-tarpaulin && \
+    bash <(curl -s https://codecov.io/bash);
   '';
 
   # simulates all supported ci tests in a local circle ci environment
-  ci = nixpkgs.writeShellScriptBin "ci" "circleci-cli local execute";
+  ci = nixpkgs.writeShellScriptBin "ci"
+  ''
+    circleci-cli local execute
+  '';
 
 in
 with nixpkgs;
@@ -81,6 +81,7 @@ stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
+
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
     # carnix
@@ -88,7 +89,6 @@ stdenv.mkDerivation rec {
     cmake
     python
     pkgconfig
-    zeromq
     rust-build
 
     nodejs-8_13
@@ -97,6 +97,8 @@ stdenv.mkDerivation rec {
     hc-flush-cargo-registry
 
     hc-wasm-build
+
+    hc-build
     hc-test
 
     hc-install-tarpaulin
@@ -111,23 +113,24 @@ stdenv.mkDerivation rec {
     hc-fmt
     hc-fmt-check
 
-    zeromq3
+    zeromq4
 
     # dev tooling
     git
 
-    # ci
-    # curl needed to push codecov
+    # curl needed to push to codecov
     curl
+    docker
     circleci-cli
-    ci-codecov
-    ci-app-spec
+    hc-codecov
+    ci
+
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
   # RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no -Z incremental-info";
-  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -Z thinlto -C codegen-units=16";
   # CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
   # RUST_LOG = "info";

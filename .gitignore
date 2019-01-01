@@ -1,5 +1,6 @@
 .qmake.stash
 /target/
+.cargo
 **/*.sock
 package-lock.json
 **/*.rs.bk
@@ -23,6 +24,11 @@ cobertura.xml
 *.hcpkg
 # symlinked Makefile for docker hub
 !/docker/Makefile
+
+# Editor temporary files
+*~
+.\#*
+\#*\#
 
 # Things being generated on the FS that should not be
 container/example-config/tmp-storage/*

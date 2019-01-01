@@ -4,7 +4,7 @@
 use crate::init_globals::init_globals;
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_allocation::SinglePageStack};
 
-// Internal global for memory usage
+/// Internal global for memory usage
 pub static mut G_MEM_STACK: Option<SinglePageStack> = None;
 
 // Internal global for retrieving all Zome API globals

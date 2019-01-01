@@ -69,28 +69,27 @@ pub(crate) fn reduce_hold_entry(
     // Add it to local storage
     let new_store = (*old_store).clone();
     let content_storage = &new_store.content_storage().clone();
-    let res = (*content_storage.write().unwrap()).add(entry);
-    if res.is_err() {
-        // TODO #439 - Log the error. Once we have better logging.
+    let res = (*content_storage.write().unwrap()).add(entry).ok();
+    if res.is_some() {
+        let meta_storage = &new_store.meta_storage().clone();
+        create_crud_status_eav(&entry.address(), CrudStatus::Live)
+            .map(|status_eav| {
+                let meta_res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
+                meta_res
+                    .map(|_| Some(new_store))
+                    .map_err(|err| {
+                        println!("reduce_hold_entry: meta_storage write failed!: {:?}", err);
+                        None::<DhtStore>
+                    })
+                    .ok()
+                    .unwrap_or(None)
+            })
+            .ok()
+            .unwrap_or(None)
+    } else {
         println!("dht::reduce_hold_entry() FAILED {:?}", res);
-        return None;
+        None
     }
-
-    // Initialize CRUD status meta
-    let meta_storage = &new_store.meta_storage().clone();
-    let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
-    let res = (*meta_storage.write().unwrap()).add_eav(&status_eav);
-    if res.is_err() {
-        // TODO #439 - Log the error. Once we have better logging.
-        println!(
-            "reduce_hold_entry: meta_storage write failed!: {:?}",
-            res.err().unwrap()
-        );
-        return None;
-    }
-
-    // Done
-    Some(new_store)
 }
 
 //
@@ -112,18 +111,21 @@ pub(crate) fn reduce_add_link(
                 "Base for link not found",
             ))),
         );
-        return Some(new_store);
+        Some(new_store)
+    } else {
+        let eav =
+            EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
+        eav.map(|e| {
+            let storage = new_store.meta_storage();
+            let result = storage.write().unwrap().add_eav(&e);
+            new_store
+                .actions_mut()
+                .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
+            Some(new_store)
+        })
+        .ok()
+        .unwrap_or(None)
     }
-
-    let eav =
-        EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
-
-    let storage = new_store.meta_storage();
-    let result = storage.write().unwrap().add_eav(&eav);
-    new_store
-        .actions_mut()
-        .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
-    Some(new_store)
 }
 
 //
@@ -139,28 +141,49 @@ pub(crate) fn reduce_update_entry(
     // Update crud-status
     let latest_old_address = old_address;
     let meta_storage = &new_store.meta_storage().clone();
-    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::Modified);
-    let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
-    if let Err(err) = res {
-        new_store
-            .actions_mut()
-            .insert(action_wrapper.clone(), Err(err));
-        return Some(new_store);
+    let closure_store = new_store.clone();
+    let new_status_eav_option = create_crud_status_eav(latest_old_address, CrudStatus::Modified)
+        .map(|new_status_eav| {
+            let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
+            res.map(|_| None)
+                .map_err(|err| {
+                    closure_store
+                        .clone()
+                        .actions_mut()
+                        .insert(action_wrapper.clone(), Err(err));
+                    Some(closure_store.clone())
+                })
+                .ok()
+                .unwrap_or(Some(closure_store.clone()))
+        })
+        .ok()
+        .unwrap_or(None);
+    if new_status_eav_option.is_some() {
+        new_status_eav_option
+    } else {
+        // Update crud-link
+        create_crud_link_eav(latest_old_address, new_address)
+            .map(|crud_link_eav| {
+                let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
+                let res_option = res.clone().ok();
+                res_option
+                    .and_then(|_| {
+                        new_store.actions_mut().insert(
+                            action_wrapper.clone(),
+                            res.clone().map(|_| new_address.clone()),
+                        );
+                        Some(new_store.clone())
+                    })
+                    .or_else(|| {
+                        new_store
+                            .actions_mut()
+                            .insert(action_wrapper.clone(), Err(res.err().unwrap()));
+                        Some(new_store.clone())
+                    })
+            })
+            .ok()
+            .unwrap_or(None)
     }
-    // Update crud-link
-    let crud_link_eav = create_crud_link_eav(latest_old_address, new_address);
-    let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
-    if let Err(err) = res {
-        new_store
-            .actions_mut()
-            .insert(action_wrapper.clone(), Err(err));
-        return Some(new_store);
-    }
-    // Done
-    new_store
-        .actions_mut()
-        .insert(action_wrapper.clone(), res.map(|_| new_address.clone()));
-    Some(new_store)
 }
 
 pub(crate) fn reduce_remove_entry(
@@ -176,7 +199,7 @@ pub(crate) fn reduce_remove_entry(
     let res = reduce_remove_entry_inner(context, &mut new_store, deleted_address, deletion_address);
     // Done
     new_store.actions_mut().insert(action_wrapper.clone(), res);
-    return Some(new_store);
+    Some(new_store)
 }
 
 //
@@ -193,12 +216,10 @@ fn reduce_remove_entry_inner(
         .unwrap()
         .fetch(latest_deleted_address)
         .unwrap();
-    if maybe_json_entry.is_none() {
-        return Err(HolochainError::ErrorGeneric(String::from(
-            "trying to remove a missing entry",
-        )));
-    }
-    let json_entry = maybe_json_entry.unwrap();
+    let json_entry = maybe_json_entry.ok_or_else(|| {
+        HolochainError::ErrorGeneric(String::from("trying to remove a missing entry"))
+    })?;
+
     let entry = Entry::try_from(json_entry).expect("Stored content should be a valid entry.");
     // pre-condition: entry_type must not by sys type, since they cannot be deleted
     if entry.entry_type().to_owned().is_sys() {
@@ -231,19 +252,22 @@ fn reduce_remove_entry_inner(
         )));
     }
     // Update crud-status
-    let new_status_eav = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
+    let result = create_crud_status_eav(latest_deleted_address, CrudStatus::Deleted);
+    if result.is_err() {
+        return Err(HolochainError::ErrorGeneric(String::from(
+            "Could not create eav",
+        )));
+    }
+    let new_status_eav = result.expect("should unwrap eav");
     let meta_storage = &new_store.meta_storage().clone();
     let res = (*meta_storage.write().unwrap()).add_eav(&new_status_eav);
     if let Err(err) = res {
         return Err(err);
     }
     // Update crud-link
-    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address);
+    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
+        .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
     let res = (*meta_storage.write().unwrap()).add_eav(&crud_link_eav);
-    //    if let Err(err) = res {
-    //        return Err(err);
-    //    }
-    // Done
     res.map(|_| latest_deleted_address.clone())
 }
 
@@ -325,7 +349,7 @@ pub mod tests {
 
         let mut context = (*context).clone();
         context.set_state(locked_state.clone());
-        let storage = context.file_storage.clone();
+        let storage = context.dht_storage.clone();
         let _ = (storage.write().unwrap()).add(&entry);
         let context = Arc::new(context);
 
@@ -399,7 +423,7 @@ pub mod tests {
 
         store.reduce(context.clone(), action_wrapper);
 
-        let cas = context.file_storage.read().unwrap();
+        let cas = context.dht_storage.read().unwrap();
 
         let maybe_json = cas.fetch(&entry.address()).unwrap();
         let result_entry = match maybe_json {

@@ -400,9 +400,7 @@ mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "fn_declarations": [],
                                 "code": {
                                     "code": ""
@@ -417,9 +415,7 @@ mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "capability": {
-                                    "membrane": "public"
-                                },
+                                "type": "public",
                                 "fn_declarations": [],
                                 "code": {
                                     "code": ""

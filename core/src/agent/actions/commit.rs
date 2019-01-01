@@ -10,10 +10,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 //use core::mem::PinMut;
 
 /// Commit Action Creator
@@ -27,7 +24,7 @@ pub async fn commit_entry(
     context: &Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let action_wrapper = ActionWrapper::new(Action::Commit((entry, maybe_crud_link)));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
     await!(CommitFuture {
         context: context.clone(),
         action: action_wrapper,
@@ -40,8 +37,6 @@ pub struct CommitFuture {
     context: Arc<Context>,
     action: ActionWrapper,
 }
-
-impl Unpin for CommitFuture {}
 
 impl Future for CommitFuture {
     type Output = Result<Address, HolochainError>;

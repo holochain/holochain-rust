@@ -2,6 +2,7 @@ use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
 use holochain_container_api::{config::*, container::Container};
+use holochain_core_types::agent::AgentId;
 use holochain_net::p2p_config::P2pConfig;
 use std::fs;
 
@@ -18,12 +19,15 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
+    let agent = AgentId::generate_fake("testAgent");
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
+        name: agent.nick,
+        public_address: agent.key,
         key_file: "hc_run.key".into(),
     };
 
-    let dna_config = DNAConfiguration {
+    let dna_config = DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: package::DEFAULT_BUNDLE_FILE_NAME.into(),
         hash: "Qm328wyq38924ybogus".into(),
@@ -65,10 +69,10 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         ..Default::default()
     };
 
-    let mut container = Container::with_config(base_config.clone());
+    let mut container = Container::from_config(base_config.clone());
 
     container
-        .load_config(&base_config)
+        .load_config()
         .map_err(|err| format_err!("{}", err))?;
 
     container.start_all_interfaces();

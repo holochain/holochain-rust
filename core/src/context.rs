@@ -13,6 +13,8 @@ use holochain_core_types::{
     eav::EntityAttributeValueStorage,
     error::{HcResult, HolochainError},
     json::JsonString,
+    cas::content::Address,
+    cas::content::AddressableContent,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -183,7 +185,7 @@ impl Context {
     }
 }
 
-pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, String)> {
+pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
@@ -196,8 +198,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, Stri
         .nucleus()
         .dna()
         .ok_or("Network::start() called without DNA".to_string())?;
-    let dna_hash = base64::encode(&dna.multihash()?);
-    Ok((dna_hash, agent_id))
+    Ok((dna.address(), agent_id))
 }
 
 /// create a test network

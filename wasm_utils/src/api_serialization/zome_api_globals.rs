@@ -5,7 +5,7 @@ use holochain_core_types::{
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson)]
 pub struct ZomeApiGlobals {
     pub dna_name: String,
-    pub dna_hash: HashString,
+    pub dna_address: Address,
     pub agent_id_str: String,
     pub agent_address: Address,
     pub agent_initial_hash: HashString,

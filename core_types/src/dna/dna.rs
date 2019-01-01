@@ -3,7 +3,10 @@ use crate::{
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
+    cas::content::Content,
+    cas::content::AddressableContent,
 };
+use std::convert::TryFrom;
 use entry::entry_type::AppEntryType;
 use multihash;
 use serde_json::{self, Value};
@@ -53,6 +56,16 @@ pub struct Dna {
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
     pub zomes: BTreeMap<String, zome::Zome>,
+}
+
+impl AddressableContent for Dna {
+    fn content(&self) -> Content {
+        Content::from(self.to_owned())
+    }
+
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(Dna::try_from(content.to_owned())?)
+    }
 }
 
 impl Default for Dna {

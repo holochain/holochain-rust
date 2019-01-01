@@ -5,6 +5,7 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
 use wasmi::RuntimeArgs;
+use holochain_core_types::cas::content::AddressableContent;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -14,7 +15,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
     // Create the ZomeApiGlobals struct with some default values
     let mut globals = ZomeApiGlobals {
         dna_name: runtime.dna_name.to_string(),
-        dna_hash: HashString::from(""),
+        dna_address: Address::from(""),
         agent_id_str: JsonString::from(runtime.context.agent_id.clone()).to_string(),
         // TODO #233 - Implement agent pub key hash
         agent_address: Address::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
@@ -24,10 +25,9 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
 
     // Update fields
     if let Some(state) = runtime.context.state() {
-        // Update dna_hash
+        // Update dna_address
         if let Some(dna) = state.nucleus().dna() {
-            globals.dna_hash =
-                HashString::encode_from_json_string(JsonString::from(dna), Multihash::SHA2256);
+            globals.dna_address = dna.address()
         }
         // Update agent hashes
         let maybe_top = state.agent().top_chain_header();

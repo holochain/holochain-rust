@@ -64,7 +64,7 @@ pub mod tests {
     /// Test that an invalid link will be rejected by this workflow.
     ///
     /// This test simulates an attack where a node is changing its local copy of the DNA to
-    /// allow otherwise invalid entries while spoofing the unmodified dna_hash.
+    /// allow otherwise invalid entries while spoofing the unmodified dna_address.
     ///
     /// hold_link_workflow is then expected to fail in its validation step
     fn test_reject_invalid_link_on_hold_workflow() {
@@ -76,10 +76,10 @@ pub mod tests {
             create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
         dna.uuid = String::from("test_reject_invalid_link_on_hold_workflow");
 
-        // Hash of the original DNA
-        let dna_hash = base64::encode(&dna.multihash().unwrap());
+        // Address of the original DNA
+        let dna_address = dna.address();
 
-        let (_, context1) = test_instance_with_spoofed_dna(hacked_dna, dna_hash, "alice").unwrap();
+        let (_, context1) = test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
         let (_instance2, context2) = instance_by_name("jack", dna);
 
         // Commit entry on attackers node

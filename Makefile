@@ -15,8 +15,8 @@ help:
 	@echo "run 'make test-something' to run cargo tests matching 'something'"
 
 SHELL = /bin/bash
-CORE_RUST_VERSION ?= nightly-2018-11-28
-TOOLS_RUST_VERSION ?= nightly-2018-11-28
+CORE_RUST_VERSION ?= nightly-2018-12-26
+TOOLS_RUST_VERSION ?= nightly-2018-12-26
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TARPULIN_INSTALL = RUSTFLAGS="--cfg procmacro2_semver_exempt -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)

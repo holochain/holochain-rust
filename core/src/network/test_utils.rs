@@ -5,9 +5,8 @@ use crate::{
     nucleus::actions::initialize::initialize_application,
 };
 use futures::executor::block_on;
-use holochain_core_types::dna::Dna;
+use holochain_core_types::{cas::content::Address, dna::Dna};
 use std::sync::Arc;
-use holochain_core_types::cas::content::Address;
 
 /// create a test instance
 #[cfg_attr(tarpaulin, skip)]

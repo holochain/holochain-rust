@@ -7,6 +7,7 @@ extern crate holochain_net_connection;
 extern crate serde_json;
 extern crate tempfile;
 
+use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
@@ -16,7 +17,6 @@ use holochain_net_connection::{
     },
     NetResult,
 };
-use holochain_core_types::cas::content::Address;
 
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 
@@ -181,7 +181,6 @@ macro_rules! one_is {
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn exec() -> NetResult<()> {
-
     fn example_dna_address() -> Address {
         "TEST_DNA_ADDRESS".into()
     }

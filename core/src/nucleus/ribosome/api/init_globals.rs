@@ -1,11 +1,13 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{
-    cas::content::Address, entry::entry_type::EntryType, hash::HashString, json::JsonString,
+    cas::content::{Address, AddressableContent},
+    entry::entry_type::EntryType,
+    hash::HashString,
+    json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use multihash::Hash as Multihash;
 use wasmi::RuntimeArgs;
-use holochain_core_types::cas::content::AddressableContent;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u32

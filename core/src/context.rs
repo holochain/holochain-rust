@@ -8,13 +8,14 @@ use crate::{
 };
 use holochain_core_types::{
     agent::AgentId,
-    cas::storage::ContentAddressableStorage,
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     error::{HcResult, HolochainError},
     json::JsonString,
-    cas::content::Address,
-    cas::content::AddressableContent,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;

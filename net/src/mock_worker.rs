@@ -1,5 +1,6 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
+use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
@@ -9,7 +10,6 @@ use holochain_net_connection::{
     },
     NetResult,
 };
-use holochain_core_types::cas::content::Address;
 
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -110,7 +110,12 @@ impl MockSingleton {
     // -- private -- //
 
     /// send a message to the appropriate channel based on dna_address::agent_id
-    fn priv_send_one(&mut self, dna_address: &Address, agent_id: &str, data: Protocol) -> NetResult<()> {
+    fn priv_send_one(
+        &mut self,
+        dna_address: &Address,
+        agent_id: &str,
+        data: Protocol,
+    ) -> NetResult<()> {
         if let Some(sender) = self.senders.get_mut(&cat_dna_agent(dna_address, agent_id)) {
             sender.send(data)?;
         }
@@ -193,7 +198,10 @@ impl MockSingleton {
 
     /// on publish meta, we send store requests to all nodes connected on this dna
     fn priv_handle_publish_dht(&mut self, msg: &DhtData) -> NetResult<()> {
-        self.priv_send_all(&msg.dna_address, ProtocolWrapper::StoreDht(msg.clone()).into())?;
+        self.priv_send_all(
+            &msg.dna_address,
+            ProtocolWrapper::StoreDht(msg.clone()).into(),
+        )?;
         Ok(())
     }
 

@@ -1,17 +1,16 @@
 use crate::{
+    cas::content::{AddressableContent, Content},
     dna::{bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
-    cas::content::Content,
-    cas::content::AddressableContent,
 };
-use std::convert::TryFrom;
 use entry::entry_type::AppEntryType;
 use multihash;
 use serde_json::{self, Value};
 use std::{
     collections::BTreeMap,
+    convert::TryFrom,
     hash::{Hash, Hasher},
 };
 use uuid::Uuid;

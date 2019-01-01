@@ -71,7 +71,8 @@ pub mod tests {
         // Address of the original DNA
         let dna_address = dna.address();
 
-        let (_, context1) = test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
+        let (_, context1) =
+            test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
         let (_instance2, context2) = instance_by_name("jack", dna);
 
         // Commit entry on attackers node

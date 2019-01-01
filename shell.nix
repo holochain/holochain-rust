@@ -4,7 +4,7 @@ let
     overlays = [ moz_overlay ];
   };
 
-  date = "2018-10-12";
+  date = "2018-12-26";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
@@ -18,13 +18,14 @@ let
     };
   });
 
-  wasmBuild = path: "cargo build --release --target ${wasmTarget} --manifest-path ${path}";
+  wasmBuild = path: "CARGO_HOME=${path}/.cargo CARGO_TARGET_DIR=${path}/target cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
   hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
   ''
-  ${wasmBuild "core/src/nucleus/actions/wasm-test/Cargo.toml"}
-  ${wasmBuild "container_api/wasm-test/Cargo.toml"}
-  ${wasmBuild "hdk-rust/wasm-test/Cargo.toml"}
-  ${wasmBuild "wasm_utils/wasm-test/integration-test/Cargo.toml"}
+  ${wasmBuild "core/src/nucleus/actions/wasm-test"}
+  ${wasmBuild "container_api/test-bridge-caller"}
+  ${wasmBuild "container_api/wasm-test"}
+  ${wasmBuild "hdk-rust/wasm-test"}
+  ${wasmBuild "wasm_utils/wasm-test/integration-test"}
   '';
 
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
@@ -33,7 +34,16 @@ let
   rm -rf ~/.cargo/git;
   '';
 
-  hc-test = nixpkgs.writeShellScriptBin "hc-test" "cargo test --all --exclude hc";
+  hc-build = nixpkgs.writeShellScriptBin "hc-build"
+  ''
+  cargo build --all --exclude hc
+  '';
+
+  hc-test = nixpkgs.writeShellScriptBin "hc-test"
+  ''
+  hc-build
+  cargo test --release --all --exclude hc;
+  '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
   ''
@@ -46,35 +56,39 @@ let
   hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
-  hc-build-and-test-all = nixpkgs.writeShellScriptBin "hc-build-and-test-all"
-  ''
-  hc-fmt-check && \
-  hc-wasm-build && \
-  hc-test && \
-  hc-install-cmd && \
-  # hc-test-cmd && \
-  hc-install-node-container && \
-  hc-test-app-spec;
-  '';
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
+
+  # runs all standard tests and reports code coverage
+  hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
+  ''
+    hc-install-tarpaulin && \
+    hc-build && \
+    hc-tarpaulin && \
+    bash <(curl -s https://codecov.io/bash);
+  '';
+
+  # simulates all supported ci tests in a local circle ci environment
+  ci = nixpkgs.writeShellScriptBin "ci"
+  ''
+    circleci-cli local execute
+  '';
+
 in
 with nixpkgs;
 stdenv.mkDerivation rec {
   name = "holochain-rust-environment";
 
   buildInputs = [
-    # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
-    binutils gcc gnumake openssl pkgconfig
-    carnix
 
-    unixtools.watch
+    # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
+    binutils gcc gnumake openssl pkgconfig coreutils
+    # carnix
 
     cmake
     python
     pkgconfig
-    zeromq
     rust-build
 
     nodejs-8_13
@@ -83,31 +97,56 @@ stdenv.mkDerivation rec {
     hc-flush-cargo-registry
 
     hc-wasm-build
+
+    hc-build
     hc-test
 
     hc-install-tarpaulin
     hc-tarpaulin
 
-    hc-install-node-container
     hc-install-cmd
+    hc-install-node-container
+
     hc-test-cmd
     hc-test-app-spec
-    hc-build-and-test-all
 
     hc-fmt
     hc-fmt-check
 
-    zeromq3
+    zeromq4
 
     # dev tooling
     git
-    virtualbox
+
+    # curl needed to push to codecov
+    curl
+    docker
+    circleci-cli
+    hc-codecov
+    ci
+
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
-  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt";
+  # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
+  # RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no -Z incremental-info";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -Z thinlto -C codegen-units=16";
+  # CARGO_INCREMENTAL = "1";
+  # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
+  # RUST_LOG = "info";
+
+  # non-nixos OS can have a "dirty" setup with rustup installed for the current
+  # user.
+  # `nix-shell` can inherit this e.g. through sourcing `.bashrc`.
+  # even `nix-shell --pure` will still source some files and inherit paths.
+  # for those users we can at least give the OS a clue that we want our pinned
+  # rust version through this environment variable.
+  # https://github.com/rust-lang/rustup.rs#environment-variables
+  # https://github.com/NixOS/nix/issues/903
+  RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   shellHook = ''
-  export PATH=$PATH:~/.cargo/bin;
+    # needed for install cmd and tarpaulin
+    export PATH=$PATH:~/.cargo/bin;
   '';
 }

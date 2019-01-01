@@ -10,7 +10,7 @@ extern crate boolinator;
 extern crate holochain_core_types_derive;
 
 use boolinator::Boolinator;
-use hdk::holochain_core_types::dna::zome::entry_types::Sharing;
+use hdk::holochain_core_types::dna::entry_types::Sharing;
 use hdk::holochain_core_types::json::JsonString;
 use hdk::holochain_core_types::json::RawString;
 use hdk::holochain_core_types::error::HolochainError;

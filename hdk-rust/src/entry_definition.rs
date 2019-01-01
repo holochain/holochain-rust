@@ -1,5 +1,8 @@
+//! This file contains the macros used for creating validating entry type definitions,
+//! and validating links definitions within those.
+
 use holochain_core_types::{
-    dna::zome::entry_types::EntryTypeDef,
+    dna::entry_types::EntryTypeDef,
     entry::{entry_type::EntryType, Entry},
     hash::HashString,
     validation::{ValidationData, ValidationPackageDefinition},
@@ -7,7 +10,9 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 
 pub type PackageCreator = Box<FnMut() -> ValidationPackageDefinition + Sync>;
+
 pub type Validator = Box<FnMut(Entry, ValidationData) -> Result<(), String> + Sync>;
+
 pub type LinkValidator =
     Box<FnMut(HashString, HashString, ValidationData) -> Result<(), String> + Sync>;
 
@@ -96,7 +101,7 @@ pub struct ValidatingLinkDefinition {
 /// # use hdk::entry_definition::ValidatingEntryType;
 /// # use hdk::holochain_core_types::{
 /// #   cas::content::Address,
-/// #   dna::zome::entry_types::Sharing,
+/// #   dna::entry_types::Sharing,
 /// #   json::JsonString,
 /// #   error::HolochainError,
 /// # };
@@ -166,7 +171,7 @@ macro_rules! entry {
     ) => (
 
         {
-            let mut entry_type = hdk::holochain_core_types::dna::zome::entry_types::EntryTypeDef::new();
+            let mut entry_type = hdk::holochain_core_types::dna::entry_types::EntryTypeDef::new();
             entry_type.description = String::from($description);
             entry_type.sharing = $sharing;
 
@@ -174,7 +179,7 @@ macro_rules! entry {
                 match $link_expr.link_type {
                     $crate::LinkDirection::To => {
                         entry_type.links_to.push(
-                            $crate::holochain_core_types::dna::zome::entry_types::LinksTo{
+                            $crate::holochain_core_types::dna::entry_types::LinksTo{
                                 target_type: $link_expr.other_entry_type,
                                 tag: $link_expr.tag,
                             }
@@ -182,7 +187,7 @@ macro_rules! entry {
                     },
                     $crate::LinkDirection::From => {
                         entry_type.linked_from.push(
-                            $crate::holochain_core_types::dna::zome::entry_types::LinkedFrom{
+                            $crate::holochain_core_types::dna::entry_types::LinkedFrom{
                                 base_type: $link_expr.other_entry_type,
                                 tag: $link_expr.tag,
                             }

@@ -1,4 +1,9 @@
-use crate::{action::ActionWrapper, context::Context, state::State};
+use crate::{
+    action::{Action, ActionWrapper},
+    context::Context,
+    signal::Signal,
+    state::State,
+};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -16,8 +21,8 @@ pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<State>>,
-    action_channel: SyncSender<ActionWrapper>,
-    observer_channel: SyncSender<Observer>,
+    action_channel: Option<SyncSender<ActionWrapper>>,
+    observer_channel: Option<SyncSender<Observer>>,
 }
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
@@ -34,14 +39,21 @@ impl Instance {
         100
     }
 
-    /// get a clone of the action channel
-    pub fn action_channel(&self) -> SyncSender<ActionWrapper> {
-        self.action_channel.clone()
+    // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
+    // rather than Option<SyncSenders>, but these would be initialized by default to broken channels
+    // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
+    // that potential failure mode.
+    // @see https://github.com/holochain/holochain-rust/issues/739
+    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+        self.action_channel
+            .as_ref()
+            .expect("Action channel not initialized")
     }
 
-    /// get a clone of the observer channel
-    pub fn observer_channel(&self) -> SyncSender<Observer> {
-        self.observer_channel.clone()
+    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+        self.observer_channel
+            .as_ref()
+            .expect("Observer channel not initialized")
     }
 
     /// Stack an Action in the Event Queue
@@ -50,7 +62,7 @@ impl Instance {
     ///
     /// Panics if called before `start_action_loop`.
     pub fn dispatch(&mut self, action_wrapper: ActionWrapper) {
-        dispatch_action(&self.action_channel, action_wrapper)
+        dispatch_action(self.action_channel(), action_wrapper)
     }
 
     /// Stack an Action in the Event Queue and block until is has been processed.
@@ -59,7 +71,11 @@ impl Instance {
     ///
     /// Panics if called before `start_action_loop`.
     pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
-        dispatch_action_and_wait(&self.action_channel, &self.observer_channel, action_wrapper);
+        dispatch_action_and_wait(
+            self.action_channel(),
+            self.observer_channel(),
+            action_wrapper,
+        );
     }
 
     /// Stack an action in the Event Queue and create an Observer on it with the specified closure
@@ -72,8 +88,8 @@ impl Instance {
         F: 'static + FnMut(&State) -> bool + Send,
     {
         dispatch_action_with_observer(
-            &self.action_channel,
-            &self.observer_channel,
+            self.action_channel(),
+            self.observer_channel(),
             action_wrapper,
             closure,
         )
@@ -85,8 +101,8 @@ impl Instance {
             sync_channel::<ActionWrapper>(Self::default_channel_buffer_size());
         let (tx_observer, rx_observer) =
             sync_channel::<Observer>(Self::default_channel_buffer_size());
-        self.action_channel = tx_action.clone();
-        self.observer_channel = tx_observer.clone();
+        self.action_channel = Some(tx_action.clone());
+        self.observer_channel = Some(tx_observer.clone());
 
         (rx_action, rx_observer)
     }
@@ -99,7 +115,7 @@ impl Instance {
         Arc::new(sub_context)
     }
 
-    /// Start the Event Loop on a seperate thread
+    /// Start the Event Loop on a separate thread
     pub fn start_action_loop(&mut self, context: Arc<Context>) {
         let (rx_action, rx_observer) = self.initialize_channels();
 
@@ -140,7 +156,7 @@ impl Instance {
                     .expect("owners of the state RwLock shouldn't panic");
 
                 // Create new state by reducing the action on old state
-                new_state = state.reduce(context.clone(), action_wrapper);
+                new_state = state.reduce(context.clone(), action_wrapper.clone());
             }
 
             // Get write lock
@@ -152,6 +168,9 @@ impl Instance {
             // Change the state
             *state = new_state;
         }
+
+        // @TODO: add a big fat debug logger here
+        self.maybe_emit_action_signal(context, action_wrapper.action().clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -174,24 +193,32 @@ impl Instance {
         state_observers
     }
 
-    /// Creates a new Instance with disconnected channels.
+    /// Given an `Action` that is being processed, decide whether or not it should be
+    /// emitted as a `Signal::Internal`, and if so, send it
+    fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: Action) {
+        if let Some(ref tx) = context.signal_tx {
+            // @TODO: if needed for performance, could add a filter predicate here
+            // to prevent emitting too many unneeded signals
+            let signal = Signal::Internal(action);
+            tx.send(signal).unwrap_or(())
+            // @TODO: once logging is implemented, kick out a warning for SendErrors
+        }
+    }
+
+    /// Creates a new Instance with no channels set up.
     pub fn new(context: Arc<Context>) -> Self {
-        let (tx_action, _) = sync_channel(1);
-        let (tx_observer, _) = sync_channel(1);
         Instance {
             state: Arc::new(RwLock::new(State::new(context))),
-            action_channel: tx_action,
-            observer_channel: tx_observer,
+            action_channel: None,
+            observer_channel: None,
         }
     }
 
     pub fn from_state(state: State) -> Self {
-        let (tx_action, _) = sync_channel(1);
-        let (tx_observer, _) = sync_channel(1);
         Instance {
             state: Arc::new(RwLock::new(state)),
-            action_channel: tx_action,
-            observer_channel: tx_observer,
+            action_channel: None,
+            observer_channel: None,
         }
     }
 
@@ -208,7 +235,7 @@ impl Instance {
     }
 }*/
 
-/// Send Action to Instance's Event Queue and block until is has been processed.
+/// Send Action to Instance's Event Queue and block until it has been processed.
 ///
 /// # Panics
 ///
@@ -352,22 +379,20 @@ pub mod tests {
         ));
         let logger = test_logger();
         (
-            Arc::new(
-                Context::new(
-                    agent,
-                    logger.clone(),
-                    Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                    file_storage.clone(),
-                    Arc::new(RwLock::new(
-                        EavFileStorage::new(
-                            tempdir().unwrap().path().to_str().unwrap().to_string(),
-                        )
+            Arc::new(Context::new(
+                agent,
+                logger.clone(),
+                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
+                file_storage.clone(),
+                file_storage.clone(),
+                Arc::new(RwLock::new(
+                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
-                    )),
-                    mock_network_config(),
-                )
-                .unwrap(),
-            ),
+                )),
+                mock_network_config(),
+                None,
+                None,
+            )),
             logger,
         )
     }
@@ -396,8 +421,9 @@ pub mod tests {
                 agent,
                 logger.clone(),
                 Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                action_channel.clone(),
-                observer_channel.clone(),
+                Some(action_channel.clone()),
+                None,
+                Some(observer_channel.clone()),
                 file_storage.clone(),
                 Arc::new(RwLock::new(
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
@@ -419,13 +445,15 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
+            file_storage.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+            None,
+            None,
+        );
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
         Arc::new(context)
@@ -441,13 +469,15 @@ pub mod tests {
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),
+            cas.clone(),
             Arc::new(RwLock::new(
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
             mock_network_config(),
-        )
-        .unwrap();
+            None,
+            None,
+        );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(chain_store, chain_header);
@@ -569,7 +599,6 @@ pub mod tests {
     /// are sent on the passed channels.
     pub fn can_process_action() {
         let mut instance = Instance::new(test_context("jason"));
-
         let context = instance.initialize_context(test_context("jane"));
         let (rx_action, rx_observer) = instance.initialize_channels();
 
@@ -763,9 +792,9 @@ pub mod tests {
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason"));
+        let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
-        let context = instance.initialize_context(context);
         instance.process_action(commit_action, state_observers, &rx_observer, &context);
 
         // Check if AgentIdEntry is found

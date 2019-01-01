@@ -1,18 +1,32 @@
+//! This module holds the relevant constants and an enum required for Holochain to have 'status' metadata for entries.
+//! Since Holochain uses an append-only data structure, but still wishes to provide classical features of a data
+//! store such as "update" and "remove" (delete), metadata is created pointing entries forward to their 'latest' version,
+//! even including an entry being marked as deleted.
+
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     eav::EntityAttributeValue,
-    error::error::HolochainError,
+    error::error::{HcResult, HolochainError},
     hash::HashString,
     json::JsonString,
 };
-use std::convert::TryInto;
+use std::{convert::TryInto, str::FromStr};
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
+/// The [EAV](../eav/index.html) attribute name utilized for storing metadata about the lifecycle related status
+/// of an entry
 pub const STATUS_NAME: &str = "crud-status";
+/// The [EAV](../eav/index.html) attribute name utilized for storing metadata that indicates the address of an updated version of a given entry
 pub const LINK_NAME: &str = "crud-link";
 
-pub fn create_crud_status_eav(address: &Address, status: CrudStatus) -> EntityAttributeValue {
+/// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [STATUS_NAME](constant.STATUS_NAME.html) as the attribute
+/// and CrudStatus as the value.
+/// This will come to represent the lifecycle status of an entry, when it gets stored in an [EAV Storage](../eav/trait.EntityAttributeValueStorage.html)
+pub fn create_crud_status_eav(
+    address: &Address,
+    status: CrudStatus,
+) -> HcResult<EntityAttributeValue> {
     EntityAttributeValue::new(
         address,
         &STATUS_NAME.to_string(),
@@ -20,56 +34,48 @@ pub fn create_crud_status_eav(address: &Address, status: CrudStatus) -> EntityAt
     )
 }
 
-pub fn create_crud_link_eav(from: &Address, to: &Address) -> EntityAttributeValue {
+/// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [LINK_NAME](constant.LINK_NAME.html) as the attribute
+/// and a new entry address as the value
+pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValue> {
     EntityAttributeValue::new(from, &LINK_NAME.to_string(), to)
 }
 
-bitflags! {
-    #[derive(Default, Serialize, Deserialize, DefaultJson)]
-    /// the CRUD status of a Pair is stored as EntryMeta in the hash table, NOT in the entry itself
-    /// statuses are represented as bitflags so we can easily build masks for filtering lookups
-    pub struct CrudStatus: u8 {
-        const LIVE = 0x01;
-        const REJECTED = 0x02;
-        const DELETED = 0x04;
-        const MODIFIED = 0x08;
-        /// CRDT resolution in progress
-        const LOCKED = 0x10;
+/// the CRUD status of a Pair is stored using an EAV, NOT in the entry itself
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, DefaultJson)]
+#[serde(rename_all = "lowercase")]
+pub enum CrudStatus {
+    Live,
+    Rejected,
+    Deleted,
+    Modified,
+    /// CRDT resolution in progress
+    Locked,
+}
+
+impl Default for CrudStatus {
+    fn default() -> CrudStatus {
+        CrudStatus::Live
     }
 }
 
 impl From<CrudStatus> for String {
-    fn from(crud_status: CrudStatus) -> String {
-        // don't do self.bits().to_string() because that spits out values for default() and all()
-        // only explicit statuses are safe as strings
-        // the expectation is that strings will be stored, referenced and parsed
-        String::from(match crud_status {
-            CrudStatus::LIVE => "1",
-            CrudStatus::REJECTED => "2",
-            CrudStatus::DELETED => "4",
-            CrudStatus::MODIFIED => "8",
-            CrudStatus::LOCKED => "16",
-            _ => unreachable!(),
-        })
+    fn from(status: CrudStatus) -> String {
+        let res_str = serde_json::to_string(&status).expect("failed to serialize CrudStatus enum");
+
+        res_str.chars().filter(|kar| kar.is_alphabetic()).collect()
     }
 }
 
-impl From<&'static str> for CrudStatus {
-    fn from(s: &str) -> CrudStatus {
-        CrudStatus::from(String::from(s))
-    }
-}
+impl FromStr for CrudStatus {
+    type Err = &'static str;
 
-impl From<String> for CrudStatus {
-    fn from(s: String) -> CrudStatus {
-        match s.as_ref() {
-            "1" => CrudStatus::LIVE,
-            "2" => CrudStatus::REJECTED,
-            "4" => CrudStatus::DELETED,
-            "8" => CrudStatus::MODIFIED,
-            "16" => CrudStatus::LOCKED,
-            _ => unreachable!(),
-        }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let quoted_string = format!("{:?}", s);
+
+        let res = serde_json::from_str(quoted_string.as_ref())
+            .map_err(|_| "failed to deserialize CrudStatus enum")?;
+
+        Ok(res)
     }
 }
 
@@ -99,30 +105,6 @@ mod tests {
     };
 
     #[test]
-    /// test the CrudStatus bit flags as ints
-    fn status_bits() {
-        assert_eq!(CrudStatus::default().bits(), 0);
-        assert_eq!(CrudStatus::all().bits(), 31);
-
-        assert_eq!(CrudStatus::LIVE.bits(), 1);
-        assert_eq!(CrudStatus::REJECTED.bits(), 2);
-        assert_eq!(CrudStatus::DELETED.bits(), 4);
-        assert_eq!(CrudStatus::MODIFIED.bits(), 8);
-        assert_eq!(CrudStatus::LOCKED.bits(), 16);
-    }
-
-    #[test]
-    /// test that we can build status masks from the CrudStatus bit flags
-    fn bitwise() {
-        let example_mask = CrudStatus::REJECTED | CrudStatus::DELETED;
-        assert!(example_mask.contains(CrudStatus::REJECTED));
-        assert!(example_mask.contains(CrudStatus::DELETED));
-        assert!(!example_mask.contains(CrudStatus::LIVE));
-        assert!(!example_mask.contains(CrudStatus::MODIFIED));
-        assert!(!example_mask.contains(CrudStatus::LOCKED));
-    }
-
-    #[test]
     fn crud_status_example_eav() {
         let entity_content = ExampleAddressableContent::try_from_content(&JsonString::from(
             RawString::from("example"),
@@ -130,36 +112,10 @@ mod tests {
         .unwrap();
         let attribute = String::from("favourite-badge");
         let value_content: Content =
-            CrudStatus::try_from_content(&JsonString::from(CrudStatus::REJECTED))
+            CrudStatus::try_from_content(&JsonString::from(CrudStatus::Rejected))
                 .unwrap()
                 .content();
         eav_round_trip_test_runner(entity_content, attribute, value_content);
-    }
-
-    #[test]
-    /// show From<CrudStatus> implementation for String
-    fn to_string_test() {
-        assert_eq!(String::from("1"), String::from(CrudStatus::LIVE));
-        assert_eq!(String::from("2"), String::from(CrudStatus::REJECTED));
-        assert_eq!(String::from("4"), String::from(CrudStatus::DELETED));
-        assert_eq!(String::from("8"), String::from(CrudStatus::MODIFIED));
-        assert_eq!(String::from("16"), String::from(CrudStatus::LOCKED));
-    }
-
-    #[test]
-    /// show From<String> and From<&'static str> implementation for CrudStatus
-    fn from_string_test() {
-        assert_eq!(CrudStatus::from("1"), CrudStatus::LIVE);
-        assert_eq!(CrudStatus::from("2"), CrudStatus::REJECTED);
-        assert_eq!(CrudStatus::from("4"), CrudStatus::DELETED);
-        assert_eq!(CrudStatus::from("8"), CrudStatus::MODIFIED);
-        assert_eq!(CrudStatus::from("16"), CrudStatus::LOCKED);
-
-        assert_eq!(CrudStatus::from(String::from("1")), CrudStatus::LIVE);
-        assert_eq!(CrudStatus::from(String::from("2")), CrudStatus::REJECTED);
-        assert_eq!(CrudStatus::from(String::from("4")), CrudStatus::DELETED);
-        assert_eq!(CrudStatus::from(String::from("8")), CrudStatus::MODIFIED);
-        assert_eq!(CrudStatus::from(String::from("16")), CrudStatus::LOCKED);
     }
 
     #[test]
@@ -167,29 +123,29 @@ mod tests {
     fn addressable_content_test() {
         // from_content()
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::LIVE),
-            CrudStatus::LIVE,
-            Address::from("QmWZ1VcQ7MzQfbevGGkpZXidjmcwwzq3Ssx2bZCkrnaY8z"),
+            JsonString::from(CrudStatus::Live),
+            CrudStatus::Live,
+            Address::from("QmXEyo1EepSNCmZjPzGATr8BF3GMYAKKSXbWJN9QS95jLx"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::REJECTED),
-            CrudStatus::REJECTED,
-            Address::from("QmNsbuCbwifcJ8T4MBJmPi2U3MRmSwbizU471R7djP3W4B"),
+            JsonString::from(CrudStatus::Rejected),
+            CrudStatus::Rejected,
+            Address::from("QmcifaUPPN6BBmpjakau1DGx9nFb9YhoS7fZjPHwFLoRuw"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::DELETED),
-            CrudStatus::DELETED,
-            Address::from("QmX6xSz9Tvubevsp1EDBa796TipmhoVTUgs3NgX4bPFrab"),
+            JsonString::from(CrudStatus::Deleted),
+            CrudStatus::Deleted,
+            Address::from("QmVKAvoNaU3jrKEvPK9tc6ovJWozxS9CVuNfWB4sbbYwR9"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::MODIFIED),
-            CrudStatus::MODIFIED,
-            Address::from("Qmc26xWbNbTxmq49kK2CooB63MSQyRSxn2LqGdURYhVnsm"),
+            JsonString::from(CrudStatus::Modified),
+            CrudStatus::Modified,
+            Address::from("QmbJmMc19gp8jNAoHSk5qY5H6LUF9qp9LTSKWFZojToAEz"),
         );
         AddressableContentTestSuite::addressable_content_trait_test::<CrudStatus>(
-            JsonString::from(CrudStatus::LOCKED),
-            CrudStatus::LOCKED,
-            Address::from("QmPFzUQmR1ST3ZqSifvKueSN4NRPxMeA1JzsZCav6Uv8BT"),
+            JsonString::from(CrudStatus::Locked),
+            CrudStatus::Locked,
+            Address::from("QmUjxgPiP7wxpowjWD9t7FLrGgnNmNA1FUGHVY3BrEnKe3"),
         );
     }
 
@@ -197,11 +153,11 @@ mod tests {
     /// show CAS round trip
     fn cas_round_trip_test() {
         let crud_statuses = vec![
-            CrudStatus::LIVE,
-            CrudStatus::REJECTED,
-            CrudStatus::DELETED,
-            CrudStatus::MODIFIED,
-            CrudStatus::LOCKED,
+            CrudStatus::Live,
+            CrudStatus::Rejected,
+            CrudStatus::Deleted,
+            CrudStatus::Modified,
+            CrudStatus::Locked,
         ];
         AddressableContentTestSuite::addressable_content_round_trip::<
             CrudStatus,

@@ -21,7 +21,7 @@ fn fetch_entry_from_cas(
     context: &Arc<Context>,
 ) -> Result<Entry, HolochainError> {
     let json = context
-        .file_storage
+        .dht_storage
         .read()?
         .fetch(address)?
         .ok_or("Entry not found".to_string())?;

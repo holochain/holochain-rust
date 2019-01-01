@@ -34,9 +34,10 @@ pub mod tests {
 
         // Create Entry & crud-status metadata, and store it.
         let entry = test_entry();
-        let result = context1.file_storage.write().unwrap().add(&entry);
+        let result = context1.dht_storage.write().unwrap().add(&entry);
         assert!(result.is_ok());
-        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::LIVE);
+        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live)
+            .expect("Could not create EAV");
         let result = context1.eav_storage.write().unwrap().add_eav(&status_eav);
         assert!(result.is_ok());
 
@@ -47,7 +48,7 @@ pub mod tests {
         assert!(maybe_entry_with_meta.is_some());
         let entry_with_meta = maybe_entry_with_meta.unwrap();
         assert_eq!(entry_with_meta.entry, entry);
-        assert_eq!(entry_with_meta.crud_status, CrudStatus::LIVE);
+        assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
     }
 
     #[test]

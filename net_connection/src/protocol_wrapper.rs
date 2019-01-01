@@ -117,7 +117,7 @@ pub struct GetDhtData {
     pub address: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
 pub struct DhtData {
     #[serde(rename = "_id")]
     pub msg_id: String,

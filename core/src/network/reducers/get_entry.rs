@@ -189,14 +189,12 @@ mod tests {
             maybe_crud_link: None,
         };
         let dht_data = DhtData {
-            msg_id: String::from(""),
-            dna_address: "".into(),
-            agent_id: String::from(""),
             address: entry.address().to_string(),
             content: serde_json::from_str(
                 &serde_json::to_string(&Some(entry_with_meta.clone())).unwrap(),
             )
             .unwrap(),
+            ..Default::default()
         };
 
         let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));

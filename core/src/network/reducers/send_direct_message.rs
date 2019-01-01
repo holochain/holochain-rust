@@ -86,7 +86,7 @@ mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: mock_network_config(),
-            dna_address: Address::from("abcd"),
+            dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));
 

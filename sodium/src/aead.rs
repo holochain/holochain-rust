@@ -19,7 +19,7 @@ pub const ABYTES: usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_AB
 ///
 /// @param {SecBuf} adata - optional additional authenticated data
 ///
-/// @param {SecBuf} nonce - Empty Buffer (needed when you want to Decrypt the meassage)
+/// @param {SecBuf} nonce - sometimes called initialization vector (iv)
 ///
 /// @param {SecBuf} cipher - Empty Buffer (needed when you want to Decrypt the meassage)
 pub fn enc(
@@ -165,26 +165,28 @@ mod tests {
     #[test]
     fn it_should_with_none_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(16);
-        let mut secret = SecBuf::with_secure(32);
         random_secbuf(&mut message);
-        let cip_len = message.len() + ABYTES;
+
+        let mut secret = SecBuf::with_secure(32);
+        random_secbuf(&mut secret);
+
         let mut nonce = SecBuf::with_insecure(NONCEBYTES);
+        random_secbuf(&mut nonce);
+
+        let cip_len = message.len() + ABYTES;
         let mut cipher = SecBuf::with_insecure(cip_len);
-        {
-            enc(&mut message, &mut secret, None, &mut nonce, &mut cipher).unwrap();
-        }
+        enc(&mut message, &mut secret, None, &mut nonce, &mut cipher).unwrap();
+
         let dec_len = cip_len - ABYTES;
         let mut decrypted_message = SecBuf::with_insecure(dec_len);
-        {
-            dec(
-                &mut decrypted_message,
-                &mut secret,
-                None,
-                &mut nonce,
-                &mut cipher,
-            )
-            .unwrap();;
-        }
+        dec(
+            &mut decrypted_message,
+            &mut secret,
+            None,
+            &mut nonce,
+            &mut cipher,
+        )
+        .unwrap();;
         let message = message.read_lock();
         let decrypted_message = decrypted_message.read_lock();
         assert_eq!(
@@ -195,36 +197,40 @@ mod tests {
     #[test]
     fn it_should_with_bad_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
         let mut secret = SecBuf::with_secure(32);
+        random_secbuf(&mut secret);
+
         let mut adata = SecBuf::with_secure(16);
+        random_secbuf(&mut adata);
+
         let mut adata1 = SecBuf::with_secure(16);
         random_secbuf(&mut adata1);
-        random_secbuf(&mut message);
-        let cip_len = message.len() + ABYTES;
+
         let mut nonce = SecBuf::with_insecure(NONCEBYTES);
+        random_secbuf(&mut nonce);
+
+        let cip_len = message.len() + ABYTES;
         let mut cipher = SecBuf::with_insecure(cip_len);
-        {
-            enc(
-                &mut message,
-                &mut secret,
-                Some(&mut adata),
-                &mut nonce,
-                &mut cipher,
-            )
-            .unwrap();;
-        }
+        enc(
+            &mut message,
+            &mut secret,
+            Some(&mut adata),
+            &mut nonce,
+            &mut cipher,
+        )
+        .unwrap();;
         let dec_len = cip_len - ABYTES;
         let mut decrypted_message = SecBuf::with_insecure(dec_len);
-        {
-            dec(
-                &mut decrypted_message,
-                &mut secret,
-                Some(&mut adata1),
-                &mut nonce,
-                &mut cipher,
-            )
-            .unwrap();;
-        }
+        dec(
+            &mut decrypted_message,
+            &mut secret,
+            Some(&mut adata1),
+            &mut nonce,
+            &mut cipher,
+        )
+        .unwrap();;
         let decrypted_message = decrypted_message.read_lock();
         assert_eq!(
             "[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",

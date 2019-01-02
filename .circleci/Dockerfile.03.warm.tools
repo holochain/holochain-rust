@@ -1,0 +1,5 @@
+FROM holochain/holochain-rust:circle.02.warm.tests
+
+RUN nix-shell --run hc-install-cmd
+
+RUN nix-shell --run hc-install-node-container

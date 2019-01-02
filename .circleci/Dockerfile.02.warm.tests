@@ -1,0 +1,4 @@
+FROM holochain/holochain-rust:circle.01.warm.nix
+
+COPY . .
+RUN nix-shell --run hc-test

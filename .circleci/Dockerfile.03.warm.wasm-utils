@@ -1,5 +1,0 @@
-FROM holochain/holochain-rust:circle.02.warm.hdk
-
-RUN nix-shell --run hc-test-wasm-utils
-
-CMD nix-shell --run hc-test-wasm-utils

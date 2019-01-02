@@ -1,6 +1,6 @@
 //! This module provides access to libsodium
 
-use super::secbuf::SecBuf;
+use super::{check_init, secbuf::SecBuf};
 use crate::{error::SodiumResult, random::buf};
 
 pub const OPSLIMIT_INTERACTIVE: u64 = rust_sodium_sys::crypto_pwhash_OPSLIMIT_INTERACTIVE as u64;
@@ -38,7 +38,8 @@ pub fn hash(
     salt: Option<&mut SecBuf>,
     hash: &mut SecBuf,
 ) -> SodiumResult<()> {
-    let mut my_salt_locker;
+    check_init();
+    let my_salt_locker;
     let mut random_salt = SecBuf::with_insecure(SALTBYTES);
     buf(&mut random_salt);
     let random_salt = random_salt.read_lock();

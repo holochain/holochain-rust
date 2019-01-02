@@ -1,7 +1,5 @@
 //! This module provides access to libsodium
-use super::check_init;
-
-use super::secbuf::SecBuf;
+use super::{check_init, secbuf::SecBuf};
 use crate::error::SodiumResult;
 
 /// Generate a signing keypair from a seed buffer
@@ -71,6 +69,7 @@ pub fn sign(
 ///
 /// @param {Buffer} publicKey
 pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf) -> i32 {
+    check_init();
     unsafe {
         let mut signature = signature.write_lock();
         let mut message = message.write_lock();

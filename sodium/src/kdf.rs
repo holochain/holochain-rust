@@ -1,7 +1,6 @@
 //! This module provides access to libsodium
 
-use super::secbuf::SecBuf;
-
+use super::{check_init, secbuf::SecBuf};
 use crate::{
     error::{SodiumError, SodiumResult},
     util::check_buf_len,
@@ -25,6 +24,7 @@ pub fn derive(
     context: &mut SecBuf,
     parent: &mut SecBuf,
 ) -> SodiumResult<()> {
+    check_init();
     {
         let out = out.read_lock();
         let o = out.len();

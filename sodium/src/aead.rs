@@ -1,6 +1,6 @@
 //! This module provides access to libsodium
 
-use super::secbuf::SecBuf;
+use super::{check_init, secbuf::SecBuf};
 use crate::error::SodiumResult;
 
 /// Used to set the size of nonce var in the enc fns
@@ -29,7 +29,8 @@ pub fn enc(
     nonce: &mut SecBuf,
     cipher: &mut SecBuf,
 ) -> SodiumResult<()> {
-    let mut my_adata_locker;
+    check_init();
+    let my_adata_locker;
     let mut my_adata = std::ptr::null();
     let mut my_ad_len = 0 as libc::c_ulonglong;
 
@@ -78,7 +79,8 @@ pub fn dec(
     nonce: &mut SecBuf,
     cipher: &mut SecBuf,
 ) -> SodiumResult<()> {
-    let mut my_adata_locker;
+    check_init();
+    let my_adata_locker;
     let mut my_adata = std::ptr::null();
     let mut my_ad_len = 0 as libc::c_ulonglong;
 

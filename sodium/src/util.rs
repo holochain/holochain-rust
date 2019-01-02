@@ -1,8 +1,6 @@
 //! This module provides access to libsodium utility and memory functions
 
-use super::check_init;
-
-use super::secbuf::SecBuf;
+use super::{check_init, secbuf::SecBuf};
 
 /// Zero all memory within the provided SecBuf
 pub fn zero(b: &mut SecBuf) {

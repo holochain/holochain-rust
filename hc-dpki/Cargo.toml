@@ -1,0 +1,8 @@
+[package]
+name = "holochain_dpki"
+version = "0.1.0"
+authors = ["zo-el<zo@el.org>"]
+edition = "2018"
+
+[dependencies]
+holochain_sodium = { path = "../sodium" }

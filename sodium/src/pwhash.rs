@@ -1,7 +1,7 @@
 //! This module provides access to libsodium
 
 use super::{check_init, secbuf::SecBuf};
-use crate::{error::SodiumResult, random::buf};
+use crate::{error::SodiumResult, random::random_secbuf};
 
 pub const OPSLIMIT_INTERACTIVE: u64 = rust_sodium_sys::crypto_pwhash_OPSLIMIT_INTERACTIVE as u64;
 pub const MEMLIMIT_INTERACTIVE: usize =
@@ -41,7 +41,7 @@ pub fn hash(
     check_init();
     let my_salt_locker;
     let mut random_salt = SecBuf::with_insecure(SALTBYTES);
-    buf(&mut random_salt);
+    random_secbuf(&mut random_salt);
     let random_salt = random_salt.read_lock();
     let mut my_salt = raw_ptr_char_immut!(random_salt);
 
@@ -79,7 +79,7 @@ mod tests {
     fn it_should_generate_with_no_salt() {
         let mut password = SecBuf::with_secure(HASHBYTES);
         let mut pw1_hash = SecBuf::with_secure(HASHBYTES);
-        buf(&mut password);
+        random_secbuf(&mut password);
         hash(
             &mut password,
             OPSLIMIT_SENSITIVE,
@@ -101,7 +101,6 @@ mod tests {
             password[1] = 222;
         }
         let mut salt = SecBuf::with_insecure(SALTBYTES);
-        // buf(&mut salt);
         hash(
             &mut password,
             OPSLIMIT_SENSITIVE,
@@ -119,9 +118,9 @@ mod tests {
         let mut password = SecBuf::with_secure(HASHBYTES);
         let mut pw1_hash = SecBuf::with_secure(HASHBYTES);
         let mut pw2_hash = SecBuf::with_secure(HASHBYTES);
-        buf(&mut password);
+        random_secbuf(&mut password);
         let mut salt = SecBuf::with_insecure(SALTBYTES);
-        buf(&mut salt);
+        random_secbuf(&mut salt);
         hash(
             &mut password,
             OPSLIMIT_SENSITIVE,

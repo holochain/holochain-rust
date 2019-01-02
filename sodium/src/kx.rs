@@ -119,7 +119,7 @@ pub fn server_session(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::buf;
+    use crate::random::random_secbuf;
 
     #[test]
     fn it_should_generate_keypair() {
@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn it_should_generate_keypair_from_seed() {
         let mut seed = SecBuf::with_secure(32);
-        buf(&mut seed);
+        random_secbuf(&mut seed);
         let mut public_key = SecBuf::with_secure(PUBLICKEYBYTES);
         let mut secret_key = SecBuf::with_secure(SECRETKEYBYTES);
         seed_keypair(&mut seed, &mut public_key, &mut secret_key).unwrap();

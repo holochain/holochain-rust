@@ -114,21 +114,21 @@ pub fn dec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::buf;
+    use crate::random::random_secbuf;
 
     #[test]
     fn it_should_with_auth_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(8);
-        buf(&mut message);
+        random_secbuf(&mut message);
 
         let mut secret = SecBuf::with_secure(32);
-        buf(&mut secret);
+        random_secbuf(&mut secret);
 
         let mut adata = SecBuf::with_secure(16);
-        buf(&mut adata);
+        random_secbuf(&mut adata);
 
         let mut nonce = SecBuf::with_insecure(16);
-        buf(&mut nonce);
+        random_secbuf(&mut nonce);
 
         let mut cipher = SecBuf::with_insecure(message.len() + ABYTES);
 
@@ -166,7 +166,7 @@ mod tests {
     fn it_should_with_none_aead_encrypt_and_decrypt() {
         let mut message = SecBuf::with_secure(16);
         let mut secret = SecBuf::with_secure(32);
-        buf(&mut message);
+        random_secbuf(&mut message);
         let mut message = message.write_lock();
         let cip_len = message.len() + ABYTES;
         let mut nonce = SecBuf::with_insecure(NONCEBYTES);
@@ -202,8 +202,8 @@ mod tests {
         let mut secret = SecBuf::with_secure(32);
         let mut adata = SecBuf::with_secure(16);
         let mut adata1 = SecBuf::with_secure(16);
-        buf(&mut adata1);
-        buf(&mut message);
+        random_secbuf(&mut adata1);
+        random_secbuf(&mut message);
         let mut message = message.write_lock();
         let cip_len = message.len() + ABYTES;
         let mut nonce = SecBuf::with_insecure(NONCEBYTES);

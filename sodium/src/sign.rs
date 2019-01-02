@@ -1,9 +1,6 @@
 //! This module provides access to libsodium
-use super::check_init;
-
-use super::secbuf::SecBuf;
+use super::{check_init, secbuf::SecBuf};
 use crate::error::SodiumResult;
-
 
 /// Generate a signing keypair from a seed buffer
 ///
@@ -14,15 +11,23 @@ use crate::error::SodiumResult;
 /// @param {SecBuf} seed - the seed to derive a keypair from
 ///
 /// @UseReturn {SecBuf} - { publicKey, privateKey }
-pub fn seed_keypair(public_key: &mut SecBuf,secret_key: &mut SecBuf,seed: &mut SecBuf)->SodiumResult<()> {
+pub fn seed_keypair(
+    public_key: &mut SecBuf,
+    secret_key: &mut SecBuf,
+    seed: &mut SecBuf,
+) -> SodiumResult<()> {
     check_init();
+    let seed = seed.read_lock();
+    let mut secret_key = secret_key.write_lock();
+    let mut public_key = public_key.write_lock();
     unsafe {
-        let seed = seed.read_lock();
-        let mut secret_key = secret_key.write_lock();
-        let mut public_key = public_key.write_lock();
-        rust_sodium_sys::crypto_sign_seed_keypair(raw_ptr_char!(public_key),raw_ptr_char!(secret_key),raw_ptr_char_immut!(seed));
-        Ok(())
+        rust_sodium_sys::crypto_sign_seed_keypair(
+            raw_ptr_char!(public_key),
+            raw_ptr_char!(secret_key),
+            raw_ptr_char_immut!(seed),
+        );
     }
+    Ok(())
 }
 
 /// generate a signature
@@ -34,18 +39,27 @@ pub fn seed_keypair(public_key: &mut SecBuf,secret_key: &mut SecBuf,seed: &mut S
 /// @param {SecBuf} signature - Empty Buffer to be used as signature return
 ///
 /// @UseReturn {SecBuf} {signature}
-pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf,signature:&mut SecBuf)->SodiumResult<()>{
+pub fn sign(
+    message: &mut SecBuf,
+    secret_key: &mut SecBuf,
+    signature: &mut SecBuf,
+) -> SodiumResult<()> {
     check_init();
+    let message = message.read_lock();
+    let secret_key = secret_key.read_lock();
+    let mut signature = signature.write_lock();
+    let mess_len = message.len() as libc::c_ulonglong;
     unsafe {
-        let message = message.read_lock();
-        let secret_key = secret_key.read_lock();
-        let mut signature = signature.write_lock();
-        let mess_len = message.len() as libc::c_ulonglong;
-        rust_sodium_sys::crypto_sign_detached(raw_ptr_char!(signature),std::ptr::null_mut(),raw_ptr_char_immut!(message),mess_len,raw_ptr_char_immut!(secret_key));
-        Ok(())
+        rust_sodium_sys::crypto_sign_detached(
+            raw_ptr_char!(signature),
+            std::ptr::null_mut(),
+            raw_ptr_char_immut!(message),
+            mess_len,
+            raw_ptr_char_immut!(secret_key),
+        );
     }
+    Ok(())
 }
-
 
 /// verify a signature given the message and a publicKey
 ///
@@ -54,20 +68,26 @@ pub fn sign(message: &mut SecBuf,secret_key:&mut SecBuf,signature:&mut SecBuf)->
 /// @param {Buffer} message
 ///
 /// @param {Buffer} publicKey
-pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf)->i32{
-    unsafe{
-        let mut signature = signature.write_lock();
-        let mut message = message.write_lock();
-        let mut public_key = public_key.write_lock();
-        let mess_len = message.len() as libc::c_ulonglong;
-        return rust_sodium_sys::crypto_sign_verify_detached(raw_ptr_char!(signature), raw_ptr_char!(message),mess_len, raw_ptr_char!(public_key))
+pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf) -> i32 {
+    check_init();
+    let signature = signature.read_lock();
+    let message = message.read_lock();
+    let public_key = public_key.read_lock();
+    let mess_len = message.len() as libc::c_ulonglong;
+    unsafe {
+        return rust_sodium_sys::crypto_sign_verify_detached(
+            raw_ptr_char_immut!(signature),
+            raw_ptr_char_immut!(message),
+            mess_len,
+            raw_ptr_char_immut!(public_key),
+        );
     }
- }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::buf;
+    use crate::random::random_secbuf;
     #[test]
     fn it_should_get_true_on_good_verify() {
         let mut seed = SecBuf::with_secure(32);
@@ -75,19 +95,16 @@ mod tests {
         let mut secret_key = SecBuf::with_secure(64);
         let mut signature = SecBuf::with_secure(64);
 
-        buf(&mut seed);
+        random_secbuf(&mut seed);
 
-        seed_keypair(&mut public_key,&mut secret_key,&mut seed).unwrap();
+        seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(32);
-        {
-            let mut message = message.write_lock();
-            buf(&mut message);
-        }
-        sign(&mut message,&mut secret_key,&mut signature).unwrap();
+        random_secbuf(&mut message);
 
+        sign(&mut message, &mut secret_key, &mut signature).unwrap();
         {
-            let ver = verify(&mut signature,&mut message,&mut public_key);
+            let ver = verify(&mut signature, &mut message, &mut public_key);
             assert_eq!(0, ver);
         }
     }
@@ -99,26 +116,20 @@ mod tests {
         let mut secret_key = SecBuf::with_secure(64);
         let mut signature = SecBuf::with_secure(64);
 
-        buf(&mut seed);
+        random_secbuf(&mut seed);
 
-        seed_keypair(&mut public_key,&mut secret_key,&mut seed).unwrap();
+        seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(32);
-        {
-            let mut message = message.write_lock();
-            buf(&mut message);
-        }
+        random_secbuf(&mut message);
 
         let mut fake_message = SecBuf::with_insecure(32);
-        {
-            let mut fake_message = fake_message.write_lock();
-            buf(&mut fake_message);
-        }
+        random_secbuf(&mut fake_message);
 
-        sign(&mut message,&mut secret_key,&mut signature).unwrap();
+        sign(&mut message, &mut secret_key, &mut signature).unwrap();
 
         {
-            let ver = verify(&mut signature,&mut fake_message,&mut public_key);
+            let ver = verify(&mut signature, &mut fake_message, &mut public_key);
             assert_eq!(-1, ver);
         }
     }

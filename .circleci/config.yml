@@ -37,7 +37,7 @@ jobs:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
    - run: docker build -f .circleci/Dockerfile..start -t holochain/holochain-rust:circle..start .
-   - run: docker push holochain/holochain-rust:circle.00.start
+   - run: docker push holochain/holochain-rust:circle..start
  docker.01:
   machine: true
   steps:

@@ -4,6 +4,7 @@ use colored::*;
 use holochain_core::nucleus::{ribosome, ZomeFnCall};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
+use holochain_core_types::json::JsonString;
 use std::{
     fs::{self, File},
     io::{Read, Write},
@@ -152,7 +153,7 @@ impl Packager {
                         "HC",
                         context,
                         wasm_binary,
-                        &ZomeFnCall::new("", None, "__hdk_get_json_definition", ""),
+                        &ZomeFnCall::new("", None, "__hdk_get_json_definition", JsonString::null()),
                         Some("{}".as_bytes().to_vec()),
                     )?;
 

@@ -200,10 +200,26 @@ pub enum BundleOnClose {
 ///
 /// # }
 /// ```
-pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
+pub fn debug_json<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     let allocation_of_input = store_as_json(&mut mem_stack, msg)?;
+
+    unsafe {
+        hc_debug_json(allocation_of_input.encode());
+    }
+
+    mem_stack
+        .deallocate(allocation_of_input)
+        .expect("should be able to deallocate input that has been allocated on memory stack");
+
+    Ok(())
+}
+
+pub fn debug(msg: &str) -> ZomeApiResult<()> {
+    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+
+    let allocation_of_input = store_as_string(&mut mem_stack, msg)?;
 
     unsafe {
         hc_debug(allocation_of_input.encode());
@@ -399,7 +415,7 @@ pub fn call<S: Into<String>>(
         .expect("deallocate failed");
     // Done
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
@@ -474,7 +490,7 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
         .expect("deallocate failed");
     // Done
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
@@ -567,7 +583,7 @@ pub fn get_entry_result(
         .expect("deallocate failed");
     // Done
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
@@ -657,7 +673,7 @@ pub fn link_entries<S: Into<String>>(
         .expect("deallocate failed");
     // Done
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
@@ -733,7 +749,7 @@ pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
         .expect("deallocate failed");
     // Done
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
@@ -782,7 +798,7 @@ pub fn update_entry(new_entry: Entry, address: Address) -> ZomeApiResult<Address
         .expect("deallocate failed");
     // Done
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
@@ -871,7 +887,7 @@ pub fn get_links_with_options<S: Into<String>>(
         .expect("deallocate failed");
 
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
@@ -988,7 +1004,7 @@ pub fn query(
         .expect("deallocate failed");
     // Done
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }

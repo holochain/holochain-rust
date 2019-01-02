@@ -366,7 +366,7 @@ JSON data by _wrapping_ already serialized data e.g. with `format!`.
 An example taken from core:
 
 ```rust
-impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
+impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
         let is_ok = result.is_ok();
         let inner_json: JsonString = match result {

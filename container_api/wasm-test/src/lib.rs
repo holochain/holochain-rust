@@ -92,7 +92,7 @@ pub extern "C" fn debug_stacked_hello(encoded_allocation_of_input: usize) -> i32
             value: "fish".to_string(),
         },
     );
-    hdk_debug(&mut mem_stack, &JsonString::from("disruptive debug log"));
+    hdk_debug(&mut mem_stack, "disruptive debug log");
     fish
 }
 

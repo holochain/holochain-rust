@@ -2,7 +2,7 @@
 
 use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
-    json::{JsonError, JsonString},
+    json::{JsonString},
 };
 use std::{error::Error, fmt};
 
@@ -16,8 +16,6 @@ pub enum ZomeApiError {
     ValidationFailed(String),
     Timeout,
 }
-
-impl JsonError for ZomeApiError {}
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {

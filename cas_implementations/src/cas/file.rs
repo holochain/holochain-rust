@@ -67,7 +67,11 @@ impl ContentAddressableStorage for FilesystemStorage {
     fn fetch(&self, address: &Address) -> Result<Option<Content>, HolochainError> {
         let _guard = self.lock.read()?;
         if self.contains(&address)? {
-            Ok(Some(read_to_string(self.address_to_path(address))?.into()))
+            Ok(
+                Some(
+                    Content::from_json(&
+                    read_to_string(
+                        self.address_to_path(address))?)))
         } else {
             Ok(None)
         }

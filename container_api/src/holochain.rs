@@ -159,7 +159,7 @@ impl Holochain {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&String::from(params)));
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 

@@ -137,7 +137,7 @@ pub extern "C" fn test_load_json_from_raw_err(_: u32) -> u32 {
     let ptr = store_res.clone().unwrap().offset() as *mut c_char;
     let load_res: Result<OtherTestStruct, HolochainError> = load_json_from_raw(ptr);
     zome_assert!(stack, load_res.is_err());
-    let store_err_res = store_as_json(&mut stack, load_res.err().unwrap().to_string());
+    let store_err_res = store_as_json(&mut stack, JsonString::from_json(&load_res.err().unwrap().to_string()));
     store_err_res.unwrap().encode()
 }
 
@@ -188,8 +188,8 @@ pub extern "C" fn test_stacked_strings(_: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn test_stacked_json_str(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
-    let first = store_as_json_into_encoded_allocation(&mut stack, "first");
-    let _second = store_as_json_into_encoded_allocation(&mut stack, "second");
+    let first = store_as_json_into_encoded_allocation(&mut stack, RawString::from("first"));
+    let _second = store_as_json_into_encoded_allocation(&mut stack, RawString::from("second"));
     first as u32
 }
 
@@ -214,9 +214,9 @@ pub extern "C" fn test_stacked_mix(_: u32) -> u32 {
         value: "first".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     });
-    let _second = store_as_json_into_encoded_allocation(&mut stack, "second");
+    let _second = store_as_json_into_encoded_allocation(&mut stack, RawString::from("second"));
     let third = store_string_into_encoded_allocation(&mut stack, "third");
-    let _fourth = store_as_json_into_encoded_allocation(&mut stack, "fourth");
+    let _fourth = store_as_json_into_encoded_allocation(&mut stack, RawString::from("fourth"));
     let _fifth = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
         value: "fifth".to_string(),
         list: vec!["fifthlist".to_string()],

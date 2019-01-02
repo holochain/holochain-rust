@@ -205,7 +205,7 @@ macro_rules! define_zome {
                     $receive_expr
                 }
 
-                $crate::global_fns::store_and_return_output(execute(input))
+                $crate::global_fns::store_and_return_output(JsonString::from_json(&execute(input)))
             }
         )*
 

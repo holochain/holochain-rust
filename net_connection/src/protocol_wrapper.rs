@@ -324,7 +324,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_funky_state() {
-        let w = ProtocolWrapper::try_from(JsonString::from(
+        let w = ProtocolWrapper::try_from(JsonString::from_json(
             r#"{
             "method": "state",
             "state": "test_state"

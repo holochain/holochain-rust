@@ -8,6 +8,7 @@ use holochain_net_connection::{
     protocol::Protocol,
     NetResult,
 };
+use holochain_core_types::json::JsonString;
 
 use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, p2p_config::*};
 
@@ -34,7 +35,7 @@ impl P2pNetwork {
     pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
         //let config: P2pConfig = serde_json::from_str(config_json.into())?;
-        let network_config = config.backend_config.to_string().into();
+        let network_config = JsonString::from_json(&config.backend_config.to_string());
         // so far, we have only implemented the "ipc" backend type
         let connection = match config.backend_kind {
             P2pBackendKind::IPC => {

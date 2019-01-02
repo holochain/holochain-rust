@@ -6,6 +6,7 @@ use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::send::SendArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
+use holochain_core_types::json::JsonString;
 
 /// ZomeApiFunction::Send function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -26,5 +27,5 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
     let result = block_on(custom_send(args.to_agent, message, &runtime.context));
 
-    runtime.store_result(result)
+    runtime.store_result(result.map(|j| JsonString::from_json(&j)))
 }

@@ -131,7 +131,7 @@ impl ContextBuilder {
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config.unwrap_or(JsonString::from(String::from(
+            self.network_config.unwrap_or(JsonString::from_json(&String::from(
                 P2pConfig::DEFAULT_MOCK_CONFIG,
             ))),
             self.container_api,

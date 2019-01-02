@@ -53,7 +53,7 @@ impl FromStr for RibosomeReturnCode {
 
 impl From<RibosomeReturnCode> for JsonString {
     fn from(ribosome_return_code: RibosomeReturnCode) -> JsonString {
-        JsonString::from(ribosome_return_code.to_string())
+        JsonString::from_json(&ribosome_return_code.to_string())
     }
 }
 

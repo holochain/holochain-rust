@@ -18,6 +18,7 @@ use holochain_wasm_utils::{
         EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
+    holochain_core_types::json::RawString,
     memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
 use std::collections::BTreeMap;
@@ -121,7 +122,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
 
             match validation_result {
                 Ok(()) => 0,
-                Err(fail_string) => crate::global_fns::store_and_return_output(fail_string),
+                Err(fail_string) => crate::global_fns::store_and_return_output(RawString::from(fail_string)),
             }
         }
     }
@@ -199,7 +200,7 @@ pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
             );
             Some(match validation_result {
                 Ok(()) => 0,
-                Err(fail_string) => ::global_fns::store_and_return_output(fail_string),
+                Err(fail_string) => ::global_fns::store_and_return_output(RawString::from(fail_string)),
             })
         })
         .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)

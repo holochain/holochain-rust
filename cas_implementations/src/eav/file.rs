@@ -160,7 +160,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 .cloned()
                 .map(|maybe_eav_content|
                     // errors filtered out above... unwrap is safe.
-                    Content::from(maybe_eav_content.unwrap()))
+                    Content::from_json(&maybe_eav_content.unwrap()))
                 .map(|content| EntityAttributeValue::try_from_content(&content))
                 .collect::<HashSet<HcResult<EntityAttributeValue>>>();
 

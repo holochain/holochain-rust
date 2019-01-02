@@ -52,7 +52,7 @@ where
     let serialized_app_entry = SerializedAppEntry::deserialize(deserializer)?;
     Ok((
         AppEntryType::from(serialized_app_entry.0),
-        AppEntryValue::from(serialized_app_entry.1),
+        AppEntryValue::from_json(&serialized_app_entry.1),
     ))
 }
 
@@ -144,7 +144,7 @@ pub fn test_entry_value() -> JsonString {
 }
 
 pub fn test_entry_content() -> Content {
-    Content::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
+    Content::from_json("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// dummy entry content, same as test_entry_value()
@@ -175,7 +175,7 @@ pub fn test_entry() -> Entry {
 }
 
 pub fn expected_serialized_entry_content() -> JsonString {
-    JsonString::from("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
+    JsonString::from_json("{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}")
 }
 
 /// the correct address for test_entry()

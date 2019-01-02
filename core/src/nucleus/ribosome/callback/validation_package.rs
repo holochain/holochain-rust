@@ -43,7 +43,7 @@ pub fn get_validation_package_definition(
                     &zome_name,
                     None,
                     "__hdk_get_validation_package_for_entry_type",
-                    app_entry_type.to_string(),
+                    JsonString::from_json(&app_entry_type.to_string()),
                 ),
                 Some(app_entry_type.to_string().into_bytes()),
             )?

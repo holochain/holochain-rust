@@ -21,7 +21,7 @@ pub(crate) fn init_globals() -> ZomeApiResult<ZomeApiGlobals> {
     let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
     // Done
     if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
+        Ok(JsonString::from_json(&result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }

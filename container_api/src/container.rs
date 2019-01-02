@@ -177,7 +177,7 @@ impl Container {
                 // Network config:
                 if let Some(network_config) = instance_config.network {
                     context_builder =
-                        context_builder.with_network_config(JsonString::from(network_config))
+                        context_builder.with_network_config(JsonString::from_json(&network_config))
                 };
 
                 // Storage:
@@ -245,7 +245,7 @@ impl Container {
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
-        Dna::try_from(JsonString::from(contents))
+        Dna::try_from(JsonString::from_json(&contents))
     }
 
     fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {

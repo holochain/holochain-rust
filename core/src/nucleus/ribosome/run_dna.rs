@@ -162,7 +162,7 @@ pub fn run_dna(
                 }
                 Ok(json_str) => {
                     return_log_msg = json_str.clone();
-                    return_result = Ok(JsonString::from(json_str));
+                    return_result = Ok(JsonString::from_json(&json_str));
                 }
             }
         }

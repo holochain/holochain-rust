@@ -24,11 +24,11 @@ impl JsonString {
     /// a null JSON value
     /// e.g. represents None when implementing From<Option<Foo>>
     pub fn null() -> JsonString {
-        JsonString::from("null")
+        JsonString::from_json("null")
     }
 
     pub fn empty_object() -> JsonString {
-        JsonString::from("{}")
+        JsonString::from_json("{}")
     }
 
     pub fn is_null(&self) -> bool {
@@ -41,9 +41,12 @@ impl JsonString {
     }
 }
 
-impl From<String> for JsonString {
-    fn from(s: String) -> JsonString {
-        let cleaned = s
+impl JsonString {
+    /// wraps an existing string
+    /// use only if you are _sure_ the existing string is already valid JSON
+    /// performs minor cleanup (trims whitespace and null characters)
+    pub fn from_json(json: &str) -> JsonString {
+        let cleaned = json
             // remove whitespace from both ends
             .trim()
             // remove null characters from both ends
@@ -67,7 +70,7 @@ impl TryFrom<JsonString> for u32 {
 
 impl From<serde_json::Value> for JsonString {
     fn from(v: serde_json::Value) -> JsonString {
-        JsonString::from(v.to_string())
+        JsonString::from_json(&v.to_string())
     }
 }
 
@@ -89,56 +92,27 @@ impl<'a> From<&'a JsonString> for String {
     }
 }
 
-impl From<&'static str> for JsonString {
-    fn from(s: &str) -> JsonString {
-        JsonString::from(String::from(s))
-    }
-}
-
 impl<T: Serialize> From<Vec<T>> for JsonString {
     fn from(vector: Vec<T>) -> JsonString {
-        JsonString::from(serde_json::to_string(&vector).expect("could not Jsonify vector"))
+        JsonString::from_json(&serde_json::to_string(&vector).expect("could not Jsonify vector"))
     }
 }
 
-/// signifies type can be converted to JsonString in Err from some Result
-/// can't use std::error::Error for this because String has Error as a reserved future trait
-pub trait JsonError {}
-
-impl JsonError for HolochainError {}
-
-impl<T: Into<JsonString>, E: Into<JsonString> + JsonError> From<Result<T, E>> for JsonString {
+impl<T: Into<JsonString>, E: Into<JsonString>> From<Result<T, E>> for JsonString {
     fn from(result: Result<T, E>) -> JsonString {
         let is_ok = result.is_ok();
+
         let inner_json: JsonString = match result {
             Ok(inner) => inner.into(),
             Err(inner) => inner.into(),
         };
-        let inner_string = String::from(inner_json);
-        format!(
-            "{{\"{}\":{}}}",
-            if is_ok { "Ok" } else { "Err" },
-            inner_string
-        )
-        .into()
-    }
-}
+        let inner_string: String = inner_json.into();
 
-impl<T: Into<JsonString>> From<Result<T, String>> for JsonString {
-    fn from(result: Result<T, String>) -> JsonString {
-        let is_ok = result.is_ok();
-        let inner_json: JsonString = match result {
-            Ok(inner) => inner.into(),
-            // strings need this special handling c.f. Error
-            Err(inner) => RawString::from(inner).into(),
-        };
-        let inner_string = String::from(inner_json);
-        format!(
+        JsonString::from_json(&format!(
             "{{\"{}\":{}}}",
             if is_ok { "Ok" } else { "Err" },
-            inner_string
-        )
-        .into()
+            inner_string,
+        ))
     }
 }
 
@@ -175,7 +149,7 @@ impl Display for JsonString {
 /// }
 pub fn default_to_json<V: Serialize + Debug>(v: V) -> JsonString {
     match serde_json::to_string(&v) {
-        Ok(s) => Ok(JsonString::from(s)),
+        Ok(s) => Ok(JsonString::from_json(&s)),
         Err(e) => Err(HolochainError::SerializationError(e.to_string())),
     }
     .expect(&format!("could not Jsonify: {:?}", v))
@@ -251,7 +225,7 @@ impl From<RawString> for String {
 /// it should always be possible to Jsonify RawString, if not something is very wrong
 impl From<RawString> for JsonString {
     fn from(raw_string: RawString) -> JsonString {
-        JsonString::from(
+        JsonString::from_json(&
             serde_json::to_string(&raw_string.0)
                 .expect(&format!("could not Jsonify RawString: {:?}", &raw_string)),
         )

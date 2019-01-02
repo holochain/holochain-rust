@@ -27,7 +27,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(args: ZomeFnCallArgs) -> Self {
-        ZomeFnCall::new(&args.zome_name, args.cap, &args.fn_name, args.fn_args)
+        ZomeFnCall::new(&args.zome_name, args.cap, &args.fn_name, JsonString::from_json(&args.fn_args))
     }
 }
 
@@ -140,7 +140,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     let response = JsonRpc::parse(&response)?;
 
     match response {
-        JsonRpc::Success(_) => Ok(JsonString::from(
+        JsonRpc::Success(_) => Ok(JsonString::from_json(&
             serde_json::to_string(&response.get_result().unwrap()).unwrap(),
         )),
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(

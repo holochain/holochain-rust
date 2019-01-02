@@ -191,6 +191,7 @@ mod tests {
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna};
+    use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
@@ -230,7 +231,10 @@ mod tests {
     use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     fn example_api_wasm_path() -> String {
-        "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm".into()
+        format!(
+            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            wasm_target_dir("container_api/", "wasm-test/"),
+        )
     }
 
     fn example_api_wasm() -> Vec<u8> {
@@ -632,9 +636,10 @@ mod tests {
     fn can_receive_action_signals() {
         use holochain_core::action::Action;
         use std::time::Duration;
-        let wasm = include_bytes!(
-            "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
-        );
+        let wasm = include_bytes!(format!(
+            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            wasm_target_dir("container_api/", "wasm-test/"),
+        ));
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
         let mut dna =
             test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);

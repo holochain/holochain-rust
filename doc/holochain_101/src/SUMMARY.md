@@ -37,6 +37,7 @@
   - [(E) Bundling](./zome/bundling.md)
   - [(E) Emitting Signals](./zome/emitting_signals.md)
 - [(E) Building Holochain Apps: Packaging And Testing](./packaging_and_testing.md)
+  - [.build Files](./build_files.md)
   - [(E) Packaging Your App Into DNA](./app_packaging.md)
   - [(E) Running Apps](./running_an_app.md)
   - [(E) Scenario Testing](./scenario_testing.md)

@@ -5,7 +5,7 @@ jobs:
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:circle.99.end
+   - image: holochain/holochain-rust:circle.zz.end
   steps:
    - checkout
 
@@ -84,12 +84,12 @@ workflows:
   #        - develop
   jobs:
    - docker.start
-   - docker.01:
-      requires:
-       - docker.start
+   # - docker.01:
+   #    requires:
+   #     - docker.start
    - docker.02:
       requires:
-       - docker.01
+       - docker.start
    - docker.03:
       requires:
        - docker.02

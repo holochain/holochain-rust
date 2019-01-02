@@ -3,6 +3,7 @@ extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
+extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
 extern crate failure;

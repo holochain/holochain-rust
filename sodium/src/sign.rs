@@ -17,17 +17,17 @@ pub fn seed_keypair(
     seed: &mut SecBuf,
 ) -> SodiumResult<()> {
     check_init();
+    let seed = seed.read_lock();
+    let mut secret_key = secret_key.write_lock();
+    let mut public_key = public_key.write_lock();
     unsafe {
-        let seed = seed.read_lock();
-        let mut secret_key = secret_key.write_lock();
-        let mut public_key = public_key.write_lock();
         rust_sodium_sys::crypto_sign_seed_keypair(
             raw_ptr_char!(public_key),
             raw_ptr_char!(secret_key),
             raw_ptr_char_immut!(seed),
         );
-        Ok(())
     }
+    Ok(())
 }
 
 /// generate a signature
@@ -45,11 +45,11 @@ pub fn sign(
     signature: &mut SecBuf,
 ) -> SodiumResult<()> {
     check_init();
+    let message = message.read_lock();
+    let secret_key = secret_key.read_lock();
+    let mut signature = signature.write_lock();
+    let mess_len = message.len() as libc::c_ulonglong;
     unsafe {
-        let message = message.read_lock();
-        let secret_key = secret_key.read_lock();
-        let mut signature = signature.write_lock();
-        let mess_len = message.len() as libc::c_ulonglong;
         rust_sodium_sys::crypto_sign_detached(
             raw_ptr_char!(signature),
             std::ptr::null_mut(),
@@ -57,8 +57,8 @@ pub fn sign(
             mess_len,
             raw_ptr_char_immut!(secret_key),
         );
-        Ok(())
     }
+    Ok(())
 }
 
 /// verify a signature given the message and a publicKey
@@ -70,11 +70,11 @@ pub fn sign(
 /// @param {Buffer} publicKey
 pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf) -> i32 {
     check_init();
+    let mut signature = signature.write_lock();
+    let mut message = message.write_lock();
+    let mut public_key = public_key.write_lock();
+    let mess_len = message.len() as libc::c_ulonglong;
     unsafe {
-        let mut signature = signature.write_lock();
-        let mut message = message.write_lock();
-        let mut public_key = public_key.write_lock();
-        let mess_len = message.len() as libc::c_ulonglong;
         return rust_sodium_sys::crypto_sign_verify_detached(
             raw_ptr_char!(signature),
             raw_ptr_char!(message),

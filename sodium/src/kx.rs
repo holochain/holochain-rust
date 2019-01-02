@@ -14,12 +14,12 @@ pub const SESSIONKEYBYTES: usize = rust_sodium_sys::crypto_kx_SESSIONKEYBYTES as
 /// @param {SecBuf} sk - Empty Buffer to be used as secretKey return
 pub fn keypair(pk: &mut SecBuf, sk: &mut SecBuf) -> SodiumResult<()> {
     check_init();
+    let mut pk = pk.write_lock();
+    let mut sk = sk.write_lock();
     unsafe {
-        let mut pk = pk.write_lock();
-        let mut sk = sk.write_lock();
         rust_sodium_sys::crypto_kx_keypair(raw_ptr_char!(pk), raw_ptr_char!(sk));
-        Ok(())
     }
+    Ok(())
 }
 
 /// Generate a fresh, keyexchange keypair, based off a seed
@@ -31,17 +31,17 @@ pub fn keypair(pk: &mut SecBuf, sk: &mut SecBuf) -> SodiumResult<()> {
 /// @param {SecBuf} sk - Empty Buffer to be used as secretKey return
 pub fn seed_keypair(seed: &mut SecBuf, pk: &mut SecBuf, sk: &mut SecBuf) -> SodiumResult<()> {
     check_init();
+    let seed = seed.read_lock();
+    let mut pk = pk.write_lock();
+    let mut sk = sk.write_lock();
     unsafe {
-        let seed = seed.read_lock();
-        let mut pk = pk.write_lock();
-        let mut sk = sk.write_lock();
         rust_sodium_sys::crypto_kx_seed_keypair(
             raw_ptr_char!(pk),
             raw_ptr_char!(sk),
             raw_ptr_char_immut!(seed),
         );
-        Ok(())
     }
+    Ok(())
 }
 
 /// Given a server's public key, derive shared secrets.
@@ -63,12 +63,12 @@ pub fn client_session(
     tx: &mut SecBuf,
 ) -> SodiumResult<()> {
     check_init();
+    let mut rx = rx.write_lock();
+    let mut tx = tx.write_lock();
+    let client_sk = client_sk.read_lock();
+    let client_pk = client_pk.read_lock();
+    let server_pk = server_pk.read_lock();
     unsafe {
-        let mut rx = rx.write_lock();
-        let mut tx = tx.write_lock();
-        let client_sk = client_sk.read_lock();
-        let client_pk = client_pk.read_lock();
-        let server_pk = server_pk.read_lock();
         rust_sodium_sys::crypto_kx_client_session_keys(
             raw_ptr_char!(rx),
             raw_ptr_char!(tx),
@@ -76,8 +76,8 @@ pub fn client_session(
             raw_ptr_char_immut!(client_sk),
             raw_ptr_char_immut!(server_pk),
         );
-        Ok(())
     }
+    Ok(())
 }
 
 /// Given a client's public key, derive shared secrets.
@@ -99,12 +99,12 @@ pub fn server_session(
     tx: &mut SecBuf,
 ) -> SodiumResult<()> {
     check_init();
+    let mut rx = rx.write_lock();
+    let mut tx = tx.write_lock();
+    let client_pk = client_pk.read_lock();
+    let server_sk = server_sk.read_lock();
+    let server_pk = server_pk.read_lock();
     unsafe {
-        let mut rx = rx.write_lock();
-        let mut tx = tx.write_lock();
-        let client_pk = client_pk.read_lock();
-        let server_sk = server_sk.read_lock();
-        let server_pk = server_pk.read_lock();
         rust_sodium_sys::crypto_kx_server_session_keys(
             raw_ptr_char!(rx),
             raw_ptr_char!(tx),
@@ -112,8 +112,8 @@ pub fn server_session(
             raw_ptr_char_immut!(server_sk),
             raw_ptr_char_immut!(client_pk),
         );
-        Ok(())
     }
+    Ok(())
 }
 
 #[cfg(test)]

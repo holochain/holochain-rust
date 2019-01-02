@@ -5,8 +5,8 @@ use super::{check_init, secbuf::SecBuf};
 /// Zero all memory within the provided SecBuf
 pub fn zero(b: &mut SecBuf) {
     check_init();
+    let mut b = b.write_lock();
     unsafe {
-        let mut b = b.write_lock();
         rust_sodium_sys::sodium_memzero(raw_ptr_void!(b), b.len());
     }
 }
@@ -14,8 +14,8 @@ pub fn zero(b: &mut SecBuf) {
 /// Increments all memory within the provided SecBuf by 1
 pub fn increment(b: &mut SecBuf) {
     check_init();
+    let mut b = b.write_lock();
     unsafe {
-        let mut b = b.write_lock();
         rust_sodium_sys::sodium_increment(raw_ptr_char!(b), b.len());
     }
 }
@@ -31,11 +31,9 @@ pub fn increment(b: &mut SecBuf) {
 /// | if a == b; return 0
 pub fn compare(a: &mut SecBuf, b: &mut SecBuf) -> i32 {
     check_init();
-    unsafe {
-        let mut a = a.write_lock();
-        let mut b = b.write_lock();
-        rust_sodium_sys::sodium_compare(raw_ptr_char!(a), raw_ptr_char!(b), a.len())
-    }
+    let mut a = a.write_lock();
+    let mut b = b.write_lock();
+    unsafe { rust_sodium_sys::sodium_compare(raw_ptr_char!(a), raw_ptr_char!(b), a.len()) }
 }
 /// Check if lenght of buffer is of approprate size
 ///

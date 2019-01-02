@@ -16,17 +16,17 @@ pub const BYTES512: usize = rust_sodium_sys::crypto_hash_sha512_BYTES as usize;
 /// @param {SecBuf} output - Empty Buffer to be used as output
 pub fn sha256(input: &mut SecBuf, output: &mut SecBuf) -> SodiumResult<()> {
     check_init();
+    let input_len = input.len() as libc::c_ulonglong;
+    let input = input.read_lock();
+    let mut output = output.write_lock();
     unsafe {
-        let input_len = input.len() as libc::c_ulonglong;
-        let input = input.read_lock();
-        let mut output = output.write_lock();
         rust_sodium_sys::crypto_hash_sha256(
             raw_ptr_char!(output),
             raw_ptr_char_immut!(input),
             input_len,
         );
-        Ok(())
     }
+    Ok(())
 }
 
 /// Compute the sha512 hash of input buffer
@@ -36,17 +36,17 @@ pub fn sha256(input: &mut SecBuf, output: &mut SecBuf) -> SodiumResult<()> {
 /// @param {SecBuf} output - Empty Buffer to be used as output
 pub fn sha512(input: &mut SecBuf, output: &mut SecBuf) -> SodiumResult<()> {
     check_init();
+    let input = input.read_lock();
+    let mut output = output.write_lock();
+    let input_len = input.len() as libc::c_ulonglong;
     unsafe {
-        let input = input.read_lock();
-        let mut output = output.write_lock();
-        let input_len = input.len() as libc::c_ulonglong;
         rust_sodium_sys::crypto_hash_sha256(
             raw_ptr_char!(output),
             raw_ptr_char_immut!(input),
             input_len,
         );
-        Ok(())
     }
+    Ok(())
 }
 
 #[cfg(test)]

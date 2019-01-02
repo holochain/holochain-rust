@@ -42,10 +42,10 @@ pub fn derive(
             )));
         }
     }
+    let mut out = out.write_lock();
+    let parent = parent.read_lock();
+    let context = context.read_lock();
     unsafe {
-        let mut out = out.write_lock();
-        let parent = parent.read_lock();
-        let context = context.read_lock();
         rust_sodium_sys::crypto_kdf_derive_from_key(
             raw_ptr_char!(out),
             out.len(),
@@ -53,8 +53,8 @@ pub fn derive(
             raw_ptr_ichar_immut!(context),
             raw_ptr_char_immut!(parent),
         );
-        Ok(())
     }
+    Ok(())
 }
 
 #[cfg(test)]

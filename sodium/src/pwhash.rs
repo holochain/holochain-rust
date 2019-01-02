@@ -54,7 +54,6 @@ pub fn hash(
     let mut hash = hash.write_lock();
     let hash_len = hash.len() as libc::c_ulonglong;
     let pw_len = password.len() as libc::c_ulonglong;
-    // println!("See salt: {:?}",my_salt);
     unsafe {
         rust_sodium_sys::crypto_pwhash(
             raw_ptr_char!(hash),
@@ -66,7 +65,6 @@ pub fn hash(
             mem_limit,
             alg as libc::c_int,
         );
-        println!("> hash : {:?}", hash);
     }
     Ok(())
 }

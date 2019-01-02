@@ -1,7 +1,7 @@
 //! This module provides access to libsodium
 
 use super::{check_init, secbuf::SecBuf};
-use crate::{error::SodiumResult, random::random_secbuf};
+use crate::{error::SodiumResult};
 
 pub const OPSLIMIT_INTERACTIVE: u64 = rust_sodium_sys::crypto_pwhash_OPSLIMIT_INTERACTIVE as u64;
 pub const MEMLIMIT_INTERACTIVE: usize =
@@ -27,7 +27,7 @@ pub const SALTBYTES: usize = rust_sodium_sys::crypto_pwhash_SALTBYTES as usize;
 ///
 /// @param {i8} algorithm - which hashing algorithm
 ///
-/// @param {SecBuf} salt - optional predefined salt (random if not included)
+/// @param {SecBuf} salt - predefined salt (randomomiz it if you dont want to generate it )
 ///
 /// @param {SecBuf} hash - the hash generated
 pub fn hash(
@@ -35,21 +35,11 @@ pub fn hash(
     ops_limit: u64,
     mem_limit: usize,
     alg: i8,
-    salt: Option<&mut SecBuf>,
+    salt: &mut SecBuf,
     hash: &mut SecBuf,
 ) -> SodiumResult<()> {
     check_init();
-    let my_salt_locker;
-    let mut random_salt = SecBuf::with_insecure(SALTBYTES);
-    random_secbuf(&mut random_salt);
-    let random_salt = random_salt.read_lock();
-    let mut my_salt = raw_ptr_char_immut!(random_salt);
-
-    if let Some(s) = salt {
-        my_salt_locker = s.read_lock();
-        my_salt = raw_ptr_char_immut!(my_salt_locker);
-    }
-
+    let salt = salt.read_lock();
     let password = password.read_lock();
     let mut hash = hash.write_lock();
     let hash_len = hash.len() as libc::c_ulonglong;
@@ -60,7 +50,7 @@ pub fn hash(
             hash_len,
             raw_ptr_ichar_immut!(password),
             pw_len,
-            my_salt,
+            raw_ptr_char_immut!(salt),
             ops_limit as libc::c_ulonglong,
             mem_limit,
             alg as libc::c_int,
@@ -72,18 +62,21 @@ pub fn hash(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::random::random_secbuf;
 
     #[test]
-    fn it_should_generate_with_no_salt() {
+    fn it_should_generate_with_random_salt() {
         let mut password = SecBuf::with_secure(HASHBYTES);
         let mut pw1_hash = SecBuf::with_secure(HASHBYTES);
+        let mut random_salt = SecBuf::with_insecure(SALTBYTES);
         random_secbuf(&mut password);
+        random_secbuf(&mut random_salt);
         hash(
             &mut password,
             OPSLIMIT_SENSITIVE,
             MEMLIMIT_SENSITIVE,
             ALG_ARGON2ID13,
-            None,
+            &mut random_salt,
             &mut pw1_hash,
         )
         .unwrap();
@@ -104,7 +97,7 @@ mod tests {
             OPSLIMIT_SENSITIVE,
             MEMLIMIT_SENSITIVE,
             ALG_ARGON2ID13,
-            Some(&mut salt),
+            &mut salt,
             &mut pw2_hash,
         )
         .unwrap();
@@ -124,7 +117,7 @@ mod tests {
             OPSLIMIT_SENSITIVE,
             MEMLIMIT_SENSITIVE,
             ALG_ARGON2ID13,
-            Some(&mut salt),
+            &mut salt,
             &mut pw1_hash,
         )
         .unwrap();
@@ -133,7 +126,7 @@ mod tests {
             OPSLIMIT_SENSITIVE,
             MEMLIMIT_SENSITIVE,
             ALG_ARGON2ID13,
-            Some(&mut salt),
+            &mut salt,
             &mut pw2_hash,
         )
         .unwrap();

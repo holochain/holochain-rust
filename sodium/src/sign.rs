@@ -70,16 +70,16 @@ pub fn sign(
 /// @param {Buffer} publicKey
 pub fn verify(signature: &mut SecBuf, message: &mut SecBuf, public_key: &mut SecBuf) -> i32 {
     check_init();
-    let mut signature = signature.write_lock();
-    let mut message = message.write_lock();
-    let mut public_key = public_key.write_lock();
+    let signature = signature.read_lock();
+    let message = message.read_lock();
+    let public_key = public_key.read_lock();
     let mess_len = message.len() as libc::c_ulonglong;
     unsafe {
         return rust_sodium_sys::crypto_sign_verify_detached(
-            raw_ptr_char!(signature),
-            raw_ptr_char!(message),
+            raw_ptr_char_immut!(signature),
+            raw_ptr_char_immut!(message),
             mess_len,
-            raw_ptr_char!(public_key),
+            raw_ptr_char_immut!(public_key),
         );
     }
 }

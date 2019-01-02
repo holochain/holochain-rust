@@ -3,10 +3,11 @@
 use super::{check_init, secbuf::SecBuf};
 use crate::{
     error::{SodiumError, SodiumResult},
-    util::check_buf_len,
 };
 
 pub const CONTEXTBYTES: usize = rust_sodium_sys::crypto_kdf_CONTEXTBYTES as usize;
+pub const MINBYTES: usize = rust_sodium_sys::crypto_kdf_BYTES_MIN as usize;
+pub const MAXBYTES: usize = rust_sodium_sys::crypto_kdf_BYTES_MAX as usize;
 
 /// Derive a subkey from a parent key
 /// ****
@@ -30,7 +31,7 @@ pub fn derive(
         let o = out.len();
         let context = context.read_lock();
         let c = context.len();
-        if check_buf_len(o) {
+        if o < MINBYTES || o > MAXBYTES {
             return Err(SodiumError::OutputLength(format!(
                 "Invalid 'out' Buffer length:{}",
                 o
@@ -91,14 +92,7 @@ mod tests {
         let mut out = SecBuf::with_insecure(2);
         {
             let mut out = out.write_lock();
-            match derive(&mut out, 3, &mut context, &mut parent) {
-                Ok(_k) => {
-                    assert!(false);
-                }
-                Err(_e) => {
-                    assert!(true);
-                }
-            };
+            derive(&mut out, 3, &mut context, &mut parent).expect_err("should have failed");
         }
     }
 }

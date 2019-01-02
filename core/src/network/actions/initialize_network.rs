@@ -10,10 +10,7 @@ use futures::{
     Future,
 };
 use holochain_core_types::error::HcResult;
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
@@ -53,8 +50,6 @@ pub async fn initialize_network_with_spoofed_dna(
 pub struct InitNetworkFuture {
     context: Arc<Context>,
 }
-
-impl Unpin for InitNetworkFuture {}
 
 impl Future for InitNetworkFuture {
     type Output = HcResult<()>;

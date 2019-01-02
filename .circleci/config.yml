@@ -84,12 +84,12 @@ workflows:
   #        - develop
   jobs:
    - docker.start
-   # - docker.01:
-   #    requires:
-   #     - docker.start
-   - docker.02:
+   - docker.01:
       requires:
        - docker.start
+   - docker.02:
+      requires:
+       - docker.01
    - docker.03:
       requires:
        - docker.02

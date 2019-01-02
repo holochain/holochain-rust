@@ -167,19 +167,15 @@ mod tests {
         let mut message = SecBuf::with_secure(16);
         let mut secret = SecBuf::with_secure(32);
         random_secbuf(&mut message);
-        let mut message = message.write_lock();
         let cip_len = message.len() + ABYTES;
         let mut nonce = SecBuf::with_insecure(NONCEBYTES);
         let mut cipher = SecBuf::with_insecure(cip_len);
         {
-            let mut message = message.write_lock();
             enc(&mut message, &mut secret, None, &mut nonce, &mut cipher).unwrap();
         }
-        let mut cipher = cipher.write_lock();
         let dec_len = cip_len - ABYTES;
         let mut decrypted_message = SecBuf::with_insecure(dec_len);
         {
-            let mut decrypted_message = decrypted_message.write_lock();
             dec(
                 &mut decrypted_message,
                 &mut secret,
@@ -204,12 +200,10 @@ mod tests {
         let mut adata1 = SecBuf::with_secure(16);
         random_secbuf(&mut adata1);
         random_secbuf(&mut message);
-        let mut message = message.write_lock();
         let cip_len = message.len() + ABYTES;
         let mut nonce = SecBuf::with_insecure(NONCEBYTES);
         let mut cipher = SecBuf::with_insecure(cip_len);
         {
-            let mut message = message.write_lock();
             enc(
                 &mut message,
                 &mut secret,
@@ -219,11 +213,9 @@ mod tests {
             )
             .unwrap();;
         }
-        let mut cipher = cipher.write_lock();
         let dec_len = cip_len - ABYTES;
         let mut decrypted_message = SecBuf::with_insecure(dec_len);
         {
-            let mut decrypted_message = decrypted_message.write_lock();
             dec(
                 &mut decrypted_message,
                 &mut secret,

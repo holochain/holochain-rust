@@ -164,14 +164,28 @@ impl SecBuf {
 
     /// make this SecBuf readable
     pub fn readable(&mut self) {
-        self.p = ProtectState::ReadOnly;
-        self.b.readable();
+        if self.p == ProtectState::NoAccess {
+            self.p = ProtectState::ReadOnly;
+            self.b.readable();
+        } else {
+            panic!(
+                "SecBuf trying to get Double Locked, Current state : {:?}",
+                self.protect_state()
+            );
+        }
     }
 
     /// make this SecBuf writable
     pub fn writable(&mut self) {
-        self.p = ProtectState::ReadWrite;
-        self.b.writable();
+        if self.p == ProtectState::NoAccess {
+            self.p = ProtectState::ReadWrite;
+            self.b.writable();
+        } else {
+            panic!(
+                "SecBuf trying to get Double Locked, Current state : {:?}",
+                self.protect_state()
+            );
+        }
     }
 
     /// secure this SecBuf against reading or writing

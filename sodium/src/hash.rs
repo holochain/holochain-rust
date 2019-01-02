@@ -62,7 +62,6 @@ mod tests {
             input[1] = 222;
         }
         {
-            let mut input = input.write_lock();
             sha256(&mut input, &mut output).unwrap();
         }
         let output = output.read_lock();
@@ -79,7 +78,6 @@ mod tests {
             input[1] = 222;
         }
         {
-            let mut input = input.write_lock();
             sha512(&mut input, &mut output).unwrap();
         }
         let output = output.write_lock();

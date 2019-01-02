@@ -100,12 +100,9 @@ mod tests {
         seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(32);
-        {
-            let mut message = message.write_lock();
-            random_secbuf(&mut message);
-        }
-        sign(&mut message, &mut secret_key, &mut signature).unwrap();
+        random_secbuf(&mut message);
 
+        sign(&mut message, &mut secret_key, &mut signature).unwrap();
         {
             let ver = verify(&mut signature, &mut message, &mut public_key);
             assert_eq!(0, ver);
@@ -124,16 +121,10 @@ mod tests {
         seed_keypair(&mut public_key, &mut secret_key, &mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(32);
-        {
-            let mut message = message.write_lock();
-            random_secbuf(&mut message);
-        }
+        random_secbuf(&mut message);
 
         let mut fake_message = SecBuf::with_insecure(32);
-        {
-            let mut fake_message = fake_message.write_lock();
-            random_secbuf(&mut fake_message);
-        }
+        random_secbuf(&mut fake_message);
 
         sign(&mut message, &mut secret_key, &mut signature).unwrap();
 

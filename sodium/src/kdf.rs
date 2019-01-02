@@ -70,11 +70,9 @@ mod tests {
         let mut out1 = SecBuf::with_secure(32);
         let mut out2 = SecBuf::with_secure(32);
         {
-            let mut out1 = out1.write_lock();
             derive(&mut out1, 3, &mut context, &mut parent).unwrap();
         }
         {
-            let mut out2 = out2.write_lock();
             derive(&mut out2, 3, &mut context, &mut parent).unwrap();
         }
         let out1 = out1.read_lock();
@@ -89,7 +87,6 @@ mod tests {
         random_secbuf(&mut parent);
         let mut out = SecBuf::with_insecure(2);
         {
-            let mut out = out.write_lock();
             derive(&mut out, 3, &mut context, &mut parent).expect_err("should have failed");
         }
     }

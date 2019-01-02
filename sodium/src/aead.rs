@@ -19,9 +19,9 @@ pub const ABYTES: usize = rust_sodium_sys::crypto_aead_xchacha20poly1305_ietf_AB
 ///
 /// @param {SecBuf} adata - optional additional authenticated data
 ///
-/// @param {SecBuf} nonce - Empty Buffer to be used as output
+/// @param {SecBuf} nonce - Empty Buffer (needed when you want to Decrypt the meassage)
 ///
-/// @param {SecBuf} cipher - Empty Buffer to be used as output
+/// @param {SecBuf} cipher - Empty Buffer (needed when you want to Decrypt the meassage)
 pub fn enc(
     message: &mut SecBuf,
     secret: &mut SecBuf,

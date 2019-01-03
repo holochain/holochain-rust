@@ -1,40 +1,29 @@
 const test = require('tape')
 const { pollFor } = require('./util')
 
-const { ConfigBuilder, Container } = require('../../nodejs_container')
+const { Config, Container } = require('../../nodejs_container')
 
 const dnaPath = "./dist/app_spec.hcpkg"
 
 // IIFE to keep config-only stuff out of test scope
-const config = (() => {
-  const agentAlice = ConfigBuilder.agent("alice")
-  const agentBob = ConfigBuilder.agent("bob")
+const container = (() => {
+  const agentAlice = Config.agent("alice")
+  const agentBob = Config.agent("bob")
 
-  const dna = ConfigBuilder.dna(dnaPath)
+  const dna = Config.dna(dnaPath)
 
-  const instanceAlice = ConfigBuilder.instance(agentAlice, dna)
-  const instanceBob = ConfigBuilder.instance(agentBob, dna)
+  const instanceAlice = Config.instance(agentAlice, dna)
+  const instanceBob = Config.instance(agentBob, dna)
 
-  return ConfigBuilder.container(instanceAlice, instanceBob)
+  const containerConfig = Config.container(instanceAlice, instanceBob)
+  return new Container(containerConfig)
 })()
 
 // Initialize the Container
-const container = new Container(config)
 container.start()
 
-// This function is a bit of temporary boilerplate to construct a convenient object
-// for testing. These objects will be created automatically with the new Scenario API,
-// and then this function will go away. (TODO)
-const makeCaller = (agentId) => {
-  const instanceId = agentId + '-' + dnaPath
-  return {
-    call: (zome, cap, fn, params) => container.call(instanceId, zome, cap, fn, params),
-    agentId: container.agent_id(instanceId)
-  }
-}
-
-const app = makeCaller('alice')
-const app2 = makeCaller('bob')
+const app = container.makeCaller('alice', dnaPath)
+const app2 = container.makeCaller('bob', dnaPath)
 
 test('agentId', (t) => {
   t.plan(2)

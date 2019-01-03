@@ -1,15 +1,12 @@
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::{Container as RustContainer},
+    container::Container as RustContainer,
 };
 use holochain_core::{
     logger::Logger,
     signal::{signal_channel, SignalReceiver},
 };
-use holochain_core_types::{
-    cas::content::Address,
-    dna::{capabilities::CapabilityCall},
-};
+use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use neon::{context::Context, prelude::*};
 
 use crate::config::*;
@@ -141,6 +138,6 @@ declare_types! {
 
 register_module!(mut cx, {
     cx.export_class::<JsContainer>("Container")?;
-    cx.export_class::<JsConfigBuilder>("ConfigBuilder")?;
+    cx.export_function("makeConfig", js_make_config)?;
     Ok(())
 });

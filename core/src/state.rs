@@ -37,6 +37,7 @@ pub struct State {
     // @TODO eventually drop stale history
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub history: HashSet<ActionWrapper>,
+    is_shutdown: bool,
 }
 
 impl State {
@@ -52,6 +53,7 @@ impl State {
             dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
             network: NetworkState::new(),
             history: HashSet::new(),
+            is_shutdown: false,
         }
     }
 
@@ -95,6 +97,7 @@ impl State {
             dht: Arc::new(DhtStore::new(cas.clone(), eav.clone())),
             network: NetworkState::new(),
             history: HashSet::new(),
+            is_shutdown: false,
         }
     }
 
@@ -121,6 +124,7 @@ impl State {
                 &action_wrapper,
             ),
             history: self.history.clone(),
+            is_shutdown: self.is_shutdown,
         };
 
         new_state.history.insert(action_wrapper);
@@ -157,14 +161,15 @@ impl State {
         ))
     }
 
-    pub fn stop(mut self) -> Result<(), String> {
-        self.shutdown()
+    pub fn is_shutdown(&self) -> bool {
+        self.is_shutdown
     }
 
-    fn shutdown(&mut self) -> Result<(), String> {
+    pub fn shutdown(&mut self) -> Result<(), String> {
+        self.is_shutdown = true;
         // TODO: properly drop/destruct rest of state (requires moving out of Arc)
         mem::replace(&mut self.network, NetworkState::new())
-            .stop()
+            .shutdown()
             .map_err(|e| e.to_string())
     }
 }

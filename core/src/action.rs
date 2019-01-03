@@ -190,9 +190,6 @@ pub enum Action {
             Result<ValidationPackage, HolochainError>,
         ),
     ),
-
-    /// Signal the instance and all subsystems to shut down immediately
-    Shutdown,
 }
 
 /// function signature for action handler functions

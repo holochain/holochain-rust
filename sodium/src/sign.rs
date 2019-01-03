@@ -2,6 +2,9 @@
 use super::{check_init, secbuf::SecBuf};
 use crate::error::SodiumResult;
 
+pub const PUBLICKEYBYTES: usize = rust_sodium_sys::crypto_sign_PUBLICKEYBYTES as usize;
+pub const SECRETKEYBYTES:usize = rust_sodium_sys::crypto_sign_SECRETKEYBYTES as usize;
+
 /// Generate a signing keypair from a seed buffer
 ///
 /// @param {SecBuf} publicKey - Empty Buffer to be used as publicKey return

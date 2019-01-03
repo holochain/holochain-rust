@@ -12,6 +12,7 @@ members = [
   "net_connection",
   "net_ipc",
   "sodium",
+  "hc-dpki",
   "test_bin",
 ]
 exclude = [

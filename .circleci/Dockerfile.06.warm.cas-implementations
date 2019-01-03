@@ -1,5 +1,0 @@
-FROM holochain/holochain-rust:circle.05.warm.core
-
-RUN nix-shell --run hc-test-cas-implementations
-
-CMD nix-shell --run hc-test-cas-implementations

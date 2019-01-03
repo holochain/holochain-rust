@@ -11,4 +11,5 @@ use holochain_core_types::{cas::content::Address, error::HcResult};
 pub enum ActionResponse {
     Publish(HcResult<Address>),
     RespondGet(HcResult<()>),
+    RespondGetLinks(HcResult<()>),
 }

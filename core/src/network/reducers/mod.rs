@@ -8,6 +8,7 @@ pub mod init;
 pub mod publish;
 pub mod resolve_direct_connection;
 pub mod respond_get;
+pub mod respond_get_links;
 pub mod send_direct_message;
 
 use crate::{
@@ -26,6 +27,7 @@ use crate::{
             publish::reduce_publish,
             resolve_direct_connection::reduce_resolve_direct_connection,
             respond_get::reduce_respond_get,
+            respond_get_links::reduce_respond_get_links,
             send_direct_message::{reduce_send_direct_message, reduce_send_direct_message_timeout},
         },
         state::NetworkState,
@@ -54,6 +56,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
         Action::Publish(_) => Some(reduce_publish),
         Action::ResolveDirectConnection(_) => Some(reduce_resolve_direct_connection),
         Action::RespondGet(_) => Some(reduce_respond_get),
+        Action::RespondGetLinks(_) => Some(reduce_respond_get_links),
         Action::SendDirectMessage(_) => Some(reduce_send_direct_message),
         Action::SendDirectMessageTimeout(_) => Some(reduce_send_direct_message_timeout),
         _ => None,

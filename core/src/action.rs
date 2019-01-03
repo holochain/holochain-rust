@@ -17,7 +17,7 @@ use holochain_core_types::{
     link::Link,
     validation::ValidationPackage,
 };
-use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData};
+use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData, GetDhtData, GetDhtMetaData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -131,6 +131,7 @@ pub enum Action {
     /// get links from entry address and tag name
     GetLinks((Address, String)),
     GetLinksTimeout((Address, String)),
+    RespondGetLinks((GetDhtMetaData, Vec<Address>)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

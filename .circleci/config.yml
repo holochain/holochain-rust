@@ -5,7 +5,7 @@ jobs:
  # is actually unit tests
  build:
   docker:
-   - image: holochain/holochain-rust:circle.99.end
+   - image: holochain/holochain-rust:circle.zz.end
   steps:
    - checkout
 
@@ -14,7 +14,7 @@ jobs:
 
  integration-tests:
   docker:
-   - image: holochain/holochain-rust:circle.99.end
+   - image: holochain/holochain-rust:circle.zz.end
   steps:
    - checkout
 
@@ -36,8 +36,8 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.00.start -t holochain/holochain-rust:circle.00.start .
-   - run: docker push holochain/holochain-rust:circle.00.start
+   - run: docker build -f .circleci/Dockerfile..start -t holochain/holochain-rust:circle..start .
+   - run: docker push holochain/holochain-rust:circle..start
  docker.01:
   machine: true
   steps:
@@ -50,106 +50,22 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.02.warm.hdk -t holochain/holochain-rust:circle.02.warm.hdk .
-   - run: docker push holochain/holochain-rust:circle.02.warm.hdk
+   - run: docker build -f .circleci/Dockerfile.02.warm.tests -t holochain/holochain-rust:circle.02.warm.tests .
+   - run: docker push holochain/holochain-rust:circle.02.warm.tests
  docker.03:
   machine: true
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.03.warm.wasm-utils -t holochain/holochain-rust:circle.03.warm.wasm-utils .
-   - run: docker push holochain/holochain-rust:circle.03.warm.wasm-utils
- docker.04:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.04.warm.container-api -t holochain/holochain-rust:circle.04.warm.container-api .
-   - run: docker push holochain/holochain-rust:circle.04.warm.container-api
- docker.05:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.05.warm.core -t holochain/holochain-rust:circle.05.warm.core .
-   - run: docker push holochain/holochain-rust:circle.05.warm.core
- docker.06:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.06.warm.cas-implementations -t holochain/holochain-rust:circle.06.warm.cas-implementations .
-   - run: docker push holochain/holochain-rust:circle.06.warm.cas-implementations
- docker.07:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.07.warm.dna-c-binding -t holochain/holochain-rust:circle.07.warm.dna-c-binding .
-   - run: docker push holochain/holochain-rust:circle.07.warm.dna-c-binding
- docker.08:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.08.warm.net-connection -t holochain/holochain-rust:circle.08.warm.net-connection .
-   - run: docker push holochain/holochain-rust:circle.08.warm.net-connection
- docker.09:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.09.warm.sodium -t holochain/holochain-rust:circle.09.warm.sodium .
-   - run: docker push holochain/holochain-rust:circle.09.warm.sodium
- docker.10:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.10.warm.hc -t holochain/holochain-rust:circle.10.warm.hc .
-   - run: docker push holochain/holochain-rust:circle.10.warm.hc
- docker.11:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.11.warm.core-types -t holochain/holochain-rust:circle.11.warm.core-types .
-   - run: docker push holochain/holochain-rust:circle.11.warm.core-types
- docker.12:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.12.warm.net -t holochain/holochain-rust:circle.12.warm.net .
-   - run: docker push holochain/holochain-rust:circle.12.warm.net
- docker.13:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.13.warm.net-ipc -t holochain/holochain-rust:circle.13.warm.net-ipc .
-   - run: docker push holochain/holochain-rust:circle.13.warm.net-ipc
- docker.14:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.14.warm.cmd -t holochain/holochain-rust:circle.14.warm.cmd .
-   - run: docker push holochain/holochain-rust:circle.14.warm.cmd
- docker.15:
-  machine: true
-  steps:
-   - checkout
-   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.15.warm.node-container -t holochain/holochain-rust:circle.15.warm.node-container .
-   - run: docker push holochain/holochain-rust:circle.15.warm.node-container
+   - run: docker build -f .circleci/Dockerfile.03.warm.tools -t holochain/holochain-rust:circle.03.warm.tools .
+   - run: docker push holochain/holochain-rust:circle.03.warm.tools
  docker.end:
   machine: true
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.99.end -t holochain/holochain-rust:circle.99.end .
-   - run: docker push holochain/holochain-rust:circle.99.end
+   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end .
+   - run: docker push holochain/holochain-rust:circle.zz.end
 
 workflows:
  version: 2
@@ -177,42 +93,6 @@ workflows:
    - docker.03:
       requires:
        - docker.02
-   - docker.04:
-      requires:
-       - docker.03
-   - docker.05:
-      requires:
-       - docker.04
-   - docker.06:
-      requires:
-       - docker.05
-   - docker.07:
-      requires:
-       - docker.06
-   - docker.08:
-      requires:
-       - docker.07
-   - docker.09:
-      requires:
-       - docker.08
-   - docker.10:
-      requires:
-       - docker.09
-   - docker.11:
-      requires:
-       - docker.10
-   - docker.12:
-      requires:
-       - docker.11
-   - docker.13:
-      requires:
-       - docker.12
-   - docker.14:
-      requires:
-       - docker.13
-   - docker.15:
-      requires:
-       - docker.14
    - docker.end:
       requires:
-       - docker.15
+       - docker.03

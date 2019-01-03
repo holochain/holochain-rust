@@ -1,5 +1,0 @@
-FROM holochain/holochain-rust:circle.11.warm.core-types
-
-RUN nix-shell --run hc-test-net
-
-CMD nix-shell --run hc-test-net

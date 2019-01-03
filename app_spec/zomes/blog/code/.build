@@ -2,9 +2,10 @@
   "steps": {
     "cargo": [
       "build",
-      "--target", "wasm32-unknown-unknown",
-      "--release"
+      "--release",
+      "--target=wasm32-unknown-unknown",
+      "--target-dir=/tmp/holochain/target"
     ]
   },
-  "artifact": "target/wasm32-unknown-unknown/release/code.wasm"
+  "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/code.wasm"
 }

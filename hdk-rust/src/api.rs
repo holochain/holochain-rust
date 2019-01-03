@@ -42,10 +42,10 @@ lazy_static! {
   /// The `name` property as taken from the DNA.
   pub static ref DNA_NAME: &'static str = &GLOBALS.dna_name;
 
-  /// The hash of the DNA the Zome is embedded within.
+  /// The address of the DNA the Zome is embedded within.
   /// This is often useful as a fixed value that is known by all
   /// participants running the DNA.
-  pub static ref DNA_HASH: &'static HashString = &GLOBALS.dna_hash;
+  pub static ref DNA_ADDRESS: &'static Address = &GLOBALS.dna_address;
 
   /// The identity string used when the chain was first initialized.
   pub static ref AGENT_ID_STR: &'static str = &GLOBALS.agent_id_str;
@@ -72,9 +72,9 @@ impl From<DNA_NAME> for JsonString {
     }
 }
 
-impl From<DNA_HASH> for JsonString {
-    fn from(dna_hash: DNA_HASH) -> JsonString {
-        JsonString::from(HashString::from(dna_hash.to_string()))
+impl From<DNA_ADDRESS> for JsonString {
+    fn from(dna_address: DNA_ADDRESS) -> JsonString {
+        JsonString::from(HashString::from(dna_address.to_string()))
     }
 }
 

@@ -8,11 +8,7 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
-use holochain_net_connection::{
-    net_connection::NetConnection,
-    protocol_wrapper::{ProtocolWrapper, TrackAppData},
-    NetResult,
-};
+use holochain_net_connection::NetResult;
 use snowflake;
 use std::{
     collections::HashMap,
@@ -97,25 +93,13 @@ impl NetworkState {
         )
     }
 
-    pub fn shutdown(&mut self) -> NetResult<()> {
+    pub fn stop(mut self) -> NetResult<()> {
+        self.shutdown()
+    }
+
+    fn shutdown(&mut self) -> NetResult<()> {
         self.network.as_ref().map_or(Ok(()), |network_mutex| {
             let mut network = network_mutex.lock().unwrap();
-
-            match (&self.dna_address, &self.agent_id) {
-                (Some(dna_address), Some(agent_id)) => {
-                    network
-                        .send(
-                            ProtocolWrapper::DropApp(TrackAppData {
-                                dna_address: dna_address.to_owned(),
-                                agent_id: agent_id.to_string(),
-                            })
-                            .into(),
-                        )
-                        .and_then(|_| Ok(()))
-                        .unwrap_or(());
-                }
-                _ => (),
-            }
 
             // @TODO: can we avoid creating a new network just so we have something to swap out?
             let dummy_network = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::default_mock())

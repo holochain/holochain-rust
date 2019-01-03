@@ -175,7 +175,7 @@ impl Holochain {
         if let Some(state) = self.context.state_raw("I acknowledge that this is bad") {
             let new_context = self.context.clone();
             mem::replace(&mut *state.write().unwrap(), State::new(new_context))
-                .shutdown()
+                .stop()
                 .or_else(|e| {
                     Err(HolochainInstanceError::InternalFailure(
                         format!("Holochain instance failed to shut down: {}", e).into(),

@@ -127,6 +127,7 @@ impl Instance {
         let action_thread = thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
             for action_wrapper in rx_action {
+                let do_shutdown = *action_wrapper.action() == Action::Shutdown;
                 state_observers = process_action_via_state(
                     state.clone(),
                     &action_wrapper,
@@ -134,9 +135,7 @@ impl Instance {
                     &rx_observer,
                     &sub_context,
                 );
-                // @TODO: this shouldn't be coupled with the action loop. If the action loop
-                // stops, then we can't shut down!
-                if state.read().unwrap().is_shutdown() {
+                if do_shutdown {
                     break;
                 }
             }
@@ -172,6 +171,11 @@ impl Instance {
     pub fn shutdown(&mut self) {
         if self.is_shutdown() {
             return;
+        }
+
+        // send shutdown signal
+        if let Some(ref tx) = self.action_channel {
+            tx.send(ActionWrapper::new(Action::Shutdown)).unwrap();
         }
 
         self.action_channel = None;

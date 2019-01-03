@@ -56,7 +56,7 @@ fn exec() -> NetResult<()> {
 
     con1.send(
         ProtocolWrapper::TrackApp(TrackAppData {
-            dna_hash: "sandwich".to_string(),
+            dna_address: "sandwich".into(),
             agent_id: "node-1".to_string(),
         })
         .into(),
@@ -64,7 +64,7 @@ fn exec() -> NetResult<()> {
 
     con2.send(
         ProtocolWrapper::TrackApp(TrackAppData {
-            dna_hash: "sandwich".to_string(),
+            dna_address: "sandwich".into(),
             agent_id: "node-2".to_string(),
         })
         .into(),
@@ -72,7 +72,7 @@ fn exec() -> NetResult<()> {
 
     con1.send(
         ProtocolWrapper::SendMessage(MessageData {
-            dna_hash: "sandwich".to_string(),
+            dna_address: "sandwich".into(),
             to_agent_id: "node-2".to_string(),
             from_agent_id: "node-1".to_string(),
             msg_id: "yada".to_string(),
@@ -87,7 +87,7 @@ fn exec() -> NetResult<()> {
     if let ProtocolWrapper::HandleSend(msg) = res {
         con2.send(
             ProtocolWrapper::HandleSendResult(MessageData {
-                dna_hash: "sandwich".to_string(),
+                dna_address: "sandwich".into(),
                 to_agent_id: "node-1".to_string(),
                 from_agent_id: "node-2".to_string(),
                 msg_id: "yada".to_string(),

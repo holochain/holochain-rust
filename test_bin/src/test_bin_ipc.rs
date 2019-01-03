@@ -7,6 +7,7 @@ extern crate holochain_net_connection;
 extern crate serde_json;
 extern crate tempfile;
 
+use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
@@ -274,14 +275,14 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     one_let!(ProtocolWrapper::State(state) = node2_state {
         // No bindings in mock mode
         if !state.bindings.is_empty() {
-            node2_binding = state.bindings[0].clone();
+        node2_binding = state.bindings[0].clone();
         }
     });
 
     // Send TrackApp message on both nodes
     node1.p2p_connection.send(
         ProtocolWrapper::TrackApp(TrackAppData {
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
         })
         .into(),
@@ -290,7 +291,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     println!("self connected result 1: {:?}", connect_result_1);
     node2.p2p_connection.send(
         ProtocolWrapper::TrackApp(TrackAppData {
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_2.to_string(),
         })
         .into(),
@@ -300,29 +301,29 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
 
     // Connect nodes between them
     if can_test_connect {
-        println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
-        node1.p2p_connection.send(
-            ProtocolWrapper::Connect(ConnectData {
-                address: node2_binding,
-            })
-            .into(),
-        )?;
-        let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
-        println!("got connect result 1: {:?}", result_1);
-        one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
-            assert_eq!(d.agent_id, AGENT_2);
-        });
-        let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
-        println!("got connect result 2: {:?}", result_2);
-        one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
-            assert_eq!(d.agent_id, AGENT_1);
-        });
+    println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
+    node1.p2p_connection.send(
+        ProtocolWrapper::Connect(ConnectData {
+            address: node2_binding.into(),
+        })
+        .into(),
+    )?;
+    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    println!("got connect result 1: {:?}", result_1);
+    one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
+        assert_eq!(d.agent_id, AGENT_2);
+    });
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+    println!("got connect result 2: {:?}", result_2);
+    one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
+        assert_eq!(d.agent_id, AGENT_1);
+    });
     }
     // Send a generic message
     node1.p2p_connection.send(
         ProtocolWrapper::SendMessage(MessageData {
             msg_id: "test".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             to_agent_id: AGENT_2.to_string(),
             from_agent_id: AGENT_1.to_string(),
             data: json!("hello"),
@@ -335,7 +336,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     node2.p2p_connection.send(
         ProtocolWrapper::HandleSendResult(MessageData {
             msg_id: "test".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             to_agent_id: AGENT_1.to_string(),
             from_agent_id: AGENT_2.to_string(),
             data: json!("echo: hello"),
@@ -349,7 +350,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     node1.p2p_connection.send(
         ProtocolWrapper::PublishDht(DhtData {
             msg_id: "testPub".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
             address: "test_addr".to_string(),
             content: json!("hello"),
@@ -366,7 +367,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     node2.p2p_connection.send(
         ProtocolWrapper::GetDht(GetDhtData {
             msg_id: "testGet".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             from_agent_id: AGENT_2.to_string(),
             address: "test_addr".to_string(),
         })
@@ -379,7 +380,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     node2.p2p_connection.send(
         ProtocolWrapper::GetDhtResult(DhtData {
             msg_id: "testGetResult".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
             address: "test_addr".to_string(),
             content: json!("hello"),
@@ -393,7 +394,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     node1.p2p_connection.send(
         ProtocolWrapper::PublishDhtMeta(DhtMetaData {
             msg_id: "testPubMeta".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
             address: "test_addr_meta".to_string(),
             attribute: "link:yay".to_string(),
@@ -411,7 +412,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     node2.p2p_connection.send(
         ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             from_agent_id: AGENT_2.to_string(),
             address: "test_addr".to_string(),
             attribute: "link:yay".to_string(),
@@ -425,7 +426,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     node2.p2p_connection.send(
         ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
             address: "test_addr".to_string(),
             attribute: "link:yay".to_string(),

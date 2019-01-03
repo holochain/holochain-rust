@@ -110,6 +110,17 @@ pub enum Action {
 
     /// GetEntry by address
     GetEntry(Address),
+
+    /// Lets the network module respond to a GET request.
+    /// Triggered from the corresponding workflow after retrieving the
+    /// requested entry from our local DHT shard.
+    RespondGet((GetDhtData, Option<EntryWithMeta>)),
+
+    /// We got a response for our GET request which needs to be
+    /// added to the state.
+    /// Triggered from the network handler.
+    HandleGetResult(DhtData),
+
     ///
     UpdateEntry((Address, Address)),
     ///
@@ -117,18 +128,9 @@ pub enum Action {
     ///
     GetEntryTimeout(Address),
 
-    /// Lets the network module respond to a GET request.
-    /// Triggered from the corresponding workflow after retrieving the
-    /// requested entry from our local DHT shard.
-    RespondGet((GetDhtData, Option<EntryWithMeta>)),
-
     /// get links from entry address and attribute-name
-    //GetLinks(GetLinksArgs),
-
-    /// We got a response for our GET request which needs to be
-    /// added to the state.
-    /// Triggered from the network handler.
-    HandleGetResult(DhtData),
+    GetLinks(Address),
+    GetLinksTimeout(Address),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

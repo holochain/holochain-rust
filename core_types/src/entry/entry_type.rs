@@ -56,6 +56,8 @@ pub enum EntryType {
     LinkList,
     ChainHeader,
     ChainMigrate,
+    CapTokenGrant,
+    CapToken,
 }
 
 impl From<AppEntryType> for EntryType {
@@ -110,6 +112,7 @@ impl EntryType {
             */
         match self {
             EntryType::Dna => false,
+            EntryType::CapTokenGrant => false,
             _ => true,
         }
     }
@@ -117,7 +120,8 @@ impl EntryType {
     /// Checks entry_type_name is valid
     pub fn has_valid_app_name(entry_type_name: &str) -> bool {
         // TODO #445 - do a real regex test instead
-        // must not be empty
+        // - must not be empty
+        // - must not contain any glob wildcards
         entry_type_name.len() > 0
         // Must not have sys_prefix
             && &entry_type_name[0..1] != "%"
@@ -137,6 +141,8 @@ impl FromStr for EntryType {
             sys_prefix!("link_remove") => EntryType::LinkRemove,
             sys_prefix!("link_list") => EntryType::LinkList,
             sys_prefix!("chain_migrate") => EntryType::ChainMigrate,
+            sys_prefix!("cap_token") => EntryType::CapToken,
+            sys_prefix!("cap_token_grant") => EntryType::CapTokenGrant,
             _ => EntryType::App(AppEntryType(s.into())),
         })
     }
@@ -154,6 +160,8 @@ impl From<EntryType> for String {
             EntryType::LinkRemove => sys_prefix!("link_remove"),
             EntryType::LinkList => sys_prefix!("link_list"),
             EntryType::ChainMigrate => sys_prefix!("chain_migrate"),
+            EntryType::CapToken => sys_prefix!("cap_token"),
+            EntryType::CapTokenGrant => sys_prefix!("cap_token_grant"),
         })
     }
 }
@@ -221,6 +229,8 @@ pub mod tests {
             EntryType::LinkList,
             EntryType::ChainHeader,
             EntryType::ChainMigrate,
+            EntryType::CapToken,
+            EntryType::CapTokenGrant,
         ]
     }
 
@@ -257,6 +267,8 @@ pub mod tests {
             (sys_prefix!("link_list"), EntryType::LinkList),
             (sys_prefix!("chain_header"), EntryType::ChainHeader),
             (sys_prefix!("chain_migrate"), EntryType::ChainMigrate),
+            (sys_prefix!("cap_token"), EntryType::CapToken),
+            (sys_prefix!("cap_token_grant"), EntryType::CapTokenGrant),
         ] {
             assert_eq!(
                 variant,
@@ -272,6 +284,7 @@ pub mod tests {
         for t in test_types() {
             match t {
                 EntryType::Dna => assert!(!t.can_publish()),
+                EntryType::CapTokenGrant => assert!(!t.can_publish()),
                 _ => assert!(t.can_publish()),
             }
         }

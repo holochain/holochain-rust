@@ -8,7 +8,7 @@ holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 holochain_net = { path = "../net" }
-futures-preview = "0.3.0-alpha.10"
+futures-preview = "0.3.0-alpha.11"
 tempfile = "3"
 serde = "1.0"
 serde_derive = "1.0"
@@ -21,6 +21,7 @@ petgraph = "0.4.13"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
+holochain_wasm_utils = { path = "../wasm_utils" }
 clap = "2"
 structopt = "0.2"
 tempfile = "3"

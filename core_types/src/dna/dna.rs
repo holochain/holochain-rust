@@ -1,5 +1,6 @@
 use crate::{
-    dna::{capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
+    cas::content::{AddressableContent, Content},
+    dna::{bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
@@ -9,6 +10,7 @@ use multihash;
 use serde_json::{self, Value};
 use std::{
     collections::BTreeMap,
+    convert::TryFrom,
     hash::{Hash, Hasher},
 };
 use uuid::Uuid;
@@ -53,6 +55,16 @@ pub struct Dna {
     /// An array of zomes associated with your holochain application.
     #[serde(default)]
     pub zomes: BTreeMap<String, zome::Zome>,
+}
+
+impl AddressableContent for Dna {
+    fn content(&self) -> Content {
+        Content::from(self.to_owned())
+    }
+
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(Dna::try_from(content.to_owned())?)
+    }
 }
 
 impl Default for Dna {
@@ -191,6 +203,14 @@ impl Dna {
         let s = String::from(JsonString::from(self.to_owned()));
         multihash::encode(multihash::Hash::SHA2256, &s.into_bytes())
             .map_err(|error| HolochainError::ErrorGeneric(error.to_string()))
+    }
+
+    pub fn get_required_bridges(&self) -> Vec<Bridge> {
+        self.zomes
+            .values()
+            .map(|zome| zome.get_required_bridges())
+            .flatten()
+            .collect()
     }
 }
 

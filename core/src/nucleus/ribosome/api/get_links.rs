@@ -1,6 +1,8 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
+use holochain_wasm_utils::api_serialization::get_links::{
+    GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -21,6 +23,21 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+
+    if input.options.status_request != LinksStatusRequestKind::Live {
+        runtime
+            .context
+            .log("get links status request other than Live not implemented!");
+        return ribosome_error_code!(Unspecified);
+    }
+
+    if input.options.sources {
+        runtime
+            .context
+            .log("get links retrieve sources not implemented!");
+        return ribosome_error_code!(Unspecified);
+    }
+
     // Get links from DHT
     let maybe_links = runtime
         .context
@@ -49,9 +66,12 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         dht::actions::add_link::add_link,
         instance::tests::{test_context_and_logger, test_instance},
-        nucleus::ribosome::{
-            api::{tests::*, ZomeApiFunction},
-            Defn,
+        nucleus::{
+            ribosome::{
+                api::{tests::*, ZomeApiFunction},
+                Defn,
+            },
+            tests::*,
         },
     };
     use futures::executor::block_on;
@@ -61,7 +81,7 @@ pub mod tests {
         json::JsonString,
         link::Link,
     };
-    use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+    use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksOptions};
     use serde_json;
 
     /// dummy link_entries args from standard test entry
@@ -69,6 +89,7 @@ pub mod tests {
         let args = GetLinksArgs {
             entry_address: base.clone(),
             tag: String::from(tag),
+            options: GetLinksOptions::default(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -80,7 +101,7 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
-            &test_capability(),
+            &test_capability_name(),
             wasm.clone(),
         );
 

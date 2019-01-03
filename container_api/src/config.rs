@@ -33,7 +33,7 @@ pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
     /// List of DNAs, for each a path to the DNA file. Required.
-    pub dnas: Vec<DNAConfiguration>,
+    pub dnas: Vec<DnaConfiguration>,
     /// List of instances, includes references to an agent and a DNA. Required.
     #[serde(default)]
     pub instances: Vec<InstanceConfiguration>,
@@ -104,7 +104,7 @@ impl Configuration {
     }
 
     /// Returns the DNA configuration with the given ID if present
-    pub fn dna_by_id(&self, id: &str) -> Option<DNAConfiguration> {
+    pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
     }
 
@@ -190,6 +190,14 @@ impl Configuration {
             .cloned()
             .collect())
     }
+
+    pub fn bridge_dependencies(&self, caller_instance_id: String) -> Vec<Bridge> {
+        self.bridges
+            .iter()
+            .filter(|bridge| bridge.caller_id == caller_instance_id)
+            .cloned()
+            .collect()
+    }
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
@@ -211,15 +219,15 @@ impl From<AgentConfiguration> for AgentId {
 /// A DNA is represented by a DNA file.
 /// A hash has to be provided for sanity check.
 #[derive(Deserialize, Serialize, Clone)]
-pub struct DNAConfiguration {
+pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     pub hash: String,
 }
 
-impl TryFrom<DNAConfiguration> for Dna {
+impl TryFrom<DnaConfiguration> for Dna {
     type Error = HolochainError;
-    fn try_from(dna_config: DNAConfiguration) -> Result<Self, Self::Error> {
+    fn try_from(dna_config: DnaConfiguration) -> Result<Self, Self::Error> {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
@@ -303,8 +311,19 @@ pub struct InstanceReferenceConfiguration {
 /// It is basically an internal interface.
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct Bridge {
+    /// ID of the instance that calls the other one.
+    /// This instance depends on the callee.
     pub caller_id: String,
+
+    /// ID of the instance that exposes capabilities through this bridge.
+    /// This instance is used by the caller.
     pub callee_id: String,
+
+    /// The caller's local handle of this bridge and the callee.
+    /// A caller can have many bridges to other DNAs and those DNAs could
+    /// by bound dynamically.
+    /// Callers reference callees by this arbitrary but unique local name.
+    pub handle: String,
 }
 
 /// Use this function to load a `Configuration` from a string.
@@ -688,10 +707,12 @@ pub mod tests {
     [[bridges]]
     caller_id = "app1"
     callee_id = "app2"
+    handle = "happ-store"
 
     [[bridges]]
     caller_id = "app2"
     callee_id = "app3"
+    handle = "DPKI"
     "#,
         );
         let config = load_configuration::<Configuration>(&toml)
@@ -720,14 +741,17 @@ pub mod tests {
     [[bridges]]
     caller_id = "app1"
     callee_id = "app2"
+    handle = "happ-store"
 
     [[bridges]]
     caller_id = "app2"
     callee_id = "app3"
+    handle = "DPKI"
 
     [[bridges]]
     caller_id = "app3"
     callee_id = "app1"
+    handle = "something"
     "#,
         );
         let config = load_configuration::<Configuration>(&toml)
@@ -745,14 +769,17 @@ pub mod tests {
     [[bridges]]
     caller_id = "app1"
     callee_id = "app2"
+    handle = "happ-store"
 
     [[bridges]]
     caller_id = "app2"
     callee_id = "app3"
+    handle = "DPKI"
 
     [[bridges]]
     caller_id = "app9000"
     callee_id = "app1"
+    handle = "something"
     "#,
         );
         let config = load_configuration::<Configuration>(&toml)
@@ -760,6 +787,39 @@ pub mod tests {
         assert_eq!(
             config.check_consistency(),
             Err("Instance configuration \"app9000\" not found, mentioned in bridge".to_string())
+        );
+    }
+
+    #[test]
+    fn test_bridge_dependencies() {
+        let toml = bridges_config(
+            r#"
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app2"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app1"
+    callee_id = "app3"
+    handle = "happ-store"
+
+    [[bridges]]
+    caller_id = "app2"
+    callee_id = "app1"
+    handle = "happ-store"
+    "#,
+        );
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        let bridged_ids: Vec<_> = config
+            .bridge_dependencies(String::from("app1"))
+            .iter()
+            .map(|bridge| bridge.callee_id.clone())
+            .collect();
+        assert_eq!(
+            bridged_ids,
+            vec![String::from("app2"), String::from("app3"),]
         );
     }
 }

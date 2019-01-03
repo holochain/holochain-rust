@@ -17,11 +17,7 @@ use holochain_core_types::{
     validation::ValidationData,
 };
 use snowflake;
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-    thread,
-};
+use std::{pin::Pin, sync::Arc, thread};
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -61,6 +57,10 @@ pub fn validate_entry<'a>(
         }
 
         EntryType::Deletion => {
+            // FIXME
+        }
+
+        EntryType::CapTokenGrant => {
             // FIXME
         }
 
@@ -121,8 +121,6 @@ pub struct ValidationFuture {
     context: Arc<Context>,
     key: (snowflake::ProcessUniqueId, HashString),
 }
-
-impl Unpin for ValidationFuture {}
 
 impl Future for ValidationFuture {
     type Output = Result<HashString, HolochainError>;

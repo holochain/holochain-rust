@@ -1,3 +1,5 @@
+//! This file contains the define_zome! macro, and smaller helper macros.
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! load_json {
@@ -11,6 +13,7 @@ macro_rules! load_json {
         maybe_input
     }};
 }
+#[doc(hidden)]
 #[macro_export]
 macro_rules! load_string {
     ($encoded_allocation_of_input:ident) => {{
@@ -26,12 +29,15 @@ macro_rules! load_string {
 
 /// Every Zome must utilize the `define_zome`
 /// macro in the main library file in their Zome.
-/// The `define_zome` macro has 3 component parts:
+/// The `define_zome` macro has 4 component parts:
 /// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
 /// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA.
 ///     It gets called when a new agent is initializing an instance of the DNA for the first time, and
 ///     should return `Ok` or an `Err`, depending on whether the agent can join the network or not.
-/// 3. functions: `functions` is divided up into `capabilities`, which specify who can access those functions.
+/// 3. receive (optional): `receive` is a callback called by Holochain when another agent on a hApp has initiated a node-to-node direct message.
+///     That node-to-node message is initiated via the [**send** function of the API](api/fn.send.html), which is where you can read further about use of `send` and `receive`.
+///     `receive` is optional to include, based on whether you use `send` anywhere in the code.
+/// 4. functions: `functions` is divided up into `capabilities`, which specify who can access those functions.
 ///     `functions` must be a tree structure where the first children are `capabilities`
 ///     and the children of those `capabilities` are actual function definitions.
 /// # Examples
@@ -53,11 +59,12 @@ macro_rules! load_string {
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::dna::entry_types::Sharing;
 /// # use boolinator::Boolinator;
-/// # use hdk::error::ZomeApiResult;
-/// use holochain_core_types::cas::content::Address;
-///
+/// use hdk::error::ZomeApiResult;
+/// use holochain_core_types::{
+///     cas::content::Address,
+///     dna::entry_types::Sharing,
+/// };
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
 /// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
@@ -75,7 +82,6 @@ macro_rules! load_string {
 /// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
 /// # #[no_mangle]
 /// # pub fn hc_send(_: u32) -> u32 { 0 }
-///
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -114,6 +120,11 @@ macro_rules! load_string {
 ///
 ///     genesis: || {
 ///         Ok(())
+///     }
+///
+///     receive: |payload| {
+///       // just return what was received, but modified
+///       format!("Received: {}", payload)
 ///     }
 ///
 ///     functions: {
@@ -213,7 +224,7 @@ macro_rules! define_zome {
         #[allow(unused_imports)]
         pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
 
-            use $crate::holochain_core_types::dna::capabilities::{Capability, Membrane, CapabilityType, FnParameter, FnDeclaration};
+            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType, FnParameter, FnDeclaration};
             use std::collections::BTreeMap;
 
             let return_value: $crate::holochain_core_types::dna::zome::ZomeCapabilities = {
@@ -221,8 +232,7 @@ macro_rules! define_zome {
 
                 $(
                     {
-                        let mut capability = Capability::new();
-                        capability.cap_type = CapabilityType { membrane: Membrane::$vis };
+                        let mut capability = Capability::new(CapabilityType::$vis);
                         capability.functions = vec![
                             $(
                                 FnDeclaration {

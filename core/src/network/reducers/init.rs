@@ -27,14 +27,14 @@ pub fn reduce_init(
     let _ = network
         .send(
             ProtocolWrapper::TrackApp(TrackAppData {
-                dna_hash: network_settings.dna_hash.clone(),
+                dna_address: network_settings.dna_address.clone(),
                 agent_id: network_settings.agent_id.clone(),
             })
             .into(),
         )
         .and_then(|_| {
             state.network = Some(Arc::new(Mutex::new(network)));
-            state.dna_hash = Some(network_settings.dna_hash.clone());
+            state.dna_address = Some(network_settings.dna_address.clone());
             state.agent_id = Some(network_settings.agent_id.clone());
             Ok(())
         });

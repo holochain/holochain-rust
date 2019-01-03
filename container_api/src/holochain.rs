@@ -13,7 +13,11 @@
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_container_api::{*, context_builder::ContextBuilder};
-//! use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
+//! use holochain_core_types::{
+//!     cas::content::Address,
+//!     agent::AgentId,
+//!     dna::{Dna, capabilities::CapabilityCall},
+//!     json::JsonString};
 //! use std::sync::Arc;
 //! use tempfile::tempdir;
 //!
@@ -38,7 +42,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome","test_cap","some_fn","{}");
+//! hc.call("test_zome", Some(CapabilityCall::new("foo".to_string(), Address::from(""), None)), "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -56,16 +60,18 @@
 use crate::error::{HolochainInstanceError, HolochainResult};
 use futures::executor::block_on;
 use holochain_core::{
-    action::Action,
     context::Context,
     instance::Instance,
     nucleus::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
-    signal::SignalSender,
     state::State,
     workflows::application,
 };
-use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    dna::{capabilities::CapabilityCall, Dna},
+    error::HolochainError,
+    json::JsonString,
+};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -80,22 +86,6 @@ impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
         let instance = Instance::new(context.clone());
-        Self::from_dna_and_context_and_instance(dna, context, instance)
-    }
-
-    /// Create a new Holochain instance with a signal channel, specifying a
-    /// predicate closure to define which Actions should result in signals being emitted.
-    /// Caller takes ownership of the Receiver for the signal channel.
-    pub fn new_with_signals<F>(
-        dna: Dna,
-        context: Arc<Context>,
-        signal_tx: SignalSender,
-        signal_filter_func: F,
-    ) -> HolochainResult<Self>
-    where
-        F: Fn(&Action) -> bool + 'static + Send + Sync,
-    {
-        let instance = Instance::new(context.clone()).with_signals(signal_tx, signal_filter_func);
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 
@@ -162,14 +152,14 @@ impl Holochain {
     pub fn call(
         &mut self,
         zome: &str,
-        cap: &str,
+        cap: Option<CapabilityCall>,
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
-        let zome_call = ZomeFnCall::new(&zome, &cap, &fn_name, String::from(params));
+        let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }
 
@@ -182,75 +172,88 @@ impl Holochain {
     pub fn state(&self) -> Result<State, HolochainInstanceError> {
         Ok(self.instance.state().clone())
     }
+
+    pub fn context(&self) -> &Arc<Context> {
+        &self.context
+    }
 }
 
 #[cfg(test)]
 mod tests {
     extern crate holochain_cas_implementations;
 
-    use self::holochain_cas_implementations::{
-        cas::file::FilesystemStorage, eav::file::EavFileStorage,
-    };
-
     use super::*;
+    use context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
-        context::{mock_network_config, Context},
+        context::Context,
         nucleus::ribosome::{callback::Callback, Defn},
-        persister::SimplePersister,
-        signal::{signal_channel, Signal},
+        signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{agent::AgentId, cas::content::AddressableContent, dna::Dna};
-
-    use std::sync::{Arc, Mutex, RwLock};
+    use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna};
+    use holochain_wasm_utils::wasm_target_dir;
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
         create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
 
-    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
-
     // TODO: TestLogger duplicated in test_utils because:
     //  use holochain_core::{instance::tests::TestLogger};
     // doesn't work.
     // @see https://github.com/holochain/holochain-rust/issues/185
-    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<test_utils::TestLogger>>) {
+    fn test_context(
+        agent_name: &str,
+    ) -> (
+        Arc<Context>,
+        Arc<Mutex<test_utils::TestLogger>>,
+        SignalReceiver,
+    ) {
         let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
+        let (signal_tx, signal_rx) = signal_channel();
         let logger = test_utils::test_logger();
         (
-            Arc::new(Context::new(
-                agent,
-                logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
-                mock_network_config(),
-            )),
+            Arc::new(
+                ContextBuilder::new()
+                    .with_agent(agent)
+                    .with_logger(logger.clone())
+                    .with_signals(signal_tx)
+                    .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
+                    .unwrap()
+                    .spawn(),
+            ),
             logger,
+            signal_rx,
         )
     }
 
+    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
+
     fn example_api_wasm_path() -> String {
-        "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm".into()
+        format!(
+            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            wasm_target_dir("container_api/", "wasm-test/"),
+        )
     }
 
     fn example_api_wasm() -> Vec<u8> {
         create_wasm_from_file(&example_api_wasm_path())
     }
 
+    fn example_capability_call() -> Option<CapabilityCall> {
+        Some(CapabilityCall::new(
+            "test_cap".to_string(),
+            Address::from("test_token"),
+            None,
+        ))
+    }
+
     #[test]
     fn can_instantiate() {
         let mut dna = Dna::new();
         dna.name = "TestApp".to_string();
-        let (context, test_logger) = test_context("bob");
+        let (context, test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_ok());
         let hc = result.unwrap();
@@ -259,7 +262,7 @@ mod tests {
         assert_eq!(hc.context.agent_id.nick, "bob".to_string());
         let network_state = hc.context.state().unwrap().network().clone();
         assert_eq!(network_state.agent_id.is_some(), true);
-        assert_eq!(network_state.dna_hash.is_some(), true);
+        assert_eq!(network_state.dna_address.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
@@ -276,7 +279,7 @@ mod tests {
     #[test]
     fn can_load() {
         let path = write_agent_state_to_file();
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let result = Holochain::load(path, context.clone());
         assert!(result.is_ok());
         let loaded_holo = result.unwrap();
@@ -284,7 +287,7 @@ mod tests {
         assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
         let network_state = loaded_holo.context.state().unwrap().network().clone();
         assert_eq!(network_state.agent_id.is_some(), true);
-        assert_eq!(network_state.dna_hash.is_some(), true);
+        assert_eq!(network_state.dna_address.is_some(), true);
         assert!(loaded_holo.instance.state().nucleus().has_initialized());
     }
 
@@ -309,7 +312,7 @@ mod tests {
             ),
         );
 
-        let (context, _test_logger) = test_context("bob");
+        let (context, _test_logger, _) = test_context("bob");
         let result = Holochain::new(dna.clone(), context.clone());
         assert!(result.is_err());
         assert_eq!(
@@ -337,7 +340,7 @@ mod tests {
         //     ),
         // );
         //
-        // let (context, _test_logger) = test_context("bob");
+        // let (context, _test_logger, _) = test_context("bob");
         // let result = Holochain::new(dna.clone(), context.clone());
         // assert!(result.is_err());
         // assert_eq!(
@@ -351,7 +354,7 @@ mod tests {
     #[test]
     fn can_start_and_stop() {
         let dna = Dna::new();
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
         assert!(!hc.active());
 
@@ -395,10 +398,10 @@ mod tests {
  )
 "#;
         let dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", "test_cap", "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "main", "");
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -408,7 +411,7 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", "test_cap", "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "main", "");
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
@@ -419,7 +422,7 @@ mod tests {
     #[test]
     fn can_get_state() {
         let dna = Dna::new();
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let hc = Holochain::new(dna.clone(), context).unwrap();
 
         let result = hc.state();
@@ -432,7 +435,7 @@ mod tests {
         let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("round_trip_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("bob");
+        let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         hc.start().expect("couldn't start");
@@ -440,7 +443,7 @@ mod tests {
         // always returns not implemented error for now!
         let result = hc.call(
             "test_zome",
-            "test_cap",
+            example_capability_call(),
             "round_trip_test",
             r#"{"input_int_val":2,"input_str_val":"fish"}"#,
         );
@@ -458,10 +461,8 @@ mod tests {
         let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("commit_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("alex");
-        let (signal_tx, signal_rx) = signal_channel();
-        let mut hc =
-            Holochain::new_with_signals(dna.clone(), context, signal_tx, |_| true).unwrap();
+        let (context, _, signal_rx) = test_context("alex");
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -476,7 +477,12 @@ mod tests {
         .unwrap();
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "commit_test", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            example_capability_call(),
+            "commit_test",
+            r#"{}"#,
+        );
 
         // Expect fail because no validation function in wasm
         assert!(result.is_ok(), "result = {:?}", result);
@@ -503,7 +509,7 @@ mod tests {
         let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _) = test_context("alex");
+        let (context, _, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -513,7 +519,12 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "commit_fail_test", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            example_capability_call(),
+            "commit_fail_test",
+            r#"{}"#,
+        );
         println!("can_call_commit_err result: {:?}", result);
 
         // Expect normal OK result with hash
@@ -537,7 +548,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_hello");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, test_logger) = test_context("alex");
+        let (context, test_logger, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -548,7 +559,12 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "debug_hello", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            example_capability_call(),
+            "debug_hello",
+            r#"{}"#,
+        );
 
         assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
@@ -570,7 +586,7 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_multiple");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, test_logger) = test_context("alex");
+        let (context, test_logger, _) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -580,7 +596,12 @@ mod tests {
         assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
-        let result = hc.call("test_zome", "test_cap", "debug_multiple", r#"{}"#);
+        let result = hc.call(
+            "test_zome",
+            example_capability_call(),
+            "debug_multiple",
+            r#"{}"#,
+        );
 
         // Expect Success as result
         println!("result = {:?}", result);
@@ -611,36 +632,37 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")] // breaks on windows.
     fn can_receive_action_signals() {
         use holochain_core::action::Action;
         use std::time::Duration;
-        let wasm = include_bytes!(
-            "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
-        );
+        let wasm = include_bytes!(format!(
+            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            wasm_target_dir("container_api/", "wasm-test/"),
+        ));
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
         let mut dna =
             test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
         dna.uuid = "can_receive_action_signals".into();
-        let context = test_utils::test_context("alex");
+        let (context, _, signal_rx) = test_context("alex");
         let timeout = 1000;
-        let (tx, rx) = signal_channel();
-        let mut hc =
-            Holochain::new_with_signals(dna.clone(), context, tx, move |action| match action {
-                Action::InitApplication(_) => false,
-                _ => true,
-            })
-            .unwrap();
+        let mut hc = Holochain::new(dna.clone(), context).unwrap();
         hc.start().expect("couldn't start");
-        hc.call("test_zome", "test_cap", "commit_test", r#"{}"#)
-            .unwrap();
+        hc.call(
+            "test_zome",
+            example_capability_call(),
+            "commit_test",
+            r#"{}"#,
+        )
+        .unwrap();
 
         'outer: loop {
-            let msg_publish = rx
+            let msg_publish = signal_rx
                 .recv_timeout(Duration::from_millis(timeout))
                 .expect("no more signals to receive (outer)");
             if let Signal::Internal(Action::Publish(address)) = msg_publish {
                 loop {
-                    let msg_hold = rx
+                    let msg_hold = signal_rx
                         .recv_timeout(Duration::from_millis(timeout))
                         .expect("no more signals to receive (inner)");
                     if let Signal::Internal(Action::Hold(entry)) = msg_hold {

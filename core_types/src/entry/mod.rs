@@ -1,7 +1,16 @@
+//! This module contains all the necessary definitions for Entry, which broadly speaking
+//! refers to any data which will be written into the ContentAddressableStorage, or the EntityAttributeValueStorage.
+//! It defines serialization behaviour for entries. Here you can find the complete list of
+//! entry_types, and special entries, like deletion_entry and cap_entry.
+
+pub mod cap_entries;
 pub mod deletion_entry;
 pub mod entry_type;
 
-use self::deletion_entry::DeletionEntry;
+use self::{
+    cap_entries::{CapToken, CapTokenGrant},
+    deletion_entry::DeletionEntry,
+};
 use agent::{test_agent_id, AgentId};
 use cas::content::{Address, AddressableContent, Content};
 use chain_header::ChainHeader;
@@ -63,6 +72,8 @@ pub enum Entry {
     LinkList(LinkList),
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),
+    CapToken(CapToken),
+    CapTokenGrant(CapTokenGrant),
 }
 
 impl From<Option<Entry>> for JsonString {
@@ -90,6 +101,8 @@ impl Entry {
             Entry::LinkList(_) => EntryType::LinkList,
             Entry::ChainHeader(_) => EntryType::ChainHeader,
             Entry::ChainMigrate(_) => EntryType::ChainMigrate,
+            Entry::CapToken(_) => EntryType::CapToken,
+            Entry::CapTokenGrant(_) => EntryType::CapTokenGrant,
         }
     }
 }

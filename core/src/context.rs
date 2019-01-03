@@ -1,16 +1,24 @@
 use crate::{
-    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister,
-    signal::Signal, state::State,
+    action::ActionWrapper,
+    instance::Observer,
+    logger::Logger,
+    persister::Persister,
+    signal::{Signal, SignalSender},
+    state::State,
 };
 use holochain_core_types::{
     agent::AgentId,
-    cas::storage::ContentAddressableStorage,
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     error::{HcResult, HolochainError},
     json::JsonString,
 };
 use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
@@ -28,12 +36,13 @@ pub struct Context {
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
-    pub signal_channel: Option<SyncSender<Signal>>,
     pub observer_channel: Option<SyncSender<Observer>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
+    pub container_api: Option<Arc<RwLock<IoHandler>>>,
+    pub signal_tx: Option<SyncSender<Signal>>,
 }
 
 impl Context {
@@ -49,6 +58,8 @@ impl Context {
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
+        container_api: Option<Arc<RwLock<IoHandler>>>,
+        signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
             agent_id,
@@ -56,12 +67,13 @@ impl Context {
             persister,
             state: None,
             action_channel: None,
-            signal_channel: None,
+            signal_tx: signal_tx,
             observer_channel: None,
             chain_storage,
             dht_storage,
             eav_storage: eav,
             network_config,
+            container_api,
         }
     }
 
@@ -70,7 +82,7 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_channel: Option<SyncSender<Signal>>,
+        signal_tx: Option<SyncSender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -82,12 +94,13 @@ impl Context {
             persister,
             state: None,
             action_channel,
-            signal_channel,
+            signal_tx,
             observer_channel,
             chain_storage: cas.clone(),
             dht_storage: cas,
             eav_storage: eav,
             network_config,
+            container_api: None,
         })
     }
 
@@ -160,8 +173,8 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_channel(&self) -> &SyncSender<Signal> {
-        self.signal_channel
+    pub fn signal_tx(&self) -> &SyncSender<Signal> {
+        self.signal_tx
             .as_ref()
             .expect("Signal channel not initialized")
     }
@@ -173,7 +186,7 @@ impl Context {
     }
 }
 
-pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, String)> {
+pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
@@ -186,8 +199,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, Stri
         .nucleus()
         .dna()
         .ok_or("Network::start() called without DNA".to_string())?;
-    let dna_hash = base64::encode(&dna.multihash()?);
-    Ok((dna_hash, agent_id))
+    Ok((dna.address(), agent_id))
 }
 
 /// create a test network
@@ -231,6 +243,8 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
+            None,
         );
 
         assert!(maybe_context.state().is_none());
@@ -262,6 +276,8 @@ pub mod tests {
                     .unwrap(),
             )),
             mock_network_config(),
+            None,
+            None,
         );
 
         let global_state = Arc::new(RwLock::new(State::new(Arc::new(context.clone()))));

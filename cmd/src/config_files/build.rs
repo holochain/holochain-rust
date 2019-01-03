@@ -47,7 +47,10 @@ impl Build {
 
             Ok(base64::encode(&wasm_buf))
         } else {
-            bail!("artifact path either doesn't point to a file or doesn't exist")
+            bail!(
+                "artifact path {} either doesn't point to a file or doesn't exist",
+                artifact_path.to_string_lossy()
+            )
         }
     }
 

@@ -10,10 +10,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{error::HolochainError, link::Link};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// AddLink Action Creator
 /// This action creator dispatches an AddLink action which is consumed by the DHT reducer.
@@ -37,8 +34,6 @@ pub struct AddLinkFuture {
     context: Arc<Context>,
     action: ActionWrapper,
 }
-
-impl Unpin for AddLinkFuture {}
 
 impl Future for AddLinkFuture {
     type Output = Result<(), HolochainError>;

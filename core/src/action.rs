@@ -226,9 +226,9 @@ pub struct NetworkSettings {
     /// determines how to connect to the network module.
     pub config: JsonString,
 
-    /// DNA hash is needed so the network module knows which network to
+    /// DNA address is needed so the network module knows which network to
     /// connect us to.
-    pub dna_hash: String,
+    pub dna_address: Address,
 
     /// The network module needs to know who we are.
     /// This is this agent's address.

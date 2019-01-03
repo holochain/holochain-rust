@@ -15,7 +15,7 @@ fn inner(
 
     let data = MessageData {
         msg_id: direct_message_data.msg_id.clone(),
-        dna_hash: network_state.dna_hash.clone().unwrap(),
+        dna_address: network_state.dna_address.clone().unwrap(),
         to_agent_id: direct_message_data.address.to_string(),
         from_agent_id: network_state.agent_id.clone().unwrap(),
         data: serde_json::from_str(&serde_json::to_string(&direct_message_data.message).unwrap())
@@ -86,7 +86,7 @@ mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: mock_network_config(),
-            dna_hash: String::from("abcd"),
+            dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));
 

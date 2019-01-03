@@ -38,7 +38,7 @@ pub struct NetworkState {
     // @see https://github.com/holochain/holochain-rust/issues/166
     pub actions: Actions,
     pub network: Option<Arc<Mutex<P2pNetwork>>>,
-    pub dna_hash: Option<String>,
+    pub dna_address: Option<Address>,
     pub agent_id: Option<String>,
 
     /// Here we store the results of GET entry processes.
@@ -69,7 +69,7 @@ impl NetworkState {
         NetworkState {
             actions: HashMap::new(),
             network: None,
-            dna_hash: None,
+            dna_address: None,
             agent_id: None,
 
             get_entry_with_meta_results: HashMap::new(),
@@ -86,7 +86,7 @@ impl NetworkState {
     }
 
     pub fn initialized(&self) -> Result<(), HolochainError> {
-        (self.network.is_some() && self.dna_hash.is_some() & self.agent_id.is_some()).ok_or(
+        (self.network.is_some() && self.dna_address.is_some() & self.agent_id.is_some()).ok_or(
             HolochainError::ErrorGeneric("Network not initialized".to_string()),
         )
     }

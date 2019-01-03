@@ -23,19 +23,20 @@ use std::{
 pub async fn get_links<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
+    tag: String,
 ) -> HcResult<Vec<Address>> {
-    let action_wrapper = ActionWrapper::new(Action::GetLinks(address.clone()));
+    let action_wrapper = ActionWrapper::new(Action::GetLinks((address.clone(), tag.clone())));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let _ = async {
         sleep(Duration::from_secs(60));
-        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(address.clone()));
+        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout((address.clone(), tag.clone())));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     };
     
     await!(GetLinksFuture {
         context: context.clone(),
-        address: address.clone(),
+        key: (address.clone(), tag.clone())
     })
 }
 
@@ -43,7 +44,7 @@ pub async fn get_links<'a>(
 /// Tracks the state of the network module
 pub struct GetLinksFuture {
     context: Arc<Context>,
-    address: Address,
+    key: (Address, String)
 }
 
 impl Future for GetLinksFuture {
@@ -59,7 +60,7 @@ impl Future for GetLinksFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        match state.get_links_results.get(&self.address) {
+        match state.get_links_results.get(&self.key) {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,
         }

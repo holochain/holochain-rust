@@ -128,9 +128,9 @@ pub enum Action {
     ///
     GetEntryTimeout(Address),
 
-    /// get links from entry address and attribute-name
-    GetLinks(Address),
-    GetLinksTimeout(Address),
+    /// get links from entry address and tag name
+    GetLinks((Address, String)),
+    GetLinksTimeout((Address, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

@@ -8,7 +8,7 @@ use holochain_core_types::cas::content::Address;
 use regex::Regex;
 use std::sync::Arc;
 use std::collections::HashSet;
-use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData, GetDhtMetaData};
+use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData, GetDhtData, GetDhtMetaData};
 
 lazy_static! {
     static ref LINK: Regex = Regex::new(r"^link__.*$").expect("This string literal is a valid regex");
@@ -56,4 +56,19 @@ pub fn handle_get_dht_meta(get_dht_meta_data: GetDhtMetaData, context: Arc<Conte
             ActionWrapper::new(Action::RespondGetLinks((get_dht_meta_data, links)));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     }
+}
+
+/// The network comes back with a result to our previous GET META request.
+pub fn handle_get_dht_meta_result(dht_meta_data: DhtMetaData, context: Arc<Context>) {
+    if LINK.is_match(&dht_meta_data.attribute) {
+        let tag = LINK.captures(&dht_meta_data.attribute)
+            .unwrap()
+            .get(1)
+            .unwrap()
+            .as_str()
+            .to_string();
+        let action_wrapper = ActionWrapper::new(Action::HandleGetLinksResult((dht_meta_data, tag)));
+        dispatch_action(context.action_channel(), action_wrapper.clone());
+    }
+
 }

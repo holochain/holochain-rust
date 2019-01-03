@@ -132,6 +132,7 @@ pub enum Action {
     GetLinks((Address, String)),
     GetLinksTimeout((Address, String)),
     RespondGetLinks((GetDhtMetaData, Vec<Address>)),
+    HandleGetLinksResult((DhtMetaData, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

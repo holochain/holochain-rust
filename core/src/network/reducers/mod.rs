@@ -2,6 +2,7 @@ pub mod get_entry;
 pub mod get_links;
 pub mod get_validation_package;
 pub mod handle_custom_send_response;
+pub mod handle_get_links_result;
 pub mod handle_get_result;
 pub mod handle_get_validation_package;
 pub mod init;

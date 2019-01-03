@@ -157,15 +157,11 @@ impl State {
         ))
     }
 
-    pub fn stop(mut self) -> Result<(), String> {
-        self.shutdown()
-    }
-
-    fn shutdown(&mut self) -> Result<(), String> {
+    pub fn shutdown(&mut self) -> HcResult<()> {
         // TODO: properly drop/destruct rest of state (requires moving out of Arc)
         mem::replace(&mut self.network, NetworkState::new())
             .stop()
-            .map_err(|e| e.to_string())
+            .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))
     }
 }
 

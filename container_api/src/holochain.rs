@@ -81,7 +81,6 @@ pub struct Holochain {
     active: bool,
     // to prevent restarting a Holochain until we can safely stop and restart all subsystems
     stopped: bool,
-    is_shutdown: bool,
 }
 
 impl Holochain {
@@ -111,7 +110,6 @@ impl Holochain {
                     context: new_context.clone(),
                     active: false,
                     stopped: false,
-                    is_shutdown: false,
                 };
                 Ok(hc)
             }
@@ -132,7 +130,6 @@ impl Holochain {
             context: new_context.clone(),
             active: false,
             stopped: false,
-            is_shutdown: false,
         })
     }
 
@@ -160,8 +157,6 @@ impl Holochain {
     }
 
     pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
-        self.is_shutdown = false;
-
         // If instance hasn't been started yet, still let it stop()
         self.stop().or_else(|err| match err {
             HolochainInstanceError::InstanceNotActiveYet => Ok(()),
@@ -169,21 +164,9 @@ impl Holochain {
         })?;
 
         // Shut down the instance
-        self.instance.shutdown();
-
-        // "Stop" the state
-        if let Some(state) = self.context.state_raw("I acknowledge that this is bad") {
-            let new_context = self.context.clone();
-            mem::replace(&mut *state.write().unwrap(), State::new(new_context))
-                .stop()
-                .or_else(|e| {
-                    Err(HolochainInstanceError::InternalFailure(
-                        format!("Holochain instance failed to shut down: {}", e).into(),
-                    ))
-                })
-        } else {
-            Ok(())
-        }
+        self.instance
+            .shutdown()
+            .map_err(|e| HolochainInstanceError::InternalFailure(e))
     }
 
     /// call a function in a zome

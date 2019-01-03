@@ -4,6 +4,7 @@ use crate::{
     signal::Signal,
     state::State,
 };
+use holochain_core_types::error::HcResult;
 use std::{
     mem,
     sync::{
@@ -168,9 +169,9 @@ impl Instance {
             .expect("owners of the state RwLock shouldn't panic")
     }
 
-    pub fn shutdown(&mut self) {
+    pub fn shutdown(&mut self) -> HcResult<()> {
         if self.is_shutdown() {
-            return;
+            return Ok(());
         }
 
         // send shutdown signal
@@ -179,11 +180,15 @@ impl Instance {
         }
 
         self.action_channel = None;
+        self.observer_channel = None;
+        self.state.write().unwrap().shutdown()?;
 
         // move action_thread out self so it can be joined into oblivion
         if let Some(t) = mem::replace(&mut self.action_thread, None) {
-            t.join().unwrap()
+            t.join().unwrap();
         }
+
+        Ok(())
     }
 
     fn is_shutdown(&self) -> bool {

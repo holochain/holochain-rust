@@ -366,7 +366,8 @@ mod tests {
     /// Can't actually run this alongside the below test because both are trying to access
     /// MockSingleton at the same time
     /// @TODO: add as real test once there's a way around this bottleneck
-    // #[test]
+    #[test]
+    #[cfg(feature = "broken-tests")]
     #[cfg_attr(tarpaulin, skip)]
     fn _it_registers_and_deregisters() {
         let (tx1, _rx1) = mpsc::channel::<Protocol>();

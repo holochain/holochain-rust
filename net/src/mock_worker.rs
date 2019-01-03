@@ -1,5 +1,6 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
+use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
@@ -17,21 +18,21 @@ use std::{
 };
 
 /// hash connections by dna::agent_id
-fn cat_dna_agent(dna_hash: &str, agent_id: &str) -> String {
-    format!("{}::{}", dna_hash, agent_id)
+fn cat_dna_agent(dna_address: &Address, agent_id: &str) -> String {
+    format!("{}::{}", dna_address, agent_id)
 }
 
 /// hash connections by dna::agent_id
 fn app_id(app_data: &TrackAppData) -> String {
-    cat_dna_agent(&app_data.dna_hash, &app_data.agent_id)
+    cat_dna_agent(&app_data.dna_address, &app_data.agent_id)
 }
 
 /// a lazy_static! singleton for routing messages in-memory
 struct MockSingleton {
-    // keep track of senders by `dna_hash::agent_id`
+    // keep track of senders by `dna_address::agent_id`
     senders: HashMap<String, mpsc::Sender<Protocol>>,
-    // keep track of senders as arrays by dna_hash
-    senders_by_dna: HashMap<String, Vec<mpsc::Sender<Protocol>>>,
+    // keep track of senders as arrays by dna_address
+    senders_by_dna: HashMap<Address, Vec<mpsc::Sender<Protocol>>>,
 }
 
 impl MockSingleton {
@@ -46,7 +47,7 @@ impl MockSingleton {
     /// register a data handler with the singleton (for message routing)
     pub fn register(&mut self, app_data: &TrackAppData, sender: mpsc::Sender<Protocol>) -> () {
         self.senders.insert(app_id(app_data), sender.clone());
-        match self.senders_by_dna.entry(app_data.dna_hash.to_string()) {
+        match self.senders_by_dna.entry(app_data.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 e.get_mut().push(sender.clone());
             }
@@ -59,7 +60,7 @@ impl MockSingleton {
     /// de-register a data handler with the singleton (for message routing)
     pub fn deregister(&mut self, app_data: &TrackAppData) -> () {
         self.senders.remove(&app_id(app_data));
-        self.senders_by_dna.remove(&app_data.dna_hash);
+        self.senders_by_dna.remove(&app_data.dna_address);
         if self.senders.is_empty() && self.senders_by_dna.is_empty() {
             println!("\n-----------------\nMockSingleton Emptied!\n-----------------\n");
         }
@@ -77,14 +78,14 @@ impl MockSingleton {
                 }
                 ProtocolWrapper::SuccessResult(msg) => {
                     self.priv_send_one(
-                        &msg.dna_hash,
+                        &msg.dna_address,
                         &msg.to_agent_id,
                         ProtocolWrapper::SuccessResult(msg.clone()).into(),
                     )?;
                 }
                 ProtocolWrapper::FailureResult(msg) => {
                     self.priv_send_one(
-                        &msg.dna_hash,
+                        &msg.dna_address,
                         &msg.to_agent_id,
                         ProtocolWrapper::FailureResult(msg.clone()).into(),
                     )?;
@@ -116,8 +117,13 @@ impl MockSingleton {
     // -- private -- //
 
     /// send a message to the appropriate channel based on dna_hash::agent_id
-    fn priv_send_one(&mut self, dna_hash: &str, agent_id: &str, data: Protocol) -> NetResult<()> {
-        if let Some(sender) = self.senders.get_mut(&cat_dna_agent(dna_hash, agent_id)) {
+    fn priv_send_one(
+        &mut self,
+        dna_address: &Address,
+        agent_id: &str,
+        data: Protocol,
+    ) -> NetResult<()> {
+        if let Some(sender) = self.senders.get_mut(&cat_dna_agent(dna_address, agent_id)) {
             // NB: ignoring send failure here
             sender
                 .send(data)
@@ -126,9 +132,9 @@ impl MockSingleton {
         Ok(())
     }
 
-    /// send a message to all nodes connected with this dna hash
-    fn priv_send_all(&mut self, dna_hash: &str, data: Protocol) -> NetResult<()> {
-        if let Some(arr) = self.senders_by_dna.get_mut(dna_hash) {
+    /// send a message to all nodes connected with this dna address
+    fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
+        if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
             for val in arr.iter_mut() {
                 // NB: ignoring send failure here
                 (*val)
@@ -144,7 +150,7 @@ impl MockSingleton {
     /// show up as a HandleSend message, fabricate that message && deliver
     fn priv_handle_send(&mut self, msg: &MessageData) -> NetResult<()> {
         self.priv_send_one(
-            &msg.dna_hash,
+            &msg.dna_address,
             &msg.to_agent_id,
             ProtocolWrapper::HandleSend(msg.clone()).into(),
         )?;
@@ -156,7 +162,7 @@ impl MockSingleton {
     /// show up as a SendResult message, fabricate that message && deliver
     fn priv_handle_send_result(&mut self, msg: &MessageData) -> NetResult<()> {
         self.priv_send_one(
-            &msg.dna_hash,
+            &msg.dna_address,
             &msg.to_agent_id,
             ProtocolWrapper::SendResult(msg.clone()).into(),
         )?;
@@ -167,7 +173,7 @@ impl MockSingleton {
     /// this mock module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
     fn priv_handle_get_dht(&mut self, msg: &GetDhtData) -> NetResult<()> {
-        match self.senders_by_dna.entry(msg.dna_hash.to_string()) {
+        match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
@@ -179,13 +185,13 @@ impl MockSingleton {
         };
 
         self.priv_send_one(
-            &msg.dna_hash,
+            &msg.dna_address,
             &msg.from_agent_id,
             ProtocolWrapper::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
-                dna_hash: msg.dna_hash.clone(),
+                dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
-                error_info: json!("could not find nodes handling this dnaHash"),
+                error_info: json!("could not find nodes handling this dnaAddress"),
             })
             .into(),
         )?;
@@ -196,7 +202,7 @@ impl MockSingleton {
     /// send back a response to a request for dht data
     fn priv_handle_get_dht_result(&mut self, msg: &DhtData) -> NetResult<()> {
         self.priv_send_one(
-            &msg.dna_hash,
+            &msg.dna_address,
             &msg.agent_id,
             ProtocolWrapper::GetDhtResult(msg.clone()).into(),
         )?;
@@ -205,7 +211,10 @@ impl MockSingleton {
 
     /// on publish meta, we send store requests to all nodes connected on this dna
     fn priv_handle_publish_dht(&mut self, msg: &DhtData) -> NetResult<()> {
-        self.priv_send_all(&msg.dna_hash, ProtocolWrapper::StoreDht(msg.clone()).into())?;
+        self.priv_send_all(
+            &msg.dna_address,
+            ProtocolWrapper::StoreDht(msg.clone()).into(),
+        )?;
         Ok(())
     }
 
@@ -213,7 +222,7 @@ impl MockSingleton {
     /// this mock module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
     fn priv_handle_get_dht_meta(&mut self, msg: &GetDhtMetaData) -> NetResult<()> {
-        match self.senders_by_dna.entry(msg.dna_hash.to_string()) {
+        match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
@@ -225,13 +234,13 @@ impl MockSingleton {
         };
 
         self.priv_send_one(
-            &msg.dna_hash,
+            &msg.dna_address,
             &msg.from_agent_id,
             ProtocolWrapper::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
-                dna_hash: msg.dna_hash.clone(),
+                dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
-                error_info: json!("could not find nodes handling this dnaHash"),
+                error_info: json!("could not find nodes handling this dnaAddress"),
             })
             .into(),
         )?;
@@ -242,7 +251,7 @@ impl MockSingleton {
     /// send back a response to a request for dht meta data
     fn priv_handle_get_dht_meta_result(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_one(
-            &msg.dna_hash,
+            &msg.dna_address,
             &msg.agent_id,
             ProtocolWrapper::GetDhtMetaResult(msg.clone()).into(),
         )?;
@@ -252,7 +261,7 @@ impl MockSingleton {
     /// on publish, we send store requests to all nodes connected on this dna
     fn priv_handle_publish_dht_meta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_all(
-            &msg.dna_hash,
+            &msg.dna_address,
             ProtocolWrapper::StoreDhtMeta(msg.clone()).into(),
         )?;
         Ok(())
@@ -342,7 +351,10 @@ mod tests {
 
     use holochain_net_connection::protocol_wrapper::{SuccessResultData, TrackAppData};
 
-    static DNA_HASH: &'static str = "blabladnahash";
+    fn example_dna_address() -> Address {
+        "blabladnaAddress".into()
+    }
+
     static AGENT_ID_1: &'static str = "agent-hash-test-1";
     static AGENT_ID_2: &'static str = "agent-hash-test-2";
 
@@ -424,7 +436,7 @@ mod tests {
 
         cli1.receive(
             ProtocolWrapper::TrackApp(TrackAppData {
-                dna_hash: DNA_HASH.to_string(),
+                dna_address: example_dna_address(),
                 agent_id: AGENT_ID_1.to_string(),
             })
             .into(),
@@ -439,7 +451,7 @@ mod tests {
 
         cli2.receive(
             ProtocolWrapper::TrackApp(TrackAppData {
-                dna_hash: DNA_HASH.to_string(),
+                dna_address: example_dna_address(),
                 agent_id: AGENT_ID_2.to_string(),
             })
             .into(),
@@ -450,7 +462,7 @@ mod tests {
 
         cli1.receive(
             ProtocolWrapper::SendMessage(MessageData {
-                dna_hash: DNA_HASH.to_string(),
+                dna_address: example_dna_address(),
                 to_agent_id: AGENT_ID_2.to_string(),
                 from_agent_id: AGENT_ID_1.to_string(),
                 msg_id: "yada".to_string(),
@@ -467,7 +479,7 @@ mod tests {
         if let ProtocolWrapper::HandleSend(msg) = res {
             cli2.receive(
                 ProtocolWrapper::HandleSendResult(MessageData {
-                    dna_hash: msg.dna_hash,
+                    dna_address: msg.dna_address,
                     to_agent_id: msg.from_agent_id,
                     from_agent_id: AGENT_ID_2.to_string(),
                     msg_id: msg.msg_id,
@@ -495,7 +507,7 @@ mod tests {
         cli2.receive(
             ProtocolWrapper::GetDht(GetDhtData {
                 msg_id: "yada".to_string(),
-                dna_hash: DNA_HASH.to_string(),
+                dna_address: example_dna_address(),
                 from_agent_id: AGENT_ID_2.to_string(),
                 address: "hello".to_string(),
             })
@@ -511,7 +523,7 @@ mod tests {
             cli1.receive(
                 ProtocolWrapper::GetDhtResult(DhtData {
                     msg_id: msg.msg_id.clone(),
-                    dna_hash: msg.dna_hash.clone(),
+                    dna_address: msg.dna_address.clone(),
                     agent_id: msg.from_agent_id.clone(),
                     address: msg.address.clone(),
                     content: json!(format!("data-for: {}", msg.address)),
@@ -538,7 +550,7 @@ mod tests {
         cli2.receive(
             ProtocolWrapper::PublishDht(DhtData {
                 msg_id: "yada".to_string(),
-                dna_hash: DNA_HASH.to_string(),
+                dna_address: example_dna_address(),
                 agent_id: AGENT_ID_2.to_string(),
                 address: "hello".to_string(),
                 content: json!("test-data"),
@@ -559,7 +571,7 @@ mod tests {
             cli1.receive(
                 ProtocolWrapper::SuccessResult(SuccessResultData {
                     msg_id: msg.msg_id.clone(),
-                    dna_hash: msg.dna_hash.clone(),
+                    dna_address: msg.dna_address.clone(),
                     to_agent_id: msg.agent_id.clone(),
                     success_info: json!("signature here"),
                 })
@@ -584,7 +596,7 @@ mod tests {
         cli2.receive(
             ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
                 msg_id: "yada".to_string(),
-                dna_hash: DNA_HASH.to_string(),
+                dna_address: example_dna_address(),
                 from_agent_id: AGENT_ID_2.to_string(),
                 address: "hello".to_string(),
                 attribute: "link:test".to_string(),
@@ -601,7 +613,7 @@ mod tests {
             cli1.receive(
                 ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
                     msg_id: msg.msg_id.clone(),
-                    dna_hash: msg.dna_hash.clone(),
+                    dna_address: msg.dna_address.clone(),
                     agent_id: msg.from_agent_id.clone(),
                     address: msg.address.clone(),
                     attribute: msg.attribute.clone(),
@@ -632,7 +644,7 @@ mod tests {
         cli2.receive(
             ProtocolWrapper::PublishDhtMeta(DhtMetaData {
                 msg_id: "yada".to_string(),
-                dna_hash: DNA_HASH.to_string(),
+                dna_address: example_dna_address(),
                 agent_id: AGENT_ID_2.to_string(),
                 address: "hello".to_string(),
                 attribute: "link:test".to_string(),
@@ -654,7 +666,7 @@ mod tests {
             cli1.receive(
                 ProtocolWrapper::SuccessResult(SuccessResultData {
                     msg_id: msg.msg_id.clone(),
-                    dna_hash: msg.dna_hash.clone(),
+                    dna_address: msg.dna_address.clone(),
                     to_agent_id: msg.agent_id.clone(),
                     success_info: json!("signature here"),
                 })

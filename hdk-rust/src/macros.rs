@@ -29,12 +29,15 @@ macro_rules! load_string {
 
 /// Every Zome must utilize the `define_zome`
 /// macro in the main library file in their Zome.
-/// The `define_zome` macro has 3 component parts:
+/// The `define_zome` macro has 4 component parts:
 /// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
 /// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA.
 ///     It gets called when a new agent is initializing an instance of the DNA for the first time, and
 ///     should return `Ok` or an `Err`, depending on whether the agent can join the network or not.
-/// 3. functions: `functions` is divided up into `capabilities`, which specify who can access those functions.
+/// 3. receive (optional): `receive` is a callback called by Holochain when another agent on a hApp has initiated a node-to-node direct message.
+///     That node-to-node message is initiated via the [**send** function of the API](api/fn.send.html), which is where you can read further about use of `send` and `receive`.
+///     `receive` is optional to include, based on whether you use `send` anywhere in the code.
+/// 4. functions: `functions` is divided up into `capabilities`, which specify who can access those functions.
 ///     `functions` must be a tree structure where the first children are `capabilities`
 ///     and the children of those `capabilities` are actual function definitions.
 /// # Examples
@@ -117,6 +120,11 @@ macro_rules! load_string {
 ///
 ///     genesis: || {
 ///         Ok(())
+///     }
+///
+///     receive: |payload| {
+///       // just return what was received, but modified
+///       format!("Received: {}", payload)
 ///     }
 ///
 ///     functions: {

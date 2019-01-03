@@ -17,9 +17,7 @@ use holochain_net_connection::{
     },
     NetResult,
 };
-
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
-
 use std::{convert::TryFrom, sync::mpsc};
 
 macro_rules! one_let {
@@ -258,9 +256,12 @@ fn launch_test_with_config(n3h_path: &str, config_filepath: &str) -> NetResult<(
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -> NetResult<()> {
-    static DNA_HASH: &'static str = "TEST_DNA_HASH";
     static AGENT_1: &'static str = "1_TEST_AGENT_1";
     static AGENT_2: &'static str = "2_TEST_AGENT_2";
+
+    fn example_dna_address() -> Address {
+        "TEST_DNA_ADDRESS".into()
+    }
 
     // Get each node's current state
     let node1_state = node1.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;

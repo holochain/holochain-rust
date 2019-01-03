@@ -127,17 +127,16 @@ impl Instance {
         let action_thread = thread::spawn(move || {
             let mut state_observers: Vec<Observer> = Vec::new();
             for action_wrapper in rx_action {
-                let (new_observers, is_shutdown) = process_action_via_state(
+                state_observers = process_action_via_state(
                     state.clone(),
                     &action_wrapper,
                     state_observers,
                     &rx_observer,
                     &sub_context,
                 );
-                state_observers = new_observers;
                 // @TODO: this shouldn't be coupled with the action loop. If the action loop
                 // stops, then we can't shut down!
-                if is_shutdown {
+                if state.read().unwrap().is_shutdown() {
                     break;
                 }
             }
@@ -194,7 +193,7 @@ pub fn process_action(
     state_observers: Vec<Observer>,
     rx_observer: &Receiver<Observer>,
     context: &Arc<Context>,
-) -> (Vec<Observer>, bool) {
+) -> Vec<Observer> {
     process_action_via_state(
         instance.state.clone(),
         action_wrapper,
@@ -212,12 +211,12 @@ pub fn process_action_via_state(
     mut state_observers: Vec<Observer>,
     rx_observer: &Receiver<Observer>,
     context: &Arc<Context>,
-) -> (Vec<Observer>, bool) {
+) -> Vec<Observer> {
     // Mutate state
-    let is_shutdown = {
+    {
         let new_state: State;
 
-        let is_shutdown = {
+        {
             // Only get a read lock first so code in reducers can read state as well
             let state = state_arc
                 .read()
@@ -225,8 +224,7 @@ pub fn process_action_via_state(
 
             // Create new state by reducing the action on old state
             new_state = state.reduce(context.clone(), action_wrapper.clone());
-            state.is_shutdown()
-        };
+        }
 
         // Get write lock
         let mut state = state_arc
@@ -235,8 +233,7 @@ pub fn process_action_via_state(
 
         // Change the state
         *state = new_state;
-        is_shutdown
-    };
+    }
 
     // @TODO: add a big fat debug logger here
     maybe_emit_action_signal(context, action_wrapper.action().clone());
@@ -258,7 +255,7 @@ pub fn process_action_via_state(
             }
         }
     }
-    (state_observers, is_shutdown)
+    state_observers
 }
 
 /// Given an `Action` that is being processed, decide whether or not it should be
@@ -647,7 +644,7 @@ pub mod tests {
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
-        let (new_observers, _) = process_action(
+        let new_observers = process_action(
             &instance,
             &action_wrapper.clone(),
             Vec::new(), // start with no observers

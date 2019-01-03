@@ -193,6 +193,10 @@ impl Context {
             .as_ref()
             .expect("Observer channel not initialized")
     }
+
+    pub fn shutdown(&mut self) -> HcResult<()> {
+        Ok(self.state.as_ref().unwrap().write().unwrap().shutdown()?)
+    }
 }
 
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {

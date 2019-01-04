@@ -95,6 +95,7 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
 
+extern crate chrono;
 extern crate serde;
 extern crate tempfile;
 #[macro_use]
@@ -109,6 +110,8 @@ extern crate serde_json;
 extern crate test_utils;
 extern crate tiny_http;
 extern crate toml;
+extern crate colored;
+extern crate regex;
 
 pub mod config;
 pub mod container;
@@ -117,5 +120,6 @@ pub mod error;
 pub mod holochain;
 pub mod interface;
 pub mod interface_impls;
+pub mod logger;
 
 pub use crate::holochain::Holochain;

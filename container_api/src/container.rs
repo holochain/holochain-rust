@@ -3,8 +3,9 @@ use crate::{
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
     Holochain,
+    logger::{DebugLogger,debug,LogRules},
 };
-use holochain_core::{logger::Logger, signal::Signal};
+use holochain_core::{logger::{ChannelLogger, Logger}, signal::Signal};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,
@@ -19,7 +20,7 @@ use std::{
     convert::TryFrom,
     fs::File,
     io::prelude::*,
-    sync::{mpsc::SyncSender, Arc, RwLock},
+    sync::{mpsc::SyncSender, Arc, RwLock, Mutex},
     thread,
 };
 
@@ -41,6 +42,7 @@ pub struct Container {
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
+    logger: DebugLogger,
 }
 
 type SignalSender = SyncSender<Signal>;
@@ -49,7 +51,14 @@ type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
 pub static DEFAULT_NETWORK_CONFIG: &'static str = P2pConfig::DEFAULT_MOCK_CONFIG;
 
+pub fn log(msg: String) {
+    let mut rules = LogRules::new();
+    rules.add_rule("Starting");
+    debug(&rules,"container".to_string(),msg);
+}
+
 impl Container {
+
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
         Container {
@@ -58,6 +67,7 @@ impl Container {
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
+            logger:  DebugLogger::new(),
         }
     }
 
@@ -91,10 +101,11 @@ impl Container {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
+
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
-                println!("Starting instance \"{}\"...", id);
+                log(format!("Starting instance \"{}\"...", id));
                 hc.write().unwrap().start()
             })
             .collect::<Result<Vec<()>, _>>()
@@ -106,7 +117,7 @@ impl Container {
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
-                println!("Stopping instance \"{}\"...", id);
+                log(format!("Stopping instance \"{}\"...", id));
                 hc.write().unwrap().stop()
             })
             .collect::<Result<Vec<()>, _>>()
@@ -186,6 +197,11 @@ impl Container {
                         format!("Error creating context: {}", hc_err.to_string())
                     })?
                 };
+
+                if instance_config.logger.logger_type == "debug" {
+                    context_builder =
+                        context_builder.with_logger(Arc::new(Mutex::new(ChannelLogger::new(instance_config.id.clone(),self.logger.get_sender()))));
+                }
 
                 // Container API
                 let mut api_builder = ContainerApiBuilder::new();

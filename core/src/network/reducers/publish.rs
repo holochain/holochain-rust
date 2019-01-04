@@ -78,6 +78,7 @@ fn publish_crud_meta(
 }
 
 fn publish_link_meta(
+    context: &Arc<Context>,
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
@@ -91,6 +92,8 @@ fn publish_link_meta(
         }
     };
     let link = link_add_entry.link().clone();
+
+    context.log(format!("Publishing link meta for link: {:?}", link));
 
     send(
         network_state,
@@ -135,7 +138,7 @@ fn reduce_publish_inner(
             )
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(context,network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_crud_meta(
                 network_state,

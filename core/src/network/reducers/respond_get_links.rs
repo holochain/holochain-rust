@@ -29,13 +29,16 @@ fn reduce_respond_get_links_inner(
 }
 
 pub fn reduce_respond_get_links(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let (get_dht_meta_data, links) = unwrap_to!(action => crate::action::Action::RespondGetLinks);
     let result = reduce_respond_get_links_inner(network_state, get_dht_meta_data, links);
+
+    context.log(format!("Responding to GET LINKS request from {} with {:?}", get_dht_meta_data.from_agent_id, links));
+
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::RespondGetLinks(match result {

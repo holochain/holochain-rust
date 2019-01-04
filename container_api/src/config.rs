@@ -1,3 +1,4 @@
+use crate::logger::LogRules;
 /// Container Configuration
 /// This module provides structs that represent the different aspects of how
 /// a container can be configured.
@@ -20,7 +21,6 @@ use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
 use toml;
-use crate::logger::LogRules;
 
 /// Main container configuration struct
 /// This is the root of the configuration tree / aggregates
@@ -58,7 +58,7 @@ pub struct LoggerConfiguration {
     pub logger_type: String,
     #[serde(default)]
     pub rules: LogRules,
-//    pub file: Option<String>,
+    //    pub file: Option<String>,
 }
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
@@ -464,8 +464,7 @@ pub mod tests {
             instance_config.network,
             Some("{\"backend_kind\":\"special\"}".to_string())
         );
-        assert_eq!(config.logger.logger_type,"");
-
+        assert_eq!(config.logger.logger_type, "");
     }
 
     #[test]
@@ -529,8 +528,8 @@ pub mod tests {
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
         assert_eq!(instance_config.network, None);
-        assert_eq!(config.logger.logger_type,"debug");
-        assert_eq!(config.logger.rules.rules.len(),1);
+        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.rules.rules.len(), 1);
     }
 
     #[test]

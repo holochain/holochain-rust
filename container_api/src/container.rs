@@ -2,10 +2,13 @@ use crate::{
     config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration},
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
+    logger::DebugLogger,
     Holochain,
-    logger::{DebugLogger},
 };
-use holochain_core::{logger::{ChannelLogger, Logger}, signal::Signal};
+use holochain_core::{
+    logger::{ChannelLogger, Logger},
+    signal::Signal,
+};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,
@@ -20,7 +23,7 @@ use std::{
     convert::TryFrom,
     fs::File,
     io::prelude::*,
-    sync::{mpsc::SyncSender, Arc, RwLock, Mutex},
+    sync::{mpsc::SyncSender, Arc, Mutex, RwLock},
     thread,
 };
 
@@ -53,11 +56,10 @@ pub static DEFAULT_NETWORK_CONFIG: &'static str = P2pConfig::DEFAULT_MOCK_CONFIG
 
 // preparing for having container notifiers go to one of the log streams
 pub fn notify(msg: String) {
-    println!("{}",msg);
+    println!("{}", msg);
 }
 
 impl Container {
-
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
@@ -67,7 +69,7 @@ impl Container {
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
-            logger:  DebugLogger::new(rules),
+            logger: DebugLogger::new(rules),
         }
     }
 
@@ -101,7 +103,6 @@ impl Container {
 
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
-
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
@@ -199,8 +200,9 @@ impl Container {
                 };
 
                 if config.logger.logger_type == "debug" {
-                    context_builder =
-                        context_builder.with_logger(Arc::new(Mutex::new(ChannelLogger::new(instance_config.id.clone(),self.logger.get_sender()))));
+                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
+                        ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
+                    )));
                 }
 
                 // Container API

@@ -101,18 +101,18 @@ extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+extern crate colored;
 #[cfg(test)]
 extern crate holochain_wasm_utils;
 extern crate jsonrpc_ws_server;
 extern crate petgraph;
+extern crate regex;
 extern crate serde_json;
+extern crate serde_regex;
 #[cfg(test)]
 extern crate test_utils;
 extern crate tiny_http;
 extern crate toml;
-extern crate colored;
-extern crate regex;
-extern crate serde_regex;
 
 pub mod config;
 pub mod container;

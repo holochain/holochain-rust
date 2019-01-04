@@ -3,9 +3,7 @@
 //! gets emitted globaly from the container.
 
 use chrono::Local;
-use std:: {
-    sync::mpsc,
-};
+use std::sync::mpsc;
 
 /// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {
@@ -35,8 +33,8 @@ impl Logger for SimpleLogger {
     // }
 }
 
-pub type Receiver = mpsc::Receiver<(String,String)>;
-pub type Sender = mpsc::Sender<(String,String)>;
+pub type Receiver = mpsc::Receiver<(String, String)>;
+pub type Sender = mpsc::Sender<(String, String)>;
 
 #[derive(Clone)]
 pub struct ChannelLogger {
@@ -46,16 +44,15 @@ pub struct ChannelLogger {
 
 impl Logger for ChannelLogger {
     fn log(&mut self, msg: String) {
-        self.sender.send((self.id.clone(),msg)).unwrap();
+        self.sender.send((self.id.clone(), msg)).unwrap();
     }
 }
 
-
 impl ChannelLogger {
     pub fn new(id: String, sender: Sender) -> ChannelLogger {
-        ChannelLogger{id, sender}
+        ChannelLogger { id, sender }
     }
-    pub fn setup()  -> (Sender,Receiver) {
+    pub fn setup() -> (Sender, Receiver) {
         mpsc::channel()
     }
 }
@@ -70,14 +67,14 @@ pub mod tests {
 
     #[test]
     fn test_channel_logger() {
-        let (tx,rx) = ChannelLogger::setup();
-        let mut logger = ChannelLogger::new("Me:".to_string(),tx.clone());
+        let (tx, rx) = ChannelLogger::setup();
+        let mut logger = ChannelLogger::new("Me:".to_string(), tx.clone());
         logger.log("fish".to_string());
         match rx.recv() {
-            Ok((id,msg)) => {
-                assert_eq!(id,"Me");
-                assert_eq!(msg,"fish");
-            },
+            Ok((id, msg)) => {
+                assert_eq!(id, "Me");
+                assert_eq!(msg, "fish");
+            }
             Err(_) => assert!(false),
         }
     }

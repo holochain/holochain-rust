@@ -186,22 +186,16 @@ impl Container {
         net_config: &NetworkConfig,
     ) -> Result<JsonString, HolochainError> {
         match self.network_ipc_uri {
-            Some(ref uri) => {
-                let tmp = JsonString::from(json!(
-                    {
-                        "backend_kind": "IPC",
-                        "backend_config": {
-                            "socketType": "zmq",
-                            "bootstrapNodes": net_config.bootstrap_nodes,
-                            "ipcUri": uri.clone()
-                        }
+            Some(ref uri) => Ok(JsonString::from(json!(
+                {
+                    "backend_kind": "IPC",
+                    "backend_config": {
+                        "socketType": "zmq",
+                        "bootstrapNodes": net_config.bootstrap_nodes,
+                        "ipcUri": uri.clone()
                     }
-                ));
-
-                println!("NET CONFIG: {}", tmp.to_string());
-
-                Ok(tmp)
-            }
+                }
+            ))),
             None => Err(HolochainError::ErrorGeneric(
                 "Network IPC URI missing".to_string(),
             )),

@@ -131,6 +131,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_timeout_test() {
         let mut context = test_context("alice");
         let store = test_store(context.clone());

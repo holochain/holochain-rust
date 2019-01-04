@@ -232,7 +232,7 @@ impl IpcNetWorker {
             println!("try connect bootstrap {:?}", bs_node);
             self.ipc_relay.send(
                 ProtocolWrapper::Connect(ConnectData {
-                    address: bs_node.clone(),
+                    address: bs_node.clone().into(),
                 })
                 .into(),
             )?;

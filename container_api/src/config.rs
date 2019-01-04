@@ -20,6 +20,7 @@ use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
 use toml;
+use crate::logger::LogRules;
 
 /// Main container configuration struct
 /// This is the root of the configuration tree / aggregates
@@ -55,6 +56,8 @@ pub struct Configuration {
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
     pub logger_type: String,
+    #[serde(default)]
+    pub rules: LogRules,
 //    pub file: Option<String>,
 }
 impl Configuration {

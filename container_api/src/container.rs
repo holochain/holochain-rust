@@ -3,7 +3,7 @@ use crate::{
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
     Holochain,
-    logger::{DebugLogger,debug,LogRules},
+    logger::{DebugLogger},
 };
 use holochain_core::{logger::{ChannelLogger, Logger}, signal::Signal};
 use holochain_core_types::{
@@ -51,23 +51,23 @@ type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
 pub static DEFAULT_NETWORK_CONFIG: &'static str = P2pConfig::DEFAULT_MOCK_CONFIG;
 
-pub fn log(msg: String) {
-    let mut rules = LogRules::new();
-    rules.add_rule("Starting");
-    debug(&rules,"container".to_string(),msg);
+// preparing for having container notifiers go to one of the log streams
+pub fn notify(msg: String) {
+    println!("{}",msg);
 }
 
 impl Container {
 
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
+        let rules = config.logger.rules.clone();
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
-            logger:  DebugLogger::new(),
+            logger:  DebugLogger::new(rules),
         }
     }
 
@@ -105,7 +105,7 @@ impl Container {
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
-                log(format!("Starting instance \"{}\"...", id));
+                notify(format!("Starting instance \"{}\"...", id));
                 hc.write().unwrap().start()
             })
             .collect::<Result<Vec<()>, _>>()
@@ -117,7 +117,7 @@ impl Container {
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
-                log(format!("Stopping instance \"{}\"...", id));
+                notify(format!("Stopping instance \"{}\"...", id));
                 hc.write().unwrap().stop()
             })
             .collect::<Result<Vec<()>, _>>()

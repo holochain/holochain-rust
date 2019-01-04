@@ -112,6 +112,7 @@ extern crate tiny_http;
 extern crate toml;
 extern crate colored;
 extern crate regex;
+extern crate serde_regex;
 
 pub mod config;
 pub mod container;

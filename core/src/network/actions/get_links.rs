@@ -8,42 +8,42 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HcResult};
+use holochain_core_types::{cas::content::Address, error::HcResult};
 use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
 
-/// GetEntry Action Creator
-/// This is the network version of get_entry that makes the network module start
+/// GetLinks Action Creator
+/// This is the network version of get_links that makes the network module start
 /// a look-up process.
-///
-/// Returns a future that resolves to an ActionResponse.
-pub async fn get_entry<'a>(
+pub async fn get_links<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
-) -> HcResult<Option<EntryWithMeta>> {
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(address.clone()));
+    tag: String,
+) -> HcResult<Vec<Address>> {
+    let action_wrapper = ActionWrapper::new(Action::GetLinks((address.clone(), tag.clone())));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let _ = async {
         sleep(Duration::from_secs(60));
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(address.clone()));
+        let action_wrapper =
+            ActionWrapper::new(Action::GetLinksTimeout((address.clone(), tag.clone())));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     };
 
-    await!(GetEntryFuture {
+    await!(GetLinksFuture {
         context: context.clone(),
-        address: address.clone(),
+        key: (address.clone(), tag.clone())
     })
 }
 
-/// GetEntryFuture resolves to a HcResult<Entry>.
+/// GetLinksFuture resolves to a HcResult<Vec<Address>>.
 /// Tracks the state of the network module
-pub struct GetEntryFuture {
+pub struct GetLinksFuture {
     context: Arc<Context>,
-    address: Address,
+    key: (Address, String),
 }
 
-impl Future for GetEntryFuture {
-    type Output = HcResult<Option<EntryWithMeta>>;
+impl Future for GetLinksFuture {
+    type Output = HcResult<Vec<Address>>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
         let state = self.context.state().unwrap().network();
@@ -55,7 +55,7 @@ impl Future for GetEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        match state.get_entry_with_meta_results.get(&self.address) {
+        match state.get_links_results.get(&self.key) {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,
         }

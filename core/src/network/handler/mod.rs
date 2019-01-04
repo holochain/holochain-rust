@@ -79,6 +79,12 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_get_dht_result(dht_data, context.clone())
             }
+            Ok(ProtocolWrapper::GetDhtMeta(get_dht_meta_data)) => {
+                handle_get_dht_meta(get_dht_meta_data, context.clone())
+            }
+            Ok(ProtocolWrapper::GetDhtMetaResult(get_dht_meta_data)) => {
+                handle_get_dht_meta_result(get_dht_meta_data, context.clone())
+            }
             Ok(ProtocolWrapper::HandleSend(message_data)) => {
                 if !is_me(
                     &context,

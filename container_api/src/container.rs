@@ -198,7 +198,7 @@ impl Container {
                     })?
                 };
 
-                if instance_config.logger.logger_type == "debug" {
+                if config.logger.logger_type == "debug" {
                     context_builder =
                         context_builder.with_logger(Arc::new(Mutex::new(ChannelLogger::new(instance_config.id.clone(),self.logger.get_sender()))));
                 }
@@ -384,9 +384,6 @@ pub mod tests {
     id = "test-instance-1"
     dna = "bridge-callee"
     agent = "test-agent-1"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "memory"
 
@@ -394,9 +391,6 @@ pub mod tests {
     id = "test-instance-2"
     dna = "test-dna"
     agent = "test-agent-2"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "memory"
 
@@ -404,9 +398,6 @@ pub mod tests {
     id = "bridge-caller"
     dna = "bridge-caller"
     agent = "test-agent-3"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "memory"
 

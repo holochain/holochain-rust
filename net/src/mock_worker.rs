@@ -320,7 +320,7 @@ impl MockWorker {
         let config: serde_json::Value = serde_json::from_str(network_config.into())?;
         let _network_name = config["networkName"]
             .as_str()
-            .expect("Mock network name not specified")
+            .unwrap_or("(unnamed)")
             .to_string();
         Ok(MockWorker {
             handler,

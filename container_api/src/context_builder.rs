@@ -132,7 +132,7 @@ impl ContextBuilder {
             dht_storage,
             eav_storage,
             self.network_config.unwrap_or(JsonString::from(String::from(
-                P2pConfig::DEFAULT_MOCK_CONFIG,
+                P2pConfig::default_mock_config("mock@ContextBuilder::spawn"),
             ))),
             self.container_api,
             self.signal_tx,
@@ -151,7 +151,7 @@ mod tests {
         assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
         assert_eq!(
             context.network_config,
-            JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG))
+            JsonString::from(String::from(P2pConfig::default_mock_config("vanilla")))
         );
     }
 
@@ -164,7 +164,9 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG));
+        let net = JsonString::from(String::from(P2pConfig::default_mock_config(
+            "with_network_config",
+        )));
         let context = ContextBuilder::new()
             .with_network_config(net.clone())
             .spawn();

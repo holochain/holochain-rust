@@ -204,8 +204,8 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 
 /// create a test network
 #[cfg_attr(tarpaulin, skip)]
-pub fn mock_network_config() -> JsonString {
-    JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)
+pub fn mock_network_config(network_name: &'static str) -> JsonString {
+    JsonString::from(P2pConfig::default_mock_config(network_name))
 }
 
 #[cfg(test)]
@@ -242,7 +242,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            mock_network_config("state_test"),
             None,
             None,
         );
@@ -275,7 +275,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            mock_network_config("test_deadlock"),
             None,
             None,
         );

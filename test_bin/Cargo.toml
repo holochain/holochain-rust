@@ -4,6 +4,7 @@ version = "0.0.2"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
+failure = "0.1.3"
 holochain_core = { path = "../core" }
 holochain_container_api = { path = "../container_api" }
 holochain_cas_implementations = { path="../cas_implementations" }

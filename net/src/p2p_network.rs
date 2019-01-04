@@ -31,24 +31,24 @@ impl NetConnection for P2pNetwork {
 
 impl P2pNetwork {
     /// create a new p2p network instance, given message handler and config json
-    pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, config: P2pConfig) -> NetResult<Self> {
         // Create Config struct
         //let config: P2pConfig = serde_json::from_str(config_json.into())?;
-        let network_config = config.backend_config.to_string().into();
         // so far, we have only implemented the "ipc" backend type
-        let connection = match config.backend_kind {
-            P2pBackendKind::IPC => {
+        let connection = match config {
+            P2pConfig::Ipc(network_config) => {
                 // create a new ipc backend with the passed sub "config" info
                 NetConnectionThread::new(
                     handler,
                     Box::new(move |h| {
-                        let out: Box<NetWorker> = Box::new(IpcNetWorker::new(h, &network_config)?);
+                        let out: Box<NetWorker> = Box::new(IpcNetWorker::new(h, network_config)?);
                         Ok(out)
                     }),
                     None,
                 )?
             }
-            P2pBackendKind::MOCK => NetConnectionThread::new(
+            // @TODO next: use _network_name
+            P2pConfig::Mock(_network_name) => NetConnectionThread::new(
                 handler,
                 Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
                 None,
@@ -69,22 +69,25 @@ mod tests {
 
     #[test]
     fn it_should_create_zmq_socket() {
-        let p2p_config = P2pConfig::new(
-            P2pBackendKind::IPC,
-            r#"{
-                "socketType": "zmq",
-                "ipcUri": "tcp://127.0.0.1:0",
-                "blockConnect": false
-            }"#,
-        );
-        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &p2p_config).unwrap();
+        let ipc_config = P2pIpcConfig {
+            spawn: None,
+            socket_type: "zmq".into(),
+            ipc_uri: Some("tcp://127.0.0.1:0".into()),
+            block_connect: Some(false),
+        };
+        let p2p_config = P2pConfig::Ipc(ipc_config);
+        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), p2p_config).unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }
 
     #[test]
     fn it_should_create_mock() {
-        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::default_mock()).unwrap();
+        let mut res = P2pNetwork::new(
+            Box::new(|_r| Ok(())),
+            P2pConfig::default_mock("it_should_create_mock"),
+        )
+        .unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

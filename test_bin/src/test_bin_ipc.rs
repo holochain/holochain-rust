@@ -93,28 +93,17 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
     let p2p_config: P2pConfig = match maybe_config_filepath {
         Some(filepath) => {
             // Get config from file
-            let p2p_config = P2pConfig::from_file(filepath);
-
-            // complement missing fields
-            serde_json::from_value(json!({
-            "backend_kind": String::from(p2p_config.backend_kind),
-            "backend_config":
-            {
-                "socketType": p2p_config.backend_config["socketType"],
-                "spawn":
-                {
-                    "cmd": p2p_config.backend_config["spawn"]["cmd"],
-                    "args": [
-                        format!("{}/packages/n3h/bin/n3h", n3h_path)
-                    ],
-                    "workDir": dir.clone(),
-                    "env": {
-                        "N3H_HACK_MODE": p2p_config.backend_config["spawn"]["env"]["N3H_HACK_MODE"],
-                        "N3H_WORK_DIR": dir.clone(),
-                        "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
-                    }
-                },
-            }})).unwrap()
+            if let P2pConfig::Ipc(mut config) = P2pConfig::from_file(filepath) {
+                // complement missing fields
+                let _ = config.spawn.iter_mut().map(|spawn| {
+                    spawn.args = vec![format!("{}/packages/n3h/bin/n3h", n3h_path)];
+                    spawn.work_dir = dir.clone();
+                    spawn.env.insert("N3H_WORK_DIR".into(), dir.clone());
+                });
+                P2pConfig::Ipc(config.clone())
+            } else {
+                panic!("Expected IPC config");
+            }
         }
         None => {
             // use default config
@@ -146,7 +135,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
             sender.send(r?)?;
             Ok(())
         }),
-        &p2p_config,
+        p2p_config,
     )?;
 
     Ok(IpcNode {

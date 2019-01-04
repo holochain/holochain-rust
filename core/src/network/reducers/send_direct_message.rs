@@ -85,7 +85,7 @@ mod tests {
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: mock_network_config(),
+            config: mock_network_config("TODO give unique string"),
             dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));

@@ -342,7 +342,7 @@ pub mod tests {
     use holochain_core::context::mock_network_config;
 
     pub fn example_serialized_network_config() -> String {
-        String::from(mock_network_config())
+        String::from(mock_network_config("TODO give unique string"))
     }
 
     #[test]

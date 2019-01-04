@@ -85,15 +85,7 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
-        let instance = Instance::new(context.clone());
-        Self::from_dna_and_context_and_instance(dna, context, instance)
-    }
-
-    fn from_dna_and_context_and_instance(
-        dna: Dna,
-        context: Arc<Context>,
-        mut instance: Instance,
-    ) -> HolochainResult<Self> {
+        let mut instance = Instance::new(context.clone());
         let name = dna.name.clone();
         instance.start_action_loop(context.clone());
         let result = block_on(application::initialize(

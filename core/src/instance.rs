@@ -389,7 +389,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                mock_network_config(),
+                mock_network_config("TODO give unique string"),
                 None,
                 None,
             )),
@@ -429,7 +429,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                mock_network_config(),
+                mock_network_config("TODO give unique string"),
             )
             .unwrap(),
         )
@@ -450,7 +450,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            mock_network_config("TODO give unique string"),
             None,
             None,
         );
@@ -474,7 +474,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            mock_network_config("TODO give unique string"),
             None,
             None,
         );

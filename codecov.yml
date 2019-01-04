@@ -1,11 +1,11 @@
 # Repository Yaml
 coverage:
   round: up
-  range: 70..100
+  range: 64..100
   status:
     project:
       default:
-        target: 70
+        target: 64
 
     patch: no
     changes: no

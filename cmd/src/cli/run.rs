@@ -49,7 +49,7 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         agent: AGENT_CONFIG_ID.into(),
         logger: Default::default(),
         storage,
-        network: Some(P2pConfig::default_mock().as_str()),
+        network: Some(P2pConfig::default_ipc().as_str()),
     };
 
     let interface_config = InterfaceConfiguration {

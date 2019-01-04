@@ -165,7 +165,7 @@ fn run() -> HolochainResult<()> {
             dir,
             testfile,
             skip_build,
-        } => cli::test(&PathBuf::from("."), &dir, &testfile, skip_build)
+        } => cli::test(std::env::current_dir()?, &dir, &testfile, skip_build)
             .map_err(HolochainError::Default)?,
     }
 

@@ -348,17 +348,6 @@ pub struct NetworkConfig {
     pub n3h_ipc_uri: Option<String>,
 }
 
-impl Default for NetworkConfig {
-    fn default() -> NetworkConfig {
-        NetworkConfig {
-            bootstrap_nodes: Vec::new(),
-            n3h_path: String::from("~/.holochain/n3h"),
-            n3h_persistence_path: String::from("/.holochain/n3h_persistence"),
-            n3h_ipc_uri: None,
-        }
-    }
-}
-
 /// Use this function to load a `Configuration` from a string.
 pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where

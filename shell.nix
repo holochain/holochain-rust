@@ -66,7 +66,7 @@ let
   ''
    hc-build-wasm && \
    hc-install-tarpaulin && \
-   hc-tarpaulin && \
+   hc-tarpaulin;
    bash <(curl -s https://codecov.io/bash);
   '';
 

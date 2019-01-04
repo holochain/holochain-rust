@@ -50,7 +50,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();
-        context.log(format!("HANDLE: {:?}", message));
+        //context.log(format!("HANDLE: {:?}", message));
         let protocol_wrapper = ProtocolWrapper::try_from(message);
         match protocol_wrapper {
             Ok(ProtocolWrapper::StoreDht(dht_data)) => {
@@ -58,10 +58,13 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_me(&context, &dht_data.dna_address, "") {
                     return Ok(());
                 }
+                context.log(format!("HANDLE StoreDht: {:?}", dht_data));
                 handle_store_dht(dht_data, context.clone())
             }
             Ok(ProtocolWrapper::StoreDhtMeta(dht_meta_data)) => {
+                context.log(format!("HANDLE StoreDhtMeta: {:?}", dht_meta_data));
                 if !is_me(&context, &dht_meta_data.dna_address, "") {
+                    context.log(format!("HANDLE StoreDhtMeta: ignoring, not for me. {:?}", dht_meta_data));
                     return Ok(());
                 }
                 handle_store_dht_meta(dht_meta_data, context.clone())
@@ -71,13 +74,32 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_me(&context, &get_dht_data.dna_address, "") {
                     return Ok(());
                 }
+                context.log(format!("HANDLE GetDht: {:?}", get_dht_data));
                 handle_get_dht(get_dht_data, context.clone())
             }
             Ok(ProtocolWrapper::GetDhtResult(dht_data)) => {
                 if !is_me(&context, &dht_data.dna_address, &dht_data.agent_id) {
                     return Ok(());
                 }
+                context.log(format!("HANDLE GetDhtResult: {:?}", dht_data));
                 handle_get_dht_result(dht_data, context.clone())
+            }
+            Ok(ProtocolWrapper::GetDhtMeta(get_dht_meta_data)) => {
+                if is_me(&context, &get_dht_meta_data.dna_address, "") {
+                    context.log(format!("HANDLE GetDhtMeta: {:?}", get_dht_meta_data));
+                    handle_get_dht_meta(get_dht_meta_data, context.clone())
+                }
+            }
+            Ok(ProtocolWrapper::GetDhtMetaResult(get_dht_meta_data)) => {
+                if is_me(&context, &get_dht_meta_data.dna_address, "") {
+                    if is_me(&context, &get_dht_meta_data.dna_address, &get_dht_meta_data.from_agent_id) {
+                        context.log("HANDLE: Got DHT meta result from myself. Ignoring.");
+                        return Ok(())
+                    } else {
+                        context.log(format!("HANDLE: GetDhtMetaResult: {:?}", get_dht_meta_data));
+                        handle_get_dht_meta_result(get_dht_meta_data, context.clone())
+                    }
+                }
             }
             Ok(ProtocolWrapper::HandleSend(message_data)) => {
                 if !is_me(

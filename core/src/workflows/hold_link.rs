@@ -28,10 +28,13 @@ pub async fn hold_link_workflow<'a>(
     };
     let link = link_add.link().clone();
 
+    context.log(format!("Hold link: {:?}", link));
     // 1. Get validation package from source
+    context.log(format!("Hold link: getting validation package..."));
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
+    context.log(format!("Hold link: got validation package!"));
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -42,10 +45,18 @@ pub async fn hold_link_workflow<'a>(
     };
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    context.log(format!("Hold link: validate..."));
+    await!(validate_entry(entry.clone(), validation_data, &context))
+        .map_err(|err| {
+            context.log(format!("Hold link: invalid! {:?}", err));
+            err
+        })?;
+    context.log(format!("Hold link: is valid!"));
 
     // 3. If valid store the entry in the local DHT shard
-    await!(add_link(&link, &context))
+    await!(add_link(&link, &context))?;
+    context.log(format!("Hold link: added! {:?}", link));
+    Ok(())
 }
 
 #[cfg(test)]

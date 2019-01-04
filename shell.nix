@@ -59,6 +59,7 @@ let
   # runs all standard tests and reports code coverage
   hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
   ''
+   hc-build-wasm && \
    hc-install-tarpaulin && \
    hc-tarpaulin && \
    bash <(curl -s https://codecov.io/bash);

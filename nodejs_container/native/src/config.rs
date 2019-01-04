@@ -58,7 +58,9 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             logger_type: String::from("DONTCARE"),
             file: None,
         };
-        let network_mock = Some(P2pConfig::DEFAULT_MOCK_CONFIG.to_string());
+        let network_mock = Some(P2pConfig::default_mock_config(
+            "TODO make unique every time",
+        ));
         let agent_id = agent_config.id.clone();
         let dna_id = dna_config.id.clone();
         let instance = InstanceConfiguration {

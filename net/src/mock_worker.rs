@@ -1,6 +1,6 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
-use holochain_core_types::cas::content::Address;
+use holochain_core_types::{cas::content::Address, json::JsonString};
 use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
@@ -272,6 +272,7 @@ fn get_mock<'a>() -> NetResult<MutexGuard<'a, MockSingleton>> {
 pub struct MockWorker {
     handler: NetHandler,
     mock_msgs: Vec<mpsc::Receiver<Protocol>>,
+    _network_name: String, // TODO use this to uniquify MockSystem
 }
 
 impl NetWorker for MockWorker {
@@ -315,10 +316,16 @@ impl NetWorker for MockWorker {
 
 impl MockWorker {
     /// create a new mock worker... no configuration required
-    pub fn new(handler: NetHandler) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, network_config: &JsonString) -> NetResult<Self> {
+        let config: serde_json::Value = serde_json::from_str(network_config.into())?;
+        let _network_name = config["networkName"]
+            .as_str()
+            .expect("Mock network name not specified")
+            .to_string();
         Ok(MockWorker {
             handler,
             mock_msgs: Vec::new(),
+            _network_name,
         })
     }
 }
@@ -326,6 +333,7 @@ impl MockWorker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::p2p_config::P2pConfig;
 
     use holochain_net_connection::protocol_wrapper::{SuccessResultData, TrackAppData};
 
@@ -341,13 +349,18 @@ mod tests {
     fn it_mock_networker_flow() {
         // -- setup client 1 -- //
 
+        let config = &JsonString::from(P2pConfig::default_mock_config("it_mock_networker_flow"));
+
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
 
         let mut cli1 = Box::new(
-            MockWorker::new(Box::new(move |r| {
-                handler_send_1.send(r?)?;
-                Ok(())
-            }))
+            MockWorker::new(
+                Box::new(move |r| {
+                    handler_send_1.send(r?)?;
+                    Ok(())
+                }),
+                config,
+            )
             .unwrap(),
         );
 
@@ -365,10 +378,13 @@ mod tests {
         let (handler_send_2, handler_recv_2) = mpsc::channel::<Protocol>();
 
         let mut cli2 = Box::new(
-            MockWorker::new(Box::new(move |r| {
-                handler_send_2.send(r?)?;
-                Ok(())
-            }))
+            MockWorker::new(
+                Box::new(move |r| {
+                    handler_send_2.send(r?)?;
+                    Ok(())
+                }),
+                config,
+            )
             .unwrap(),
         );
 

@@ -41,7 +41,7 @@ fn exec() -> NetResult<()> {
             sender1.send(r?)?;
             Ok(())
         }),
-        &P2pConfig::default_mock(),
+        &P2pConfig::default_mock("TODO give unique string"),
     )?;
 
     let (sender2, receiver2) = mpsc::channel::<Protocol>();
@@ -51,7 +51,7 @@ fn exec() -> NetResult<()> {
             sender2.send(r?)?;
             Ok(())
         }),
-        &P2pConfig::default_mock(),
+        &P2pConfig::default_mock("TODO give unique string"),
     )?;
 
     con1.send(

@@ -4,7 +4,7 @@ let
     overlays = [ moz_overlay ];
   };
 
-  date = "2018-12-26";
+  date = "2019-01-02";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
@@ -36,7 +36,7 @@ let
     RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin;
    fi;
   '';
-  hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
+  hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
   hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc --release && cargo install -f --path cmd";
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
@@ -147,9 +147,11 @@ stdenv.mkDerivation rec {
   # https://github.com/NixOS/nix/issues/903
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
+  HC_TARGET_PREFIX = "/tmp/holochain/";
+  CARGO_TARGET_DIR = "${HC_TARGET_PREFIX}target";
+
   shellHook = ''
    # needed for install cmd and tarpaulin
    export PATH=$PATH:~/.cargo/bin;
-   export HC_TARGET_PREFIX=/tmp/holochain/
   '';
 }

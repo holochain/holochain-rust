@@ -180,59 +180,5 @@ mod tests {
             maybe_get_entry_result,
             Some(Some(Err(HolochainError::Timeout)))
         );
-
-        /*
-        // test that an existing result does not get overwritten by timeout signal
-        let entry_with_meta = EntryWithMeta {
-            entry: entry.clone(),
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        };
-        let dht_data = DhtData {
-            address: entry.address().to_string(),
-            content: serde_json::from_str(
-                &serde_json::to_string(&Some(entry_with_meta.clone())).unwrap(),
-            )
-                .unwrap(),
-            ..Default::default()
-        };
-
-
-        let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));
-        {
-            let mut new_store = store.write().unwrap();
-            *new_store = new_store.reduce(context.clone(), action_wrapper);
-        }
-        let maybe_entry_with_meta_result = store
-            .read()
-            .unwrap()
-            .network()
-            .get_entry_with_meta_results
-            .get(&entry.address())
-            .map(|result| result.clone());
-        assert!(maybe_entry_with_meta_result.is_some());
-        let maybe_entry_with_meta = maybe_entry_with_meta_result.unwrap().unwrap();
-        let entry_with_meta = maybe_entry_with_meta.unwrap().unwrap();
-        assert_eq!(entry_with_meta.entry, entry.clone());
-
-        // Ok we got a positive result in the state
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(entry.address()));
-        {
-            let mut new_store = store.write().unwrap();
-            *new_store = new_store.reduce(context.clone(), action_wrapper);
-        }
-        let maybe_entry_with_meta_result = store
-            .read()
-            .unwrap()
-            .network()
-            .get_entry_with_meta_results
-            .get(&entry.address())
-            .map(|result| result.clone());
-        // The timeout should not have overwritten the entry
-        assert!(maybe_entry_with_meta_result.is_some());
-        let maybe_entry_with_meta = maybe_entry_with_meta_result.unwrap().unwrap();
-        let entry_with_meta = maybe_entry_with_meta.unwrap().unwrap();
-        assert_eq!(entry_with_meta.entry, entry);
-        */
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     network::actions::get_links::get_links,
-    nucleus::ribosome::{api::ZomeApiResult, Runtime}
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
 use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_links::{

@@ -14,7 +14,10 @@ pub mod tests {
         dht::actions::add_link::add_link,
         instance::tests::test_instance_and_context_by_name,
         network::{
-            actions::{get_entry::get_entry, get_validation_package::get_validation_package, get_links::get_links},
+            actions::{
+                get_entry::get_entry, get_links::get_links,
+                get_validation_package::get_validation_package,
+            },
             test_utils::test_wat_always_valid,
         },
         workflows::author_entry::author_entry,
@@ -23,8 +26,8 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         crud_status::{create_crud_status_eav, CrudStatus},
-        entry::{entry_type::test_app_entry_type, Entry, test_entry},
-        link::Link
+        entry::{entry_type::test_app_entry_type, test_entry, Entry},
+        link::Link,
     };
     use test_utils::*;
 
@@ -117,7 +120,6 @@ pub mod tests {
         dna.uuid = String::from("get_links_roundtrip");
         let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
 
-
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
             let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
@@ -134,10 +136,17 @@ pub mod tests {
 
         let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
 
-        let maybe_links = block_on(get_links(&context2, &entry_addresses[0], String::from("test-tag")));
+        let maybe_links = block_on(get_links(
+            &context2,
+            &entry_addresses[0],
+            String::from("test-tag"),
+        ));
 
         assert!(maybe_links.is_ok());
         let links = maybe_links.unwrap();
-        assert_eq!(links, vec![entry_addresses[1].clone(), entry_addresses[2].clone()]);
+        assert_eq!(
+            links,
+            vec![entry_addresses[1].clone(), entry_addresses[2].clone()]
+        );
     }
 }

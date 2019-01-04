@@ -9,12 +9,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HcResult};
-use std::{
-    pin::Pin, sync::Arc,
-    thread::sleep,
-    time::Duration,
-
-};
+use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
 
 /// GetEntry Action Creator
 /// This is the network version of get_entry that makes the network module start

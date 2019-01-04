@@ -7,7 +7,11 @@ use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::{GetDhtMetaData, ProtocolWrapper};
 use std::sync::Arc;
 
-fn inner(network_state: &mut NetworkState, address: &Address, tag: &String) -> Result<(), HolochainError> {
+fn inner(
+    network_state: &mut NetworkState,
+    address: &Address,
+    tag: &String,
+) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
     send(
@@ -48,20 +52,11 @@ pub fn reduce_get_links_timeout(
     let action = action_wrapper.action();
     let key = unwrap_to!(action => crate::action::Action::GetLinksTimeout);
 
-    if network_state
-        .get_links_results
-        .get(key)
-        .is_none()
-    {
+    if network_state.get_links_results.get(key).is_none() {
         return;
     }
 
-    if network_state
-        .get_links_results
-        .get(key)
-        .unwrap()
-        .is_none()
-    {
+    if network_state.get_links_results.get(key).unwrap().is_none() {
         network_state
             .get_links_results
             .insert(key.clone(), Some(Err(HolochainError::Timeout)));
@@ -77,9 +72,7 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use holochain_core_types::{
-        error::HolochainError,
-    };
+    use holochain_core_types::error::HolochainError;
     use std::sync::{Arc, RwLock};
 
     #[test]

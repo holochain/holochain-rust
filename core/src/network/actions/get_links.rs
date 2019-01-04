@@ -9,11 +9,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, error::HcResult};
-use std::{
-    pin::Pin, sync::Arc,
-    thread::sleep,
-    time::Duration,
-};
+use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
@@ -28,10 +24,11 @@ pub async fn get_links<'a>(
 
     let _ = async {
         sleep(Duration::from_secs(60));
-        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout((address.clone(), tag.clone())));
+        let action_wrapper =
+            ActionWrapper::new(Action::GetLinksTimeout((address.clone(), tag.clone())));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     };
-    
+
     await!(GetLinksFuture {
         context: context.clone(),
         key: (address.clone(), tag.clone())
@@ -42,7 +39,7 @@ pub async fn get_links<'a>(
 /// Tracks the state of the network module
 pub struct GetLinksFuture {
     context: Arc<Context>,
-    key: (Address, String)
+    key: (Address, String),
 }
 
 impl Future for GetLinksFuture {

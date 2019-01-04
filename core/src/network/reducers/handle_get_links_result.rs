@@ -12,7 +12,8 @@ fn inner(
     let res = serde_json::from_str(&serde_json::to_string(&dht_meta_data.content).unwrap());
     if let Err(_) = res {
         return Err(HolochainError::ErrorGeneric(
-            "Failed to deserialize Vec<Address> from HandleGetLinkResult DhtMetaData content".to_string(),
+            "Failed to deserialize Vec<Address> from HandleGetLinkResult DhtMetaData content"
+                .to_string(),
         ));
     }
     Ok(res.unwrap())
@@ -28,7 +29,8 @@ pub fn reduce_handle_get_links_result(
 
     let result = inner(network_state, dht_meta_data);
 
-    network_state
-        .get_links_results
-        .insert((Address::from(dht_meta_data.address.clone()), tag.clone()), Some(result));
+    network_state.get_links_results.insert(
+        (Address::from(dht_meta_data.address.clone()), tag.clone()),
+        Some(result),
+    );
 }

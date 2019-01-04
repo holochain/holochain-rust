@@ -5,13 +5,15 @@ use crate::{
     nucleus,
 };
 use holochain_core_types::cas::content::Address;
+use holochain_net_connection::protocol_wrapper::{
+    DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
+};
 use regex::Regex;
-use std::sync::Arc;
-use std::collections::HashSet;
-use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData, GetDhtData, GetDhtMetaData};
+use std::{collections::HashSet, sync::Arc};
 
 lazy_static! {
-    static ref LINK: Regex = Regex::new(r"^link__(.*)$").expect("This string literal is a valid regex");
+    static ref LINK: Regex =
+        Regex::new(r"^link__(.*)$").expect("This string literal is a valid regex");
 }
 
 /// The network has requested a DHT entry from us.
@@ -39,7 +41,8 @@ pub fn handle_get_dht_result(dht_data: DhtData, context: Arc<Context>) {
 
 pub fn handle_get_dht_meta(get_dht_meta_data: GetDhtMetaData, context: Arc<Context>) {
     if LINK.is_match(&get_dht_meta_data.attribute) {
-        let tag = LINK.captures(&get_dht_meta_data.attribute)
+        let tag = LINK
+            .captures(&get_dht_meta_data.attribute)
             .unwrap()
             .get(1)
             .unwrap()
@@ -49,7 +52,10 @@ pub fn handle_get_dht_meta(get_dht_meta_data: GetDhtMetaData, context: Arc<Conte
             .state()
             .unwrap()
             .dht()
-            .get_links(Address::from(get_dht_meta_data.address.clone()), tag.clone())
+            .get_links(
+                Address::from(get_dht_meta_data.address.clone()),
+                tag.clone(),
+            )
             .unwrap_or(HashSet::new())
             .into_iter()
             .map(|eav| eav.value())
@@ -63,7 +69,8 @@ pub fn handle_get_dht_meta(get_dht_meta_data: GetDhtMetaData, context: Arc<Conte
 /// The network comes back with a result to our previous GET META request.
 pub fn handle_get_dht_meta_result(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     if LINK.is_match(&dht_meta_data.attribute) {
-        let tag = LINK.captures(&dht_meta_data.attribute)
+        let tag = LINK
+            .captures(&dht_meta_data.attribute)
             .unwrap()
             .get(1)
             .unwrap()
@@ -72,5 +79,4 @@ pub fn handle_get_dht_meta_result(dht_meta_data: DhtMetaData, context: Arc<Conte
         let action_wrapper = ActionWrapper::new(Action::HandleGetLinksResult((dht_meta_data, tag)));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     }
-
 }

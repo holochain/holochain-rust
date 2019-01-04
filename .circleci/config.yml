@@ -12,6 +12,14 @@ jobs:
    - run: nix-shell --run hc-fmt-check
    - run: nix-shell --run hc-test
 
+ code-coverage:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+
+   - run: hc-codecov
+
  integration-tests:
   docker:
    - image: holochain/holochain-rust:circle.zz.end

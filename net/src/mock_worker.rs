@@ -281,7 +281,7 @@ impl NetWorker for MockWorker {
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
             if let ProtocolWrapper::TrackApp(app) = wrap {
-                // Couldn't figure out lifetimes here, so accessing the mock is inlined.
+                // get a write lock first
                 let mut map_lock = MOCK_MAP.write().unwrap();
                 let mut mock = map_lock
                     .entry(self.network_name.clone())
@@ -292,9 +292,11 @@ impl NetWorker for MockWorker {
                 let (tx, rx) = mpsc::channel();
                 self.mock_msgs.push(rx);
                 mock.register(&app.dna_address, &app.agent_id, tx)?;
-                mock.handle(data)?;
             }
         }
+        let map_lock = MOCK_MAP.read().unwrap();
+        let mut mock = map_lock.get(&self.network_name).unwrap().lock().unwrap();
+        mock.handle(data)?;
         Ok(())
     }
 

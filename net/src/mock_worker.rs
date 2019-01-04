@@ -10,11 +10,12 @@ use holochain_net_connection::{
     },
     NetResult,
 };
+use std::sync::RwLock;
 
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
-    sync::{mpsc, Mutex, MutexGuard},
+    sync::{mpsc, Mutex},
 };
 
 /// hash connections by dna::agent_id
@@ -23,14 +24,14 @@ fn cat_dna_agent(dna_address: &Address, agent_id: &str) -> String {
 }
 
 /// a lazy_static! singleton for routing messages in-memory
-struct MockSingleton {
+struct MockSystem {
     // keep track of senders by `dna_address::agent_id`
     senders: HashMap<String, mpsc::Sender<Protocol>>,
     // keep track of senders as arrays by dna_address
     senders_by_dna: HashMap<Address, Vec<mpsc::Sender<Protocol>>>,
 }
 
-impl MockSingleton {
+impl MockSystem {
     /// create a new mock singleton
     pub fn new() -> Self {
         Self {
@@ -255,17 +256,11 @@ impl MockSingleton {
     }
 }
 
-/// this is the actual memory space for our mock singleton
-lazy_static! {
-    static ref MOCK: Mutex<MockSingleton> = Mutex::new(MockSingleton::new());
-}
+type MockSystemMap = HashMap<Address, Mutex<MockSystem>>;
 
-/// make fetching the singleton a little easier
-fn get_mock<'a>() -> NetResult<MutexGuard<'a, MockSingleton>> {
-    match MOCK.lock() {
-        Ok(s) => Ok(s),
-        Err(_) => bail!("mock singleton mutex fail"),
-    }
+/// this is the actual memory space for our mock systems
+lazy_static! {
+    static ref MOCK_MAP: RwLock<MockSystemMap> = RwLock::new(HashMap::new());
 }
 
 /// a p2p worker for mocking in-memory scenario tests
@@ -284,18 +279,22 @@ impl NetWorker for MockWorker {
     /// we got a message from holochain core
     /// forward to our mock singleton
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
-        let mut mock = get_mock()?;
-
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
             if let ProtocolWrapper::TrackApp(app) = wrap {
+                // Couldn't figure out lifetimes here, so accessing the mock is inlined.
+                let mut map_lock = MOCK_MAP.write().unwrap();
+                let mut mock = map_lock
+                    .entry(app.dna_address.clone())
+                    .or_insert_with(|| Mutex::new(MockSystem::new()))
+                    .lock()
+                    .unwrap();
+
                 let (tx, rx) = mpsc::channel();
                 self.mock_msgs.push(rx);
                 mock.register(&app.dna_address, &app.agent_id, tx)?;
-                return Ok(());
+                mock.handle(data)?;
             }
         }
-
-        mock.handle(data)?;
         Ok(())
     }
 

@@ -15,11 +15,9 @@ use std::{
     time::Duration,
 };
 
-/// GetEntry Action Creator
-/// This is the network version of get_entry that makes the network module start
+/// GetLinks Action Creator
+/// This is the network version of get_links that makes the network module start
 /// a look-up process.
-///
-/// Returns a future that resolves to an ActionResponse.
 pub async fn get_links<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
@@ -40,7 +38,7 @@ pub async fn get_links<'a>(
     })
 }
 
-/// GetEntryFuture resolves to a HcResult<Entry>.
+/// GetLinksFuture resolves to a HcResult<Vec<Address>>.
 /// Tracks the state of the network module
 pub struct GetLinksFuture {
     context: Arc<Context>,

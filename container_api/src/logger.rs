@@ -39,7 +39,6 @@ impl LogRules {
             color: "".to_string(),
         };
         if self.rules.len() == 0 {
-            println!("NO RULES");
             Some(message)
         } else {
             for r in &self.rules {
@@ -47,7 +46,6 @@ impl LogRules {
                     if r.exclude {
                         return None;
                     }
-                    println!("MATCHED colr:{}", r.color.clone());
                     message.color = r.color.clone();
                     return Some(message);
                 }

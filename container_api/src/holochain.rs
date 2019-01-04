@@ -103,7 +103,7 @@ impl Holochain {
         ));
         match result {
             Ok(new_context) => {
-                context.log(format!("{} instantiated", name));
+                context.log(format!("debug/container: {} instantiated", name));
                 let hc = Holochain {
                     instance,
                     context: new_context.clone(),

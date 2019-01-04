@@ -18,7 +18,7 @@ jobs:
   steps:
    - checkout
 
-   - run: HC_TARGET_PREFIX=/tmp/tarpaulin nix-shell --run hc-codecov
+   - run: nix-shell --run hc-codecov
 
  integration-tests:
   docker:

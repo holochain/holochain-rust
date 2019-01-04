@@ -33,6 +33,13 @@ Container.prototype.makeCaller = function (agentId, dnaPath) {
   }
 }
 
+Container.withInstances = function (...instances) {
+    const networkName = `auto-mock-network-${this._nextMock++}`
+    const config = makeConfig(networkName, instances)
+    return new Container(config)
+}
+Container._nextMock = 1
+
 const Config = {
     agent: name => ({ name }),
     dna: (path) => ({ path }),
@@ -42,7 +49,6 @@ const Config = {
         }
         return { agent, dna, name }
     },
-    container: (...instances) => makeConfig(...instances),
 }
 
 module.exports = { Config, Container };

@@ -24,17 +24,14 @@ pub struct InstanceData {
 }
 
 pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let mut i = 0;
-    let mut instances = Vec::<InstanceData>::new();
-    while let Some(arg) = cx.argument_opt(i) {
-        instances.push(neon_serde::from_value(&mut cx, arg)?);
-        i += 1;
-    }
-    let config = make_config(instances);
+    let network_name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+    let instances_arg: Handle<JsValue> = cx.argument(1)?;
+    let instances: Vec<InstanceData> = neon_serde::from_value(&mut cx, instances_arg)?;
+    let config = make_config(network_name, instances);
     Ok(neon_serde::to_value(&mut cx, &config)?)
 }
 
-fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
+fn make_config(network_name: String, instance_data: Vec<InstanceData>) -> Configuration {
     let mut agent_configs = HashMap::new();
     let mut dna_configs = HashMap::new();
     let mut instance_configs = Vec::new();
@@ -58,9 +55,7 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             logger_type: String::from("DONTCARE"),
             file: None,
         };
-        let network_mock = Some(P2pConfig::default_mock_config(
-            "TODO make unique every time",
-        ));
+        let network_mock = Some(P2pConfig::default_mock_config(&network_name));
         let agent_id = agent_config.id.clone();
         let dna_id = dna_config.id.clone();
         let instance = InstanceConfiguration {

@@ -83,7 +83,7 @@ impl P2pConfig {
 
 // statics
 impl P2pConfig {
-    pub fn default_mock_config(network_name: &'static str) -> String {
+    pub fn default_mock_config(network_name: &str) -> String {
         format!(
             r#"{{
             "backend_kind": "MOCK",

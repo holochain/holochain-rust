@@ -13,10 +13,9 @@ const container = (() => {
   const dna = Config.dna(dnaPath)
 
   const instanceAlice = Config.instance(agentAlice, dna)
-  const instanceBob = Config.instance(agentTash, dna)
+  const instanceTash = Config.instance(agentTash, dna)
 
-  const containerConfig = Config.container(instanceAlice, instanceBob)
-  return new Container(containerConfig)
+  return Container.withInstances(instanceAlice, instanceTash)
 })()
 
 // Initialize the Container

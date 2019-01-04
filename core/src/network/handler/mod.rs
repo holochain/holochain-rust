@@ -80,13 +80,21 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_get_dht_result(dht_data, context.clone())
             }
             Ok(ProtocolWrapper::HandleSend(message_data)) => {
-                if !is_me(&context, &message_data.dna_address, &message_data.to_agent_id) {
+                if !is_me(
+                    &context,
+                    &message_data.dna_address,
+                    &message_data.to_agent_id
+                ) {
                     return Ok(());
                 }
                 handle_send(message_data, context.clone())
             }
             Ok(ProtocolWrapper::SendResult(message_data)) => {
-                if !is_me(&context, &message_data.dna_address, &message_data.to_agent_id) {
+                if !is_me(
+                    &context,
+                    &message_data.dna_address,
+                    &message_data.to_agent_id
+                ) {
                     return Ok(());
                 }
                 handle_send_result(message_data, context.clone())

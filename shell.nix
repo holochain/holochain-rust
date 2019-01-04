@@ -38,7 +38,7 @@ let
   '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin"
   ''
-   cargo tarpaulin \
+   CARGO_TARGET_DIR=/tmp/tarpaulin cargo tarpaulin \
     --all \
     --verbose \
     --release \
@@ -165,7 +165,7 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   HC_TARGET_PREFIX = "/tmp/holochain/";
-  CARGO_TARGET_DIR = "${HC_TARGET_PREFIX}target";
+  # CARGO_TARGET_DIR = "${HC_TARGET_PREFIX}target";
 
   shellHook = ''
    # needed for install cmd and tarpaulin

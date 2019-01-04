@@ -265,7 +265,7 @@ mod tests {
         assert_eq!(network_state.dna_address.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
+        assert_eq!(format!("{:?}", *test_logger), "[\"debug/container: TestApp instantiated\"]");
     }
 
     fn write_agent_state_to_file() -> String {
@@ -569,7 +569,7 @@ mod tests {
         assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
         assert_eq!(
-            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
+            "[\"debug/container: TestApp instantiated\", \"debug/dna: \\\'\\\"Hello world!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_hello\\\' returned: Success\"]",
             format!("{:?}", test_logger.log),
         );
         // Check in holochain instance's history that the debug event has been processed
@@ -610,7 +610,7 @@ mod tests {
         let test_logger = test_logger.lock().unwrap();
 
         assert_eq!(
-            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
+            "[\"debug/container: TestApp instantiated\", \"debug/dna: \\\'\\\"Hello\\\"\\\'\", \"debug/dna: \\\'\\\"world\\\"\\\'\", \"debug/dna: \\\'\\\"!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_multiple\\\' returned: Success\"]",
             format!("{:?}", test_logger.log),
         );
 

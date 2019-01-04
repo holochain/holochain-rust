@@ -68,7 +68,7 @@ pub mod tests {
     #[test]
     fn test_channel_logger() {
         let (tx, rx) = ChannelLogger::setup();
-        let mut logger = ChannelLogger::new("Me:".to_string(), tx.clone());
+        let mut logger = ChannelLogger::new("Me".to_string(), tx.clone());
         logger.log("fish".to_string());
         match rx.recv() {
             Ok((id, msg)) => {

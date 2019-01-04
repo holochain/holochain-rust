@@ -24,6 +24,7 @@ maplit = "1.0.1"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
+holochain_wasm_utils = { path = "../wasm_utils" }
 clap = "2"
 structopt = "0.2"
 tempfile = "3"

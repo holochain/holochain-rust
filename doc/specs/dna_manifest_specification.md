@@ -139,7 +139,7 @@ They are available in keyword specific Capabilities and function names.
               "tag": "agent"
             },
             {
-              "base_type": "__DNA_HASH__",
+              "base_type": "__DNA_ADDRESS__",
               "tag": "handles"
             },
           ]

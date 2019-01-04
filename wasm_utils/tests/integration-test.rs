@@ -18,6 +18,7 @@ use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeErrorCode},
     json::{default_try_from_json, JsonString, RawString},
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{convert::TryFrom, error::Error};
 use test_utils::hc_setup_and_call_zome_fn;
 
@@ -38,8 +39,12 @@ impl Logger for TestLogger {
 
 fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
     hc_setup_and_call_zome_fn(
-        "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
-        fn_name)
+        &format!(
+            "{}/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
+            wasm_target_dir("wasm_utils/", "wasm-test/integration-test/"),
+        ),
+        fn_name,
+    )
 }
 
 #[test]

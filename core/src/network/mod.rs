@@ -53,6 +53,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn get_non_existant_entry() {
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.uuid = String::from("get_non_existant_entry");

@@ -114,8 +114,8 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     //    context.log("HANDLE: Got DHT meta result from myself. Ignoring.");
                     //    return Ok(());
                     //} else {
-                        context.log(format!("HANDLE: GetDhtMetaResult: {:?}", get_dht_meta_data));
-                        handle_get_dht_meta_result(get_dht_meta_data, context.clone())
+                    context.log(format!("HANDLE: GetDhtMetaResult: {:?}", get_dht_meta_data));
+                    handle_get_dht_meta_result(get_dht_meta_data, context.clone())
                     //}
                 }
             }

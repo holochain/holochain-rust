@@ -3,6 +3,7 @@ use colored::*;
 use holochain_core::logger::{ChannelLogger, Sender};
 use regex::Regex;
 use std::thread;
+use holochain_core_types::error::HolochainError;
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct LogRule {
@@ -23,14 +24,19 @@ impl LogRules {
     pub fn new() -> Self {
         LogRules { rules: Vec::new() }
     }
-    pub fn add_rule(&mut self, pattern: &str, exclude: bool, color: &str) {
-        let regex = Regex::new(pattern).unwrap();
+
+    // add a new rule to the rules list
+    pub fn add_rule(&mut self, pattern: &str, exclude: bool, color: &str) -> Result<(), HolochainError> {
+        let regex = Regex::new(pattern).map_err(|e| HolochainError::new(&e.to_string()))?;
         self.rules.push(LogRule {
             pattern: regex,
             exclude,
             color: color.to_string(),
         });
+        Ok(())
     }
+
+    // run the rules on a message, returning None if the message is rejected, or Some(LogMessage)
     pub fn run(&self, id: String, msg: String) -> Option<LogMessage> {
         let mut message = LogMessage {
             date: Local::now(),
@@ -130,16 +136,25 @@ pub mod tests {
     #[test]
     fn test_log_rules() {
         let mut rules = LogRules::new();
-        rules.add_rule("foo", false, "");
+        rules.add_rule("foo", false, "").unwrap();
         let id = "instance".to_string();
         assert_eq!(rules.run(id.clone(), "bar".to_string()), None);
         let m = rules.run(id.clone(), "xfooy".to_string()).unwrap();
         assert_eq!(m.msg, "xfooy");
-        rules.add_rule("baz", true, ""); // rule to reject anything with baz
-        rules.add_rule("b", false, ""); // rule to accept anything with b
+        rules.add_rule("baz", true, "").unwrap(); // rule to reject anything with baz
+        rules.add_rule("b", false, "").unwrap(); // rule to accept anything with b
         assert_eq!(rules.run(id.clone(), "baz".to_string()), None);
         let m = rules.run(id.clone(), "xboy".to_string()).unwrap();
         assert_eq!(m.msg, "xboy");
+    }
+
+    #[test]
+    fn test_bad_log_rules() {
+        let mut rules = LogRules::new();
+        assert_eq!(
+            rules.add_rule("foo[", false, ""),
+            Err(HolochainError::new("regex parse error:\n    foo[\n       ^\nerror: unclosed character class"))
+        );
     }
 
     #[test]
@@ -155,8 +170,8 @@ exclude = true
 color = "blue"
 "#;
         let mut rules = LogRules::new();
-        rules.add_rule("foo", false, "");
-        rules.add_rule("bar", true, "blue");
+        rules.add_rule("foo", false, "").unwrap();
+        rules.add_rule("bar", true, "blue").unwrap();
         let toml1 = toml::to_string(&rules).unwrap();
         assert_eq!(toml1, toml);
 

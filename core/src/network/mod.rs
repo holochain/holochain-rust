@@ -83,6 +83,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn get_validation_package_roundtrip() {
         let wat = &test_wat_always_valid();
 

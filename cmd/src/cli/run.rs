@@ -47,7 +47,6 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         id: INSTANCE_CONFIG_ID.into(),
         dna: DNA_CONFIG_ID.into(),
         agent: AGENT_CONFIG_ID.into(),
-        logger: Default::default(),
         storage,
         network: Some(P2pConfig::default_mock().as_str()),
     };

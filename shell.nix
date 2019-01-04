@@ -169,7 +169,6 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   HC_TARGET_PREFIX = "/tmp/holochain/";
-  # CARGO_TARGET_DIR = "${HC_TARGET_PREFIX}target";
 
   TARPAULIN_RUSTFLAGS = "-A warnings -Z thinlto --cfg procmacro2_semver_exempt";
   TARPAULIN_TARGET_DIR = "/tmp/tarpaulin/target";

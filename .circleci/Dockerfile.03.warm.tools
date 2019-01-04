@@ -11,3 +11,4 @@ FROM holochain/holochain-rust:circle.02.warm.tests
 # RUN nix-shell --run hc-install-node-container
 
 RUN nix-shell --run hc-install-tarpaulin
+RUN nix-shell --run hc-tarpaulin

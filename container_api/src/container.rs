@@ -151,7 +151,7 @@ impl Container {
             ))?;
 
         println!(
-            "spawn network (workdir: {})",
+            "Spawning network with working directory: {}",
             network_config.n3h_persistence_path
         );
         let SpawnResult {
@@ -173,11 +173,11 @@ impl Container {
             true,
         )
         .map_err(|error| {
-            println!("!!!! {:?}", error);
+            println!("Error spawning network process! {:?}", error);
             HolochainError::ErrorGeneric(error.to_string())
         })?;
         self.network_child_process = kill;
-        println!("spawned with binding: {:?}", ipc_binding);
+        println!("Network spawned with binding: {:?}", ipc_binding);
         Ok(ipc_binding)
     }
 

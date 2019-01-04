@@ -19,11 +19,6 @@ fn empty_object() -> Value {
     json!({})
 }
 
-//use uuid::Uuid;
-//fn new_uuid() -> String {
-//    Uuid::new_v4().to_string()
-//}
-
 /// serde helper, provides a default newly generated v4 uuid
 fn zero_uuid() -> String {
     String::from("00000000-0000-0000-0000-000000000000")

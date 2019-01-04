@@ -33,7 +33,9 @@ let
   ''
    if ! cargo --list | grep --quiet tarpaulin;
    then
-    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install --vers 0.6.11 cargo-tarpaulin;
+    CARGO_TARGET_DIR=$TARPAULIN_TARGET_DIR \
+    RUSTFLAGS=$TARPAULIN_RUSTFLAGS \
+    cargo install --vers 0.6.11 cargo-tarpaulin;
    fi;
   '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin"
@@ -169,7 +171,7 @@ stdenv.mkDerivation rec {
   HC_TARGET_PREFIX = "/tmp/holochain/";
   # CARGO_TARGET_DIR = "${HC_TARGET_PREFIX}target";
 
-  TARPAULIN_RUSTFLAGS = "-A warnings -Z thinlto";
+  TARPAULIN_RUSTFLAGS = "-A warnings -Z thinlto --cfg procmacro2_semver_exempt";
   TARPAULIN_TARGET_DIR = "/tmp/tarpaulin/target";
 
   shellHook = ''

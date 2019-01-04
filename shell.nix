@@ -41,12 +41,11 @@ let
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin"
   ''
    CARGO_TARGET_DIR=$TARPAULIN_TARGET_DIR \
+   CARGO_INCREMENTAL=0 \
    RUSTFLAGS=$TARPAULIN_RUSTFLAGS \
    cargo tarpaulin \
     --all \
     --verbose \
-    --release \
-    --forward \
     --ignore-panics \
     --ignore-tests \
     --timeout 5 \

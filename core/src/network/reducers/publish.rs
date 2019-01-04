@@ -50,6 +50,7 @@ fn publish_crud_meta(
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_address.to_string(),
             attribute: STATUS_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
@@ -66,6 +67,7 @@ fn publish_crud_meta(
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_address.to_string(),
             attribute: LINK_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
@@ -96,6 +98,7 @@ fn publish_link_meta(
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: link.base().to_string(),
             attribute: String::from("link"),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())

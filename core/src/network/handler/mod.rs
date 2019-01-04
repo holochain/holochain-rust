@@ -83,7 +83,15 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_get_dht_meta(get_dht_meta_data, context.clone())
             }
             Ok(ProtocolWrapper::GetDhtMetaResult(get_dht_meta_data)) => {
-                handle_get_dht_meta_result(get_dht_meta_data, context.clone())
+                if is_me(&context, &get_dht_meta_data.dna_address, "") {
+                    if is_me(&context, &get_dht_meta_data.dna_address, &get_dht_meta_data.from_agent_id) {
+                        context.log("HANDLE: Got DHT meta result from myself. Ignoring.");
+                        return Ok(())
+                    } else {
+                        context.log(format!("HANDLE: GetDhtMetaResult: {:?}", get_dht_meta_data));
+                        handle_get_dht_meta_result(get_dht_meta_data, context.clone())
+                    }
+                }
             }
             Ok(ProtocolWrapper::HandleSend(message_data)) => {
                 if !is_me(

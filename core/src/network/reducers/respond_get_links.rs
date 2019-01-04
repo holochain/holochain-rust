@@ -20,6 +20,7 @@ fn reduce_respond_get_links_inner(
             msg_id: get_dht_meta_data.msg_id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: get_dht_meta_data.from_agent_id.clone(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: get_dht_meta_data.address.clone(),
             attribute: get_dht_meta_data.attribute.clone(),
             content: serde_json::from_str(&serde_json::to_string(&links).unwrap()).unwrap(),

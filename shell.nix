@@ -33,7 +33,7 @@ let
   ''
    if ! cargo --list | grep --quiet tarpaulin;
    then
-    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install --vers 0.6.10 cargo-tarpaulin;
+    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install --vers 0.6.11 cargo-tarpaulin;
    fi;
   '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin"

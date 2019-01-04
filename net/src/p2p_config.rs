@@ -2,48 +2,6 @@ use holochain_core_types::{error::HolochainError, json::JsonString};
 use std::{collections::HashMap, fs::File, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------
-// P2pBackendKind
-//--------------------------------------------------------------------------------------------------
-
-#[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
-pub enum P2pBackendKind {
-    MOCK,
-    IPC,
-}
-
-impl FromStr for P2pBackendKind {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "MOCK" => Ok(P2pBackendKind::MOCK),
-            "IPC" => Ok(P2pBackendKind::IPC),
-            _ => Err(()),
-        }
-    }
-}
-
-impl From<P2pBackendKind> for String {
-    fn from(kind: P2pBackendKind) -> String {
-        String::from(match kind {
-            P2pBackendKind::MOCK => "MOCK",
-            P2pBackendKind::IPC => "IPC",
-        })
-    }
-}
-
-impl From<String> for P2pBackendKind {
-    fn from(s: String) -> P2pBackendKind {
-        P2pBackendKind::from_str(&s).expect("could not convert String to P2pBackendKind")
-    }
-}
-
-impl From<&'static str> for P2pBackendKind {
-    fn from(s: &str) -> P2pBackendKind {
-        P2pBackendKind::from(String::from(s))
-    }
-}
-
-//--------------------------------------------------------------------------------------------------
 // P2pConfig
 //--------------------------------------------------------------------------------------------------
 

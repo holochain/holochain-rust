@@ -1,4 +1,4 @@
-use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util};
+use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util,workflow::toolchain};
 use base64;
 use colored::*;
 use holochain_core::nucleus::{ribosome, ZomeFnCall};
@@ -42,6 +42,7 @@ impl Packager {
     }
 
     pub fn package(strip_meta: bool, output: Option<PathBuf>) -> DefaultResult<()> {
+        toolchain::upgrade_toolchain_if_outdated()?;
         let output = output.unwrap_or_else(|| PathBuf::from(DEFAULT_BUNDLE_FILE_NAME));
 
         Packager::new(strip_meta).run(&output)

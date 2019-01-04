@@ -95,17 +95,28 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
             }
             Ok(ProtocolWrapper::GetDhtMetaResult(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
-                    if is_me(
-                        &context,
-                        &get_dht_meta_data.dna_address,
-                        &get_dht_meta_data.from_agent_id,
-                    ) {
-                        context.log("HANDLE: Got DHT meta result from myself. Ignoring.");
-                        return Ok(());
-                    } else {
+                    // TODO: Find a proper solution for selecting DHT meta responses.
+                    // Current network implementation broadcasts messages to all nodes which means
+                    // we respond to ourselves first in most cases.
+                    // Eric and I thought the filter below (ignoring messages from ourselves)
+                    // would fix this but that breaks several tests since in most tests
+                    // we only have one instance and have to rely on the nodes local knowledge.
+                    // A proper solution has to implement some aspects of what we call the
+                    // "world model". A node needs to know what context it's in: if we are the only
+                    // node we know about (like in these tests) we can not ignore our local knowledge
+                    // but in other cases we should rather rely on the network's response.
+                    // In the end this needs a full CRDT implemention.
+                    //if is_me(
+                    //    &context,
+                    //    &get_dht_meta_data.dna_address,
+                    //    &get_dht_meta_data.from_agent_id,
+                    //) {
+                    //    context.log("HANDLE: Got DHT meta result from myself. Ignoring.");
+                    //    return Ok(());
+                    //} else {
                         context.log(format!("HANDLE: GetDhtMetaResult: {:?}", get_dht_meta_data));
                         handle_get_dht_meta_result(get_dht_meta_data, context.clone())
-                    }
+                    //}
                 }
             }
             Ok(ProtocolWrapper::HandleSend(message_data)) => {

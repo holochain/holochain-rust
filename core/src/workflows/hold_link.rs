@@ -46,11 +46,10 @@ pub async fn hold_link_workflow<'a>(
 
     // 3. Validate the entry
     context.log(format!("Hold link: validate..."));
-    await!(validate_entry(entry.clone(), validation_data, &context))
-        .map_err(|err| {
-            context.log(format!("Hold link: invalid! {:?}", err));
-            err
-        })?;
+    await!(validate_entry(entry.clone(), validation_data, &context)).map_err(|err| {
+        context.log(format!("Hold link: invalid! {:?}", err));
+        err
+    })?;
     context.log(format!("Hold link: is valid!"));
 
     // 3. If valid store the entry in the local DHT shard

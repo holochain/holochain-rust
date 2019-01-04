@@ -64,7 +64,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
             Ok(ProtocolWrapper::StoreDhtMeta(dht_meta_data)) => {
                 context.log(format!("HANDLE StoreDhtMeta: {:?}", dht_meta_data));
                 if !is_me(&context, &dht_meta_data.dna_address, "") {
-                    context.log(format!("HANDLE StoreDhtMeta: ignoring, not for me. {:?}", dht_meta_data));
+                    context.log(format!(
+                        "HANDLE StoreDhtMeta: ignoring, not for me. {:?}",
+                        dht_meta_data
+                    ));
                     return Ok(());
                 }
                 handle_store_dht_meta(dht_meta_data, context.clone())
@@ -92,9 +95,13 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
             }
             Ok(ProtocolWrapper::GetDhtMetaResult(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
-                    if is_me(&context, &get_dht_meta_data.dna_address, &get_dht_meta_data.from_agent_id) {
+                    if is_me(
+                        &context,
+                        &get_dht_meta_data.dna_address,
+                        &get_dht_meta_data.from_agent_id,
+                    ) {
                         context.log("HANDLE: Got DHT meta result from myself. Ignoring.");
-                        return Ok(())
+                        return Ok(());
                     } else {
                         context.log(format!("HANDLE: GetDhtMetaResult: {:?}", get_dht_meta_data));
                         handle_get_dht_meta_result(get_dht_meta_data, context.clone())

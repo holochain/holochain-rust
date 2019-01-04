@@ -138,7 +138,7 @@ fn reduce_publish_inner(
             )
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(context,network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_crud_meta(
                 network_state,

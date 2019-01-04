@@ -21,7 +21,10 @@ pub async fn author_entry<'a>(
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let address = entry.address();
-    context.log(format!("Authoring entry: {} with content: {:?}", address, entry));
+    context.log(format!(
+        "Authoring entry: {} with content: {:?}",
+        address, entry
+    ));
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(&entry, &context))?;
     let validation_data = ValidationData {
@@ -49,7 +52,10 @@ pub async fn author_entry<'a>(
         await!(publish(entry.address(), &context))?;
         context.log(format!("Authoring entry {}: published!", address));
     } else {
-        context.log(format!("Authoring entry {}: entry is private, no publishing", address));
+        context.log(format!(
+            "Authoring entry {}: entry is private, no publishing",
+            address
+        ));
     }
     Ok(addr)
 }

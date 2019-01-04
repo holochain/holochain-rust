@@ -151,7 +151,9 @@ mod tests {
         assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
         assert_eq!(
             context.network_config,
-            JsonString::from(String::from(P2pConfig::default_mock_config("vanilla")))
+            JsonString::from(String::from(P2pConfig::default_mock_config(
+                "mock@ContextBuilder::spawn"
+            )))
         );
     }
 

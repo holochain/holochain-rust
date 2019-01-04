@@ -189,11 +189,8 @@ impl GetEntryResult {
         match self.result {
             GetEntryResultType::Single(ref item) => item.entry.clone(),
             GetEntryResultType::All(ref history) => {
-                let last = history.items.last();
-                if last.is_none() {
-                    return None;
-                }
-                last.unwrap().entry.clone()
+                let last = history.items.last()?;
+                last.entry.clone()
             }
         }
     }

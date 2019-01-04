@@ -83,7 +83,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_me(
                     &context,
                     &message_data.dna_address,
-                    &message_data.to_agent_id
+                    &message_data.to_agent_id,
                 ) {
                     return Ok(());
                 }
@@ -93,7 +93,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_me(
                     &context,
                     &message_data.dna_address,
-                    &message_data.to_agent_id
+                    &message_data.to_agent_id,
                 ) {
                     return Ok(());
                 }

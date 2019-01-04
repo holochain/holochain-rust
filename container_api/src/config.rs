@@ -508,6 +508,9 @@ pub mod tests {
 
     [logger]
     type = "debug"
+    [[logger.rules.rules]]
+    pattern = ".*"
+    color = "red"
 
     "#;
 
@@ -527,6 +530,7 @@ pub mod tests {
         assert_eq!(instance_config.agent, "test agent");
         assert_eq!(instance_config.network, None);
         assert_eq!(config.logger.logger_type,"debug");
+        assert_eq!(config.logger.rules.rules.len(),1);
     }
 
     #[test]

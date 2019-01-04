@@ -10,29 +10,32 @@ pub struct LogRule {
     pub pattern: Regex,
     #[serde(default)]
     pub exclude: bool,
+    #[serde(default)]
+    pub color: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Default)]
 pub struct LogRules {
-    rules:  Vec<LogRule>
+    pub rules:  Vec<LogRule>
 }
 
 impl LogRules {
     pub fn new()->Self {
         LogRules{rules: Vec::new()}
     }
-    pub fn add_rule(&mut self,pattern: &str,exclude: bool) {
+    pub fn add_rule(&mut self,pattern: &str,exclude: bool,color:&str) {
         let regex = Regex::new(pattern).unwrap();
-        self.rules.push(LogRule{pattern:regex,exclude});
+        self.rules.push(LogRule{pattern:regex,exclude,color: color.to_string()});
     }
     pub fn run(&self, id: String, msg: String) -> Option<LogMessage> {
         let mut message = LogMessage{
             date: Local::now(),
-            id: "".to_string(),
+            id: id,
             msg: msg.clone(),
+            color: "".to_string(),
         };
         if self.rules.len() == 0 {
-            message.id = id.green().to_string();
+            println!("NO RULES");
             Some(message)
         } else {
             for r in &self.rules {
@@ -40,7 +43,8 @@ impl LogRules {
                     if r.exclude {
                         return None;
                     }
-                    message.id = id.red().to_string();
+                    println!("MATCHED colr:{}",r.color.clone());
+                    message.color = r.color.clone();
                     return Some(message);
                 }
             }
@@ -48,6 +52,9 @@ impl LogRules {
         }
     }
 }
+
+// The DebugLogger implements a receiver for the instance ChannelLogger
+// which allows for configurable colorization and filtering of log messages.
 pub struct DebugLogger {
     sender: Sender,
 }
@@ -63,7 +70,7 @@ impl DebugLogger {
             loop {
                 match rx.recv() {
                     Ok((id,msg)) => {
-                        debug(&rules,id,msg)
+                        run(&rules,id,msg)
                     },
                     Err(_) => break,
                 }
@@ -76,15 +83,39 @@ impl DebugLogger {
     }
 }
 
-pub fn debug(rules: &LogRules, id: String,msg: String) {
+// run checks a message against the rules and renders it if it matches
+pub fn run(rules: &LogRules, id: String,msg: String) {
     match rules.run(id, msg) {
         Some(message) => render(message),
         None=>(),
     }
 }
 
+static ID_COLORS: &'static [&str] = &[
+        "green",
+        "yellow",
+        "blue",
+        "magenta",
+        "cyan",
+];
+
+// TODO this is actually silly and we should allocate colors to IDs so they aren't likely to collide
+fn pick_color(text: &str) -> &str {
+    let mut total = 0;
+    for b in text.to_string().into_bytes() {
+        total += b;
+    }
+    ID_COLORS[(total as usize)%ID_COLORS.len()]
+}
+
+// renders a log message, using the id color if no color specified for the message.
 pub fn render(msg: LogMessage) {
-    let x = format!("{}:{}:{}", msg.date.format("%Y-%m-%d %H:%M:%S"),msg.id,msg.msg);
+    let id_color = pick_color(&msg.id);
+    let msg_color = match msg.color == "" {
+        true => id_color.to_string(),
+        _ => msg.color
+    };
+    let x = format!("{}:{}: {}", msg.date.format("%Y-%m-%d %H:%M:%S"),msg.id.color(id_color),msg.msg.color(msg_color));
     println!("{}",x);
 }
 
@@ -93,6 +124,7 @@ pub struct LogMessage {
     date: DateTime<Local>,
     id: String,
     msg: String,
+    color: String,
 }
 
 #[cfg(test)]
@@ -103,13 +135,13 @@ pub mod tests {
     #[test]
     fn test_log_rules() {
         let mut rules = LogRules::new();
-        rules.add_rule("foo",false);
+        rules.add_rule("foo",false,"");
         let id = "instance".to_string();
         assert_eq!(rules.run(id.clone(),"bar".to_string()),None);
         let m = rules.run(id.clone(),"xfooy".to_string()).unwrap();
         assert_eq!(m.msg,"xfooy");
-        rules.add_rule("baz",true); // rule to reject anything with baz
-        rules.add_rule("b",false);  // rule to accept anything with b
+        rules.add_rule("baz",true,""); // rule to reject anything with baz
+        rules.add_rule("b",false,"");  // rule to accept anything with b
         assert_eq!(rules.run(id.clone(),"baz".to_string()),None);
         let m = rules.run(id.clone(),"xboy".to_string()).unwrap();
         assert_eq!(m.msg,"xboy");
@@ -120,19 +152,23 @@ pub mod tests {
         let toml = r#"[[rules]]
 pattern = "foo"
 exclude = false
+color = ""
 
 [[rules]]
 pattern = "bar"
 exclude = true
+color = "blue"
 "#;
         let mut rules = LogRules::new();
-        rules.add_rule("foo",false);
-        rules.add_rule("bar",true);
+        rules.add_rule("foo",false,"");
+        rules.add_rule("bar",true,"blue");
         let toml1 = toml::to_string(&rules).unwrap();
         assert_eq!(toml1,toml);
 
         let rules1 = toml::from_str::<LogRules>(toml).unwrap();
         assert!(rules1.rules[0].pattern.is_match("foo"));
+        assert_eq!(rules1.rules[0].color,"");
         assert!(rules1.rules[1].pattern.is_match("bar"));
+        assert_eq!(rules1.rules[1].color,"blue");
     }
 }

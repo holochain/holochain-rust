@@ -1,9 +1,9 @@
 use chrono::{DateTime, Local};
 use colored::*;
 use holochain_core::logger::{ChannelLogger, Sender};
+use holochain_core_types::error::HolochainError;
 use regex::Regex;
 use std::thread;
-use holochain_core_types::error::HolochainError;
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct LogRule {
@@ -26,7 +26,12 @@ impl LogRules {
     }
 
     // add a new rule to the rules list
-    pub fn add_rule(&mut self, pattern: &str, exclude: bool, color: &str) -> Result<(), HolochainError> {
+    pub fn add_rule(
+        &mut self,
+        pattern: &str,
+        exclude: bool,
+        color: &str,
+    ) -> Result<(), HolochainError> {
         let regex = Regex::new(pattern).map_err(|e| HolochainError::new(&e.to_string()))?;
         self.rules.push(LogRule {
             pattern: regex,
@@ -153,7 +158,9 @@ pub mod tests {
         let mut rules = LogRules::new();
         assert_eq!(
             rules.add_rule("foo[", false, ""),
-            Err(HolochainError::new("regex parse error:\n    foo[\n       ^\nerror: unclosed character class"))
+            Err(HolochainError::new(
+                "regex parse error:\n    foo[\n       ^\nerror: unclosed character class"
+            ))
         );
     }
 

@@ -43,6 +43,7 @@ let
    CARGO_TARGET_DIR=$TARPAULIN_TARGET_DIR \
    CARGO_INCREMENTAL=0 \
    RUSTFLAGS=$TARPAULIN_RUSTFLAGS \
+   RUST_TEST_THREADS=1 \
    cargo tarpaulin \
     --all \
     --verbose \

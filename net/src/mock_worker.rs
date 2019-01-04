@@ -256,7 +256,7 @@ impl MockSystem {
     }
 }
 
-type MockSystemMap = HashMap<Address, Mutex<MockSystem>>;
+type MockSystemMap = HashMap<String, Mutex<MockSystem>>;
 
 /// this is the actual memory space for our mock systems
 lazy_static! {
@@ -267,6 +267,7 @@ lazy_static! {
 pub struct MockWorker {
     handler: NetHandler,
     mock_msgs: Vec<mpsc::Receiver<Protocol>>,
+    network_name: String,
 }
 
 impl NetWorker for MockWorker {
@@ -283,7 +284,7 @@ impl NetWorker for MockWorker {
                 // Couldn't figure out lifetimes here, so accessing the mock is inlined.
                 let mut map_lock = MOCK_MAP.write().unwrap();
                 let mut mock = map_lock
-                    .entry(app.dna_address.clone())
+                    .entry(self.network_name.clone())
                     .or_insert_with(|| Mutex::new(MockSystem::new()))
                     .lock()
                     .unwrap();
@@ -314,10 +315,11 @@ impl NetWorker for MockWorker {
 
 impl MockWorker {
     /// create a new mock worker... no configuration required
-    pub fn new(handler: NetHandler) -> NetResult<Self> {
+    pub fn new(network_name: String, handler: NetHandler) -> NetResult<Self> {
         Ok(MockWorker {
             handler,
             mock_msgs: Vec::new(),
+            network_name,
         })
     }
 }
@@ -341,12 +343,16 @@ mod tests {
         // -- setup client 1 -- //
 
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
+        let network_name = "it_mock_networker_flow".to_string();
 
         let mut cli1 = Box::new(
-            MockWorker::new(Box::new(move |r| {
-                handler_send_1.send(r?)?;
-                Ok(())
-            }))
+            MockWorker::new(
+                network_name.clone(),
+                Box::new(move |r| {
+                    handler_send_1.send(r?)?;
+                    Ok(())
+                }),
+            )
             .unwrap(),
         );
 
@@ -364,10 +370,13 @@ mod tests {
         let (handler_send_2, handler_recv_2) = mpsc::channel::<Protocol>();
 
         let mut cli2 = Box::new(
-            MockWorker::new(Box::new(move |r| {
-                handler_send_2.send(r?)?;
-                Ok(())
-            }))
+            MockWorker::new(
+                network_name.clone(),
+                Box::new(move |r| {
+                    handler_send_2.send(r?)?;
+                    Ok(())
+                }),
+            )
             .unwrap(),
         );
 

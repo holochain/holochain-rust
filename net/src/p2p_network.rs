@@ -47,10 +47,11 @@ impl P2pNetwork {
                     None,
                 )?
             }
-            // @TODO next: use _network_name
-            P2pConfig::Mock(_network_name) => NetConnectionThread::new(
+            P2pConfig::Mock(P2pMockConfig { network_name }) => NetConnectionThread::new(
                 handler,
-                Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
+                Box::new(move |h| {
+                    Ok(Box::new(MockWorker::new(network_name.clone(), h)?) as Box<NetWorker>)
+                }),
                 None,
             )?,
         };

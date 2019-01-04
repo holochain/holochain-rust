@@ -146,8 +146,8 @@ pub mod tests {
         let links = maybe_links.unwrap();
         // can be in any order
         assert!(
-            (links[0] == entry_addresses[1] || links[0] == entry_addresses[2]) &&
-                (links[1] == entry_addresses[1] || links[1] == entry_addresses[2])
+            (links[0] == entry_addresses[1] || links[0] == entry_addresses[2])
+                && (links[1] == entry_addresses[1] || links[1] == entry_addresses[2])
         );
     }
 }

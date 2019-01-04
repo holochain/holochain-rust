@@ -115,7 +115,6 @@ impl IpcNetWorker {
             .iter()
             .map(|s| s.as_str().unwrap().to_string())
             .collect();
-        println!("BS NODES!: {:?}", bootstrap_nodes);
         if config["ipcUri"].as_str().is_none() {
             if let Some(s) = config["spawn"].as_object() {
                 if s["cmd"].is_string()
@@ -227,9 +226,7 @@ impl IpcNetWorker {
     }
 
     fn priv_send_connects(&mut self) -> NetResult<()> {
-        println!("bs nodes {:?}", &self.bootstrap_nodes);
         for bs_node in &self.bootstrap_nodes {
-            println!("try connect bootstrap {:?}", bs_node);
             self.ipc_relay.send(
                 ProtocolWrapper::Connect(ConnectData {
                     address: bs_node.clone().into(),

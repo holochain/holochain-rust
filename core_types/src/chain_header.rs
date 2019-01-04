@@ -379,6 +379,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     /// test that different chain state returns different addresses
     fn address_chain_state() {
         let entry = test_entry();

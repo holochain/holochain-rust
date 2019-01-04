@@ -20,16 +20,16 @@ After installing via npm the module can be used in a node script as follows:
 const dnaPath = "path/to/happ.hcpkg"
 const aliceAgentId = "alice"
 const tashAgentId = "tash"
-// destructure to get ConfigBuilder and Container off the main import, which is an object now
-const { ConfigBuilder, Container } = require('@holochain/holochain-nodejs')
+// destructure to get Config and Container off the main import, which is an object now
+const { Config, Container } = require('@holochain/holochain-nodejs')
 
 // build up a configuration for the container, step by step
-const agentAlice = ConfigBuilder.agent(aliceAgentId)
-const agentTash = ConfigBuilder.agent(tashAgentId)
-const dna = ConfigBuilder.dna(dnaPath)
-const instanceAlice = ConfigBuilder.instance(agentAlice, dna)
-const instanceTash = ConfigBuilder.instance(agentTash, dna)
-const config = ConfigBuilder.container(instanceAlice, instanceTash)
+const agentAlice = Config.agent(aliceAgentId)
+const agentTash = Config.agent(tashAgentId)
+const dna = Config.dna(dnaPath)
+const instanceAlice = Config.instance(agentAlice, dna)
+const instanceTash = Config.instance(agentTash, dna)
+const config = Config.container(instanceAlice, instanceTash)
 
 // create a new instance of a Container, from the config
 const container = new Container(config)
@@ -37,9 +37,10 @@ const container = new Container(config)
 // this starts all the configured instances
 container.start()
 
-// note that in the following examples, an "instance id" is
-// considered to be the given agent ID plus a dash plus the given dnaPath
-const aliceInstanceId = aliceAgentId + '-' + dnaPath
+// When building up a config using `Config`, the instance ID is automatically assigned
+// as the given agent ID plus a double colon plus the given dnaPath.
+// We'll need this to call the instance later.
+const aliceInstanceId = aliceAgentId + '::' + dnaPath
 
 // zome functions can be called using the following
 const callResult = container.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
@@ -60,21 +61,21 @@ Prior to version ???, a container would only return a single instance of an app.
 const callResult = container.call(someInstanceId, someZome, someCapability, someFunction, someParams)
 ```
 
-If you wanted to go on using the old syntax of individuating the apps, you could use the following, after the container has been setup and started:
+If you wanted to go on using the old syntax of individuating the apps, you could use the following
+helper function which is exposed on `Container`:
 
 ```
-const dnaPath = "./dist/app_spec.hcpkg"
-const makeCaller = (agentId) => {
-  const instanceId = agentId + '-' + dnaPath
-  return {
-    call: (zome, cap, fn, params) => container.call(instanceId, zome, cap, fn, params),
-    agentId: container.agent_id(instanceId)
-  }
-}
+const dnaPath = "path/to/happ.hcpkg"
+...
+const container = new Container(config)
+const alice = container.makeCaller('alice', dnaPath)
 
-const app = makeCaller('alice')
-// the following four params would need to be replaced with valid values
-app.call(someZome, someCapability, someFunction, someParams)
+// now you can use `alice` as a slightly more convenient way of calling this instance
+// (the following four params would need to be replaced with valid values)
+alice.call(someZome, someCapability, someFunction, someParams)
+
+// you can also get the agent's address this way:
+alice.agentId
 ```
 
 ## Deployment

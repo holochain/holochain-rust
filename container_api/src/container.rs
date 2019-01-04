@@ -196,9 +196,7 @@ impl Container {
                     }
                 }
             ))),
-            None => Err(HolochainError::ErrorGeneric(
-                "Network IPC URI missing".to_string(),
-            )),
+            None => Ok(JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)),
         }
     }
 
@@ -210,7 +208,8 @@ impl Container {
     pub fn load_config(&mut self) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
-        // if there's no NetworkConfig then assume the mock network
+        // if there's no NetworkConfig we won't spawn a network process
+        // and instead configure instances to use the mock network
         if self.config.network.is_some() {
             // if there is a config then either we need to spawn a process and get the
             // ipc_uri for it and save it for future calls to `load_config`
@@ -224,7 +223,6 @@ impl Container {
                     .n3h_ipc_uri
                     .clone()
                     .or_else(|| self.spawn_network().ok());
-                println!("got network_ipc_uri: {:?}", self.network_ipc_uri);
             }
         }
 

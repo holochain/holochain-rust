@@ -71,7 +71,7 @@ let
    hc-build-wasm && \
    hc-install-tarpaulin && \
    hc-tarpaulin;
-   bash <(curl -s https://codecov.io/bash);
+   # bash <(curl -s https://codecov.io/bash);
   '';
 
   # simulates all supported ci tests in a local circle ci environment
@@ -170,7 +170,7 @@ stdenv.mkDerivation rec {
 
   HC_TARGET_PREFIX = "/tmp/holochain/";
 
-  TARPAULIN_RUSTFLAGS = "-A warnings -Z thinlto --cfg procmacro2_semver_exempt";
+  TARPAULIN_RUSTFLAGS = "-A warnings --cfg procmacro2_semver_exempt";
   TARPAULIN_TARGET_DIR = "/tmp/tarpaulin/target";
 
   shellHook = ''

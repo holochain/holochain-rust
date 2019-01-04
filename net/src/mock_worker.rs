@@ -256,7 +256,7 @@ impl MockSystem {
     }
 }
 
-type MockSystemMap = HashMap<Address, Mutex<MockSystem>>;
+type MockSystemMap = HashMap<String, Mutex<MockSystem>>;
 
 /// this is the actual memory space for our mock systems
 lazy_static! {
@@ -267,7 +267,7 @@ lazy_static! {
 pub struct MockWorker {
     handler: NetHandler,
     mock_msgs: Vec<mpsc::Receiver<Protocol>>,
-    _network_name: String, // TODO use this to uniquify MockSystem
+    network_name: String,
 }
 
 impl NetWorker for MockWorker {
@@ -284,7 +284,7 @@ impl NetWorker for MockWorker {
                 // Couldn't figure out lifetimes here, so accessing the mock is inlined.
                 let mut map_lock = MOCK_MAP.write().unwrap();
                 let mut mock = map_lock
-                    .entry(app.dna_address.clone())
+                    .entry(self.network_name.clone())
                     .or_insert_with(|| Mutex::new(MockSystem::new()))
                     .lock()
                     .unwrap();
@@ -317,14 +317,14 @@ impl MockWorker {
     /// create a new mock worker... no configuration required
     pub fn new(handler: NetHandler, network_config: &JsonString) -> NetResult<Self> {
         let config: serde_json::Value = serde_json::from_str(network_config.into())?;
-        let _network_name = config["networkName"]
+        let network_name = config["networkName"]
             .as_str()
             .unwrap_or("(unnamed)")
             .to_string();
         Ok(MockWorker {
             handler,
             mock_msgs: Vec::new(),
-            _network_name,
+            network_name,
         })
     }
 }

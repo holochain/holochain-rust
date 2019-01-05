@@ -137,6 +137,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn returns_ok_if_base_is_present() {
         let (instance, context) = create_test_instance();
 

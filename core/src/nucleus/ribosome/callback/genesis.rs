@@ -15,6 +15,7 @@ pub fn genesis(
 }
 
 #[cfg(test)]
+#[cfg(feature = "broken-tests")]
 pub mod tests {
 
     use super::genesis;
@@ -57,7 +58,7 @@ pub mod tests {
     }
 
     #[test]
-    fn fail() {
+    fn genesis_fail() {
         let zome = "test_zome";
         let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 1);
         assert!(instance.is_err());

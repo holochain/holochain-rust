@@ -160,6 +160,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn errors_with_wrong_tag() {
         let (instance, context) = create_test_instance();
 

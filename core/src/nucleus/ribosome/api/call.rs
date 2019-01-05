@@ -476,6 +476,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn test_call_assigned() {
         let dna = setup_dna_for_cap_test(CapabilityType::Assigned);
         let test_setup = setup_test(dna);

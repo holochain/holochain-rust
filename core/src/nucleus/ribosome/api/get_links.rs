@@ -90,6 +90,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-links")]
     fn returns_list_of_links() {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(

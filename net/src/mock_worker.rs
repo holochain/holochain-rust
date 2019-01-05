@@ -300,16 +300,17 @@ impl NetWorker for MockWorker {
 
     /// check for messages from our mock singleton
     fn tick(&mut self) -> NetResult<bool> {
-        let mut did_something = false;
-
-        for msg in self.mock_msgs.iter_mut() {
-            if let Ok(data) = msg.try_recv() {
-                did_something = true;
-                (self.handler)(Ok(data))?;
-            }
-        }
-
-        Ok(did_something)
+        // let mut did_something = false;
+        //
+        // for msg in self.mock_msgs.iter_mut() {
+        //     if let Ok(data) = msg.try_recv() {
+        //         did_something = true;
+        //         (self.handler)(Ok(data))?;
+        //     }
+        // }
+        //
+        // Ok(did_something)
+        Ok(false)
     }
 }
 

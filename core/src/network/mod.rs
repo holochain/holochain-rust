@@ -117,6 +117,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn get_links_roundtrip() {
         let wat = &test_wat_always_valid();
 

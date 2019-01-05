@@ -8,17 +8,12 @@ extern crate tempfile;
 extern crate wabt;
 
 use holochain_container_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
-use holochain_core::{
-    action::Action,
-    context::Context,
-    logger::Logger,
-    signal::Signal,
-};
+use holochain_core::{action::Action, context::Context, logger::Logger, signal::Signal};
 use holochain_core_types::{
-    cas::content::Address,
     agent::AgentId,
+    cas::content::Address,
     dna::{
-        capabilities::{Capability, FnDeclaration, CapabilityType, CapabilityCall},
+        capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         wasm::DnaWasm,
         zome::{Config, Zome},
@@ -200,7 +195,7 @@ pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<Tes
                 .with_logger(logger.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                 .expect("Tempdir must be accessible")
-                .spawn()
+                .spawn(),
         ),
         logger,
     )
@@ -234,7 +229,16 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call("test_zome", Some(CapabilityCall::new("test_cap".to_string(), Address::from("test_token"),None)), fn_name, r#"{}"#);
+    return hc.call(
+        "test_zome",
+        Some(CapabilityCall::new(
+            "test_cap".to_string(),
+            Address::from("test_token"),
+            None,
+        )),
+        fn_name,
+        r#"{}"#,
+    );
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
@@ -245,7 +249,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             .with_agent(agent)
             .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
             .expect("Tempdir must be accessible")
-            .spawn()
+            .spawn(),
     )
 }
 
@@ -261,7 +265,8 @@ where
             .recv_timeout(Duration::from_millis(timeout))
             .map_err(|e| e.to_string())?
         {
-            Signal::Internal(action) => {
+            Signal::Internal(aw) => {
+                let action = aw.action().clone();
                 if f(&action) {
                     return Ok(action);
                 }

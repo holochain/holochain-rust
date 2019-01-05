@@ -517,6 +517,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn test_agent_as_token() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
         let test_setup = setup_test(dna);

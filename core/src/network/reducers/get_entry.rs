@@ -83,6 +83,7 @@ mod tests {
     use std::sync::{Arc, RwLock};
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_without_network_initialized() {
         let context = test_context("alice");
         let store = test_store(context.clone());

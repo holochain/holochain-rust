@@ -86,6 +86,13 @@ fn instance_id(agent_id: &str, dna_id: &str) -> String {
     format!("{}::{}", agent_id, dna_id)
 }
 
+pub fn js_instance_id(mut cx: FunctionContext) -> JsResult<JsString> {
+    let agent_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+    let dna_id = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
+    let id = instance_id(&agent_id, &dna_id);
+    Ok(cx.string(id))
+}
+
 fn make_dna_config(dna: DnaData) -> Result<DnaConfiguration, String> {
     let path = dna.path.to_string_lossy().to_string();
     Ok(DnaConfiguration {

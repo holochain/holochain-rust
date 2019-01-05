@@ -14,6 +14,7 @@ crate-type = ["dylib"]
 neon-build = "0.2.0"
 
 [dependencies]
+colored = "1"
 neon = "0.2.0"
 neon-serde = "0.1.1"
 base64 = "0.9"

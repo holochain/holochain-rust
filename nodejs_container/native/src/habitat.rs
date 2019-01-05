@@ -1,26 +1,30 @@
+use colored::*;
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::Container as RustContainer,
+    container::Container,
 };
-use holochain_core::{
-    logger::Logger,
-    signal::{signal_channel, SignalReceiver},
-};
+use holochain_core::signal::signal_channel;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use neon::{context::Context, prelude::*};
+use std::sync::{
+    mpsc::{sync_channel, SyncSender},
+    Arc, Mutex,
+};
 
-use crate::config::*;
+use crate::{
+    config::{js_instance_id, js_make_config},
+    waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask},
+};
 
-#[derive(Clone, Debug)]
-struct NullLogger {}
-
-impl Logger for NullLogger {
-    fn log(&mut self, _msg: String) {}
+pub struct Habitat {
+    container: Container,
+    sender_tx: Option<SyncSender<SyncSender<ControlMsg>>>,
+    is_running: Arc<Mutex<bool>>,
 }
 
-pub struct NodeContainer {
-    container: RustContainer,
-    _signal_rx: SignalReceiver,
+fn _signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
+    println!("{}", "Background task shut down\n".bold().yellow());
+    Ok(cx.null())
 }
 
 declare_types! {
@@ -28,7 +32,7 @@ declare_types! {
     /// A Container can be initialized either by:
     /// - an Object representation of a Configuration struct
     /// - a string representing TOML
-    pub class JsContainer for NodeContainer {
+    pub class JsHabitat for Habitat {
         init(mut cx) {
             let config_arg: Handle<JsValue> = cx.argument(0)?;
             let config: Configuration = if config_arg.is_a::<JsObject>() {
@@ -39,18 +43,35 @@ declare_types! {
             } else {
                 panic!("Invalid type specified for config, must be object or string");
             };
-            let (signal_tx, _signal_rx) = signal_channel();
-            let container = RustContainer::from_config(config).with_signal_channel(signal_tx);
-            Ok(NodeContainer { container, _signal_rx })
+            let container = Container::from_config(config);
+            let is_running = Arc::new(Mutex::new(false));
+
+            Ok(Habitat { container, sender_tx: None, is_running })
         }
 
         method start(mut cx) {
+            let js_callback: Handle<JsFunction> = cx.argument(0)?;
+            // let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, _signal_callback)
+            //         .unwrap()
+            //         .as_value(&mut cx)
+            //         .downcast_or_throw(&mut cx)
+            //         .unwrap();
             let mut this = cx.this();
+
+            let (signal_tx, signal_rx) = signal_channel();
+            let (sender_tx, sender_rx) = sync_channel(1);
 
             let start_result: Result<(), String> = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
-                hab.container.load_config().and_then(|_| {
+                hab.sender_tx = Some(sender_tx);
+                {
+                    let mut is_running = hab.is_running.lock().unwrap();
+                    *is_running = true;
+                }
+                let background_task = MainBackgroundTask::new(signal_rx, sender_rx, hab.is_running.clone());
+                background_task.schedule(js_callback);
+                hab.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
                     hab.container.start_all_instances().map_err(|e| e.to_string())
                 })
             };
@@ -69,7 +90,12 @@ declare_types! {
             let stop_result: Result<(), String> = {
                 let guard = cx.lock();
                 let hab = &mut *this.borrow_mut(&guard);
-                hab.container.stop_all_instances().map_err(|e| e.to_string())
+
+                let mut is_running = hab.is_running.lock().unwrap();
+                *is_running = false;
+
+                let result = hab.container.shutdown().map_err(|e| e.to_string());
+                result
             };
 
             stop_result.or_else(|e| {
@@ -86,6 +112,8 @@ declare_types! {
             let cap_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
             let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
             let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
+            // let maybe_task_id = cx.argument_opt(5);
+
             let mut this = cx.this();
 
             let call_result = {
@@ -108,7 +136,29 @@ declare_types! {
             })?;
 
             let result_string: String = res_string.into();
+
+            // let completion_callback =
             Ok(cx.string(result_string).upcast())
+        }
+
+        method register_callback(mut cx) {
+            let js_callback: Handle<JsFunction> = cx.argument(0)?;
+            let this = cx.this();
+            {
+                let guard = cx.lock();
+                let hab = &*this.borrow(&guard);
+
+                let (tx, rx) = sync_channel(0);
+                let task = CallBlockingTask { rx };
+                task.schedule(js_callback);
+                hab
+                    .sender_tx
+                    .as_ref()
+                    .expect("Container sender channel not initialized")
+                    .send(tx)
+                    .expect("Could not send to sender channel");
+            }
+            Ok(cx.undefined().upcast())
         }
 
         method agent_id(mut cx) {
@@ -136,8 +186,9 @@ declare_types! {
     }
 }
 
-register_module!(mut cx, {
-    cx.export_class::<JsContainer>("Container")?;
-    cx.export_function("makeConfig", js_make_config)?;
+register_module!(mut m, {
+    m.export_function("makeConfig", js_make_config)?;
+    m.export_function("makeInstanceId", js_instance_id)?;
+    m.export_class::<JsHabitat>("Habitat")?;
     Ok(())
 });

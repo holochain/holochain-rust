@@ -238,7 +238,10 @@ impl Container {
     /// @TODO: clean up the container creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config(&mut self) -> Result<(), String> {
+    pub fn load_config_with_signal(
+        &mut self,
+        signal_tx: Option<SignalSender>,
+    ) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -251,7 +254,7 @@ impl Container {
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
-                .instantiate_from_config(&id, &config)
+                .instantiate_from_config(&id, &config, signal_tx.clone())
                 .map_err(|error| {
                     format!(
                         "Error while trying to create instance \"{}\": {}",
@@ -265,12 +268,17 @@ impl Container {
         Ok(())
     }
 
+    pub fn load_config(&mut self) -> Result<(), String> {
+        self.load_config_with_signal(None)
+    }
+
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
     pub fn instantiate_from_config(
         &mut self,
         id: &String,
         config: &Configuration,
+        signal_tx: Option<SignalSender>,
     ) -> Result<Holochain, String> {
         let _ = config.check_consistency()?;
 
@@ -288,6 +296,11 @@ impl Container {
                     context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 context_builder = context_builder.with_network_config(self.instance_p2p_config()?);
+
+                // Signal config:
+                if let Some(tx) = signal_tx {
+                    context_builder = context_builder.with_signals(tx)
+                };
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {

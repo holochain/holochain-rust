@@ -34,7 +34,7 @@ let
    if ! cargo --list | grep --quiet tarpaulin;
    then
     CARGO_TARGET_DIR=$TARPAULIN_TARGET_DIR \
-    RUSTFLAGS=$TARPAULIN_RUSTFLAGS \
+    RUSTFLAGS="--cfg procmacro2_semver_exempt" \
     cargo install --vers 0.6.11 cargo-tarpaulin;
    fi;
   '';
@@ -42,7 +42,7 @@ let
   ''
    CARGO_TARGET_DIR=$TARPAULIN_TARGET_DIR \
    CARGO_INCREMENTAL=0 \
-   RUSTFLAGS=$TARPAULIN_RUSTFLAGS \
+   RUSTFLAGS="-A warnings" \
    RUST_TEST_THREADS=1 \
    cargo tarpaulin \
     --all \
@@ -170,7 +170,6 @@ stdenv.mkDerivation rec {
 
   HC_TARGET_PREFIX = "/tmp/holochain/";
 
-  TARPAULIN_RUSTFLAGS = "-A warnings --cfg procmacro2_semver_exempt";
   TARPAULIN_TARGET_DIR = "/tmp/tarpaulin/target";
 
   shellHook = ''

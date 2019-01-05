@@ -242,6 +242,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn test_building_validation_package_chain_entries() {
         let (_instance, context) = instance();
 

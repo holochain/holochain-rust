@@ -14,7 +14,10 @@ pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
     address: Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let dht = context.state().unwrap().dht().content_storage();
+    let dht = match context.state() {
+        Some(state) => state.dht().content_storage(),
+        None => return Err(HolochainError::ErrorGeneric("Failed to load state from context".into())),
+    };
     let storage = &dht.clone();
     let json = (*storage.read().unwrap()).fetch(&address)?;
     let entry: Option<Entry> = json

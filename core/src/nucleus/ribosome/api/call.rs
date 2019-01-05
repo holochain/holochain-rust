@@ -450,6 +450,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn test_call_transferable() {
         let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
         let test_setup = setup_test(dna);

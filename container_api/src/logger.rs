@@ -12,7 +12,7 @@ pub struct LogRule {
     #[serde(default)]
     pub exclude: bool,
     #[serde(default)]
-    pub color: String,
+    pub color: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Default)]
@@ -30,13 +30,13 @@ impl LogRules {
         &mut self,
         pattern: &str,
         exclude: bool,
-        color: &str,
+        color: Option<String>,
     ) -> Result<(), HolochainError> {
         let regex = Regex::new(pattern).map_err(|e| HolochainError::new(&e.to_string()))?;
         self.rules.push(LogRule {
             pattern: regex,
             exclude,
-            color: color.to_string(),
+            color,
         });
         Ok(())
     }
@@ -47,7 +47,7 @@ impl LogRules {
             date: Local::now(),
             id: id,
             msg: msg.clone(),
-            color: "".to_string(),
+            color: None,
         };
         if self.rules.len() == 0 {
             Some(message)
@@ -112,9 +112,9 @@ fn pick_color(text: &str) -> &str {
 // renders a log message, using the id color if no color specified for the message.
 pub fn render(msg: LogMessage) {
     let id_color = pick_color(&msg.id);
-    let msg_color = match msg.color == "" {
-        true => id_color.to_string(),
-        _ => msg.color,
+    let msg_color = match msg.color {
+        None => id_color.to_string(),
+        Some(color) => color,
     };
     let x = format!(
         "{}:{}: {}",
@@ -130,7 +130,7 @@ pub struct LogMessage {
     date: DateTime<Local>,
     id: String,
     msg: String,
-    color: String,
+    color: Option<String>,
 }
 
 #[cfg(test)]
@@ -141,13 +141,13 @@ pub mod tests {
     #[test]
     fn test_log_rules() {
         let mut rules = LogRules::new();
-        rules.add_rule("foo", false, "").unwrap();
+        rules.add_rule("foo", false, None).unwrap();
         let id = "instance".to_string();
         assert_eq!(rules.run(id.clone(), "bar".to_string()), None);
         let m = rules.run(id.clone(), "xfooy".to_string()).unwrap();
         assert_eq!(m.msg, "xfooy");
-        rules.add_rule("baz", true, "").unwrap(); // rule to reject anything with baz
-        rules.add_rule("b", false, "").unwrap(); // rule to accept anything with b
+        rules.add_rule("baz", true, None).unwrap(); // rule to reject anything with baz
+        rules.add_rule("b", false, None).unwrap(); // rule to accept anything with b
         assert_eq!(rules.run(id.clone(), "baz".to_string()), None);
         let m = rules.run(id.clone(), "xboy".to_string()).unwrap();
         assert_eq!(m.msg, "xboy");
@@ -157,7 +157,7 @@ pub mod tests {
     fn test_bad_log_rules() {
         let mut rules = LogRules::new();
         assert_eq!(
-            rules.add_rule("foo[", false, ""),
+            rules.add_rule("foo[", false, None),
             Err(HolochainError::new(
                 "regex parse error:\n    foo[\n       ^\nerror: unclosed character class"
             ))
@@ -169,7 +169,6 @@ pub mod tests {
         let toml = r#"[[rules]]
 pattern = "foo"
 exclude = false
-color = ""
 
 [[rules]]
 pattern = "bar"
@@ -177,15 +176,15 @@ exclude = true
 color = "blue"
 "#;
         let mut rules = LogRules::new();
-        rules.add_rule("foo", false, "").unwrap();
-        rules.add_rule("bar", true, "blue").unwrap();
+        rules.add_rule("foo", false, None).unwrap();
+        rules.add_rule("bar", true, Some("blue".to_string())).unwrap();
         let toml1 = toml::to_string(&rules).unwrap();
         assert_eq!(toml1, toml);
 
         let rules1 = toml::from_str::<LogRules>(toml).unwrap();
         assert!(rules1.rules[0].pattern.is_match("foo"));
-        assert_eq!(rules1.rules[0].color, "");
+        assert_eq!(rules1.rules[0].color, None);
         assert!(rules1.rules[1].pattern.is_match("bar"));
-        assert_eq!(rules1.rules[1].color, "blue");
+        assert_eq!(rules1.rules[1].color, Some("blue".to_string()));
     }
 }

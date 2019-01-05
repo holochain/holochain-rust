@@ -177,7 +177,9 @@ color = "blue"
 "#;
         let mut rules = LogRules::new();
         rules.add_rule("foo", false, None).unwrap();
-        rules.add_rule("bar", true, Some("blue".to_string())).unwrap();
+        rules
+            .add_rule("bar", true, Some("blue".to_string()))
+            .unwrap();
         let toml1 = toml::to_string(&rules).unwrap();
         assert_eq!(toml1, toml);
 

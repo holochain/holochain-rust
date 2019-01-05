@@ -283,18 +283,18 @@ impl NetWorker for MockWorker {
     /// we got a message from holochain core
     /// forward to our mock singleton
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
-        let mut mock = get_mock()?;
-
-        if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
-            if let ProtocolWrapper::TrackApp(app) = wrap {
-                let (tx, rx) = mpsc::channel();
-                self.mock_msgs.push(rx);
-                mock.register(&app.dna_address, &app.agent_id, tx)?;
-                return Ok(());
-            }
-        }
-
-        mock.handle(data)?;
+        // let mut mock = get_mock()?;
+        //
+        // if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
+        //     if let ProtocolWrapper::TrackApp(app) = wrap {
+        //         let (tx, rx) = mpsc::channel();
+        //         self.mock_msgs.push(rx);
+        //         mock.register(&app.dna_address, &app.agent_id, tx)?;
+        //         return Ok(());
+        //     }
+        // }
+        //
+        // mock.handle(data)?;
         Ok(())
     }
 

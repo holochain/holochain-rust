@@ -70,7 +70,7 @@ let
    hc-build-wasm && \
    hc-install-tarpaulin && \
    hc-tarpaulin;
-   # bash <(curl -s https://codecov.io/bash);
+   bash <(curl -s https://codecov.io/bash);
   '';
 
   # simulates all supported ci tests in a local circle ci environment

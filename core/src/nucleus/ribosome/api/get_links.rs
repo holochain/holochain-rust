@@ -1,5 +1,8 @@
-use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::cas::content::Address;
+use crate::{
+    network::actions::get_links::get_links,
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+};
+use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
 };
@@ -39,20 +42,10 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     }
 
     // Get links from DHT
-    let maybe_links = runtime
-        .context
-        .state()
-        .unwrap()
-        .dht()
-        .get_links(input.entry_address, input.tag);
+    let maybe_links = block_on(get_links(&runtime.context, &input.entry_address, input.tag));
 
     runtime.store_result(match maybe_links {
-        Ok(links) => Ok(GetLinksResult::new(
-            links
-                .iter()
-                .map(|eav| eav.value())
-                .collect::<Vec<Address>>(),
-        )),
+        Ok(links) => Ok(GetLinksResult::new(links)),
         Err(hc_err) => Err(hc_err),
     })
 }

@@ -4,6 +4,7 @@ use crate::{
     error::DefaultResult,
     util,
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -61,14 +62,20 @@ fn interpolate_cargo_template(
 
 impl RustScaffold {
     pub fn new(package_name: String) -> RustScaffold {
+        let target_dir = wasm_target_dir(&package_name, "");
         let artifact_name = format!(
-            "target/wasm32-unknown-unknown/release/{}.wasm",
-            package_name
+            "{}/wasm32-unknown-unknown/release/{}.wasm",
+            &target_dir, &package_name,
         );
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(
                 "cargo",
-                &["build", "--release", "--target=wasm32-unknown-unknown"],
+                &[
+                    "build",
+                    "--release",
+                    "--target=wasm32-unknown-unknown",
+                    &format!("--target-dir={}", target_dir),
+                ],
             ),
             package_name: package_name,
         }

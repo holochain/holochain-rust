@@ -184,6 +184,7 @@ pub mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn works_with_linked_from_defined_link() {
         let (instance, context) = create_test_instance();
 

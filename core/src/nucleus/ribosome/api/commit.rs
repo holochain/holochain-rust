@@ -57,7 +57,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     /// test that we can round trip bytes through a commit action and get the result from WASM
     fn test_commit_round_trip() {
         let (call_result, _) = test_zome_api_function(

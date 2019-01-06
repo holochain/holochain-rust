@@ -283,34 +283,33 @@ impl NetWorker for MockWorker {
     /// we got a message from holochain core
     /// forward to our mock singleton
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
-        // let mut mock = get_mock()?;
-        //
-        // if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
-        //     if let ProtocolWrapper::TrackApp(app) = wrap {
-        //         let (tx, rx) = mpsc::channel();
-        //         self.mock_msgs.push(rx);
-        //         mock.register(&app.dna_address, &app.agent_id, tx)?;
-        //         return Ok(());
-        //     }
-        // }
-        //
-        // mock.handle(data)?;
+        let mut mock = get_mock()?;
+
+        if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
+            if let ProtocolWrapper::TrackApp(app) = wrap {
+                let (tx, rx) = mpsc::channel();
+                self.mock_msgs.push(rx);
+                mock.register(&app.dna_address, &app.agent_id, tx)?;
+                return Ok(());
+            }
+        }
+
+        mock.handle(data)?;
         Ok(())
     }
 
     /// check for messages from our mock singleton
     fn tick(&mut self) -> NetResult<bool> {
-        // let mut did_something = false;
-        //
-        // for msg in self.mock_msgs.iter_mut() {
-        //     if let Ok(data) = msg.try_recv() {
-        //         did_something = true;
-        //         (self.handler)(Ok(data))?;
-        //     }
-        // }
-        //
-        // Ok(did_something)
-        Ok(false)
+        let mut did_something = false;
+
+        for msg in self.mock_msgs.iter_mut() {
+            if let Ok(data) = msg.try_recv() {
+                did_something = true;
+                (self.handler)(Ok(data))?;
+            }
+        }
+
+        Ok(did_something)
     }
 }
 
@@ -325,6 +324,7 @@ impl MockWorker {
 }
 
 #[cfg(test)]
+#[cfg(feature = "broken-tests")]
 mod tests {
     use super::*;
 
@@ -339,7 +339,6 @@ mod tests {
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
-    #[cfg(feature = "broken-tests")]
     fn it_mock_networker_flow() {
         // -- setup client 1 -- //
 

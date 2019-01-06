@@ -9,7 +9,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, p2p_config::*};
+use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, mock_mock_worker::MockMockWorker, p2p_config::*};
 
 /// The p2p network instance
 pub struct P2pNetwork {
@@ -47,7 +47,14 @@ impl P2pNetwork {
                     }),
                     None,
                 )?
-            }
+            },
+
+            P2pBackendKind::MockMock => NetConnectionThread::new(
+                handler,
+                Box::new(move |_| Ok(Box::new(MockMockWorker::new()) as Box<NetWorker>)),
+                None,
+            )?,
+
             P2pBackendKind::MOCK => NetConnectionThread::new(
                 handler,
                 Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),

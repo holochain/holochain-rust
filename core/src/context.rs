@@ -208,6 +208,11 @@ pub fn mock_network_config() -> JsonString {
     JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)
 }
 
+#[cfg_attr(tarpaulin, skip)]
+pub fn mock_mock_network_config() -> JsonString {
+    JsonString::from(P2pConfig::DEFAULT_MOCK_MOCK_CONFIG)
+}
+
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;

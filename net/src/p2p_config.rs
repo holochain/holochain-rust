@@ -7,6 +7,7 @@ use std::{fs::File, str::FromStr};
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
+    MockMock,
     MOCK,
     IPC,
 }
@@ -15,6 +16,7 @@ impl FromStr for P2pBackendKind {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "MockMock" => Ok(P2pBackendKind::MockMock),
             "MOCK" => Ok(P2pBackendKind::MOCK),
             "IPC" => Ok(P2pBackendKind::IPC),
             _ => Err(()),
@@ -25,6 +27,7 @@ impl FromStr for P2pBackendKind {
 impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
+            P2pBackendKind::MockMock => "MockMock",
             P2pBackendKind::MOCK => "MOCK",
             P2pBackendKind::IPC => "IPC",
         })
@@ -98,6 +101,11 @@ impl P2pConfig {
 
 // statics
 impl P2pConfig {
+    pub const DEFAULT_MOCK_MOCK_CONFIG: &'static str = r#"{
+    "backend_kind": "MockMock",
+    "backend_config": ""
+    }"#;
+
     pub const DEFAULT_MOCK_CONFIG: &'static str = r#"{
     "backend_kind": "MOCK",
     "backend_config": ""

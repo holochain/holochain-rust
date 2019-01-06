@@ -128,7 +128,9 @@ mod tests {
     }
 
     #[test]
-    #[cfg[feature = "broken-tests")]
+    // hits action channel that may not exist
+    // https://circleci.com/gh/holochain/holochain-rust/1902
+    #[cfg(feature = "broken-tests")]
     pub fn reduce_get_links_timeout_test() {
         let mut context = test_context("alice");
         let store = test_store(context.clone());

@@ -14,7 +14,7 @@ fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), Holo
         network_state,
         ProtocolWrapper::GetDht(GetDhtData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             from_agent_id: network_state.agent_id.clone().unwrap(),
             address: address.to_string(),
         }),
@@ -113,7 +113,7 @@ mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: mock_network_config(),
-            dna_hash: String::from("abcd"),
+            dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));
         let store = store.reduce(context.clone(), action_wrapper);
@@ -140,7 +140,7 @@ mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: mock_network_config(),
-            dna_hash: String::from("abcd"),
+            dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));
 
@@ -189,14 +189,12 @@ mod tests {
             maybe_crud_link: None,
         };
         let dht_data = DhtData {
-            msg_id: String::from(""),
-            dna_hash: String::from(""),
-            agent_id: String::from(""),
             address: entry.address().to_string(),
             content: serde_json::from_str(
                 &serde_json::to_string(&Some(entry_with_meta.clone())).unwrap(),
             )
             .unwrap(),
+            ..Default::default()
         };
 
         let action_wrapper = ActionWrapper::new(Action::HandleGetResult(dht_data));

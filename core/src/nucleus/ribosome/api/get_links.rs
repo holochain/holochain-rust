@@ -1,6 +1,11 @@
-use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
+use crate::{
+    network::actions::get_links::get_links,
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+};
+use futures::executor::block_on;
+use holochain_wasm_utils::api_serialization::get_links::{
+    GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -21,21 +26,26 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+
+    if input.options.status_request != LinksStatusRequestKind::Live {
+        runtime
+            .context
+            .log("get links status request other than Live not implemented!");
+        return ribosome_error_code!(Unspecified);
+    }
+
+    if input.options.sources {
+        runtime
+            .context
+            .log("get links retrieve sources not implemented!");
+        return ribosome_error_code!(Unspecified);
+    }
+
     // Get links from DHT
-    let maybe_links = runtime
-        .context
-        .state()
-        .unwrap()
-        .dht()
-        .get_links(input.entry_address, input.tag);
+    let maybe_links = block_on(get_links(&runtime.context, &input.entry_address, input.tag));
 
     runtime.store_result(match maybe_links {
-        Ok(links) => Ok(GetLinksResult::new(
-            links
-                .iter()
-                .map(|eav| eav.value())
-                .collect::<Vec<Address>>(),
-        )),
+        Ok(links) => Ok(GetLinksResult::new(links)),
         Err(hc_err) => Err(hc_err),
     })
 }
@@ -64,7 +74,7 @@ pub mod tests {
         json::JsonString,
         link::Link,
     };
-    use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+    use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksOptions};
     use serde_json;
 
     /// dummy link_entries args from standard test entry
@@ -72,6 +82,7 @@ pub mod tests {
         let args = GetLinksArgs {
             entry_address: base.clone(),
             tag: String::from(tag),
+            options: GetLinksOptions::default(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

@@ -28,7 +28,7 @@ fn publish_entry(
         network_state,
         ProtocolWrapper::PublishDht(DhtData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_with_header.entry.address().to_string(),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
@@ -48,7 +48,7 @@ fn publish_crud_meta(
         network_state,
         ProtocolWrapper::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_address.to_string(),
             attribute: STATUS_NAME.to_string(),
@@ -64,7 +64,7 @@ fn publish_crud_meta(
         network_state,
         ProtocolWrapper::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_address.to_string(),
             attribute: LINK_NAME.to_string(),
@@ -94,7 +94,7 @@ fn publish_link_meta(
         network_state,
         ProtocolWrapper::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
             address: link.base().to_string(),
             attribute: String::from("link"),

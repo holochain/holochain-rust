@@ -313,6 +313,7 @@ pub mod tests {
     use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
+    use holochain_wasm_utils::wasm_target_dir;
     use std::{fs::File, io::Write};
     use tempfile::tempdir;
     use test_utils::*;
@@ -659,13 +660,13 @@ pub mod tests {
 
     fn callee_dna() -> Dna {
         let wat = &callee_wat();
-        let mut dna = create_test_dna_with_wat("greeter", "public", Some(wat));
+        let mut dna = create_test_dna_with_wat("greeter", "test_cap", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
         dna.zomes
             .get_mut("greeter")
             .unwrap()
             .capabilities
-            .get_mut("public")
+            .get_mut("test_cap")
             .unwrap()
             .functions
             .push(dna::capabilities::FnDeclaration {
@@ -676,15 +677,27 @@ pub mod tests {
                     parameter_type: String::from("String"),
                 }],
             });
+        dna.zomes.get_mut("greeter").unwrap().functions.insert(
+            String::from("hello"),
+            dna::capabilities::FnDeclaration {
+                name: String::from("hello"),
+                inputs: vec![],
+                outputs: vec![dna::capabilities::FnParameter {
+                    name: String::from("greeting"),
+                    parameter_type: String::from("String"),
+                }],
+            },
+        );
         dna
     }
 
     fn caller_dna() -> Dna {
-        let wasm = create_wasm_from_file(
-            "test-bridge-caller/target/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
-        );
-        let capabability = create_test_cap_with_fn_name("call_bridge");
-        let mut dna = create_test_dna_with_cap("main", "main", &capabability, &wasm);
+        let wasm = create_wasm_from_file(&format!(
+            "{}/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
+            wasm_target_dir("container_api/", "test-bridge-caller/"),
+        ));
+        let defs = create_test_defs_with_fn_name("call_bridge");
+        let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
         dna
     }
@@ -703,9 +716,9 @@ pub mod tests {
             .write()
             .unwrap()
             .call(
-                "main",
+                "test_zome",
                 Some(dna::capabilities::CapabilityCall::new(
-                    String::from("main"),
+                    String::from("test_cap"),
                     Address::from("fake_token"),
                     None,
                 )),

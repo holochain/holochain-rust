@@ -18,6 +18,8 @@ pub mod tests {
         entry::Entry,
         json::RawString,
     };
+
+    use holochain_wasm_utils::wasm_target_dir;
     use std::{collections::BTreeMap, sync::Arc};
     use test_utils::*;
 
@@ -29,8 +31,10 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_dna() -> Dna {
         // Setup the holochain instance
-        let wasm =
-            create_wasm_from_file("src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm");
+        let wasm = create_wasm_from_file(&format!(
+            "{}/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
+            wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
+        ));
 
         let defs = (BTreeMap::new(), BTreeMap::new());
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);

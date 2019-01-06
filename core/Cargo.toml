@@ -17,14 +17,14 @@ multihash = "0.8.0"
 bitflags = "1.0"
 holochain_wasm_utils = { path = "../wasm_utils"}
 failure = "0.1.3"
-futures-preview = "0.3.0-alpha.10"
+futures-preview = "0.3.0-alpha.11"
 lazy_static = "1.1.0"
 unwrap_to = "0.1.0"
 num-traits = "0.2"
 num-derive = "0.2"
 config = "0.8"
 regex = "1"
-toml="0.4.8"
+toml = "0.4.8"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_cas_implementations = { path = "../cas_implementations" }
@@ -38,4 +38,4 @@ globset = "0.4.2"
 [dev-dependencies]
 wabt = "0.7.2"
 test_utils = { path = "../test_utils"}
-tempfile="3"
+tempfile = "3"

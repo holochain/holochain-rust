@@ -15,5 +15,5 @@ extern crate holochain_net;
 extern crate tempfile;
 
 mod config;
-pub mod habitat;
+pub mod js_test_container;
 mod waiter;

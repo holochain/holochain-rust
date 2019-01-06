@@ -1,7 +1,7 @@
 const tape = require('tape')
 const { pollFor } = require('./util')
 
-const { Config, Habitat, Scenario } = require('../../nodejs_container')
+const { Config, Container, Scenario } = require('../../nodejs_container')
 
 const dnaPath = "./dist/app_spec.hcpkg"
 

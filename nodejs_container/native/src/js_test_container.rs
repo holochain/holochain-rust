@@ -1,7 +1,7 @@
 use colored::*;
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::Container,
+    container::Container as RustContainer,
 };
 use holochain_core::signal::signal_channel;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
@@ -16,8 +16,8 @@ use crate::{
     waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask},
 };
 
-pub struct Habitat {
-    container: Container,
+pub struct TestContainer {
+    container: RustContainer,
     sender_tx: Option<SyncSender<SyncSender<ControlMsg>>>,
     is_running: Arc<Mutex<bool>>,
 }
@@ -32,7 +32,7 @@ declare_types! {
     /// A Container can be initialized either by:
     /// - an Object representation of a Configuration struct
     /// - a string representing TOML
-    pub class JsHabitat for Habitat {
+    pub class JsTestContainer for TestContainer {
         init(mut cx) {
             let config_arg: Handle<JsValue> = cx.argument(0)?;
             let config: Configuration = if config_arg.is_a::<JsObject>() {
@@ -43,10 +43,10 @@ declare_types! {
             } else {
                 panic!("Invalid type specified for config, must be object or string");
             };
-            let container = Container::from_config(config);
+            let container = RustContainer::from_config(config);
             let is_running = Arc::new(Mutex::new(false));
 
-            Ok(Habitat { container, sender_tx: None, is_running })
+            Ok(TestContainer { container, sender_tx: None, is_running })
         }
 
         method start(mut cx) {
@@ -63,16 +63,16 @@ declare_types! {
 
             let start_result: Result<(), String> = {
                 let guard = cx.lock();
-                let hab = &mut *this.borrow_mut(&guard);
-                hab.sender_tx = Some(sender_tx);
+                let tc = &mut *this.borrow_mut(&guard);
+                tc.sender_tx = Some(sender_tx);
                 {
-                    let mut is_running = hab.is_running.lock().unwrap();
+                    let mut is_running = tc.is_running.lock().unwrap();
                     *is_running = true;
                 }
-                let background_task = MainBackgroundTask::new(signal_rx, sender_rx, hab.is_running.clone());
+                let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone());
                 background_task.schedule(js_callback);
-                hab.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
-                    hab.container.start_all_instances().map_err(|e| e.to_string())
+                tc.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
+                    tc.container.start_all_instances().map_err(|e| e.to_string())
                 })
             };
 
@@ -89,12 +89,12 @@ declare_types! {
 
             let stop_result: Result<(), String> = {
                 let guard = cx.lock();
-                let hab = &mut *this.borrow_mut(&guard);
+                let tc = &mut *this.borrow_mut(&guard);
 
-                let mut is_running = hab.is_running.lock().unwrap();
+                let mut is_running = tc.is_running.lock().unwrap();
                 *is_running = false;
 
-                let result = hab.container.shutdown().map_err(|e| e.to_string());
+                let result = tc.container.shutdown().map_err(|e| e.to_string());
                 result
             };
 
@@ -118,13 +118,13 @@ declare_types! {
 
             let call_result = {
                 let guard = cx.lock();
-                let hab = &mut *this.borrow_mut(&guard);
+                let tc = &mut *this.borrow_mut(&guard);
                 let cap = Some(CapabilityCall::new(
                     cap_name.to_string(),
                     Address::from(""), //FIXME
                     None,
                 ));
-                let instance_arc = hab.container.instances().get(&instance_id)
+                let instance_arc = tc.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
                 instance.call(&zome, cap, &fn_name, &params)
@@ -146,12 +146,12 @@ declare_types! {
             let this = cx.this();
             {
                 let guard = cx.lock();
-                let hab = &*this.borrow(&guard);
+                let tc = &*this.borrow(&guard);
 
                 let (tx, rx) = sync_channel(0);
                 let task = CallBlockingTask { rx };
                 task.schedule(js_callback);
-                hab
+                tc
                     .sender_tx
                     .as_ref()
                     .expect("Container sender channel not initialized")
@@ -166,8 +166,8 @@ declare_types! {
             let this = cx.this();
             let result = {
                 let guard = cx.lock();
-                let hab = this.borrow(&guard);
-                let instance = hab.container.instances().get(&instance_id)
+                let tc = this.borrow(&guard);
+                let instance = tc.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id))
                     .read().unwrap();
                 let out = instance.context().state().ok_or("No state?".to_string())
@@ -189,6 +189,6 @@ declare_types! {
 register_module!(mut m, {
     m.export_function("makeConfig", js_make_config)?;
     m.export_function("makeInstanceId", js_instance_id)?;
-    m.export_class::<JsHabitat>("Habitat")?;
+    m.export_class::<JsTestContainer>("TestContainer")?;
     Ok(())
 });

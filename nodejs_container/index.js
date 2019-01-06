@@ -5,7 +5,8 @@ const path = require('path');
 // deals with ensuring the correct version for the machine/node version
 const binding_path = binary.find(path.resolve(path.join(__dirname, './package.json')));
 
-const { makeInstanceId, makeConfig, Habitat } = require(binding_path);
+const { makeInstanceId, makeConfig, TestContainer: Container } = require(binding_path);
+
 
 const promiser = (fulfill, reject) => (err, val) => {
     if (err) {
@@ -31,22 +32,22 @@ const Config = {
 
 /////////////////////////////////////////////////////////////
 
-Habitat.prototype._start = Habitat.prototype.start
-Habitat.prototype._stop = Habitat.prototype.stop
-Habitat.prototype._callRaw = Habitat.prototype.call
+Container.prototype._start = Container.prototype.start
+Container.prototype._stop = Container.prototype.stop
+Container.prototype._callRaw = Container.prototype.call
 
-Habitat.prototype.start = function () {
+Container.prototype.start = function () {
     this._stopPromise = new Promise((fulfill, reject) => {
         this._start(promiser(fulfill, reject))
     })
 }
 
-Habitat.prototype.stop = function () {
+Container.prototype.stop = function () {
     this._stop()
     return this._stopPromise
 }
 
-Habitat.prototype._call = function (id, zome, trait, fn, params) {
+Container.prototype._call = function (id, zome, trait, fn, params) {
     const stringInput = JSON.stringify(params);
     const rawResult = this._callRaw(id, zome, trait, fn, stringInput);
     let result;
@@ -59,12 +60,12 @@ Habitat.prototype._call = function (id, zome, trait, fn, params) {
     return result;
 }
 
-Habitat.prototype.call = function (...args) {
+Container.prototype.call = function (...args) {
     this.register_callback(() => console.log("Another call well done"))
     return this._call(...args)
 }
 
-Habitat.prototype.callWithPromise = function (...args) {
+Container.prototype.callWithPromise = function (...args) {
     const promise = new Promise((fulfill, reject) => {
         this.register_callback(() => fulfill(result))
     })
@@ -72,7 +73,7 @@ Habitat.prototype.callWithPromise = function (...args) {
     return [result, promise]
 }
 
-Habitat.prototype.callSync = function (...args) {
+Container.prototype.callSync = function (...args) {
     const [result, promise] = this.callWithPromise(...args)
     return promise
         .catch(err => console.error("Error with scenario test system: ", err))
@@ -81,7 +82,7 @@ Habitat.prototype.callSync = function (...args) {
 
 // Convenience function for making an object that can call into the container
 // in the context of a particular instance. This may be temporary.
-Habitat.prototype.makeCaller = function (agentId, dnaPath) {
+Container.prototype.makeCaller = function (agentId, dnaPath) {
   const instanceId = makeInstanceId(agentId, dnaPath)
   return {
     call: (zome, cap, fn, params) => this.call(instanceId, zome, cap, fn, params),
@@ -89,13 +90,13 @@ Habitat.prototype.makeCaller = function (agentId, dnaPath) {
   }
 }
 
-Habitat.withInstances = function (...instances) {
+Container.withInstances = function (...instances) {
     const networkName = `auto-mock-network-${this._nextMock++}`
     const config = makeConfig(networkName, instances)
-    return new Habitat(config)
+    return new Container(config)
 }
-// counter to give a unique mock network name for each new Habitat
-Habitat._nextMock = 1
+// counter to give a unique mock network name for each new Container
+Container._nextMock = 1
 
 /////////////////////////////////////////////////////////////
 
@@ -122,8 +123,8 @@ class Scenario {
      *      })
      */
     run(fn) {
-        const hab = Habitat.withInstances(...this.instances)
-        hab.start()
+        const container = Container.withInstances(...this.instances)
+        container.start()
         const callers = {}
         this.instances.forEach(instance => {
             const id = makeInstanceId(instance.agent.name, instance.dna.path)
@@ -132,13 +133,13 @@ class Scenario {
                 throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
             }
             callers[name] = {
-                call: (...args) => hab.call(id, ...args),
-                callSync: (...args) => hab.callSync(id, ...args),
-                callWithPromise: (...args) => hab.callWithPromise(id, ...args),
-                agentId: hab.agent_id(id)
+                call: (...args) => container.call(id, ...args),
+                callSync: (...args) => container.callSync(id, ...args),
+                callWithPromise: (...args) => container.callWithPromise(id, ...args),
+                agentId: container.agent_id(id)
             }
         })
-        fn(() => hab.stop(), callers)
+        fn(() => container.stop(), callers)
     }
 
     runTape(tape, description, fn) {
@@ -154,4 +155,4 @@ class Scenario {
 
 /////////////////////////////////////////////////////////////
 
-module.exports = { Config, Habitat, Scenario };
+module.exports = { Config, Container, Scenario };

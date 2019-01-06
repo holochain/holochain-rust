@@ -32,7 +32,6 @@ pub mod tests {
     use test_utils::*;
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn get_entry_roundtrip() {
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.uuid = String::from("get_entry_roundtrip");
@@ -59,7 +58,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn get_non_existant_entry() {
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.uuid = String::from("get_non_existant_entry");
@@ -75,7 +73,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn get_when_alone() {
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.uuid = String::from("get_when_alone");
@@ -90,7 +87,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn get_validation_package_roundtrip() {
         let wat = &test_wat_always_valid();
 
@@ -117,7 +113,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn get_links_roundtrip() {
         let wat = &test_wat_always_valid();
 

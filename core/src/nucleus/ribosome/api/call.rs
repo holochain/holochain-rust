@@ -418,7 +418,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_call_no_zome() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
         let test_setup = setup_test(dna);
@@ -440,7 +439,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_call_public() {
         let dna = setup_dna_for_cap_test(CapabilityType::Public);
         let test_setup = setup_test(dna);
@@ -450,7 +448,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_call_transferable() {
         let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
         let test_setup = setup_test(dna);
@@ -479,7 +476,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_call_assigned() {
         let dna = setup_dna_for_cap_test(CapabilityType::Assigned);
         let test_setup = setup_test(dna);
@@ -520,7 +516,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_agent_as_token() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
         let test_setup = setup_test(dna);

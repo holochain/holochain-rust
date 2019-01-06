@@ -118,7 +118,6 @@ pub mod tests {
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn get_entry_from_dht_cas() {
         let entry = test_entry();
         let context = test_context_with_state();

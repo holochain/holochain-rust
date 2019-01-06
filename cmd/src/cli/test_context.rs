@@ -2,6 +2,7 @@ use holochain_container_api::context_builder::ContextBuilder;
 use holochain_core::{context::Context, logger::Logger};
 use holochain_core_types::agent::AgentId;
 use std::sync::{Arc, Mutex};
+use holochain_core::context::mock_mock_network_config;
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {
@@ -31,6 +32,7 @@ pub fn test_context(agent_name: &str) -> Arc<Context> {
             .with_agent(agent)
             .with_logger(test_logger())
             .with_memory_storage()
+            .with_network_config(mock_mock_network_config())
             .spawn(),
     )
 }

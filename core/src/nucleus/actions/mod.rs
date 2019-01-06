@@ -114,7 +114,6 @@ pub mod tests {
 
     // smoke test just to make sure our testing code works.
     #[test]
-    #[cfg(feature = "broken-tests")]
     pub fn can_instantiate_test_instance() {
         let (instance, _context) = instance();
         assert!(instance.state().nucleus().has_initialized());

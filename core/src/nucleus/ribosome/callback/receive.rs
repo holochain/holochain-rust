@@ -57,7 +57,6 @@ pub fn receive(
 }
 
 #[cfg(test)]
-#[cfg(feature = "broken-tests")]
 pub mod tests {
 
     use super::receive;

@@ -15,7 +15,6 @@ pub fn genesis(
 }
 
 #[cfg(test)]
-#[cfg(feature = "broken-tests")]
 pub mod tests {
 
     use super::genesis;

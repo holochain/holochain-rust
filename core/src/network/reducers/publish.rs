@@ -174,7 +174,6 @@ mod tests {
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     pub fn reduce_publish_test() {
         let context = test_context("alice");
         let store = test_store(context.clone());

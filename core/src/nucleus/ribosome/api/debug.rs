@@ -36,7 +36,6 @@ pub mod tests {
 
     /// test that bytes passed to debug end up in the log
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_zome_api_function_debug() {
         let (call_result, context) =
             test_zome_api_function(ZomeApiFunction::Debug.as_str(), test_args_bytes());

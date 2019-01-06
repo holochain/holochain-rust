@@ -6,10 +6,6 @@ package-lock.json
 **/*.rs.bk
 **/Cargo.lock
 Cargo.lock
-core/src/nucleus/ribosome/target
-core/src/nucleus/wasm-test/target
-core/src/nucleus/actions/wasm-test/target
-test_utils/target
 net_ipc/tests/node-p2p-ipc
 build_docs_key
 *.orig

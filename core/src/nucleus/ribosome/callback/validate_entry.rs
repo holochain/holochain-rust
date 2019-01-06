@@ -61,6 +61,14 @@ pub fn validate_entry(
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(CallbackResult::Pass),
 
+        // TODO: actually check agent against app specific membrane validation rule
+        // like for instance: validate_agent_id(
+        //                      entry.clone(),
+        //                      validation_data,
+        //                      context,
+        //                    )?
+        EntryType::AgentId => Ok(CallbackResult::Pass),
+
         _ => Ok(CallbackResult::NotImplemented),
     }
 }

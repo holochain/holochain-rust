@@ -80,6 +80,7 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             logger_type: "debug".to_string(),
             rules: LogRules::new(),
         },
+        ..Default::default()
     };
     config
 }

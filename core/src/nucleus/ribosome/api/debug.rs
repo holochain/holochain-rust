@@ -40,9 +40,9 @@ pub mod tests {
             call_result
         );
         assert_eq!(JsonString::null(), call_result,);
-        assert_eq!(
-            JsonString::from("[\"debug/dna: \\\'foo\\\'\", \"debug/zome: Zome Function \\\'test\\\' returned: Success\"]"),
-            JsonString::from(format!("{}", (*context.logger.lock().unwrap()).dump())),
-        );
+        let expected_in_log =
+       "\"debug/dna: \\\'foo\\\'\", \"debug/zome: Zome Function \\\'test\\\' returned: Success\"";
+        let log_contents = format!("{}", (*context.logger.lock().unwrap()).dump());
+        assert!(log_contents.contains(expected_in_log));
     }
 }

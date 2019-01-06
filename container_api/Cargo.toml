@@ -22,6 +22,9 @@ petgraph = "0.4.13"
 colored = "1.6"
 regex = "1"
 serde_regex = "0.3.1"
+holochain_net_connection = { path = "../net_connection" }
+holochain_net_ipc = { path = "../net_ipc" }
+maplit = "1.0.1"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

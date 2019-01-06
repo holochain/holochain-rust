@@ -137,7 +137,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn returns_ok_if_base_is_present() {
         let (instance, context) = create_test_instance();
 
@@ -161,7 +160,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn errors_with_wrong_tag() {
         let (instance, context) = create_test_instance();
 
@@ -184,7 +182,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn works_with_linked_from_defined_link() {
         let (instance, context) = create_test_instance();
 

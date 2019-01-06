@@ -21,4 +21,3 @@ impl Interface for HttpInterface {
         Ok(())
     }
 }
-

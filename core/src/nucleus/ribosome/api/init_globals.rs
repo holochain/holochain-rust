@@ -65,7 +65,6 @@ pub mod tests {
     use std::convert::TryFrom;
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     /// test that bytes passed to debug end up in the log
     fn test_init_globals() {
         let input: Vec<u8> = vec![];

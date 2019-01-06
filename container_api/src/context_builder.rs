@@ -131,6 +131,7 @@ impl ContextBuilder {
             chain_storage,
             dht_storage,
             eav_storage,
+            // self.network_config.unwrap(),
             self.network_config.unwrap_or(JsonString::from(String::from(
                 P2pConfig::DEFAULT_MOCK_CONFIG,
             ))),
@@ -142,8 +143,11 @@ impl ContextBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::context_builder::ContextBuilder;
+    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::json::JsonString;
     use tempfile::tempdir;
+    use holochain_net::p2p_config::P2pConfig;
 
     #[test]
     fn vanilla() {
@@ -164,7 +168,7 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG));
+        let net = JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_MOCK_CONFIG));
         let context = ContextBuilder::new()
             .with_network_config(net.clone())
             .spawn();

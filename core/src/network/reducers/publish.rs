@@ -172,10 +172,15 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use crate::instance::tests::test_context_with_channels;
+    use std::sync::mpsc::sync_channel;
 
     #[test]
     pub fn reduce_publish_test() {
-        let context = test_context("alice");
+        let (action_send, action_receive) = sync_channel(2);
+        let (observer_send, observer_receive) = sync_channel(2);
+
+        let context = test_context_with_channels("alice", &action_send, &observer_send);
         let store = test_store(context.clone());
 
         let entry = test_entry();

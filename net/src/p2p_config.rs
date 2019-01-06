@@ -85,20 +85,21 @@ impl P2pConfig {
             .expect("file is not a proper JSON of a P2pConfig struct")
     }
 
-    pub fn default_mock(network_name: &str) -> Self {
-        P2pConfig::from_str(&P2pConfig::default_mock_config(network_name))
-            .expect("Invalid backend_config json on P2pConfig creation.")
-    }
-
     pub fn default_ipc() -> Self {
         P2pConfig::from_str(P2pConfig::DEFAULT_IPC_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
-}
 
-// statics
-impl P2pConfig {
-    pub fn default_mock_config(network_name: &str) -> String {
+    pub fn default_mock() -> Self {
+        Self::named_mock("default-mock")
+    }
+
+    pub fn named_mock(network_name: &str) -> Self {
+        P2pConfig::from_str(&Self::named_mock_config(network_name))
+            .expect("Invalid backend_config json on P2pConfig creation.")
+    }
+
+    pub fn named_mock_config(network_name: &str) -> String {
         format!(
             r#"{{
     "backend_kind": "MOCK",
@@ -109,6 +110,17 @@ impl P2pConfig {
             network_name
         )
     }
+}
+
+// statics
+impl P2pConfig {
+    pub const DEFAULT_MOCK_CONFIG: &'static str = r#"
+    {
+        "backend_kind": "MOCK",
+        "backend_config": {
+            "networkName": "default-mock"
+        }
+    }"#;
 
     pub const DEFAULT_IPC_CONFIG: &'static str = r#"
     {
@@ -132,15 +144,11 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let p2p_config =
-            P2pConfig::from_str(&P2pConfig::default_mock_config("it_can_json_round_trip")).unwrap();
+        let p2p_config = P2pConfig::from_str(P2pConfig::DEFAULT_MOCK_CONFIG).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);
-        assert_eq!(
-            p2p_config,
-            P2pConfig::default_mock("it_can_json_round_trip")
-        );
+        assert_eq!(p2p_config, P2pConfig::default_mock());
     }
 
     #[test]

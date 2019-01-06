@@ -86,11 +86,7 @@ mod tests {
 
     #[test]
     fn it_should_create_mock() {
-        let mut res = P2pNetwork::new(
-            Box::new(|_r| Ok(())),
-            &P2pConfig::default_mock("TODO give unique string"),
-        )
-        .unwrap();
+        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::default_mock()).unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

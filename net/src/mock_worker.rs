@@ -349,7 +349,7 @@ mod tests {
     fn it_mock_networker_flow() {
         // -- setup client 1 -- //
 
-        let config = &JsonString::from(P2pConfig::default_mock_config("it_mock_networker_flow"));
+        let config = &JsonString::from(P2pConfig::named_mock_config("it_mock_networker_flow"));
 
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
 

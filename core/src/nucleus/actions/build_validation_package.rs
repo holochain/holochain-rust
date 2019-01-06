@@ -214,7 +214,6 @@ mod tests {
     use holochain_core_types::validation::ValidationPackage;
 
     #[test]
-    #[cfg(feature = "broken-test")]
     fn test_building_validation_package_entry() {
         let (_instance, context) = instance();
 
@@ -243,7 +242,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_building_validation_package_chain_entries() {
         let (_instance, context) = instance();
 
@@ -271,7 +269,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_building_validation_package_chain_headers() {
         let (_instance, context) = instance();
 
@@ -299,7 +296,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     fn test_building_validation_package_chain_full() {
         let (_instance, context) = instance();
 

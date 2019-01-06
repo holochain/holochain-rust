@@ -164,7 +164,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")]
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
         let wasm = test_get_round_trip_wat();

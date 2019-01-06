@@ -103,6 +103,7 @@ extern crate boolinator;
 #[cfg(test)]
 extern crate holochain_wasm_utils;
 extern crate jsonrpc_ws_server;
+extern crate jsonrpc_http_server;
 extern crate petgraph;
 extern crate serde_json;
 #[cfg(test)]

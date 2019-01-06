@@ -438,6 +438,14 @@ pub mod tests {
     id = "app spec instance"
 
     [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
     id = "app spec domainsocket interface"
     [interfaces.driver]
     type = "domainsocket"
@@ -495,6 +503,14 @@ pub mod tests {
     [interfaces.driver]
     type = "websocket"
     port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
     [[interfaces.instances]]
     id = "app spec instance"
 

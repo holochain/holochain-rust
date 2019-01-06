@@ -404,6 +404,16 @@ pub mod tests {
     [[interfaces.instances]]
     id = "test-instance-2"
 
+    [[interfaces]]
+    id = "test-interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "test-instance-1"
+    [[interfaces.instances]]
+    id = "test-instance-2"
+
     [[bridges]]
     caller_id = "test-instance-2"
     callee_id = "test-instance-1"

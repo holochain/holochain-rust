@@ -10,14 +10,13 @@ use crate::{
     hash::HashString,
     json::JsonString,
 };
+use chrono::{offset::Utc, DateTime};
 use im::hashmap::HashMap;
 use objekt;
 use std::{
     convert::TryInto,
     sync::{Arc, RwLock},
 };
-use chrono::DateTime;
-use chrono::offset::Utc;
 
 use regex::RegexBuilder;
 use std::fmt::Debug;
@@ -41,7 +40,7 @@ pub type Value = Address;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson,Default)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default)]
 pub struct EntityAttributeValue {
     entity: Entity,
     attribute: Attribute,
@@ -51,65 +50,56 @@ pub struct EntityAttributeValue {
 }
 
 #[derive(Clone)]
-pub enum Action
-{
+pub enum Action {
     insert,
     delete,
     update,
-    None
+    None,
 }
 
-impl ToString for Action
-{
-    fn to_string(&self) ->String
-    {
-        match self
-        {
+impl ToString for Action {
+    fn to_string(&self) -> String {
+        match self {
             insert => String::from("Action"),
             delete => String::from("Delete"),
-            update => String::from("Update")
+            update => String::from("Update"),
         }
     }
 }
 
 impl From<String> for Action {
     fn from(action: String) -> Self {
-        if action == String::from("Insert")
-        {
+        if action == String::from("Insert") {
             Action::insert
-        }
-        else if action == String::from("Delete")
-        {
+        } else if action == String::from("Delete") {
             Action::delete
-        }
-        else if action ==String::from("Update")
-        {
+        } else if action == String::from("Update") {
             Action::update
-        }
-        else
-        {
+        } else {
             Action::None
         }
-
     }
 }
 
-pub fn create_key(action:Action) ->Result<HashString,HolochainError>
-{
-   let unix_time = Utc::now().timestamp();
-   let key = vec![unix_time.to_string(),action.to_string()].join("_");
-   Ok(HashString::from(key))
-   
+pub fn create_key(action: Action) -> Result<HashString, HolochainError> {
+    let unix_time = Utc::now().timestamp();
+    let key = vec![unix_time.to_string(), action.to_string()].join("_");
+    Ok(HashString::from(key))
 }
 
-pub fn from_key(key:HashString) ->Result<(i64,Action),HolochainError>
-{
+pub fn from_key(key: HashString) -> Result<(i64, Action), HolochainError> {
     let string_key = key.to_string();
     let split = string_key.split("-").collect::<Vec<&str>>();
     let mut split_iter = split.iter();
-    let timestamp = split_iter.next().ok_or(HolochainError::ErrorGeneric("Could not get timestamp".to_string()))?;
-    let action = split_iter.next().ok_or(HolochainError::ErrorGeneric("Could not get action".to_string()))?;
-    let unix_timestamp = timestamp.parse::<i64>().map_err(|_|HolochainError::ErrorGeneric("Could not get action".to_string()))?;
+    let timestamp = split_iter.next().ok_or(HolochainError::ErrorGeneric(
+        "Could not get timestamp".to_string(),
+    ))?;
+    let action = split_iter.next().ok_or(HolochainError::ErrorGeneric(
+        "Could not get action".to_string(),
+    ))?;
+    let unix_timestamp = timestamp
+        .parse::<i64>()
+        .map_err(|_| HolochainError::ErrorGeneric("Could not get action".to_string()))?;
     Ok((unix_timestamp, Action::from(action.clone().to_string())))
 }
 
@@ -192,13 +182,12 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
 
     fn fetch_eav_range(
         &self,
-        start_date : Option<DateTime<Utc>>,
-        end_date : Option<DateTime<Utc>>,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>;
-
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -287,16 +276,14 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
 
     fn fetch_eav_range(
         &self,
-        start_date : Option<DateTime<Utc>>,
-        end_date : Option<DateTime<Utc>>,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>
-    {
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
         unimplemented!("Could not implment eav on range")
     }
-
 }
 
 pub fn test_eav_entity() -> Entry {
@@ -328,9 +315,7 @@ pub fn test_eav_address() -> Address {
     test_eav().address()
 }
 
-
-fn create_hash() ->HashString
-{
+fn create_hash() -> HashString {
     HashString::from("")
 }
 
@@ -362,11 +347,7 @@ pub fn eav_round_trip_test_runner(
     eav_storage.add_eav(&eav).expect("could not add eav");
 
     let mut expected = HashMap::new();
-    let key = vec![
-        create_hash().to_string(),
-        eav.address().to_string(),
-    ]
-    .join("_");
+    let key = vec![create_hash().to_string(), eav.address().to_string()].join("_");
     expected.insert(HashString::from(key), eav.clone());
     // some examples of constraints that should all return the eav
     for (e, a, v) in vec![

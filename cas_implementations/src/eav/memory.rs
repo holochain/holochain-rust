@@ -1,12 +1,15 @@
+use chrono::{offset::Utc, DateTime};
 use holochain_core_types::{
     cas::content::AddressableContent,
-    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value,Action,create_key,from_key},
+    eav::{
+        create_key, from_key, Action, Attribute, Entity, EntityAttributeValue,
+        EntityAttributeValueStorage, Value,
+    },
     error::HolochainError,
     hash::HashString,
 };
 use im::hashmap::HashMap;
 use std::sync::{Arc, RwLock};
-use chrono::{offset::Utc, DateTime};
 
 use uuid::Uuid;
 
@@ -26,12 +29,10 @@ impl EavMemoryStorage {
     pub fn new() -> EavMemoryStorage {
         EavMemoryStorage {
             storage: Arc::new(RwLock::new(HashMap::new())),
-            id: Uuid::new_v4()
+            id: Uuid::new_v4(),
         }
     }
 }
-
-
 
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
@@ -61,29 +62,32 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
 
     fn fetch_eav_range(
         &self,
-        start_date : Option<DateTime<Utc>>,
-        end_date : Option<DateTime<Utc>>,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>
-    {
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?.clone();
         Ok(map
             .into_iter()
-            .filter(|(k, _)| 
-            {
-                start_date.map(|start|{
-                    let (unix_time,_) = from_key(k.clone()).unwrap_or((i64::min_value(),Action::None));
-                    unix_time > start.timestamp()
-                }).unwrap_or(true)
+            .filter(|(k, _)| {
+                start_date
+                    .map(|start| {
+                        let (unix_time, _) =
+                            from_key(k.clone()).unwrap_or((i64::min_value(), Action::None));
+                        unix_time > start.timestamp()
+                    })
+                    .unwrap_or(true)
             })
-            .filter(|(k, _)| 
-            {
-                end_date.map(|end|{
-                    let (unix_time,_) = from_key(k.clone()).unwrap_or((i64::max_value(),Action::None));
-                    unix_time < end.timestamp()
-                }).unwrap_or(true)
+            .filter(|(k, _)| {
+                end_date
+                    .map(|end| {
+                        let (unix_time, _) =
+                            from_key(k.clone()).unwrap_or((i64::max_value(), Action::None));
+                        unix_time < end.timestamp()
+                    })
+                    .unwrap_or(true)
             })
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|(_, e)| {
@@ -92,7 +96,6 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<HashMap<HashString, EntityAttributeValue>>())
     }
-    
 }
 
 #[cfg(test)]

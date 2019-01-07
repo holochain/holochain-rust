@@ -14,9 +14,8 @@ extern crate uuid;
 extern crate serde;
 extern crate serde_json;
 
-
-extern crate im;
 extern crate chrono;
+extern crate im;
 
 pub mod cas;
 pub mod eav;

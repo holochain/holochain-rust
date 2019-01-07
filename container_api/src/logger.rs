@@ -5,7 +5,7 @@ use holochain_core_types::error::HolochainError;
 use regex::Regex;
 use std::thread;
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LogRule {
     #[serde(with = "serde_regex")]
     pub pattern: Regex,
@@ -15,9 +15,23 @@ pub struct LogRule {
     pub color: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Clone, Default)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LogRules {
     pub rules: Vec<LogRule>,
+}
+
+impl Default for LogRules {
+    fn default() -> LogRules {
+        let mut rules = LogRules::new();
+        rules
+            .add_rule("^err/", false, Some("red".to_string()))
+            .expect("rule is valid");
+        rules
+            .add_rule("^debug/dna", false, Some("white".to_string()))
+            .expect("rule is valid");
+        rules.add_rule(".*", false, None).expect("rule is valid");
+        rules
+    }
 }
 
 impl LogRules {
@@ -151,6 +165,13 @@ pub mod tests {
         assert_eq!(rules.run(id.clone(), "baz".to_string()), None);
         let m = rules.run(id.clone(), "xboy".to_string()).unwrap();
         assert_eq!(m.msg, "xboy");
+    }
+
+    #[test]
+    fn test_log_rules_default() {
+        let rules = LogRules::default();
+        assert_eq!(rules.rules.len(), 3);
+        assert_eq!(format!("{:?}",rules),"LogRules { rules: [LogRule { pattern: ^err/, exclude: false, color: Some(\"red\") }, LogRule { pattern: ^debug/dna, exclude: false, color: Some(\"white\") }, LogRule { pattern: .*, exclude: false, color: None }] }".to_string());
     }
 
     #[test]

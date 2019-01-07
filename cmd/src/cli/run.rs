@@ -61,10 +61,7 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
     };
 
     // temporary log rules, should come from a configuration
-    let mut rules = LogRules::new();
-    rules.add_rule("^err/", false, Some("red".to_string()))?;
-    rules.add_rule("^debug/dna", false, Some("white".to_string()))?;
-    rules.add_rule(".*", false, None)?;
+    let rules = LogRules::new();
     let logger_config = LoggerConfiguration {
         logger_type: "debug".to_string(),
         rules,

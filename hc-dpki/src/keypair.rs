@@ -98,7 +98,7 @@ impl Keypair {
 
             decode_id(&mut client_pk,&mut r_sign_pub,&mut r_enc_pub);
 
-            kx::server_session(&mut enc_pub,&mut enc_priv,&mut r_enc_pub,&mut srv_rx,&mut srv_tx);
+            kx::server_session(&mut enc_pub,&mut enc_priv,&mut r_enc_pub,&mut srv_rx,&mut srv_tx).unwrap();
 
             let mut nonce = SecBuf::with_insecure(16);
             random_secbuf(&mut nonce);
@@ -124,8 +124,8 @@ impl Keypair {
      * @param {Buffer} cipher - the encrypted data
      * @return {Buffer} - the decrypted data
      */
-    pub fn decrypt (&mut self,source_id: &mut SecBuf, cipher_bundle: &Vec<SecBuf>){
-        let c_b_iter = cipher_bundle.to_owned();
+    pub fn decrypt (&mut self,source_id: &mut SecBuf,cipher_bundle:&mut Vec<SecBuf>)->Result<SecBuf,String>{
+        // let &mut cipher_bundle = bundle
         let mut source_id = source_id;
         let mut source_sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut source_enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
@@ -141,20 +141,39 @@ impl Keypair {
         let mut cli_tx = SecBuf::with_secure(kx::SESSIONKEYBYTES);
         kx::client_session(&mut client_enc_pub, &mut client_enc_priv, &mut source_enc_pub, &mut cli_rx,&mut cli_tx).unwrap();
 
-        for i in 0..cipher_bundle.len()-4{
-            if i%2 == 0 {
-                let mut n = &mut c_b_iter[i];
-                let mut c = &mut cipher_bundle[i + 1];
-                // let mut c = SecBuf::with_secure(kx::SESSIONKEYBYTES);
-
-                let mut decrypted_message = SecBuf::with_insecure(c.len() - aead::ABYTES);
-
-                aead::dec(&mut decrypted_message,&mut cli_rx,None,&mut n,&mut c).unwrap();
-
-                println!("{:?}",decrypted_message );
-            }
+        let mut sys_secret_check:Option<SecBuf>= None;
+          
+        while cipher_bundle.len() != 2{
+            let mut n: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
+            let mut c: Vec<_> = cipher_bundle.splice(..1, vec![]).collect(); 
+            let mut n =&mut n[0];
+            let mut c =&mut c[0];
+            let mut sys_secret = SecBuf::with_insecure(c.len() - aead::ABYTES);
+          
+            match aead::dec(&mut sys_secret,&mut cli_rx,None,&mut n,&mut c){
+                Ok(_) => {
+                    sys_secret_check = Some(sys_secret);
+                },
+                Err(_) => {
+                    sys_secret_check = None;
+                }
+            };
         }
 
+        let mut n: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
+        let mut c: Vec<_> = cipher_bundle.splice(..1, vec![]).collect(); 
+        let mut n =&mut n[0];
+        let mut c =&mut c[0];
+        let mut dm = SecBuf::with_insecure(c.len() - aead::ABYTES);
+             
+        if let Some(mut secret) = sys_secret_check{
+            aead::dec(&mut dm,&mut secret,None,&mut n,&mut c).unwrap();
+            Ok(dm)
+        }
+        else{
+            Err("could not decrypt - not a recipient?".to_string())
+        }
+          
     }
 
 }
@@ -176,19 +195,27 @@ mod tests {
         let mut message = SecBuf::with_secure(16);
         random_secbuf(&mut message);
 
-
         let recipient_id = vec![&mut keypair_1.pub_keys];
 
         let mut out = Vec::new();
         keypair_main.encrypt(recipient_id,&mut message,&mut out);
 
-        // for o in out {
-        //     println!("->{:?}",o);
-        // }
-
-        keypair_1.decrypt(&mut keypair_main.pub_keys,&mut out);
-
-        assert!(false);
+        match keypair_1.decrypt(&mut keypair_main.pub_keys,&mut out){
+            Ok(mut dm) => {
+            println!("Decrypted Message: {:?}",dm);
+            let message = message.read_lock();
+            let dm = dm.read_lock();
+            assert_eq!(
+                format!("{:?}", *message),
+                format!("{:?}", *dm)
+            );
+ 
+            },
+            Err(_) => {
+                println!("Error");
+                assert!(false);
+            }
+        };
     }
     #[test]
     fn it_should_sign_message_and_verify() {

@@ -15,6 +15,7 @@ snowflake = "1.2"
 walkdir = "2"
 uuid = { version = "0.7", features = ["v4"] }
 im = "^12.2"
+chrono = "0.4"
 
 [dev-dependencies]
 holochain_core_types = { path = "../core_types" }

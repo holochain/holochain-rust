@@ -16,6 +16,8 @@ use std::{
     convert::TryInto,
     sync::{Arc, RwLock},
 };
+use chrono::DateTime;
+use chrono::offset::Utc;
 
 use regex::RegexBuilder;
 use std::fmt::Debug;
@@ -46,6 +48,49 @@ pub struct EntityAttributeValue {
     value: Value,
     // index: Index,
     // source: Source,
+}
+
+pub enum Action
+{
+    Insert,
+    Delete,
+    Update,
+    None
+}
+
+impl ToString for Action
+{
+    fn to_string(&self) ->String
+    {
+        match self
+        {
+            Insert => String::from("Action"),
+            Delete => String::from("Delete"),
+            Update => String::from("Update")
+        }
+    }
+}
+
+impl From<String> for Action {
+    fn from(action: String) -> Self {
+        if action == String::from("Insert")
+        {
+            Action::Insert
+        }
+        else if action == String::from("Delete")
+        {
+            Action::Delete
+        }
+        else if action ==String::from("Update")
+        {
+            Action::Update
+        }
+        else
+        {
+            Action::None
+        }
+
+    }
 }
 
 impl AddressableContent for EntityAttributeValue {
@@ -125,7 +170,15 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         value: Option<Value>,
     ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>;
 
-    fn get_hash(&self) -> HashString;
+    fn fetch_eav_range(
+        &self,
+        start_date : Option<DateTime<Utc>>,
+        end_date : Option<DateTime<Utc>>,
+        entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>,
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>;
+
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -212,9 +265,18 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             .unthreadable_fetch_eav(entity, attribute, value)
     }
 
-    fn get_hash(&self) -> HashString {
-        HashString::from("")
+    fn fetch_eav_range(
+        &self,
+        start_date : Option<DateTime<Utc>>,
+        end_date : Option<DateTime<Utc>>,
+        entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>,
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>
+    {
+        unimplemented!("Could not implment eav on range")
     }
+
 }
 
 pub fn test_eav_entity() -> Entry {
@@ -246,6 +308,12 @@ pub fn test_eav_address() -> Address {
     test_eav().address()
 }
 
+
+fn create_hash() ->HashString
+{
+    HashString::from("")
+}
+
 pub fn eav_round_trip_test_runner(
     entity_content: impl AddressableContent + Clone,
     attribute: String,
@@ -275,7 +343,7 @@ pub fn eav_round_trip_test_runner(
 
     let mut expected = HashMap::new();
     let key = vec![
-        eav_storage.get_hash().to_string(),
+        create_hash().to_string(),
         eav.address().to_string(),
     ]
     .join("_");

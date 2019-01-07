@@ -19,6 +19,7 @@ holochain_core_types_derive = { path = "../core_types_derive" }
 uuid = { version = "0.7", features = ["v4"] }
 regex = "^1.1"
 im = "^12.2"
+chrono = "0.4"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

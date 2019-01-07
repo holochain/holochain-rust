@@ -239,6 +239,11 @@ where
     }
 }
 
+fn create_hash() ->HashString
+{
+    HashString::from("")
+}
+
 pub struct EavTestSuite;
 
 impl EavTestSuite {
@@ -273,7 +278,7 @@ impl EavTestSuite {
         eav_storage.add_eav(&eav).expect("could not add eav");
 
         let mut expected = HashMap::new();
-        let hash = eav_storage.get_hash();
+        let hash = create_hash();
         let key = vec![hash.to_string(), eav.address().to_string()].join("_");
         expected.insert(HashString::from(key), eav.clone());
         println!("expected");
@@ -335,7 +340,7 @@ impl EavTestSuite {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
             eav_storage.add_eav(&eav).expect("could not add eav");
-            let hash = eav_storage.get_hash();
+            let hash = create_hash();
             let key = vec![hash.to_string(), eav.address().to_string()].join("_");
             expected.insert(HashString::from(key), eav);
         }
@@ -367,7 +372,7 @@ impl EavTestSuite {
                 EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
                     .expect("Could not create eav");
             let key = vec![
-                eav_storage.get_hash().to_string(),
+                create_hash().to_string(),
                 eav.address().to_string(),
             ]
             .join("_");
@@ -407,7 +412,7 @@ impl EavTestSuite {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
             let key = vec![
-                eav_storage.get_hash().to_string(),
+                create_hash().to_string(),
                 eav.address().to_string(),
             ]
             .join("_");
@@ -442,7 +447,7 @@ impl EavTestSuite {
                 EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
                     .expect("Could not create eav");
             let key = vec![
-                eav_storage.get_hash().to_string(),
+                create_hash().to_string(),
                 eav.address().to_string(),
             ]
             .join("_");

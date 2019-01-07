@@ -33,6 +33,7 @@ extern crate maplit;
 extern crate uuid;
 
 extern crate im;
+extern crate chrono;
 
 pub mod cas;
 pub mod chain_header;

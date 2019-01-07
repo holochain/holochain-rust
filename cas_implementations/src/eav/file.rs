@@ -13,6 +13,8 @@ use std::{
 };
 use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
+use chrono::{offset::Utc, DateTime};
+
 
 const ENTITY_DIR: &str = "e";
 const ATTRIBUTE_DIR: &str = "a";
@@ -188,6 +190,13 @@ impl EavFileStorage {
     }
 }
 
+impl EavFileStorage
+{
+      fn get_hash(&self) -> HashString {
+        self.current_hash.clone()
+    }
+}
+
 impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let _guard = self.lock.write()?;
@@ -198,9 +207,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .and_then(|_| self.write_to_hash_file(eav))
     }
 
-    fn get_hash(&self) -> HashString {
-        self.current_hash.clone()
-    }
 
     fn fetch_eav(
         &self,
@@ -260,6 +266,18 @@ impl EntityAttributeValueStorage for EavFileStorage {
                     .collect())
             }
         }
+    }
+
+    fn fetch_eav_range(
+        &self,
+        start_date : Option<DateTime<Utc>>,
+        end_date : Option<DateTime<Utc>>,
+        entity: Option<Entity>,
+        attribute: Option<Attribute>,
+        value: Option<Value>,
+    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>
+    {
+        unimplemented!("Could not implment eav on range")
     }
 }
 

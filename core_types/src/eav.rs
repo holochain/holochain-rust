@@ -41,7 +41,7 @@ pub type Value = Address;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson,Default)]
 pub struct EntityAttributeValue {
     entity: Entity,
     attribute: Attribute,

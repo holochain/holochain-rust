@@ -3,12 +3,13 @@ use holochain_core_types::{
     eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value,Action},
     error::{HcResult, HolochainError},
     hash::HashString,
+    json::JsonString
 };
 use im::hashmap::HashMap;
 use std::{
     fs::{create_dir_all, File, OpenOptions},
     io::{prelude::*, ErrorKind},
-    path::MAIN_SEPARATOR,
+    path::{MAIN_SEPARATOR,Path},
     sync::{Arc, RwLock},
 };
 use uuid::Uuid;
@@ -35,74 +36,30 @@ impl PartialEq for EavFileStorage {
 }
 
 #[warn(unused_must_use)]
-pub fn add_eav_to_hashset(
+pub fn read_eav(
     parent_dir: String,
-    dir_entry: DirEntry,
-    hash: HashString,
-    set: &mut HashMap<HashString, HcResult<String>>,
-) {
+    dir_entry: DirEntry
+) -> HcResult<(HashString, String)> {
     let path = dir_entry.path();
-    let hash_list = read_from_hash_list(parent_dir, hash.clone()).unwrap_or(Vec::new());
-    let dir_entry_name = HashString::from(dir_entry.file_name().to_str().unwrap_or(""));
-    if hash_list.iter().find(|x| **x == dir_entry_name).is_some() {
-        match OpenOptions::new().read(true).open(path) {
-            Ok(mut file) => {
-                let mut content: String = String::new();
-                let _result = file
-                    .read_to_string(&mut content)
-                    .map(|e| {
-                        if e > 0 {
-                            Ok(content)
-                        } else {
-                            Err(HolochainError::IoError(format!(
-                                "Could not read from path {:?}",
-                                path
-                            )))
-                        }
-                    })
-                    .map(|e| {
-                        //find key to use here that is persistent use e
-                        let key =
-                            [hash.to_string(), e.clone().unwrap_or(String::from(""))].join("_");
-                        let new_hash = HashString::from(key);
-                        set.insert(new_hash, e);
-                    });
-            }
-            Err(_) => {
-                set.insert(
-                    hash,
-                    Err(HolochainError::IoError(format!(
-                        "Could not read from path {:?}",
-                        path
-                    ))),
-                );
-            }
-        }
-    } else {
-        ();
-    }
+    let mut file = OpenOptions::new().read(true).open(path)?;
+    let mut content: String = String::new();
+    let _result = file.read_to_string(&mut content)?;
+    let key =get_key_from_path(path)?;
+    Ok((key,content))
 }
 
-fn read_from_hash_list(
-    dir_path: String,
-    current_hash: HashString,
-) -> Result<Vec<HashString>, HolochainError> {
-    let path = vec![dir_path.clone(), current_hash.to_string()].join(&MAIN_SEPARATOR.to_string());
-    let mut file = OpenOptions::new().read(true).open(path)?;
-    let mut file_contents = String::new();
-    file.read_to_string(&mut file_contents)?;
-    let mut hashes = file_contents
-        .split("\n")
-        .map(|s| HashString::from(s))
-        .collect::<Vec<HashString>>();
-    hashes.pop();
-    if hashes.len() > 0 {
-        Ok(hashes)
-    } else {
-        Err(HolochainError::ErrorGeneric(
-            "index does not exist".to_string(),
-        ))
-    }
+fn get_key_from_path(abs_path:&Path) ->HcResult<HashString>
+{
+    let mut path_sections = abs_path.to_str().ok_or(HolochainError::ErrorGeneric("Could not get path section".to_string()))?.split(MAIN_SEPARATOR).collect::<Vec<&str>>();
+    path_sections.reverse();
+    let mut reverse_path_sections = path_sections.iter();
+    reverse_path_sections.next();
+    let action_type = reverse_path_sections.next().ok_or(HolochainError::ErrorGeneric("Cold not get unix_time".to_string()))?;
+    let action = Action::from(action_type.to_string());
+    let unix_time = reverse_path_sections.next().ok_or(HolochainError::ErrorGeneric("Cold not get unix_time".to_string()))?;
+    Ok(HashString::from(vec![unix_time.to_string(),action.to_string()].join("_")))
+
+    
 }
 
 impl EavFileStorage {
@@ -142,7 +99,7 @@ impl EavFileStorage {
         hash: HashString,
         subscript: String,
         eav_constraint: Option<T>,
-    ) -> HashMap<HashString, HcResult<String>>
+    ) -> HcResult<HashMap<HashString, String>>
     where
         T: ToString,
     {
@@ -151,41 +108,29 @@ impl EavFileStorage {
             .unwrap_or(String::new());
         let full_path =
             vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
-        let mut set = HashMap::new();
-        WalkDir::new(full_path.clone())
+        let (eavs,errors) : (Vec<_>, Vec<_>) = WalkDir::new(full_path.clone())
             .into_iter()
-            .for_each(|dir_entry| match dir_entry {
-                Ok(eav_content) => {
-                    add_eav_to_hashset(
-                        self.dir_path.clone(),
-                        eav_content,
-                        self.current_hash.clone(),
-                        &mut set,
-                    );
-                }
-                Err(err) => match err.io_error().unwrap().kind() {
-                    ErrorKind::NotFound => {
-                        ();
-                    }
-                    _ => {
-                        set.insert(
-                            hash.clone(),
-                            Err(HolochainError::ErrorGeneric("Could not obtain".to_string())),
-                        );
-                    }
-                },
+            .map(|dir_entry|
+            dir_entry.map(|walk|{
+              read_eav(self.dir_path.clone(),walk)
+            }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not get eav".to_string()))))
+            .partition(Result::is_ok);
+        if errors.len() >0 
+        {
+            Err(HolochainError::ErrorGeneric("Could not read eavs from directory".to_string()))
+        }
+        else 
+        {
+            let mut hashmap : HashMap<HashString, String> = HashMap::new();
+            eavs.iter().for_each(|s|{
+                let (key,value) = s.clone().unwrap_or((HashString::from(""),String::from("")));
+                hashmap.insert(key,value);
             });
-
-        set
+            Ok(hashmap)
+        }   
     }
 }
 
-impl EavFileStorage
-{
-      fn get_hash(&self) -> HashString {
-        self.current_hash.clone()
-    }
-}
 
 impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
@@ -207,56 +152,36 @@ impl EntityAttributeValueStorage for EavFileStorage {
     ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
         let entity_set =
-            self.read_from_dir::<Entity>(self.current_hash.clone(), ENTITY_DIR.to_string(), entity);
+            self.read_from_dir::<Entity>(self.current_hash.clone(), ENTITY_DIR.to_string(), entity)?;
         let attribute_set = self
             .read_from_dir::<Attribute>(
                 self.current_hash.clone(),
                 ATTRIBUTE_DIR.to_string(),
                 attribute,
-            )
+            )?
             .clone();
-
         let value_set =
-            self.read_from_dir::<Value>(self.current_hash.clone(), VALUE_DIR.to_string(), value);
+            self.read_from_dir::<Value>(self.current_hash.clone(), VALUE_DIR.to_string(), value)?;
 
         let attribute_value_inter = attribute_set.intersection(value_set);
 
         let entity_attribute_value_inter = entity_set.intersection(attribute_value_inter);
-        let maybe_first_error = entity_attribute_value_inter
-            .iter()
-            .find(|(_, e)| e.is_err());
-        if let Some((_, Err(first_error))) = maybe_first_error {
-            return Err(first_error.to_owned());
-        } else {
-            let hopefully_eavs = entity_attribute_value_inter
-                .iter()
-                .cloned()
-                .map(|(hash, maybe_eav_content)| {
-                    // errors filtered out above... unwrap is safe.
-                    (hash, Content::from(maybe_eav_content.unwrap()))
-                })
-                .map(|(hash, content)| (hash, EntityAttributeValue::try_from_content(&content)))
-                .collect::<HashMap<HashString, HcResult<EntityAttributeValue>>>();
-
-            let maybe_first_error = hopefully_eavs.iter().find(|e| e.1.is_err());
-            if let Some((_, Err(first_error))) = maybe_first_error {
-                return Err(first_error.to_owned());
-            } else {
-                Ok(hopefully_eavs
-                    .iter()
-                    .map(|eav| {
-                        let key = vec![
-                            self.current_hash.clone().to_string(),
-                            eav.1.clone().unwrap().address().to_string(),
-                        ]
-                        .join("_");
-
-                        // errors filtered out above... unwrap is safe
-                        (HashString::from(key), eav.1.clone().unwrap())
-                    })
-                    .collect())
-            }
+        let (eav,error) : (HashMap<_,_>,HashMap<_,_>) = entity_attribute_value_inter.into_iter().map(|(hash,content)|{
+            (hash, EntityAttributeValue::try_from_content(&JsonString::from(content)))
+        }).partition(|(_,c)| c.is_ok());
+        if error.len() >0
+        {
+            Err(HolochainError::ErrorGeneric("Error Converting EAVs".to_string()))
         }
+        else  
+        {
+            Ok(eav.
+               into_iter().
+               map(|key_value : (HashString,HcResult<EntityAttributeValue>)|(key_value.0,key_value.1.unwrap_or(EntityAttributeValue::default()))).
+               collect::<HashMap<HashString, EntityAttributeValue>>())
+        }
+        
+        
     }
 
     fn fetch_eav_range(

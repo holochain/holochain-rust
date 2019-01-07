@@ -387,9 +387,10 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 
 /// This can eventually be dependency injected for third party Interface definitions
 fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
-    use interface_impls::websocket::WebsocketInterface;
+    use interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
+        InterfaceDriver::Http { port } => Box::new(HttpInterface::new(port)),
         _ => unimplemented!(),
     }
 }
@@ -493,6 +494,16 @@ pub mod tests {
     [interfaces.driver]
     type = "websocket"
     port = 8888
+    [[interfaces.instances]]
+    id = "test-instance-1"
+    [[interfaces.instances]]
+    id = "test-instance-2"
+
+    [[interfaces]]
+    id = "test-interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
     [[interfaces.instances]]
     id = "test-instance-1"
     [[interfaces.instances]]

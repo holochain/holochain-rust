@@ -168,12 +168,11 @@ fn run() -> HolochainResult<()> {
             dir,
             testfile,
             skip_build,
-        } => cli::test(
-            &std::env::current_dir().map_err(HolochainError::Default)?,
-            &dir,
-            &testfile,
-            skip_build,
-        )
+        } => {
+            let current_path = std::env::current_dir()
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            cli::test(&current_path, &dir, &testfile, skip_build)
+        }
         .map_err(HolochainError::Default)?,
     }
 

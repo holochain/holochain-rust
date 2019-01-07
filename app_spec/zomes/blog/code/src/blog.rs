@@ -1,6 +1,6 @@
 use hdk::{
     self,
-    error::ZomeApiResult,
+    error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
@@ -10,6 +10,7 @@ use hdk::{
     AGENT_ADDRESS,
 };
 use post::Post;
+use std::convert::TryFrom;
 
 pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -22,7 +23,14 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
         num1: num1,
         num2: num2,
     };
-    hdk::call(hdk::THIS_INSTANCE, "summer", "main", "test_token", "sum", call_input.into())
+    hdk::call(
+        hdk::THIS_INSTANCE,
+        "summer",
+        "main",
+        "test_token",
+        "sum",
+        call_input.into(),
+    )
 }
 
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
@@ -61,7 +69,7 @@ pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
     // This allows for pagination.
     // Future versions will also include more parameters for more complex
     // queries.
-    hdk::query( "post".into(), 0, 0)
+    hdk::query("post".into(), 0, 0)
 }
 
 pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
@@ -70,4 +78,30 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
     // Otherwise its a Some(T) or a None
     hdk::get_entry(post_address)
+}
+
+pub fn handle_delete_post(post_address: Address) -> ZomeApiResult<()> {
+    hdk::get_entry(post_address.clone())?;
+
+    hdk::remove_entry(post_address)?;
+
+    Ok(())
+}
+
+pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<()> {
+    let old_entry = hdk::get_entry(post_address.clone())?;
+
+    if let Some(Entry::App(_, json_string)) = old_entry {
+        let post = Post::try_from(json_string)?;
+        let updated_post_entry = Entry::App(
+            "post".into(),
+            Post::new(&new_content, &post.date_created).into(),
+        );
+
+        hdk::update_entry(updated_post_entry, post_address)?;
+
+        Ok(())
+    } else {
+        Err(ZomeApiError::Internal("failed to update post".into()))
+    }
 }

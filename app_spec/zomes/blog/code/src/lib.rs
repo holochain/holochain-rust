@@ -71,6 +71,18 @@ define_zome! {
                 outputs: |post_hashes: ZomeApiResult<Vec<Address>>|,
                 handler: blog::handle_my_posts_as_commited
             }
+
+            delete_post: {
+                inputs: |post_address: Address|,
+                outputs: |post_hashes: ZomeApiResult<()>|,
+                handler: blog::handle_delete_post
+            }
+
+            update_post: {
+                inputs: |post_address: Address, new_content: String|,
+                outputs: |post_hashes: ZomeApiResult<()>|,
+                handler: blog::handle_update_post
+            }
         }
     }
 }

@@ -104,7 +104,7 @@ impl IpcNetWorker {
                 Ok(out)
             }),
             None,
-vec![],
+            vec![],
             default_local_endpoint.to_string(),
         )
     }
@@ -135,30 +135,30 @@ vec![],
                 && spawn_config["args"].is_array()
                 && spawn_config["workDir"].is_string()
                 && spawn_config["env"].is_object())
-                {
+            {
                 bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
             }
             let env: HashMap<String, String> = spawn_config["env"]
-                        .as_object()
-                        .unwrap()
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
-                        .collect();
+                .as_object()
+                .unwrap()
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
+                .collect();
             // create a new IpcNetWorker witch spawns the n3h process
             return IpcNetWorker::priv_new_with_spawn(
-                        handler,
+                handler,
                 spawn_config["cmd"].as_str().unwrap().to_string(),
                 spawn_config["args"]
-                            .as_array()
-                            .unwrap()
-                            .iter()
-                            .map(|i| i.as_str().unwrap_or_default().to_string())
-                            .collect(),
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|i| i.as_str().unwrap_or_default().to_string())
+                    .collect(),
                 spawn_config["workDir"].as_str().unwrap().to_string(),
-                        env,
-                        block_connect,
-                        bootstrap_nodes,
-                    );
+                env,
+                block_connect,
+                bootstrap_nodes,
+            );
         }
         // create a new IpcNetWorker that connects to the given 'ipcUri'
         let uri = config["ipcUri"].as_str().unwrap().to_string();
@@ -173,7 +173,7 @@ vec![],
             }),
             None,
             bootstrap_nodes,
-endpoint,
+            endpoint,
         )
     }
 
@@ -193,7 +193,7 @@ endpoint,
 
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;
-let endpoint = ipc_binding.clone();
+        let endpoint = ipc_binding.clone();
         IpcNetWorker::priv_new(
             handler,
             Box::new(move |h| {
@@ -204,7 +204,7 @@ let endpoint = ipc_binding.clone();
             }),
             kill,
             bootstrap_nodes,
-endpoint,
+            endpoint,
         )
     }
 
@@ -214,7 +214,7 @@ endpoint,
         factory: NetWorkerFactory,
         done: NetShutdown,
         bootstrap_nodes: Vec<String>,
-endpoint: String,
+        endpoint: String,
     ) -> NetResult<Self> {
         let (ipc_sender, ipc_relay_receiver) = mpsc::channel::<Protocol>();
 
@@ -235,7 +235,7 @@ endpoint: String,
             state: "undefined".to_string(),
             last_state_millis: 0.0_f64,
             bootstrap_nodes,
-endpoint,
+            endpoint,
         })
     }
 
@@ -244,7 +244,7 @@ endpoint,
             self.ipc_relay.send(
                 ProtocolWrapper::Connect(ConnectData {
                     address: bs_node.clone().into(),
-        })
+                })
                 .into(),
             )?;
         }

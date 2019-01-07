@@ -8,6 +8,7 @@ extern crate serde_json;
 extern crate tempfile;
 
 use holochain_core_types::cas::content::Address;
+use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
@@ -17,7 +18,6 @@ use holochain_net_connection::{
     },
     NetResult,
 };
-use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use std::{convert::TryFrom, sync::mpsc};
 
 macro_rules! one_let {
@@ -113,7 +113,7 @@ impl IpcNode {
 fn create_config(
     n3h_path: &str,
     maybe_config_filepath: Option<&str>,
-bootstrap_nodes: Vec<String>,
+    bootstrap_nodes: Vec<String>,
 ) -> (P2pConfig, tempfile::TempDir) {
     // Create temp directory
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
@@ -319,23 +319,23 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
 
     // Connect nodes between them
     if can_test_connect {
-    println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
-    node1.p2p_connection.send(
-        ProtocolWrapper::Connect(ConnectData {
-            address: node2_binding.into(),
-        })
-        .into(),
-    )?;
-    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
-    println!("got connect result 1: {:?}", result_1);
-    one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
-        assert_eq!(d.agent_id, AGENT_2);
-    });
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
-    println!("got connect result 2: {:?}", result_2);
-    one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
-        assert_eq!(d.agent_id, AGENT_1);
-    });
+        println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
+        node1.p2p_connection.send(
+            ProtocolWrapper::Connect(ConnectData {
+                address: node2_binding.into(),
+            })
+            .into(),
+        )?;
+        let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+        println!("got connect result 1: {:?}", result_1);
+        one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
+            assert_eq!(d.agent_id, AGENT_2);
+        });
+        let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+        println!("got connect result 2: {:?}", result_2);
+        one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
+            assert_eq!(d.agent_id, AGENT_1);
+        });
     }
     // Send a generic message
     node1.p2p_connection.send(

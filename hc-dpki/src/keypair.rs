@@ -8,6 +8,7 @@ use crate::holochain_sodium::{
 use crate::util::{
     encode_id,
     decode_id,
+    check_if_wrong_secbuf,
 };
 
 pub const SEEDSIZE:usize = 32 as usize;
@@ -125,7 +126,7 @@ impl Keypair {
      * @return {Buffer} - the decrypted data
      */
     pub fn decrypt (&mut self,source_id: &mut SecBuf,cipher_bundle:&mut Vec<SecBuf>)->Result<SecBuf,String>{
-        // let &mut cipher_bundle = bundle
+        // let &mut cipher_bundle = bundle.iter().cloned();
         let mut source_id = source_id;
         let mut source_sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut source_enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
@@ -143,7 +144,8 @@ impl Keypair {
 
         let mut sys_secret_check:Option<SecBuf>= None;
           
-        while cipher_bundle.len() != 2{
+        while cipher_bundle.len() != 2 {
+            println!("Round trip");
             let mut n: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
             let mut c: Vec<_> = cipher_bundle.splice(..1, vec![]).collect(); 
             let mut n =&mut n[0];
@@ -152,7 +154,17 @@ impl Keypair {
           
             match aead::dec(&mut sys_secret,&mut cli_rx,None,&mut n,&mut c){
                 Ok(_) => {
-                    sys_secret_check = Some(sys_secret);
+
+                    if check_if_wrong_secbuf(&mut sys_secret){
+                        println!("TRUE");
+                        sys_secret_check = Some(sys_secret);
+                        break;
+                    }
+                    else {
+                        println!("FALSE");
+                    
+                        sys_secret_check = None;    
+                    }
                 },
                 Err(_) => {
                     sys_secret_check = None;
@@ -160,12 +172,12 @@ impl Keypair {
             };
         }
 
-        let mut n: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
-        let mut c: Vec<_> = cipher_bundle.splice(..1, vec![]).collect(); 
+        let mut c: Vec<_> = cipher_bundle.splice(cipher_bundle.len()-1.. , vec![]).collect(); 
+        let mut n: Vec<_> = cipher_bundle.splice(cipher_bundle.len()-1.. , vec![]).collect();
         let mut n =&mut n[0];
         let mut c =&mut c[0];
         let mut dm = SecBuf::with_insecure(c.len() - aead::ABYTES);
-             
+
         if let Some(mut secret) = sys_secret_check{
             aead::dec(&mut dm,&mut secret,None,&mut n,&mut c).unwrap();
             Ok(dm)
@@ -182,6 +194,108 @@ impl Keypair {
 mod tests {
     use super::*;
     use crate::holochain_sodium::random::random_secbuf;
+    
+    #[test]
+    fn it_should_encode_n_decode_data_for_multiple_users2() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+
+        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_1);
+        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
+
+        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_2);
+        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
+
+        let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
+        let recipient_id = vec![&mut keypair_1.pub_keys,&mut keypair_2.pub_keys];
+
+        let mut out = Vec::new();
+        keypair_main.encrypt(recipient_id,&mut message,&mut out);
+
+        match keypair_2.decrypt(&mut keypair_main.pub_keys,&mut out){
+            Ok(mut dm) => {
+            let message = message.read_lock();
+            let dm = dm.read_lock();
+            assert_eq!(
+                format!("{:?}", *message),
+                format!("{:?}", *dm)
+            );
+
+            },
+            Err(_) => {
+                assert!(false);
+            }
+         };       
+    }
+    #[test]
+    fn it_should_encode_n_decode_data_for_multiple_users1() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+
+        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_1);
+        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
+
+        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_2);
+        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
+
+        let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
+        let recipient_id = vec![&mut keypair_1.pub_keys,&mut keypair_2.pub_keys];
+
+        let mut out = Vec::new();
+        keypair_main.encrypt(recipient_id,&mut message,&mut out);
+
+        match keypair_1.decrypt(&mut keypair_main.pub_keys,&mut out){
+            Ok(mut dm) => {
+            println!("Decrypted Message: {:?}",dm);
+            let message = message.read_lock();
+            let dm = dm.read_lock();
+            assert_eq!(
+                format!("{:?}", *message),
+                format!("{:?}", *dm)
+            );
+
+            },
+            Err(_) => {
+                println!("Error");
+                assert!(false);
+            }
+         };       
+    }
+    #[test]
+    fn it_should_with_fail_when_wrong_key_used_to_decrypt() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+
+        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_1);
+        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
+
+        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_2);
+        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
+
+        let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
+        let recipient_id = vec![&mut keypair_1.pub_keys];
+
+        let mut out = Vec::new();
+        keypair_main.encrypt(recipient_id,&mut message,&mut out);
+
+        keypair_2.decrypt(&mut keypair_main.pub_keys,&mut out).expect_err("should have failed");
+        
+    }
     #[test]
     fn it_should_encode_n_decode_data() {
         let mut seed = SecBuf::with_secure(SEEDSIZE);
@@ -202,7 +316,6 @@ mod tests {
 
         match keypair_1.decrypt(&mut keypair_main.pub_keys,&mut out){
             Ok(mut dm) => {
-            println!("Decrypted Message: {:?}",dm);
             let message = message.read_lock();
             let dm = dm.read_lock();
             assert_eq!(
@@ -212,7 +325,6 @@ mod tests {
  
             },
             Err(_) => {
-                println!("Error");
                 assert!(false);
             }
         };

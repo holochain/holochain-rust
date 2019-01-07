@@ -87,6 +87,18 @@ pub fn decode_id(id:&mut SecBuf,sign_pub: &mut SecBuf,enc_pub:&mut SecBuf){
     }
 }
 
+
+pub fn check_if_wrong_secbuf(buf:&mut SecBuf)->bool{
+    let buf = buf.read_lock();
+    println!("Buf{:?}",*buf);
+    for i in 0..buf.len(){
+        if buf[i]!=0{
+            return true;
+        }
+    }
+    return false;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

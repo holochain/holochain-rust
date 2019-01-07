@@ -97,7 +97,7 @@ test('delete_post', (t) => {
 })
 
 test('update_post', (t) => {
-  t.plan(2)
+  t.plan(4)
 
   const content = "Hello Holo world 123"
   const in_reply_to = null
@@ -110,6 +110,12 @@ test('update_post', (t) => {
   const result = app.call("blog", "main", "update_post", updateParams)
 
   t.equals(result.Ok, null)
+
+  const updatedPost = app.call("blog", "main", "get_post", { post_address: createResult.Ok })
+
+  t.ok(updatedPost.Ok)
+
+  t.equals(updatedPost.Ok.App[1], { content: "Hello Holo", in_reply_to: null })
 })
 
 

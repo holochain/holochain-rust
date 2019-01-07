@@ -19,6 +19,7 @@ exclude = [
   "app_spec",
   "nodejs_container/native",
   "rust_sodium-sys",
+  "rust_zmq-sys",
 ]
 
 [patch.crates-io]

@@ -84,7 +84,11 @@ impl IpcNode {
 
 // Spawn an IPC node that uses n3h and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
+fn spawn_connection(
+    n3h_path: &str,
+    maybe_config_filepath: Option<&str>,
+    bootstrap_nodes: Vec<String>,
+) -> NetResult<IpcNode> {
     let dir_ref = tempfile::tempdir()?;
     let dir = dir_ref.path().to_string_lossy().to_string();
 
@@ -101,6 +105,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
             "backend_config":
             {
                 "socketType": p2p_config.backend_config["socketType"],
+                "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
                     "cmd": p2p_config.backend_config["spawn"]["cmd"],
@@ -123,6 +128,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
             "backend_config":
             {
                 "socketType": "zmq",
+                "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
                     "cmd": "node",
@@ -199,8 +205,16 @@ fn exec() -> NetResult<()> {
     }
 
     // Create two nodes
-    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"))?;
-    let mut node2 = spawn_connection(&n3h_path, None)?;
+    let mut node1 = spawn_connection(
+        &n3h_path,
+        Some("test_bin/src/network_config.json"),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
+    let mut node2 = spawn_connection(
+        &n3h_path,
+        None,
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
     println!("node1 path: {}", node1.dir);
     println!("node2 path: {}", node2.dir);
 
@@ -334,6 +348,7 @@ fn exec() -> NetResult<()> {
             msg_id: "testPubMeta".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
+            from_agent_id: AGENT_1.to_string(),
             address: "test_addr_meta".to_string(),
             attribute: "link:yay".to_string(),
             content: json!("hello-meta"),
@@ -366,6 +381,7 @@ fn exec() -> NetResult<()> {
             msg_id: "testGetMetaResult".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
+            from_agent_id: AGENT_2.to_string(),
             address: "test_addr".to_string(),
             attribute: "link:yay".to_string(),
             content: json!("hello"),

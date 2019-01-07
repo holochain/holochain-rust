@@ -215,8 +215,7 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        context::mock_network_config, instance::tests::test_logger, persister::SimplePersister,
-        state::State,
+        context::mock_network_config, logger::test_logger, persister::SimplePersister, state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;

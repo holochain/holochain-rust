@@ -20,6 +20,7 @@ fn reduce_respond_get_links_inner(
             msg_id: get_dht_meta_data.msg_id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: get_dht_meta_data.from_agent_id.clone(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: get_dht_meta_data.address.clone(),
             attribute: get_dht_meta_data.attribute.clone(),
             content: serde_json::from_str(&serde_json::to_string(&links).unwrap()).unwrap(),
@@ -28,13 +29,19 @@ fn reduce_respond_get_links_inner(
 }
 
 pub fn reduce_respond_get_links(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let (get_dht_meta_data, links) = unwrap_to!(action => crate::action::Action::RespondGetLinks);
     let result = reduce_respond_get_links_inner(network_state, get_dht_meta_data, links);
+
+    context.log(format!(
+        "debug/reduce/get_links: Responding to GET LINKS request from {} with {:?}",
+        get_dht_meta_data.from_agent_id, links
+    ));
+
     network_state.actions.insert(
         action_wrapper.clone(),
         ActionResponse::RespondGetLinks(match result {

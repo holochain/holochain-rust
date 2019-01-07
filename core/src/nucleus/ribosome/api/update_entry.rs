@@ -32,10 +32,10 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            println!(
-                "invoke_update_entry failed to deserialize SerializedEntry: {:?}",
+            runtime.context.log(format!(
+                "err/zome: invoke_update_entry failed to deserialize SerializedEntry: {:?}",
                 args_str
-            );
+            ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };

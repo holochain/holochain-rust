@@ -157,6 +157,8 @@ pub struct DhtMetaData {
     #[serde(rename = "agentId")]
     pub agent_id: String,
 
+    pub from_agent_id: String,
+
     pub address: String,
     pub attribute: String,
     pub content: serde_json::Value,

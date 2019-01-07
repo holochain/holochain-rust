@@ -50,11 +50,12 @@ pub struct EntityAttributeValue {
     // source: Source,
 }
 
+#[derive(Clone)]
 pub enum Action
 {
-    Insert,
-    Delete,
-    Update,
+    insert,
+    delete,
+    update,
     None
 }
 
@@ -64,9 +65,9 @@ impl ToString for Action
     {
         match self
         {
-            Insert => String::from("Action"),
-            Delete => String::from("Delete"),
-            Update => String::from("Update")
+            insert => String::from("Action"),
+            delete => String::from("Delete"),
+            update => String::from("Update")
         }
     }
 }
@@ -75,15 +76,15 @@ impl From<String> for Action {
     fn from(action: String) -> Self {
         if action == String::from("Insert")
         {
-            Action::Insert
+            Action::insert
         }
         else if action == String::from("Delete")
         {
-            Action::Delete
+            Action::delete
         }
         else if action ==String::from("Update")
         {
-            Action::Update
+            Action::update
         }
         else
         {
@@ -91,6 +92,25 @@ impl From<String> for Action {
         }
 
     }
+}
+
+pub fn create_key(action:Action) ->Result<HashString,HolochainError>
+{
+   let unix_time = Utc::now().timestamp();
+   let key = vec![unix_time.to_string(),action.to_string()].join("_");
+   Ok(HashString::from(key))
+   
+}
+
+pub fn from_key(key:HashString) ->Result<(i64,Action),HolochainError>
+{
+    let string_key = key.to_string();
+    let split = string_key.split("-").collect::<Vec<&str>>();
+    let mut split_iter = split.iter();
+    let timestamp = split_iter.next().ok_or(HolochainError::ErrorGeneric("Could not get timestamp".to_string()))?;
+    let action = split_iter.next().ok_or(HolochainError::ErrorGeneric("Could not get action".to_string()))?;
+    let unix_timestamp = timestamp.parse::<i64>().map_err(|_|HolochainError::ErrorGeneric("Could not get action".to_string()))?;
+    Ok((unix_timestamp, Action::from(action.clone().to_string())))
 }
 
 impl AddressableContent for EntityAttributeValue {

@@ -1,6 +1,6 @@
 use holochain_core_types::{
     cas::content::{AddressableContent, Content},
-    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
+    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value,Action},
     error::{HcResult, HolochainError},
     hash::HashString,
 };
@@ -117,6 +117,7 @@ impl EavFileStorage {
 
     fn write_to_file(
         &self,
+        (unix_time,action) : (i64,Action),
         subscript: String,
         eav: &EntityAttributeValue,
     ) -> Result<(), HolochainError> {
@@ -127,7 +128,7 @@ impl EavFileStorage {
             _ => String::new(),
         };
         let path =
-            vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
+            vec![self.dir_path.clone(), subscript,unix_time.to_string(),action.to_string(),address].join(&MAIN_SEPARATOR.to_string());
         create_dir_all(path.clone())?;
         let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
         let mut f = File::create(address_path)?;
@@ -135,17 +136,6 @@ impl EavFileStorage {
         Ok(())
     }
 
-    fn write_to_hash_file(&self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        let path = vec![self.dir_path.clone(), self.current_hash.to_string()]
-            .join(&MAIN_SEPARATOR.to_string());
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .append(true)
-            .open(path)?;
-        writeln!(file, "{}", eav.address())?;
-        Ok(())
-    }
 
     fn read_from_dir<T>(
         &self,
@@ -201,10 +191,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let _guard = self.lock.write()?;
         create_dir_all(self.dir_path.clone())?;
-        self.write_to_file(ENTITY_DIR.to_string(), eav)
-            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), eav))
-            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), eav))
-            .and_then(|_| self.write_to_hash_file(eav))
+        let key = (Utc::now().timestamp(),Action::insert);
+        self.write_to_file(key.clone(),ENTITY_DIR.to_string(), eav)
+            .and_then(|_| self.write_to_file(key.clone(),ATTRIBUTE_DIR.to_string(), eav))
+            .and_then(|_| self.write_to_file(key.clone(),VALUE_DIR.to_string(), eav))
+
     }
 
 

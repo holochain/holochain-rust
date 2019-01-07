@@ -1,6 +1,6 @@
 use holochain_core_types::{
     cas::content::AddressableContent,
-    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value,Action},
+    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value,Action,create_key,from_key},
     error::HolochainError,
     hash::HashString,
 };
@@ -31,29 +31,12 @@ impl EavMemoryStorage {
     }
 }
 
-fn create_key(action:Action) ->Result<HashString,HolochainError>
-{
-   let unix_time = Utc::now().timestamp();
-   let key = vec![unix_time.to_string(),action.to_string()].join("_");
-   Ok(HashString::from(key))
-   
-}
 
-fn from_key(key:HashString) ->Result<(i64,Action),HolochainError>
-{
-    let string_key = key.to_string();
-    let split = string_key.split("-").collect::<Vec<&str>>();
-    let mut split_iter = split.iter();
-    let timestamp = split_iter.next().ok_or(HolochainError::ErrorGeneric("Could not get timestamp".to_string()))?;
-    let action = split_iter.next().ok_or(HolochainError::ErrorGeneric("Could not get action".to_string()))?;
-    let unix_timestamp = timestamp.parse::<i64>().map_err(|_|HolochainError::ErrorGeneric("Could not get action".to_string()))?;
-    Ok((unix_timestamp, Action::from(action.clone().to_string())))
-}
 
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         let mut map = self.storage.write()?;
-        let key = create_key(Action::Insert)?;
+        let key = create_key(Action::insert)?;
         map.insert(key, eav.clone());
         Ok(())
     }

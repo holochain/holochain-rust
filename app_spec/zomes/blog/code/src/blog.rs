@@ -10,14 +10,14 @@ use hdk::{
     AGENT_ADDRESS,
     AGENT_ID_STR,
     DNA_NAME,
-    DNA_HASH,
+    DNA_ADDRESS,
 };
 use post::Post;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 pub struct Env {
     dna_name: String,
-    dna_hash: String,
+    dna_address: String,
     agent_id: String,
     agent_address: String,
 }
@@ -28,7 +28,7 @@ pub struct Env {
 pub fn handle_show_env() -> ZomeApiResult<Env> {
     Ok(Env{
         dna_name: DNA_NAME.to_string(),
-        dna_hash: DNA_HASH.to_string(),
+        dna_address: DNA_ADDRESS.to_string(),
         agent_id: AGENT_ID_STR.to_string(),
         agent_address: AGENT_ADDRESS.to_string(),
     })

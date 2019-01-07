@@ -5,6 +5,7 @@ use holochain_core_types::json::JsonString;
 use holochain_net_ipc::{
     ipc_client::IpcClient,
     socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
+    spawn,
     util::get_millis,
 };
 
@@ -13,11 +14,11 @@ use holochain_net_connection::{
         NetConnection, NetConnectionRelay, NetHandler, NetShutdown, NetWorker, NetWorkerFactory,
     },
     protocol::Protocol,
-    protocol_wrapper::{ConfigData, ProtocolWrapper, StateData},
+    protocol_wrapper::{ConfigData, ConnectData, ProtocolWrapper, StateData},
     NetResult,
 };
 
-use std::{collections::HashMap, convert::TryFrom, io::Read, sync::mpsc};
+use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
 
 use serde_json;
 
@@ -29,6 +30,7 @@ pub struct IpcNetWorker {
     is_ready: bool,
     state: String,
     last_state_millis: f64,
+    bootstrap_nodes: Vec<String>,
 }
 
 impl NetWorker for IpcNetWorker {
@@ -77,6 +79,7 @@ impl NetWorker for IpcNetWorker {
             if !self.is_ready && &self.state == "ready" {
                 self.is_ready = true;
                 (self.handler)(Ok(Protocol::P2pReady))?;
+                self.priv_send_connects()?;
             }
         }
 
@@ -95,6 +98,7 @@ impl IpcNetWorker {
                 Ok(out)
             }),
             None,
+            vec![],
         )
     }
 
@@ -104,6 +108,13 @@ impl IpcNetWorker {
             bail!("unexpected socketType: {}", config["socketType"]);
         }
         let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
+        let empty = vec![];
+        let bootstrap_nodes: Vec<String> = config["bootstrapNodes"]
+            .as_array()
+            .unwrap_or(&empty)
+            .iter()
+            .map(|s| s.as_str().unwrap().to_string())
+            .collect();
         if config["ipcUri"].as_str().is_none() {
             if let Some(s) = config["spawn"].as_object() {
                 if s["cmd"].is_string()
@@ -129,6 +140,7 @@ impl IpcNetWorker {
                         s["workDir"].as_str().unwrap().to_string(),
                         env,
                         block_connect,
+                        bootstrap_nodes,
                     );
                 } else {
                     bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
@@ -146,6 +158,7 @@ impl IpcNetWorker {
                 Ok(out)
             }),
             None,
+            bootstrap_nodes,
         )
     }
 
@@ -159,70 +172,12 @@ impl IpcNetWorker {
         work_dir: String,
         env: HashMap<String, String>,
         block_connect: bool,
+        bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
-        let mut child = std::process::Command::new(cmd);
+        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, env, block_connect)?;
 
-        child
-            .stdout(std::process::Stdio::piped())
-            .args(&args)
-            .envs(&env)
-            .current_dir(work_dir);
-
-        println!("SPAWN ({:?})", child);
-
-        let mut child = child.spawn()?;
-
-        // transport info (zmq uri) for connecting to the ipc socket
-        let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
-
-        // transport info (multiaddr) for any p2p interface bindings
-        let re_p2p = regex::Regex::new("(?m)^#P2P-BINDING#:(.+)$")?;
-
-        // the child process is ready for connections
-        let re_ready = regex::Regex::new("#IPC-READY#")?;
-
-        let mut ipc_binding = String::new();
-        let mut p2p_bindings: Vec<String> = Vec::new();
-
-        // we need to know when our child process is ready for IPC connections
-        // it will run some startup algorithms, and then output some binding
-        // info on stdout and finally a `#IPC-READY#` message.
-        // collect the binding info, and proceed when `#IPC-READY#`
-        if let Some(ref mut stdout) = child.stdout {
-            let mut data: Vec<u8> = Vec::new();
-            loop {
-                let mut buf: [u8; 4096] = [0; 4096];
-                let size = stdout.read(&mut buf)?;
-                if size > 0 {
-                    data.extend_from_slice(&buf[..size]);
-
-                    let tmp = String::from_utf8_lossy(&data);
-                    if re_ready.is_match(&tmp) {
-                        for m in re_ipc.captures_iter(&tmp) {
-                            ipc_binding = m[1].to_string();
-                            break;
-                        }
-                        for m in re_p2p.captures_iter(&tmp) {
-                            p2p_bindings.push(m[1].to_string());
-                        }
-                        break;
-                    }
-                } else {
-                    std::thread::sleep(std::time::Duration::from_millis(10));
-                }
-
-                if !block_connect {
-                    break;
-                }
-            }
-        } else {
-            bail!("pipe fail");
-        }
-
-        // close the pipe since we can never read from it again...
-        child.stdout = None;
-
-        println!("READY! {} {:?}", ipc_binding, p2p_bindings);
+        let ipc_binding = spawn_result.ipc_binding;
+        let kill = spawn_result.kill;
 
         IpcNetWorker::priv_new(
             handler,
@@ -232,9 +187,8 @@ impl IpcNetWorker {
                 let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
                 Ok(out)
             }),
-            Some(Box::new(move || {
-                child.kill().unwrap();
-            })),
+            kill,
+            bootstrap_nodes,
         )
     }
 
@@ -243,6 +197,7 @@ impl IpcNetWorker {
         handler: NetHandler,
         factory: NetWorkerFactory,
         done: NetShutdown,
+        bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         let (ipc_sender, ipc_relay_receiver) = mpsc::channel::<Protocol>();
 
@@ -265,7 +220,22 @@ impl IpcNetWorker {
             state: "undefined".to_string(),
 
             last_state_millis: 0.0_f64,
+
+            bootstrap_nodes,
         })
+    }
+
+    fn priv_send_connects(&mut self) -> NetResult<()> {
+        for bs_node in &self.bootstrap_nodes {
+            self.ipc_relay.send(
+                ProtocolWrapper::Connect(ConnectData {
+                    address: bs_node.clone().into(),
+                })
+                .into(),
+            )?;
+        }
+
+        Ok(())
     }
 
     /// send a ping twice per second

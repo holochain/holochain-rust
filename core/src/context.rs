@@ -8,7 +8,10 @@ use crate::{
 };
 use holochain_core_types::{
     agent::AgentId,
-    cas::storage::ContentAddressableStorage,
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     error::{HcResult, HolochainError},
@@ -183,7 +186,7 @@ impl Context {
     }
 }
 
-pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, String)> {
+pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
@@ -196,9 +199,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, Stri
         .nucleus()
         .dna()
         .ok_or("Network::start() called without DNA".to_string())?;
-    let multihash = dna.multihash()?;
-    let dna_hash = base64::encode(&multihash);
-    Ok((dna_hash, agent_id))
+    Ok((dna.address(), agent_id))
 }
 
 /// create a test network

@@ -7,6 +7,7 @@ extern crate holochain_net_connection;
 extern crate serde_json;
 extern crate tempfile;
 
+use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     net_connection::NetConnection,
     protocol::Protocol,
@@ -83,7 +84,11 @@ impl IpcNode {
 
 // Spawn an IPC node that uses n3h and a temp folder
 #[cfg_attr(tarpaulin, skip)]
-fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetResult<IpcNode> {
+fn spawn_connection(
+    n3h_path: &str,
+    maybe_config_filepath: Option<&str>,
+    bootstrap_nodes: Vec<String>,
+) -> NetResult<IpcNode> {
     let dir_ref = tempfile::tempdir()?;
     let dir = dir_ref.path().to_string_lossy().to_string();
 
@@ -100,6 +105,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
             "backend_config":
             {
                 "socketType": p2p_config.backend_config["socketType"],
+                "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
                     "cmd": p2p_config.backend_config["spawn"]["cmd"],
@@ -122,6 +128,7 @@ fn spawn_connection(n3h_path: &str, maybe_config_filepath: Option<&str>) -> NetR
             "backend_config":
             {
                 "socketType": "zmq",
+                "bootstrapNodes": bootstrap_nodes,
                 "spawn":
                 {
                     "cmd": "node",
@@ -180,7 +187,10 @@ macro_rules! one_is {
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn exec() -> NetResult<()> {
-    static DNA_HASH: &'static str = "TEST_DNA_HASH";
+    fn example_dna_address() -> Address {
+        "TEST_DNA_ADDRESS".into()
+    }
+
     static AGENT_1: &'static str = "1_TEST_AGENT_1";
     static AGENT_2: &'static str = "2_TEST_AGENT_2";
 
@@ -195,8 +205,16 @@ fn exec() -> NetResult<()> {
     }
 
     // Create two nodes
-    let mut node1 = spawn_connection(&n3h_path, Some("test_bin/src/network_config.json"))?;
-    let mut node2 = spawn_connection(&n3h_path, None)?;
+    let mut node1 = spawn_connection(
+        &n3h_path,
+        Some("test_bin/src/network_config.json"),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
+    let mut node2 = spawn_connection(
+        &n3h_path,
+        None,
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
     println!("node1 path: {}", node1.dir);
     println!("node2 path: {}", node2.dir);
 
@@ -217,7 +235,7 @@ fn exec() -> NetResult<()> {
     // Send TrackApp message on both nodes
     node1.p2p_connection.send(
         ProtocolWrapper::TrackApp(TrackAppData {
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
         })
         .into(),
@@ -226,7 +244,7 @@ fn exec() -> NetResult<()> {
     println!("self connected result 1: {:?}", connect_result_1);
     node2.p2p_connection.send(
         ProtocolWrapper::TrackApp(TrackAppData {
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_2.to_string(),
         })
         .into(),
@@ -238,7 +256,7 @@ fn exec() -> NetResult<()> {
     println!("connect node1 ({}) to node2 ({})", node1_id, node2_binding);
     node1.p2p_connection.send(
         ProtocolWrapper::Connect(ConnectData {
-            address: node2_binding,
+            address: node2_binding.into(),
         })
         .into(),
     )?;
@@ -257,7 +275,7 @@ fn exec() -> NetResult<()> {
     node1.p2p_connection.send(
         ProtocolWrapper::SendMessage(MessageData {
             msg_id: "test".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             to_agent_id: AGENT_2.to_string(),
             from_agent_id: AGENT_1.to_string(),
             data: json!("hello"),
@@ -270,7 +288,7 @@ fn exec() -> NetResult<()> {
     node2.p2p_connection.send(
         ProtocolWrapper::HandleSendResult(MessageData {
             msg_id: "test".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             to_agent_id: AGENT_1.to_string(),
             from_agent_id: AGENT_2.to_string(),
             data: json!("echo: hello"),
@@ -284,7 +302,7 @@ fn exec() -> NetResult<()> {
     node1.p2p_connection.send(
         ProtocolWrapper::PublishDht(DhtData {
             msg_id: "testPub".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
             address: "test_addr".to_string(),
             content: json!("hello"),
@@ -301,7 +319,7 @@ fn exec() -> NetResult<()> {
     node2.p2p_connection.send(
         ProtocolWrapper::GetDht(GetDhtData {
             msg_id: "testGet".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             from_agent_id: AGENT_2.to_string(),
             address: "test_addr".to_string(),
         })
@@ -314,7 +332,7 @@ fn exec() -> NetResult<()> {
     node2.p2p_connection.send(
         ProtocolWrapper::GetDhtResult(DhtData {
             msg_id: "testGetResult".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
             address: "test_addr".to_string(),
             content: json!("hello"),
@@ -328,8 +346,9 @@ fn exec() -> NetResult<()> {
     node1.p2p_connection.send(
         ProtocolWrapper::PublishDhtMeta(DhtMetaData {
             msg_id: "testPubMeta".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
+            from_agent_id: AGENT_1.to_string(),
             address: "test_addr_meta".to_string(),
             attribute: "link:yay".to_string(),
             content: json!("hello-meta"),
@@ -346,7 +365,7 @@ fn exec() -> NetResult<()> {
     node2.p2p_connection.send(
         ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             from_agent_id: AGENT_2.to_string(),
             address: "test_addr".to_string(),
             attribute: "link:yay".to_string(),
@@ -360,8 +379,9 @@ fn exec() -> NetResult<()> {
     node2.p2p_connection.send(
         ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
-            dna_hash: DNA_HASH.to_string(),
+            dna_address: example_dna_address(),
             agent_id: AGENT_1.to_string(),
+            from_agent_id: AGENT_2.to_string(),
             address: "test_addr".to_string(),
             attribute: "link:yay".to_string(),
             content: json!("hello"),

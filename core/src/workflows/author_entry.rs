@@ -20,6 +20,11 @@ pub async fn author_entry<'a>(
     maybe_crud_link: Option<Address>,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
+    let address = entry.address();
+    context.log(format!(
+        "Authoring entry: {} with content: {:?}",
+        address, entry
+    ));
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(&entry, &context))?;
     let validation_data = ValidationData {
@@ -28,15 +33,29 @@ pub async fn author_entry<'a>(
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
     };
+
     // 2. Validate the entry
+    context.log(format!("Authoring entry {}: validating...", address));
     await!(validate_entry(entry.clone(), validation_data, &context))?;
+    context.log(format!("Authoring entry {}: is valid!", address));
+
     // 3. Commit the entry
+    context.log(format!("Authoring entry {}: committing...", address));
     let addr = await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
+    context.log(format!("Authoring entry {}: committed", address));
+
     // 4. Publish the valid entry to DHT. This will call Hold to itself
     //TODO: missing a general public/private sharing check here, for now just
     // using the entry_type can_publish() function which isn't enough
     if entry.entry_type().can_publish() {
+        context.log(format!("Authoring entry {}: publishing...", address));
         await!(publish(entry.address(), &context))?;
+        context.log(format!("Authoring entry {}: published!", address));
+    } else {
+        context.log(format!(
+            "Authoring entry {}: entry is private, no publishing",
+            address
+        ));
     }
     Ok(addr)
 }

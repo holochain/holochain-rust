@@ -205,9 +205,10 @@ fn create_borrowed_connection(ipc_binding: &str) -> NetResult<IpcNode> {
 fn create_spawned_connection(
     n3h_path: &str,
     maybe_config_filepath: Option<&str>,
+    bootstrap_nodes: Vec<String>,
 ) -> NetResult<IpcNode> {
     // Create Config
-    let (p2p_config, dir_ref) = create_config(n3h_path, maybe_config_filepath);
+    let (p2p_config, dir_ref) = create_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
     // Create channel
     let (sender, receiver) = mpsc::channel::<Protocol>();
     // Create P2pNetwork
@@ -230,7 +231,11 @@ fn create_spawned_connection(
 // do general test with hackmode
 fn launch_test_with_ipc_mock(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
     // Create two nodes
-    let mut node1 = create_spawned_connection(n3h_path, Some(config_filepath))?;
+    let mut node1 = create_spawned_connection(
+        n3h_path,
+        Some(config_filepath),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
     let mut node2 = create_borrowed_connection(&node1.p2p_connection.endpoint())?;
 
     general_test(&mut node1, &mut node2, false)?;
@@ -245,8 +250,16 @@ fn launch_test_with_ipc_mock(n3h_path: &str, config_filepath: &str) -> NetResult
 // Do general test with config
 fn launch_test_with_config(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
     // Create two nodes
-    let mut node1 = create_spawned_connection(n3h_path, Some(config_filepath))?;
-    let mut node2 = create_spawned_connection(n3h_path, Some(config_filepath))?;
+    let mut node1 = create_spawned_connection(
+        n3h_path,
+        Some(config_filepath),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
+    let mut node2 = create_spawned_connection(
+        n3h_path,
+        Some(config_filepath),
+        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
+    )?;
 
     general_test(&mut node1, &mut node2, true)?;
 
@@ -266,20 +279,6 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
     fn example_dna_address() -> Address {
         "TEST_DNA_ADDRESS".into()
     }
-
-    // Create two nodes
-    let mut node1 = spawn_connection(
-        &n3h_path,
-        Some("test_bin/src/network_config.json"),
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-    )?;
-    let mut node2 = spawn_connection(
-        &n3h_path,
-        None,
-        vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
-    )?;
-    println!("node1 path: {}", node1.dir);
-    println!("node2 path: {}", node2.dir);
 
     // Get each node's current state
     let node1_state = node1.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
@@ -417,7 +416,7 @@ fn general_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool
             agent_id: AGENT_1.to_string(),
             from_agent_id: AGENT_1.to_string(),
             address: "test_addr_meta".to_string(),
-            attribute: "link:yay".to_string(),
+            attribute: "link__yay".to_string(),
             content: json!("hello-meta"),
         })
         .into(),

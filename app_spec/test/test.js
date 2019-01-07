@@ -105,7 +105,7 @@ test('update_post', (t) => {
 
   t.ok(updatedPost.Ok)
 
-  t.equals(updatedPost.Ok.App[1], { content: "Hello Holo", in_reply_to: null })
+  t.equals(updatedPost.Ok.App[1], { content: "Hello Holo", "date_created": "now" })
 })
 
 test('create_post with bad reply to', (t) => {

@@ -128,7 +128,7 @@ When using `hc generate` to scaffold a Zome, you will have a `.build` file autom
       "--target=wasm32-unknown-unknown"
     ]
   },
-  "artifact": "target/wasm32-unknown-unknown/release/code.wasm"
+  "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/code.wasm"
 }
 ```
 

@@ -18,42 +18,29 @@ let
     };
   });
 
-  wasmBuild = path: "CARGO_HOME=${path}/.cargo CARGO_TARGET_DIR=${path}/target cargo build --release --target ${wasmTarget} --manifest-path ${path}/Cargo.toml";
-  hc-wasm-build = nixpkgs.writeShellScriptBin "hc-wasm-build"
-  ''
-  ${wasmBuild "core/src/nucleus/actions/wasm-test"}
-  ${wasmBuild "container_api/test-bridge-caller"}
-  ${wasmBuild "container_api/wasm-test"}
-  ${wasmBuild "hdk-rust/wasm-test"}
-  ${wasmBuild "wasm_utils/wasm-test/integration-test"}
-  '';
-
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
-  rm -rf ~/.cargo/registry;
-  rm -rf ~/.cargo/git;
-  '';
-
-  hc-build = nixpkgs.writeShellScriptBin "hc-build"
-  ''
-  cargo build --all --exclude hc
-  '';
-
-  hc-test = nixpkgs.writeShellScriptBin "hc-test"
-  ''
-  hc-build
-  cargo test --release --all --exclude hc;
+   rm -rf ~/.cargo/registry;
+   rm -rf ~/.cargo/git;
   '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
   ''
-  . ./scripts/build_nodejs_container.sh;
+   . ./scripts/build_nodejs_container.sh;
   '';
 
-  hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin" "if ! cargo --list | grep --quiet tarpaulin; then cargo install cargo-tarpaulin; fi;";
+  hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin"
+  ''
+   if ! cargo --list | grep --quiet tarpaulin;
+   then
+    RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin;
+   fi;
+  '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
-  hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc && cargo install -f --path cmd";
+  hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc --release && cargo install -f --path cmd";
+  hc-install-container = nixpkgs.writeShellScriptBin "hc-install-container" "cargo build -p holochain_container --release && cargo install -f --path container";
+
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
 
@@ -63,16 +50,37 @@ let
   # runs all standard tests and reports code coverage
   hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
   ''
-    hc-install-tarpaulin && \
-    hc-build && \
-    hc-tarpaulin && \
-    bash <(curl -s https://codecov.io/bash);
+   hc-install-tarpaulin && \
+   hc-tarpaulin && \
+   bash <(curl -s https://codecov.io/bash);
   '';
 
   # simulates all supported ci tests in a local circle ci environment
   ci = nixpkgs.writeShellScriptBin "ci"
   ''
-    circleci-cli local execute
+   circleci-cli local execute
+  '';
+
+  build-wasm = wasm-path:
+  ''
+   export WASM_PATH=${wasm-path}/
+   cargo build --release --target wasm32-unknown-unknown --manifest-path "$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$WASM_PATH"target;
+  '';
+  wasm-paths = [
+   "hdk-rust/wasm-test"
+   "wasm_utils/wasm-test/integration-test"
+   "container_api/wasm-test"
+   "container_api/test-bridge-caller"
+   "core/src/nucleus/actions/wasm-test"
+  ];
+  hc-build-wasm = nixpkgs.writeShellScriptBin "hc-build-wasm"
+  ''
+   ${nixpkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
+  '';
+  hc-test = nixpkgs.writeShellScriptBin "hc-test"
+  ''
+   hc-build-wasm
+   cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
   '';
 
 in
@@ -96,15 +104,14 @@ stdenv.mkDerivation rec {
 
     hc-flush-cargo-registry
 
-    hc-wasm-build
-
-    hc-build
+    hc-build-wasm
     hc-test
 
     hc-install-tarpaulin
     hc-tarpaulin
 
     hc-install-cmd
+    hc-install-container
     hc-install-node-container
 
     hc-test-cmd
@@ -124,14 +131,12 @@ stdenv.mkDerivation rec {
     circleci-cli
     hc-codecov
     ci
-
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
   # https://llogiq.github.io/2017/06/01/perf-pitfalls.html
-  # RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -C lto=no -Z incremental-info";
-  RUSTFLAGS = "-D warnings -Z external-macro-backtrace --cfg procmacro2_semver_exempt -Z thinlto -C codegen-units=16";
-  # CARGO_INCREMENTAL = "1";
+  RUSTFLAGS = "-D warnings -Z external-macro-backtrace -Z thinlto -C codegen-units=16 -C opt-level=z";
+  CARGO_INCREMENTAL = "1";
   # https://github.com/rust-lang/cargo/issues/4961#issuecomment-359189913
   # RUST_LOG = "info";
 
@@ -146,7 +151,8 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   shellHook = ''
-    # needed for install cmd and tarpaulin
-    export PATH=$PATH:~/.cargo/bin;
+   # needed for install cmd and tarpaulin
+   export PATH=$PATH:~/.cargo/bin;
+   export HC_TARGET_PREFIX=/tmp/holochain/
   '';
 }

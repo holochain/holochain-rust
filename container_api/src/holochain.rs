@@ -191,6 +191,7 @@ mod tests {
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna};
+    use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
@@ -230,7 +231,10 @@ mod tests {
     use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
 
     fn example_api_wasm_path() -> String {
-        "wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm".into()
+        format!(
+            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            wasm_target_dir("container_api/", "wasm-test/"),
+        )
     }
 
     fn example_api_wasm() -> Vec<u8> {
@@ -258,10 +262,10 @@ mod tests {
         assert_eq!(hc.context.agent_id.nick, "bob".to_string());
         let network_state = hc.context.state().unwrap().network().clone();
         assert_eq!(network_state.agent_id.is_some(), true);
-        assert_eq!(network_state.dna_hash.is_some(), true);
+        assert_eq!(network_state.dna_address.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
+        assert!(format!("{:?}", *test_logger).contains("\"TestApp instantiated\""));
     }
 
     fn write_agent_state_to_file() -> String {
@@ -283,7 +287,7 @@ mod tests {
         assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
         let network_state = loaded_holo.context.state().unwrap().network().clone();
         assert_eq!(network_state.agent_id.is_some(), true);
-        assert_eq!(network_state.dna_hash.is_some(), true);
+        assert_eq!(network_state.dna_address.is_some(), true);
         assert!(loaded_holo.instance.state().nucleus().has_initialized());
     }
 
@@ -564,10 +568,9 @@ mod tests {
 
         assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(
-            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
-            format!("{:?}", test_logger.log),
-        );
+        assert!(format!("{:?}", test_logger.log).contains(
+            "\"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\""));
+
         // Check in holochain instance's history that the debug event has been processed
         // @TODO don't use history length in tests
         // @see https://github.com/holochain/holochain-rust/issues/195
@@ -605,10 +608,8 @@ mod tests {
 
         let test_logger = test_logger.lock().unwrap();
 
-        assert_eq!(
-            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
-            format!("{:?}", test_logger.log),
-        );
+        assert!(format!("{:?}", test_logger.log).contains(
+            "\"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\""));
 
         // Check in holochain instance's history that the deb event has been processed
         // @TODO don't use history length in tests
@@ -632,9 +633,10 @@ mod tests {
     fn can_receive_action_signals() {
         use holochain_core::action::Action;
         use std::time::Duration;
-        let wasm = include_bytes!(
-            "../wasm-test/target/wasm32-unknown-unknown/release/example_api_wasm.wasm"
-        );
+        let wasm = include_bytes!(format!(
+            "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
+            wasm_target_dir("container_api/", "wasm-test/"),
+        ));
         let capability = test_utils::create_test_cap_with_fn_name("commit_test");
         let mut dna =
             test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);

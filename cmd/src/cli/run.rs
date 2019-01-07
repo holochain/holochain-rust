@@ -70,7 +70,13 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
         dnas: vec![dna_config],
         instances: vec![instance_config],
         interfaces: vec![interface_config],
-        ..Default::default()
+        network: NetworkConfig {
+            bootstrap_nodes: Default::default(),
+            n3h_path: Default::default(),
+            n3h_persistence_path: Default::default(),
+            n3h_ipc_uri: Default::default(),
+        },
+        ..Default::default(),
     };
 
     let mut container = Container::from_config(base_config.clone());

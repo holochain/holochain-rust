@@ -268,11 +268,9 @@ pub struct LoggerConfiguration {
 ///
 /// Projected are various DB adapters.
 #[derive(Deserialize, Serialize, Clone)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
-    #[serde(rename = "memory")]
     Memory,
-    #[serde(rename = "file")]
     File { path: String },
 }
 
@@ -332,19 +330,19 @@ pub struct Bridge {
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct NetworkConfig {
     /// List of URIs that point to other nodes to bootstrap p2p connections.
-    #[serde(default, rename = "bootstrap_nodes")]
+    #[serde(default)]
     pub bootstrap_nodes: Vec<String>,
     /// Absolute path to the local installation/repository of n3h
-    #[serde(default, rename = "n3h_path")]
+    #[serde(default)]
     pub n3h_path: String,
     /// Absolute path to the directory that n3h uses to store persisted data.
-    #[serde(default, rename = "n3h_persistence_path")]
+    #[serde(default)]
     pub n3h_persistence_path: String,
     /// URI pointing a n3h process that is already running and not managed by this
     /// container.
     /// If this is set the container does not spawn n3h itself and ignores the path
     /// configs above. Default is None.
-    #[serde(default, rename = "n3h_ipc_uri")]
+    #[serde(default)]
     pub n3h_ipc_uri: Option<String>,
 }
 

@@ -109,6 +109,8 @@ enum Cli {
         package: bool,
         #[structopt(long, help = "Save generated data to file system")]
         persist: bool,
+        #[structopt(long, help = "Use real networking")]
+        networked: bool,
     },
     #[structopt(
         name = "test",
@@ -160,13 +162,19 @@ fn run() -> HolochainResult<()> {
             package,
             port,
             persist,
-        } => cli::run(package, port, persist).map_err(HolochainError::Default)?,
+            networked,
+        } => cli::run(package, port, persist, networked).map_err(HolochainError::Default)?,
         Cli::Test {
             dir,
             testfile,
             skip_build,
-        } => cli::test(std::env::current_dir()?, &dir, &testfile, skip_build)
-            .map_err(HolochainError::Default)?,
+        } => cli::test(
+            &std::env::current_dir().map_err(HolochainError::Default)?,
+            &dir,
+            &testfile,
+            skip_build,
+        )
+        .map_err(HolochainError::Default)?,
     }
 
     Ok(())

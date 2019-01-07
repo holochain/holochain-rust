@@ -14,7 +14,7 @@ const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 /// Starts a small container with the current application running
-pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
+pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultResult<()> {
     if package {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
@@ -49,7 +49,11 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         agent: AGENT_CONFIG_ID.into(),
         logger: Default::default(),
         storage,
-        network: Some(P2pConfig::default_ipc().as_str()),
+        network: Some(if networked {
+            P2pConfig::default_ipc().as_str()
+        } else {
+            P2pConfig::default_mock().as_str()
+        }),
     };
 
     let interface_config = InterfaceConfiguration {

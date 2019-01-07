@@ -1,7 +1,7 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
-use holochain_container_api::{config::*, container::Container};
+use holochain_container_api::{config::*, container::Container, logger::LogRules};
 use holochain_core_types::agent::AgentId;
 use holochain_net::p2p_config::P2pConfig;
 use std::fs;
@@ -60,11 +60,22 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         }],
     };
 
+    // temporary log rules, should come from a configuration
+    let mut rules = LogRules::new();
+    rules.add_rule("^err/", false, Some("red".to_string()))?;
+    rules.add_rule("^debug/dna", false, Some("white".to_string()))?;
+    rules.add_rule(".*", false, None)?;
+    let logger_config = LoggerConfiguration {
+        logger_type: "debug".to_string(),
+        rules,
+    };
+
     let base_config = Configuration {
         agents: vec![agent_config],
         dnas: vec![dna_config],
         instances: vec![instance_config],
         interfaces: vec![interface_config],
+        logger: logger_config,
         ..Default::default()
     };
 

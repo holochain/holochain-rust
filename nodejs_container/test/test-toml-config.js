@@ -24,9 +24,6 @@ hash = "Qm328wyq38924y"
 id = "test/instance/1"
 dna = "test/dna"
 agent = "test/agent/1"
-[instances.logger]
-type = "simple"
-file = "app_spec.log"
 [instances.storage]
 type = "memory"
 
@@ -34,9 +31,6 @@ type = "memory"
 id = "test/instance/2"
 dna = "test/dna"
 agent = "test/agent/2"
-[instances.logger]
-type = "simple"
-file = "app_spec.log"
 [instances.storage]
 type = "memory"
 
@@ -49,6 +43,9 @@ port = 8888
 id = "test/instance/1"
 [[interfaces.instances]]
 id = "test/instance/2"
+
+[logger]
+type = "debug"
 `
 
 test('can create config from TOML', t => {

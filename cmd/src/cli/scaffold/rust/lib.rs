@@ -27,8 +27,8 @@ pub struct MyEntry {
 }
 
 pub fn handle_create_my_entry(entry: MyEntry) -> ZomeApiResult<Address> {
-    let post_entry = Entry::App("my_entry".into(), entry.into());
-    let address = hdk::commit_entry(&post_entry)?;
+    let entry = Entry::App("my_entry".into(), entry.into());
+    let address = hdk::commit_entry(&entry)?;
     Ok(address)
 }
 

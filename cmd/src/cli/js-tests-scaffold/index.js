@@ -1,42 +1,35 @@
 // This test file uses the tape testing framework.
 // To learn more, go here: https://github.com/substack/tape
 const test = require('tape');
-const { ConfigBuilder, Container } = require('@holochain/holochain-nodejs');
 
-// IIFE to keep config-only stuff out of test scope
-const config = (() => {
-  const agentAlice = ConfigBuilder.agent("alice")
+const { Config, Container } = require("@holochain/holochain-nodejs")
 
-  const dna = ConfigBuilder.dna(dnaPath)
+//const dnaPath = "./dist/app_spec.hcpkg"
+const dnaPath = "./dist/bundle.json"
 
-  const instanceAlice = ConfigBuilder.instance(agentAlice, dna)
+// closure to keep config-only stuff out of test scope
+const container = (() => {
+    const agentAlice = Config.agent("alice")
 
-  return ConfigBuilder.container(instanceAlice)
+    const dna = Config.dna(dnaPath)
+
+    const instanceAlice = Config.instance(agentAlice, dna)
+
+    const containerConfig = Config.container(instanceAlice)
+    return new Container(containerConfig)
 })()
 
 // Initialize the Container
-const container = new Container(config)
 container.start()
 
-// This function is a bit of temporary boilerplate to construct a convenient object
-// for testing. These objects will be created automatically with the new Scenario API,
-// and then this function will go away. (TODO)
-const makeCaller = (agentId) => {
-  const instanceId = agentId + '-' + dnaPath
-  return {
-    call: (zome, cap, fn, params) => container.call(instanceId, zome, cap, fn, params),
-    agentId: container.agent_id(instanceId)
-  }
-}
-
-const app = makeCaller('alice')
+const alice = container.makeCaller('alice', dnaPath)
 
 test('description of example test', (t) => {
   // Make a call to a Zome function
   // indicating the capability and function, and passing it an input
-    const addr = app.call("my_zome", "main", "create_my_entry", {"entry" : {"content":"sample content"}})
+    const addr = alice.call("my_zome", "main", "create_my_entry", {"entry" : {"content":"sample content"}})
 
-    const result = app.call("my_zome", "main", "get_my_entry", {"address": addr.Ok})
+    const result = alice.call("my_zome", "main", "get_my_entry", {"address": addr.Ok})
 
   // check for equality of the actual and expected results
   t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })

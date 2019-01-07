@@ -50,6 +50,7 @@ fn publish_crud_meta(
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_address.to_string(),
             attribute: STATUS_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
@@ -66,6 +67,7 @@ fn publish_crud_meta(
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_address.to_string(),
             attribute: LINK_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
@@ -76,6 +78,7 @@ fn publish_crud_meta(
 }
 
 fn publish_link_meta(
+    context: &Arc<Context>,
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
@@ -90,12 +93,15 @@ fn publish_link_meta(
     };
     let link = link_add_entry.link().clone();
 
+    context.log(format!("Publishing link meta for link: {:?}", link));
+
     send(
         network_state,
         ProtocolWrapper::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: link.base().to_string(),
             attribute: String::from("link"),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
@@ -132,7 +138,7 @@ fn reduce_publish_inner(
             )
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_crud_meta(
                 network_state,

@@ -43,6 +43,9 @@ pub struct Configuration {
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
+    /// Configuration options for the network module n3h
+    #[serde(default)]
+    pub network: Option<NetworkConfig>,
 }
 
 impl Configuration {
@@ -326,6 +329,25 @@ pub struct Bridge {
     pub handle: String,
 }
 
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct NetworkConfig {
+    /// List of URIs that point to other nodes to bootstrap p2p connections.
+    #[serde(default, rename = "bootstrap_nodes")]
+    pub bootstrap_nodes: Vec<String>,
+    /// Absolute path to the local installation/repository of n3h
+    #[serde(default, rename = "n3h_path")]
+    pub n3h_path: String,
+    /// Absolute path to the directory that n3h uses to store persisted data.
+    #[serde(default, rename = "n3h_persistence_path")]
+    pub n3h_persistence_path: String,
+    /// URI pointing a n3h process that is already running and not managed by this
+    /// container.
+    /// If this is set the container does not spawn n3h itself and ignores the path
+    /// configs above. Default is None.
+    #[serde(default, rename = "n3h_ipc_uri")]
+    pub n3h_ipc_uri: Option<String>,
+}
+
 /// Use this function to load a `Configuration` from a string.
 pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where
@@ -338,7 +360,7 @@ where
 
 #[cfg(test)]
 pub mod tests {
-    use crate::config::{load_configuration, Configuration};
+    use crate::config::{load_configuration, Configuration, NetworkConfig};
     use holochain_core::context::mock_network_config;
 
     pub fn example_serialized_network_config() -> String {
@@ -444,6 +466,11 @@ pub mod tests {
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
+
+    [network]
+    bootstrap_nodes = ["/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"]
+    n3h_path = "/Users/cnorris/.holochain/n3h"
+    n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
     "#,
             "{\\\"backend_kind\\\":\\\"special\\\"}"
         );
@@ -462,6 +489,17 @@ pub mod tests {
         assert_eq!(
             instance_config.network,
             Some("{\"backend_kind\":\"special\"}".to_string())
+        );
+        assert_eq!(
+            config.network.unwrap(),
+            NetworkConfig {
+                bootstrap_nodes: vec![String::from(
+                    "/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"
+                )],
+                n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
+                n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
+                n3h_ipc_uri: None,
+            }
         );
     }
 

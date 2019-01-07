@@ -2,11 +2,11 @@
 //! which is separate from standard logging via the log crate warn! info! debug! logging that
 //! gets emitted globaly from the container.
 use chrono::Local;
- /// trait that defines the logging functionality that holochain_core requires
+/// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {
     // Add log message to logger
     fn log(&mut self, msg: String);
-     // Dump all held logs
+    // Dump all held logs
     fn dump(&self) -> String {
         String::new()
     }
@@ -15,7 +15,7 @@ pub trait Logger: Send {
 pub struct SimpleLogger {
     // log: Vec<String>,
 }
- // ignore this in test coverage as it is only side effects
+// ignore this in test coverage as it is only side effects
 #[cfg_attr(tarpaulin, skip)]
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {
@@ -28,13 +28,10 @@ impl Logger for SimpleLogger {
 }
 #[cfg(test)]
 pub mod tests {
-    use crate::{
-        logger::SimpleLogger,
-        logger::Logger
-    };
+    use crate::logger::{Logger, SimpleLogger};
     #[test]
     fn test_logger() {
-        let mut logger_test = SimpleLogger{};
+        let mut logger_test = SimpleLogger {};
         logger_test.log("Example Log".to_string());
     }
 }

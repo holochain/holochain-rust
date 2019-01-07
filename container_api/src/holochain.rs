@@ -187,6 +187,7 @@ mod tests {
     use holochain_core::{
         action::Action,
         context::Context,
+        logger::{test_logger, TestLogger},
         nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
@@ -199,20 +200,10 @@ mod tests {
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
 
-    // TODO: TestLogger duplicated in test_utils because:
-    //  use holochain_core::{instance::tests::TestLogger};
-    // doesn't work.
-    // @see https://github.com/holochain/holochain-rust/issues/185
-    fn test_context(
-        agent_name: &str,
-    ) -> (
-        Arc<Context>,
-        Arc<Mutex<test_utils::TestLogger>>,
-        SignalReceiver,
-    ) {
+    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
         let agent = AgentId::generate_fake(agent_name);
         let (signal_tx, signal_rx) = signal_channel();
-        let logger = test_utils::test_logger();
+        let logger = test_logger();
         (
             Arc::new(
                 ContextBuilder::new()

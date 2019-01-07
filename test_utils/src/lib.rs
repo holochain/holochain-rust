@@ -11,8 +11,8 @@ use holochain_container_api::{context_builder::ContextBuilder, error::HolochainR
 use holochain_core::{
     action::Action,
     context::Context,
-    logger::Logger,
     signal::Signal,
+    logger::{test_logger, TestLogger},
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -30,7 +30,6 @@ use holochain_core_types::{
 
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
-    fmt,
     fs::File,
     hash::{Hash, Hasher},
     io::prelude::*,
@@ -162,32 +161,6 @@ pub fn create_test_dna_with_cap(
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
     dna
-}
-
-#[derive(Clone)]
-pub struct TestLogger {
-    pub log: Vec<String>,
-}
-
-impl Logger for TestLogger {
-    fn log(&mut self, msg: String) {
-        self.log.push(msg);
-    }
-    fn dump(&self) -> String {
-        format!("{:?}", self.log)
-    }
-}
-
-// trying to get a way to print out what has been logged for tests without a read function.
-// this currently fails
-impl fmt::Debug for TestLogger {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self.log)
-    }
-}
-
-pub fn test_logger() -> Arc<Mutex<TestLogger>> {
-    Arc::new(Mutex::new(TestLogger { log: Vec::new() }))
 }
 
 #[cfg_attr(tarpaulin, skip)]

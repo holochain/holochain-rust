@@ -15,6 +15,7 @@ extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_container_api::{error::HolochainResult, *};
+use holochain_core::logger::TestLogger;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,

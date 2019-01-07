@@ -49,17 +49,23 @@ impl P2pNetwork {
                 )?
             },
 
-            P2pBackendKind::MockMock => NetConnectionThread::new(
+            P2pBackendKind::MockMock => {
+                println!("MOCK MOCK");
+                 NetConnectionThread::new(
                 handler,
                 Box::new(move |_| Ok(Box::new(MockMockWorker::new()) as Box<NetWorker>)),
                 None,
-            )?,
+            )?
+        },
 
-            P2pBackendKind::MOCK => NetConnectionThread::new(
+            P2pBackendKind::MOCK => {
+                println!("MOCKX");
+                NetConnectionThread::new(
                 handler,
                 Box::new(move |h| Ok(Box::new(MockWorker::new(h)?) as Box<NetWorker>)),
                 None,
-            )?,
+            )?
+        },
         };
         Ok(P2pNetwork { connection })
     }

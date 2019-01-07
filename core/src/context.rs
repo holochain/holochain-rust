@@ -168,9 +168,11 @@ impl Context {
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
     pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
-        self.action_channel
-            .as_ref()
-            .expect("Action channel not initialized")
+        println!("{:?}", self.action_channel);
+        match self.action_channel.as_ref() {
+            Some(channel) => channel,
+            None => panic!("action channel is None"),
+        }
     }
 
     pub fn signal_tx(&self) -> &SyncSender<Signal> {

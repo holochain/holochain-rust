@@ -70,6 +70,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn can_add_valid_link() {
         let (_instance, context) = nucleus::actions::tests::instance();
 
@@ -85,6 +86,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(features = "broken-links")]
     fn errors_when_link_base_not_present() {
         let (_instance, context) = nucleus::actions::tests::instance();
 

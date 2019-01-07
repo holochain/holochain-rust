@@ -47,7 +47,7 @@ Container.prototype.stop = function () {
     return this._stopPromise
 }
 
-Container.prototype._call = function (id, zome, trait, fn, params) {
+Container.prototype.callRaw = function (id, zome, trait, fn, params) {
     const stringInput = JSON.stringify(params);
     const rawResult = this._callRaw(id, zome, trait, fn, stringInput);
     let result;
@@ -62,14 +62,14 @@ Container.prototype._call = function (id, zome, trait, fn, params) {
 
 Container.prototype.call = function (...args) {
     this.register_callback(() => console.log("Another call well done"))
-    return this._call(...args)
+    return this.callRaw(...args)
 }
 
 Container.prototype.callWithPromise = function (...args) {
     const promise = new Promise((fulfill, reject) => {
         this.register_callback(() => fulfill(result))
     })
-    const result = this._call(...args)
+    const result = this.callRaw(...args)
     return [result, promise]
 }
 

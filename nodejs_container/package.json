@@ -23,7 +23,7 @@
   "scripts": {
     "compile": "neon build --release",
     "clean": "neon clean",
-    "test": "tape test/*"
+    "test": "tape test/test-toml*"
   },
   "dependencies": {
     "node-pre-gyp": "^0.11.0",

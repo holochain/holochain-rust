@@ -51,11 +51,6 @@ declare_types! {
 
         method start(mut cx) {
             let js_callback: Handle<JsFunction> = cx.argument(0)?;
-            // let js_callback: Handle<JsFunction> = JsFunction::new(&mut cx, _signal_callback)
-            //         .unwrap()
-            //         .as_value(&mut cx)
-            //         .downcast_or_throw(&mut cx)
-            //         .unwrap();
             let mut this = cx.this();
 
             let (signal_tx, signal_rx) = signal_channel();

@@ -6,7 +6,6 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
-use multihash::Hash as Multihash;
 use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code

@@ -9,13 +9,15 @@ const dnaPath = "./dist/app_spec.hcpkg"
 const container = (() => {
   const agentAlice = Config.agent("alice")
   const agentTash = Config.agent("tash")
+  const agentMyPosts = Config.agent("myposts")
 
   const dna = Config.dna(dnaPath)
 
   const instanceAlice = Config.instance(agentAlice, dna)
   const instanceBob = Config.instance(agentTash, dna)
+  const instanceMyPosts = Config.instance(agentMyPosts, dna)
 
-  const containerConfig = Config.container(instanceAlice, instanceBob)
+  const containerConfig = Config.container(instanceAlice, instanceBob, instanceMyPosts)
   return new Container(containerConfig)
 })()
 
@@ -158,11 +160,13 @@ test('posts_by_agent', (t) => {
 test('my_posts', async (t) => {
   t.plan(1)
 
-  alice.call("blog", "main", "create_post",
+  const instance = container.makeCaller("myposts", dnaPath)
+
+  instance.call("blog", "main", "create_post",
     { "content": "Holo world", "in_reply_to": "" }
   )
 
-  alice.call("blog", "main", "create_post",
+  instance.call("blog", "main", "create_post",
     { "content": "Another post", "in_reply_to": "" }
   )
 
@@ -172,11 +176,11 @@ test('my_posts', async (t) => {
       return result &&
         result.Ok &&
         result.Ok.addresses &&
-        result.Ok.addresses.length === 3
+        result.Ok.addresses.length === 2
     }
   ).catch(t.fail)
 
-  t.equal(result.Ok.addresses.length, 3)
+  t.equal(result.Ok.addresses.length, 2)
 })
 
 test('create/get_post roundtrip', (t) => {

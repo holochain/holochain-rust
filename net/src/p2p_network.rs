@@ -33,7 +33,6 @@ impl P2pNetwork {
     /// create a new p2p network instance, given message handler and config json
     pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
-        //let config: P2pConfig = serde_json::from_str(config_json.into())?;
         let network_config = config.backend_config.to_string().into();
         // so far, we have only implemented the "ipc" backend type
         let connection = match config.backend_kind {
@@ -63,6 +62,10 @@ impl P2pNetwork {
     pub fn stop(self) -> NetResult<()> {
         self.connection.stop()
     }
+
+    pub fn endpoint(&self) -> String {
+        self.connection.endpoint.clone()
+    }
 }
 
 #[cfg(test)]
@@ -73,11 +76,7 @@ mod tests {
     fn it_should_create_zmq_socket() {
         let p2p_config = P2pConfig::new(
             P2pBackendKind::IPC,
-            r#"{
-                "socketType": "zmq",
-                "ipcUri": "tcp://127.0.0.1:0",
-                "blockConnect": false
-            }"#,
+            crate::ipc_net_worker::IpcNetWorker::ZMQ_URI_CONFIG,
         );
         let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &p2p_config).unwrap();
         res.send(Protocol::P2pReady).unwrap();

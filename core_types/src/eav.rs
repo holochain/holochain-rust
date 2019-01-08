@@ -60,7 +60,7 @@ pub enum Action {
 impl ToString for Action {
     fn to_string(&self) -> String {
         match self {
-            insert => String::from("Action"),
+            insert => String::from("Insert"),
             delete => String::from("Delete"),
             update => String::from("Update"),
         }

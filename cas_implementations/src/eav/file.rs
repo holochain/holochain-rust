@@ -101,6 +101,7 @@ impl EavFileStorage {
             address,
         ]
         .join(&MAIN_SEPARATOR.to_string());
+        println!("path {:?}",path.clone());
         create_dir_all(path.clone())?;
         let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
         let mut f = File::create(address_path)?;
@@ -121,14 +122,20 @@ impl EavFileStorage {
             .map(|e| e.to_string())
             .unwrap_or(String::new());
         let full_path =
-            vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
+            vec![self.dir_path.clone(), subscript].join(&MAIN_SEPARATOR.to_string());
+        if Path::new(&full_path.clone()).exists()
+        {
         let (eavs, errors): (Vec<_>, Vec<_>) = WalkDir::new(full_path.clone())
+            .contents_first(true)
             .into_iter()
+            .filter_entry(|dir_entry|
+                dir_entry.path().to_str().unwrap_or("").to_string().contains(&*address) && ! dir_entry.metadata().map(|walk|walk.is_dir()).unwrap_or(false)
+            )
             .map(|dir_entry| {
                 dir_entry
                     .map(|walk| read_eav(self.dir_path.clone(), walk))
                     .unwrap_or(Err(HolochainError::ErrorGeneric(
-                        "Could not get eav".to_string(),
+                        vec!["Could not get eav : ".to_string(),self.dir_path.clone()].join("")
                     )))
             })
             .partition(Result::is_ok);
@@ -138,6 +145,7 @@ impl EavFileStorage {
             ))
         } else {
             let mut hashmap: HashMap<HashString, String> = HashMap::new();
+            println!("eavs {:?}",eavs.clone());
             eavs.iter().for_each(|s| {
                 let (key, value) = s
                     .clone()
@@ -145,6 +153,11 @@ impl EavFileStorage {
                 hashmap.insert(key, value);
             });
             Ok(hashmap)
+        }
+        }
+        else
+        {
+            Ok(HashMap::new())
         }
     }
 }

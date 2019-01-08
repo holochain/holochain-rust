@@ -32,24 +32,22 @@ fn example_dna_address() -> Address {
     DNA_ADDRESS.into()
 }
 
+type TwoNodesTestFn =
+    fn(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -> NetResult<()>;
 
-type TwoNodesTestFn = fn(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -> NetResult<()>;
-
-// Do general test with config
+// Do normal tests according to config
 fn launch_test_with_config(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
     launch_two_nodes_test(n3h_path, config_filepath, general_test)?;
     launch_two_nodes_test(n3h_path, config_filepath, meta_test)?;
     Ok(())
 }
 
-// Do general test with config
+// Do ipc-mock tests according to config
 fn launch_test_with_ipc_mock(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
     launch_two_nodes_test_with_ipc_mock(n3h_path, config_filepath, general_test)?;
     launch_two_nodes_test_with_ipc_mock(n3h_path, config_filepath, meta_test)?;
     Ok(())
 }
-
-
 
 // MACROS
 macro_rules! one_let {
@@ -261,7 +259,11 @@ fn create_spawned_connection(
 }
 
 // do general test with hackmode
-fn launch_two_nodes_test_with_ipc_mock(n3h_path: &str, config_filepath: &str, test_fn: TwoNodesTestFn) -> NetResult<()> {
+fn launch_two_nodes_test_with_ipc_mock(
+    n3h_path: &str,
+    config_filepath: &str,
+    test_fn: TwoNodesTestFn,
+) -> NetResult<()> {
     // Create two nodes
     let mut node1 = create_spawned_connection(
         n3h_path,
@@ -282,10 +284,12 @@ fn launch_two_nodes_test_with_ipc_mock(n3h_path: &str, config_filepath: &str, te
     Ok(())
 }
 
-
 // Do general test with config
-fn launch_two_nodes_test(n3h_path: &str, config_filepath: &str, test_fn: TwoNodesTestFn) -> NetResult<()> {
-
+fn launch_two_nodes_test(
+    n3h_path: &str,
+    config_filepath: &str,
+    test_fn: TwoNodesTestFn,
+) -> NetResult<()> {
     // Create two nodes
     let mut node1 = create_spawned_connection(
         n3h_path,
@@ -310,17 +314,18 @@ fn launch_two_nodes_test(n3h_path: &str, config_filepath: &str, test_fn: TwoNode
     Ok(())
 }
 
-
-fn no_track_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -> NetResult<()> {
+fn no_track_test(
+    node1: &mut IpcNode,
+    node2: &mut IpcNode,
+    can_test_connect: bool,
+) -> NetResult<()> {
     // FIXME: not calling trackApp should make sends or whatever else fail
     Ok(())
 }
 
-
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -> NetResult<()> {
-
     // Get each node's current state
     let node1_state = node1.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
     let node2_state = node2.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
@@ -345,7 +350,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
         })
-            .into(),
+        .into(),
     )?;
     let connect_result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     node2.p2p_connection.send(
@@ -353,7 +358,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_2.to_string(),
         })
-            .into(),
+        .into(),
     )?;
     let connect_result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
 
@@ -363,7 +368,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             ProtocolWrapper::Connect(ConnectData {
                 address: node2_binding.into(),
             })
-                .into(),
+            .into(),
         )?;
         let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
         one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
@@ -377,11 +382,11 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
 
     // Send data & metadata on same address
     send_and_check_data(node1, node2, ENTRY_ADDRESS_1)?;
-    send_and_check_metadata(node1, node2,ENTRY_ADDRESS_1)?;
+    send_and_check_metadata(node1, node2, ENTRY_ADDRESS_1)?;
 
     // Again but now send metadata first
-    send_and_check_metadata(node1, node2,ENTRY_ADDRESS_2)?;
-    send_and_check_data(node1, node2,ENTRY_ADDRESS_2)?;
+    send_and_check_metadata(node1, node2, ENTRY_ADDRESS_2)?;
+    send_and_check_data(node1, node2, ENTRY_ADDRESS_2)?;
 
     // Done
     Ok(())
@@ -397,7 +402,7 @@ fn send_and_check_data(node1: &mut IpcNode, node2: &mut IpcNode, address: &str) 
             address: address.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     // Check if both nodes received a Store it
     let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
@@ -413,7 +418,7 @@ fn send_and_check_data(node1: &mut IpcNode, node2: &mut IpcNode, address: &str) 
             from_agent_id: AGENT_ID_2.to_string(),
             address: address.to_string(),
         })
-            .into(),
+        .into(),
     )?;
     let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDht(_))))?;
     println!("got dht get: {:?}", result_2);
@@ -427,7 +432,7 @@ fn send_and_check_data(node1: &mut IpcNode, node2: &mut IpcNode, address: &str) 
             address: address.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtResult(_))))?;
     println!("got dht get result: {:?}", result_2);
@@ -435,8 +440,11 @@ fn send_and_check_data(node1: &mut IpcNode, node2: &mut IpcNode, address: &str) 
     Ok(())
 }
 
-
-fn send_and_check_metadata(node1: &mut IpcNode, node2: &mut IpcNode, address: &str) -> NetResult<()>  {
+fn send_and_check_metadata(
+    node1: &mut IpcNode,
+    node2: &mut IpcNode,
+    address: &str,
+) -> NetResult<()> {
     // Send 'Store DHT metadata' message on node 1
     node1.p2p_connection.send(
         ProtocolWrapper::PublishDhtMeta(DhtMetaData {
@@ -448,7 +456,7 @@ fn send_and_check_metadata(node1: &mut IpcNode, node2: &mut IpcNode, address: &s
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello-meta"),
         })
-            .into(),
+        .into(),
     )?;
     // Check if both nodes received a 'Store DHT Metadata' message
     let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
@@ -465,7 +473,7 @@ fn send_and_check_metadata(node1: &mut IpcNode, node2: &mut IpcNode, address: &s
             address: address.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
         })
-            .into(),
+        .into(),
     )?;
     let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMeta(_))))?;
     println!("got dht get: {:?}", result_2);
@@ -481,7 +489,7 @@ fn send_and_check_metadata(node1: &mut IpcNode, node2: &mut IpcNode, address: &s
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
     println!("got dht get result: {:?}", result_2);

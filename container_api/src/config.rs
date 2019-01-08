@@ -254,14 +254,13 @@ impl TryFrom<DnaConfiguration> for Dna {
 }
 
 /// An instance combines a DNA with an agent.
-/// Each instance has its own network, storage and logger configuration.
+/// Each instance has its own storage configuration.
 #[derive(Deserialize, Serialize, Clone)]
 pub struct InstanceConfiguration {
     pub id: String,
     pub dna: String,
     pub agent: String,
     pub storage: StorageConfiguration,
-    pub network: Option<String>,
 }
 
 /// This configures the Content Addressable Storage (CAS) that
@@ -437,8 +436,7 @@ pub mod tests {
 
     #[test]
     fn test_load_complete_config() {
-        let toml = &format!(
-            r#"
+        let toml = r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester 1"
@@ -454,7 +452,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    network = "{}"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -487,9 +484,7 @@ pub mod tests {
     bootstrap_nodes = ["/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"]
     n3h_path = "/Users/cnorris/.holochain/n3h"
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
-    "#,
-            "{\\\"backend_kind\\\":\\\"special\\\"}"
-        );
+    "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
@@ -502,10 +497,9 @@ pub mod tests {
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
-        assert_eq!(
-            instance_config.network,
-            Some("{\"backend_kind\":\"special\"}".to_string())
-        );
+        assert_eq!(instance_config.id, "app spec instance");
+        assert_eq!(instance_config.dna, "app spec rust");
+        assert_eq!(instance_config.agent, "test agent");
         assert_eq!(config.logger.logger_type, "");
         assert_eq!(
             config.network.unwrap(),
@@ -589,9 +583,10 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(instance_config.network, None);
         assert_eq!(config.logger.logger_type, "debug");
         assert_eq!(config.logger.rules.rules.len(), 1);
+
+        assert_eq!(config.network, None);
     }
 
     #[test]

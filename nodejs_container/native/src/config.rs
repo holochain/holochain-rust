@@ -57,7 +57,6 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             .entry(dna_data.path.clone())
             .or_insert_with(|| make_dna_config(dna_data).expect("DNA file not found"));
 
-        let network_mock = Some(P2pConfig::unique_mock_config());
         let agent_id = agent_config.id.clone();
         let dna_id = dna_config.id.clone();
         let instance = InstanceConfiguration {
@@ -65,7 +64,6 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             agent: agent_id,
             dna: dna_id,
             storage: StorageConfiguration::Memory,
-            network: network_mock,
         };
         instance_configs.push(instance);
     }

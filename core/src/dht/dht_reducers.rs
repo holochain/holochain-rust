@@ -54,7 +54,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
 
 //
 pub(crate) fn reduce_hold_entry(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -78,7 +78,10 @@ pub(crate) fn reduce_hold_entry(
                 meta_res
                     .map(|_| Some(new_store))
                     .map_err(|err| {
-                        println!("reduce_hold_entry: meta_storage write failed!: {:?}", err);
+                        context.log(format!(
+                            "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
+                            err
+                        ));
                         None::<DhtStore>
                     })
                     .ok()
@@ -87,7 +90,10 @@ pub(crate) fn reduce_hold_entry(
             .ok()
             .unwrap_or(None)
     } else {
-        println!("dht::reduce_hold_entry() FAILED {:?}", res);
+        context.log(format!(
+            "err/dht: dht::reduce_hold_entry() FAILED {:?}",
+            res
+        ));
         None
     }
 }

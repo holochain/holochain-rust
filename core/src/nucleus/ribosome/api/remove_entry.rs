@@ -32,10 +32,10 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let try_address = Address::try_from(args_str.clone());
     // Exit on error
     if try_address.is_err() {
-        println!(
-            "invoke_remove_entry failed to deserialize Address: {:?}",
+        runtime.context.log(format!(
+            "err/zome: invoke_remove_entry failed to deserialize Address: {:?}",
             args_str
-        );
+        ));
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let deleted_entry_address = try_address.unwrap();

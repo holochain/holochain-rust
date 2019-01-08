@@ -93,7 +93,10 @@ fn publish_link_meta(
     };
     let link = link_add_entry.link().clone();
 
-    context.log(format!("Publishing link meta for link: {:?}", link));
+    context.log(format!(
+        "debug/reduce/link_meta: Publishing link meta for link: {:?}",
+        link
+    ));
 
     send(
         network_state,

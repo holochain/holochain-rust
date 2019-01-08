@@ -29,7 +29,7 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
                     custom_direct_message,
                     context.clone(),
                 )) {
-                    context.log(format!("Error handling custom direct message: {:?}", error));
+                    context.log(format!("err/net: Error handling custom direct message: {:?}", error));
                 }
             });
         }
@@ -48,7 +48,7 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
             });
         }
         DirectMessage::ValidationPackage(_) => context.log(
-            "Got DirectMessage::ValidationPackage as initial message. This should not happen.",
+            "err/net: Got DirectMessage::ValidationPackage as initial message. This should not happen.",
         ),
     };
 }
@@ -71,7 +71,7 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
     match response {
         DirectMessage::Custom(custom_direct_message) => {
             if initial_message.is_none() {
-                context.log("Received a custom direct message response but could not find message ID in history. Not able to process.");
+                context.log("err/net: Received a custom direct message response but could not find message ID in history. Not able to process.");
                 return;
             }
 
@@ -86,11 +86,11 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
             dispatch_action(context.action_channel(), action_wrapper.clone());
         }
         DirectMessage::RequestValidationPackage(_) => context.log(
-            "Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
+            "err/net: Got DirectMessage::RequestValidationPackage as a response. This should not happen.",
         ),
         DirectMessage::ValidationPackage(maybe_validation_package) => {
             if initial_message.is_none() {
-                context.log("Received a validation package but could not find message ID in history. Not able to process.");
+                context.log("err/net: Received a validation package but could not find message ID in history. Not able to process.");
                 return;
             }
 

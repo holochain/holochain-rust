@@ -103,7 +103,7 @@ impl Holochain {
         ));
         match result {
             Ok(new_context) => {
-                context.log(format!("{} instantiated", name));
+                context.log(format!("debug/container: {} instantiated", name));
                 let hc = Holochain {
                     instance,
                     context: new_context.clone(),
@@ -256,7 +256,7 @@ mod tests {
         assert_eq!(network_state.dna_address.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
-        assert!(format!("{:?}", *test_logger).contains("\"TestApp instantiated\""));
+        assert!(format!("{:?}", *test_logger).contains("\"debug/container: TestApp instantiated\""));
     }
 
     fn write_agent_state_to_file() -> String {
@@ -560,7 +560,7 @@ mod tests {
         assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
         assert!(format!("{:?}", test_logger.log).contains(
-            "\"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\""));
+            "\"debug/dna: \\\'\\\"Hello world!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_hello\\\' returned: Success\""));
 
         // Check in holochain instance's history that the debug event has been processed
         // @TODO don't use history length in tests
@@ -600,7 +600,7 @@ mod tests {
         let test_logger = test_logger.lock().unwrap();
 
         assert!(format!("{:?}", test_logger.log).contains(
-            "\"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\""));
+            "\"debug/dna: \\\'\\\"Hello\\\"\\\'\", \"debug/dna: \\\'\\\"world\\\"\\\'\", \"debug/dna: \\\'\\\"!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_multiple\\\' returned: Success\""));
 
         // Check in holochain instance's history that the deb event has been processed
         // @TODO don't use history length in tests

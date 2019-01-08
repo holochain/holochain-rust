@@ -1,7 +1,7 @@
 extern crate metadeps;
 
 use std::env;
-// use std::path::Path;
+use std::path::Path;
 
 // fn prefix_dir(env_name: &str, dir: &str) -> Option<String> {
 //     env::var(env_name).ok().or_else(|| {
@@ -11,12 +11,18 @@ use std::env;
 //     })
 // }
 
+fn prefix_dir(dir: &str) -> Option<String> {
+    env::var("CARGO_MANIFEST_DIR").ok()
+        .map(|prefix| Path::new(&prefix).join("zmq-sys").join("vendor").join("zmq").join(dir))
+        .and_then(|path| path.to_str().map(|p| p.to_owned()))
+}
+
 fn main() {
-    println!("fooo!");
-    let dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let prefix_dir = format!("{}/zmq-sys/vendor/zmq", dir);
-    println!("cargo:rustc-link-search=native={}/lib", &prefix_dir);
-    println!("cargo:include={}/include", &prefix_dir);
+    // println!("fooo!");
+    // let dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    // let prefix_dir = format!("{}/zmq-sys/vendor/zmq", dir);
+    println!("cargo:rustc-link-search=native={}", &prefix_dir("lib").unwrap());
+    println!("cargo:include={}", &prefix_dir("include").unwrap());
 
     // let lib_path = prefix_dir("LIBZMQ_LIB_DIR", "lib");
     // let include = prefix_dir("LIBZMQ_INCLUDE_DIR", "include");

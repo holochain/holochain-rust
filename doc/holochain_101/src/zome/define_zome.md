@@ -25,7 +25,7 @@ The first line in the following code snippet (from a `src/lib.rs`) is important:
 
 What are Rust macros? Generally speaking, they are code that will actually generate other code, when compiled. They are shortcuts. Anywhere in Rust that you see an expression followed immediately (no space) by an exclamation mark (!) that is the use of a macro.
 
-In the case of Zome development, it was discovered that much code could be saved from being written, by obscuring it in a macro. 
+In the case of Zome development, it was discovered that much code could be saved from being written, by encapsulating it in a macro.
 
 That is how `define_zome!` came about. It is a Rust macro imported from the HDK which must be used for every Zome (unless you read the source code for it yourself and write something that behaves the same way!)
 

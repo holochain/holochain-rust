@@ -20,7 +20,7 @@
   - [Adding a Zome](./zome/adding_a_zome.md)
   - [Intro to HDK](./zome/intro_to_hdk.md)
   - [Intro to Zome Definition](./zome/define_zome.md)
-  - [(E) Entry Type Definitions](./zome/entry_type_definitions.md)
+  - [App Entry Type Definitions](./zome/entry_type_definitions.md)
   - [(E) Genesis](./zome/genesis.md)
   - [(E) Zome Functions](./zome/zome_functions.md)
   - [(E) Read & Write Data Operations](./zome/read_and_write.md)

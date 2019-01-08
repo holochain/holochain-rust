@@ -7,7 +7,7 @@
 # run `make test_holochain` to test holochain builds
 # run `make test_cmd` to test the command line tool builds
 
-all: lint build_holochain build_cmd
+all: build_holochain build_cmd
 
 CORE_RUST_VERSION ?= nightly-2018-12-26
 TOOLS_RUST_VERSION ?= nightly-2018-12-26

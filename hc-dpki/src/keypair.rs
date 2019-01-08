@@ -59,6 +59,23 @@ impl Keypair {
             pw_enc_priv,
         }
     }
+  
+    /**
+    * get the keypair identifier string
+    * @return {string}
+    */
+    pub fn get_id (&mut self)->SecBuf {
+        let mut id = SecBuf::with_secure(self.pub_keys.len());
+        // let pub_keys = self.pub_keys.write_lock(); 
+        {
+            let mut id = id.write_lock();
+            let pub_keys = self.pub_keys.read_lock();
+            for i in 0..pub_keys.len(){
+                id[i]=pub_keys[i].clone();
+            }
+        }
+        return id;
+    }
 
     /**
      * sign some arbitrary data with the signing private key
@@ -210,6 +227,21 @@ impl Keypair {
 mod tests {
     use super::*;
     use crate::holochain_sodium::random::random_secbuf;
+
+    #[test]
+    fn it_should_get_id() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed);
+       
+        let mut pk : SecBuf = keypair.get_id();
+        let pk = pk.read_lock();
+        println!("pk: {:?}",*pk);
+        let mut pk1 : SecBuf = keypair.get_id();
+        let pk1 = pk1.read_lock();
+        println!("pk1: {:?}",*pk1);
+        assert_eq!(format!("{:?}", *pk),format!("{:?}", *pk1));
+    }
 
     #[test]
     fn it_should_get_bundle() {

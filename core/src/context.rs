@@ -205,7 +205,7 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 /// create a test network
 #[cfg_attr(tarpaulin, skip)]
 pub fn mock_network_config() -> JsonString {
-    JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)
+    JsonString::from(P2pConfig::unique_mock())
 }
 
 #[cfg(test)]
@@ -215,8 +215,7 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        context::mock_network_config, instance::tests::test_logger, persister::SimplePersister,
-        state::State,
+        context::mock_network_config, logger::test_logger, persister::SimplePersister, state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;

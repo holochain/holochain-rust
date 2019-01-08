@@ -1,6 +1,6 @@
 # holochain-nodejs
 
-Nodejs Holochain Container primarily for the execution of tests
+NodeJS Holochain Container, primarily for the execution of tests. It includes a lightweight API for orchestrating multi-agent scenario tests.
 
 ## Installation
 
@@ -12,8 +12,9 @@ node ./publish.js
 ```
 from the project root.
 
-## Usage
-The following demo shows how to spin up two separate instances of a hApp, within the container.
+## Basic Usage
+
+The following demo shows how to spin up two separate instances of a DNA, within the container.
 
 After installing via npm the module can be used in a node script as follows:
 ```javascript
@@ -55,28 +56,15 @@ container.stop()
 container.start, container.call, container.agent_id, and container.stop are the four functions of Container instances currently.
 
 Note about usage:
-Prior to version ???, a container would only return a single instance of an app. Now a container actually contains multiple instances. When performing a call to an instance, one must include the instance id. Take the following for example:
+Prior to version 0.0.3, a container would only return a single instance of an app. Now a container actually contains multiple instances. When performing a call to an instance, one must include the instance id. Take the following for example:
 
 ```
 const callResult = container.call(someInstanceId, someZome, someCapability, someFunction, someParams)
 ```
 
-If you wanted to go on using the old syntax of individuating the apps, you could use the following
-helper function which is exposed on `Container`:
+## Scenario tests
 
-```
-const dnaPath = "path/to/happ.hcpkg"
-...
-const container = new Container(config)
-const alice = container.makeCaller('alice', dnaPath)
 
-// now you can use `alice` as a slightly more convenient way of calling this instance
-// (the following four params would need to be replaced with valid values)
-alice.call(someZome, someCapability, someFunction, someParams)
-
-// you can also get the agent's address this way:
-alice.agentId
-```
 
 ## Deployment
 Recommended pattern for deployment:

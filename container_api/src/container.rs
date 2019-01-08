@@ -391,7 +391,7 @@ impl Container {
                     "err/container: Error running interface '{}': {}",
                     interface_config.id, error
                 );
-                log_sender.send((String::from("container"), message));
+                let _ = log_sender.send((String::from("container"), message));
                 error
             })
         })

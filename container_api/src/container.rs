@@ -4,9 +4,13 @@ use crate::{
     },
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
+    logger::DebugLogger,
     Holochain,
 };
-use holochain_core::{logger::Logger, signal::Signal};
+use holochain_core::{
+    logger::{ChannelLogger, Logger},
+    signal::Signal,
+};
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     dna::Dna,
@@ -21,7 +25,7 @@ use std::{
     convert::TryFrom,
     fs::File,
     io::prelude::*,
-    sync::{mpsc::SyncSender, Arc, RwLock},
+    sync::{mpsc::SyncSender, Arc, Mutex, RwLock},
     thread,
 };
 
@@ -45,6 +49,7 @@ pub struct Container {
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
+    logger: DebugLogger,
     network_ipc_uri: Option<String>,
     network_child_process: NetShutdown,
 }
@@ -63,15 +68,22 @@ type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
 pub static DEFAULT_NETWORK_CONFIG: &'static str = P2pConfig::DEFAULT_MOCK_CONFIG;
 
+// preparing for having container notifiers go to one of the log streams
+pub fn notify(msg: String) {
+    println!("{}", msg);
+}
+
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
+        let rules = config.logger.rules.clone();
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
+            logger: DebugLogger::new(rules),
             network_ipc_uri: None,
             network_child_process: None,
         }
@@ -110,7 +122,7 @@ impl Container {
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
-                println!("Starting instance \"{}\"...", id);
+                notify(format!("Starting instance \"{}\"...", id));
                 hc.write().unwrap().start()
             })
             .collect::<Result<Vec<()>, _>>()
@@ -122,7 +134,7 @@ impl Container {
         self.instances
             .iter_mut()
             .map(|(id, hc)| {
-                println!("Stopping instance \"{}\"...", id);
+                notify(format!("Stopping instance \"{}\"...", id));
                 hc.write().unwrap().stop()
             })
             .collect::<Result<Vec<()>, _>>()
@@ -281,6 +293,12 @@ impl Container {
                     })?
                 };
 
+                if config.logger.logger_type == "debug" {
+                    context_builder = context_builder.with_logger(Arc::new(Mutex::new(
+                        ChannelLogger::new(instance_config.id.clone(), self.logger.get_sender()),
+                    )));
+                }
+
                 // Container API
                 let mut api_builder = ContainerApiBuilder::new();
                 // Bridges:
@@ -387,9 +405,10 @@ impl<'a> TryFrom<&'a Configuration> for Container {
 
 /// This can eventually be dependency injected for third party Interface definitions
 fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
-    use interface_impls::websocket::WebsocketInterface;
+    use interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
     match interface_config.driver {
         InterfaceDriver::Websocket { port } => Box::new(WebsocketInterface::new(port)),
+        InterfaceDriver::Http { port } => Box::new(HttpInterface::new(port)),
         _ => unimplemented!(),
     }
 }
@@ -462,9 +481,6 @@ pub mod tests {
     id = "test-instance-1"
     dna = "bridge-callee"
     agent = "test-agent-1"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "memory"
 
@@ -472,9 +488,6 @@ pub mod tests {
     id = "test-instance-2"
     dna = "test-dna"
     agent = "test-agent-2"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "memory"
 
@@ -482,9 +495,6 @@ pub mod tests {
     id = "bridge-caller"
     dna = "bridge-caller"
     agent = "test-agent-3"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "memory"
 
@@ -493,6 +503,16 @@ pub mod tests {
     [interfaces.driver]
     type = "websocket"
     port = 8888
+    [[interfaces.instances]]
+    id = "test-instance-1"
+    [[interfaces.instances]]
+    id = "test-instance-2"
+
+    [[interfaces]]
+    id = "test-interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
     [[interfaces.instances]]
     id = "test-instance-1"
     [[interfaces.instances]]

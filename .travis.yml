@@ -42,7 +42,7 @@ _windows_template: &_windows_template
   - nodist add $TRAVIS_NODE_VERSION
   - nodist $TRAVIS_NODE_VERSION
   - NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
-  - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+  # - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
   - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
 
 _unix_nodejs_container_template: &_unix_nodejs_container_template
@@ -159,7 +159,7 @@ _windows_template_lite: &_windows_template_lite
   language: rust
   rust: nightly-2018-12-26-x86_64-pc-windows-msvc
   before_install:
-   - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
+   # - PATH=$PATH:$TRAVIS_BUILD_DIR/vendor/zmq/bin
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-Z thinlto -C codegen-units=16"
   cache:
@@ -316,7 +316,7 @@ jobs:
         - CRATE_NAME=hc
         # - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
       before_script:
-        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+        # - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
 
     - name: "CMD DEPLOY - 64 bit Windows GNU"
       <<: *_cmd_deploy_template
@@ -327,7 +327,7 @@ jobs:
         - CRATE_NAME=hc
         # - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
       before_script:
-        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+        # - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
 
     # holochain-nodejs releases section
     - name: "Linux - Node 8"

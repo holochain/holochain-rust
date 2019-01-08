@@ -37,11 +37,8 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
     let edition = maybe_package
         .and_then(|p| p.get("edition"))
         .unwrap_or(&edition_default);
-    let branch = maybe_package
-        .and_then(|p| p.get("branch"))
-        .unwrap_or(&branch_default);
 
-    interpolate_cargo_template(&name, authors, edition, branch)
+    interpolate_cargo_template(&name, authors, edition, &branch_default)
 }
 
 /// Use the Cargo.toml.template file and interpolate values into the placeholders

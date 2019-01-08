@@ -172,11 +172,11 @@ test('my_posts', async (t) => {
       return result &&
         result.Ok &&
         result.Ok.addresses &&
-        result.Ok.addresses.length === 2
+        result.Ok.addresses.length === 3
     }
   ).catch(t.fail)
 
-  t.equal(result.Ok.addresses.length, 2)
+  t.equal(result.Ok.addresses.length, 3)
 })
 
 test('create/get_post roundtrip', (t) => {

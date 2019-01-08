@@ -292,6 +292,7 @@ impl NetWorker for MockWorker {
                 let (tx, rx) = mpsc::channel();
                 self.mock_msgs.push(rx);
                 mock.register(&app.dna_address, &app.agent_id, tx)?;
+                return Ok(());
             }
         }
         let map_lock = MOCK_MAP.read().unwrap();

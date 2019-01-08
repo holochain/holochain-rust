@@ -6,7 +6,6 @@ use holochain_container_api::{
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
-use holochain_net::p2p_config::P2pConfig;
 use neon::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
 

@@ -22,6 +22,7 @@ fn main() {
     // let dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     // let prefix_dir = format!("{}/zmq-sys/vendor/zmq", dir);
     println!("cargo:rustc-link-search=native={}", &prefix_dir("lib").unwrap());
+    println!("cargo:rustc-link-search=native={}", &prefix_dir("bin").unwrap());
     println!("cargo:include={}", &prefix_dir("include").unwrap());
 
     // let lib_path = prefix_dir("LIBZMQ_LIB_DIR", "lib");

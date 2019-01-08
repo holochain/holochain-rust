@@ -383,9 +383,17 @@ impl Container {
         interface_config: InterfaceConfiguration,
     ) -> InterfaceThreadHandle {
         let dispatcher = self.make_interface_handler(&interface_config);
+        let log_sender = self.logger.get_sender();
         thread::spawn(move || {
             let iface = make_interface(&interface_config);
-            iface.run(dispatcher)
+            iface.run(dispatcher).map_err(|error| {
+                let message = format!(
+                    "err/container: Error running interface '{}': {}",
+                    interface_config.id, error
+                );
+                log_sender.send((String::from("container"), message));
+                error
+            })
         })
     }
 }

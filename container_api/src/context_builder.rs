@@ -132,7 +132,7 @@ impl ContextBuilder {
             dht_storage,
             eav_storage,
             self.network_config.unwrap_or(JsonString::from(String::from(
-                P2pConfig::named_mock_config("todo make unique"),
+                P2pConfig::unique_mock_config(),
             ))),
             self.container_api,
             self.signal_tx,
@@ -149,12 +149,10 @@ mod tests {
     fn vanilla() {
         let context = ContextBuilder::new().spawn();
         assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
-        assert_eq!(
-            context.network_config,
-            JsonString::from(String::from(P2pConfig::named_mock_config(
-                "todo make unique"
-            )))
-        );
+        assert!(context
+            .network_config
+            .to_string()
+            .contains(r#""backend_kind": "MOCK""#));
     }
 
     #[test]
@@ -166,9 +164,7 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(String::from(P2pConfig::named_mock_config(
-            "todo make unique",
-        )));
+        let net = JsonString::from(String::from(P2pConfig::unique_mock_config()));
         let context = ContextBuilder::new()
             .with_network_config(net.clone())
             .spawn();

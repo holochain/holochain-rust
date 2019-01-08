@@ -1,4 +1,5 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
+use snowflake;
 use std::{fs::File, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------
@@ -92,6 +93,20 @@ impl P2pConfig {
 
     pub fn default_mock() -> Self {
         Self::named_mock("default-mock")
+    }
+
+    pub fn unique_mock() -> Self {
+        Self::named_mock(&format!(
+            "mock-auto-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ))
+    }
+
+    pub fn unique_mock_config() -> String {
+        Self::named_mock_config(&format!(
+            "mock-auto-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ))
     }
 
     pub fn named_mock(network_name: &str) -> Self {

@@ -389,7 +389,7 @@ pub fn call<S: Into<String>>(
     // Call WASMI-able commit
     let encoded_allocation_of_result: u32 = unsafe { hc_call(allocation_of_input.encode() as u32) };
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result = load_string(encoded_allocation_of_result)?;
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result)?;
 
     // Free result & input allocations.
     mem_stack

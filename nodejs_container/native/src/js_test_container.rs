@@ -1,4 +1,3 @@
-use colored::*;
 use holochain_container_api::{
     config::{load_configuration, Configuration},
     container::Container as RustContainer,
@@ -11,10 +10,7 @@ use std::sync::{
     Arc, Mutex,
 };
 
-use crate::{
-    config::{js_instance_id, js_make_config},
-    waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask},
-};
+use crate::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
 pub struct TestContainer {
     container: RustContainer,
@@ -22,16 +18,11 @@ pub struct TestContainer {
     is_running: Arc<Mutex<bool>>,
 }
 
-fn _signal_callback(mut cx: FunctionContext) -> JsResult<JsNull> {
-    println!("{}", "Background task shut down\n".bold().yellow());
-    Ok(cx.null())
-}
-
 declare_types! {
 
-    /// A Container can be initialized either by:
-    /// - an Object representation of a Configuration struct
-    /// - a string representing TOML
+    // A TestContainer can be initialized either by:
+    // - an Object representation of a Configuration struct
+    // - a string representing TOML
     pub class JsTestContainer for TestContainer {
         init(mut cx) {
             let config_arg: Handle<JsValue> = cx.argument(0)?;
@@ -49,6 +40,7 @@ declare_types! {
             Ok(TestContainer { container, sender_tx: None, is_running })
         }
 
+        // Start the backing Container and spawn a MainBackgroundTask
         method start(mut cx) {
             let js_callback: Handle<JsFunction> = cx.argument(0)?;
             let mut this = cx.this();
@@ -79,6 +71,7 @@ declare_types! {
             Ok(cx.undefined().upcast())
         }
 
+        // Stop the backing container and break the listening loop in the MainBackgroundTask
         method stop(mut cx) {
             let mut this = cx.this();
 
@@ -87,6 +80,7 @@ declare_types! {
                 let tc = &mut *this.borrow_mut(&guard);
 
                 let mut is_running = tc.is_running.lock().unwrap();
+                // This causes MainBackgroundTask to eventually terminate
                 *is_running = false;
 
                 let result = tc.container.shutdown().map_err(|e| e.to_string());
@@ -107,7 +101,6 @@ declare_types! {
             let cap_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
             let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
             let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
-            // let maybe_task_id = cx.argument_opt(5);
 
             let mut this = cx.this();
 
@@ -132,10 +125,12 @@ declare_types! {
 
             let result_string: String = res_string.into();
 
-            // let completion_callback =
             Ok(cx.string(result_string).upcast())
         }
 
+        // This sets up the state of MainBackgroundTask to listen for the next ExecuteZomeFunction
+        // action and does its magic of observing incoming actions to invoke the callback once it
+        // determines that all test-relevant network activity has completed
         method register_callback(mut cx) {
             let js_callback: Handle<JsFunction> = cx.argument(0)?;
             let this = cx.this();
@@ -156,6 +151,7 @@ declare_types! {
             Ok(cx.undefined().upcast())
         }
 
+        // Fetch the agent address from within the instance
         method agent_id(mut cx) {
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let this = cx.this();
@@ -180,10 +176,3 @@ declare_types! {
         }
     }
 }
-
-register_module!(mut m, {
-    m.export_function("makeConfig", js_make_config)?;
-    m.export_function("makeInstanceId", js_instance_id)?;
-    m.export_class::<JsTestContainer>("TestContainer")?;
-    Ok(())
-});

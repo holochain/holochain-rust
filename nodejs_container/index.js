@@ -7,7 +7,6 @@ const binding_path = binary.find(path.resolve(path.join(__dirname, './package.js
 
 const { makeInstanceId, makeConfig, TestContainer: Container } = require(binding_path);
 
-
 const promiser = (fulfill, reject) => (err, val) => {
     if (err) {
         reject(err)

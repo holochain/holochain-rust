@@ -17,3 +17,15 @@ extern crate tempfile;
 mod config;
 pub mod js_test_container;
 mod waiter;
+
+use crate::{
+    config::{js_instance_id, js_make_config},
+    js_test_container::JsTestContainer,
+};
+
+register_module!(mut m, {
+    m.export_function("makeConfig", js_make_config)?;
+    m.export_function("makeInstanceId", js_instance_id)?;
+    m.export_class::<JsTestContainer>("TestContainer")?;
+    Ok(())
+});

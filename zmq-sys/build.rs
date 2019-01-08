@@ -13,7 +13,7 @@ use std::path::Path;
 
 fn prefix_dir(dir: &str) -> Option<String> {
     env::var("CARGO_MANIFEST_DIR").ok()
-        .map(|prefix| Path::new(&prefix).join("zmq-sys").join("vendor").join("zmq").join(dir))
+        .map(|prefix| Path::new(&prefix).join("vendor").join("zmq").join(dir))
         .and_then(|path| path.to_str().map(|p| p.to_owned()))
 }
 

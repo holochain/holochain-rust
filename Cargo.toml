@@ -19,8 +19,9 @@ exclude = [
   "app_spec",
   "nodejs_container/native",
   "rust_sodium-sys",
-  "rust_zmq-sys",
+  "zmq-sys",
 ]
 
 [patch.crates-io]
 rust_sodium-sys = { path = "./rust_sodium-sys" }
+zmq-sys = { path = "./zmq-sys" }

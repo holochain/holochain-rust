@@ -6,10 +6,11 @@ use std::ops::{Deref, DerefMut};
 use super::check_init;
 
 /// a trait for structures that can be used as a backing store for SecBuf
-trait Bufferable {
+pub trait Bufferable {
     fn new(s: usize) -> Box<Bufferable>
     where
         Self: Sized;
+    fn len(&self) -> usize;
     fn readable(&mut self);
     fn writable(&mut self);
     fn noaccess(&mut self);
@@ -27,6 +28,10 @@ impl Bufferable for RustBuf {
     fn new(s: usize) -> Box<Bufferable> {
         let b = vec![0; s].into_boxed_slice();
         Box::new(RustBuf { b })
+    }
+
+    fn len(&self) -> usize {
+        self.b.len()
     }
 
     fn readable(&mut self) {}
@@ -53,7 +58,7 @@ struct SodiumBuf {
 impl Bufferable for SodiumBuf {
     /// warning: funky sizes may result in mis-alignment
     fn new(s: usize) -> Box<Bufferable> {
-        if s != 16 && s != 32 && s != 64 {
+        if s != 8 && s != 16 && s != 32 && s != 64 {
             panic!("bad buffer size: {}, disallowing this for safety", s);
         }
         let z = unsafe {
@@ -66,6 +71,10 @@ impl Bufferable for SodiumBuf {
             z
         };
         Box::new(SodiumBuf { z, s })
+    }
+
+    fn len(&self) -> usize {
+        self.s
     }
 
     fn readable(&mut self) {
@@ -148,16 +157,35 @@ impl SecBuf {
         self.p.clone()
     }
 
+    /// should be able to get size without messing with mem protection
+    pub fn len(&self) -> usize {
+        self.b.len()
+    }
+
     /// make this SecBuf readable
     pub fn readable(&mut self) {
-        self.p = ProtectState::ReadOnly;
-        self.b.readable();
+        if self.p == ProtectState::NoAccess {
+            self.p = ProtectState::ReadOnly;
+            self.b.readable();
+        } else {
+            panic!(
+                "SecBuf trying to get Double Locked, Current state : {:?}",
+                self.protect_state()
+            );
+        }
     }
 
     /// make this SecBuf writable
     pub fn writable(&mut self) {
-        self.p = ProtectState::ReadWrite;
-        self.b.writable();
+        if self.p == ProtectState::NoAccess {
+            self.p = ProtectState::ReadWrite;
+            self.b.writable();
+        } else {
+            panic!(
+                "SecBuf trying to get Double Locked, Current state : {:?}",
+                self.protect_state()
+            );
+        }
     }
 
     /// secure this SecBuf against reading or writing
@@ -172,7 +200,7 @@ impl SecBuf {
         Locker::new(self, false)
     }
 
-    /// make this SecBuf writeable, and return a locker object
+    /// make this SecBuf writable, and return a locker object
     /// that will secure this SecBuf automatically when it goes out of scope.
     pub fn write_lock(&mut self) -> Locker {
         Locker::new(self, true)
@@ -216,6 +244,12 @@ impl<'a> Locker<'a> {
 impl<'a> Drop for Locker<'a> {
     fn drop(&mut self) {
         self.0.noaccess();
+    }
+}
+
+impl<'a> std::fmt::Debug for Locker<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self.b.ref_())
     }
 }
 

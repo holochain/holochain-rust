@@ -36,7 +36,7 @@ fn is_me(c: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
         return false;
     }
     if (my_dna_address != *dna_address) || (agent_id != "" && c.agent_id.key != agent_id) {
-        c.log("HANDLE: ignoring, wasn't for me");
+        c.log("debug/net/handle: ignoring, wasn't for me");
         false
     } else {
         true
@@ -50,7 +50,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();
-        //context.log(format!("HANDLE: {:?}", message));
+        //context.log(format!("debug/net/handle: {:?}", message));
         let protocol_wrapper = ProtocolWrapper::try_from(message);
         match protocol_wrapper {
             Ok(ProtocolWrapper::StoreDht(dht_data)) => {
@@ -58,14 +58,17 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_me(&context, &dht_data.dna_address, "") {
                     return Ok(());
                 }
-                context.log(format!("HANDLE StoreDht: {:?}", dht_data));
+                context.log(format!("debug/net/handle: StoreDht: {:?}", dht_data));
                 handle_store_dht(dht_data, context.clone())
             }
             Ok(ProtocolWrapper::StoreDhtMeta(dht_meta_data)) => {
-                context.log(format!("HANDLE StoreDhtMeta: {:?}", dht_meta_data));
+                context.log(format!(
+                    "debug/net/handle: StoreDhtMeta: {:?}",
+                    dht_meta_data
+                ));
                 if !is_me(&context, &dht_meta_data.dna_address, "") {
                     context.log(format!(
-                        "HANDLE StoreDhtMeta: ignoring, not for me. {:?}",
+                        "debug/net/handle: StoreDhtMeta: ignoring, not for me. {:?}",
                         dht_meta_data
                     ));
                     return Ok(());
@@ -77,19 +80,22 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_me(&context, &get_dht_data.dna_address, "") {
                     return Ok(());
                 }
-                context.log(format!("HANDLE GetDht: {:?}", get_dht_data));
+                context.log(format!("debug/net/handle: GetDht: {:?}", get_dht_data));
                 handle_get_dht(get_dht_data, context.clone())
             }
             Ok(ProtocolWrapper::GetDhtResult(dht_data)) => {
                 if !is_me(&context, &dht_data.dna_address, &dht_data.agent_id) {
                     return Ok(());
                 }
-                context.log(format!("HANDLE GetDhtResult: {:?}", dht_data));
+                context.log(format!("debug/net/handle: GetDhtResult: {:?}", dht_data));
                 handle_get_dht_result(dht_data, context.clone())
             }
             Ok(ProtocolWrapper::GetDhtMeta(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
-                    context.log(format!("HANDLE GetDhtMeta: {:?}", get_dht_meta_data));
+                    context.log(format!(
+                        "debug/net/handle: GetDhtMeta: {:?}",
+                        get_dht_meta_data
+                    ));
                     handle_get_dht_meta(get_dht_meta_data, context.clone())
                 }
             }
@@ -111,10 +117,13 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     //    &get_dht_meta_data.dna_address,
                     //    &get_dht_meta_data.from_agent_id,
                     //) {
-                    //    context.log("HANDLE: Got DHT meta result from myself. Ignoring.");
+                    //    context.log("debug/net/handle: Got DHT meta result from myself. Ignoring.");
                     //    return Ok(());
                     //} else {
-                    context.log(format!("HANDLE: GetDhtMetaResult: {:?}", get_dht_meta_data));
+                    context.log(format!(
+                        "debug/net/handle: GetDhtMetaResult: {:?}",
+                        get_dht_meta_data
+                    ));
                     handle_get_dht_meta_result(get_dht_meta_data, context.clone())
                     //}
                 }
@@ -167,7 +176,10 @@ fn republish_all_public_chain_entries(context: &Arc<Context>) {
         .for_each(|chain_header| {
             let hash = HashString::from(chain_header.entry_address().to_string());
             match block_on(publish(hash.clone(), context)) {
-                Err(e) => context.log(format!("unable to publish {:?}, got error: {:?}", hash, e)),
+                Err(e) => context.log(format!(
+                    "err/net/handle: unable to publish {:?}, got error: {:?}",
+                    hash, e
+                )),
                 _ => {}
             }
         });

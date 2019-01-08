@@ -176,7 +176,7 @@ impl Container {
             )],
             network_config.n3h_persistence_path.clone(),
             hashmap! {
-                String::from("N3H_MODE") => String::from("HACK"),
+                String::from("N3H_MODE") => network_config.n3h_mode.clone(),
                 String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
             },

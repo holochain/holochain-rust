@@ -340,6 +340,7 @@ pub mod tests {
         state::State,
     };
 
+    use crate::context::mock_mock_network_config;
     use std::{
         sync::{
             mpsc::{channel, sync_channel},
@@ -348,7 +349,6 @@ pub mod tests {
         thread::sleep,
         time::Duration,
     };
-    use crate::context::mock_mock_network_config;
 
     use holochain_core_types::entry::Entry;
 

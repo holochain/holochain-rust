@@ -174,11 +174,10 @@ mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
-        instance::tests::test_context,
+        instance::tests::{test_context, test_context_with_channels},
         state::test_store,
     };
     use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
-    use crate::instance::tests::test_context_with_channels;
     use std::sync::mpsc::sync_channel;
 
     #[test]

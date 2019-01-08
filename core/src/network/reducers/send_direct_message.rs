@@ -69,14 +69,12 @@ mod tests {
     use crate::{
         action::{Action, ActionWrapper, DirectMessageData, NetworkSettings},
         context::mock_network_config,
-        instance::tests::test_context,
+        instance::tests::{test_context, test_context_with_channels},
         network::direct_message::{CustomDirectMessage, DirectMessage},
         state::test_store,
     };
     use holochain_core_types::{cas::content::Address, error::HolochainError};
-    use std::sync::{Arc, RwLock};
-    use std::sync::mpsc::sync_channel;
-    use crate::instance::tests::test_context_with_channels;
+    use std::sync::{mpsc::sync_channel, Arc, RwLock};
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {

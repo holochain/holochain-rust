@@ -144,10 +144,9 @@ impl ContextBuilder {
 #[cfg(test)]
 mod tests {
     use crate::context_builder::ContextBuilder;
-    use holochain_core_types::agent::AgentId;
-    use holochain_core_types::json::JsonString;
-    use tempfile::tempdir;
+    use holochain_core_types::{agent::AgentId, json::JsonString};
     use holochain_net::p2p_config::P2pConfig;
+    use tempfile::tempdir;
 
     #[test]
     fn vanilla() {

@@ -1,6 +1,4 @@
-use holochain_net_connection::net_connection::NetWorker;
-use holochain_net_connection::NetResult;
-use holochain_net_connection::protocol::Protocol;
+use holochain_net_connection::{net_connection::NetWorker, protocol::Protocol, NetResult};
 
 pub struct MockMockWorker {}
 
@@ -20,6 +18,6 @@ impl NetWorker for MockMockWorker {
 
 impl MockMockWorker {
     pub fn new() -> Self {
-        MockMockWorker{}
+        MockMockWorker {}
     }
 }

@@ -1,8 +1,10 @@
 use holochain_container_api::context_builder::ContextBuilder;
-use holochain_core::{context::Context, logger::Logger};
+use holochain_core::{
+    context::{mock_mock_network_config, Context},
+    logger::Logger,
+};
 use holochain_core_types::agent::AgentId;
 use std::sync::{Arc, Mutex};
-use holochain_core::context::mock_mock_network_config;
 
 #[derive(Clone, Debug)]
 pub struct TestLogger {

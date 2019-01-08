@@ -86,11 +86,6 @@ impl P2pConfig {
             .expect("file is not a proper JSON of a P2pConfig struct")
     }
 
-    pub fn default_ipc() -> Self {
-        P2pConfig::from_str(P2pConfig::DEFAULT_IPC_CONFIG)
-            .expect("Invalid backend_config json on P2pConfig creation.")
-    }
-
     pub fn default_ipc_spawn() -> Self {
         P2pConfig::from_str(P2pConfig::DEFAULT_IPC_SPAWN_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")

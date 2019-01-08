@@ -1,7 +1,7 @@
 extern crate metadeps;
 
 use std::env;
-use std::path::Path;
+// use std::path::Path;
 
 // fn prefix_dir(env_name: &str, dir: &str) -> Option<String> {
 //     env::var(env_name).ok().or_else(|| {

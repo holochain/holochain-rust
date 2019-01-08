@@ -46,7 +46,10 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            println!("invoke_call failed to deserialize: {:?}", args_str);
+            runtime.context.log(format!(
+                "err/zome: invoke_call failed to deserialize: {:?}",
+                args_str
+            ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };

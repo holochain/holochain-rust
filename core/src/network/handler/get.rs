@@ -24,7 +24,7 @@ pub fn handle_get_dht(get_dht_data: GetDhtData, context: Arc<Context>) {
         Address::from(get_dht_data.address.clone()),
     )
     .unwrap_or_else(|error| {
-        context.log(format!("Error trying to find entry {:?}", error));
+        context.log(format!("error/net: Error trying to find entry {:?}", error));
         None
     });
 

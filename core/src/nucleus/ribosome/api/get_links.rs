@@ -19,10 +19,10 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         Err(_) => {
-            println!(
-                "invoke_get_links failed to deserialize GetLinksArgs: {:?}",
+            runtime.context.log(format!(
+                "err/zome: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
                 args_str
-            );
+            ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };

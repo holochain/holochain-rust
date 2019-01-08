@@ -91,10 +91,6 @@ impl P2pConfig {
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
-    pub fn default_mock() -> Self {
-        Self::named_mock("default-mock")
-    }
-
     pub fn unique_mock() -> Self {
         Self::named_mock(&format!(
             "mock-auto-{}",
@@ -129,14 +125,6 @@ impl P2pConfig {
 
 // statics
 impl P2pConfig {
-    pub const DEFAULT_MOCK_CONFIG: &'static str = r#"
-    {
-        "backend_kind": "MOCK",
-        "backend_config": {
-            "networkName": "default-mock"
-        }
-    }"#;
-
     pub const DEFAULT_IPC_CONFIG: &'static str = r#"
     {
       "backend_kind": "IPC",
@@ -159,11 +147,12 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let p2p_config = P2pConfig::from_str(P2pConfig::DEFAULT_MOCK_CONFIG).unwrap();
+        let mock_name = "mock";
+        let p2p_config = P2pConfig::from_str(&P2pConfig::named_mock_config(mock_name)).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);
-        assert_eq!(p2p_config, P2pConfig::default_mock());
+        assert_eq!(p2p_config, P2pConfig::named_mock(mock_name));
     }
 
     #[test]

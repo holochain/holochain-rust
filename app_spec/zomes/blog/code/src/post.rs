@@ -1,11 +1,8 @@
 use boolinator::Boolinator;
 use hdk::entry_definition::ValidatingEntryType;
 /// This file holds everything that represents the "post" entry type.
-use hdk::{
-    holochain_core_types::{
-        cas::content::Address, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
-    },
-    validation::EntryAction,
+use hdk::holochain_core_types::{
+    cas::content::Address, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
 };
 
 /// We declare the structure of our entry type with this Rust struct.
@@ -56,22 +53,9 @@ pub fn definition() -> ValidatingEntryType {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation: |data: ValidationData<Post>| {
-            match data {
-                ValidationData::Create { entry, .. } => (entry.content.len() > 280)
-                    .ok_or_else(|| "Content too long".into()),
-                ValidationData::Modify { .. } => Ok(()),
-                ValidationData::Delete { entry_addr, orig_entry, .. } => {
-                    let del_entry = hdk::get_entry(&entry_addr)?;
-                    let orig_entry = hdk::get_entry(&orig_entry)?;
-
-                    let del_entry_sources = entry.sources();
-                    let orig_entry_sources = entry.sources();
-
-                    (del_entry_sources == orig_entry_sources)
-                        .ok_or_else(|| "deletion is unauthorized".into())
-                },
-            }
+        validation: |post: crate::post::Post, _ctx: hdk::ValidationData| {
+            (post.content.len() < 280)
+                .ok_or_else(|| String::from("Content too long"))
         },
 
         links: [
@@ -81,11 +65,8 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: |data: LinkValidationData| {
-                    match data {
-                        LinkValidationData::Create { .. } => Ok(()),
-                        LinkValidationData::Delete { .. } => Ok(())
-                    }
+                validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
+                    Ok(())
                 }
             )
         ]

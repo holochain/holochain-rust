@@ -71,9 +71,3 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     // Otherwise its a Some(T) or a None
     hdk::get_entry(post_address)
 }
-
-pub fn handle_remove_post(post_address: Address) -> ZomeApiResult<()> {
-    let post: Post = hdk::get_entry(&post_address)?;
-
-    hdk::remove_entry(post_address)
-}

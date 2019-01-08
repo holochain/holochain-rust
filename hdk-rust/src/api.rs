@@ -920,7 +920,7 @@ pub fn get_links_result<S: Into<String>>(
     let result = get_links_result
         .addresses()
         .iter()
-        .map(|address| get_entry_result(address.to_owned(), get_entry_options.clone()))
+        .map(|address| get_entry_result(&address, get_entry_options.clone()))
         .collect();
     Ok(result)
 }

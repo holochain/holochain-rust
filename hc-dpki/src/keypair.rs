@@ -43,7 +43,38 @@ impl Keypair {
             enc_priv:enc_secret_key
         }
     }
+    // /**
+    // * generate an encrypted persistence bundle
+    // * @param {string} passphrase - the encryption passphrase
+    // * @param {string} hint - additional info / description for the bundle
+    // */
+    // async getBundle (passphrase, hint) {
+    //     if (typeof hint !== 'string') {
+    //     throw new Error('hint must be a string')
+    //     }
 
+    //     this._signPriv.$makeReadable()
+    //     this._encPriv.$makeReadable()
+    //     const out = {
+    //     type: 'hcKeypair',
+    //     hint,
+    //     data: (await util.pwEnc(msgpack.encode([
+    //         this._signPub, this._encPub,
+    //         this._signPriv._, this._encPriv._
+    //     ]), passphrase))
+    //     }
+    //     this._signPriv.$restoreProtection()
+    //     this._encPriv.$restoreProtection()
+
+    //     return out
+    // }
+    // pub fn get_bundle (passphrase,hint){
+    //     let type:String = "hcKeypair".to_string();
+    //     Ok(ptype.clone(),
+    //     hint.clone(),
+
+    //     )
+    // }
     /**
      * sign some arbitrary data with the signing private key
      * @param {Buffer} data - the data to sign

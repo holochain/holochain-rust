@@ -5,11 +5,7 @@ use crate::holochain_sodium::{
     kx,
     aead,
 };
-use crate::util::{
-    encode_id,
-    decode_id,
-    check_if_wrong_secbuf,
-};
+use crate::util;
 
 pub const SEEDSIZE:usize = 32 as usize;
 
@@ -35,7 +31,7 @@ impl Keypair {
         kx::seed_keypair(&mut seed, &mut enc_public_key, &mut enc_secret_key).unwrap();
 
         let mut pub_id = SecBuf::with_secure(sign::PUBLICKEYBYTES + kx::PUBLICKEYBYTES);
-        encode_id(&mut sign_public_key, &mut enc_public_key, &mut pub_id);
+        util::encode_id(&mut sign_public_key, &mut enc_public_key, &mut pub_id);
 
         Keypair {
             pub_keys: pub_id,
@@ -43,38 +39,27 @@ impl Keypair {
             enc_priv:enc_secret_key
         }
     }
-    // /**
-    // * generate an encrypted persistence bundle
-    // * @param {string} passphrase - the encryption passphrase
-    // * @param {string} hint - additional info / description for the bundle
-    // */
-    // async getBundle (passphrase, hint) {
-    //     if (typeof hint !== 'string') {
-    //     throw new Error('hint must be a string')
-    //     }
+    /**
+    * generate an encrypted persistence bundle
+    * @param {string} passphrase - the encryption passphrase
+    * @param {string} hint - additional info / description for the bundle
+    */
+    pub fn get_bundle (&mut self, passphrase:&mut SecBuf,hint:String)->util::Bundle{
+        let mut passphrase = passphrase;
+        let bundle_type:String = "hcKeypair".to_string();  
+        let pw_pub_keys: util::ReturnBundleData = util::pw_enc(&mut self.pub_keys,&mut passphrase);
+        let pw_sign_priv: util::ReturnBundleData = util::pw_enc(&mut self.sign_priv,&mut passphrase);
+        let pw_enc_priv: util::ReturnBundleData = util::pw_enc(&mut self.enc_priv,&mut passphrase);
 
-    //     this._signPriv.$makeReadable()
-    //     this._encPriv.$makeReadable()
-    //     const out = {
-    //     type: 'hcKeypair',
-    //     hint,
-    //     data: (await util.pwEnc(msgpack.encode([
-    //         this._signPub, this._encPub,
-    //         this._signPriv._, this._encPriv._
-    //     ]), passphrase))
-    //     }
-    //     this._signPriv.$restoreProtection()
-    //     this._encPriv.$restoreProtection()
+        return util::Bundle{
+            bundle_type,
+            hint,
+            pw_pub_keys, 
+            pw_sign_priv,
+            pw_enc_priv,
+        }
+    }
 
-    //     return out
-    // }
-    // pub fn get_bundle (passphrase,hint){
-    //     let type:String = "hcKeypair".to_string();
-    //     Ok(ptype.clone(),
-    //     hint.clone(),
-
-    //     )
-    // }
     /**
      * sign some arbitrary data with the signing private key
      * @param {Buffer} data - the data to sign
@@ -98,7 +83,7 @@ impl Keypair {
         let mut sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
 
-        decode_id(&mut pub_keys,&mut sign_pub,&mut enc_pub);
+        util::decode_id(&mut pub_keys,&mut sign_pub,&mut enc_pub);
 
         sign::verify(&mut signature,&mut data,&mut sign_pub)
     }
@@ -119,7 +104,7 @@ impl Keypair {
         let mut pub_keys = &mut self.pub_keys;
         let mut sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
-        decode_id(&mut pub_keys,&mut sign_pub,&mut enc_pub);
+        util::decode_id(&mut pub_keys,&mut sign_pub,&mut enc_pub);
 
         let mut enc_priv = &mut self.enc_priv;
 
@@ -128,7 +113,7 @@ impl Keypair {
             let mut r_enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
             let mut client_pk = client_pk;
 
-            decode_id(&mut client_pk,&mut r_sign_pub,&mut r_enc_pub);
+            util::decode_id(&mut client_pk,&mut r_sign_pub,&mut r_enc_pub);
 
             kx::server_session(&mut enc_pub,&mut enc_priv,&mut r_enc_pub,&mut srv_rx,&mut srv_tx).unwrap();
 
@@ -161,12 +146,12 @@ impl Keypair {
         let mut source_id = source_id;
         let mut source_sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut source_enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
-        decode_id(&mut source_id,&mut source_sign_pub,&mut source_enc_pub);
+        util::decode_id(&mut source_id,&mut source_sign_pub,&mut source_enc_pub);
 
         let mut client_pub_keys = &mut self.pub_keys;
         let mut client_sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut client_enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
-        decode_id(&mut client_pub_keys,&mut client_sign_pub,&mut client_enc_pub);
+        util::decode_id(&mut client_pub_keys,&mut client_sign_pub,&mut client_enc_pub);
         let mut client_enc_priv = &mut self.enc_priv;
 
         let mut cli_rx = SecBuf::with_secure(kx::SESSIONKEYBYTES);
@@ -186,7 +171,7 @@ impl Keypair {
             match aead::dec(&mut sys_secret,&mut cli_rx,None,&mut n,&mut c){
                 Ok(_) => {
 
-                    if check_if_wrong_secbuf(&mut sys_secret){
+                    if util::check_if_wrong_secbuf(&mut sys_secret){
                         println!("TRUE");
                         sys_secret_check = Some(sys_secret);
                         break;
@@ -225,7 +210,24 @@ impl Keypair {
 mod tests {
     use super::*;
     use crate::holochain_sodium::random::random_secbuf;
-    
+
+    #[test]
+    fn it_should_get_bundle() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed);
+        let mut passphrase = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut passphrase);
+
+        let bundle: util::Bundle = keypair.get_bundle(&mut passphrase,"hint".to_string());
+        
+        println!("HINT: {:?}",bundle.hint);
+
+        println!("{:?}",bundle.pw_pub_keys.salt);
+
+        assert_eq!("hint",bundle.hint);
+    }
+
     #[test]
     fn it_should_encode_n_decode_data_for_multiple_users2() {
         let mut seed = SecBuf::with_secure(SEEDSIZE);

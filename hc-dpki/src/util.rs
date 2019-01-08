@@ -10,6 +10,13 @@ pub const PW_HASH_OPS_LIMIT :u64 = pwhash::OPSLIMIT_SENSITIVE;
 pub const PW_HASH_MEM_LIMIT :usize = pwhash::MEMLIMIT_SENSITIVE;
 pub const PW_HASH_ALGO :i8 = pwhash::ALG_ARGON2ID13;
 
+pub struct Bundle {
+    pub bundle_type:String, 
+    pub hint:String,
+    pub pw_pub_keys: ReturnBundleData, 
+    pub pw_sign_priv: ReturnBundleData,
+    pub pw_enc_priv: ReturnBundleData,
+}
 /**
  * simplify the api for generating a password hash with our set parameters
  * @param {SecBuf} pass - the password buffer to hash
@@ -23,20 +30,19 @@ pub fn pw_hash(password: &mut SecBuf,salt:&mut SecBuf,hash:&mut SecBuf){
     pwhash::hash(&mut password,PW_HASH_OPS_LIMIT,PW_HASH_MEM_LIMIT,PW_HASH_ALGO,&mut salt,&mut hash).unwrap()
 }
 
+pub struct ReturnBundleData  {
+    pub salt: Vec<u8>,
+    pub nonce: Vec<u8>,
+    pub cipher: Vec<u8>,
+}
+
 /**
  * Helper for encrypting a buffer with a pwhash-ed passphrase
  * @param {Buffer} data
  * @param {string} passphrase
  * @return {Buffer} - the encrypted data
  */
-// #[derive(RustcDecodable, RustcEncodable)]
-pub struct BundleData  {
-    salt: Vec<u8>,
-    nonce: Vec<u8>,
-    cipher: Vec<u8>,
-}
-// Need to return (salt nonce cipher)  
-pub fn pw_enc(data:&mut SecBuf,passphrase:&mut SecBuf)->BundleData{
+pub fn pw_enc(data:&mut SecBuf,passphrase:&mut SecBuf)->ReturnBundleData{
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_secure(pwhash::SALTBYTES);
     holochain_sodium::random::random_secbuf(&mut salt);
@@ -57,7 +63,7 @@ pub fn pw_enc(data:&mut SecBuf,passphrase:&mut SecBuf)->BundleData{
     let salt: Vec<u8> = salt.iter().cloned().collect();
     let nonce: Vec<u8> = nonce.iter().cloned().collect();
     let cipher: Vec<u8> = cipher.iter().cloned().collect();
-    let data = BundleData {
+    let data = ReturnBundleData {
         salt,
         nonce,
         cipher,
@@ -71,13 +77,13 @@ pub fn pw_enc(data:&mut SecBuf,passphrase:&mut SecBuf)->BundleData{
  * @param {string} passphrase
  * @return {Buffer} - the decrypted data
  */
-pub fn pw_dec (bundle:&BundleData,passphrase:&mut SecBuf)->SecBuf{
+pub fn pw_dec (bundle:&ReturnBundleData,passphrase:&mut SecBuf)->SecBuf{
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_secure(pwhash::SALTBYTES);    
     load_secbuf(&bundle.salt,&mut salt);
     let mut nonce = SecBuf::with_insecure(bundle.nonce.len());    
     load_secbuf(&bundle.nonce,&mut nonce);
-    let mut cipher = SecBuf::with_secure(bundle.cipher.len());    
+    let mut cipher = SecBuf::with_insecure(bundle.cipher.len());    
     load_secbuf(&bundle.cipher,&mut cipher);
     let mut passphrase = passphrase;
     pw_hash(&mut passphrase,&mut salt,&mut secret);
@@ -151,7 +157,7 @@ mod tests {
 
     #[test]
     fn it_should_encrypt_data() {
-        let mut data = SecBuf::with_insecure(16);
+        let mut data = SecBuf::with_insecure(32);
         {
             let mut data = data.write_lock();
             data[0] = 88;
@@ -163,7 +169,7 @@ mod tests {
             password[0] = 42;
             password[1] = 222;
         }
-        let mut bundle:BundleData = pw_enc(&mut data,&mut password);
+        let mut bundle:ReturnBundleData = pw_enc(&mut data,&mut password);
 
         let mut dec_mess = pw_dec(&mut bundle,&mut password);
 

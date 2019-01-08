@@ -1,4 +1,3 @@
-
 # Holochain-rust
 
   <a href="http://holochain.org"><img align="right" width="200" src="https://github.com/holochain/org/blob/master/logo/holochain_logo.png?raw=true" alt="holochain logo" /></a>
@@ -28,13 +27,11 @@ This `holochain-rust` repository implements a number of distinct yet overlapping
 
 1. A library for the core Holochain functionality for defining and running DNA instances: [*core*](#core)
 1. A library and syntax for use in Rust based development of Zomes within DNAs, called Holochain Development Kit: [*hdk-rust*](#hdk-rust)
-1. A library for managing instances and connecting them to interfaces: [*container_api*](#container-api)
+1. A library for managing instances and connecting them to interfaces: [*container-api*](#container-api)
 1. A Rust based container that uses the container_api: [*container*](#rust-container)
-1. A nodejs based container for running tests: [*container*](#nodejs-container)
+1. A nodejs based container for running tests: [*nodejs-container*](#nodejs-container)
 1. A command line developer tool: [*hc*](#hc-command-line-developer-tool)
 1. A sample application that we use to demonstrate the current functionality and drive development: [*app-spec*](#app-spec-driven-development)
-
-Let's elaborate on these three aspects.
 
 ### Core
 The [core](./core) folder contains the code that implements the core functionality of Holochain. It is the aspect that takes in an application DNA, and an agent, and securely runs peer-to-peer applications by exposing the API functions to Zomes. It draws on other top level definitions and functions such as [dna](./dna), [cas_implementations](./cas_implementations), [agent](./agent), and [core_types](./core_types).
@@ -63,13 +60,16 @@ If you need to implement your own container, [container_api](container_api) shou
 To implement a container in a C based language, the [core_api_c_binding](./core_api_c_binding) [NEEDS UPDATING] code could be used, such as HoloSqape does.
 
 ### Rust Container
-The [container crate](container) uses the [container_api](container_api) to implement an executable which is intended to become the main, highly configurable and GUI less container implementation that can be run as a background system service.  Currently the Rust Container
+The [container crate](container) uses the [container_api](container_api) to implement an executable which is intended to become the main, highly configurable and GUI less container implementation that can be run as a background system service.
 
 ### Nodejs Container
 The [nodejs_container](nodejs_container) directory implements a node package that creates a container that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
 
 ### HC Command-line developer tool.
 The [cmd crate](cmd) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a containter.  For more details see the [crate README](cmd/README.md).
+
+## App Spec Driven Development
+We use a practice for coordinating additions and features that starts with adding a feature to a sample application so that we know we have a working example all the times.  You can read about [the details here](/CONTRIBUTING.md#app-spec-driven-development)
 
 ## Documentation: The Book on Holochain
 There is a work-in-progress book of documentation being written about `holochain-rust`. See the published version at the associated GitHub Pages for this repo, [https://developer.holochain.org/guide/latest](https://developer.holochain.org/guide/latest). See instructions for how to contribute to the book at [doc/holochain_101/src/how_to_contribute.md](./doc/holochain_101/src/how_to_contribute.md).
@@ -82,9 +82,15 @@ There is a work-in-progress book of documentation being written about `holochain
 
 **The following instructions are for developing Holochain Core or the HDK itself**
 
-There are two approaches to building and testing Holochain, using `make` or using `docker`:
+There are three approaches to building and testing Holochain, using `make`, `docker` or `nix`:
 
 ### Make (ubuntu and macOS only)
+
+For Ubuntu you can install the prerequisites with :
+
+``` shell
+sudo apt-get install git build-essential libssl-dev curl
+```
 
 If you are running on ubuntu or macOS, and you have `make` installed, you can do local development by simply typing:
 
@@ -108,8 +114,6 @@ Not everything in the Makefile is implemented in nix, and a lot of things don't 
 
 If you have a nix friendly system, this is probably the fastest way to develop and test.
 
-e.g. `nix-shell --run hc-test`
-
 #### Running tests
 
 Run:
@@ -123,6 +127,12 @@ or
 make test
 ```
 
+or
+
+``` shell
+nix-shell --run hc-test
+```
+
 Note that there are also make commands for running the tests of just core, or the command-line line tools or app_spec separately:
 
 ``` shell
@@ -132,118 +142,12 @@ make test_app_spec
 make build_nodejs_container
 ```
 
-
-#### Code style
-There is a linter/formatter enforcing code style.
-
-Run:
-
-```shell
-. docker/run-fmt
-```
-or
-
-``` shell
-make fmt
-```
-
-#### Compiler warnings
-
-Compilation warnings are NOT OK in shared/production level code.
-
-Warnings have a nasty habit of piling up over time. This makes your code increasingly unpleasant for other people to work with.
-
-CI MUST fail or pass, there is no use in the ever noisier "maybe" status.
-
-If you are facing a warning locally you can try:
-
-0. Fixing it
-1. Using `#[allow(***)]` inline to surgically override a once-off issue
-2. Proposing a global `allow` for a specific rule
-  - this is an extreme action to take
-  - this should only be considered if it can be shown that:
-    - the issue is common (e.g. dozens of `#allow[***]`)
-    - disabling it won't cause issues/mess to pile up elsewhere
-    - the wider Rust community won't find our codebase harder to work with
-
-If you don't know the best approach, please ask for help!
-
-It is NOT OK to disable `deny` for warnings globally at the CI or makefile/nix level.
-
-You can allow warnings locally during development by setting the `RUSTFLAGS` environment variable.
-
-#### CI configuration changes
-
-Please also be aware that extending/changing the CI configuration can be very time consuming. Seemingly minor changes can have large downstream impact.
-
-Some notable things to watch out for:
-
-- Adding changes that cause the Travis cache to be dropped on every run
-- Changing the compiler/lint rules that are shared by many people
-- Changing versions of crates/libs that also impact downstream crates/repos
-- Changing the nightly version of Rust used
-- Adding/removing tools or external libs
-
-The change may not be immediately apparent to you. The change may break the development environment on a different operating system, e.g. Windows.
-
-At the same time, we do not want to catastrophise and stifle innovation or legitimate upgrades.
-
-If you have a proposal to improve our CI config, that is great!
-
-Please open a dedicated branch for the change in isolation so we can discuss the proposal together.
-
-Please broadcast the proposal in chat to maximise visibility and the opportunity for everyone to respond.
-
-It is NOT OK to change the behaviour of tests/CI in otherwise unrelated PRs. SOMETIMES it MAY be OK to change CI in a related PR, e.g. adding a new lib that your code requires. DO expect that a change like this will probably attract additional scrutiny during the PR review process, which is unfortunate but important.
-
-Use your best judgement and respect that other people, across all timezones, rely on this repository remaining a productive working environment 24/7/365.
-
-#### Updating the CI Environment
-
-The continuous integration (CI) suite executes the same `. docker/run-test` command that developers are encouraged to run.
-
-What happens if I need to change that environment? E.g. what if I need a new system library dependency installed?
-
-- Step 1 - Add the dependency to `docker/Dockerfile.ubuntu`
-
-```dockerfile
-RUN apt-get update && apt-get install --yes\
-  # ... snip ...
-  my-new-lib-here
-```
-
-- Step 2 - Build it
-
-```shell
-. docker/build-ubuntu
-```
-
-- Step 3 - Test it out
-
-```shell
-. docker/run-test
-```
-
-- Step 4 - Wait a minute! The CI environment is still using the old Dockerfile!
-
-If your changes do not break the current environment, you can submit a separate Pull Request first, and once it is merged, the CI environment should be up-to-date for your code change Pull Request.
-
-Otherwise, you will need to speak to an admin who can force merge your full changes after testing locally.
-
 ### Building for Android
 Note there is an article written on how to build Holochain for Android, read it [here](doc/holochain_101/src/building_for_android.md).
 
 ## Contribute
-Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.
+Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](/CONTRIBUTING.md) for our general practices and protocols on participating in the community, as well as specific expectations around things like code formatting, testing practices, continuous integration, etc.
 
-### App Spec Driven Development
-In adding significant changes and new features to Holochain, we follow a specific test-driven development protocol:
-1. Start by creating a branch in this repository and modifying the example app in the app_spec directory to demonstrates an actual implementation of the use of the new feature, including tests that would pass if the feature were actually implemented.
-1. Create a pull request on that branch for the development team to talk about and discuss the suggested change.  The PR triggers Continuous Integration tests which will initially fail.
-1. Do any development necessary in core or hdk crates of this repo to actually implement the feature demonstrated in `app_spec`
-1. Finally, when the feature is fully implemented, the CI tests should turn green and the branch can be merged.
-
-In this way `app_spec` works as a living specification with example app to build against.
 
 Some helpful links:
 

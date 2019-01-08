@@ -17,6 +17,7 @@ extern crate regex;
 extern crate rmp_serde;
 extern crate serde;
 extern crate serde_bytes;
+extern crate snowflake;
 extern crate zmq;
 
 #[macro_use]

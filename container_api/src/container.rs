@@ -66,8 +66,6 @@ type SignalSender = SyncSender<Signal>;
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
-pub static DEFAULT_NETWORK_CONFIG: &'static str = P2pConfig::DEFAULT_MOCK_CONFIG;
-
 // preparing for having container notifiers go to one of the log streams
 pub fn notify(msg: String) {
     println!("{}", msg);
@@ -208,7 +206,7 @@ impl Container {
                     }
                 }
             ))),
-            None => Ok(JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)),
+            None => Ok(JsonString::from(P2pConfig::unique_mock_config())),
         }
     }
 

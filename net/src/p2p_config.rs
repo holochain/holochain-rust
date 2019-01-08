@@ -1,4 +1,5 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
+use snowflake;
 use std::{fs::File, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------
@@ -85,11 +86,6 @@ impl P2pConfig {
             .expect("file is not a proper JSON of a P2pConfig struct")
     }
 
-    pub fn default_mock() -> Self {
-        P2pConfig::from_str(P2pConfig::DEFAULT_MOCK_CONFIG)
-            .expect("Invalid backend_config json on P2pConfig creation.")
-    }
-
     pub fn default_ipc_spawn() -> Self {
         P2pConfig::from_str(P2pConfig::DEFAULT_IPC_SPAWN_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")
@@ -114,15 +110,41 @@ impl P2pConfig {
             }
         }
     }
+
+    pub fn unique_mock() -> Self {
+        Self::named_mock(&format!(
+            "mock-auto-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ))
+    }
+
+    pub fn unique_mock_config() -> String {
+        Self::named_mock_config(&format!(
+            "mock-auto-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ))
+    }
+
+    pub fn named_mock(network_name: &str) -> Self {
+        P2pConfig::from_str(&Self::named_mock_config(network_name))
+            .expect("Invalid backend_config json on P2pConfig creation.")
+    }
+
+    pub fn named_mock_config(network_name: &str) -> String {
+        format!(
+            r#"{{
+    "backend_kind": "MOCK",
+    "backend_config": {{
+        "networkName": "{}"
+    }}
+}}"#,
+            network_name
+        )
+    }
 }
 
 // statics
 impl P2pConfig {
-    pub const DEFAULT_MOCK_CONFIG: &'static str = r#"{
-    "backend_kind": "MOCK",
-    "backend_config": ""
-    }"#;
-
     pub const DEFAULT_IPC_SPAWN_CONFIG: &'static str = r#"
     {
       "backend_kind": "IPC",
@@ -155,11 +177,12 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let p2p_config = P2pConfig::from_str(P2pConfig::DEFAULT_MOCK_CONFIG).unwrap();
+        let mock_name = "mock";
+        let p2p_config = P2pConfig::from_str(&P2pConfig::named_mock_config(mock_name)).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);
-        assert_eq!(p2p_config, P2pConfig::default_mock());
+        assert_eq!(p2p_config, P2pConfig::named_mock(mock_name));
     }
 
     #[test]

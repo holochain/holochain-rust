@@ -48,7 +48,7 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         dna: DNA_CONFIG_ID.into(),
         agent: AGENT_CONFIG_ID.into(),
         storage,
-        network: Some(P2pConfig::default_mock().as_str()),
+        network: Some(P2pConfig::named_mock("mock@cmd/cli/run").as_str()),
     };
 
     let interface_config = InterfaceConfiguration {

@@ -2,7 +2,7 @@ use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
-use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value};
+use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value, types::params::Params};
 use serde_json;
 use std::{
     collections::HashMap,
@@ -154,6 +154,24 @@ impl ContainerApiBuilder {
         };
         self.instances
             .insert(instance_name.clone(), instance.clone());
+        self
+    }
+
+    pub fn with_admin_dna_functions(mut self) -> Self {
+        self.io.add_method("admin/dna/install", move |params| {
+            let params_map = match params {
+                Params::Map(map) => Ok(map),
+                _ => Err(String::from("Expected parameters map")),
+            }?;
+            let id = params_map.get("id")?;
+            let path = params_map.get("file_path")?;
+            let params_string =
+                serde_json::to_string(&params).map_err(|e| {
+                    jsonrpc_core::Error::invalid_params(e.to_string())
+                })?;
+
+
+        });
         self
     }
 }

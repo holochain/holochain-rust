@@ -368,6 +368,13 @@ where
     })
 }
 
+pub fn serialize_configuration(config: Configuration) -> HcResult<String>
+{
+    toml::to_string(&config).map_err(|e| {
+        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+    })
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::config::{load_configuration, Configuration, NetworkConfig};

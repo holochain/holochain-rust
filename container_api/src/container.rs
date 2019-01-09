@@ -1,6 +1,7 @@
 use crate::{
     config::{
         Configuration, InterfaceConfiguration, InterfaceDriver, NetworkConfig, StorageConfiguration,
+        serialize_configuration,
     },
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
@@ -46,8 +47,9 @@ use interface::{ContainerApiBuilder, InstanceMap, Interface};
 pub struct Container {
     instances: InstanceMap,
     config: Configuration,
+    config_path: String,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
-    dna_loader: DnaLoader,
+    pub (crate) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     network_ipc_uri: Option<String>,
@@ -75,6 +77,7 @@ impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
+        let config_path = dirs::home_dir().expect("")
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
@@ -395,6 +398,12 @@ impl Container {
                 error
             })
         })
+    }
+
+    pub fn save_config(&self) -> Result<(), HolochainError> {
+        let mut file = File::create(self.config_path)?;
+        file.write(serialize_configuration(self.config)?.as_bytes());
+        Ok(())
     }
 }
 

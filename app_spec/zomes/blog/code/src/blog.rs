@@ -47,7 +47,7 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
 
     if let Some(in_reply_to_address) = in_reply_to {
         // return with Err if in_reply_to_address points to missing entry
-        hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions::default())?;
+        hdk::get_entry_result(&in_reply_to_address, GetEntryOptions::default())?;
         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
     }
 
@@ -77,7 +77,7 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     // where T is the type that you used to commit the entry, in this case a Blog
     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
     // Otherwise its a Some(T) or a None
-    hdk::get_entry(post_address)
+    hdk::get_entry(&post_address)
 }
 
 pub fn handle_delete_post(post_address: Address) -> ZomeApiResult<()> {

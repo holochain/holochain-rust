@@ -63,15 +63,11 @@ The dApp code sets sharing and verification rules.
 
 Public data works like Bittorrent: 
 
-   anybody can join a network
-   
-   anybody can request any data they want from the network
-
-   any data is available as long as at least one person is sharing it
-
-   if some data is not shared by enough people, a new random person on the network must share it
-
-   there is no "local only" data  
+   - anybody can join a network
+   - anybody can request any data they want from the network
+   - any data is available as long as at least one person is sharing it
+   - if some data is not shared by enough people, a new random person on the network must share it
+   - there is no "local only" data  
 
 As stated above, an additional requirement for Holochain dApps is that new data must have a digital signature. 
 

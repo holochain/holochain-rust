@@ -1,9 +1,6 @@
-use holochain_container_api::{
-    config::{
-        AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
-        LoggerConfiguration, StorageConfiguration,
-    },
-    logger::LogRules,
+use holochain_container_api::config::{
+    AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
+    LoggerConfiguration, StorageConfiguration,
 };
 use holochain_core_types::agent::AgentId;
 use neon::prelude::*;
@@ -25,18 +22,31 @@ pub struct InstanceData {
     pub dna: DnaData,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct MakeConfigOptions {
+    #[serde(default, rename = "debugLog")]
+    debug_log: bool,
+}
+
 pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let mut i = 0;
-    let mut instances = Vec::<InstanceData>::new();
-    while let Some(arg) = cx.argument_opt(i) {
-        instances.push(neon_serde::from_value(&mut cx, arg)?);
-        i += 1;
-    }
-    let config = make_config(instances);
+    let instances_arg: Handle<JsValue> = cx.argument(0)?;
+    let opts_arg: Handle<JsValue> = cx.argument(1)?;
+
+    let instances: Vec<InstanceData> = neon_serde::from_value(&mut cx, instances_arg)?;
+    let opts: MakeConfigOptions = neon_serde::from_value(&mut cx, opts_arg)?;
+    let logger = if opts.debug_log {
+        Default::default()
+    } else {
+        LoggerConfiguration {
+            logger_type: "none".into(),
+            ..Default::default()
+        }
+    };
+    let config = make_config(instances, logger);
     Ok(neon_serde::to_value(&mut cx, &config)?)
 }
 
-fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
+fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) -> Configuration {
     let mut agent_configs = HashMap::new();
     let mut dna_configs = HashMap::new();
     let mut instance_configs = Vec::new();
@@ -71,12 +81,7 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
         agents: agent_configs.into_iter().map(|(_, v)| v).collect(),
         dnas: dna_configs.into_iter().map(|(_, v)| v).collect(),
         instances: instance_configs,
-        interfaces: Vec::new(),
-        bridges: Vec::new(),
-        logger: LoggerConfiguration {
-            logger_type: "debug".to_string(),
-            rules: LogRules::new(),
-        },
+        logger,
         ..Default::default()
     };
     config

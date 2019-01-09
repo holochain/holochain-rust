@@ -27,7 +27,7 @@ const Config = {
         }
         return { agent, dna, name }
     },
-    container: (...instances) => makeConfig(...instances)
+    container: (instances) => makeConfig(instances, {})
 }
 
 /////////////////////////////////////////////////////////////
@@ -90,9 +90,8 @@ Container.prototype.makeCaller = function (agentId, dnaPath) {
   }
 }
 
-Container.withInstances = function (...instances) {
-    const networkName = `auto-mock-network-${this._nextMock++}`
-    const config = makeConfig(networkName, instances)
+Container.withInstances = function (instances) {
+    const config = makeConfig(instances, {})
     return new Container(config)
 }
 // counter to give a unique mock network name for each new Container
@@ -123,7 +122,7 @@ class Scenario {
      *      })
      */
     run(fn) {
-        const container = Container.withInstances(...this.instances)
+        const container = Container.withInstances(this.instances)
         container.start()
         const callers = {}
         this.instances.forEach(instance => {

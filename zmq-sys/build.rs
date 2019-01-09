@@ -14,7 +14,7 @@ fn prefix_dir(dir: &str) -> Option<String> {
 fn main() {
 
     #[cfg(windows)]
-    // total hack to get the libzmq dll on the PATH
+    // hack to get the libzmq dll on the PATH
     // copies it next to cargo
     // kind of messy, but it is less than 1MB
     {

@@ -93,8 +93,6 @@ Container.withInstances = function (instances) {
     const config = makeConfig(instances, {})
     return new Container(config)
 }
-// counter to give a unique mock network name for each new Container
-Container._nextMock = 1
 
 /////////////////////////////////////////////////////////////
 

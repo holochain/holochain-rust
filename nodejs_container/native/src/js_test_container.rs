@@ -16,6 +16,7 @@ pub struct TestContainer {
     container: RustContainer,
     sender_tx: Option<SyncSender<SyncSender<ControlMsg>>>,
     is_running: Arc<Mutex<bool>>,
+    is_started: bool,
 }
 
 declare_types! {
@@ -37,7 +38,7 @@ declare_types! {
             let container = RustContainer::from_config(config);
             let is_running = Arc::new(Mutex::new(false));
 
-            Ok(TestContainer { container, sender_tx: None, is_running })
+            Ok(TestContainer { container, sender_tx: None, is_running, is_started: false })
         }
 
         // Start the backing Container and spawn a MainBackgroundTask
@@ -58,6 +59,7 @@ declare_types! {
                 }
                 let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone());
                 background_task.schedule(js_callback);
+                tc.is_started = true;
                 tc.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
                     tc.container.start_all_instances().map_err(|e| e.to_string())
                 })
@@ -107,6 +109,9 @@ declare_types! {
             let call_result = {
                 let guard = cx.lock();
                 let tc = &mut *this.borrow_mut(&guard);
+                if !tc.is_started {
+                    panic!("TestContainer: cannot use call() before start()");
+                }
                 let cap = Some(CapabilityCall::new(
                     cap_name.to_string(),
                     Address::from(""), //FIXME
@@ -138,6 +143,10 @@ declare_types! {
                 let guard = cx.lock();
                 let tc = &*this.borrow(&guard);
 
+                if !tc.is_started {
+                    panic!("TestContainer: cannot use register_callback() before start()");
+                }
+
                 let (tx, rx) = sync_channel(0);
                 let task = CallBlockingTask { rx };
                 task.schedule(js_callback);
@@ -158,6 +167,11 @@ declare_types! {
             let result = {
                 let guard = cx.lock();
                 let tc = this.borrow(&guard);
+
+                if !tc.is_started {
+                    panic!("TestContainer: cannot use agent_id() before start()");
+                }
+
                 let instance = tc.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id))
                     .read().unwrap();

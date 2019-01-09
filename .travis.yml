@@ -42,7 +42,7 @@ _windows_template: &_windows_template
   - nodist add $TRAVIS_NODE_VERSION
   - nodist $TRAVIS_NODE_VERSION
   - NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
-  # - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/zmq-sys/vendor/zmq/bin
+  - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/zmq-sys/vendor/zmq/bin
   - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
 
 _unix_nodejs_container_template: &_unix_nodejs_container_template
@@ -150,16 +150,12 @@ _cmd_deploy_template: &_cmd_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
-# env:
-#  global:
-#   - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-
 _windows_template_lite: &_windows_template_lite
   os: windows
   language: rust
   rust: nightly-2018-12-26-x86_64-pc-windows-msvc
   before_install:
-   # - PATH=$PATH:$TRAVIS_BUILD_DIR/zmq-sys/vendor/zmq/bin
+   - PATH=$PATH:$TRAVIS_BUILD_DIR/zmq-sys/vendor/zmq/bin
    - CARGO_INCREMENTAL=1
    - RUSTFLAGS="-Z thinlto -C codegen-units=16"
   cache:
@@ -314,9 +310,8 @@ jobs:
       env:
         - TARGET=x86_64-pc-windows-msvc
         - CRATE_NAME=hc
-        # - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
       before_script:
-        # - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/zmq-sys/vendor/zmq/bin
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/zmq-sys/vendor/zmq/bin
 
     - name: "CMD DEPLOY - 64 bit Windows GNU"
       <<: *_cmd_deploy_template
@@ -325,9 +320,8 @@ jobs:
       env:
         - TARGET=x86_64-pc-windows-gnu
         - CRATE_NAME=hc
-        # - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
       before_script:
-        # - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/zmq-sys/vendor/zmq/bin
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/zmq-sys/vendor/zmq/bin
 
     # holochain-nodejs releases section
     - name: "Linux - Node 8"
@@ -378,7 +372,6 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="8"
         - PERFORM_NODE_DEPLOY=1
-        # - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
     - name: "Windows - Node 10"
       <<: *_windows_template
       <<: *_to_deploy_template
@@ -389,7 +382,6 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="10"
         - PERFORM_NODE_DEPLOY=1
-        # - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
     - name: "Windows - Node 11"
       <<: *_windows_template
       <<: *_to_deploy_template
@@ -400,4 +392,3 @@ jobs:
         - NODIST_X64=1
         - TRAVIS_NODE_VERSION="11"
         - PERFORM_NODE_DEPLOY=1
-        # - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq

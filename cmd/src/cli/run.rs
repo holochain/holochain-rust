@@ -3,7 +3,6 @@ use colored::*;
 use error::DefaultResult;
 use holochain_container_api::{config::*, container::Container, logger::LogRules};
 use holochain_core_types::agent::AgentId;
-use holochain_net::p2p_config::P2pConfig;
 use std::fs;
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
@@ -48,7 +47,6 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         dna: DNA_CONFIG_ID.into(),
         agent: AGENT_CONFIG_ID.into(),
         storage,
-        network: Some(P2pConfig::default_mock().as_str()),
     };
 
     let interface_config = InterfaceConfiguration {

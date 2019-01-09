@@ -19,12 +19,39 @@ pub fn check_init() {
 }
 
 /// make invoking ffi functions taking SecBuf references more readable
-macro_rules! rptr {
+macro_rules! raw_ptr_void {
     ($name: ident) => {
         $name.as_mut_ptr() as *mut libc::c_void
     };
 }
 
+/// make invoking ffi functions taking SecBuf references more readable
+macro_rules! raw_ptr_char {
+    ($name: ident) => {
+        $name.as_mut_ptr() as *mut libc::c_uchar
+    };
+}
+
+/// make invoking ffi functions taking SecBuf references more readable
+macro_rules! raw_ptr_char_immut {
+    ($name: ident) => {
+        $name.as_ptr() as *const libc::c_uchar
+    };
+}
+
+/// make invoking ffi functions taking SecBuf references more readable
+macro_rules! raw_ptr_ichar_immut {
+    ($name: ident) => {
+        $name.as_ptr() as *const libc::c_char
+    };
+}
+pub mod aead;
+pub mod error;
+pub mod hash;
+pub mod kdf;
+pub mod kx;
+pub mod pwhash;
 pub mod random;
 pub mod secbuf;
+pub mod sign;
 pub mod util;

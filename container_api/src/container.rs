@@ -66,8 +66,6 @@ type SignalSender = SyncSender<Signal>;
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
-pub static DEFAULT_NETWORK_CONFIG: &'static str = P2pConfig::DEFAULT_MOCK_CONFIG;
-
 // preparing for having container notifiers go to one of the log streams
 pub fn notify(msg: String) {
     println!("{}", msg);
@@ -178,7 +176,7 @@ impl Container {
             )],
             network_config.n3h_persistence_path.clone(),
             hashmap! {
-                String::from("N3H_MODE") => String::from("HACK"),
+                String::from("N3H_MODE") => network_config.n3h_mode.clone(),
                 String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
             },
@@ -208,7 +206,7 @@ impl Container {
                     }
                 }
             ))),
-            None => Ok(JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)),
+            None => Ok(JsonString::from(P2pConfig::unique_mock_config())),
         }
     }
 
@@ -385,9 +383,17 @@ impl Container {
         interface_config: InterfaceConfiguration,
     ) -> InterfaceThreadHandle {
         let dispatcher = self.make_interface_handler(&interface_config);
+        let log_sender = self.logger.get_sender();
         thread::spawn(move || {
             let iface = make_interface(&interface_config);
-            iface.run(dispatcher)
+            iface.run(dispatcher).map_err(|error| {
+                let message = format!(
+                    "err/container: Error running interface '{}': {}",
+                    interface_config.id, error
+                );
+                let _ = log_sender.send((String::from("container"), message));
+                error
+            })
         })
     }
 }

@@ -40,6 +40,7 @@ However, it is impossible to get the original data from a hash -- its purpose is
 
 These features imply that one can use small, portable hashes to verify data. One could also use a database containing data and their hashes as a table of contents, indexing (though not reading) data associated with a given hash. 
 
+In the context of Holochain hashes are frequently used to look up content, both in our internal implementations as well as on the DHT.  Therefore we frequently refer to the hash of some item (i.e. an entry on the chain) as its *Address*.
 ### Signatures 
 Signatures provide an additional type of data verification, answering the question "who created this data?" Signatures look like hashes. They are unique, reliable, and like hashes, cannot be used to retrieve the data to which they correspond. Signatures also come with a pair of keys. One is public, and the other private. 
 

@@ -67,11 +67,11 @@ pub mod tests {
     use super::*;
     use crate::cli::package;
     use assert_cmd::prelude::*;
-    use std::process::Command;
+    use std::{env, process::Command};
     use tempfile::{Builder, TempDir};
 
     #[cfg(feature = "broken-tests")]
-    const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
+    const HOLOCHAIN_TEST_PREFIX: &str = "org_holochain_test";
 
     #[cfg(feature = "broken-tests")]
     pub fn gen_dir() -> TempDir {
@@ -82,17 +82,31 @@ pub mod tests {
     }
 
     #[test]
-    // flagged as broken for taking 60+ seconds
+    // flagged as broken for:
+    // 1. taking 60+ seconds
+    // 2. because `generate_cargo_toml` in cmd/src/scaffold/rust.rs sets the
+    //    branch to master rather than develop and currently there's no way to
+    //    adjust that on the fly.
+    // 3. the call to generate my_zome function doesn't quite work
     #[cfg(feature = "broken-tests")]
     fn test_command_basic_test() {
         let temp_space = gen_dir();
         let temp_dir_path = temp_space.path();
         let temp_dir_path_buf = temp_space.path().to_path_buf();
 
-        // do init first, so theres a project
+        // do init first, so there's a project
         Command::main_binary()
             .unwrap()
             .args(&["init", temp_dir_path.to_str().unwrap()])
+            .assert()
+            .success();
+
+        assert!(env::set_current_dir(&temp_dir_path).is_ok());
+
+        // do gen my_zome first, so there's a zome
+        Command::main_binary()
+            .unwrap()
+            .args(&["generate", "my_zome"])
             .assert()
             .success();
 
@@ -104,6 +118,7 @@ pub mod tests {
             .join(&DIST_DIR_NAME)
             .join(package::DEFAULT_BUNDLE_FILE_NAME)
             .exists());
+
         // check success of npm install step
         assert!(temp_dir_path_buf
             .join(&TEST_DIR_NAME)
@@ -119,7 +134,7 @@ pub mod tests {
         let temp_dir_path = temp_space.path();
         let temp_dir_path_buf = temp_space.path().to_path_buf();
 
-        // do init first, so theres a project
+        // do init first, so there's a project
         Command::main_binary()
             .unwrap()
             .args(&["init", temp_dir_path.to_str().unwrap()])

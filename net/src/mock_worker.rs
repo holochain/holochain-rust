@@ -280,7 +280,11 @@ impl NetWorker for MockWorker {
     /// forward to our mock singleton
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         let map_lock = MOCK_MAP.read().unwrap();
-        let mut mock = map_lock.get(&self.network_name).unwrap().lock().unwrap();
+        let mut mock = map_lock
+            .get(&self.network_name)
+            .expect("MockSystem should have been initialized by now")
+            .lock()
+            .unwrap();
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
             if let ProtocolWrapper::TrackApp(app) = wrap {
                 let (tx, rx) = mpsc::channel();

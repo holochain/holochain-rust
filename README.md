@@ -94,6 +94,13 @@ If you are running on ubuntu or macOS, and you have `make` installed, you can do
 2. build all the rust libraries from the source code in this repository.
 3. build and install the command-line tools.
 
+Make itself can be installed with `apt-get` or `brew`:
+
+```
+apt-get install make; # ubuntu
+brew install make; # mac OS X
+```
+
 ### Docker
 
 We also use [docker](https://www.docker.com/).  The `docker` folder contains scripts to build and run docker images.

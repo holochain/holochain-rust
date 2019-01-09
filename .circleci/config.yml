@@ -70,10 +70,10 @@ jobs:
  cold.ubuntu:
   docker:
    - image: ubuntu
-   - steps:
-    - checkout
-    - run: . ./scripts/install/ubuntu.sh
-    - run: make test
+  steps:
+   - checkout
+   - run: . ./scripts/install/ubuntu.sh
+   - run: make test
 
 workflows:
  version: 2

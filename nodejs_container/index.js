@@ -42,7 +42,7 @@ const Config = {
         }
         return { agent, dna, name }
     },
-    container: (...instances) => makeConfig(...instances),
+    container: (instances) => makeConfig(instances),
 }
 
 module.exports = { Config, Container };

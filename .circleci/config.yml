@@ -23,6 +23,10 @@ jobs:
        command: nix-shell --run hc-install-cmd
 
    - run:
+      name: test cmd
+      command: nix-shell --run hc-test-cmd
+
+   - run:
        name: install node container
        command: nix-shell --run hc-install-node-container
 
@@ -85,7 +89,7 @@ workflows:
  cold:
   jobs:
    - cold.ubuntu
-nixni
+
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
   triggers:

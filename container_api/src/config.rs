@@ -360,6 +360,10 @@ pub fn default_n3h_path() -> String {
     String::from("~/.hc/net/n3h")
 }
 
+pub fn default_n3h_persistence_path() -> String {
+    String::from("/tmp")
+}
+
 /// Use this function to load a `Configuration` from a string.
 pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where

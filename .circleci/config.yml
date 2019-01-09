@@ -78,11 +78,11 @@ jobs:
  cold.nixos:
   docker:
    - image: nixorg/nix:circleci
+  environment:
+   NIX_PATH: nixpkgs=https://github.com/NixOS/nixpkgs/archive/47f008676fe3b77b9c8edda54db621a0dc16dd8e.tar.gz
   steps:
    - checkout
    - run:
-      environment:
-       NIX_PATH: nixpkgs=https://github.com/NixOS/nixpkgs/archive/47f008676fe3b77b9c8edda54db621a0dc16dd8e.tar.gz
       command: nix-shell --pure --run hc-test
 
 workflows:

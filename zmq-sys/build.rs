@@ -10,6 +10,9 @@ fn prefix_dir(dir: &str) -> Option<String> {
 }
 
 fn main() {
+    // println!("{}", env::var("CARGO").unwrap());
+    // println!("{}", env::var("OUT_DIR").unwrap());
     println!("cargo:rustc-link-search=native={}", &prefix_dir("lib").unwrap());
     println!("cargo:include={}", &prefix_dir("include").unwrap());
+    // panic!();
 }

@@ -83,7 +83,6 @@ stdenv.mkDerivation rec {
 
     # https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/rust.section.md
     binutils gcc gnumake openssl pkgconfig coreutils
-    # carnix
 
     cmake
     python
@@ -118,7 +117,6 @@ stdenv.mkDerivation rec {
 
     # curl needed to push to codecov
     curl
-    docker
     circleci-cli
     hc-codecov
     ci

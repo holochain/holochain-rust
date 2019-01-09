@@ -1,6 +1,6 @@
 # holochain-nodejs
 
-Nodejs Holochain Container primarily for the execution of tests
+NodeJS Holochain Container, primarily for the execution of tests. It includes a lightweight API for orchestrating multi-agent scenario tests.
 
 ## Installation
 
@@ -12,24 +12,25 @@ node ./publish.js
 ```
 from the project root.
 
-## Usage
-The following demo shows how to spin up two separate instances of a hApp, within the container.
+## Basic Usage
+
+The following demo shows how to spin up two separate instances of a DNA, within the container.
 
 After installing via npm the module can be used in a node script as follows:
 ```javascript
 const dnaPath = "path/to/happ.hcpkg"
 const aliceAgentId = "alice"
 const tashAgentId = "tash"
-// destructure to get ConfigBuilder and Container off the main import, which is an object now
-const { ConfigBuilder, Container } = require('@holochain/holochain-nodejs')
+// destructure to get Config and Container off the main import, which is an object now
+const { Config, Container } = require('@holochain/holochain-nodejs')
 
 // build up a configuration for the container, step by step
-const agentAlice = ConfigBuilder.agent(aliceAgentId)
-const agentTash = ConfigBuilder.agent(tashAgentId)
-const dna = ConfigBuilder.dna(dnaPath)
-const instanceAlice = ConfigBuilder.instance(agentAlice, dna)
-const instanceTash = ConfigBuilder.instance(agentTash, dna)
-const config = ConfigBuilder.container(instanceAlice, instanceTash)
+const agentAlice = Config.agent(aliceAgentId)
+const agentTash = Config.agent(tashAgentId)
+const dna = Config.dna(dnaPath)
+const instanceAlice = Config.instance(agentAlice, dna)
+const instanceTash = Config.instance(agentTash, dna)
+const config = Config.container(instanceAlice, instanceTash)
 
 // create a new instance of a Container, from the config
 const container = new Container(config)
@@ -37,9 +38,10 @@ const container = new Container(config)
 // this starts all the configured instances
 container.start()
 
-// note that in the following examples, an "instance id" is
-// considered to be the given agent ID plus a dash plus the given dnaPath
-const aliceInstanceId = aliceAgentId + '-' + dnaPath
+// When building up a config using `Config`, the instance ID is automatically assigned
+// as the given agent ID plus a double colon plus the given dnaPath.
+// We'll need this to call the instance later.
+const aliceInstanceId = aliceAgentId + '::' + dnaPath
 
 // zome functions can be called using the following
 const callResult = container.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
@@ -54,28 +56,15 @@ container.stop()
 container.start, container.call, container.agent_id, and container.stop are the four functions of Container instances currently.
 
 Note about usage:
-Prior to version ???, a container would only return a single instance of an app. Now a container actually contains multiple instances. When performing a call to an instance, one must include the instance id. Take the following for example:
+Prior to version 0.0.3, a container would only return a single instance of an app. Now a container actually contains multiple instances. When performing a call to an instance, one must include the instance id. Take the following for example:
 
 ```
 const callResult = container.call(someInstanceId, someZome, someCapability, someFunction, someParams)
 ```
 
-If you wanted to go on using the old syntax of individuating the apps, you could use the following, after the container has been setup and started:
+## Scenario tests
 
-```
-const dnaPath = "./dist/app_spec.hcpkg"
-const makeCaller = (agentId) => {
-  const instanceId = agentId + '-' + dnaPath
-  return {
-    call: (zome, cap, fn, params) => container.call(instanceId, zome, cap, fn, params),
-    agentId: container.agent_id(instanceId)
-  }
-}
 
-const app = makeCaller('alice')
-// the following four params would need to be replaced with valid values
-app.call(someZome, someCapability, someFunction, someParams)
-```
 
 ## Deployment
 Recommended pattern for deployment:

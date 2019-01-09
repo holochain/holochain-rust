@@ -19,9 +19,6 @@ hash = "Qm328wyq38924y"
 id = "app spec instance 1"
 dna = "app spec rust"
 agent = "test agent 1"
-[instances.logger]
-type = "simple"
-file = "app_spec.log"
 [instances.storage]
 type = "file"
 path = "example-config/tmp-storage"
@@ -30,9 +27,6 @@ path = "example-config/tmp-storage"
 id = "app spec instance 2"
 dna = "app spec rust"
 agent = "test agent 2"
-[instances.logger]
-type = "simple"
-file = "app_spec.log"
 [instances.storage]
 type = "file"
 path = "example-config/tmp-storage"
@@ -47,3 +41,6 @@ port = 3000
 id = "app spec instance 1"
 [[interfaces.instances]]
 id = "app spec instance 2"
+
+[logger]
+type = "debug"

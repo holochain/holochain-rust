@@ -20,25 +20,27 @@ let
 
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
-  rm -rf ~/.cargo/registry;
-  rm -rf ~/.cargo/git;
+   rm -rf ~/.cargo/registry;
+   rm -rf ~/.cargo/git;
   '';
 
   hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
   ''
-  . ./scripts/build_nodejs_container.sh;
+   . ./scripts/build_nodejs_container.sh;
   '';
 
   hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin"
   ''
-  if ! cargo --list | grep --quiet tarpaulin;
-  then
+   if ! cargo --list | grep --quiet tarpaulin;
+   then
     RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin;
-  fi;
+   fi;
   '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
   hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc --release && cargo install -f --path cmd";
+  hc-install-container = nixpkgs.writeShellScriptBin "hc-install-container" "cargo build -p holochain_container --release && cargo install -f --path container";
+
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
 
@@ -48,55 +50,37 @@ let
   # runs all standard tests and reports code coverage
   hc-codecov = nixpkgs.writeShellScriptBin "hc-codecov"
   ''
-    hc-install-tarpaulin && \
-    hc-tarpaulin && \
-    bash <(curl -s https://codecov.io/bash);
+   hc-install-tarpaulin && \
+   hc-tarpaulin && \
+   bash <(curl -s https://codecov.io/bash);
   '';
 
   # simulates all supported ci tests in a local circle ci environment
   ci = nixpkgs.writeShellScriptBin "ci"
   ''
-    circleci-cli local execute
+   circleci-cli local execute
   '';
 
   build-wasm = wasm-path:
   ''
-  export WASM_PATH=${wasm-path}/
-  cargo build --release --target wasm32-unknown-unknown --manifest-path "$TEST_PATH""$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$TEST_PATH""$WASM_PATH"target;
+   export WASM_PATH=${wasm-path}/
+   cargo build --release --target wasm32-unknown-unknown --manifest-path "$WASM_PATH"Cargo.toml --target-dir "$HC_TARGET_PREFIX""$WASM_PATH"target;
   '';
-  test = test-p: test-path: wasm-paths:
+  wasm-paths = [
+   "hdk-rust/wasm-test"
+   "wasm_utils/wasm-test/integration-test"
+   "container_api/wasm-test"
+   "container_api/test-bridge-caller"
+   "core/src/nucleus/actions/wasm-test"
+  ];
+  hc-build-wasm = nixpkgs.writeShellScriptBin "hc-build-wasm"
   ''
-   export TEST_PATH=${test-path}/;
    ${nixpkgs.lib.concatMapStrings (path: build-wasm path) wasm-paths}
-   cargo test -p ${test-p} --release --target-dir "$HC_TARGET_PREFIX""$TEST_PATH"target;
   '';
-  hc-test-hdk = nixpkgs.writeShellScriptBin "hc-test-hdk" "${test "hdk" "hdk-rust" [ "wasm-test" ]}";
-  hc-test-wasm-utils = nixpkgs.writeShellScriptBin "hc-test-wasm-utils" "${test "holochain_wasm_utils" "wasm_utils" [ "wasm-test/integration-test" ]}";
-  hc-test-container-api = nixpkgs.writeShellScriptBin "hc-test-container-api" "${test "holochain_container_api" "container_api" [ "wasm-test" "test-bridge-caller" ]}";
-  hc-test-core = nixpkgs.writeShellScriptBin "hc-test-core" "${test "holochain_core" "core" [ "src/nucleus/actions/wasm-test" ]}";
-  hc-test-cas-implementations = nixpkgs.writeShellScriptBin "hc-test-cas-implementations" "${test "holochain_cas_implementations" "cas_implementations" [] }";
-  hc-test-dna-c-binding = nixpkgs.writeShellScriptBin "hc-test-dna-c-binding" "${test "holochain_dna_c_binding" "dna_c_binding" []}";
-  hc-test-net-connection = nixpkgs.writeShellScriptBin "hc-test-net-connection" "${test "holochain_net_connection" "net_connection" []}";
-  hc-test-sodium = nixpkgs.writeShellScriptBin "hc-test-sodium" "${test "holochain_sodium" "sodium" []}";
-  hc-test-hc = nixpkgs.writeShellScriptBin "hc-test-hc" "${test "hc" "cmd" []}";
-  hc-test-core-types = nixpkgs.writeShellScriptBin "hc-test-core-types" "${test "holochain_core_types" "core_types" []}";
-  hc-test-net = nixpkgs.writeShellScriptBin "hc-test-net" "${test "holochain_net" "net" []}";
-  hc-test-net-ipc = nixpkgs.writeShellScriptBin "hc-test-net-ipc" "${test "holochain_net_ipc" "net_ipc" []}";
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
-  hc-test-hdk \
-  && hc-test-wasm-utils \
-  && hc-test-container-api \
-  && hc-test-core \
-  && hc-test-cas-implementations \
-  && hc-test-dna-c-binding \
-  && hc-test-net-connection \
-  && hc-test-sodium \
-  && hc-test-hc \
-  && hc-test-core-types \
-  && hc-test-net \
-  && hc-test-net-ipc \
-  ;
+   hc-build-wasm
+   cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
   '';
 
 in
@@ -120,12 +104,14 @@ stdenv.mkDerivation rec {
 
     hc-flush-cargo-registry
 
+    hc-build-wasm
     hc-test
 
     hc-install-tarpaulin
     hc-tarpaulin
 
     hc-install-cmd
+    hc-install-container
     hc-install-node-container
 
     hc-test-cmd
@@ -145,19 +131,6 @@ stdenv.mkDerivation rec {
     circleci-cli
     hc-codecov
     ci
-
-    hc-test-hdk
-    hc-test-wasm-utils
-    hc-test-container-api
-    hc-test-core
-    hc-test-cas-implementations
-    hc-test-dna-c-binding
-    hc-test-net-connection
-    hc-test-sodium
-    hc-test-hc
-    hc-test-core-types
-    hc-test-net
-    hc-test-net-ipc
   ];
 
   # https://github.com/rust-unofficial/patterns/blob/master/anti_patterns/deny-warnings.md
@@ -178,8 +151,8 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   shellHook = ''
-    # needed for install cmd and tarpaulin
-    export PATH=$PATH:~/.cargo/bin;
-    export HC_TARGET_PREFIX=/tmp/holochain/
+   # needed for install cmd and tarpaulin
+   export PATH=$PATH:~/.cargo/bin;
+   export HC_TARGET_PREFIX=/tmp/holochain/
   '';
 }

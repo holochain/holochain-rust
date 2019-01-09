@@ -34,6 +34,7 @@ fn exec() -> NetResult<()> {
 
     // use a mpsc channel for messaging
     let (sender1, receiver1) = mpsc::channel::<Protocol>();
+    let network = P2pConfig::unique_mock();
 
     // create a new ipc P2pNetwork instance
     let mut con1 = P2pNetwork::new(
@@ -41,7 +42,7 @@ fn exec() -> NetResult<()> {
             sender1.send(r?)?;
             Ok(())
         }),
-        &P2pConfig::default_mock(),
+        &network,
     )?;
 
     let (sender2, receiver2) = mpsc::channel::<Protocol>();
@@ -51,7 +52,7 @@ fn exec() -> NetResult<()> {
             sender2.send(r?)?;
             Ok(())
         }),
-        &P2pConfig::default_mock(),
+        &network,
     )?;
 
     con1.send(

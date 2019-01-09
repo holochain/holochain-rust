@@ -16,7 +16,7 @@ fn main() {
     #[cfg(windows)]
     // hack to get the libzmq dll on the PATH
     // copies it next to cargo
-    // kind of messy, but it is less than 1MB
+    // kind of messy, is less than 1MB
     {
         let dll_name = "libzmq-v140-mt-4_2_0.dll";
         let cargo_path = &env::var("CARGO").unwrap();

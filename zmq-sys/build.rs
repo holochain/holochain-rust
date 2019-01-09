@@ -19,9 +19,12 @@ fn main() {
     // kind of messy, but it is less than 1MB
     {
         let dll_name = "libzmq-v140-mt-4_2_0.dll";
+        let cargo_path = &env::var("CARGO").unwrap();
+        let path_on_path = Path::new(cargo_path).parent().unwrap().join("libzmq");
+        fs::create_dir_all(&path_on_path).unwrap();
         fs::copy(
             Path::new(&prefix_dir("bin").unwrap()).join(dll_name),
-            Path::new(&env::var("CARGO").unwrap()).parent().unwrap().join("libzmq").join(dll_name),
+            path_on_path.join(dll_name),
         ).unwrap();
     }
 

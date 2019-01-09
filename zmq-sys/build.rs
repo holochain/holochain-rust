@@ -1,6 +1,7 @@
 extern crate metadeps;
 
 use std::env;
+use std::fs;
 use std::path::Path;
 
 fn prefix_dir(dir: &str) -> Option<String> {
@@ -12,6 +13,11 @@ fn prefix_dir(dir: &str) -> Option<String> {
 fn main() {
     // println!("{}", env::var("CARGO").unwrap());
     // println!("{}", env::var("OUT_DIR").unwrap());
+    let dll_name = "libzmq-v140-mt-4_2_0.dll";
+    fs::copy(
+        Path::new(&prefix_dir("bin").unwrap()).join(dll_name),
+        Path::new(&env::var("OUT_DIR").unwrap()).join(dll_name),
+    ).unwrap();
     println!("cargo:rustc-link-search=native={}", &prefix_dir("lib").unwrap());
     println!("cargo:include={}", &prefix_dir("include").unwrap());
     // panic!();

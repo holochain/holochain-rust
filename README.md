@@ -80,7 +80,7 @@ There is a work-in-progress book of documentation being written about `holochain
 
 **The following instructions are for developing Holochain Core or the HDK itself**
 
-There are two components needed currently to run Holochain applications, the core (what's in this repo) and also [the networking engine](https://github.com/holochain/n3h).  You can install and work on core using the built-in mock network following the instructions below, but if you want to actually test out your apps using the real networking, you will have to install [the networking engine](https://github.com/holochain/n3h).
+There are two components needed currently to run Holochain applications, the core (what's in this repo) and also [the networking engine](https://github.com/holochain/n3h).  You can install and work on core using the built-in mock network following the instructions below, but if you want to actually test out your apps using the real networking, you will have to install [the networking component](https://github.com/holochain/n3h) following the instructions in the readme there.  (Note: please see the instructions in the [`hc` command-line tool readme](./cmd/README.md#using-real-networking) or the [container readme](./container/README.md#using-real-networking) for how to configure the tools to use the find and activate the networking component.
 
 There are three approaches to building and testing Holochain: using `make`, `docker` or `nix`:
 

@@ -11,6 +11,7 @@ use crate::logger::LogRules;
 ///   the container
 /// * bridges, which are
 use boolinator::*;
+use directories;
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
@@ -19,10 +20,8 @@ use holochain_core_types::{
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
+use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*};
 use toml;
-use std::env;
-use directories;
 
 /// Main container configuration struct
 /// This is the root of the configuration tree / aggregates
@@ -360,7 +359,13 @@ pub fn default_n3h_mode() -> String {
 
 pub fn default_n3h_path() -> String {
     if let Some(user_dirs) = directories::UserDirs::new() {
-        user_dirs.home_dir().join(".hc").join("net").join("n3h").to_string_lossy().to_string()
+        user_dirs
+            .home_dir()
+            .join(".hc")
+            .join("net")
+            .join("n3h")
+            .to_string_lossy()
+            .to_string()
     } else {
         String::from("n3h")
     }
@@ -885,7 +890,7 @@ pub mod tests {
 
     #[test]
     fn test_n3h_defaults() {
-        assert_eq!(default_n3h_mode(),String::from("HACK"));
+        assert_eq!(default_n3h_mode(), String::from("HACK"));
 
         #[cfg(not(windows))]
         assert!(default_n3h_path().contains("/.hc/net/n3h"));
@@ -893,6 +898,6 @@ pub mod tests {
         assert!(default_n3h_path().contains("/home/"));
 
         #[cfg(not(windows))]
-        assert_eq!(default_n3h_persistence_path(),String::from("/tmp"));
+        assert_eq!(default_n3h_persistence_path(), String::from("/tmp"));
     }
 }

@@ -68,7 +68,9 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
 
     let n3h_path = env::var("HC_N3H_PATH").ok();
 
-    // network config
+    // create an n3h network config if the --networked flag is set
+    // or if a value where to find n3h has been put into the the
+    // HC_N3H_PATH environment variable
     let network_config = if networked || n3h_path.is_some() {
         let n3h_mode = env::var("HC_N3H_MODE").ok();
         let n3h_persistence_path = env::var("HC_N3H_WORK_DIR").ok();

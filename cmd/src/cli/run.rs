@@ -75,7 +75,8 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
             bootstrap_nodes: Default::default(),
             n3h_path: n3h_path.unwrap_or_else(|| default_n3h_path()),
             n3h_mode: n3h_mode.unwrap_or_else(|| default_n3h_mode()),
-            n3h_persistence_path: n3h_persistence_path.unwrap_or_else(|| default_n3h_persistence_path()),
+            n3h_persistence_path: n3h_persistence_path
+                .unwrap_or_else(|| default_n3h_persistence_path()),
             n3h_ipc_uri: Default::default(),
         })
     } else {

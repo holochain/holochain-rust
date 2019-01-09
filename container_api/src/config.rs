@@ -21,6 +21,8 @@ use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
 use toml;
+use std::env;
+use directories;
 
 /// Main container configuration struct
 /// This is the root of the configuration tree / aggregates
@@ -357,11 +359,15 @@ pub fn default_n3h_mode() -> String {
 }
 
 pub fn default_n3h_path() -> String {
-    String::from("~/.hc/net/n3h")
+    if let Some(user_dirs) = directories::UserDirs::new() {
+        user_dirs.home_dir().join(".hc").join("net").join("n3h").to_string_lossy().to_string()
+    } else {
+        String::from("n3h")
+    }
 }
 
 pub fn default_n3h_persistence_path() -> String {
-    String::from("/tmp")
+    env::temp_dir().to_string_lossy().to_string()
 }
 
 /// Use this function to load a `Configuration` from a string.
@@ -376,6 +382,7 @@ where
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
     use holochain_core::context::mock_network_config;
 
@@ -874,5 +881,18 @@ pub mod tests {
             bridged_ids,
             vec![String::from("app2"), String::from("app3"),]
         );
+    }
+
+    #[test]
+    fn test_n3h_defaults() {
+        assert_eq!(default_n3h_mode(),String::from("HACK"));
+
+        #[cfg(not(windows))]
+        assert!(default_n3h_path().contains("/.hc/net/n3h"));
+        #[cfg(not(windows))]
+        assert!(default_n3h_path().contains("/home/"));
+
+        #[cfg(not(windows))]
+        assert_eq!(default_n3h_persistence_path(),String::from("/tmp"));
     }
 }

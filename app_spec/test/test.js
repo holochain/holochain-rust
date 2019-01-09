@@ -1,5 +1,4 @@
 const tape = require('tape')
-const { pollFor } = require('./util')
 
 const { Config, Container, Scenario } = require('../../nodejs_container')
 
@@ -105,23 +104,15 @@ scenario1.runTape(tape, 'posts_by_agent', async (t, { alice }) => {
 scenario1.runTape(tape, 'my_posts', async (t, { alice }) => {
   t.plan(1)
 
-  alice.call("blog", "main", "create_post",
+  await alice.callSync("blog", "main", "create_post",
     { "content": "Holo world", "in_reply_to": "" }
   )
 
-  alice.call("blog", "main", "create_post",
+  await alice.callSync("blog", "main", "create_post",
     { "content": "Another post", "in_reply_to": "" }
   )
 
-  const result = await pollFor(
-    () => alice.call("blog", "main", "my_posts", {}),
-    (result) => {
-      return result &&
-        result.Ok &&
-        result.Ok.addresses &&
-        result.Ok.addresses.length === 2
-    }
-  ).catch(t.fail)
+  const result = alice.call("blog", "main", "my_posts", {})
 
   t.equal(result.Ok.addresses.length, 2)
 })

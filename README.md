@@ -98,6 +98,28 @@ If you are running on ubuntu or macOS, and you have `make` installed, you can do
 
 We also use [docker](https://www.docker.com/).  The `docker` folder contains scripts to build and run docker images.
 
+### Windows
+
+You will need to install rust.
+
+Rustup `https://rustup.rs/#` is likely the best option.
+
+The rust language moves very fast on the nightly channel.
+
+It is very important to be using the correct nightly version.
+
+Currently this is:
+
+`nightly-2018-12-26-x86_64-pc-windows-msvc`
+
+Rust zmq requires a specific dll to be on the PATH in windows.
+
+Add the absolute path to `zmq-sys/vendor/zmq/bin` to your PATH.
+
+There are examples of configuring windows in .travis.yml
+
+The nightly version we test/develop against can be found in the .travis.yml file.
+
 ### NixOS
 
 If you have `nix-shell` then feel free to use our `.nix` files.

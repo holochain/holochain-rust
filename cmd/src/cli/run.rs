@@ -18,7 +18,8 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
-    let agent = AgentId::generate_fake("testAgent");
+    let agent_name = env::var("HC_AGENT").ok();
+    let agent = AgentId::generate_fake(&agent_name.unwrap_or_else(|| String::from("testAgent")));
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent.nick,
@@ -66,13 +67,20 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
     };
 
     let n3h_path = env::var("HC_N3H_PATH").ok();
-    let n3h_mode = env::var("HC_N3H_MODE").ok();
-    let n3h_persistence_path = env::var("HC_N3H_WORK_DIR").ok();
 
     // network config
     let network_config = if networked || n3h_path.is_some() {
+        let n3h_mode = env::var("HC_N3H_MODE").ok();
+        let n3h_persistence_path = env::var("HC_N3H_WORK_DIR").ok();
+        let n3h_bootstrap_node = env::var("HC_N3H_BOOTSTRAP_NODE").ok();
+        let mut n3h_bootstrap = Vec::new();
+
+        if n3h_bootstrap_node.is_some() {
+            n3h_bootstrap.push(n3h_bootstrap_node.unwrap())
+        }
+
         Some(NetworkConfig {
-            bootstrap_nodes: Default::default(),
+            bootstrap_nodes: n3h_bootstrap,
             n3h_path: n3h_path.unwrap_or_else(|| default_n3h_path()),
             n3h_mode: n3h_mode.unwrap_or_else(|| default_n3h_mode()),
             n3h_persistence_path: n3h_persistence_path

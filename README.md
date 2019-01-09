@@ -86,7 +86,7 @@ There are two approaches to building and testing Holochain, using `make` or usin
 
 ### Make (ubuntu and macOS only)
 
-If you are running on ubuntu or macOS, and you have `make` installed, you can do local development by simply typing:
+If you are running on ubuntu or macOS, and you have `make` and other dependencies installed, you can do local development by simply typing:
 
 `make` which will:
 
@@ -94,11 +94,12 @@ If you are running on ubuntu or macOS, and you have `make` installed, you can do
 2. build all the rust libraries from the source code in this repository.
 3. build and install the command-line tools.
 
-Make itself can be installed with `apt-get` or `brew`:
+Make itself can be installed with `apt-get` or `brew`
+
+#### Ubuntu
 
 ```
-apt-get install make; # ubuntu
-brew install make; # mac OS X
+. ./scripts/install/ubuntu.sh
 ```
 
 ### Docker

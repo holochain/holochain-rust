@@ -279,24 +279,16 @@ impl NetWorker for MockWorker {
     /// we got a message from holochain core
     /// forward to our mock singleton
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        let map_lock = MOCK_MAP.read().unwrap();
+        let mut mock = map_lock.get(&self.network_name).unwrap().lock().unwrap();
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
             if let ProtocolWrapper::TrackApp(app) = wrap {
-                // get a write lock first
-                let mut map_lock = MOCK_MAP.write().unwrap();
-                let mut mock = map_lock
-                    .entry(self.network_name.clone())
-                    .or_insert_with(|| Mutex::new(MockSystem::new()))
-                    .lock()
-                    .unwrap();
-
                 let (tx, rx) = mpsc::channel();
                 self.mock_msgs.push(rx);
                 mock.register(&app.dna_address, &app.agent_id, tx)?;
                 return Ok(());
             }
         }
-        let map_lock = MOCK_MAP.read().unwrap();
-        let mut mock = map_lock.get(&self.network_name).unwrap().lock().unwrap();
         mock.handle(data)?;
         Ok(())
     }
@@ -324,6 +316,12 @@ impl MockWorker {
             .as_str()
             .unwrap_or("(unnamed)")
             .to_string();
+
+        let mut map_lock = MOCK_MAP.write().unwrap();
+        if !map_lock.contains_key(&network_name) {
+            map_lock.insert(network_name.clone(), Mutex::new(MockSystem::new()));
+        }
+
         Ok(MockWorker {
             handler,
             mock_msgs: Vec::new(),

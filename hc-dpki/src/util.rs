@@ -1,5 +1,5 @@
 use holochain_sodium::{
-    secbuf::{SecBuf},
+    secbuf::SecBuf,
     pwhash,
     aead,
     kx,
@@ -13,10 +13,19 @@ pub const PW_HASH_ALGO :i8 = pwhash::ALG_ARGON2ID13;
 pub struct Bundle {
     pub bundle_type:String, 
     pub hint:String,
+    pub data:Keys,
+}
+pub struct Keys {
     pub pw_pub_keys: ReturnBundleData, 
     pub pw_sign_priv: ReturnBundleData,
     pub pw_enc_priv: ReturnBundleData,
 }
+pub struct ReturnBundleData  {
+    pub salt: Vec<u8>,
+    pub nonce: Vec<u8>,
+    pub cipher: Vec<u8>,
+}
+
 /**
  * simplify the api for generating a password hash with our set parameters
  * @param {SecBuf} pass - the password buffer to hash
@@ -28,12 +37,6 @@ pub fn pw_hash(password: &mut SecBuf,salt:&mut SecBuf,hash:&mut SecBuf){
     let mut salt = salt;
     let mut hash = hash;
     pwhash::hash(&mut password,PW_HASH_OPS_LIMIT,PW_HASH_MEM_LIMIT,PW_HASH_ALGO,&mut salt,&mut hash).unwrap()
-}
-
-pub struct ReturnBundleData  {
-    pub salt: Vec<u8>,
-    pub nonce: Vec<u8>,
-    pub cipher: Vec<u8>,
 }
 
 /**
@@ -88,7 +91,6 @@ pub fn pw_dec (bundle:&ReturnBundleData,passphrase:&mut SecBuf)->SecBuf{
     let mut passphrase = passphrase;
     pw_hash(&mut passphrase,&mut salt,&mut secret);
     let mut decrypted_message = SecBuf::with_insecure(cipher.len() - aead::ABYTES);
-    println!("{} {} {} {} {}",secret.len(),salt.len(),nonce.len(),cipher.len(),decrypted_message.len());
     aead::dec(&mut decrypted_message,&mut secret,None,&mut nonce,&mut cipher).unwrap();
     decrypted_message
 }
@@ -97,9 +99,7 @@ pub fn load_secbuf(data:&Vec<u8>,buf:&mut SecBuf){
     let mut buf = buf.write_lock();
     for x in 0..data.len() {
         buf[x]=data[x];
-        print!("({}):{:?}",x,buf[x]);
     }
-    println!("");
 }
 
 pub fn encode_id(sign_pub: &mut SecBuf,enc_pub:&mut SecBuf,id:&mut SecBuf){

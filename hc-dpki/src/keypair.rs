@@ -54,12 +54,33 @@ impl Keypair {
         return util::Bundle{
             bundle_type,
             hint,
-            pw_pub_keys, 
-            pw_sign_priv,
-            pw_enc_priv,
+            data: util::Keys{
+                pw_pub_keys, 
+                pw_sign_priv,
+                pw_enc_priv,
+            }
         }
     }
-  
+    /**
+   * initialize the pairs from an encrypted persistence bundle
+   * @param {object} bundle - persistence info
+   * @param {string} passphrase - decryption passphrase
+   */
+    pub fn from_bundle(bundle: &util::Bundle, passphrase: &mut SecBuf)->Keypair{
+        let pk: &util::ReturnBundleData = &bundle.data.pw_pub_keys;
+        let epk: &util::ReturnBundleData = &bundle.data.pw_enc_priv;
+        let spk: &util::ReturnBundleData = &bundle.data.pw_sign_priv;
+        let pub_keys = util::pw_dec(pk,passphrase);
+        let enc_priv = util::pw_dec(epk,passphrase);
+        let sign_priv = util::pw_dec(spk,passphrase);
+        Keypair {
+            pub_keys,
+            enc_priv,
+            sign_priv,
+        }
+    }
+
+
     /**
     * get the keypair identifier string
     * @return {string}
@@ -228,6 +249,24 @@ mod tests {
     use super::*;
     use crate::holochain_sodium::random::random_secbuf;
 
+
+    #[test]
+    fn it_should_get_from_bundle() {
+          let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed);
+        let mut passphrase = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut passphrase);
+
+        let bundle: util::Bundle = keypair.get_bundle(&mut passphrase,"hint".to_string());
+        
+        let keypair_from_bundle = Keypair::from_bundle(&bundle,&mut passphrase);
+
+        assert_eq!(64,keypair_from_bundle.sign_priv.len());
+        assert_eq!(32,keypair_from_bundle.enc_priv.len());
+        assert_eq!(64,keypair_from_bundle.pub_keys.len());
+ }
+
     #[test]
     fn it_should_get_id() {
         let mut seed = SecBuf::with_secure(SEEDSIZE);
@@ -253,10 +292,8 @@ mod tests {
 
         let bundle: util::Bundle = keypair.get_bundle(&mut passphrase,"hint".to_string());
         
-        println!("HINT: {:?}",bundle.hint);
-
-        println!("{:?}",bundle.pw_pub_keys.salt);
-
+        // println!("HINT: {:?}",bundle.hint);
+        // println!("{:?}",bundle.data.pw_pub_keys.salt);
         assert_eq!("hint",bundle.hint);
     }
 

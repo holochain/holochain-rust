@@ -15,7 +15,7 @@ const container = (() => {
 
     const instanceAlice = Config.instance(agentAlice, dna)
 
-    const containerConfig = Config.container(instanceAlice)
+    const containerConfig = Config.container([instanceAlice])
     return new Container(containerConfig)
 })()
 

@@ -81,6 +81,11 @@ workflows:
   jobs:
    - build
    - integration-tests
+
+ cold:
+  jobs:
+   - cold.ubuntu
+
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
   triggers:

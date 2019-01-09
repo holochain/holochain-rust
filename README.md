@@ -114,7 +114,7 @@ We also use [docker](https://www.docker.com/).  The `docker` folder contains scr
 
 ### Windows
 
-You will need to install rust.
+You will need to install rust manually.
 
 Rustup `https://rustup.rs/#` is likely the best option.
 
@@ -126,13 +126,7 @@ Currently this is:
 
 `nightly-2018-12-26-x86_64-pc-windows-msvc`
 
-Rust zmq requires a specific dll to be on the PATH in windows.
-
-Add the absolute path to `zmq-sys/vendor/zmq/bin` to your PATH.
-
-There are examples of configuring windows in .travis.yml
-
-The nightly version we test/develop against can be found in the .travis.yml file.
+The nightly version we test/develop against can always be found in the .travis.yml file.
 
 ### NixOS
 

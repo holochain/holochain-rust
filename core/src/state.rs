@@ -97,6 +97,7 @@ impl State {
     }
 
     pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
+        context.log(format!("debug/reduce: {:?}", action_wrapper));
         let mut new_state = State {
             nucleus: crate::nucleus::reduce(
                 Arc::clone(&context),

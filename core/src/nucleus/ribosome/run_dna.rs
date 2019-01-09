@@ -169,7 +169,7 @@ pub fn run_dna(
     };
     // Log & done
     runtime.context.log(format!(
-        "Zome Function '{}' returned: {}",
+        "debug/zome: Zome Function '{}' returned: {}",
         zome_call.fn_name, return_log_msg,
     ));
     return return_result;

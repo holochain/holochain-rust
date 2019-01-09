@@ -41,7 +41,7 @@ pub struct Bridge {
 #[serde(untagged)]
 pub enum BridgeReference {
     /// A bridge reference that defines another DNA statically by its address (i.e. hash).
-    /// If this variant is used the other DNA gets locked in as per DNA hash
+    /// If this variant is used the other DNA gets locked in as per DNA address
     Address { dna_address: Address },
 
     /// A bridge reference that defines another DNA loosely by expecting a DNA that implements

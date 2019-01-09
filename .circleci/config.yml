@@ -1,76 +1,98 @@
 version: 2
+
 jobs:
-  build:
-    docker:
-      - image: holochain/holochain-rust:circle
-    steps:
-      - checkout
+ # must be called build for local circle cli to work
+ # is actually unit tests
+ build:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
 
-      - restore_cache:
-          keys:
-            # todo: keys for each target
-            - v3-rust-{{ checksum "Cargo.toml" }}
+   - run: nix-shell --run hc-fmt-check
+   - run: nix-shell --run hc-test
 
-      - run:
-          name: fmt check
-          command: nix-shell --run hc-fmt-check
+ integration-tests:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
 
-      # wasm tests
-      - restore_cache:
-          keys:
-            - v6-wasm-{{ checksum "shell.nix" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
-      - run:
-          name: build wasm
-          command: nix-shell --run hc-wasm-build
-      - save_cache:
-          key: v6-wasm-{{ checksum "shell.nix" }}-{{ checksum "core/src/nucleus/actions/wasm-test/Cargo.toml" }}-{{ checksum "container_api/wasm-test/Cargo.toml"}}-{{ checksum "hdk-rust/wasm-test/Cargo.toml"}}-{{ checksum "wasm_utils/wasm-test/integration-test/Cargo.toml"}}
-          paths:
-            - "./core/src/nucleus/actions/wasm-test/target"
-            - "./core/src/nucleus/actions/wasm-test/.cargo"
+   - run:
+       name: install cmd
+       command: nix-shell --run hc-install-cmd
 
-            - "./container_api/wasm-test/target"
-            - "./container_api/wasm-test/.cargo"
+   - run:
+       name: install node container
+       command: nix-shell --run hc-install-node-container
 
-            - "./hdk-rust/wasm-test/target"
-            - "./hdk-rust/wasm-test/.cargo"
+   - run:
+       name: app spec tests
+       command: nix-shell --run hc-test-app-spec
 
-            - "./wasm_utils/wasm-test/integration-test/target"
-            - "./wasm_utils/wasm-test/integration-test/.cargo"
+ # https://circleci.com/docs/2.0/building-docker-images/
+ docker.start:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile..start -t holochain/holochain-rust:circle..start .
+   - run: docker push holochain/holochain-rust:circle..start
+ docker.01:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.01.warm.nix -t holochain/holochain-rust:circle.01.warm.nix .
+   - run: docker push holochain/holochain-rust:circle.01.warm.nix
+ docker.02:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.02.warm.tests -t holochain/holochain-rust:circle.02.warm.tests .
+   - run: docker push holochain/holochain-rust:circle.02.warm.tests
+ docker.03:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.03.warm.tools -t holochain/holochain-rust:circle.03.warm.tools .
+   - run: docker push holochain/holochain-rust:circle.03.warm.tools
+ docker.end:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end .
+   - run: docker push holochain/holochain-rust:circle.zz.end
 
-      - run:
-          name: run all tests
-          command: nix-shell --run hc-test
-
-      - run:
-          name: install cmd
-          command: nix-shell --run hc-install-cmd
-
-      # test the node container build
-      # todo - this cache doesn't stop recompilation of rust on node container
-      - restore_cache:
-          keys:
-            - v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
-      - run:
-          name: install node container
-          command: nix-shell --run hc-install-node-container
-      - save_cache:
-          key: v1-nodejs_container-{{ checksum "nodejs_container/package.json" }}-{{ checksum "nodejs_container/publish.js" }}-{{ checksum "nodejs_container/yarn.lock" }}-{{ checksum "nodejs_container/native/Cargo.toml" }}
-          paths:
-            - "./nodejs_container/native/target"
-            - "./nodejs_container/node_modules"
-            - "./nodejs_container/native/Cargo.lock"
-
-      - run:
-          name: app spec tests
-          command: nix-shell --run hc-test-app-spec
-
-      - save_cache:
-          key: v3-rust-{{ checksum "Cargo.toml" }}
-          paths:
-            - "~/.cargo"
-            - "./target"
-            - "./app_spec/zomes/blog/code/target"
-            - "./app_spec/zomes/summer/code/target"
-            - "./core/src/nucleus/ribosome/target"
-            - "./core/src/nucleus/wasm-test/target"
-            - "./test_utils/target"
+workflows:
+ version: 2
+ tests:
+  jobs:
+   - build
+   - integration-tests
+ dockers:
+  # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
+  triggers:
+   - schedule:
+      cron: "0 0 * * *"
+      filters:
+       branches:
+        only:
+         - develop
+  jobs:
+   - docker.start
+   - docker.01:
+      requires:
+       - docker.start
+   - docker.02:
+      requires:
+       - docker.01
+   - docker.03:
+      requires:
+       - docker.02
+   - docker.end:
+      requires:
+       - docker.03

@@ -15,6 +15,7 @@ extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_container_api::{error::HolochainResult, *};
+use holochain_core::logger::TestLogger;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
@@ -30,10 +31,13 @@ use holochain_core_types::{
     hash::HashString,
     json::JsonString,
 };
-use holochain_wasm_utils::api_serialization::{
-    get_entry::{GetEntryResult, StatusRequestKind},
-    get_links::GetLinksResult,
-    QueryResult,
+use holochain_wasm_utils::{
+    api_serialization::{
+        get_entry::{GetEntryResult, StatusRequestKind},
+        get_links::GetLinksResult,
+        QueryResult,
+    },
+    wasm_target_dir,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -138,8 +142,10 @@ fn start_holochain_instance<T: Into<String>>(
     agent_name: T,
 ) -> (Holochain, Arc<Mutex<TestLogger>>) {
     // Setup the holochain instance
-    let wasm =
-        create_wasm_from_file("wasm-test/target/wasm32-unknown-unknown/release/test_globals.wasm");
+    let wasm = create_wasm_from_file(&format!(
+        "{}/wasm32-unknown-unknown/release/test_globals.wasm",
+        wasm_target_dir("hdk-rust/", "wasm-test/"),
+    ));
     let capabability = create_test_cap_with_fn_names(vec![
         "check_global",
         "check_commit_entry",

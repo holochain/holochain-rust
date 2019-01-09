@@ -75,16 +75,6 @@ jobs:
    - run: . ./scripts/install/ubuntu.sh
    - run: make test
 
- cold.nixos:
-  docker:
-   - image: nixorg/nix:circleci
-  environment:
-   NIX_PATH: nixpkgs=https://github.com/NixOS/nixpkgs/archive/47f008676fe3b77b9c8edda54db621a0dc16dd8e.tar.gz
-  steps:
-   - checkout
-   - run:
-      command: nix-shell --pure --run hc-test
-
 workflows:
  version: 2
  tests:
@@ -95,7 +85,6 @@ workflows:
  cold:
   jobs:
    - cold.ubuntu
-   - cold.nixos
 
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow

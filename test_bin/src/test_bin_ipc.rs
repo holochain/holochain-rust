@@ -25,6 +25,7 @@ static AGENT_ID_1: &'static str = "DUMMY_AGENT_1";
 static AGENT_ID_2: &'static str = "DUMMY_AGENT_2";
 static ENTRY_ADDRESS_1: &'static str = "dummy_addr_1";
 static ENTRY_ADDRESS_2: &'static str = "dummy_addr_2";
+static ENTRY_ADDRESS_3: &'static str = "dummy_addr_3";
 static DNA_ADDRESS: &'static str = "DUMMY_DNA_ADDRESS";
 static META_ATTRIBUTE: &'static str = "link__yay";
 
@@ -60,6 +61,7 @@ macro_rules! one_let {
     };
 }
 
+/// Macro for transforming a type check into a predicate
 macro_rules! one_is {
     ($p:pat) => {
         |d| {
@@ -104,7 +106,7 @@ impl IpcNode {
         }
     }
 
-    // Wait for a message corresponding to predicate
+    /// Wait for a message corresponding to predicate
     #[cfg_attr(tarpaulin, skip)]
     pub fn wait(
         &mut self,
@@ -381,18 +383,91 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
     }
 
     // Send data & metadata on same address
-    send_and_check_data(node1, node2, ENTRY_ADDRESS_1)?;
-    send_and_check_metadata(node1, node2, ENTRY_ADDRESS_1)?;
+    send_and_confirm_data(node1, node2, ENTRY_ADDRESS_1)?;
+    send_and_confirm_metadata(node1, node2, ENTRY_ADDRESS_1)?;
 
     // Again but now send metadata first
-    send_and_check_metadata(node1, node2, ENTRY_ADDRESS_2)?;
-    send_and_check_data(node1, node2, ENTRY_ADDRESS_2)?;
+    send_and_confirm_metadata(node1, node2, ENTRY_ADDRESS_2)?;
+    send_and_confirm_data(node1, node2, ENTRY_ADDRESS_2)?;
+
+    // Again but wait at the end
+    // Send 'Store DHT data' message on node 1
+    node1.p2p_connection.send(
+        ProtocolWrapper::PublishDht(DhtData {
+            msg_id: "testPublishEntry".to_string(),
+            dna_address: example_dna_address(),
+            agent_id: AGENT_ID_1.to_string(),
+            address: ENTRY_ADDRESS_3.to_string(),
+            content: json!("hello"),
+        })
+            .into(),
+    )?;
+    // Send 'Store DHT metadata' message on node 1
+    node1.p2p_connection.send(
+        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+            msg_id: "testPublishMeta".to_string(),
+            dna_address: example_dna_address(),
+            agent_id: AGENT_ID_1.to_string(),
+            from_agent_id: AGENT_ID_1.to_string(),
+            address: ENTRY_ADDRESS_3.to_string(),
+            attribute: META_ATTRIBUTE.to_string(),
+            content: json!("hello-meta"),
+        })
+            .into(),
+    )?;
+    // Send 'get DHT data' message on node 2
+    node2.p2p_connection.send(
+        ProtocolWrapper::GetDht(GetDhtData {
+            msg_id: "testGetEntry".to_string(),
+            dna_address: example_dna_address(),
+            from_agent_id: AGENT_ID_2.to_string(),
+            address: ENTRY_ADDRESS_3.to_string(),
+        })
+            .into(),
+    )?;
+    // Send 'Get DHT data result' message on node 2
+    node2.p2p_connection.send(
+        ProtocolWrapper::GetDhtResult(DhtData {
+            msg_id: "testGetEntryResult".to_string(),
+            dna_address: example_dna_address(),
+            agent_id: AGENT_ID_1.to_string(),
+            address: ENTRY_ADDRESS_3.to_string(),
+            content: json!("hello"),
+        })
+            .into(),
+    )?;
+    // Send a 'Get DHT metadata' message on node 2
+    node2.p2p_connection.send(
+        ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
+            msg_id: "testGetMeta".to_string(),
+            dna_address: example_dna_address(),
+            from_agent_id: AGENT_ID_2.to_string(),
+            address: ENTRY_ADDRESS_3.to_string(),
+            attribute: META_ATTRIBUTE.to_string(),
+        })
+            .into(),
+    )?;
+    // Send a 'Get DHT metadata result' message on node 2
+    node2.p2p_connection.send(
+        ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
+            msg_id: "testGetMetaResult".to_string(),
+            dna_address: example_dna_address(),
+            agent_id: AGENT_ID_1.to_string(),
+            from_agent_id: AGENT_ID_2.to_string(),
+            address: ENTRY_ADDRESS_3.to_string(),
+            attribute: META_ATTRIBUTE.to_string(),
+            content: json!("hello"),
+        })
+            .into(),
+    )?;
+    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
+    println!("got GetDhtMetaResult: {:?}", result_2);
 
     // Done
     Ok(())
 }
 
-fn send_and_check_data(node1: &mut IpcNode, node2: &mut IpcNode, address: &str) -> NetResult<()> {
+fn send_and_confirm_data(node1: &mut IpcNode, node2: &mut IpcNode, address: &str) -> NetResult<()> {
     // Send 'Store DHT data' message on node 1
     node1.p2p_connection.send(
         ProtocolWrapper::PublishDht(DhtData {
@@ -440,7 +515,7 @@ fn send_and_check_data(node1: &mut IpcNode, node2: &mut IpcNode, address: &str) 
     Ok(())
 }
 
-fn send_and_check_metadata(
+fn send_and_confirm_metadata(
     node1: &mut IpcNode,
     node2: &mut IpcNode,
     address: &str,

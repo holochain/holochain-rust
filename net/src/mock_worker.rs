@@ -59,7 +59,7 @@ impl MockSingleton {
         Ok(())
     }
 
-    /// process a message
+    /// process an incoming message
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
             match wrap {

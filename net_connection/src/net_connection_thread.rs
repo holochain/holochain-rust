@@ -12,7 +12,8 @@ use std::sync::{
     mpsc, Arc,
 };
 
-/// a NetConnection instance that is managed on another thread
+/// Struct for handling a network connection that is managed on a separate thread.
+/// Implements the NetConnection trait.
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
     send_channel: mpsc::Sender<Protocol>,
@@ -30,19 +31,7 @@ impl NetConnection for NetConnectionThread {
 }
 
 impl NetConnectionThread {
-    /// stop (join) the worker thread
-    pub fn stop(self) -> NetResult<()> {
-        self.can_keep_running.store(false, Ordering::Relaxed);
-        if self.thread.join().is_err() {
-            bail!("NetConnectionThread failed to join on stop() call");
-        }
-        if let Some(done) = self.done {
-            done();
-        }
-        Ok(())
-    }
-
-    /// Create a new NetConnectionThread instance with given handler / worker
+    /// Create a new NetConnectionThread instance with the given handler, worker, and shutdown
     pub fn new(
         handler: NetHandler,
         worker_factory: NetWorkerFactory,
@@ -53,10 +42,9 @@ impl NetConnectionThread {
         let can_keep_running_shared = can_keep_running.clone();
         // Create channel
         let (send_channel, recv_channel) = mpsc::channel();
-
         let (send_endpoint, recv_endpoint) = mpsc::channel();
 
-        // spawn worker thread
+        // Spawn worker thread
         let thread = thread::spawn(move || {
             // Create worker
             let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
@@ -107,6 +95,7 @@ impl NetConnectionThread {
             worker.stop().unwrap_or_else(|e| panic!("{:?}", e));
         });
 
+        // Retrieve endpoint from worker thread
         let endpoint = recv_endpoint
             .recv()
             .expect("Failed to receive endpoint address from net worker");
@@ -123,12 +112,23 @@ impl NetConnectionThread {
             endpoint,
         })
     }
+
+    /// stop (join) the worker thread
+    pub fn stop(self) -> NetResult<()> {
+        self.can_keep_running.store(false, Ordering::Relaxed);
+        if self.thread.join().is_err() {
+            bail!("NetConnectionThread failed to join on stop() call");
+        }
+        if let Some(done) = self.done {
+            done();
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use super::super::net_connection::NetWorker;
 
     struct DefWorker;

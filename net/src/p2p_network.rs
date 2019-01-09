@@ -1,4 +1,4 @@
-//! This module provides the core abstraction for differing p2p backends
+//! This module provides the main abstraction for differing p2p backends
 //! P2pNetwork instances take a json configuration string
 //! and at load-time instantiate the configured "backend"
 
@@ -11,26 +11,17 @@ use holochain_net_connection::{
 
 use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, p2p_config::*};
 
-/// The p2p network instance
+/// Facade handling a network connection
+/// Holds a NetConnectionThread and implements itself the NetConnection Trait
 pub struct P2pNetwork {
     connection: NetConnectionThread,
 }
 
-impl std::fmt::Debug for P2pNetwork {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "P2pNetwork {{}}")
-    }
-}
-
-impl NetConnection for P2pNetwork {
-    /// send a Protocol message to the p2p network instance
-    fn send(&mut self, data: Protocol) -> NetResult<()> {
-        self.connection.send(data)
-    }
-}
-
 impl P2pNetwork {
-    /// create a new p2p network instance, given message handler and config json
+    /// Create a new p2p network connection
+    /// `config` is the configuration of the p2p connection
+    /// `handler` is the closure for handling received Protocol messages
+    /// `send()` is used for sending Protocol messages to the network
     pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
         let network_config = config.backend_config.to_string().into();
@@ -58,15 +49,31 @@ impl P2pNetwork {
         Ok(P2pNetwork { connection })
     }
 
-    /// stop the network module (disconnect any sockets, join any threads, etc)
+    /// Stop the network connection (disconnect any sockets, join any threads, etc)
     pub fn stop(self) -> NetResult<()> {
         self.connection.stop()
     }
 
+    /// Getter of the endpoint of its connection
     pub fn endpoint(&self) -> String {
         self.connection.endpoint.clone()
     }
 }
+
+
+impl std::fmt::Debug for P2pNetwork {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "P2pNetwork {{}}")
+    }
+}
+
+impl NetConnection for P2pNetwork {
+    /// send a Protocol message to the p2p network instance
+    fn send(&mut self, data: Protocol) -> NetResult<()> {
+        self.connection.send(data)
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

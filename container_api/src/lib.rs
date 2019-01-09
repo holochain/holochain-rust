@@ -119,6 +119,7 @@ extern crate tiny_http;
 extern crate toml;
 #[macro_use]
 extern crate maplit;
+extern crate directories;
 
 pub mod config;
 pub mod container;

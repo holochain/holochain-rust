@@ -10,7 +10,6 @@ We are committed to foster a vibrant thriving community, including growing a cul
 
 ## Coordination
 
-* For task management we use [Waffle](https://waffle.io/holochain/org) or for the non-kan-ban view [github's issues](https://github.com/holochain/org/issuees)
 * Chat with us on our [chat server](https://chat.holochain.net) or [Gitter](https://gitter.im/metacurrency/holochain)
 
 ## Test Driven Development

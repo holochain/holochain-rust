@@ -1,25 +1,11 @@
 use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
-
+use crate::bundle;
 // allow overrides for unit-testing purposes
 pub const PW_HASH_OPS_LIMIT: u64 = pwhash::OPSLIMIT_SENSITIVE;
 pub const PW_HASH_MEM_LIMIT: usize = pwhash::MEMLIMIT_SENSITIVE;
 pub const PW_HASH_ALGO: i8 = pwhash::ALG_ARGON2ID13;
 
-pub struct Bundle {
-    pub bundle_type: String,
-    pub hint: String,
-    pub data: Keys,
-}
-pub struct Keys {
-    pub pw_pub_keys: ReturnBundleData,
-    pub pw_sign_priv: ReturnBundleData,
-    pub pw_enc_priv: ReturnBundleData,
-}
-pub struct ReturnBundleData {
-    pub salt: Vec<u8>,
-    pub nonce: Vec<u8>,
-    pub cipher: Vec<u8>,
-}
+
 
 /// simplify the api for generating a password hash with our set parameters
 ///
@@ -49,8 +35,8 @@ pub fn pw_hash(password: &mut SecBuf, salt: &mut SecBuf, hash: &mut SecBuf) {
 ///
 /// @param {string} passphrase
 ///
-/// @return {ReturnBundleData} - the encrypted data
-pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> ReturnBundleData {
+/// @return {bundle::ReturnBundleData} - the encrypted data
+pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> bundle::ReturnBundleData {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_secure(pwhash::SALTBYTES);
     holochain_sodium::random::random_secbuf(&mut salt);
@@ -71,7 +57,7 @@ pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> ReturnBundleData {
     let salt: Vec<u8> = salt.iter().cloned().collect();
     let nonce: Vec<u8> = nonce.iter().cloned().collect();
     let cipher: Vec<u8> = cipher.iter().cloned().collect();
-    let data = ReturnBundleData {
+    let data = bundle::ReturnBundleData {
         salt,
         nonce,
         cipher,
@@ -86,7 +72,7 @@ pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> ReturnBundleData {
 /// @param {string} passphrase
 ///
 /// @return {SecBuf} - the decrypted data
-pub fn pw_dec(bundle: &ReturnBundleData, passphrase: &mut SecBuf) -> SecBuf {
+pub fn pw_dec(bundle: &bundle::ReturnBundleData, passphrase: &mut SecBuf) -> SecBuf {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_secure(pwhash::SALTBYTES);
     load_secbuf(&bundle.salt, &mut salt);
@@ -201,7 +187,7 @@ mod tests {
             password[0] = 42;
             password[1] = 222;
         }
-        let mut bundle: ReturnBundleData = pw_enc(&mut data, &mut password);
+        let mut bundle: bundle::ReturnBundleData = pw_enc(&mut data, &mut password);
 
         let mut dec_mess = pw_dec(&mut bundle, &mut password);
 

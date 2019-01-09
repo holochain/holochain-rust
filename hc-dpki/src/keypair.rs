@@ -1,6 +1,7 @@
 use crate::{
     holochain_sodium::{aead, kx, random::random_secbuf, secbuf::SecBuf, sign},
     util,
+    bundle,
 };
 
 pub const SEEDSIZE: usize = 32 as usize;
@@ -41,18 +42,18 @@ impl Keypair {
     /// @param {SecBuf} passphrase - the encryption passphrase
     ///
     /// @param {string} hint - additional info / description for the bundle
-    pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> util::Bundle {
+    pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> bundle::KeyBundle {
         let mut passphrase = passphrase;
         let bundle_type: String = "hcKeypair".to_string();
-        let pw_pub_keys: util::ReturnBundleData = util::pw_enc(&mut self.pub_keys, &mut passphrase);
-        let pw_sign_priv: util::ReturnBundleData =
+        let pw_pub_keys: bundle::ReturnBundleData = util::pw_enc(&mut self.pub_keys, &mut passphrase);
+        let pw_sign_priv: bundle::ReturnBundleData =
             util::pw_enc(&mut self.sign_priv, &mut passphrase);
-        let pw_enc_priv: util::ReturnBundleData = util::pw_enc(&mut self.enc_priv, &mut passphrase);
+        let pw_enc_priv: bundle::ReturnBundleData = util::pw_enc(&mut self.enc_priv, &mut passphrase);
 
-        return util::Bundle {
+        return bundle::KeyBundle {
             bundle_type,
             hint,
-            data: util::Keys {
+            data: bundle::Keys {
                 pw_pub_keys,
                 pw_sign_priv,
                 pw_enc_priv,
@@ -65,10 +66,10 @@ impl Keypair {
     /// @param {object} bundle - persistence info
     ///
     /// @param {SecBuf} passphrase - decryption passphrase
-    pub fn from_bundle(bundle: &util::Bundle, passphrase: &mut SecBuf) -> Keypair {
-        let pk: &util::ReturnBundleData = &bundle.data.pw_pub_keys;
-        let epk: &util::ReturnBundleData = &bundle.data.pw_enc_priv;
-        let spk: &util::ReturnBundleData = &bundle.data.pw_sign_priv;
+    pub fn from_bundle(bundle: &bundle::KeyBundle, passphrase: &mut SecBuf) -> Keypair {
+        let pk: &bundle::ReturnBundleData = &bundle.data.pw_pub_keys;
+        let epk: &bundle::ReturnBundleData = &bundle.data.pw_enc_priv;
+        let spk: &bundle::ReturnBundleData = &bundle.data.pw_sign_priv;
         let pub_keys = util::pw_dec(pk, passphrase);
         let enc_priv = util::pw_dec(epk, passphrase);
         let sign_priv = util::pw_dec(spk, passphrase);
@@ -283,7 +284,7 @@ mod tests {
         let mut passphrase = SecBuf::with_secure(SEEDSIZE);
         random_secbuf(&mut passphrase);
 
-        let bundle: util::Bundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
+        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
 
         let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase);
 
@@ -315,7 +316,7 @@ mod tests {
         let mut passphrase = SecBuf::with_secure(SEEDSIZE);
         random_secbuf(&mut passphrase);
 
-        let bundle: util::Bundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
+        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
 
         // println!("HINT: {:?}",bundle.hint);
         // println!("{:?}",bundle.data.pw_pub_keys.salt);

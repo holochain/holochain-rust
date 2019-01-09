@@ -239,7 +239,7 @@ SPAWN ("node" "/home/eric/holochain/n3h/packages/n3h/bin/n3h")
 To fire up a second node you have to do a little more work, namely:
 1. providing the address of the first node as a bootstrap node,
 2. specifying a different agent id
-3. specifying a different port for the UI interface.
+3. specifying a different port for the websocket server, for a UI to connect to.
 
 Do that something like this (where the node address is copied from the output of the first node):
 

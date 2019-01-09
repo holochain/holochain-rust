@@ -943,8 +943,14 @@ pub fn get_links_and_load<S: Into<String>>(
     Ok(entries)
 }
 
-/// Returns a list of entries from your local source chain, that match a given type.
-/// entry_type_names: Specify type of entry(s) to retrieve, as a Vec<String> of 0 or more names.
+/// Returns a list of entries from your local source chain, that match a given entry type name or names.
+/// Each name may be a "glob" pattern such as "prefix/*" (matches all entry types starting with
+/// "prefix/"), or "[!%]*e" (matches all non-system non-name-spaced entry types ending in "e").
+/// Simple entry type name-spacing is supported by including "/" in your entry type names; use [], "",
+/// or "**" to match all names in all name-spaces. All names and patterns are merged into a single
+/// efficient Regular Expression for scanning.
+/// entry_type_names: Specify type of entry(s) to retrieve, as a String or Vec<String> of 0 or more names, converted into the QueryArgNames type
+/// start: First entry in result list to retrieve
 /// limit: Max number of entries to retrieve
 /// # Examples
 /// ```rust
@@ -957,6 +963,12 @@ pub fn get_links_and_load<S: Into<String>>(
 /// # fn main() {
 /// pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
 ///     hdk::query("post".into(), 0, 0)
+/// }
+/// pub fn all_system_plus_mine() -> ZomeApiResult<Vec<Address>> {
+///     hdk::query(vec!["[%]*","mine"].into(), 0, 0)
+/// }
+/// pub fn everything_including_namespaced_except_system() -> ZomeApiResult<Vec<Address>> {
+///     hdk::query("**/[!%]*".into(), 0, 0)
 /// }
 /// # }
 /// ```

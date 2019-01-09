@@ -48,7 +48,7 @@ impl Packager {
     }
 
     fn run(&self, output: &PathBuf) -> DefaultResult<()> {
-        let dir_obj_bundle = self.bundle_recurse(&PathBuf::from("."))?;
+        let dir_obj_bundle = self.bundle_recurse(&std::env::current_dir()?)?;
 
         let out_file = File::create(&output)?;
 

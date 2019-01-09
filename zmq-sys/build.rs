@@ -14,6 +14,7 @@ fn main() {
     // println!("{}", env::var("CARGO").unwrap());
     // println!("{}", env::var("OUT_DIR").unwrap());
     let dll_name = "libzmq-v140-mt-4_2_0.dll";
+    #[cfg(windows)]
     fs::copy(
         Path::new(&prefix_dir("bin").unwrap()).join(dll_name),
         Path::new(&env::var("CARGO").unwrap()).parent().unwrap().join(dll_name),

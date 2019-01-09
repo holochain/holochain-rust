@@ -15,7 +15,7 @@ This is the home of the Holochain Rust libraries, being rewritten from [Go](http
 
 **Code Status:** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 released October 2017.  Alpha 1 was released May 2018.  
 
-There are [3 developer preview releases](/releases) of the Rust version. 0.0.3 is the first with a working networking implementation.
+There are [3 developer preview releases](https://github.com/holochain/holochain-rust/releases) of the Rust version. 0.0.3 is the first with a working networking implementation.
 <br/>
 
 | Holochain Links: | [FAQ](https://developer.holochain.org/guide/latest/faq.html) | [Developer Docs](https://developer.holochain.org) | [White Paper](https://github.com/holochain/holochain-proto/blob/whitepaper/holochain.pdf) |

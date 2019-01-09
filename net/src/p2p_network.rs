@@ -60,7 +60,6 @@ impl P2pNetwork {
     }
 }
 
-
 impl std::fmt::Debug for P2pNetwork {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "P2pNetwork {{}}")
@@ -73,7 +72,6 @@ impl NetConnection for P2pNetwork {
         self.connection.send(data)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

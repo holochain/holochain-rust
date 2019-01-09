@@ -128,8 +128,7 @@ impl NetConnectionThread {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use super::super::net_connection::NetWorker;
+    use super::{super::net_connection::NetWorker, *};
 
     struct DefWorker;
 

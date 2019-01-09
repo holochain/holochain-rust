@@ -400,7 +400,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             address: ENTRY_ADDRESS_3.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     // Send 'Store DHT metadata' message on node 1
     node1.p2p_connection.send(
@@ -413,7 +413,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello-meta"),
         })
-            .into(),
+        .into(),
     )?;
     // Send 'get DHT data' message on node 2
     node2.p2p_connection.send(
@@ -423,7 +423,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             from_agent_id: AGENT_ID_2.to_string(),
             address: ENTRY_ADDRESS_3.to_string(),
         })
-            .into(),
+        .into(),
     )?;
     // Send 'Get DHT data result' message on node 2
     node2.p2p_connection.send(
@@ -434,7 +434,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             address: ENTRY_ADDRESS_3.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     // Send a 'Get DHT metadata' message on node 2
     node2.p2p_connection.send(
@@ -445,7 +445,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             address: ENTRY_ADDRESS_3.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
         })
-            .into(),
+        .into(),
     )?;
     // Send a 'Get DHT metadata result' message on node 2
     node2.p2p_connection.send(
@@ -458,7 +458,7 @@ fn meta_test(node1: &mut IpcNode, node2: &mut IpcNode, can_test_connect: bool) -
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
     println!("got GetDhtMetaResult: {:?}", result_2);

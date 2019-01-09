@@ -64,7 +64,7 @@ impl LogRules {
             color: None,
         };
         if self.rules.len() == 0 {
-            Some(message)
+            None
         } else {
             for r in &self.rules {
                 if r.pattern.is_match(&msg) {

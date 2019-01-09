@@ -26,12 +26,8 @@ pub struct InstanceData {
 }
 
 pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let mut i = 0;
-    let mut instances = Vec::<InstanceData>::new();
-    while let Some(arg) = cx.argument_opt(i) {
-        instances.push(neon_serde::from_value(&mut cx, arg)?);
-        i += 1;
-    }
+    let instances_arg: Handle<JsValue> = cx.argument(0)?;
+    let instances: Vec<InstanceData> = neon_serde::from_value(&mut cx, instances_arg)?;
     let config = make_config(instances);
     Ok(neon_serde::to_value(&mut cx, &config)?)
 }

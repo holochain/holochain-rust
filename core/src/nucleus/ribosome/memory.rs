@@ -43,7 +43,7 @@ impl SinglePageManager {
 
         return SinglePageManager {
             stack: SinglePageStack::default(),
-            wasm_memory: wasm_memory.clone(),
+            wasm_memory,
         };
     }
 

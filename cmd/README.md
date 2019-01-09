@@ -220,7 +220,7 @@ This will store data in the same directory as your app, in a hidden folder calle
 
 Of course these options can be used in combination with one another.
 
-### Networking
+### Using Real Networking
 
 `hc run` uses mock networking by default and therefore can't talk to any other nodes.  If you want to test multiple nodes you will need to install the [n3h](https://github.com/holochain/n3h) networking component (following the instructions on the readme there).  Once you have installed it then you can simply fire up your first node while setting the HC_N3H_PATH environment variable to the path where you installed it.  If n3h was installed properly you should see something like this:
 
@@ -252,7 +252,7 @@ In both cases make sure to change the path to where you actually installed n3h.
 
 
 ## Contribute
-Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.
+Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](../CONTRIBUTING.md) for our general practices and protocols on participating in the community.
 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)

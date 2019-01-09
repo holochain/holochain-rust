@@ -15,7 +15,7 @@ const container = (() => {
   const instanceAlice = Config.instance(agentAlice, dna)
   const instanceBob = Config.instance(agentTash, dna)
 
-  const containerConfig = Config.container(instanceAlice, instanceBob)
+  const containerConfig = Config.container([instanceAlice, instanceBob])
   return new Container(containerConfig)
 })()
 
@@ -153,6 +153,7 @@ test('create/get_post roundtrip', (t) => {
   t.equal(entry_value.date_created, "now")
 
 })
+
 
 test('get_post with non-existant address returns null', (t) => {
   t.plan(1)

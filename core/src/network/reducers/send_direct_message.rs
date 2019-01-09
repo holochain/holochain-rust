@@ -42,7 +42,10 @@ pub fn reduce_send_direct_message(
     let action = action_wrapper.action();
     let dm_data = unwrap_to!(action => crate::action::Action::SendDirectMessage);
     if let Err(error) = inner(network_state, dm_data) {
-        context.log(format!("Error sending direct message: {:?}", error));
+        context.log(format!(
+            "err/net: Error sending direct message: {:?}",
+            error
+        ));
     }
 }
 

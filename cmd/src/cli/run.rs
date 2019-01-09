@@ -1,10 +1,9 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
-use holochain_container_api::{config::*, container::Container};
+use holochain_container_api::{config::*, container::Container, logger::LogRules};
 use holochain_core_types::agent::AgentId;
-use holochain_net::p2p_config::P2pConfig;
-use std::fs;
+use std::{env, fs};
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
@@ -47,13 +46,7 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
         id: INSTANCE_CONFIG_ID.into(),
         dna: DNA_CONFIG_ID.into(),
         agent: AGENT_CONFIG_ID.into(),
-        logger: Default::default(),
         storage,
-        network: Some(if networked {
-            P2pConfig::default_ipc().as_str()
-        } else {
-            P2pConfig::default_mock().as_str()
-        }),
     };
 
     let interface_config = InterfaceConfiguration {
@@ -65,18 +58,37 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
         }],
     };
 
+    // temporary log rules, should come from a configuration
+    let rules = LogRules::new();
+    let logger_config = LoggerConfiguration {
+        logger_type: "debug".to_string(),
+        rules,
+    };
+
+    let n3h_path = env::var("HC_N3H_PATH").ok();
+    let n3h_mode = env::var("HC_N3H_MODE").ok();
+
+    // network config
+    let network_config = if networked || n3h_path.is_some() {
+        Some(NetworkConfig {
+            bootstrap_nodes: Default::default(),
+            n3h_path: n3h_path.unwrap_or_else(|| default_n3h_path()),
+            n3h_mode: n3h_mode.unwrap_or_else(|| default_n3h_mode()),
+            n3h_persistence_path: Default::default(),
+            n3h_ipc_uri: Default::default(),
+        })
+    } else {
+        None
+    };
+
     let base_config = Configuration {
         agents: vec![agent_config],
         dnas: vec![dna_config],
         instances: vec![instance_config],
         interfaces: vec![interface_config],
-        network: NetworkConfig {
-            bootstrap_nodes: Default::default(),
-            n3h_path: Default::default(),
-            n3h_persistence_path: Default::default(),
-            n3h_ipc_uri: Default::default(),
-        },
-        ..Default::default(),
+        network: network_config,
+        logger: logger_config,
+        ..Default::default()
     };
 
     let mut container = Container::from_config(base_config.clone());

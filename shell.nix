@@ -99,7 +99,7 @@ stdenv.mkDerivation rec {
     pkgconfig
     rust-build
 
-    nodejs-8_13
+    nodejs-10_x
     yarn
 
     hc-flush-cargo-registry
@@ -119,6 +119,8 @@ stdenv.mkDerivation rec {
 
     hc-fmt
     hc-fmt-check
+
+    zeromq4
 
     # dev tooling
     git

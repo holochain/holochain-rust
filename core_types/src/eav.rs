@@ -49,7 +49,7 @@ pub struct EntityAttributeValue {
     // source: Source,
 }
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub enum Action {
     insert,
     delete,

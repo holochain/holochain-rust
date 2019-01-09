@@ -235,7 +235,7 @@ SPAWN ("node" "/home/eric/holochain/n3h/packages/n3h/bin/n3h")
 (@hackmode@) [t] running
 ...
 ```
-
+Note that there is an agent id set by default, and the default is `testAgent`.
 To fire up a second node you have to do a little more work, namely:
 1. providing the address of the first node as a bootstrap node,
 2. specifying a different agent id

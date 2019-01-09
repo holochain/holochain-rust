@@ -953,12 +953,13 @@ pub fn get_links_and_load<S: Into<String>>(
 
 /// Returns a list of entries from your local source chain, that match a given entry type name or names.
 ///
-/// Each name may be a "glob" pattern such as "prefix/*" (matches all entry types starting with
-/// "prefix/"), or "[!%]*e" (matches all non-system non-name-spaced entry types ending in "e").
+/// Each name may be a plain entry type name, or a "glob" pattern such as "prefix/*" (matches all
+/// entry types starting with "prefix/"), or "[!%]*e" (matches all non-system non-name-spaced entry
+/// types ending in "e").  All names and patterns are merged into a single efficient Regular
+/// Expression for scanning.
 ///
-/// Entry type name-spaces are supported by including "/" in your entry type names; use [], "", or
-/// "**" to match all names in all name-spaces, "*" to match all non-namespaced names. All names and
-/// patterns are merged into a single efficient Regular Expression for scanning.
+/// Entry type name-spaces are supported by including "/" in your entry type names; use vec![], "",
+/// or "**" to match all names in all name-spaces, "*" to match all non-namespaced names.
 ///
 /// entry_type_names: Specify type of entry(s) to retrieve, as a String or Vec<String> of 0 or more names, converted into the QueryArgNames type
 /// start: First entry in result list to retrieve

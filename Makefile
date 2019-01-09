@@ -41,8 +41,9 @@ lint: fmt_check clippy
 install_rustup:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(CORE_RUST_VERSION) -y; \
+		export PATH="${HOME}/.cargo/bin:${PATH}"; \
+		source $HOME/.cargo/env; \
 	fi
-	export PATH="${HOME}/.cargo/bin:${PATH}"
 
 # idempotent install rustup with the default toolchain set for Holochain core
 # best for green fields Rust installation
@@ -50,48 +51,18 @@ install_rustup:
 install_rustup_tools:
 	if ! which rustup ; then \
 		curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain $(TOOLS_RUST_VERSION) -y; \
+		export PATH="${HOME}/.cargo/bin:${PATH}"; \
+		source $HOME/.cargo/env; \
 	fi
-	export PATH="${HOME}/.cargo/bin:${PATH}"
-
-# idempotent installation of libzmq system library
-# note, this is complicated by our use of travis-ci ubuntu trusty
-# we need to install a newer version than is otherwise available
-.PHONY: install_system_libzmq
-install_system_libzmq:
-	if ! (pkg-config libzmq --libs) ; then \
-		if ! which apt-get ; then \
-			if which brew ; then \
-				echo "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
-				brew install zmq; \
-			else \
-				echo "\033[0;93m## libzmq couldn't be installed, build probably won't work\033[0m"; \
-			fi; \
-		else \
-			if [ "x${TRAVIS}" = "x" ]; then \
-				echo "\033[0;93m## Attempting to install libzmq3-dev with apt-get ##\033[0m"; \
-				sudo apt-get install -y libzmq3-dev; \
-			else \
-				echo "\033[0;93m## Attempting to install libzmq3-dev on UBUNTU TRUSTY ##\033[0m"; \
-				echo "deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./" >> /etc/apt/sources.list; \
-				wget https://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key -O- | sudo apt-key add; \
-				sudo apt-get update -qq; \
-				sudo apt-get install libzmq3-dev; \
-			fi; \
-		fi; \
-	fi; \
-
-# idempotent install of any required system libraries
-.PHONY: install_system_libs
-install_system_libs: install_system_libzmq
 
 # idempotent installation of core toolchain
 .PHONY: core_toolchain
-core_toolchain: install_rustup install_system_libs
+core_toolchain: install_rustup
 	rustup toolchain install ${CORE_RUST_VERSION}
 
 # idempotent installation of tools toolchain
 .PHONY: tools_toolchain
-tools_toolchain: install_rustup_tools install_system_libs
+tools_toolchain: install_rustup_tools
 	rustup toolchain install ${TOOLS_RUST_VERSION}
 
 # idempotent addition of wasm target

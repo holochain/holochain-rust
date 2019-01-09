@@ -894,8 +894,6 @@ pub mod tests {
 
         #[cfg(not(windows))]
         assert!(default_n3h_path().contains("/.hc/net/n3h"));
-        #[cfg(not(windows))]
-        assert!(default_n3h_path().contains("/home/"));
 
         #[cfg(not(windows))]
         assert_eq!(default_n3h_persistence_path(), String::from("/tmp"));

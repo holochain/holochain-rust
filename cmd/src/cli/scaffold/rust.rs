@@ -27,6 +27,7 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
 
     let authors_default = Value::from("[\"TODO\"]");
     let edition_default = Value::from("\"TODO\"");
+    let branch_default = Value::from("master");
     let maybe_package = config.get("package");
 
     let name = Value::from(name);
@@ -37,7 +38,7 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
         .and_then(|p| p.get("edition"))
         .unwrap_or(&edition_default);
 
-    interpolate_cargo_template(&name, authors, edition)
+    interpolate_cargo_template(&name, authors, edition, &branch_default)
 }
 
 /// Use the Cargo.toml.template file and interpolate values into the placeholders
@@ -46,12 +47,14 @@ fn interpolate_cargo_template(
     name: &Value,
     authors: &Value,
     edition: &Value,
+    branch: &Value,
 ) -> DefaultResult<String> {
     let template = include_str!("rust/Cargo.template.toml");
     Ok(template
         .replace("<<NAME>>", toml::to_string(name)?.as_str())
         .replace("<<AUTHORS>>", toml::to_string(authors)?.as_str())
-        .replace("<<EDITION>>", toml::to_string(edition)?.as_str()))
+        .replace("<<EDITION>>", toml::to_string(edition)?.as_str())
+        .replace("<<BRANCH>>", toml::to_string(branch)?.as_str()))
 }
 
 impl RustScaffold {

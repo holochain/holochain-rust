@@ -50,9 +50,18 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
         storage,
     };
 
+    let interface_type = env::var("HC_INTERFACE").ok().unwrap_or_else(|| String::from("websocket"));
+    let driver = if interface_type == String::from("websocket") {
+        InterfaceDriver::Websocket { port }
+    } else if interface_type == String::from("http") {
+        InterfaceDriver::Http { port }
+    } else {
+        return Err(format_err!("unknown interface type: {}",interface_type));
+    };
+
     let interface_config = InterfaceConfiguration {
         id: INTERFACE_CONFIG_ID.into(),
-        driver: InterfaceDriver::Websocket { port },
+        driver,
         admin: true,
         instances: vec![InstanceReferenceConfiguration {
             id: INSTANCE_CONFIG_ID.into(),
@@ -113,7 +122,8 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
     container.start_all_instances()?;
 
     println!(
-        "Holochain development container started. Running websocket server on port {}",
+        "Holochain development container started. Running {} server on port {}",
+        interface_type,
         port
     );
     println!("Type 'exit' to stop the container and exit the program");

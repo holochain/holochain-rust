@@ -47,7 +47,7 @@ use interface::{ContainerApiBuilder, InstanceMap, Interface};
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
     instances: InstanceMap,
-    config: Configuration,
+    pub (crate) config: Configuration,
     config_path: PathBuf,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     pub (crate) dna_loader: DnaLoader,
@@ -67,7 +67,7 @@ impl Drop for Container {
 
 type SignalSender = SyncSender<Signal>;
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
-type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
+pub type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
 
 // preparing for having container notifiers go to one of the log streams
 pub fn notify(msg: String) {
@@ -92,6 +92,10 @@ impl Container {
             network_ipc_uri: None,
             network_child_process: None,
         }
+    }
+
+    pub fn set_config_path(&mut self, path: PathBuf) {
+        self.config_path = path;
     }
 
     pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {

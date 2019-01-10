@@ -236,7 +236,7 @@ impl From<AgentConfiguration> for AgentId {
 
 /// A DNA is represented by a DNA file.
 /// A hash has to be provided for sanity check.
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct DnaConfiguration {
     pub id: String,
     pub file: String,

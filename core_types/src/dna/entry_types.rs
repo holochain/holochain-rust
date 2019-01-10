@@ -19,7 +19,7 @@ pub enum Sharing {
 }
 
 impl Sharing {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
+    #[rustfmt::skip]
     pub fn can_publish(self) -> bool {
        match self {
            Sharing::Public    => true,

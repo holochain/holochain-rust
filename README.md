@@ -89,7 +89,7 @@ There are three approaches to building and testing Holochain: using `make`, `doc
 For Ubuntu you can install the prerequisites with :
 
 ``` shell
-sudo apt-get install git build-essential libssl-dev curl
+. ./scripts/install/ubuntu.sh
 ```
 
 If you are running on ubuntu or macOS, and you have `make` installed, you can do local development by simply typing:
@@ -103,6 +103,22 @@ If you are running on ubuntu or macOS, and you have `make` installed, you can do
 ### Docker
 
 We also use [docker](https://www.docker.com/).  The `docker` folder contains scripts to build and run docker images.
+
+### Windows
+
+You will need to install rust manually.
+
+Rustup `https://rustup.rs/#` is likely the best option.
+
+The rust language moves very fast on the nightly channel.
+
+It is very important to be using the correct nightly version.
+
+Currently this is:
+
+`nightly-2018-12-26-x86_64-pc-windows-msvc`
+
+The nightly version we test/develop against can always be found in the .travis.yml file.
 
 ### NixOS
 

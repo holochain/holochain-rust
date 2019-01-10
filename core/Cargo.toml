@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 

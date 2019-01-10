@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
 };
 
-trait ContainerAdmin {
+pub trait ContainerAdmin {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: String) -> Result<(), HolochainError>;
 }

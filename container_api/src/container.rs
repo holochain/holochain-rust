@@ -78,7 +78,9 @@ impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
-        let config_path = dirs::home_dir().expect("");
+        let config_path = dirs::home_dir().expect("No home dir defined. Don't know where to store config file")
+            .join(std::path::PathBuf::from(".holochain/container-config.toml"));
+
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
@@ -447,6 +449,7 @@ pub mod tests {
     use std::{fs::File, io::Write};
     use tempfile::tempdir;
     use test_utils::*;
+    use std::fs::OpenOptions;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|path: &String| {
@@ -642,6 +645,22 @@ pub mod tests {
         container.start_all_instances().unwrap();
         container.start_all_interfaces();
         container.stop_all_instances().unwrap();
+    }
+
+    #[test]
+    fn test_container_save_and_load_config_default_location() {
+        let container = test_container();
+        assert_eq!(container.save_config(), Ok(()));
+
+        let mut toml = String::new();
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .open(&container.config_path).expect("Could not open config file");
+        file.read_to_string(&mut toml).expect("Could not read config file");
+
+        let restored_config = load_configuration::<Configuration>(&toml).expect("could not load config");
+        assert_eq!(serialize_configuration(&container.config), serialize_configuration(&restored_config))
     }
 
     #[test]

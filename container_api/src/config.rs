@@ -370,8 +370,12 @@ where
 
 pub fn serialize_configuration(config: &Configuration) -> HcResult<String>
 {
-    toml::to_string(&config).map_err(|e| {
+    // see https://github.com/alexcrichton/toml-rs/issues/142
+    let config_toml = toml::Value::try_from(config).map_err(|e| {
         HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+    })?;
+    toml::to_string(&config_toml).map_err(|e| {
+        HolochainError::IoError(format!("Could not convert toml to string: {}", e.to_string()))
     })
 }
 

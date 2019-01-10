@@ -170,6 +170,8 @@ impl ContainerApiBuilder {
             let _path = params_map.get("file_path")
                 .ok_or(jsonrpc_core::Error::invalid_params("`file_path` param not provided"))?;
 
+            // how to call this on container from here?
+            // install_dna_from_file(path, id)?;
             Ok(serde_json::Value::Null)
 
         });

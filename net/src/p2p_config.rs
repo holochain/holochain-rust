@@ -118,19 +118,19 @@ impl P2pConfig {
         ))
     }
 
-    pub fn unique_mock_config() -> String {
-        Self::named_mock_config(&format!(
+    pub fn unique_mock_as_string() -> String {
+        Self::named_mock_as_string(&format!(
             "mock-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
         ))
     }
 
     pub fn named_mock(network_name: &str) -> Self {
-        P2pConfig::from_str(&Self::named_mock_config(network_name))
+        P2pConfig::from_str(&Self::named_mock_as_string(network_name))
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
-    pub fn named_mock_config(network_name: &str) -> String {
+    pub fn named_mock_as_string(network_name: &str) -> String {
         format!(
             r#"{{
     "backend_kind": "MOCK",
@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn it_can_json_round_trip() {
         let mock_name = "mock";
-        let p2p_config = P2pConfig::from_str(&P2pConfig::named_mock_config(mock_name)).unwrap();
+        let p2p_config = P2pConfig::from_str(&P2pConfig::named_mock_as_string(mock_name)).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);

@@ -5,6 +5,10 @@ extern crate holochain_core_types;
 extern crate holochain_net;
 extern crate serde_json;
 extern crate tempfile;
+#[macro_use]
+extern crate failure;
+
+use failure::Error;
 
 use holochain_container_api::{context_builder::ContextBuilder, *};
 use holochain_core_types::{agent::AgentId, dna::Dna};
@@ -19,6 +23,7 @@ fn usage() {
     std::process::exit(1);
 }
 
+/// Network Test executable entry point.
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn main() {

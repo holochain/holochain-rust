@@ -1,9 +1,15 @@
 #![feature(try_from)]
 
+extern crate holochain_core_types;
 extern crate holochain_net;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate failure;
+
+pub mod p2p_node;
+
 
 use holochain_net_connection::{
     net_connection::NetConnection,
@@ -15,6 +21,9 @@ use holochain_net_connection::{
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 
 use std::{convert::TryFrom, sync::mpsc};
+use failure::Error;
+
+use p2p_node::P2pNode;
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
@@ -25,53 +34,29 @@ fn usage() {
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-fn exec() -> NetResult<()> {
-    let args: Vec<String> = std::env::args().collect();
+fn exec_mock_test() -> NetResult<()> {
 
-    if args.len() != 1 {
-        usage();
-    }
+    let mut node_a = P2pNode::new_mock();
+    let mut node_b = P2pNode::new_mock();
 
-    // use a mpsc channel for messaging
-    let (sender1, receiver1) = mpsc::channel::<Protocol>();
-    let network = P2pConfig::unique_mock();
-
-    // create a new ipc P2pNetwork instance
-    let mut con1 = P2pNetwork::new(
-        Box::new(move |r| {
-            sender1.send(r?)?;
-            Ok(())
-        }),
-        &network,
-    )?;
-
-    let (sender2, receiver2) = mpsc::channel::<Protocol>();
-
-    let mut con2 = P2pNetwork::new(
-        Box::new(move |r| {
-            sender2.send(r?)?;
-            Ok(())
-        }),
-        &network,
-    )?;
-
-    con1.send(
+    node_a.send(
         ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: "sandwich".into(),
             agent_id: "node-1".to_string(),
         })
         .into(),
-    )?;
+    ).expect("Failed sending TrackAppData on node_a");
 
-    con2.send(
+
+    node_b.send(
         ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: "sandwich".into(),
             agent_id: "node-2".to_string(),
         })
         .into(),
-    )?;
+    ).expect("Failed sending TrackAppData on node_b");
 
-    con1.send(
+    node_a.send(
         ProtocolWrapper::SendMessage(MessageData {
             dna_address: "sandwich".into(),
             to_agent_id: "node-2".to_string(),
@@ -80,13 +65,15 @@ fn exec() -> NetResult<()> {
             data: json!("hello"),
         })
         .into(),
-    )?;
+    ).expect("Failed sending SendMessage on node_a");
 
-    let res = ProtocolWrapper::try_from(receiver2.recv()?)?;
+    //let res = ProtocolWrapper::try_from(receiver1.recv()?)?;
+
+    let res = node_b.try_recv().expect("Failed to receive message on node_b");
     println!("got: {:?}", res);
 
     if let ProtocolWrapper::HandleSend(msg) = res {
-        con2.send(
+        node_b.send(
             ProtocolWrapper::HandleSendResult(MessageData {
                 dna_address: "sandwich".into(),
                 to_agent_id: "node-1".to_string(),
@@ -95,12 +82,12 @@ fn exec() -> NetResult<()> {
                 data: json!(format!("echo: {}", msg.data.to_string())),
             })
             .into(),
-        )?;
+        ).expect("Failed sending HandleSendResult on node_b");;
     } else {
         panic!("bad msg");
     }
 
-    let res = ProtocolWrapper::try_from(receiver1.recv()?)?;
+    let res = node_a.try_recv()?;
     println!("got: {:?}", res);
 
     if let ProtocolWrapper::SendResult(msg) = res {
@@ -112,9 +99,9 @@ fn exec() -> NetResult<()> {
     // yay, everything worked
     println!("test complete");
 
-    // shut down the P2pNetwork instance
-    con1.stop()?;
-    con2.stop()?;
+    // shut down the nodes
+    node_a.stop();
+    node_b.stop();
 
     Ok(())
 }
@@ -122,5 +109,17 @@ fn exec() -> NetResult<()> {
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
-    exec().unwrap();
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() != 1 {
+        usage();
+    }
+    let res = exec_mock_test();
+    assert!(res.is_ok());
+
+    // Wait a bit before closing
+    for i in (0..4).rev() {
+        println!("tick... {}", i);
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+    }
 }

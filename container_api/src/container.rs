@@ -206,7 +206,7 @@ impl Container {
                     }
                 }
             ))),
-            None => Ok(JsonString::from(P2pConfig::unique_mock_config())),
+            None => Ok(JsonString::from(P2pConfig::unique_mock_as_string())),
         }
     }
 

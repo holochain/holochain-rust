@@ -12,6 +12,7 @@ holochain_net_connection = { path="../net_connection" }
 holochain_net = { path = "../net" }
 serde_json = { version = "1", features = ["preserve_order"] }
 tempfile = "3"
+failure = "0.1.3"
 
 [[bin]]
 name = "holochain_test_bin"

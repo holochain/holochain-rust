@@ -2,7 +2,7 @@
 # currently only supports 'debug' builds
 
 .PHONY: all help
-all: lint build_holochain build_cmd
+all: build_holochain build_cmd
 
 help:
 	@echo "run 'make' to build all the libraries and binaries"

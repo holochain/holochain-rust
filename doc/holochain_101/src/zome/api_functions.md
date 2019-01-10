@@ -159,7 +159,7 @@ Consumes three values, two of which are the addresses of entries, and one of whi
 
 Canonical name: `query`
 
-Returns a list of addresses of entries from your local source chain, that match a given type. You can optionally limit the number of results.
+Returns a list of addresses of entries from your local source chain, that match a given entry type name, or a vector of names. You can optionally limit the number of results, and you can use "glob" patterns such as "prefix/*" to specify the entry type names desired.
 
 [View it in the Rust HDK](https://developer.holochain.org/api/latest/hdk/api/fn.query.html)
 

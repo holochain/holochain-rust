@@ -115,7 +115,7 @@ enum Cli {
             long,
             short,
             help = "Specify interface type to use: websocket/http",
-            default_value = "websocket",
+            default_value = "websocket"
         )]
         interface: String,
     },
@@ -171,7 +171,8 @@ fn run() -> HolochainResult<()> {
             persist,
             networked,
             interface,
-        } => cli::run(package, port, persist, networked, interface).map_err(HolochainError::Default)?,
+        } => cli::run(package, port, persist, networked, interface)
+            .map_err(HolochainError::Default)?,
         Cli::Test {
             dir,
             testfile,

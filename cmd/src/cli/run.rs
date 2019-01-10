@@ -13,7 +13,13 @@ const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 /// Starts a small container with the current application running
-pub fn run(package: bool, port: u16, persist: bool, networked: bool, interface: String) -> DefaultResult<()> {
+pub fn run(
+    package: bool,
+    port: u16,
+    persist: bool,
+    networked: bool,
+    interface: String,
+) -> DefaultResult<()> {
     if package {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
@@ -56,7 +62,7 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool, interface: 
     } else if interface_type == String::from("http") {
         InterfaceDriver::Http { port }
     } else {
-        return Err(format_err!("unknown interface type: {}",interface_type));
+        return Err(format_err!("unknown interface type: {}", interface_type));
     };
 
     let interface_config = InterfaceConfiguration {
@@ -123,8 +129,7 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool, interface: 
 
     println!(
         "Holochain development container started. Running {} server on port {}",
-        interface_type,
-        port
+        interface_type, port
     );
     println!("Type 'exit' to stop the container and exit the program");
 

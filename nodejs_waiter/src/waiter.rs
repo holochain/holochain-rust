@@ -142,13 +142,16 @@ impl Waiter {
         }
     }
 
+    /// Alter state based on signals that come in, if a checker is registered.
+    /// A checker gets registered if a ControlSender was passed in from TestContainer.
+    /// Some signals add a "condition", which is a function looking for other signals.
+    /// When one of those "checkee" signals comes in, it removes the checker from the state.
     pub fn process_signal(&mut self, sig: Signal) {
-        println!("we get signal\n{:?}\n", sig);
         match sig {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
-                match aw.action().clone() {
-                    Action::ExecuteZomeFunction(call) => match self.sender_rx.try_recv() {
+                match (self.current_checker(), aw.action().clone()) {
+                    (_, Action::ExecuteZomeFunction(call)) => match self.sender_rx.try_recv() {
                         Ok(sender) => {
                             self.add_call(call.clone(), sender);
                             self.current_checker().unwrap().add(move |aw| {
@@ -166,19 +169,16 @@ impl Waiter {
                     },
 
                     // TODO: limit to App entry?
-                    Action::Commit((entry, _)) => match self.current_checker() {
+                    (Some(checker), Action::Commit((entry, _))) => {
                         // TODO: is there a possiblity that this can get messed up if the same
                         // entry is committed multiple times?
-                        Some(checker) => {
-                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
-                        }
-                        None => (),
-                    },
+                        checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
+                    }
 
-                    Action::SendDirectMessage(data) => {
+                    (Some(checker), Action::SendDirectMessage(data)) => {
                         let msg_id = data.msg_id;
-                        match (self.current_checker(), data.message) {
-                            (Some(checker), DirectMessage::Custom(_)) => {
+                        match data.message {
+                            DirectMessage::Custom(_) => {
                                 checker.add(move |aw| {
                                     [
                                         Action::ResolveDirectConnection(msg_id.clone()),
@@ -191,6 +191,10 @@ impl Waiter {
                         }
                     }
 
+                    // Note that we ignore anything coming in if there's no active checker,
+                    (None, _) => (),
+
+                    // or if it's simply a signal we don't care about
                     _ => (),
                 };
 

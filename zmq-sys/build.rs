@@ -12,12 +12,14 @@ fn prefix_dir(dir: &str) -> Option<String> {
 }
 
 fn main() {
+    println!("cargo:rerun-if-env-changed=CARGO_MANIFEST_DIR");
 
     #[cfg(windows)]
     // hack to get the libzmq dll on the PATH
     // copies it next to cargo
     // kind of messy, is less than 1MB
     {
+        println!("cargo:rerun-if-env-changed=CARGO");
         let dll_name = "libzmq-v140-mt-4_2_0.dll";
         let cargo_path = &env::var("CARGO").unwrap();
         let path_on_path = Path::new(cargo_path).parent().unwrap();

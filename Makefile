@@ -90,47 +90,15 @@ install_rustup: version_rustup curl_rustup
 install_rustup_tools:	RUST_VERSION = $(TOOLS_RUST_VERSION)
 install_rustup_tools: version_rustup curl_rustup
 
-
-# idempotent installation of libzmq system library
-# note, this is complicated by our use of travis-ci ubuntu trusty
-# we need to install a newer version than is otherwise available
-.PHONY: install_system_libzmq
-install_system_libzmq:
-	@if ! (pkg-config libzmq --libs >/dev/null) ; then \
-		if ! which apt-get ; then \
-			if which brew ; then \
-				echo -e "\033[0;93m## Attempting to install zmq using homebrew ##\033[0m"; \
-				brew install zmq; \
-			else \
-				echo -e "\033[0;93m## libzmq couldn't be installed, build probably won't work ##\033[0m"; \
-			fi; \
-		else \
-			if [ "x${TRAVIS}" = "x" ]; then \
-				echo -e "\033[0;93m## Attempting to install libzmq3-dev with apt-get ##\033[0m"; \
-				sudo apt-get install -y libzmq3-dev; \
-			else \
-				echo -e "\033[0;93m## Attempting to install libzmq3-dev on UBUNTU TRUSTY ##\033[0m"; \
-				echo "deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./" >> /etc/apt/sources.list; \
-				wget https://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key -O- | sudo apt-key add; \
-				sudo apt-get update -qq; \
-				sudo apt-get install libzmq3-dev; \
-			fi; \
-		fi; \
-	fi; \
-
-# idempotent install of any required system libraries
-.PHONY: install_system_libs
-install_system_libs: install_system_libzmq
-
 # idempotent installation of core toolchain.  Changes default toolchain to CORE_RUST_VERSION.
 .PHONY: core_toolchain
 core_toolchain: RUST_VERSION=$(CORE_RUST_VERSION)
-core_toolchain: version_rustup install_rustup install_system_libs
+core_toolchain: version_rustup install_rustup
 
 # idempotent installation of tools toolchain.  Changes default toolchain to TOOLS_RUST_VERSION.
 .PHONY: tools_toolchain
 tools_toolchain: RUST_VERSION=$(TOOLS_RUST_VERSION)
-tools_toolchain: version_rustup install_rustup_tools install_system_libs
+tools_toolchain: version_rustup install_rustup_tools
 
 # idempotent addition of wasm target in current (default: CORE_RUST_VERSION) toolchain
 .PHONY: ensure_wasm_target

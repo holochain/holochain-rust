@@ -13,7 +13,7 @@ const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 /// Starts a small container with the current application running
-pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultResult<()> {
+pub fn run(package: bool, port: u16, persist: bool, networked: bool, interface: String) -> DefaultResult<()> {
     if package {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
@@ -50,7 +50,7 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
         storage,
     };
 
-    let interface_type = env::var("HC_INTERFACE").ok().unwrap_or_else(|| String::from("websocket"));
+    let interface_type = env::var("HC_INTERFACE").ok().unwrap_or_else(|| interface);
     let driver = if interface_type == String::from("websocket") {
         InterfaceDriver::Websocket { port }
     } else if interface_type == String::from("http") {

@@ -3,38 +3,43 @@ use crate::{
     util,
     bundle,
 };
+use holochain_core_types::agent::{KeyBuffer};
 
 pub const SEEDSIZE: usize = 32 as usize;
 
 pub struct Keypair {
-    pub_keys: SecBuf,
+    pub_keys: String,
     sign_priv: SecBuf,
     enc_priv: SecBuf,
 }
 
 impl Keypair {
-    ///
+    
     /// derive the pairs from a 32 byte seed buffer
     ///  
     /// @param {SecBuf} seed - the seed buffer
     pub fn new_from_seed(seed: &mut SecBuf) -> Self {
         let mut seed = seed;
-        let mut sign_public_key = SecBuf::with_secure(sign::PUBLICKEYBYTES);
-        let mut sign_secret_key = SecBuf::with_secure(sign::SECRETKEYBYTES);
-        let mut enc_public_key = SecBuf::with_secure(kx::PUBLICKEYBYTES);
-        let mut enc_secret_key = SecBuf::with_secure(kx::SECRETKEYBYTES);
+        let mut sign_public_key = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
+        let mut sign_secret_key = SecBuf::with_insecure(sign::SECRETKEYBYTES);
+        let mut enc_public_key = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
+        let mut enc_secret_key = SecBuf::with_insecure(kx::SECRETKEYBYTES);
 
         sign::seed_keypair(&mut sign_public_key, &mut sign_secret_key, &mut seed).unwrap();
         kx::seed_keypair(&mut seed, &mut enc_public_key, &mut enc_secret_key).unwrap();
 
-        let mut pub_id = SecBuf::with_secure(sign::PUBLICKEYBYTES + kx::PUBLICKEYBYTES);
-        util::encode_id(&mut sign_public_key, &mut enc_public_key, &mut pub_id);
-
         Keypair {
-            pub_keys: pub_id,
+            pub_keys: util::encode_id(&mut sign_public_key, &mut enc_public_key),
             sign_priv: sign_secret_key,
             enc_priv: enc_secret_key,
         }
+    }
+
+    /// get the keypair identifier string
+    ///
+    /// @return {SecBuf}
+    pub fn get_id(&mut self) -> String {
+        return self.pub_keys.clone();
     }
 
     /// generate an encrypted persistence bundle
@@ -45,16 +50,28 @@ impl Keypair {
     pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> bundle::KeyBundle {
         let mut passphrase = passphrase;
         let bundle_type: String = "hcKeypair".to_string();
-        let pw_pub_keys: bundle::ReturnBundleData = util::pw_enc(&mut self.pub_keys, &mut passphrase);
-        let pw_sign_priv: bundle::ReturnBundleData =
-            util::pw_enc(&mut self.sign_priv, &mut passphrase);
+        // let pw_pub_keys: bundle::ReturnBundleData = util::pw_enc(&mut self.pub_keys, &mut passphrase);
+        let skk = KeyBuffer::with_corrected(&self.pub_keys).unwrap();
+        let sk = skk.get_sig() as &[u8];
+        let ekk = KeyBuffer::with_corrected(&self.pub_keys).unwrap();
+        let ek = ekk.get_enc() as &[u8];
+        let mut sk_buf = SecBuf::with_insecure(32);
+        let mut ek_buf = SecBuf::with_insecure(32);
+        util::convert_array_to_secbuf(&sk,&mut sk_buf);
+        util::convert_array_to_secbuf(&ek,&mut ek_buf);
+        
+        let pw_sign_pub: bundle::ReturnBundleData = util::pw_enc(&mut sk_buf, &mut passphrase);
+        let pw_enc_pub: bundle::ReturnBundleData = util::pw_enc(&mut ek_buf, &mut passphrase);
+        
+        let pw_sign_priv: bundle::ReturnBundleData = util::pw_enc(&mut self.sign_priv, &mut passphrase);
         let pw_enc_priv: bundle::ReturnBundleData = util::pw_enc(&mut self.enc_priv, &mut passphrase);
 
         return bundle::KeyBundle {
             bundle_type,
             hint,
             data: bundle::Keys {
-                pw_pub_keys,
+                pw_sign_pub,
+                pw_enc_pub,
                 pw_sign_priv,
                 pw_enc_priv,
             },
@@ -67,33 +84,19 @@ impl Keypair {
     ///
     /// @param {SecBuf} passphrase - decryption passphrase
     pub fn from_bundle(bundle: &bundle::KeyBundle, passphrase: &mut SecBuf) -> Keypair {
-        let pk: &bundle::ReturnBundleData = &bundle.data.pw_pub_keys;
+        let sk: &bundle::ReturnBundleData = &bundle.data.pw_sign_pub;
+        let ek: &bundle::ReturnBundleData = &bundle.data.pw_enc_pub;
         let epk: &bundle::ReturnBundleData = &bundle.data.pw_enc_priv;
         let spk: &bundle::ReturnBundleData = &bundle.data.pw_sign_priv;
-        let pub_keys = util::pw_dec(pk, passphrase);
+        let mut sign_public_key = util::pw_dec(sk, passphrase);
+        let mut enc_public_key = util::pw_dec(ek, passphrase);
         let enc_priv = util::pw_dec(epk, passphrase);
         let sign_priv = util::pw_dec(spk, passphrase);
         Keypair {
-            pub_keys,
+            pub_keys: util::encode_id(&mut sign_public_key, &mut enc_public_key),
             enc_priv,
             sign_priv,
         }
-    }
-
-    /// get the keypair identifier string
-    ///
-    /// @return {SecBuf}
-    pub fn get_id(&mut self) -> SecBuf {
-        let mut id = SecBuf::with_secure(self.pub_keys.len());
-        // let pub_keys = self.pub_keys.write_lock();
-        {
-            let mut id = id.write_lock();
-            let pub_keys = self.pub_keys.read_lock();
-            for i in 0..pub_keys.len() {
-                id[i] = pub_keys[i].clone();
-            }
-        }
-        return id;
     }
 
     /// sign some arbitrary data with the signing private key
@@ -116,11 +119,11 @@ impl Keypair {
     pub fn verify(&mut self, signature: &mut SecBuf, data: &mut SecBuf) -> i32 {
         let mut data = data;
         let mut signature = signature;
-        let mut pub_keys = &mut self.pub_keys;
+        let pub_keys = &mut self.pub_keys;
         let mut sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
 
-        util::decode_id(&mut pub_keys, &mut sign_pub, &mut enc_pub);
+        util::decode_id(pub_keys.clone(), &mut sign_pub, &mut enc_pub);
 
         sign::verify(&mut signature, &mut data, &mut sign_pub)
     }
@@ -134,7 +137,7 @@ impl Keypair {
     /// @param {Buffer} out - Empty vec[secBuf]
     pub fn encrypt(
         &mut self,
-        recipient_id: Vec<&mut SecBuf>,
+        recipient_id: Vec<&String>,
         data: &mut SecBuf,
         out: &mut Vec<SecBuf>,
     ) {
@@ -144,19 +147,18 @@ impl Keypair {
         let mut srv_rx = SecBuf::with_secure(kx::SESSIONKEYBYTES);
         let mut srv_tx = SecBuf::with_secure(kx::SESSIONKEYBYTES);
 
-        let mut pub_keys = &mut self.pub_keys;
+        let pub_keys = &mut self.pub_keys;
         let mut sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
-        util::decode_id(&mut pub_keys, &mut sign_pub, &mut enc_pub);
+        util::decode_id(pub_keys.to_string(), &mut sign_pub, &mut enc_pub);
 
         let mut enc_priv = &mut self.enc_priv;
 
         for client_pk in recipient_id {
             let mut r_sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
             let mut r_enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
-            let mut client_pk = client_pk;
-
-            util::decode_id(&mut client_pk, &mut r_sign_pub, &mut r_enc_pub);
+      
+            util::decode_id(client_pk.to_string(), &mut r_sign_pub, &mut r_enc_pub);
 
             kx::server_session(
                 &mut enc_pub,
@@ -194,20 +196,18 @@ impl Keypair {
     /// @return {Result<SecBuf,String>} - the decrypted data
     pub fn decrypt(
         &mut self,
-        source_id: &mut SecBuf,
+        source_id: String,
         cipher_bundle: &mut Vec<SecBuf>,
     ) -> Result<SecBuf, String> {
-        // let &mut cipher_bundle = bundle.iter().cloned();
-        let mut source_id = source_id;
         let mut source_sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut source_enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
-        util::decode_id(&mut source_id, &mut source_sign_pub, &mut source_enc_pub);
+        util::decode_id(source_id, &mut source_sign_pub, &mut source_enc_pub);
 
-        let mut client_pub_keys = &mut self.pub_keys;
+        let client_pub_keys = &self.pub_keys;
         let mut client_sign_pub = SecBuf::with_secure(sign::PUBLICKEYBYTES);
         let mut client_enc_pub = SecBuf::with_secure(kx::PUBLICKEYBYTES);
         util::decode_id(
-            &mut client_pub_keys,
+            client_pub_keys.to_string(),
             &mut client_sign_pub,
             &mut client_enc_pub,
         );
@@ -277,193 +277,6 @@ mod tests {
     use crate::holochain_sodium::random::random_secbuf;
 
     #[test]
-    fn it_should_get_from_bundle() {
-        let mut seed = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed);
-        let mut passphrase = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut passphrase);
-
-        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
-
-        let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase);
-
-        assert_eq!(64, keypair_from_bundle.sign_priv.len());
-        assert_eq!(32, keypair_from_bundle.enc_priv.len());
-        assert_eq!(64, keypair_from_bundle.pub_keys.len());
-    }
-
-    #[test]
-    fn it_should_get_id() {
-        let mut seed = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed);
-
-        let mut pk: SecBuf = keypair.get_id();
-        let pk = pk.read_lock();
-        println!("pk: {:?}", *pk);
-        let mut pk1: SecBuf = keypair.get_id();
-        let pk1 = pk1.read_lock();
-        println!("pk1: {:?}", *pk1);
-        assert_eq!(format!("{:?}", *pk), format!("{:?}", *pk1));
-    }
-
-    #[test]
-    fn it_should_get_bundle() {
-        let mut seed = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed);
-        let mut passphrase = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut passphrase);
-
-        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
-
-        // println!("HINT: {:?}",bundle.hint);
-        // println!("{:?}",bundle.data.pw_pub_keys.salt);
-        assert_eq!("hint", bundle.hint);
-    }
-
-    #[test]
-    fn it_should_encode_n_decode_data_for_multiple_users2() {
-        let mut seed = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed);
-        let mut keypair_main = Keypair::new_from_seed(&mut seed);
-
-        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed_1);
-        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
-
-        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed_2);
-        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
-
-        let mut message = SecBuf::with_secure(16);
-        random_secbuf(&mut message);
-
-        let recipient_id = vec![&mut keypair_1.pub_keys, &mut keypair_2.pub_keys];
-
-        let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out);
-
-        match keypair_2.decrypt(&mut keypair_main.pub_keys, &mut out) {
-            Ok(mut dm) => {
-                let message = message.read_lock();
-                let dm = dm.read_lock();
-                assert_eq!(format!("{:?}", *message), format!("{:?}", *dm));
-            }
-            Err(_) => {
-                assert!(false);
-            }
-        };
-    }
-    #[test]
-    fn it_should_encode_n_decode_data_for_multiple_users1() {
-        let mut seed = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed);
-        let mut keypair_main = Keypair::new_from_seed(&mut seed);
-
-        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed_1);
-        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
-
-        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed_2);
-        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
-
-        let mut message = SecBuf::with_secure(16);
-        random_secbuf(&mut message);
-
-        let recipient_id = vec![&mut keypair_1.pub_keys, &mut keypair_2.pub_keys];
-
-        let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out);
-
-        match keypair_1.decrypt(&mut keypair_main.pub_keys, &mut out) {
-            Ok(mut dm) => {
-                println!("Decrypted Message: {:?}", dm);
-                let message = message.read_lock();
-                let dm = dm.read_lock();
-                assert_eq!(format!("{:?}", *message), format!("{:?}", *dm));
-            }
-            Err(_) => {
-                println!("Error");
-                assert!(false);
-            }
-        };
-    }
-    #[test]
-    fn it_should_with_fail_when_wrong_key_used_to_decrypt() {
-        let mut seed = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed);
-        let mut keypair_main = Keypair::new_from_seed(&mut seed);
-
-        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed_1);
-        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
-
-        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed_2);
-        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
-
-        let mut message = SecBuf::with_secure(16);
-        random_secbuf(&mut message);
-
-        let recipient_id = vec![&mut keypair_1.pub_keys];
-
-        let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out);
-
-        keypair_2
-            .decrypt(&mut keypair_main.pub_keys, &mut out)
-            .expect_err("should have failed");
-    }
-    #[test]
-    fn it_should_encode_n_decode_data() {
-        let mut seed = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed);
-        let mut keypair_main = Keypair::new_from_seed(&mut seed);
-
-        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed_1);
-        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
-
-        let mut message = SecBuf::with_secure(16);
-        random_secbuf(&mut message);
-
-        let recipient_id = vec![&mut keypair_1.pub_keys];
-
-        let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out);
-
-        match keypair_1.decrypt(&mut keypair_main.pub_keys, &mut out) {
-            Ok(mut dm) => {
-                let message = message.read_lock();
-                let dm = dm.read_lock();
-                assert_eq!(format!("{:?}", *message), format!("{:?}", *dm));
-            }
-            Err(_) => {
-                assert!(false);
-            }
-        };
-    }
-    #[test]
-    fn it_should_sign_message_and_verify() {
-        let mut seed = SecBuf::with_secure(SEEDSIZE);
-        random_secbuf(&mut seed);
-
-        let mut keypair = Keypair::new_from_seed(&mut seed);
-
-        let mut message = SecBuf::with_secure(16);
-        random_secbuf(&mut message);
-
-        let mut message_signed = SecBuf::with_secure(64);
-
-        keypair.sign(&mut message, &mut message_signed);
-
-        let check = keypair.verify(&mut message_signed, &mut message);
-        assert_eq!(0, check);
-    }
-    #[test]
     fn it_should_set_keypair_from_seed() {
         let mut seed = SecBuf::with_secure(SEEDSIZE);
         random_secbuf(&mut seed);
@@ -477,8 +290,194 @@ mod tests {
         // let enc_priv = keypair.enc_priv.read_lock();
         // println!("{:?}",enc_priv);
 
-        assert_eq!(64, keypair.pub_keys.len());
         assert_eq!(64, keypair.sign_priv.len());
         assert_eq!(32, keypair.enc_priv.len());
+    }
+
+    #[test]
+    fn it_should_get_id() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed);
+
+        let pk: String = keypair.get_id();
+        println!("pk: {:?}", pk);
+        let pk1: String = keypair.get_id();
+        println!("pk1: {:?}", pk1);
+        assert_eq!(pk,pk1);
+    }
+
+    #[test]
+    fn it_should_sign_message_and_verify() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed);
+
+        let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
+        let mut message_signed = SecBuf::with_secure(64);
+
+        keypair.sign(&mut message, &mut message_signed);
+
+        let check = keypair.verify(&mut message_signed, &mut message);
+        assert_eq!(0, check);
+    }
+
+    #[test]
+    fn it_should_encode_n_decode_data() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+
+        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_1);
+        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
+
+        let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
+        let recipient_id = vec![&keypair_1.pub_keys];
+
+        let mut out = Vec::new();
+        keypair_main.encrypt(recipient_id, &mut message, &mut out);
+
+        match keypair_1.decrypt(keypair_main.pub_keys, &mut out) {
+            Ok(mut dm) => {
+                let message = message.read_lock();
+                let dm = dm.read_lock();
+                assert_eq!(format!("{:?}", *message), format!("{:?}", *dm));
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        };
+    }
+
+    #[test]
+    fn it_should_encode_n_decode_data_for_multiple_users2() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+
+        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_1);
+        let keypair_1 = Keypair::new_from_seed(&mut seed_1);
+
+        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_2);
+        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
+
+        let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
+        let recipient_id = vec![&keypair_1.pub_keys, &keypair_2.pub_keys];
+
+        let mut out = Vec::new();
+        keypair_main.encrypt(recipient_id, &mut message, &mut out);
+
+        match keypair_2.decrypt(keypair_main.pub_keys, &mut out) {
+            Ok(mut dm) => {
+                let message = message.read_lock();
+                let dm = dm.read_lock();
+                assert_eq!(format!("{:?}", *message), format!("{:?}", *dm));
+            }
+            Err(_) => {
+                assert!(false);
+            }
+        };
+    }
+
+    #[test]
+    fn it_should_encode_n_decode_data_for_multiple_users1() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+
+        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_1);
+        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
+
+        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_2);
+        let keypair_2 = Keypair::new_from_seed(&mut seed_2);
+
+        let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
+        let recipient_id = vec![&keypair_1.pub_keys, &keypair_2.pub_keys];
+
+        let mut out = Vec::new();
+        keypair_main.encrypt(recipient_id, &mut message, &mut out);
+
+        match keypair_1.decrypt(keypair_main.pub_keys, &mut out) {
+            Ok(mut dm) => {
+                println!("Decrypted Message: {:?}", dm);
+                let message = message.read_lock();
+                let dm = dm.read_lock();
+                assert_eq!(format!("{:?}", *message), format!("{:?}", *dm));
+            }
+            Err(_) => {
+                println!("Error");
+                assert!(false);
+            }
+        };
+    }
+
+    #[test]
+    fn it_should_with_fail_when_wrong_key_used_to_decrypt() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+
+        let mut seed_1 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_1);
+        let keypair_1 = Keypair::new_from_seed(&mut seed_1);
+
+        let mut seed_2 = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed_2);
+        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
+
+        let mut message = SecBuf::with_secure(16);
+        random_secbuf(&mut message);
+
+        let recipient_id = vec![&keypair_1.pub_keys];
+
+        let mut out = Vec::new();
+        keypair_main.encrypt(recipient_id, &mut message, &mut out);
+
+        keypair_2
+            .decrypt(keypair_main.pub_keys, &mut out)
+            .expect_err("should have failed");
+    }
+
+    #[test]
+    fn it_should_get_from_bundle() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed);
+        let mut passphrase = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut passphrase);
+
+        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
+
+        let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase);
+
+        assert_eq!(64, keypair_from_bundle.sign_priv.len());
+        assert_eq!(32, keypair_from_bundle.enc_priv.len());
+        assert_eq!(92, keypair_from_bundle.pub_keys.len());
+    }
+
+    #[test]
+    fn it_should_get_bundle() {
+        let mut seed = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed);
+        let mut passphrase = SecBuf::with_secure(SEEDSIZE);
+        random_secbuf(&mut passphrase);
+
+        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
+
+        assert_eq!("hint", bundle.hint);
     }
 }

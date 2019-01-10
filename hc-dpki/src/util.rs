@@ -1,5 +1,7 @@
 use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
 use crate::bundle;
+use holochain_core_types::agent::{KeyBuffer};
+
 // allow overrides for unit-testing purposes
 pub const PW_HASH_OPS_LIMIT: u64 = pwhash::OPSLIMIT_SENSITIVE;
 pub const PW_HASH_MEM_LIMIT: usize = pwhash::MEMLIMIT_SENSITIVE;
@@ -75,11 +77,11 @@ pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> bundle::ReturnBundl
 pub fn pw_dec(bundle: &bundle::ReturnBundleData, passphrase: &mut SecBuf) -> SecBuf {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_secure(pwhash::SALTBYTES);
-    load_secbuf(&bundle.salt, &mut salt);
+    convert_vec_to_secbuf(&bundle.salt, &mut salt);
     let mut nonce = SecBuf::with_insecure(bundle.nonce.len());
-    load_secbuf(&bundle.nonce, &mut nonce);
+    convert_vec_to_secbuf(&bundle.nonce, &mut nonce);
     let mut cipher = SecBuf::with_insecure(bundle.cipher.len());
-    load_secbuf(&bundle.cipher, &mut cipher);
+    convert_vec_to_secbuf(&bundle.cipher, &mut cipher);
     let mut passphrase = passphrase;
     pw_hash(&mut passphrase, &mut salt, &mut secret);
     let mut decrypted_message = SecBuf::with_insecure(cipher.len() - aead::ABYTES);
@@ -94,13 +96,22 @@ pub fn pw_dec(bundle: &bundle::ReturnBundleData, passphrase: &mut SecBuf) -> Sec
     decrypted_message
 }
 
-/// Load the [u8] into the SecBuf
-pub fn load_secbuf(data: &Vec<u8>, buf: &mut SecBuf) {
+/// Load the Vec<u8> into the SecBuf
+pub fn convert_vec_to_secbuf(data: &Vec<u8>, buf: &mut SecBuf) {
     let mut buf = buf.write_lock();
     for x in 0..data.len() {
         buf[x] = data[x];
     }
 }
+
+/// Load the [u8] into the SecBuf
+pub fn convert_array_to_secbuf(data: &[u8], buf: &mut SecBuf) {
+    let mut buf = buf.write_lock();
+    for x in 0..data.len() {
+        buf[x] = data[x];
+    }
+}
+
 
 /// Generate an identity string with a pair of public keys
 ///
@@ -109,24 +120,12 @@ pub fn load_secbuf(data: &Vec<u8>, buf: &mut SecBuf) {
 /// @param {SecBuf} encPub - encryption public key
 ///
 /// @param {SecBuf} id
-pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf, id: &mut SecBuf) {
+pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf)->String {
     let sign_pub = sign_pub.read_lock();
     let enc_pub = enc_pub.read_lock();
-    let mut id = id.write_lock();
-
-    if id.len() == sign_pub.len() + enc_pub.len() {
-        for x in 0..sign_pub.len() {
-            id[x] = sign_pub[x];
-        }
-        for x in 0..enc_pub.len() {
-            id[x + sign_pub.len()] = enc_pub[x];
-        }
-    } else {
-        panic!(
-            "The Size of the id secbuf should be : {}",
-            sign_pub.len() + enc_pub.len()
-        );
-    }
+    let sp = &sign_pub[..] as &[u8];
+    let ep = &enc_pub[..] as &[u8];
+    KeyBuffer::with_raw_parts(array_ref![sp, 0, 32],array_ref![ep, 0, 32]).render()
 }
 
 /// break an identity string up into a pair of public keys
@@ -136,23 +135,20 @@ pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf, id: &mut SecBuf) {
 /// @param {SecBuf} signPub - Empty singing public key
 ///
 /// @param {SecBuf} encPub - Empty encryption public key
-pub fn decode_id(id: &mut SecBuf, sign_pub: &mut SecBuf, enc_pub: &mut SecBuf) {
+pub fn decode_id(key: String, sign_pub: &mut SecBuf, enc_pub: &mut SecBuf) {
+    let id = &KeyBuffer::with_corrected(&key).unwrap();
+   
     let mut sign_pub = sign_pub.write_lock();
     let mut enc_pub = enc_pub.write_lock();
-    let id = id.read_lock();
+  
+    let sig = id.get_sig();
+    let enc = id.get_enc();
 
-    if id.len() % 2 == 0 {
-        for x in 0..sign_pub.len() {
-            sign_pub[x] = id[x];
-        }
-        for x in 0..enc_pub.len() {
-            enc_pub[x] = id[x + sign_pub.len()];
-        }
-    } else {
-        panic!(
-            "The Size of the sign_pub and enc_pub secbuf should be : {}",
-            id.len() / 2
-        );
+    for x in 0..sign_pub.len() {
+        sign_pub[x] = sig[x];
+    }
+    for x in 0..enc_pub.len() {
+        enc_pub[x] = enc[x];
     }
 }
 
@@ -212,31 +208,25 @@ mod tests {
     }
 
     #[test]
-    fn it_should_encode_to_create_pub_key() {
+    fn it_should_decode_to_create_pub_key() {
         let mut sign_pub = SecBuf::with_insecure(32);
         random_secbuf(&mut sign_pub);
 
         let mut enc_pub = SecBuf::with_insecure(32);
         random_secbuf(&mut enc_pub);
 
-        let mut id = SecBuf::with_secure(64);
-
-        encode_id(&mut sign_pub, &mut enc_pub, &mut id);
-        // assert!(false);
-        assert_eq!(sign_pub.len() * 2, id.len());
-        // assert_eq!(format!("{:?}", *sign_pub),format!("{:?}", *id));
-    }
-
-    #[test]
-    fn it_should_decode_to_create_pub_key() {
-        let mut sign_pub = SecBuf::with_insecure(32);
-        let mut enc_pub = SecBuf::with_insecure(32);
-
-        let mut id = SecBuf::with_secure(64);
-        random_secbuf(&mut id);
-
-        decode_id(&mut id, &mut sign_pub, &mut enc_pub);
-        assert_eq!(sign_pub.len() * 2, id.len());
-        // assert_eq!(format!("{:?}", *sign_pub),format!("{:?}", *id));
+        let enc:String = encode_id(&mut sign_pub, &mut enc_pub);
+       
+        let mut sign_pub_dec = SecBuf::with_insecure(32);
+        let mut enc_pub_dec = SecBuf::with_insecure(32);
+        
+        decode_id(enc, &mut sign_pub_dec, &mut enc_pub_dec);
+        
+        let sign_pub = sign_pub.read_lock();
+        let enc_pub = enc_pub.read_lock();
+        let sign_pub_dec = sign_pub_dec.read_lock();
+        let enc_pub_dec = enc_pub_dec.read_lock();
+        assert_eq!(format!("{:?}", *sign_pub),format!("{:?}", *sign_pub_dec));
+        assert_eq!(format!("{:?}", *enc_pub),format!("{:?}", *enc_pub_dec));
     }
 }

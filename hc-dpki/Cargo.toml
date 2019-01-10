@@ -5,4 +5,6 @@ authors = ["zo-el<zo@el.org>"]
 edition = "2018"
 
 [dependencies]
+arrayref = "0.3.5"
 holochain_sodium = { path = "../sodium" }
+holochain_core_types = { path = "../core_types" }

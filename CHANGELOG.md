@@ -27,8 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - http interface [#823](https://github.com/holochain/holochain-rust/pull/823)
 - hc command-line tool:
     - `run --persist` flag for keeping state across runs [#729](https://github.com/holochain/holochain-rust/pull/729/files)
-    -
-- Groundwork for: capabilities & signals
+    - Added env variables to activate real networking [#826](https://github.com/holochain/holochain-rust/pull/826)
+- Groundwork for: capabilities & signals [#762](https://github.com/holochain/holochain-rust/pull/826) & [#732](https://github.com/holochain/holochain-rust/pull/732)
 - Improved debug logging with log rules and colorization [#819](https://github.com/holochain/holochain-rust/pull/819)
 - This change log!
 

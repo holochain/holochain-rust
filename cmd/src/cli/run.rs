@@ -1,7 +1,7 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
-use holochain_container_api::{config::*, container::Container, logger::LogRules};
+use holochain_container_api::{config::*, container::{CONTAINER, mount_container_from_config}, logger::LogRules};
 use holochain_core_types::agent::AgentId;
 use std::fs;
 
@@ -74,7 +74,9 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         ..Default::default()
     };
 
-    let mut container = Container::from_config(base_config.clone());
+    mount_container_from_config(base_config);
+    let mut container_guard = CONTAINER.lock().unwrap();
+    let container = container_guard.as_mut().expect("Container must be mounted");
 
     container
         .load_config()

@@ -1,15 +1,18 @@
 use holochain_core::state::State;
-use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
+use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall, error::HolochainError};
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value, types::params::Params};
 use serde_json;
 use std::{
     collections::HashMap,
+    path::PathBuf,
     sync::{Arc, RwLock},
 };
 
 use config::InstanceConfiguration;
+use container::CONTAINER;
+use container_admin::ContainerAdmin;
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
@@ -158,22 +161,28 @@ impl ContainerApiBuilder {
     }
 
     pub fn with_admin_dna_functions(mut self) -> Self {
-        self.io.add_method("admin/dna/install", move |params| {
+        self.io.add_method("admin/dna/install_from_file", move |params| {
             let params_map = match params {
                 Params::Map(map) => Ok(map),
                 _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
             }?;
 
-            let _id = params_map.get("id")
+            let id = params_map.get("id")
                 .ok_or(jsonrpc_core::Error::invalid_params("`id` param not provided"))?;
 
-            let _path = params_map.get("file_path")
+            let path = params_map.get("file_path")
                 .ok_or(jsonrpc_core::Error::invalid_params("`file_path` param not provided"))?;
 
-            // how to call this on container from here?
-            // install_dna_from_file(path, id)?;
-            Ok(serde_json::Value::Null)
+            match *CONTAINER.lock().unwrap() {
+                Some(ref mut container) => container.install_dna_from_file(PathBuf::from(path.to_string()), id.to_string()),
+                None => {
+                    println!("Admin function called without a container mounted as singleton!");
+                    // This should actually never happen!
+                    Err(HolochainError::ErrorGeneric(String::from("Admin function called without a container mounted as singleton!")))
+                }
+            }.map_err(|_| jsonrpc_core::Error::internal_error())?;
 
+            Ok(serde_json::Value::Null)
         });
         self
     }

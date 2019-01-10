@@ -21,7 +21,7 @@ extern crate structopt;
 
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::Container,
+    container::{CONTAINER, mount_container_from_config},
 };
 use holochain_core_types::error::HolochainError;
 use std::{fs::File, io::prelude::*, path::PathBuf};
@@ -44,7 +44,9 @@ fn main() {
     let config_path_str = config_path.to_str().unwrap();
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
-        Ok(mut container) => {
+        Ok(()) => {
+            let mut container_guard = CONTAINER.lock().unwrap();
+            let mut container = container_guard.as_mut().expect("Container must be mounted");
             if container.instances().len() > 0 {
                 println!(
                     "Successfully loaded {} instance configurations",
@@ -67,14 +69,15 @@ fn main() {
 }
 
 #[cfg_attr(tarpaulin, skip)]
-fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
+fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
         .check_consistency()
         .map_err(|string| HolochainError::ConfigError(string))?;
-    let mut container = Container::from_config(config);
-    container.load_config()?;
-    Ok(container)
+    mount_container_from_config(config);
+    let mut container_guard = CONTAINER.lock().unwrap();
+    container_guard.as_mut().expect("Container must be mounted").load_config()?;
+    Ok(())
 }
 
 #[cfg_attr(tarpaulin, skip)]

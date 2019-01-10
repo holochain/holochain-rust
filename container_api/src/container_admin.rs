@@ -59,7 +59,7 @@ pub mod tests {
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|_: &String| {
             Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
-        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
+        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 

@@ -120,6 +120,8 @@ extern crate toml;
 #[macro_use]
 extern crate maplit;
 extern crate dirs;
+#[macro_use]
+extern crate lazy_static;
 
 pub mod config;
 pub mod container;

@@ -35,9 +35,28 @@ use holochain_net::p2p_config::P2pConfig;
 use holochain_net_connection::net_connection::NetShutdown;
 use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
+
+lazy_static! {
+    /// This is global and mutable Container singleton.
+    /// In order to call from interface threads Container admin functions that change
+    /// the config and hence mutate the Container, we need something that owns the Container
+    /// and is accessible from everywhere (esp. those container interface method closures
+    /// in interface.rs).
+    pub static ref CONTAINER: Arc<Mutex<Option<Container>>> = Arc::new(Mutex::new(None));
+}
+
+/// Container constructor that makes sure the instance is mounted in above static CONTAINER.
+/// With Container::from_config private to this crate, this is the only way for calling code
+/// to create a Container instance.
+/// It replaces any Container instance that was mounted before to CONTAINER with a new one
+/// create from the given configuration.
+pub fn mount_container_from_config(config: Configuration) {
+    let container = Container::from_config(config);
+    CONTAINER.lock().unwrap().replace(container);
+}
+
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
-
 /// A primary point in this struct is
 /// `load_config(&mut self, config: &Configuration) -> Result<(), String>`
 /// which takes a `config::Configuration` struct and tries to instantiate all configured instances.
@@ -67,7 +86,7 @@ impl Drop for Container {
 
 type SignalSender = SyncSender<Signal>;
 type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
-pub type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
+pub type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>>;
 
 // preparing for having container notifiers go to one of the log streams
 pub fn notify(msg: String) {
@@ -76,7 +95,7 @@ pub fn notify(msg: String) {
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
-    pub fn from_config(config: Configuration) -> Self {
+    pub(crate) fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
         let config_path = dirs::home_dir().expect("No home dir defined. Don't know where to store config file")
             .join(std::path::PathBuf::from(".holochain/container-config.toml"));
@@ -383,10 +402,15 @@ impl Container {
             .map(|(id, val)| (id.clone(), val.clone()))
             .collect();
 
-        ContainerApiBuilder::new()
+        let mut container_api_builder = ContainerApiBuilder::new()
             .with_instances(instance_subset)
-            .with_instance_configs(self.config.instances.clone())
-            .spawn()
+            .with_instance_configs(self.config.instances.clone());
+
+        if interface_config.admin {
+            container_api_builder= container_api_builder.with_admin_dna_functions();
+        }
+
+        container_api_builder.spawn()
     }
 
     fn spawn_interface_thread(
@@ -462,7 +486,7 @@ pub mod tests {
                 "bridge/caller.dna" => caller_dna(),
                 _ => Dna::try_from(JsonString::from(example_dna_string())).unwrap(),
             })
-        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
+        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 

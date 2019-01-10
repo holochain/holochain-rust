@@ -19,20 +19,26 @@ use std::{
 type ControlSender = SyncSender<ControlMsg>;
 type ControlReceiver = Receiver<ControlMsg>;
 
+/// Possible messages used to influence the behavior of the CallBlockingTask
+/// Currently the only action needed is to stop it, triggering its callback
+pub enum ControlMsg {
+    Stop,
+}
+
+/// A predicate function which examines an ActionWrapper to see if it is
+/// the one it's looking for
+type CallFxCondition = Box<Fn(&ActionWrapper) -> bool + 'static + Send>;
+
 /// A set of closures, each of which checks for a certain condition to be met
 /// (usually for a certain action to be seen). When the condition specified by the closure
 /// is met, that closure is removed from the set of checks.
 ///
 /// When the set of checks goes from non-empty to empty, send a message via `tx`
-/// to the BlockTask on the other side
+/// to the `CallBlockingTask` on the other side
 struct CallFxChecker {
     tx: ControlSender,
-    conditions: Vec<CallFxCondition>, // maybe RefCell
+    conditions: Vec<CallFxCondition>,
 }
-
-// Could maybe reduce this to HashSet<ActionWrapper> if we only need to check for
-// simple existence of one of any possible ActionWrappers
-type CallFxCondition = Box<Fn(&ActionWrapper) -> bool + 'static + Send>;
 
 impl CallFxChecker {
     pub fn new(tx: ControlSender) -> Self {
@@ -85,7 +91,7 @@ impl CallFxChecker {
     }
 }
 
-/// A simple Task that blocks until it receives a message.
+/// A simple Task that blocks until it receives `ControlMsg::Stop`.
 /// This is used to trigger a JS Promise resolution when a ZomeFnCall's
 /// side effects have all completed.
 pub struct CallBlockingTask {
@@ -123,7 +129,7 @@ fn log(msg: &str) {
 /// - handles incoming Signals, running all `CallFxChecker` closures
 pub struct Waiter {
     checkers: HashMap<ZomeFnCall, CallFxChecker>,
-    current: Option<ZomeFnCall>, // maybe RefCell
+    current: Option<ZomeFnCall>,
     sender_rx: Receiver<ControlSender>,
 }
 
@@ -137,39 +143,37 @@ impl Waiter {
     }
 
     pub fn process_signal(&mut self, sig: Signal) {
-        let do_log = match sig {
+        match sig {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
-                let do_log = match aw.action().clone() {
-                    Action::ExecuteZomeFunction(call) => {
-                        match self.sender_rx.try_recv() {
-                            Ok(sender) => {
-                                self.add_call(call.clone(), sender);
-                                self.current_checker().unwrap().add(move |aw| {
-                                    if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
-                                        r.call() == call
-                                    } else {
-                                        false
-                                    }
-                                });
-                            }
-                            Err(_) => {
-                                self.deactivate_current();
-                                log("Waiter: deactivate_current");
-                            }
+                match aw.action().clone() {
+                    Action::ExecuteZomeFunction(call) => match self.sender_rx.try_recv() {
+                        Ok(sender) => {
+                            self.add_call(call.clone(), sender);
+                            self.current_checker().unwrap().add(move |aw| {
+                                if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
+                                    r.call() == call
+                                } else {
+                                    false
+                                }
+                            });
                         }
-                        true
-                    }
-                    Action::ReturnZomeFunctionResult(_) => true,
+                        Err(_) => {
+                            self.deactivate_current();
+                            log("Waiter: deactivate_current");
+                        }
+                    },
+
+                    // TODO: limit to App entry?
                     Action::Commit((entry, _)) => match self.current_checker() {
                         // TODO: is there a possiblity that this can get messed up if the same
                         // entry is committed multiple times?
                         Some(checker) => {
                             checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
-                            true
                         }
-                        None => false,
+                        None => (),
                     },
+
                     Action::SendDirectMessage(data) => {
                         let msg_id = data.msg_id;
                         match (self.current_checker(), data.message) {
@@ -181,25 +185,19 @@ impl Waiter {
                                     ]
                                     .contains(aw.action())
                                 });
-                                true
                             }
-                            _ => false,
+                            _ => (),
                         }
                     }
-                    Action::ResolveDirectConnection(_) => true,
-                    Action::SendDirectMessageTimeout(_) => true,
-                    Action::Hold(_) => true,
-                    _ => false,
+
+                    _ => (),
                 };
 
                 self.run_checks(&aw);
-                do_log
             }
-            _ => false,
+
+            _ => (),
         };
-        if do_log {
-            println!("{} {:?}", ":::SIG".cyan(), sig);
-        }
     }
 
     fn run_checks(&mut self, aw: &ActionWrapper) {
@@ -234,13 +232,15 @@ impl Waiter {
     }
 }
 
-pub enum ControlMsg {
-    Stop,
-}
-
+/// This Task is started with the TestContainer and is stopped with the TestContainer.
+/// It runs in a Node worker thread, receiving Signals and running them through
+/// the Waiter. Each TestContainer spawns its own MainBackgroundTask.
 pub struct MainBackgroundTask {
+    /// The Receiver<Signal> for the Container
     signal_rx: SignalReceiver,
+    /// The Waiter is in a RefCell because perform() uses an immutable &self reference
     waiter: RefCell<Waiter>,
+    /// This Mutex is flipped from true to false from within the TestContainer
     is_running: Arc<Mutex<bool>>,
 }
 
@@ -267,7 +267,8 @@ impl Task for MainBackgroundTask {
     fn perform(&self) -> Result<(), String> {
         while *self.is_running.lock().unwrap() {
             // TODO: could use channels more intelligently to stop immediately
-            // rather than waiting for timeout, but it's more complicated.
+            // rather than waiting for timeout, but it's more complicated and probably
+            // involves adding some kind of control variant to the Signal enum
             match self.signal_rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(sig) => self.waiter.borrow_mut().process_signal(sig),
                 Err(RecvTimeoutError::Timeout) => continue,
@@ -275,23 +276,151 @@ impl Task for MainBackgroundTask {
             }
         }
 
-        println!("{}", "\nHOW ABOUT LET'S STOP?".red().bold());
-
         for (_, checker) in self.waiter.borrow_mut().checkers.iter_mut() {
             println!("{}", "Shutting down lingering checker...".magenta().bold());
             checker.shutdown();
         }
-        println!("{}", "ONLY NOW ARE WE ACTUALLY sTOPPED\n".magenta().bold());
+        println!("Terminating MainBackgroundTask::perform() loop");
         Ok(())
     }
 
     fn complete(self, mut cx: TaskContext, result: Result<(), String>) -> JsResult<JsUndefined> {
-        println!("{}", "Background task shutting down...".bold().magenta());
         result.or_else(|e| {
             let error_string = cx.string(format!("unable to shut down background task: {}", e));
             cx.throw(error_string)
         })?;
-        println!("{}", "...with no errors".bold().magenta());
+        println!("MainBackgroundTask shut down");
         Ok(cx.undefined())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Action::*, *};
+    use holochain_core::{
+        action::DirectMessageData, network::direct_message::CustomDirectMessage,
+        nucleus::ExecuteZomeFnResponse,
+    };
+    use holochain_core_types::{entry::Entry, json::JsonString};
+    use std::sync::mpsc::sync_channel;
+
+    fn sig(a: Action) -> Signal {
+        Signal::Internal(ActionWrapper::new(a))
+    }
+
+    fn mk_entry(ty: &'static str, content: &'static str) -> Entry {
+        Entry::App(ty.into(), JsonString::from(content))
+    }
+
+    fn msg_data(msg_id: &str) -> DirectMessageData {
+        DirectMessageData {
+            address: "fake address".into(),
+            message: DirectMessage::Custom(CustomDirectMessage {
+                zome: "fake zome".into(),
+                payload: Ok("fake payload".into()),
+            }),
+            msg_id: msg_id.into(),
+            is_response: false,
+        }
+    }
+
+    fn zf_call(function_name: &str) -> ZomeFnCall {
+        ZomeFnCall::new("z", None, function_name, "")
+    }
+
+    fn zf_response(call: ZomeFnCall) -> ExecuteZomeFnResponse {
+        ExecuteZomeFnResponse::new(call, Ok(JsonString::from("")))
+    }
+
+    fn test_waiter() -> (Waiter, Receiver<ControlMsg>) {
+        let (sender_tx, sender_rx) = sync_channel(0);
+        let (control_tx, control_rx) = sync_channel(0);
+        let waiter = Waiter::new(sender_rx);
+        sender_tx
+            .send(control_tx)
+            .expect("Could not send control sender");
+        (waiter, control_rx)
+    }
+
+    #[test]
+    fn can_await_commit_simple() {
+        let (mut waiter, control_rx) = test_waiter();
+        let entry = mk_entry("t1", "x");
+        let call = zf_call("c1");
+
+        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(Commit((entry.clone(), None))));
+        waiter.process_signal(sig(Hold(entry)));
+        assert!(
+            control_rx.try_recv().is_err(),
+            "ControlMsg::Stop message received too early!"
+        );
+        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call))));
+        assert!(
+            control_rx.try_recv().is_ok(),
+            "ControlMsg::Stop message not received!"
+        );
+    }
+
+    #[test]
+    fn can_await_commit_funky_ordering() {
+        let (mut waiter, control_rx) = test_waiter();
+        let entry_1 = mk_entry("t1", "x");
+        let entry_2 = mk_entry("t2", "y");
+        let entry_3 = mk_entry("t3", "z");
+        let call_1 = zf_call("c1");
+        let call_2 = zf_call("c2");
+
+        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+        waiter.process_signal(sig(Commit((entry_1.clone(), None))));
+        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
+
+        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+        waiter.process_signal(sig(Commit((entry_2.clone(), None))));
+        waiter.process_signal(sig(Commit((entry_3.clone(), None))));
+        waiter.process_signal(sig(Hold(entry_1)));
+        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_2))));
+
+        waiter.process_signal(sig(Hold(entry_2)));
+        assert!(
+            control_rx.try_recv().is_err(),
+            "ControlMsg::Stop message received too early!"
+        );
+        waiter.process_signal(sig(Hold(entry_3)));
+        assert!(
+            control_rx.try_recv().is_ok(),
+            "ControlMsg::Stop message not received!"
+        );
+    }
+
+    #[test]
+    fn can_await_direct_messages() {
+        let (mut waiter, control_rx) = test_waiter();
+        let _entry_1 = mk_entry("a", "x");
+        let _entry_2 = mk_entry("b", "y");
+        let _entry_3 = mk_entry("c", "z");
+        let call_1 = zf_call("1");
+        let call_2 = zf_call("2");
+        let msg_id_1 = "m1";
+        let msg_id_2 = "m2";
+
+        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+        waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_1))));
+        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1))));
+
+        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+        waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_1))));
+        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_2))));
+
+        waiter.process_signal(sig(ResolveDirectConnection(msg_id_1.to_string())));
+        assert!(
+            control_rx.try_recv().is_err(),
+            "ControlMsg::Stop message received too early!"
+        );
+        waiter.process_signal(sig(SendDirectMessageTimeout(msg_id_2.to_string())));
+        assert!(
+            control_rx.try_recv().is_ok(),
+            "ControlMsg::Stop message not received!"
+        );
     }
 }

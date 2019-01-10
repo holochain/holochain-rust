@@ -12,11 +12,11 @@ extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
+extern crate holochain_node_test_waiter;
 extern crate tempfile;
 
 mod config;
 pub mod js_test_container;
-mod waiter;
 
 use crate::{
     config::{js_instance_id, js_make_config},

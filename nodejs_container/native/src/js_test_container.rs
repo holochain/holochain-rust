@@ -10,7 +10,7 @@ use std::sync::{
     Arc, Mutex,
 };
 
-use crate::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
+use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
 pub struct TestContainer {
     container: RustContainer,

@@ -9,15 +9,6 @@ let
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
-  nodejs-11_6 = nixpkgs.nodejs-10_x.overrideAttrs(oldAttrs: rec {
-    version = "11.6.0";
-    name = "nodejs-${version}";
-    src = nixpkgs.fetchurl {
-      url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
-      sha256 = "1czrpxmk6calqn0p92rm0bv2vlgbnx6q4z7n2j8r7aw0khwbxwll";
-    };
-  });
-
   nodejs-8_13 = nixpkgs.nodejs-8_x.overrideAttrs(oldAttrs: rec {
     name = "nodejs-${version}";
     version = "8.13.0";

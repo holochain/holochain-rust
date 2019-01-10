@@ -151,6 +151,12 @@ pub mod tests {
     }
 
     #[test]
+    fn wee() {
+        let mut a = &wee_alloc::WeeAlloc::INIT;
+        println!("{:?}", a.head.header);
+    }
+
+    #[test]
     /// smoke test single_page_allocation
     fn single_page_allocation_smoke_test() {
         test_single_page_allocation();

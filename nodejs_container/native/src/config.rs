@@ -1,6 +1,9 @@
-use holochain_container_api::config::{
-    AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
-    LoggerConfiguration, StorageConfiguration,
+use holochain_container_api::{
+    config::{
+        AgentConfiguration, Configuration, DnaConfiguration, InstanceConfiguration,
+        LoggerConfiguration, StorageConfiguration,
+    },
+    logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
 use neon::prelude::*;
@@ -39,7 +42,7 @@ pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
     } else {
         LoggerConfiguration {
             logger_type: "none".into(),
-            ..Default::default()
+            rules: LogRules::new(),
         }
     };
     let config = make_config(instances, logger);

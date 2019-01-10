@@ -28,6 +28,7 @@ use std::{
     io::prelude::*,
     sync::{mpsc::SyncSender, Arc, Mutex, RwLock},
     thread,
+    path::PathBuf,
 };
 
 use holochain_net::p2p_config::P2pConfig;
@@ -47,7 +48,7 @@ use interface::{ContainerApiBuilder, InstanceMap, Interface};
 pub struct Container {
     instances: InstanceMap,
     config: Configuration,
-    config_path: String,
+    config_path: PathBuf,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     pub (crate) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
@@ -77,11 +78,12 @@ impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
-        let config_path = dirs::home_dir().expect("")
+        let config_path = dirs::home_dir().expect("");
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
             config,
+            config_path,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
             logger: DebugLogger::new(rules),
@@ -401,8 +403,8 @@ impl Container {
     }
 
     pub fn save_config(&self) -> Result<(), HolochainError> {
-        let mut file = File::create(self.config_path)?;
-        file.write(serialize_configuration(self.config)?.as_bytes());
+        let mut file = File::create(&self.config_path)?;
+        file.write(serialize_configuration(&self.config)?.as_bytes())?;
         Ok(())
     }
 }

@@ -368,7 +368,7 @@ where
     })
 }
 
-pub fn serialize_configuration(config: Configuration) -> HcResult<String>
+pub fn serialize_configuration(config: &Configuration) -> HcResult<String>
 {
     toml::to_string(&config).map_err(|e| {
         HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))

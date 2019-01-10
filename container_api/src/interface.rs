@@ -161,15 +161,16 @@ impl ContainerApiBuilder {
         self.io.add_method("admin/dna/install", move |params| {
             let params_map = match params {
                 Params::Map(map) => Ok(map),
-                _ => Err(String::from("Expected parameters map")),
+                _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
             }?;
-            let id = params_map.get("id")?;
-            let path = params_map.get("file_path")?;
-            let params_string =
-                serde_json::to_string(&params).map_err(|e| {
-                    jsonrpc_core::Error::invalid_params(e.to_string())
-                })?;
 
+            let _id = params_map.get("id")
+                .ok_or(jsonrpc_core::Error::invalid_params("`id` param not provided"))?;
+
+            let _path = params_map.get("file_path")
+                .ok_or(jsonrpc_core::Error::invalid_params("`file_path` param not provided"))?;
+
+            Ok(serde_json::Value::Null)
 
         });
         self

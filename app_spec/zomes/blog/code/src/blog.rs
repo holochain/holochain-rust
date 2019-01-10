@@ -81,15 +81,15 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
 }
 
 pub fn handle_delete_post(post_address: Address) -> ZomeApiResult<()> {
-    hdk::get_entry(post_address.clone())?;
+    hdk::get_entry(&post_address)?;
 
-    hdk::remove_entry(post_address)?;
+    hdk::remove_entry(&post_address)?;
 
     Ok(())
 }
 
 pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<()> {
-    let old_entry = hdk::get_entry(post_address.clone())?;
+    let old_entry = hdk::get_entry(&post_address)?;
 
     if let Some(Entry::App(_, json_string)) = old_entry {
         let post = Post::try_from(json_string)?;
@@ -98,7 +98,7 @@ pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApi
             Post::new(&new_content, &post.date_created).into(),
         );
 
-        hdk::update_entry(updated_post_entry, post_address)?;
+        hdk::update_entry(updated_post_entry, &post_address)?;
 
         Ok(())
     } else {

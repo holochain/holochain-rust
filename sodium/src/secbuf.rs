@@ -2,7 +2,9 @@
 
 use libc::c_void;
 use std::ops::{Deref, DerefMut};
+use reed_solomon::{Decoder, Encoder};
 
+use crate::error::SodiumError;
 use super::check_init;
 
 /// a trait for structures that can be used as a backing store for SecBuf
@@ -135,6 +137,9 @@ impl std::fmt::Debug for SecBuf {
 }
 
 impl SecBuf {
+    /// Constants specific to SecBuf
+    const PARITY_LEN: usize = 5;
+    
     /// create a new SecBuf backed by insecure memory (for things like public keys)
     pub fn with_insecure(s: usize) -> Self {
         SecBuf {
@@ -150,6 +155,49 @@ impl SecBuf {
             b: SodiumBuf::new(s),
             p: ProtectState::NoAccess,
         }
+    }
+
+    /// take a potentially user-entered base64url encoded user representation
+    /// of an public key identity
+    /// apply reed-solomon parity correction
+    /// returns a raw byte buffer
+    pub fn securely_corrected(s: &str) -> Result<SecBuf,SodiumError> {
+        let s = s.replace("-", "+").replace("_", "/");
+        let base64 = base64::decode(&s)?;
+        let dec = Decoder::new(SecBuf::PARITY_LEN);
+        let dec = *dec.correct(base64.as_slice(), None)?;
+        let mut b = SecBuf::with_secure(dec.len()-5);
+        SecBuf::convert_array_to_secbuf(&dec[0..dec.len()-5],&mut b);
+        Ok(b)
+    }
+
+    /// take a potentially user-entered base64url encoded user representation
+    /// of an public key identity
+    /// apply reed-solomon parity correction
+    /// returns a raw byte buffer
+    pub fn insecurely_corrected(s: &str) -> Result<SecBuf,SodiumError> {
+        let s = s.replace("-", "+").replace("_", "/");
+        let base64 = base64::decode(&s)?;
+        let dec = Decoder::new(SecBuf::PARITY_LEN);
+        let dec = *dec.correct(base64.as_slice(), None)?;
+        let mut b = SecBuf::with_insecure(dec.len()-5);
+        SecBuf::convert_array_to_secbuf(&dec[0..dec.len()-5],&mut b);
+        Ok(b)
+    }
+
+    /// Load the [u8] into the SecBuf
+    pub fn convert_array_to_secbuf(data: &[u8], buf: &mut SecBuf) {
+        let mut buf = buf.write_lock();
+        for x in 0..data.len() {
+            buf[x] = data[x];
+        }
+    }
+
+    /// render a base64url encoded user identity with reed-solomon parity bytes
+    pub fn render(&self) -> String {
+        let enc = Encoder::new(SecBuf::PARITY_LEN);
+        let enc = *enc.encode(&self);
+        base64::encode(&enc[..]).replace("+", "-").replace("/", "_")
     }
 
     /// what is the current memory protection state of this SecBuf?
@@ -270,7 +318,57 @@ impl<'a> DerefMut for Locker<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::random::random_secbuf;
+     #[test]
+    fn it_should_encode_insecure_secbuf_8() {
+        let mut b = SecBuf::with_insecure(8);
+        random_secbuf(&mut b);
+        {
+        let b = b.read_lock();
+        println!("Original: {:?}",*b);    
+        }
+        let b = b.read_lock();
+        let enc = &b.render();
+        println!("Encoded: {}",enc);
+        
+        let mut b_copy = SecBuf::insecurely_corrected(&enc).unwrap();
+        let b_copy = b_copy.read_lock();
+        assert_eq!(format!("{:?}", *b_copy), format!("{:?}", *b));
+    }
 
+    #[test]
+    fn it_should_encode_secure_secbuf_8() {
+        let mut b = SecBuf::with_secure(8);
+        random_secbuf(&mut b);
+        {
+        let b = b.read_lock();
+        println!("Original: {:?}",*b);    
+        }
+        let b = b.read_lock();
+        let enc = &b.render();
+        println!("Encoded: {}",enc);
+        
+        let mut b_copy = SecBuf::securely_corrected(&enc).unwrap();
+        let b_copy = b_copy.read_lock();
+        assert_eq!(format!("{:?}", *b_copy), format!("{:?}", *b));
+    }
+
+    #[test]
+    fn it_should_encode_secure_secbuf_64() {
+        let mut b = SecBuf::with_secure(64);
+        random_secbuf(&mut b);
+        {
+        let b = b.read_lock();
+        println!("Original: {:?}",*b);    
+        }
+        let b = b.read_lock();
+        let enc = &b.render();
+        println!("Encoded: {}",enc);
+        
+        let mut b_copy = SecBuf::securely_corrected(&enc).unwrap();
+        let b_copy = b_copy.read_lock();
+        assert_eq!(format!("{:?}", *b_copy), format!("{:?}", *b));
+    }
     #[test]
     fn it_should_read_write_insecure() {
         let mut b = SecBuf::with_insecure(16);

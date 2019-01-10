@@ -2,6 +2,8 @@ extern crate rust_sodium_sys;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
+extern crate reed_solomon;
+extern crate base64;
 
 lazy_static! {
     /// we only need to call sodium_init once

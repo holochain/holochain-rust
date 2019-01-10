@@ -39,8 +39,8 @@ pub fn pw_hash(password: &mut SecBuf, salt: &mut SecBuf, hash: &mut SecBuf) {
 ///
 /// @return {bundle::ReturnBundleData} - the encrypted data
 pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> bundle::ReturnBundleData {
-    let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
-    let mut salt = SecBuf::with_secure(pwhash::SALTBYTES);
+    let mut secret = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
+    let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
     holochain_sodium::random::random_secbuf(&mut salt);
     let mut nonce = SecBuf::with_insecure(aead::NONCEBYTES);
     holochain_sodium::random::random_secbuf(&mut nonce);
@@ -75,8 +75,8 @@ pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> bundle::ReturnBundl
 ///
 /// @return {SecBuf} - the decrypted data
 pub fn pw_dec(bundle: &bundle::ReturnBundleData, passphrase: &mut SecBuf) -> SecBuf {
-    let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
-    let mut salt = SecBuf::with_secure(pwhash::SALTBYTES);
+    let mut secret = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
+    let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
     convert_vec_to_secbuf(&bundle.salt, &mut salt);
     let mut nonce = SecBuf::with_insecure(bundle.nonce.len());
     convert_vec_to_secbuf(&bundle.nonce, &mut nonce);
@@ -123,8 +123,8 @@ pub fn convert_array_to_secbuf(data: &[u8], buf: &mut SecBuf) {
 pub fn encode_id(sign_pub: &mut SecBuf, enc_pub: &mut SecBuf)->String {
     let sign_pub = sign_pub.read_lock();
     let enc_pub = enc_pub.read_lock();
-    let sp = &sign_pub[..] as &[u8];
-    let ep = &enc_pub[..] as &[u8];
+    let sp = &*sign_pub;
+    let ep = &*enc_pub;
     KeyBuffer::with_raw_parts(array_ref![sp, 0, 32],array_ref![ep, 0, 32]).render()
 }
 
@@ -177,7 +177,7 @@ mod tests {
             data[0] = 88;
             data[1] = 101;
         }
-        let mut password = SecBuf::with_secure(pwhash::HASHBYTES);
+        let mut password = SecBuf::with_insecure(pwhash::HASHBYTES);
         {
             let mut password = password.write_lock();
             password[0] = 42;
@@ -194,8 +194,8 @@ mod tests {
 
     #[test]
     fn it_should_generate_pw_hash_with_salt() {
-        let mut password = SecBuf::with_secure(pwhash::HASHBYTES);
-        let mut pw2_hash = SecBuf::with_secure(pwhash::HASHBYTES);
+        let mut password = SecBuf::with_insecure(pwhash::HASHBYTES);
+        let mut pw2_hash = SecBuf::with_insecure(pwhash::HASHBYTES);
         {
             let mut password = password.write_lock();
             password[0] = 42;

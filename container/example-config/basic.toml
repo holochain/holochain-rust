@@ -33,6 +33,7 @@ path = "example-config/tmp-storage"
 
 
 [[interfaces]]
+admin = true
 id = "websocket interface"
 [interfaces.driver]
 type = "websocket"

@@ -1,11 +1,11 @@
 use crate::{
+    bundle,
     holochain_sodium::{aead, kx, random::random_secbuf, secbuf::SecBuf, sign},
     util,
-    bundle,
 };
-use holochain_core_types::agent::{KeyBuffer};
-
-pub const SEEDSIZE: usize = 32 as usize;
+use holochain_core_types::agent::KeyBuffer;
+use rustc_serialize::json;
+use std::str;
 
 pub struct Keypair {
     pub_keys: String,
@@ -13,8 +13,9 @@ pub struct Keypair {
     enc_priv: SecBuf,
 }
 
+pub const SEEDSIZE: usize = 32 as usize;
+
 impl Keypair {
-    
     /// derive the pairs from a 32 byte seed buffer
     ///  
     /// @param {SecBuf} seed - the seed buffer
@@ -50,31 +51,39 @@ impl Keypair {
     pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> bundle::KeyBundle {
         let mut passphrase = passphrase;
         let bundle_type: String = "hcKeypair".to_string();
-        // let pw_pub_keys: bundle::ReturnBundleData = util::pw_enc(&mut self.pub_keys, &mut passphrase);
         let skk = KeyBuffer::with_corrected(&self.pub_keys).unwrap();
         let sk = skk.get_sig() as &[u8];
         let ekk = KeyBuffer::with_corrected(&self.pub_keys).unwrap();
         let ek = ekk.get_enc() as &[u8];
         let mut sk_buf = SecBuf::with_insecure(32);
         let mut ek_buf = SecBuf::with_insecure(32);
-        util::convert_array_to_secbuf(&sk,&mut sk_buf);
-        util::convert_array_to_secbuf(&ek,&mut ek_buf);
-        
+        util::convert_array_to_secbuf(&sk, &mut sk_buf);
+        util::convert_array_to_secbuf(&ek, &mut ek_buf);
+
         let pw_sign_pub: bundle::ReturnBundleData = util::pw_enc(&mut sk_buf, &mut passphrase);
         let pw_enc_pub: bundle::ReturnBundleData = util::pw_enc(&mut ek_buf, &mut passphrase);
-        
-        let pw_sign_priv: bundle::ReturnBundleData = util::pw_enc(&mut self.sign_priv, &mut passphrase);
-        let pw_enc_priv: bundle::ReturnBundleData = util::pw_enc(&mut self.enc_priv, &mut passphrase);
+
+        let pw_sign_priv: bundle::ReturnBundleData =
+            util::pw_enc(&mut self.sign_priv, &mut passphrase);
+        let pw_enc_priv: bundle::ReturnBundleData =
+            util::pw_enc(&mut self.enc_priv, &mut passphrase);
+
+        // convert to string
+        let bundle_data = bundle::Keys {
+            pw_sign_pub,
+            pw_enc_pub,
+            pw_sign_priv,
+            pw_enc_priv,
+        };
+        let bundle_data_serialized = json::encode(&bundle_data).unwrap();
+
+        // conver to base64
+        let bundle_data_encoded = base64::encode(&bundle_data_serialized);
 
         return bundle::KeyBundle {
             bundle_type,
             hint,
-            data: bundle::Keys {
-                pw_sign_pub,
-                pw_enc_pub,
-                pw_sign_priv,
-                pw_enc_priv,
-            },
+            data: bundle_data_encoded,
         };
     }
 
@@ -84,10 +93,15 @@ impl Keypair {
     ///
     /// @param {SecBuf} passphrase - decryption passphrase
     pub fn from_bundle(bundle: &bundle::KeyBundle, passphrase: &mut SecBuf) -> Keypair {
-        let sk: &bundle::ReturnBundleData = &bundle.data.pw_sign_pub;
-        let ek: &bundle::ReturnBundleData = &bundle.data.pw_enc_pub;
-        let epk: &bundle::ReturnBundleData = &bundle.data.pw_enc_priv;
-        let spk: &bundle::ReturnBundleData = &bundle.data.pw_sign_priv;
+        // decoding the bundle.data of type utinl::Keys
+        let bundle_decoded = base64::decode(&bundle.data).unwrap();
+        let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
+        let data: bundle::Keys = json::decode(&bundle_string).unwrap();
+
+        let sk: &bundle::ReturnBundleData = &data.pw_sign_pub;
+        let ek: &bundle::ReturnBundleData = &data.pw_enc_pub;
+        let epk: &bundle::ReturnBundleData = &data.pw_enc_priv;
+        let spk: &bundle::ReturnBundleData = &data.pw_sign_priv;
         let mut sign_public_key = util::pw_dec(sk, passphrase);
         let mut enc_public_key = util::pw_dec(ek, passphrase);
         let enc_priv = util::pw_dec(epk, passphrase);
@@ -157,7 +171,7 @@ impl Keypair {
         for client_pk in recipient_id {
             let mut r_sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
             let mut r_enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
-      
+
             util::decode_id(client_pk.to_string(), &mut r_sign_pub, &mut r_enc_pub);
 
             kx::server_session(
@@ -304,7 +318,7 @@ mod tests {
         println!("pk: {:?}", pk);
         let pk1: String = keypair.get_id();
         println!("pk1: {:?}", pk1);
-        assert_eq!(pk,pk1);
+        assert_eq!(pk, pk1);
     }
 
     #[test]
@@ -477,6 +491,10 @@ mod tests {
         random_secbuf(&mut passphrase);
 
         let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
+
+        println!("Bundle.bundle_type: {}", bundle.bundle_type);
+        println!("Bundle.Hint: {}", bundle.hint);
+        println!("Bundle.data: {}", bundle.data);
 
         assert_eq!("hint", bundle.hint);
     }

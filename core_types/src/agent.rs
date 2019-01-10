@@ -41,15 +41,18 @@ impl KeyBuffer {
     pub fn with_raw(b: &[u8; KeyBuffer::KEY_LEN]) -> KeyBuffer {
         KeyBuffer(b.clone())
     }
- 
-   /// generate a key buffer from raw bytes from two parts (no correction)
-    pub fn with_raw_parts(a: &[u8; KeyBuffer::HALF_KEY_LEN],b: &[u8; KeyBuffer::HALF_KEY_LEN]) -> KeyBuffer {
-        let mut buf: [u8; KeyBuffer::KEY_LEN]=[0;64];
-        for i in 0..KeyBuffer::HALF_KEY_LEN{
-            buf[i]=a[i];
+
+    /// generate a key buffer from raw bytes from two parts (no correction)
+    pub fn with_raw_parts(
+        a: &[u8; KeyBuffer::HALF_KEY_LEN],
+        b: &[u8; KeyBuffer::HALF_KEY_LEN],
+    ) -> KeyBuffer {
+        let mut buf: [u8; KeyBuffer::KEY_LEN] = [0; 64];
+        for i in 0..KeyBuffer::HALF_KEY_LEN {
+            buf[i] = a[i];
         }
-        for i in 0..KeyBuffer::HALF_KEY_LEN{
-            buf[KeyBuffer::HALF_KEY_LEN+i]=b[i];
+        for i in 0..KeyBuffer::HALF_KEY_LEN {
+            buf[KeyBuffer::HALF_KEY_LEN + i] = b[i];
         }
         KeyBuffer(buf)
     }
@@ -166,14 +169,16 @@ mod tests {
     #[test]
     fn it_should_allow_buffer_with_pair() {
         // let buf = test_base64_to_agent_id(GOOD_ID).unwrap().to_buffer();
-        let buf = KeyBuffer::with_raw_parts( 
+        let buf = KeyBuffer::with_raw_parts(
             &[
                 177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
-                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239
-            ], &[
+                190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,
+            ],
+            &[
                 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190,
-                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0
-            ]);
+                251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 224, 0, 0,
+            ],
+        );
         assert_eq!(
             &[
                 177, 169, 221, 194, 39, 33, 251, 239, 190, 251, 239, 190, 251, 239, 190, 251, 239,

@@ -11,6 +11,7 @@ use crate::logger::LogRules;
 ///   the container
 /// * bridges, which are
 use boolinator::*;
+use directories;
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
@@ -19,7 +20,7 @@ use holochain_core_types::{
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
+use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*};
 use toml;
 
 /// Main container configuration struct
@@ -271,11 +272,9 @@ pub struct InstanceConfiguration {
 ///
 /// Projected are various DB adapters.
 #[derive(Deserialize, Serialize, Clone)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
-    #[serde(rename = "memory")]
     Memory,
-    #[serde(rename = "file")]
     File { path: String },
 }
 
@@ -335,27 +334,45 @@ pub struct Bridge {
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct NetworkConfig {
     /// List of URIs that point to other nodes to bootstrap p2p connections.
-    #[serde(default, rename = "bootstrap_nodes")]
+    #[serde(default)]
     pub bootstrap_nodes: Vec<String>,
     /// Absolute path to the local installation/repository of n3h
-    #[serde(rename = "n3h_path")]
+    #[serde(default)]
     pub n3h_path: String,
     /// networking mode used by n3h
-    #[serde(default = "default_n3h_mode", rename = "n3h_mode")]
+    #[serde(default = "default_n3h_mode")]
     pub n3h_mode: String,
     /// Absolute path to the directory that n3h uses to store persisted data.
-    #[serde(default, rename = "n3h_persistence_path")]
+    #[serde(default)]
     pub n3h_persistence_path: String,
     /// URI pointing a n3h process that is already running and not managed by this
     /// container.
     /// If this is set the container does not spawn n3h itself and ignores the path
     /// configs above. Default is None.
-    #[serde(default, rename = "n3h_ipc_uri")]
+    #[serde(default)]
     pub n3h_ipc_uri: Option<String>,
 }
 
-fn default_n3h_mode() -> String {
+pub fn default_n3h_mode() -> String {
     String::from("HACK")
+}
+
+pub fn default_n3h_path() -> String {
+    if let Some(user_dirs) = directories::UserDirs::new() {
+        user_dirs
+            .home_dir()
+            .join(".hc")
+            .join("net")
+            .join("n3h")
+            .to_string_lossy()
+            .to_string()
+    } else {
+        String::from("n3h")
+    }
+}
+
+pub fn default_n3h_persistence_path() -> String {
+    env::temp_dir().to_string_lossy().to_string()
 }
 
 /// Use this function to load a `Configuration` from a string.
@@ -370,6 +387,7 @@ where
 
 #[cfg(test)]
 pub mod tests {
+    use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
     use holochain_core::context::mock_network_config;
 
@@ -868,5 +886,16 @@ pub mod tests {
             bridged_ids,
             vec![String::from("app2"), String::from("app3"),]
         );
+    }
+
+    #[test]
+    fn test_n3h_defaults() {
+        assert_eq!(default_n3h_mode(), String::from("HACK"));
+
+        #[cfg(not(windows))]
+        assert!(default_n3h_path().contains("/.hc/net/n3h"));
+
+        #[cfg(not(windows))]
+        assert_eq!(default_n3h_persistence_path(), String::from("/tmp"));
     }
 }

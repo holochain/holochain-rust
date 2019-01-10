@@ -208,7 +208,7 @@ _windows_template_lite: &_windows_template_lite
     - if [ ! -z "$WASM_PATH_2" ]; then cargo build --manifest-path ${TEST_PATH}${WASM_PATH_2}Cargo.toml --release --target wasm32-unknown-unknown --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}${WASM_PATH_2}target; fi;
 
   script:
-    - cargo test -p $TEST_P --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}target
+    - cargo test -p $TEST_P --release --target-dir ${HC_TARGET_PREFIX}${TEST_PATH}target
 
 jobs:
   # test builds are ordered from slowest to quickest

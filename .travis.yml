@@ -131,20 +131,43 @@ _windows_nodejs_container_template: &_windows_nodejs_container_template
 _cmd_deploy_template: &_cmd_deploy_template
   language: rust
   rust: nightly-2018-12-26
-  if: tag =~ /^holochain-cmd-v\d+\.\d+\.\d+/
+  if: tag =~ /^test-v\d+\.\d+\.\d+/
   before_script:
     - make install_system_libzmq
   script:
     - cargo rustc --manifest-path cmd/Cargo.toml --target $TARGET --release -- -C lto
-    - mkdir $TRAVIS_TAG-$TARGET
-    - cp target/$TARGET/release/hc cmd/LICENSE cmd/README.md $TRAVIS_TAG-$TARGET/
-    - tar czf $TRAVIS_TAG-$TARGET.tar.gz $TRAVIS_TAG-$TARGET/
+    - mkdir cmd-$TRAVIS_TAG-$TARGET
+    - cp target/$TARGET/release/hc cmd/LICENSE cmd/README.md cmd-$TRAVIS_TAG-$TARGET/
+    - tar czf cmd-$TRAVIS_TAG-$TARGET.tar.gz cmd-$TRAVIS_TAG-$TARGET/
   deploy:
     provider: releases
     api_key:
         secure: SfAyYHw8iC74CY8SrSnEsA0GPLxpCwguYziw19ZlBz6Nq+HxqNWoexw87TdrTIkxUKJpNxoLzqeKmigpAzr8Q4Y8j72tD5JyTSLwTnjChclM1BMRh7NR3dL8gTrBRuRZ4ALJr4EP1sxXI16W3lEz7hrS4tyws2e0W3xb80Os7p9fNQHpKCAncON622mDSznPbUXbUCNdosqZq+dZua6RZ9xmMaba1La3+vZn+hzvcNvI2mtiK/KOIDbo4uzZEUf7URtKmtkslilIc+3568iuCjPl5zV1s+/VN2/SEuxcxuVtxXUV6ZVguniF0z4L5YOCwnnadUJtlXYxxQznRu/YT7xvlvitSNulDm81jACiwKZ7LbbXssfzIb+gTBXiTdFyUDJUEHL8U992K7oDJN2nM6jPsqnmjuqalFcV/raVmpZA/gA3eCqyCw8is363NqEFpGgczBnL84h81x63RrXsXb6oZq2E5fQkIHP/4srG/s359achguHmaf/g69NiAnhCz9P2xF15zFqRPZnUA7q9ONpSAJrkOWVxBEntfIsLL6P07y3rCdXhs6A6Q5lh5YcWdOH2zEtsVXaI2/AbVgB4g0CWChts6tpqrNa5QzRIF82LLjhQTZOkpBUwMliunzmHMhIz0ojHMjay0JrCuYF2lbUfQ/f3S4Clnz19Z5DPo/A=
     file_glob: true
-    file: $TRAVIS_TAG-$TARGET.tar.gz
+    file: cmd-$TRAVIS_TAG-$TARGET.tar.gz
+    skip_cleanup: true
+    on:
+        tags: true
+    name: $TRAVIS_TAG
+
+# holochain-container deploy template
+_container_deploy_template: &_cmd_deploy_template
+  language: rust
+  rust: nightly-2018-12-26
+  if: tag =~ /^test-v\d+\.\d+\.\d+/
+  before_script:
+    - make install_system_libzmq
+  script:
+    - cargo rustc --manifest-path container/Cargo.toml --target $TARGET --release -- -C lto
+    - mkdir container-$TRAVIS_TAG-$TARGET
+    - cp target/$TARGET/release/holochain_container container/LICENSE container/README.md container-$TRAVIS_TAG-$TARGET/
+    - tar czf container-$TRAVIS_TAG-$TARGET.tar.gz container-$TRAVIS_TAG-$TARGET/
+  deploy:
+    provider: releases
+    api_key:
+        secure: SfAyYHw8iC74CY8SrSnEsA0GPLxpCwguYziw19ZlBz6Nq+HxqNWoexw87TdrTIkxUKJpNxoLzqeKmigpAzr8Q4Y8j72tD5JyTSLwTnjChclM1BMRh7NR3dL8gTrBRuRZ4ALJr4EP1sxXI16W3lEz7hrS4tyws2e0W3xb80Os7p9fNQHpKCAncON622mDSznPbUXbUCNdosqZq+dZua6RZ9xmMaba1La3+vZn+hzvcNvI2mtiK/KOIDbo4uzZEUf7URtKmtkslilIc+3568iuCjPl5zV1s+/VN2/SEuxcxuVtxXUV6ZVguniF0z4L5YOCwnnadUJtlXYxxQznRu/YT7xvlvitSNulDm81jACiwKZ7LbbXssfzIb+gTBXiTdFyUDJUEHL8U992K7oDJN2nM6jPsqnmjuqalFcV/raVmpZA/gA3eCqyCw8is363NqEFpGgczBnL84h81x63RrXsXb6oZq2E5fQkIHP/4srG/s359achguHmaf/g69NiAnhCz9P2xF15zFqRPZnUA7q9ONpSAJrkOWVxBEntfIsLL6P07y3rCdXhs6A6Q5lh5YcWdOH2zEtsVXaI2/AbVgB4g0CWChts6tpqrNa5QzRIF82LLjhQTZOkpBUwMliunzmHMhIz0ojHMjay0JrCuYF2lbUfQ/f3S4Clnz19Z5DPo/A=
+    file_glob: true
+    file: container-$TRAVIS_TAG-$TARGET.tar.gz
     skip_cleanup: true
     on:
         tags: true
@@ -325,6 +348,42 @@ jobs:
       env:
         - TARGET=x86_64-pc-windows-gnu
         - CRATE_NAME=hc
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      before_script:
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+
+# holochain-container releases section
+    - name: "CONTAINER DEPLOY - 64 bit Linux"
+      <<: *_container_deploy_template
+      env:
+        - TARGET=x86_64-unknown-linux-gnu
+        - CRATE_NAME=container
+      os: linux
+
+    - name: "CONTAINER DEPLOY - 64 bit OSX"
+      <<: *_container_deploy_template
+      env:
+        - TARGET=x86_64-apple-darwin
+        - CRATE_NAME=container
+      os: osx
+    - name: "CONTAINER DEPLOY - 64 bit Windows MSVC"
+      <<: *_container_deploy_template
+      os: windows
+      rust: nightly-2018-12-26-x86_64-pc-windows-msvc
+      env:
+        - TARGET=x86_64-pc-windows-msvc
+        - CRATE_NAME=container
+        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
+      before_script:
+        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
+
+    - name: "CONTAINER DEPLOY - 64 bit Windows GNU"
+      <<: *_container_deploy_template
+      os: windows
+      rust: nightly-2018-12-26-x86_64-pc-windows-gnu
+      env:
+        - TARGET=x86_64-pc-windows-gnu
+        - CRATE_NAME=container
         - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
       before_script:
         - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin

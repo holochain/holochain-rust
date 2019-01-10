@@ -89,7 +89,7 @@ There are three approaches to building and testing Holochain: using `make`, `doc
 For Ubuntu you can install the prerequisites with :
 
 ``` shell
-sudo apt-get install git build-essential libssl-dev curl
+. ./scripts/install/ubuntu.sh
 ```
 
 If you are running on ubuntu or macOS, and you have `make` installed, you can do local development by simply typing:
@@ -99,14 +99,6 @@ If you are running on ubuntu or macOS, and you have `make` installed, you can do
 1. install (or update to) the correct version of rust
 2. build all the rust libraries from the source code in this repository.
 3. build and install the command-line tools.
-
-Make itself can be installed with `apt-get` or `brew`
-
-#### Ubuntu
-
-```
-. ./scripts/install/ubuntu.sh
-```
 
 ### Docker
 

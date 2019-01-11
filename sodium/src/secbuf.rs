@@ -10,6 +10,9 @@ pub trait Bufferable {
     fn new(s: usize) -> Box<Bufferable>
     where
         Self: Sized;
+    fn from_string(s:String) -> Box<Bufferable>
+    where
+        Self: Sized;
     fn len(&self) -> usize;
     fn readable(&mut self);
     fn writable(&mut self);
@@ -27,6 +30,11 @@ struct RustBuf {
 impl Bufferable for RustBuf {
     fn new(s: usize) -> Box<Bufferable> {
         let b = vec![0; s].into_boxed_slice();
+        Box::new(RustBuf { b })
+    }
+
+    fn from_string(s: String) -> Box<Bufferable> {
+        let b = s.into_bytes().into_boxed_slice();
         Box::new(RustBuf { b })
     }
 
@@ -71,6 +79,11 @@ impl Bufferable for SodiumBuf {
             z
         };
         Box::new(SodiumBuf { z, s })
+    }
+
+    fn from_string(s: String) -> Box<Bufferable> {
+        let b = s.into_bytes().into_boxed_slice();
+        Box::new(RustBuf { b })
     }
 
     fn len(&self) -> usize {
@@ -148,6 +161,13 @@ impl SecBuf {
     pub fn with_secure(s: usize) -> Self {
         SecBuf {
             b: SodiumBuf::new(s),
+            p: ProtectState::NoAccess,
+        }
+    }
+
+    pub fn with_insecure_from_string(s: String) -> Self {
+        SecBuf {
+            b: RustBuf::from_string(s),
             p: ProtectState::NoAccess,
         }
     }
@@ -270,6 +290,12 @@ impl<'a> DerefMut for Locker<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn it_should_create_secbuf_from_string() {
+        let b = SecBuf::with_insecure_from_string("zooooo".to_string());
+        assert_eq!(ProtectState::NoAccess, b.protect_state());
+    }
 
     #[test]
     fn it_should_read_write_insecure() {

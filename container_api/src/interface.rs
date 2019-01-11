@@ -15,6 +15,7 @@ use std::{
 use config::{InstanceConfiguration, StorageConfiguration};
 use container::CONTAINER;
 use container_admin::ContainerAdmin;
+use serde_json::map::Map;
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
@@ -174,35 +175,35 @@ impl ContainerApiBuilder {
         )))
     }
 
+    fn unwrap_params_map(params: Params) -> Result<Map<String, Value>, jsonrpc_core::Error> {
+        match params {
+            Params::Map(map) => Ok(map),
+            _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
+        }
+    }
+
+    fn get_as_string<T: Into<String>>(key: T, params_map: &Map<String, Value>) -> Result<String, jsonrpc_core::Error> {
+        let key = key.into();
+        Ok(params_map
+            .get(&key)
+            .ok_or(jsonrpc_core::Error::invalid_params(
+                format!("`{}` param not provided", &key),
+            ))?
+            .as_str()
+            .ok_or(jsonrpc_core::Error::invalid_params(
+                format!("`{}` is not a valid json string", &key),
+            ))?
+            .to_string())
+    }
+
     pub fn with_admin_dna_functions(mut self) -> Self {
         self.io
             .add_method("admin/dna/install_from_file", move |params| {
-                let params_map = match params {
-                    Params::Map(map) => Ok(map),
-                    _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
-                }?;
+                let params_map = Self::unwrap_params_map(params)?;
 
-                let id = params_map
-                    .get("id")
-                    .ok_or(jsonrpc_core::Error::invalid_params(
-                        "`id` param not provided",
-                    ))?
-                    .as_str()
-                    .ok_or(jsonrpc_core::Error::invalid_params(
-                        "`id` is not a valid json string",
-                    ))?;
+                let id = Self::get_as_string("id", &params_map)?;
+                let path = Self::get_as_string("path", &params_map)?;
 
-                let path = params_map
-                    .get("file_path")
-                    .ok_or(jsonrpc_core::Error::invalid_params(
-                        "`file_path` param not provided",
-                    ))?
-                    .as_str()
-                    .ok_or(jsonrpc_core::Error::invalid_params(
-                        "`file_path` is not a valid json string",
-                    ))?;
-
-                // seems to lock here
                 match *CONTAINER.lock().unwrap() {
                     Some(ref mut container) => {
                         container.install_dna_from_file(PathBuf::from(path), id.to_string())
@@ -215,41 +216,11 @@ impl ContainerApiBuilder {
             });
 
         self.io.add_method("admin/instance/start", move |params| {
-            // this is not DRY! refactor before merge
-            let params_map = match params {
-                Params::Map(map) => Ok(map),
-                _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
-            }?;
+            let params_map = Self::unwrap_params_map(params)?;
 
-            let id = params_map
-                .get("id")
-                .ok_or(jsonrpc_core::Error::invalid_params(
-                    "`id` param not provided",
-                ))?
-                .as_str()
-                .ok_or(jsonrpc_core::Error::invalid_params(
-                    "`id` is not a valid json string",
-                ))?;
-
-            let dna_id = params_map
-                .get("dna_id")
-                .ok_or(jsonrpc_core::Error::invalid_params(
-                    "`dna_id` param not provided",
-                ))?
-                .as_str()
-                .ok_or(jsonrpc_core::Error::invalid_params(
-                    "`dna_id` is not a valid json string",
-                ))?;
-
-            let agent_id = params_map
-                .get("agent_id")
-                .ok_or(jsonrpc_core::Error::invalid_params(
-                    "`agent_id` param not provided",
-                ))?
-                .as_str()
-                .ok_or(jsonrpc_core::Error::invalid_params(
-                    "`agent_id` is not a valid json string",
-                ))?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let dna_id = Self::get_as_string("dna_id", &params_map)?;
+            let agent_id = Self::get_as_string("agent_id", &params_map)?;
 
             let new_instance = InstanceConfiguration {
                 id: id.to_string(),

@@ -10,7 +10,7 @@ use std::{
     sync::{mpsc::Receiver, Arc, RwLock},
 };
 
-use config::{InstanceConfiguration, StorageConfiguration};
+use config::{DnaConfiguration, InstanceConfiguration, StorageConfiguration};
 use container::CONTAINER;
 use container_admin::ContainerAdmin;
 use serde_json::map::Map;
@@ -234,6 +234,14 @@ impl ContainerApiBuilder {
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.uninstall_dna(&id))?;
             Ok(serde_json::Value::String("success".into()))
+        });
+
+        self.io.add_method("admin/dna/list", move |_params| {
+            let dnas = container_call!(|c| Ok(c.config.dnas.clone()) as Result<Vec<DnaConfiguration>, String>)?;
+            Ok(serde_json::Value::Array(dnas.iter()
+                .map(|dna| json!({"id": dna.id, "hash": dna.hash}))
+                .collect()
+            ))
         });
 
         self.io.add_method("admin/instance/add", move |params| {

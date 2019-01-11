@@ -7,7 +7,7 @@ use std::{path::PathBuf, sync::Arc};
 
 pub trait ContainerAdmin {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
-    fn uninstall_dna(&mut self, id: String) -> Result<(), HolochainError>;
+    fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_instance_and_start(
         &mut self,
         new_instance: InstanceConfiguration,
@@ -43,7 +43,33 @@ impl ContainerAdmin for Container {
         Ok(())
     }
 
-    fn uninstall_dna(&mut self, _id: String) -> Result<(), HolochainError> {
+    /// Removes the DNA given by id from the config.
+    /// Also removes all instances and their mentions from all interfaces to not render the config
+    /// invalid.
+    /// Then saves the config.
+    fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        new_config.dnas = new_config.dnas
+            .into_iter()
+            .filter(|dna| dna.id != *id)
+            .collect();
+
+        let instance_ids: Vec<String> = new_config.instances
+            .iter()
+            .filter(|instance| instance.dna != *id)
+            .map(|instance| instance.id.clone())
+            .collect();
+
+        for id in instance_ids.iter() {
+            self.remove_instance(id)?;
+        }
+
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+
+        println!("Uninstalled DNA \"{}\".", id);
+
         Ok(())
     }
 
@@ -237,7 +263,6 @@ pattern = ".*"
         assert_eq!(
             config_contents,
 r#"bridges = []
-interfaces = []
 
 [[agents]]
 id = "test-agent-1"
@@ -406,4 +431,64 @@ pattern = ".*"
 
     }
 
+
+    #[test]
+    /// Tests if the uninstalled DNA is gone from the config file
+    /// as well as the instances that use the DNA and their mentions are gone from the interfaces
+    /// (to not render the config invalid).
+    fn test_uninstall_dna() {
+        let mut container = create_test_container();
+        assert_eq!(
+            container.uninstall_dna(&String::from("test-dna")),
+            Ok(()),
+        );
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        assert_eq!(
+            config_contents,
+            r#"bridges = []
+
+[[agents]]
+id = "test-agent-1"
+key_file = "holo_tester.key"
+name = "Holo Tester 1"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+[[agents]]
+id = "test-agent-2"
+key_file = "holo_tester.key"
+name = "Holo Tester 2"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[interfaces.driver]
+port = 3000
+type = "websocket"
+
+[logger]
+type = ""
+[[logger.rules.rules]]
+color = "red"
+exclude = false
+pattern = "^err/"
+
+[[logger.rules.rules]]
+color = "white"
+exclude = false
+pattern = "^debug/dna"
+
+[[logger.rules.rules]]
+exclude = false
+pattern = ".*"
+"#
+        );
+
+    }
 }

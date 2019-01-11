@@ -146,6 +146,7 @@ _cmd_deploy_template: &_cmd_deploy_template
     file_glob: true
     file: cmd-$TRAVIS_TAG-$TARGET.tar.gz
     skip_cleanup: true
+    sudo: true
     on:
         tags: true
     name: $TRAVIS_TAG
@@ -169,6 +170,7 @@ _container_deploy_template: &_container_deploy_template
     file_glob: true
     file: container-$TRAVIS_TAG-$TARGET.tar.gz
     skip_cleanup: true
+    sudo: true
     on:
         tags: true
     name: $TRAVIS_TAG

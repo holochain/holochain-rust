@@ -67,7 +67,7 @@ pub fn mount_container_from_config(config: Configuration) {
 pub struct Container {
     instances: InstanceMap,
     pub (crate) config: Configuration,
-    config_path: PathBuf,
+    pub config_path: PathBuf,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     pub (crate) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,

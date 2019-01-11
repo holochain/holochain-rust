@@ -223,7 +223,7 @@ impl ContainerApiBuilder {
 
             match *CONTAINER.lock().unwrap() {
                 Some(ref mut container) => {
-                    container.add_instance(new_instance)
+                    container.add_instance_and_start(new_instance)
                 },
                 None => {
                     println!("Admin function called without a container mounted as singleton!");

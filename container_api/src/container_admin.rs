@@ -14,7 +14,7 @@ use std::{
 pub trait ContainerAdmin {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: String) -> Result<(), HolochainError>;
-    fn add_instance(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
+    fn add_instance_and_start(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -47,12 +47,13 @@ impl ContainerAdmin for Container {
         Ok(())
     }
 
-    fn add_instance(&mut self, instance: InstanceConfiguration) -> Result<(), HolochainError> {
+    fn add_instance_and_start(&mut self, instance: InstanceConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.instances.push(instance.clone());
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
+        self.load_config()?; // populate the instances
         self.start_all_instances() // TODO: create new function to start instance by id to call here
             .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
         println!("Started new instance of {} as \"{}\"", instance.dna, instance.id);
@@ -121,8 +122,7 @@ pattern = ".*"
             .to_string()
     }
 
-    #[test]
-    fn test_install_dna_from_file() {
+    fn create_test_container() -> Container {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
@@ -131,6 +131,13 @@ pattern = ".*"
         let mut tmp_config_path = PathBuf::new();
         tmp_config_path.push("tmp-test-container-config.toml");
         container.set_config_path(tmp_config_path.clone());
+        container
+    }
+
+    #[test]
+    fn test_install_dna_from_file() {
+
+        let mut container = create_test_container();
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
@@ -163,7 +170,7 @@ pattern = ".*"
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&tmp_config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents).expect("Could not read temp config file");
 
         assert_eq!(
@@ -212,5 +219,10 @@ exclude = false
 pattern = ".*"
 "#
         );
+    }
+
+    #[test]
+    fn test_add_instance_and_start() {
+
     }
 }

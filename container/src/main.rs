@@ -47,22 +47,18 @@ fn main() {
         Ok(()) => {
             let mut container_guard = CONTAINER.lock().unwrap();
             let mut container = container_guard.as_mut().expect("Container must be mounted");
-            if container.instances().len() > 0 {
-                println!(
-                    "Successfully loaded {} instance configurations",
-                    container.instances().len()
-                );
-                println!("Starting all of them...");
-                container
-                    .start_all_instances()
-                    .expect("Could not start instances!");
-                println!("Starting interfaces...");
-                container.start_all_interfaces();
-                println!("Done.");
-                loop {}
-            } else {
-                println!("No instance started, bailing...");
-            }
+            println!(
+                "Successfully loaded {} instance configurations",
+                container.instances().len()
+            );
+            println!("Starting all of them...");
+            container
+                .start_all_instances()
+                .expect("Could not start instances!");
+            println!("Starting interfaces...");
+            container.start_all_interfaces();
+            println!("Done.");
+            loop {}
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),
     };

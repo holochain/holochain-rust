@@ -33,9 +33,10 @@ use toml;
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
-    /// List of DNAs, for each a path to the DNA file. Required.
+    /// List of DNAs, for each a path to the DNA file. Optional.
+    #[serde(default)]
     pub dnas: Vec<DnaConfiguration>,
-    /// List of instances, includes references to an agent and a DNA. Required.
+    /// List of instances, includes references to an agent and a DNA. Optional.
     #[serde(default)]
     pub instances: Vec<InstanceConfiguration>,
     /// List of interfaces any UI can use to access zome functions. Optional.

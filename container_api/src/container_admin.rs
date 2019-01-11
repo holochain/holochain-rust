@@ -1,6 +1,6 @@
 use crate::{
     config::{DnaConfiguration, InstanceConfiguration},
-    container::Container,
+    container::{Container, notify},
 };
 use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
 use std::{path::PathBuf, sync::Arc};
@@ -39,7 +39,7 @@ impl ContainerAdmin for Container {
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
-        println!("Installed DNA from {} as \"{}\"", path_string, id);
+        notify(format!("Installed DNA from {} as \"{}\"", path_string, id));
         Ok(())
     }
 
@@ -68,7 +68,7 @@ impl ContainerAdmin for Container {
         self.config = new_config;
         self.save_config()?;
 
-        println!("Uninstalled DNA \"{}\".", id);
+        notify(format!("Uninstalled DNA \"{}\".", id));
 
         Ok(())
     }
@@ -85,10 +85,10 @@ impl ContainerAdmin for Container {
         self.load_config()?; // populate the instances
         self.start_all_instances() // TODO: create new function to start instance by id to call here
             .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
-        println!(
+        notify(format!(
             "Started new instance of {} as \"{}\"",
             instance.dna, instance.id
-        );
+        ));
         Ok(())
     }
 

@@ -3,7 +3,7 @@
 if [[ "$OSTYPE" == "linux-gnu" ]];
 then
  . `pwd`/scripts/install/ubuntu.sh
-elif [[ "$OSTYPE" == "darwin" ]];
+elif [[ "$OSTYPE" == darwin* ]];
 then
  . `pwd`/scripts/install/osx.sh
 else

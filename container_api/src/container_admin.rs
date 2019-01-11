@@ -9,10 +9,7 @@ use std::{path::PathBuf, sync::Arc};
 pub trait ContainerAdmin {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn add_instance_and_start(
-        &mut self,
-        new_instance: InstanceConfiguration,
-    ) -> Result<(), HolochainError>;
+    fn add_instance(&mut self, new_instance: InstanceConfiguration, ) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
     fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
@@ -84,7 +81,7 @@ impl ContainerAdmin for Container {
         Ok(())
     }
 
-    fn add_instance_and_start(
+    fn add_instance(
         &mut self,
         instance: InstanceConfiguration,
     ) -> Result<(), HolochainError> {
@@ -93,13 +90,6 @@ impl ContainerAdmin for Container {
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
-        self.load_config()?; // populate the instances
-        self.start_all_instances() // TODO: create new function to start instance by id to call here
-            .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
-        notify(format!(
-            "Started new instance of {} as \"{}\"",
-            instance.dna, instance.id
-        ));
         Ok(())
     }
 
@@ -358,7 +348,7 @@ pattern = ".*"
             .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"))
             .expect("Could not install DNA");
 
-        let add_result = container.add_instance_and_start(InstanceConfiguration {
+        let add_result = container.add_instance(InstanceConfiguration {
             id: String::from("new-instance"),
             dna: String::from("new-dna"),
             agent: String::from("test-agent-1"),

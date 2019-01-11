@@ -250,7 +250,7 @@ impl ContainerApiBuilder {
                 storage: StorageConfiguration::Memory, // TODO: don't actually use this. Have some idea of default store
             };
 
-            container_call!(|c| c.add_instance_and_start(new_instance))?;
+            container_call!(|c| c.add_instance(new_instance))?;
 
             Ok(serde_json::Value::String("success".into()))
         });

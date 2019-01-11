@@ -24,6 +24,19 @@ pub trait DispatchRpc {
     fn handler(self) -> IoHandler;
 }
 
+macro_rules! container_call {
+    ( |$container:ident| $call_expr:expr ) => {
+        match * CONTAINER.lock().unwrap() {
+            Some( ref mut $container) => {
+                $call_expr
+            }
+            None => Self::container_singleton_warning(),
+        }
+        .map_err( | e | jsonrpc_core::Error::invalid_params(e.to_string()))
+    }
+}
+
+
 /// ContainerApiBuilder creates IoHandlers that implement RPCs for exposure
 /// through interfaces or bridges.
 /// This includes zome function calls as well as admin functionality.
@@ -204,13 +217,7 @@ impl ContainerApiBuilder {
                 let id = Self::get_as_string("id", &params_map)?;
                 let path = Self::get_as_string("path", &params_map)?;
 
-                match *CONTAINER.lock().unwrap() {
-                    Some(ref mut container) => {
-                        container.install_dna_from_file(PathBuf::from(path), id.to_string())
-                    }
-                    None => Self::container_singleton_warning(),
-                }
-                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string()))?;
 
                 Ok(serde_json::Value::String("success".into()))
             });
@@ -229,11 +236,7 @@ impl ContainerApiBuilder {
                 storage: StorageConfiguration::Memory, // TODO: don't actually use this. Have some idea of default store
             };
 
-            match *CONTAINER.lock().unwrap() {
-                Some(ref mut container) => container.add_instance_and_start(new_instance),
-                None => Self::container_singleton_warning(),
-            }
-            .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+            container_call!(|c| c.add_instance_and_start(new_instance))?;
 
             Ok(serde_json::Value::String("success".into()))
         });

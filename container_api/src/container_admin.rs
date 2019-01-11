@@ -71,6 +71,12 @@ impl ContainerAdmin for Container {
         self.config = new_config;
         self.save_config()?;
 
+        for id in instance_ids.iter() {
+            self.stop_instance(id)
+                .map_err(|err| HolochainError::ErrorGeneric(err.to_string()))?;
+            notify(format!("Removed instance \"{}\".", id));
+        }
+
         notify(format!("Uninstalled DNA \"{}\".", id));
 
         Ok(())

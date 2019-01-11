@@ -40,7 +40,7 @@ pub type Value = Address;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default,PartialOrd,Ord)]
 pub struct EntityAttributeValue {
     entity: Entity,
     attribute: Attribute,
@@ -82,7 +82,7 @@ impl From<String> for Action {
 }
 
 pub fn create_key(action: Action) -> Result<HashString, HolochainError> {
-    let unix_time = Utc::now().timestamp();
+    let unix_time = Utc::now().timestamp_millis();
     let key = vec![unix_time.to_string(), action.to_string()].join("_");
     Ok(HashString::from(key))
 }
@@ -205,10 +205,18 @@ impl ExampleEntityAttributeValueStorageNonSync {
     }
 
     fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-        let hash = HashString::from("");
-        let key = vec![hash.to_string(), eav.address().to_string()].join("_");
-        self.storage.insert(HashString::from(key), eav.clone());
-        Ok(())
+
+        if self.fetch_eav(Some(eav.entity()),Some(eav.attribute()),Some(eav.value()))?.len() ==0 
+        {
+            
+             let key = create_key(Action::insert)?
+             self.storage.insert(key, eav.clone());
+             Ok(())
+        }
+        else
+        {
+           Ok(()) 
+        }
     }
 
     fn unthreadable_fetch_eav(

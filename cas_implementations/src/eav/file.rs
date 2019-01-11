@@ -121,20 +121,12 @@ impl EavFileStorage {
             action.to_string(),
         ]
         .join(&MAIN_SEPARATOR.to_string());
-        if self.fetch_eav(Some(eav.entity()),Some(eav.attribute()),Some(eav.value()))?.len() ==0 
-        {
              create_dir_all(path.clone())?;
              let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
              let full_path = vec![address_path.clone(), "txt".to_string()].join(&".".to_string());
              let mut f = File::create(full_path)?;
              writeln!(f, "{}", eav.content())?;
              Ok(())
-        }
-        else
-        {
-            //look into implementing delete and update options here
-            Ok(())
-        }
         
     }
 
@@ -196,6 +188,8 @@ impl EavFileStorage {
 
 impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+        if self.fetch_eav(Some(eav.entity()),Some(eav.attribute()),Some(eav.value()))?.len() ==0 
+        {
         let _guard = self.lock.write()?;
         create_dir_all(self.dir_path.clone())?;
         let key = (Utc::now().timestamp_millis(), Action::insert);
@@ -203,6 +197,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
         self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
             .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
             .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))
+        }
+        else
+        {
+            Ok(())
+        }
     }
 
     fn fetch_eav(

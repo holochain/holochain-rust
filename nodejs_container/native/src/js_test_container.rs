@@ -67,8 +67,12 @@ declare_types! {
             };
 
             result.or_else(|e| {
+                println!("Indeed an error: {:?}", e);
                 cx.throw_error(format!("unable to start container: {}", e))
-            }).map(|_| cx.boolean(true).upcast())
+            }).map(|_| {
+                println!("No error whatsoever");
+                cx.boolean(true).upcast()
+            })
         }
 
         // Stop the backing container and break the listening loop in the MainBackgroundTask

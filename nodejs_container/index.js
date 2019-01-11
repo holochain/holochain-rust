@@ -17,6 +17,10 @@ const promiser = (fulfill, reject) => (err, val) => {
 
 /////////////////////////////////////////////////////////////
 
+const defaultOpts = {
+    debugLog: false
+}
+
 const Config = {
     agent: name => ({ name }),
     dna: (path) => ({ path }),
@@ -26,7 +30,7 @@ const Config = {
         }
         return { agent, dna, name }
     },
-    container: (instances) => makeConfig(instances, {})
+    container: (instances, opts=defaultOpts) => makeConfig(instances, opts)
 }
 
 /////////////////////////////////////////////////////////////
@@ -84,16 +88,17 @@ Container.prototype.makeCaller = function (agentId, dnaPath) {
   }
 }
 
-Container.withInstances = function (instances) {
-    const config = makeConfig(instances, {})
+Container.withInstances = function (instances, opts=defaultOpts) {
+    const config = Config.container(instances, opts)
     return new Container(config)
 }
 
 /////////////////////////////////////////////////////////////
 
 class Scenario {
-    constructor(instances) {
+    constructor(instances, opts=defaultOpts) {
         this.instances = instances
+        this.opts = opts
     }
 
     static setTape(tape) {
@@ -116,7 +121,7 @@ class Scenario {
      *      })
      */
     run(fn) {
-        const container = Container.withInstances(this.instances)
+        const container = Container.withInstances(this.instances, this.opts)
         const started = container.start()
         if (!started) {
             console.error("Container not started!")

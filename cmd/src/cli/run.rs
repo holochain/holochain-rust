@@ -150,3 +150,37 @@ pub fn run(
 
     Ok(())
 }
+
+#[cfg(test)]
+// flagged as broken for:
+// 1. taking 60+ seconds
+//#[cfg(feature = "broken-tests")]
+mod tests {
+    use assert_cmd::prelude::*;
+    use std::process::Command;
+    use crate::cli::init::tests::gen_dir;
+    use std::env;
+
+    #[test]
+    fn test_run() {
+        let temp_dir = gen_dir();
+        let temp_dir_path = temp_dir.path();
+        let _temp_dir_path_buf = temp_dir_path.to_path_buf();
+
+        assert!(env::set_current_dir(&temp_dir_path).is_ok());
+
+        Command::main_binary()
+            .unwrap()
+            .args(&["init", "my_dna"])
+            .assert()
+            .success();
+
+        assert!(env::set_current_dir(&temp_dir_path.join("my_dna")).is_ok());
+
+        Command::main_binary()
+            .unwrap()
+            .args(&["run", "--package"])
+            .assert()
+            .success();
+    }
+}

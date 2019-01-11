@@ -91,7 +91,7 @@ enum Cli {
     #[structopt(
         name = "run",
         alias = "r",
-        about = "Starts a development container with an open websocket"
+        about = "Starts a development container with a websocket or http interface"
     )]
     Run {
         #[structopt(

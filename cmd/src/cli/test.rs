@@ -64,22 +64,7 @@ pub fn test(
 #[cfg(test)]
 #[cfg(feature = "broken-tests")]
 pub mod tests {
-    use super::*;
-    use crate::cli::package;
-    use assert_cmd::prelude::*;
-    use std::{env, process::Command};
-    use tempfile::{Builder, TempDir};
-
-    #[cfg(feature = "broken-tests")]
-    const HOLOCHAIN_TEST_PREFIX: &str = "org_holochain_test";
-
-    #[cfg(feature = "broken-tests")]
-    pub fn gen_dir() -> TempDir {
-        Builder::new()
-            .prefix(HOLOCHAIN_TEST_PREFIX)
-            .tempdir()
-            .unwrap()
-    }
+    use crate::cli::init::tests::gen_dir;
 
     #[test]
     // flagged as broken for:

@@ -294,16 +294,7 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 mod tests {
     use assert_cmd::prelude::*;
     use std::process::Command;
-    use tempfile::{Builder, TempDir};
-
-    const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
-
-    fn gen_dir() -> TempDir {
-        Builder::new()
-            .prefix(HOLOCHAIN_TEST_PREFIX)
-            .tempdir()
-            .unwrap()
-    }
+    use crate::cli::init::tests::gen_dir;
 
     #[test]
     fn package_and_unpack_isolated() {

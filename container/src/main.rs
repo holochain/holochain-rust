@@ -74,10 +74,11 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
         .map_err(|string| HolochainError::ConfigError(string))?;
     mount_container_from_config(config);
     let mut container_guard = CONTAINER.lock().unwrap();
-    container_guard
+    let container = container_guard
         .as_mut()
-        .expect("Container must be mounted")
-        .load_config()?;
+        .expect("Container must be mounted");
+    container.set_config_path(PathBuf::from(path));
+    container.load_config()?;
     Ok(())
 }
 

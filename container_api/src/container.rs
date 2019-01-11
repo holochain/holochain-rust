@@ -180,9 +180,9 @@ impl Container {
 
     /// Stop and clear all instances
     pub fn shutdown(&mut self) {
-        let _ = self.stop_all_instances().map_err(|error|
-            notify(format!("Error during shutdown: {}", error))
-        );
+        let _ = self
+            .stop_all_instances()
+            .map_err(|error| notify(format!("Error during shutdown: {}", error)));
         // @TODO: also stop all interfaces
         self.instances = HashMap::new();
     }

@@ -1,6 +1,6 @@
 [package]
 name = "holochain_container_api"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -28,6 +28,7 @@ holochain_net_ipc = { path = "../net_ipc" }
 maplit = "1.0.1"
 dirs = "1.0.4"
 lazy_static = "1.2.0"
+directories = "1.0"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

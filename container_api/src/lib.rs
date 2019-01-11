@@ -122,6 +122,7 @@ extern crate maplit;
 extern crate dirs;
 #[macro_use]
 extern crate lazy_static;
+extern crate directories;
 
 pub mod config;
 pub mod container;

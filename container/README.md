@@ -41,17 +41,29 @@ The container requires a configuration file to run, you can see a [sample here](
 
 You can put your configuration file in `~/.holochain/container_config.toml` or run `holochain_container` explicitly with the `-c` to specify where to find it.
 
+### Using real networking
+The container currently uses mock networking by default. To use real networking you have to install the [n3h networking component](https://github.com/holochain/n3h) and add a configuration block into the config file to tell the container where it can find n3h.  It should look something like this:
+
+```
+[network]
+n3h_path = "/home/eric/holochain/n3h"
+n3h_persistence_path = "/tmp"
+bootstrap_nodes = []
+```
+
 ## Configuration File Spec
 
 TBD (for now you just have infer from the example!)
 
 ## Testing HTTP interface using cURL
 
+Currently the container supports the `websocket` and `http` interfaces.
 Assuming the container http interface is running on port 4000 it can be tested by running:
 `curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":"0","method":"info/instances"}' http://localhost:4000`
 
+
 ## Contribute
-Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.
+Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](../CONTRIBUTING.md) for our general practices and protocols on participating in the community.
 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)

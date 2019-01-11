@@ -27,7 +27,7 @@ use std::{
     fs::File,
     io::prelude::*,
     path::PathBuf,
-    sync::{mpsc::SyncSender, Arc, Mutex, RwLock},
+    sync::{mpsc::{Sender, SyncSender, channel}, Arc, Mutex, RwLock},
     thread,
 };
 
@@ -72,7 +72,7 @@ pub struct Container {
     pub(crate) instances: InstanceMap,
     pub(crate) config: Configuration,
     pub config_path: PathBuf,
-    interface_threads: HashMap<String, InterfaceThreadHandle>,
+    interface_threads: HashMap<String, Sender<()>>,
     pub(crate) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
@@ -89,7 +89,6 @@ impl Drop for Container {
 }
 
 type SignalSender = SyncSender<Signal>;
-type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
 pub type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>>;
 
 // preparing for having container notifiers go to one of the log streams
@@ -143,6 +142,16 @@ impl Container {
             .collect()
     }
 
+    pub fn stop_all_interfaces(&mut self) {
+        for (id, kill_switch)  in self.interface_threads.iter() {
+            notify(format!("Stopping interface {}", id));
+            let send_result = kill_switch.send(());
+            if send_result.is_err() {
+                notify(format!("Error stopping interface: {}", send_result.err().unwrap()));
+            }
+        }
+    }
+
     pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
         self.config
             .interface_by_id(&id)
@@ -183,7 +192,7 @@ impl Container {
         let _ = self
             .stop_all_instances()
             .map_err(|error| notify(format!("Error during shutdown: {}", error)));
-        // @TODO: also stop all interfaces
+        self.stop_all_interfaces();
         self.instances = HashMap::new();
     }
 
@@ -429,20 +438,25 @@ impl Container {
     fn spawn_interface_thread(
         &self,
         interface_config: InterfaceConfiguration,
-    ) -> InterfaceThreadHandle {
+    ) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
         let log_sender = self.logger.get_sender();
-        thread::spawn(move || {
-            let iface = make_interface(&interface_config);
-            iface.run(dispatcher).map_err(|error| {
-                let message = format!(
-                    "err/container: Error running interface '{}': {}",
-                    interface_config.id, error
-                );
-                let _ = log_sender.send((String::from("container"), message));
-                error
+        let (tx, rx) = channel();
+        thread::Builder::new()
+            .name(format!("container-interface: {}", interface_config.id))
+            .spawn(move || {
+                let iface = make_interface(&interface_config);
+                iface.run(dispatcher, rx).map_err(|error| {
+                    let message = format!(
+                        "err/container: Error running interface '{}': {}",
+                        interface_config.id, error
+                    );
+                    let _ = log_sender.send((String::from("container"), message));
+                    error
+                })
             })
-        })
+            .expect("Could not spawn thread for interface");
+        tx
     }
 
     pub fn save_config(&self) -> Result<(), HolochainError> {

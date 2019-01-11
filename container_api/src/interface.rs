@@ -9,7 +9,7 @@ use serde_json;
 use std::{
     collections::HashMap,
     path::PathBuf,
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock, mpsc::Receiver},
 };
 
 use config::{InstanceConfiguration, StorageConfiguration};
@@ -272,7 +272,7 @@ impl ContainerApiBuilder {
 }
 
 pub trait Interface {
-    fn run(&self, handler: IoHandler) -> Result<(), String>;
+    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<(), String>;
 }
 
 #[cfg(test)]

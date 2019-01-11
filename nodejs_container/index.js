@@ -46,7 +46,7 @@ Container.prototype.stop = function () {
     return this._stopPromise
 }
 
-Container.prototype.callRaw = function (id, zome, trait, fn, params) {
+Container.prototype.call = function (id, zome, trait, fn, params) {
     const stringInput = JSON.stringify(params);
     const rawResult = this._callRaw(id, zome, trait, fn, stringInput);
     let result;
@@ -59,16 +59,11 @@ Container.prototype.callRaw = function (id, zome, trait, fn, params) {
     return result;
 }
 
-Container.prototype.call = function (...args) {
-    this.register_callback(() => console.log("Another call well done"))
-    return this.callRaw(...args)
-}
-
 Container.prototype.callWithPromise = function (...args) {
     const promise = new Promise((fulfill, reject) => {
         this.register_callback(() => fulfill(result))
     })
-    const result = this.callRaw(...args)
+    const result = this.call(...args)
     return [result, promise]
 }
 
@@ -107,11 +102,13 @@ class Scenario {
 
     /**
      * Run a test case, specified by a curried function:
-     * stop => (...instances) => { body }
-     * where stop is a function that ends the test and shuts down the running Container
-     * and the ...instances are the instances specified in the config
+     * stop => (instances) => { body }
+     * where `stop` is a function that ends the test and shuts down the running Container
+     * and the `instances` is an Object of instances specified in the config, keyed by "name"
+     * (name is the optional third parameter of `Config.instance`)
+     *
      * e.g.:
-     *      scenario.run(stop => async (alice, bob, carol) => {
+     *      scenario.run(stop => async ({alice, bob, carol}) => {
      *          const resultAlice = await alice.callSync(...)
      *          const resultBob = await bob.callSync(...)
      *          assert(resultAlice === resultBob)
@@ -120,7 +117,10 @@ class Scenario {
      */
     run(fn) {
         const container = Container.withInstances(this.instances)
-        container.start()
+        const started = container.start()
+        if (!started) {
+            console.error("Container not started!")
+        }
         const callers = {}
         this.instances.forEach(instance => {
             const id = makeInstanceId(instance.agent.name, instance.dna.path)

@@ -58,12 +58,13 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
         let mut dna_data = instance.dna;
         let agent_config = agent_configs.entry(agent_name.clone()).or_insert_with(|| {
             let agent_key = AgentId::generate_fake(&agent_name);
-            AgentConfiguration {
+            let config = AgentConfiguration {
                 id: agent_name.clone(),
                 name: agent_name.clone(),
                 public_address: agent_key.key,
                 key_file: format!("fake/key/{}", agent_name),
-            }
+            };
+            config
         });
         let dna_config = dna_configs
             .entry(dna_data.path.clone())

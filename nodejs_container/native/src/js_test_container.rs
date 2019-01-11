@@ -49,7 +49,7 @@ declare_types! {
             let (signal_tx, signal_rx) = signal_channel();
             let (sender_tx, sender_rx) = sync_channel(1);
 
-            let start_result: Result<(), String> = {
+            let result = {
                 let guard = cx.lock();
                 let tc = &mut *this.borrow_mut(&guard);
                 tc.sender_tx = Some(sender_tx);
@@ -57,20 +57,18 @@ declare_types! {
                     let mut is_running = tc.is_running.lock().unwrap();
                     *is_running = true;
                 }
-                let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone());
-                background_task.schedule(js_callback);
-                tc.is_started = true;
                 tc.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
-                    tc.container.start_all_instances().map_err(|e| e.to_string())
+                    tc.container.start_all_instances().map_err(|e| e.to_string()).map(|_| {
+                        let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone());
+                        background_task.schedule(js_callback);
+                        tc.is_started = true;
+                    })
                 })
             };
 
-            start_result.or_else(|e| {
-                let error_string = cx.string(format!("unable to start container: {}", e));
-                cx.throw(error_string)
-            })?;
-
-            Ok(cx.undefined().upcast())
+            result.or_else(|e| {
+                cx.throw_error(format!("unable to start container: {}", e))
+            }).map(|_| cx.boolean(true).upcast())
         }
 
         // Stop the backing container and break the listening loop in the MainBackgroundTask
@@ -171,7 +169,6 @@ declare_types! {
                 if !tc.is_started {
                     panic!("TestContainer: cannot use agent_id() before start()");
                 }
-
                 let instance = tc.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id))
                     .read().unwrap();

@@ -17,6 +17,7 @@ pub mod api_serialization;
 pub mod macros;
 pub mod memory_allocation;
 pub mod memory_serialization;
+pub mod bits_n_pieces;
 
 pub fn wasm_target_dir(test_path: &str, wasm_path: &str) -> String {
     match std::env::var("HC_TARGET_PREFIX") {

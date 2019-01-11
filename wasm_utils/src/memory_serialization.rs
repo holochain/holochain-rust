@@ -1,5 +1,5 @@
 use crate::memory_allocation::{
-    decode_encoded_allocation, SinglePageAllocation, SinglePageStack, U16_MAX,
+    decode_encoded_allocation, SinglePageAllocation, SinglePageStack,
 };
 use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeErrorCode, RibosomeReturnCode},
@@ -8,6 +8,7 @@ use holochain_core_types::{
 use serde::Deserialize;
 use serde_json;
 use std::{convert::TryInto, ffi::CStr, os::raw::c_char, slice};
+use bits_n_pieces::U16_MAX;
 
 //-------------------------------------------------------------------------------------------------
 // Raw

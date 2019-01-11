@@ -31,9 +31,7 @@ pub struct CapTokenGrant {
 
 impl CapTokenGrant {
     fn new(assignees: Option<Vec<Address>>) -> Self {
-        CapTokenGrant {
-            assignees: assignees,
-        }
+        CapTokenGrant { assignees }
     }
 
     pub fn create(

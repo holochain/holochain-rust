@@ -64,7 +64,7 @@ impl CapabilityCall {
         CapabilityCall {
             cap_name: name,
             cap_token: token,
-            caller: caller,
+            caller,
             signature: CallSignature {}, // FIXME
         }
     }

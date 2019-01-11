@@ -179,11 +179,12 @@ impl Container {
     }
 
     /// Stop and clear all instances
-    pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
-        self.stop_all_instances()?;
+    pub fn shutdown(&mut self) {
+        let _ = self.stop_all_instances().map_err(|error|
+            notify(format!("Error during shutdown: {}", error))
+        );
         // @TODO: also stop all interfaces
         self.instances = HashMap::new();
-        Ok(())
     }
 
     pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
@@ -283,8 +284,7 @@ impl Container {
         }
 
         let config = self.config.clone();
-        self.shutdown().map_err(|e| e.to_string())?;
-        self.instances = HashMap::new();
+        self.shutdown();
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self

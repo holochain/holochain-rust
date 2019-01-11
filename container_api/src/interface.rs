@@ -1,6 +1,6 @@
 use holochain_core::state::State;
 use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityCall, error::HolochainError,
+    cas::content::Address, dna::capabilities::CapabilityCall,
 };
 use Holochain;
 
@@ -29,10 +29,27 @@ macro_rules! container_call {
         match * CONTAINER.lock().unwrap() {
             Some( ref mut $container) => {
                 $call_expr
+                    .map_err( | e | {
+                        let mut new = jsonrpc_core::Error::internal_error();
+                        new.message = e.to_string();
+                        new
+                    })
             }
-            None => Self::container_singleton_warning(),
+            None => {
+                println!("Admin container function called without a container mounted as singleton!");
+                // If interfaces are supposed to work, the container needs to be mounted to a static place
+                // with container_api::container::mount_container_from_config(config: Configuration).
+                // There are cases in which we don't want to treat the container as a singleton such as
+                // holochain_nodejs and tests in particular. In those cases, calling admin functions via
+                // interfaces (websockt/http) won't work, but also we don't need that.
+                let mut error = jsonrpc_core::Error::internal_error();
+                error.message = String::from(
+                    "Admin container function called without a container mounted as singleton!",
+                );
+                Err(error)
+            },
         }
-        .map_err( | e | jsonrpc_core::Error::invalid_params(e.to_string()))
+
     }
 }
 
@@ -176,18 +193,6 @@ impl ContainerApiBuilder {
         self
     }
 
-    fn container_singleton_warning() -> Result<(), HolochainError> {
-        println!("Admin container function called without a container mounted as singleton!");
-        // If interfaces are supposed to work, the container needs to be mounted to a static place
-        // with container_api::container::mount_container_from_config(config: Configuration).
-        // There are cases in which we don't want to treat the container as a singleton such as
-        // holochain_nodejs and tests in particular. In those cases, calling admin functions via
-        // interfaces (websockt/http) won't work, but also we don't need that.
-        Err(HolochainError::ErrorGeneric(String::from(
-            "Admin container function called without a container mounted as singleton!",
-        )))
-    }
-
     fn unwrap_params_map(params: Params) -> Result<Map<String, Value>, jsonrpc_core::Error> {
         match params {
             Params::Map(map) => Ok(map),
@@ -222,7 +227,15 @@ impl ContainerApiBuilder {
                 Ok(serde_json::Value::String("success".into()))
             });
 
-        self.io.add_method("admin/instance/start", move |params| {
+        self.io
+            .add_method("admin/dna/uninstall", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                container_call!(|c| c.uninstall_dna(&id))?;
+                Ok(serde_json::Value::String("success".into()))
+            });
+
+        self.io.add_method("admin/instance/add", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
 
             let id = Self::get_as_string("id", &params_map)?;
@@ -238,6 +251,27 @@ impl ContainerApiBuilder {
 
             container_call!(|c| c.add_instance_and_start(new_instance))?;
 
+            Ok(serde_json::Value::String("success".into()))
+        });
+
+        self.io.add_method("admin/instance/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.remove_instance(&id))?;
+            Ok(serde_json::Value::String("success".into()))
+        });
+
+        self.io.add_method("admin/instance/start", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.start_instance(&id))?;
+            Ok(serde_json::Value::String("success".into()))
+        });
+
+        self.io.add_method("admin/instance/stop", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.stop_instance(&id))?;
             Ok(serde_json::Value::String("success".into()))
         });
 

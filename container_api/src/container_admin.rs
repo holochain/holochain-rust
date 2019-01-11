@@ -59,12 +59,12 @@ impl ContainerAdmin for Container {
 
         let instance_ids: Vec<String> = new_config.instances
             .iter()
-            .filter(|instance| instance.dna != *id)
+            .filter(|instance| instance.dna == *id)
             .map(|instance| instance.id.clone())
             .collect();
 
         for id in instance_ids.iter() {
-            self.remove_instance(id)?;
+            new_config = new_config.save_remove_instance(id);
         }
 
         new_config.check_consistency()?;
@@ -102,21 +102,7 @@ impl ContainerAdmin for Container {
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        new_config.instances = new_config.instances
-            .into_iter()
-            .filter(|instance| instance.id != *id)
-            .collect();
-
-        new_config.interfaces = new_config.interfaces
-            .into_iter()
-            .map(|mut interface| {
-                interface.instances = interface.instances
-                    .into_iter()
-                    .filter(|instance| instance.id != *id)
-                    .collect();
-                interface
-            })
-            .collect();
+        new_config = new_config.save_remove_instance(id);
 
         new_config.check_consistency()?;
         self.config = new_config;

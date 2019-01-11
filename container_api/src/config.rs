@@ -219,6 +219,28 @@ impl Configuration {
             .cloned()
             .collect()
     }
+
+    /// Removes the instance given by id and all mentions of it in other elements so
+    /// that the config is guaranteed to be valid afterwards if it was before.
+    pub fn save_remove_instance(mut self, id: &String) -> Self {
+        self.instances = self.instances
+            .into_iter()
+            .filter(|instance| instance.id != *id)
+            .collect();
+
+        self.interfaces = self.interfaces
+            .into_iter()
+            .map(|mut interface| {
+                interface.instances = interface.instances
+                    .into_iter()
+                    .filter(|instance| instance.id != *id)
+                    .collect();
+                interface
+            })
+            .collect();
+
+        self
+    }
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file

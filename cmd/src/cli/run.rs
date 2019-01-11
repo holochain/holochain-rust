@@ -1,7 +1,11 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
-use holochain_container_api::{config::*, container::{CONTAINER, mount_container_from_config}, logger::LogRules};
+use holochain_container_api::{
+    config::*,
+    container::{mount_container_from_config, CONTAINER},
+    logger::LogRules,
+};
 use holochain_core_types::agent::AgentId;
 use std::{env, fs};
 

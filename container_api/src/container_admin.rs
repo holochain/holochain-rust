@@ -1,15 +1,6 @@
-use crate::{
-    config::DnaConfiguration,
-    container::Container,
-};
-use holochain_core_types::{
-    cas::content::AddressableContent,
-    error::HolochainError
-};
-use std::{
-    path::PathBuf,
-    sync::Arc,
-};
+use crate::{config::DnaConfiguration, container::Container};
+use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
+use std::{path::PathBuf, sync::Arc};
 
 pub trait ContainerAdmin {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
@@ -18,16 +9,17 @@ pub trait ContainerAdmin {
 
 impl ContainerAdmin for Container {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError> {
-        let path_string = path.to_str().ok_or(HolochainError::ConfigError("invalid path".into()))?;
-        let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&path_string.into()).map_err(
-            |e| {
+        let path_string = path
+            .to_str()
+            .ok_or(HolochainError::ConfigError("invalid path".into()))?;
+        let dna =
+            Arc::get_mut(&mut self.dna_loader).unwrap()(&path_string.into()).map_err(|e| {
                 HolochainError::ConfigError(format!(
                     "Could not load DNA file \"{}\", Error: {}",
                     path_string,
                     e.to_string()
                 ))
-            },
-        )?;
+            })?;
 
         let new_dna = DnaConfiguration {
             id: id.clone(),
@@ -48,19 +40,18 @@ impl ContainerAdmin for Container {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::config::{Configuration, load_configuration};
-    use crate::container::{DnaLoader, tests::example_dna_string};
-    use holochain_core_types::{dna::Dna, json::{JsonString}};
-    use std::{
-        convert::TryFrom,
-        fs::File,
-        io::Read,
+    use crate::{
+        config::{load_configuration, Configuration},
+        container::{tests::example_dna_string, DnaLoader},
     };
+    use holochain_core_types::{dna::Dna, json::JsonString};
+    use std::{convert::TryFrom, fs::File, io::Read};
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader = Box::new(|_: &String| {
-            Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
-        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>;
+        let loader =
+            Box::new(
+                |_: &String| Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap()),
+            ) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
@@ -125,12 +116,10 @@ pattern = ".*"
             Ok(()),
         );
 
-        let new_dna = Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
+        let new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
 
-        assert_eq!(
-            container.config().dnas.len(),
-            2,
-        );
+        assert_eq!(container.config().dnas.len(), 2,);
         assert_eq!(
             container.config().dnas,
             vec![
@@ -149,7 +138,8 @@ pattern = ".*"
 
         let mut config_contents = String::new();
         let mut file = File::open(&tmp_config_path).expect("Could not open temp config file");
-        file.read_to_string(&mut config_contents).expect("Could not read temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
 
         assert_eq!(
             config_contents,

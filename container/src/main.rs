@@ -21,7 +21,7 @@ extern crate structopt;
 
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::{CONTAINER, mount_container_from_config},
+    container::{mount_container_from_config, CONTAINER},
 };
 use holochain_core_types::error::HolochainError;
 use std::{fs::File, io::prelude::*, path::PathBuf};
@@ -74,7 +74,10 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
         .map_err(|string| HolochainError::ConfigError(string))?;
     mount_container_from_config(config);
     let mut container_guard = CONTAINER.lock().unwrap();
-    container_guard.as_mut().expect("Container must be mounted").load_config()?;
+    container_guard
+        .as_mut()
+        .expect("Container must be mounted")
+        .load_config()?;
     Ok(())
 }
 

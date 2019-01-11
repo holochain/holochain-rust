@@ -1,7 +1,7 @@
 use crate::{
     config::{
-        Configuration, InterfaceConfiguration, InterfaceDriver, NetworkConfig, StorageConfiguration,
-        serialize_configuration,
+        serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
+        NetworkConfig, StorageConfiguration,
     },
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
@@ -26,9 +26,9 @@ use std::{
     convert::TryFrom,
     fs::File,
     io::prelude::*,
+    path::PathBuf,
     sync::{mpsc::SyncSender, Arc, Mutex, RwLock},
     thread,
-    path::PathBuf,
 };
 
 use holochain_net::p2p_config::P2pConfig;
@@ -66,10 +66,10 @@ pub fn mount_container_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
     instances: InstanceMap,
-    pub (crate) config: Configuration,
+    pub(crate) config: Configuration,
     config_path: PathBuf,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
-    pub (crate) dna_loader: DnaLoader,
+    pub(crate) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<JsonString>,
@@ -97,7 +97,8 @@ impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub(crate) fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
-        let config_path = dirs::home_dir().expect("No home dir defined. Don't know where to store config file")
+        let config_path = dirs::home_dir()
+            .expect("No home dir defined. Don't know where to store config file")
             .join(std::path::PathBuf::from(".holochain/container-config.toml"));
 
         Container {
@@ -415,7 +416,7 @@ impl Container {
             .with_instance_configs(self.config.instances.clone());
 
         if interface_config.admin {
-            container_api_builder= container_api_builder.with_admin_dna_functions();
+            container_api_builder = container_api_builder.with_admin_dna_functions();
         }
 
         container_api_builder.spawn()
@@ -482,10 +483,12 @@ pub mod tests {
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_wasm_utils::wasm_target_dir;
-    use std::{fs::File, io::Write};
+    use std::{
+        fs::{File, OpenOptions},
+        io::Write,
+    };
     use tempfile::tempdir;
     use test_utils::*;
-    use std::fs::OpenOptions;
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader = Box::new(|path: &String| {
@@ -692,11 +695,17 @@ pub mod tests {
 
         let mut file = OpenOptions::new()
             .read(true)
-            .open(&container.config_path).expect("Could not open config file");
-        file.read_to_string(&mut toml).expect("Could not read config file");
+            .open(&container.config_path)
+            .expect("Could not open config file");
+        file.read_to_string(&mut toml)
+            .expect("Could not read config file");
 
-        let restored_config = load_configuration::<Configuration>(&toml).expect("could not load config");
-        assert_eq!(serialize_configuration(&container.config), serialize_configuration(&restored_config))
+        let restored_config =
+            load_configuration::<Configuration>(&toml).expect("could not load config");
+        assert_eq!(
+            serialize_configuration(&container.config),
+            serialize_configuration(&restored_config)
+        )
     }
 
     #[test]

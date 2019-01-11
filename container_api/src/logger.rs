@@ -116,7 +116,7 @@ static ID_COLORS: &'static [&str] = &["green", "yellow", "blue", "magenta", "cya
 
 // TODO this is actually silly and we should allocate colors to IDs so they aren't likely to collide
 fn pick_color(text: &str) -> &str {
-    let mut total : u16 = 0;
+    let mut total: u16 = 0;
     for b in text.to_string().into_bytes() {
         total += b as u16;
     }

@@ -1,8 +1,10 @@
 use holochain_core::state::State;
-use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall, error::HolochainError};
+use holochain_core_types::{
+    cas::content::Address, dna::capabilities::CapabilityCall, error::HolochainError,
+};
 use Holochain;
 
-use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value, types::params::Params};
+use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use serde_json;
 use std::{
     collections::HashMap,
@@ -161,36 +163,50 @@ impl ContainerApiBuilder {
     }
 
     pub fn with_admin_dna_functions(mut self) -> Self {
-        self.io.add_method("admin/dna/install_from_file", move |params| {
-            let params_map = match params {
-                Params::Map(map) => Ok(map),
-                _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
-            }?;
+        self.io
+            .add_method("admin/dna/install_from_file", move |params| {
+                let params_map = match params {
+                    Params::Map(map) => Ok(map),
+                    _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
+                }?;
 
-            let id = params_map.get("id")
-                .ok_or(jsonrpc_core::Error::invalid_params("`id` param not provided"))?
-                .as_str()
-                .ok_or(jsonrpc_core::Error::invalid_params("`id` is not a valid json string"))?;
+                let id = params_map
+                    .get("id")
+                    .ok_or(jsonrpc_core::Error::invalid_params(
+                        "`id` param not provided",
+                    ))?
+                    .as_str()
+                    .ok_or(jsonrpc_core::Error::invalid_params(
+                        "`id` is not a valid json string",
+                    ))?;
 
-            let path = params_map.get("file_path")
-                .ok_or(jsonrpc_core::Error::invalid_params("`file_path` param not provided"))?
-                .as_str()
-                .ok_or(jsonrpc_core::Error::invalid_params("`file_path` is not a valid json string"))?;
+                let path = params_map
+                    .get("file_path")
+                    .ok_or(jsonrpc_core::Error::invalid_params(
+                        "`file_path` param not provided",
+                    ))?
+                    .as_str()
+                    .ok_or(jsonrpc_core::Error::invalid_params(
+                        "`file_path` is not a valid json string",
+                    ))?;
 
-            // seems to lock here 
-            match *CONTAINER.lock().unwrap() {
-                Some(ref mut container) => {
-                    container.install_dna_from_file(PathBuf::from(path), id.to_string())
-                },
-                None => {
-                    println!("Admin function called without a container mounted as singleton!");
-                    // This should actually never happen!
-                    Err(HolochainError::ErrorGeneric(String::from("Admin function called without a container mounted as singleton!")))
+                // seems to lock here
+                match *CONTAINER.lock().unwrap() {
+                    Some(ref mut container) => {
+                        container.install_dna_from_file(PathBuf::from(path), id.to_string())
+                    }
+                    None => {
+                        println!("Admin function called without a container mounted as singleton!");
+                        // This should actually never happen!
+                        Err(HolochainError::ErrorGeneric(String::from(
+                            "Admin function called without a container mounted as singleton!",
+                        )))
+                    }
                 }
-            }.map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
-            Ok(serde_json::Value::String("success".into()))
-        });
+                Ok(serde_json::Value::String("success".into()))
+            });
         self
     }
 }

@@ -168,14 +168,8 @@ pattern = ".*"
         );
 
         let mut config_contents = String::new();
-<<<<<<< HEAD
-        let mut file = File::open(&tmp_config_path).expect("Could not open temp config file");
-        file.read_to_string(&mut config_contents)
-            .expect("Could not read temp config file");
-=======
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents).expect("Could not read temp config file");
->>>>>>> 1328b6cc1ad6282eaa356182f17ec0d2f10bc35c
 
         assert_eq!(
             config_contents,

@@ -3,51 +3,137 @@ use crate::{error::HolochainError, json::JsonString};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
 
+pub struct RibosomeAllocation32(u32)
+pub struct RibosomeAllocation64(u64)
+
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
 /// @see SinglePageAllocation
 #[repr(u32)]
 #[derive(Clone, Debug, PartialEq)]
-pub enum RibosomeReturnCode {
+pub enum RibosomeReturnCode32 {
     Success,
-    Failure(RibosomeErrorCode),
+    Allocation(RibosomeAllocation32),
+    Failure(RibosomeErrorCode32),
 }
 
-impl From<RibosomeReturnCode> for i32 {
+#[repr(u64)]
+#[derive(Clone, Debug, PartialEq)]
+pub enum RibosomeReturnCode64 {
+    Success,
+    Allocation(RibosomeAllocation64),
+    Failure(RibosomeErrorCode64),
+}
+
+impl From<u32> for RibosomeReturnCode32 {
+    fn from(i: u32) -> Self {
+        if (i == 0) {
+            Success
+        }
+        else {
+            let (offset, length) = split_u32(i);
+            if (length == 0) {
+                Failure(RibosomeErrorCode32::from_offset(offset)
+            }
+            else {
+                Allocation(i)
+            }
+        }
+    }
+}
+
+impl From<u64> for RibosomeReturnCode64 {
+    fn from(i: u64) -> Self {
+        if (i == 0) {
+            Success
+        }
+        else {
+            let (offset, length) = split_u64(i);
+            if (length == 0) {
+                Failure(RibosomeErrorCode64::from_offset(offset)
+            }
+            else {
+                Allocation(i)
+            }
+        }
+    }
+}
+
+impl From<RibosomeReturnCode32> for i32 {
     fn from(ribosome_return_code: RibosomeReturnCode) -> i32 {
         match ribosome_return_code {
             RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Allocation(code) => code as i32,
             RibosomeReturnCode::Failure(code) => code as i32,
         }
     }
 }
 
-impl From<RibosomeReturnCode> for u32 {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> u32 {
+impl From<RibosomeReturnCode64> for i64 {
+    fn from(ribosome_return_code: RibosomeReturnCode64) -> i64 {
         match ribosome_return_code {
             RibosomeReturnCode::Success => 0,
-            RibosomeReturnCode::Failure(code) => code as i32 as u32,
+            RibosomeReturnCode::Allocation(code) => code as i64,
+            RibosomeReturnCode::Failure(code) => code as i364,
         }
     }
 }
 
-impl ToString for RibosomeReturnCode {
+impl From<RibosomeReturnCode32> for u32 {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> u32 {
+        match ribosome_return_code {
+            RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Allocation(code) => code,
+            RibosomeReturnCode::Failure(code) => code,
+        }
+    }
+}
+
+impl From<RibosomeReturnCode64> for u64 {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> u64 {
+        match ribosome_return_code {
+            RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Allocation(code) => code,
+            RibosomeReturnCode::Failure(code) => code,
+        }
+    }
+}
+
+impl ToString for RibosomeReturnCode32 {
     fn to_string(&self) -> String {
         match self {
             Success => "Success".to_string(),
+            Allocation(code) => code.to_string(),
             Failure(code) => code.to_string(),
         }
     }
 }
 
-impl FromStr for RibosomeReturnCode {
+impl ToString for RibosomeReturnCode64 {
+    fn to_string(&self) -> String {
+        match self {
+            Success => "Success".to_string(),
+            Allocation(code) => code.to_string(),
+            Failure(code) => code.to_string(),
+        }
+    }
+}
+
+impl FromStr for RibosomeReturnCode32 {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.as_ref() {
-            "Success" => RibosomeReturnCode::Success,
-            _ => RibosomeReturnCode::Failure(s.parse()?),
-        })
+        let i: u32 = s.parse?;
+        Self::from(i)
+    }
+}
+
+impl FromStr for RibosomeReturnCode64 {
+    type Err = HolochainError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let i: u64 = s.parse?;
+        Ok(Self::from(i))
     }
 }
 
@@ -82,7 +168,7 @@ impl RibosomeReturnCode {
 #[repr(u32)]
 #[derive(Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
 #[rustfmt::skip]
-pub enum RibosomeErrorCode {
+pub enum RibosomeErrorCode32 {
     Unspecified                     = 1 << 16,
     ArgumentDeserializationFailed   = 2 << 16,
     OutOfMemory                     = 3 << 16,
@@ -96,7 +182,7 @@ pub enum RibosomeErrorCode {
 }
 
 #[rustfmt::skip]
-impl RibosomeErrorCode {
+impl RibosomeErrorCode32 {
     pub fn as_str(&self) -> &str {
         match self {
             Unspecified                     => "Unspecified",
@@ -113,19 +199,19 @@ impl RibosomeErrorCode {
     }
 }
 
-impl ToString for RibosomeErrorCode {
+impl ToString for RibosomeErrorCode32 {
     fn to_string(&self) -> String {
         self.as_str().to_string()
     }
 }
 
-impl From<RibosomeErrorCode> for String {
+impl From<RibosomeErrorCode32> for String {
     fn from(ribosome_error_code: RibosomeErrorCode) -> Self {
         ribosome_error_code.to_string()
     }
 }
 
-impl RibosomeErrorCode {
+impl RibosomeErrorCode32 {
     pub fn from_offset(offset: u16) -> Self {
         match offset {
             0 => unreachable!(),
@@ -152,7 +238,7 @@ impl RibosomeErrorCode {
 
 // @TODO review this serialization, can it be an i32 instead of a full string?
 // @see https://github.com/holochain/holochain-rust/issues/591
-impl Serialize for RibosomeErrorCode {
+impl Serialize for RibosomeErrorCode32 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -161,7 +247,7 @@ impl Serialize for RibosomeErrorCode {
     }
 }
 
-impl<'de> Deserialize<'de> for RibosomeErrorCode {
+impl<'de> Deserialize<'de> for RibosomeErrorCode32 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -171,7 +257,7 @@ impl<'de> Deserialize<'de> for RibosomeErrorCode {
     }
 }
 
-impl FromStr for RibosomeErrorCode {
+impl FromStr for RibosomeErrorCode32 {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

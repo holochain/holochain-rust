@@ -1,44 +1,48 @@
+/// bits
+/// pieces of bits
+/// bits n pieces
+
 pub const U16_MAX: u32 = u16::max_value() as u32;
 pub const U32_MAX: u64 = u32::max_value() as u64;
 
 /// u16 high bits from u32
-pub fn u32_high_bits(i: u32) -> u16 {
+pub fn high_u32(i: u32) -> u16 {
     (i >> 16) as u16
 }
 
 /// u32 high bits from u64
-pub fn u64_high_bits(i: u64) -> u32 {
+pub fn high_u64(i: u64) -> u32 {
     (i >> 32) as u32
 }
 
 /// u16 low bits from u32
-pub fn u32_low_bits(i: u32) -> u16 {
+pub fn low_u32(i: u32) -> u16 {
     // lossy cast
     (i as u16)
 }
 
-pub fn u64_low_bits(i: u64) -> u32 {
+pub fn low_u64(i: u64) -> u32 {
     // lossy cast
     (i as u32)
 }
 
 /// u32 as u16 (high, low) tuple
-pub fn u32_split_bits(i: u32) -> (u16, u16) {
+pub fn split_u32(i: u32) -> (u16, u16) {
     (u32_high_bits(i), u32_low_bits(i))
 }
 
 /// u64 as u32 (high, low) tuple
-pub fn u64_split_bits(i: u64) -> (u32, u32) {
+pub fn split_u64(i: u64) -> (u32, u32) {
     (u64_high_bits(i), u64_low_bits(i))
 }
 
 /// u16 (high, low) tuple into u32
-pub fn u32_merge_bits(high: u16, low: u16) -> u32 {
+pub fn merge_u32(high: u16, low: u16) -> u32 {
     (u32::from(high) << 16) | u32::from(low)
 }
 
 /// u32 (high, low) tuple into u64
-pub fn u64_merge_bits(high: u32, low: u32) -> u64 {
+pub fn merge_u64(high: u32, low: u32) -> u64 {
     (u64::from(high) << 32) | u64::from(low)
 }
 

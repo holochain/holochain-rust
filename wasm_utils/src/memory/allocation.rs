@@ -3,6 +3,47 @@ use bits_n_pieces::u32_split_bits;
 use bits_n_pieces::U16_MAX;
 use bits_n_pieces::u32_merge_bits;
 
+pub struct EncodedAllocation32(u32)
+
+pub struct EncodedAllocation64(u64)
+
+pub struct Allocation32 {
+    offset: u16,
+    length: u16,
+}
+
+impl Allocation32 {
+    pub fn new(offset: u16, length: u16) -> Result<Self, RibosomeErrorCode> {
+        if (u32::from(offset) + u32::from(length)) > U16_MAX {
+            Err(RibosomeErrorCode::OutOfMemory)
+        } else if (offset + length) == 0 {
+            Err(RibosomeErrorCode::ZeroSizedAllocation)
+        } else if length == 0 {
+            Err(RibosomeErrorCode::NotAnAllocation)
+        } else {
+            Ok(Self { offset, length })
+        }
+    }
+}
+
+impl TryFrom<RibosomeReturnCode32> for Allocation32 {
+    type Error = RibosomeReturnCode32;
+    fn try_from(return_code: RibosomeReturnCode32) -> Result<Self, Self::Error> {
+        let (offset, length) = split_u32(u32::from(return_code));
+        match return_code {
+            Allocation::(_) => {
+                Ok(Self { offset, length })
+            },
+            _ => Err(RibosomeReturnCode32::from_offset(offset),
+        }
+    }
+}
+
+pub struct Allocation64 {
+
+}
+
+
 //--------------------------------------------------------------------------------------------------
 // Helpers
 //--------------------------------------------------------------------------------------------------
@@ -10,13 +51,7 @@ use bits_n_pieces::u32_merge_bits;
 pub fn decode_encoded_allocation(
     encoded_allocation: u32,
 ) -> Result<SinglePageAllocation, RibosomeReturnCode> {
-    let (offset, length) = u32_split_bits(encoded_allocation);
-    if length == 0 {
-        // zero length allocation = RibosomeReturnCode
-        Err(RibosomeReturnCode::from_offset(offset))
-    } else {
-        SinglePageAllocation::new(offset, length).map_err(RibosomeReturnCode::Failure)
-    }
+
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -31,17 +66,7 @@ pub struct SinglePageAllocation {
 }
 
 impl SinglePageAllocation {
-    pub fn new(offset: u16, length: u16) -> Result<Self, RibosomeErrorCode> {
-        if (u32::from(offset) + u32::from(length)) > U16_MAX {
-            Err(RibosomeErrorCode::OutOfMemory)
-        } else if (offset + length) == 0 {
-            Err(RibosomeErrorCode::ZeroSizedAllocation)
-        } else if length == 0 {
-            Err(RibosomeErrorCode::NotAnAllocation)
-        } else {
-            Ok(SinglePageAllocation { offset, length })
-        }
-    }
+
 
     /// An Encoded Allocation is a u32 where 'offset' is first 16-bits and 'length' last 16-bits
     /// A valid allocation must not have a length of zero

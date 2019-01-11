@@ -37,7 +37,13 @@ use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
 
 lazy_static! {
-    /// This is global and mutable Container singleton.
+    /// This is a global and mutable Container singleton.
+    /// (Ok, not really. I've made Container::from_config public again so holochain_nodejs
+    /// is not forced to use Container as a singleton so we don't run into problems with
+    /// tests affecting each other. The consequence is that Rustc can't help us in enforcing
+    /// the container to be singleton otherwise. The only point this is important anyway is in
+    /// the interfaces. That code needs this static variable to be set in order to be able to
+    /// call ContainerAdmin functions.)
     /// In order to call from interface threads Container admin functions that change
     /// the config and hence mutate the Container, we need something that owns the Container
     /// and is accessible from everywhere (esp. those container interface method closures
@@ -46,8 +52,6 @@ lazy_static! {
 }
 
 /// Container constructor that makes sure the instance is mounted in above static CONTAINER.
-/// With Container::from_config private to this crate, this is the only way for calling code
-/// to create a Container instance.
 /// It replaces any Container instance that was mounted before to CONTAINER with a new one
 /// create from the given configuration.
 pub fn mount_container_from_config(config: Configuration) {
@@ -95,7 +99,7 @@ pub fn notify(msg: String) {
 
 impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
-    pub(crate) fn from_config(config: Configuration) -> Self {
+    pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
         let config_path = dirs::home_dir()
             .expect("No home dir defined. Don't know where to store config file")

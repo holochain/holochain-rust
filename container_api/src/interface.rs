@@ -162,6 +162,18 @@ impl ContainerApiBuilder {
         self
     }
 
+    fn container_singleton_warning() -> Result<(), HolochainError> {
+        println!("Admin container function called without a container mounted as singleton!");
+        // If interfaces are supposed to work, the container needs to be mounted to a static place
+        // with container_api::container::mount_container_from_config(config: Configuration).
+        // There are cases in which we don't want to treat the container as a singleton such as
+        // holochain_nodejs and tests in particular. In those cases, calling admin functions via
+        // interfaces (websockt/http) won't work, but also we don't need that.
+        Err(HolochainError::ErrorGeneric(String::from(
+            "Admin container function called without a container mounted as singleton!",
+        )))
+    }
+
     pub fn with_admin_dna_functions(mut self) -> Self {
         self.io
             .add_method("admin/dna/install_from_file", move |params| {
@@ -195,13 +207,7 @@ impl ContainerApiBuilder {
                     Some(ref mut container) => {
                         container.install_dna_from_file(PathBuf::from(path), id.to_string())
                     }
-                    None => {
-                        println!("Admin function called without a container mounted as singleton!");
-                        // This should actually never happen!
-                        Err(HolochainError::ErrorGeneric(String::from(
-                            "Admin function called without a container mounted as singleton!",
-                        )))
-                    }
+                    None => Self::container_singleton_warning(),
                 }
                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
@@ -254,13 +260,7 @@ impl ContainerApiBuilder {
 
             match *CONTAINER.lock().unwrap() {
                 Some(ref mut container) => container.add_instance_and_start(new_instance),
-                None => {
-                    println!("Admin function called without a container mounted as singleton!");
-                    // This should actually never happen!
-                    Err(HolochainError::ErrorGeneric(String::from(
-                        "Admin function called without a container mounted as singleton!",
-                    )))
-                }
+                None => Self::container_singleton_warning(),
             }
             .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 

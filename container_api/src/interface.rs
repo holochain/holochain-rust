@@ -173,16 +173,19 @@ impl ContainerApiBuilder {
             let path = params_map.get("file_path")
                 .ok_or(jsonrpc_core::Error::invalid_params("`file_path` param not provided"))?;
 
+            // seems to lock here 
             match *CONTAINER.lock().unwrap() {
-                Some(ref mut container) => container.install_dna_from_file(PathBuf::from(path.to_string()), id.to_string()),
+                Some(ref mut container) => {
+                    container.install_dna_from_file(PathBuf::from(path.to_string()), id.to_string())
+                },
                 None => {
                     println!("Admin function called without a container mounted as singleton!");
                     // This should actually never happen!
                     Err(HolochainError::ErrorGeneric(String::from("Admin function called without a container mounted as singleton!")))
                 }
-            }.map_err(|_| jsonrpc_core::Error::internal_error())?;
+            }.map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
-            Ok(serde_json::Value::Null)
+            Ok(serde_json::Value::String("success".into()))
         });
         self
     }

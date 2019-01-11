@@ -19,7 +19,6 @@ pub trait ContainerAdmin {
 impl ContainerAdmin for Container {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError> {
         let path_string = path.to_str().ok_or(HolochainError::ConfigError("invalid path".into()))?;
-
         let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&path_string.into()).map_err(
             |_| {
                 HolochainError::ConfigError(format!(

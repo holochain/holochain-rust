@@ -10,6 +10,14 @@ instances = []
 
 [[interfaces]]
 admin = true
+id = "http interface"
+instances = []
+[interfaces.driver]
+type = "http"
+port = 4000
+
+[[interfaces]]
+admin = true
 id = "websocket interface"
 instances = []
 [interfaces.driver]

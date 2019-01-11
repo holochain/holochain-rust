@@ -37,6 +37,7 @@ impl ContainerAdmin for Container {
         new_config.dnas.push(new_dna.clone());
         new_config.check_consistency()?;
         self.config = new_config;
+        self.save_config()?;
         println!("Installed DNA from {} as \"{}\"", path_string, id);
         Ok(())
     }

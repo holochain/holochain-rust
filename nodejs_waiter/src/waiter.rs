@@ -5,6 +5,7 @@ use holochain_core::{
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
+use holochain_core_types::entry::Entry;
 use neon::{context::Context, prelude::*};
 use std::{
     cell::RefCell,
@@ -169,11 +170,24 @@ impl Waiter {
                     },
 
                     // TODO: limit to App entry?
-                    (Some(checker), Action::Commit((entry, _))) => {
-                        // TODO: is there a possiblity that this can get messed up if the same
-                        // entry is committed multiple times?
-                        checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
-                    }
+                    (Some(checker), Action::Commit((entry, _))) => match entry.clone() {
+                        Entry::App(_, _) => {
+                            // TODO: is there a possiblity that this can get messed up if the same
+                            // entry is committed multiple times?
+                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
+                        }
+                        Entry::LinkAdd(link_add) => {
+                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
+                            checker.add(move |aw| {
+                                *aw.action() == Action::AddLink(link_add.clone().link().clone())
+                            });
+                        }
+                        Entry::LinkRemove(_link_remove) => {
+                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
+                            println!("warn/waiter: LinkRemove not implemented!");
+                        }
+                        _ => (),
+                    },
 
                     (Some(checker), Action::SendDirectMessage(data)) => {
                         let msg_id = data.msg_id;
@@ -306,7 +320,7 @@ mod tests {
         action::DirectMessageData, network::direct_message::CustomDirectMessage,
         nucleus::ExecuteZomeFnResponse,
     };
-    use holochain_core_types::{entry::Entry, json::JsonString};
+    use holochain_core_types::{entry::Entry, json::JsonString, link::link_add::LinkAdd};
     use std::sync::mpsc::sync_channel;
 
     fn sig(a: Action) -> Signal {
@@ -493,6 +507,41 @@ mod tests {
 
         // we don't even care that Hold(entry_4) was not seen,
         // we're done because it wasn't registered.
+    }
+
+    #[test]
+    fn can_await_links() {
+        let (mut waiter, sender_tx) = test_waiter();
+        let call = zf_call("c1");
+        let link_add = LinkAdd::new(
+            &"base".to_string().into(),
+            &"target".to_string().into(),
+            "tag",
+        );
+        let entry = Entry::LinkAdd(link_add.clone());
+
+        let control_rx = test_register(&sender_tx);
+        assert_eq!(waiter.checkers.len(), 0);
+
+        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        assert_eq!(waiter.checkers.len(), 1);
+        assert_eq!(num_conditions(&waiter, &call), 1);
+
+        // this adds two actions to await
+        waiter.process_signal(sig(Commit((entry.clone(), None))));
+        assert_eq!(num_conditions(&waiter, &call), 3);
+
+        waiter.process_signal(sig(Hold(entry.clone())));
+        assert_eq!(num_conditions(&waiter, &call), 2);
+
+        waiter.process_signal(sig(AddLink(link_add.link().clone())));
+        assert_eq!(num_conditions(&waiter, &call), 1);
+        assert_eq!(waiter.checkers.len(), 1);
+
+        expect_final(control_rx, || {
+            waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call.clone()))))
+        });
+        assert_eq!(waiter.checkers.len(), 0);
     }
 
     #[test]

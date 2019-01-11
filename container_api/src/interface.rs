@@ -10,7 +10,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use config::InstanceConfiguration;
+use config::{InstanceConfiguration, StorageConfiguration};
 use container::CONTAINER;
 use container_admin::ContainerAdmin;
 
@@ -177,7 +177,6 @@ impl ContainerApiBuilder {
                 .as_str()
                 .ok_or(jsonrpc_core::Error::invalid_params("`file_path` is not a valid json string"))?;
 
-            // seems to lock here 
             match *CONTAINER.lock().unwrap() {
                 Some(ref mut container) => {
                     container.install_dna_from_file(PathBuf::from(path), id.to_string())
@@ -191,6 +190,51 @@ impl ContainerApiBuilder {
 
             Ok(serde_json::Value::String("success".into()))
         });
+
+        self.io.add_method("admin/instance/start", move |params| { 
+            // this is not DRY! refactor before merge
+            let params_map = match params {
+                Params::Map(map) => Ok(map),
+                _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
+            }?;
+
+            let id = params_map.get("id")
+                .ok_or(jsonrpc_core::Error::invalid_params("`id` param not provided"))?
+                .as_str()
+                .ok_or(jsonrpc_core::Error::invalid_params("`id` is not a valid json string"))?;
+
+            let dna_id = params_map.get("dna_id")
+                .ok_or(jsonrpc_core::Error::invalid_params("`dna_id` param not provided"))?
+                .as_str()
+                .ok_or(jsonrpc_core::Error::invalid_params("`dna_id` is not a valid json string"))?;
+
+            let agent_id = params_map.get("agent_id")
+                .ok_or(jsonrpc_core::Error::invalid_params("`agent_id` param not provided"))?
+                .as_str()
+                .ok_or(jsonrpc_core::Error::invalid_params("`agent_id` is not a valid json string"))?;
+
+            let new_instance = InstanceConfiguration {
+                id: id.to_string(),
+                dna: dna_id.to_string(),
+                agent: agent_id.to_string(),
+                storage: StorageConfiguration::Memory, // TODO: don't actually use this. Have some idea of default store
+
+            };
+
+            match *CONTAINER.lock().unwrap() {
+                Some(ref mut container) => {
+                    container.add_instance(new_instance)
+                },
+                None => {
+                    println!("Admin function called without a container mounted as singleton!");
+                    // This should actually never happen!
+                    Err(HolochainError::ErrorGeneric(String::from("Admin function called without a container mounted as singleton!")))
+                }
+            }.map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+
+            Ok(serde_json::Value::String("success".into()))
+        });
+
         self
     }
 }

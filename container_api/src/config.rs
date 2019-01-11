@@ -33,6 +33,7 @@ use toml;
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
+    pub default_agent_id: Option<String>,
     /// List of DNAs, for each a path to the DNA file. Optional.
     #[serde(default)]
     pub dnas: Vec<DnaConfiguration>,

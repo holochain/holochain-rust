@@ -1,5 +1,5 @@
 use crate::{
-    config::DnaConfiguration,
+    config::{DnaConfiguration, InstanceConfiguration},
     container::Container,
 };
 use holochain_core_types::{
@@ -14,6 +14,7 @@ use std::{
 pub trait ContainerAdmin {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: String) -> Result<(), HolochainError>;
+    fn add_instance(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -34,13 +35,27 @@ impl ContainerAdmin for Container {
             file: path_string.into(),
             hash: dna.address().to_string(),
         };
-        self.config.dnas.push(new_dna);
-        self.save_config()?;
+        let mut new_config = self.config.clone();
+        new_config.dnas.push(new_dna.clone());
+        new_config.check_consistency()?;
+        self.config = new_config;
         println!("Installed DNA from {} as \"{}\"", path_string, id);
         Ok(())
     }
 
     fn uninstall_dna(&mut self, _id: String) -> Result<(), HolochainError> {
+        Ok(())
+    }
+
+    fn add_instance(&mut self, instance: InstanceConfiguration) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        new_config.instances.push(instance.clone());
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+        self.start_all_instances() // TODO: create new function to start instance by id to call here
+            .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
+        println!("Started new instance of {} as \"{}\"", instance.dna, instance.id);
         Ok(())
     }
 }

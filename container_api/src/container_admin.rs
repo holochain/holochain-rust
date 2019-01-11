@@ -129,7 +129,7 @@ pattern = ".*"
         container.load_config().unwrap();
 
         let mut tmp_config_path = PathBuf::new();
-        tmp_config_path.push("tmp-test-container-config.toml");
+        tmp_config_path.push("./tmp-test-container-config.toml");
         container.set_config_path(tmp_config_path.clone());
         container
     }
@@ -221,8 +221,25 @@ pattern = ".*"
         );
     }
 
+    use crate::config::StorageConfiguration;
     #[test]
     fn test_add_instance_and_start() {
+        let mut container = create_test_container();
+        let mut new_dna_path = PathBuf::new();
+        new_dna_path.push("new-dna.hcpkg");
+        container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna"))
+            .expect("Could not install DNA");
 
+        let add_result = container.add_instance_and_start(InstanceConfiguration{
+            id: String::from("new-instance"),
+            dna: String::from("new-dna"),
+            agent: String::from("test-agent-1"),
+            storage: StorageConfiguration::Memory,
+        });
+
+        assert_eq!(
+            add_result,
+            Ok(())
+        )
     }
 }

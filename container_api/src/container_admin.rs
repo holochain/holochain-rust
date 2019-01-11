@@ -30,12 +30,13 @@ impl ContainerAdmin for Container {
         )?;
 
         let new_dna = DnaConfiguration {
-            id,
+            id: id.clone(),
             file: path_string.into(),
             hash: dna.address().to_string(),
         };
         self.config.dnas.push(new_dna);
         self.save_config()?;
+        println!("Installed DNA from {} as \"{}\"", path_string, id);
         Ok(())
     }
 

@@ -133,7 +133,7 @@ _cmd_deploy_template: &_cmd_deploy_template
   rust: nightly-2018-12-26
   if: tag =~ /^test-v\d+\.\d+\.\d+/
   before_script:
-    - . ./scripts/install/ubuntu.sh
+    - . ./scripts/install/auto.sh
   script:
     - cargo rustc --manifest-path cmd/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir cmd-$TRAVIS_TAG-$TARGET
@@ -156,7 +156,7 @@ _container_deploy_template: &_container_deploy_template
   rust: nightly-2018-12-26
   if: tag =~ /^test-v\d+\.\d+\.\d+/
   before_script:
-    - make install_system_libzmq
+    - . ./scripts/install/auto.sh
   script:
     - cargo rustc --manifest-path container/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir container-$TRAVIS_TAG-$TARGET
@@ -362,9 +362,6 @@ jobs:
       env:
         - TARGET=x86_64-pc-windows-msvc
         - CRATE_NAME=container
-        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      before_script:
-        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
 
     - name: "CONTAINER DEPLOY - 64 bit Windows GNU"
       <<: *_container_deploy_template
@@ -373,9 +370,6 @@ jobs:
       env:
         - TARGET=x86_64-pc-windows-gnu
         - CRATE_NAME=container
-        - LIBZMQ_PREFIX=C:\\Users\\travis\\build\\holochain\\holochain-rust\\vendor\\zmq
-      before_script:
-        - PATH=$PATH:/c/Users/travis/build/holochain/holochain-rust/vendor/zmq/bin
 
     # holochain-nodejs releases section
     - name: "Linux - Node 8"

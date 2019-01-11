@@ -66,7 +66,7 @@ pub fn mount_container_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
     instances: InstanceMap,
-    pub (crate) config: Configuration,
+    pub(crate) config: Configuration,
     pub config_path: PathBuf,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     pub(crate) dna_loader: DnaLoader,

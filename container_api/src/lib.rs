@@ -2,8 +2,7 @@
 //!     Arc::new(Mutex::new(SimplePersister::new(file_system.clone()))),
 //!     file_system.clone(),
 
-#![feature(try_from, async_await, await_macro)]
-
+#![feature(try_from, try_trait, async_await, await_macro)]
 /// Holochain Container API
 ///
 /// This crate is a library that provides types and functions that help with building

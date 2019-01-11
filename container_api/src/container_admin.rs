@@ -1,6 +1,7 @@
 use crate::{
     config::{DnaConfiguration, InstanceConfiguration},
     container::{Container, notify},
+    error::HolochainInstanceError,
 };
 use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
 use std::{path::PathBuf, sync::Arc};
@@ -13,6 +14,8 @@ pub trait ContainerAdmin {
         new_instance: InstanceConfiguration,
     ) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
+    fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
 }
 
 impl ContainerAdmin for Container {
@@ -119,8 +122,24 @@ impl ContainerAdmin for Container {
         self.config = new_config;
         self.save_config()?;
 
-        println!("Removed instance \"{}\".", id);
+        self.stop_instance(id)
+            .map_err(|err| HolochainError::ErrorGeneric(err.to_string()))?;
+        self.instances.remove(id);
+
+        notify(format!("Removed instance \"{}\".", id));
         Ok(())
+    }
+
+    fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+        let instance = self.instances.get(id)?;
+        notify(format!("Starting instance \"{}\"...", id));
+        instance.write().unwrap().start()
+    }
+
+    fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+        let instance = self.instances.get(id)?;
+        notify(format!("Stopping instance \"{}\"...", id));
+        instance.write().unwrap().stop()
     }
 }
 
@@ -490,5 +509,30 @@ pattern = ".*"
 "#
         );
 
+    }
+
+    #[test]
+    fn test_start_stop_instance() {
+        let mut container = create_test_container();
+        assert_eq!(
+            container.start_instance(&String::from("test-instance-1")),
+            Ok(()),
+        );
+        assert_eq!(
+            container.start_instance(&String::from("test-instance-1")),
+            Err(HolochainInstanceError::InstanceAlreadyActive),
+        );
+        assert_eq!(
+            container.start_instance(&String::from("non-existant-id")),
+            Err(HolochainInstanceError::NoSuchInstance),
+        );
+        assert_eq!(
+            container.stop_instance(&String::from("test-instance-1")),
+            Ok(())
+        );
+        assert_eq!(
+            container.stop_instance(&String::from("test-instance-1")),
+            Err(HolochainInstanceError::InstanceNotActiveYet),
+        );
     }
 }

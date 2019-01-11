@@ -1,5 +1,5 @@
 use holochain_core_types::error::HolochainError;
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, option::NoneError};
 
 pub type HolochainResult<T> = Result<T, HolochainInstanceError>;
 
@@ -9,6 +9,7 @@ pub enum HolochainInstanceError {
     InternalFailure(HolochainError),
     InstanceNotActiveYet,
     InstanceAlreadyActive,
+    NoSuchInstance,
 }
 
 impl Error for HolochainInstanceError {
@@ -18,7 +19,8 @@ impl Error for HolochainInstanceError {
             HolochainInstanceError::InstanceNotActiveYet => "Holochain instance is not active yet.",
             HolochainInstanceError::InstanceAlreadyActive => {
                 "Holochain instance is already active."
-            }
+            },
+            HolochainInstanceError::NoSuchInstance => "Instance does not exist",
         }
     }
 
@@ -29,6 +31,7 @@ impl Error for HolochainInstanceError {
             HolochainInstanceError::InternalFailure(ref err)  => Some(err),
             HolochainInstanceError::InstanceNotActiveYet => None,
             HolochainInstanceError::InstanceAlreadyActive => None,
+            HolochainInstanceError::NoSuchInstance => None,
         }
     }
 }
@@ -43,6 +46,10 @@ impl From<HolochainError> for HolochainInstanceError {
     fn from(error: HolochainError) -> Self {
         HolochainInstanceError::InternalFailure(error)
     }
+}
+
+impl From<NoneError> for HolochainInstanceError {
+    fn from(_: NoneError) -> Self { HolochainInstanceError::NoSuchInstance }
 }
 
 #[cfg(test)]
@@ -68,6 +75,10 @@ pub mod tests {
                 HolochainInstanceError::InternalFailure(HolochainError::DnaMissing),
                 "DNA is missing",
             ),
+            (
+                HolochainInstanceError::NoSuchInstance,
+                "Instance does not exist",
+            ),
         ] {
             assert_eq!(i.description(), o,);
         }
@@ -88,6 +99,10 @@ pub mod tests {
             (
                 HolochainInstanceError::InternalFailure(HolochainError::DnaMissing),
                 "DNA is missing",
+            ),
+            (
+                HolochainInstanceError::NoSuchInstance,
+                "Instance does not exist",
             ),
         ] {
             assert_eq!(

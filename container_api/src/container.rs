@@ -27,7 +27,10 @@ use std::{
     fs::File,
     io::prelude::*,
     path::PathBuf,
-    sync::{mpsc::{Sender, SyncSender, channel}, Arc, Mutex, RwLock},
+    sync::{
+        mpsc::{channel, Sender, SyncSender},
+        Arc, Mutex, RwLock,
+    },
     thread,
 };
 
@@ -143,11 +146,14 @@ impl Container {
     }
 
     pub fn stop_all_interfaces(&mut self) {
-        for (id, kill_switch)  in self.interface_threads.iter() {
+        for (id, kill_switch) in self.interface_threads.iter() {
             notify(format!("Stopping interface {}", id));
             let send_result = kill_switch.send(());
             if send_result.is_err() {
-                notify(format!("Error stopping interface: {}", send_result.err().unwrap()));
+                notify(format!(
+                    "Error stopping interface: {}",
+                    send_result.err().unwrap()
+                ));
             }
         }
     }
@@ -435,10 +441,7 @@ impl Container {
         container_api_builder.spawn()
     }
 
-    fn spawn_interface_thread(
-        &self,
-        interface_config: InterfaceConfiguration,
-    ) -> Sender<()> {
+    fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
         let log_sender = self.logger.get_sender();
         let (tx, rx) = channel();

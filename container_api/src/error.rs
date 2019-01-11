@@ -19,7 +19,7 @@ impl Error for HolochainInstanceError {
             HolochainInstanceError::InstanceNotActiveYet => "Holochain instance is not active yet.",
             HolochainInstanceError::InstanceAlreadyActive => {
                 "Holochain instance is already active."
-            },
+            }
             HolochainInstanceError::NoSuchInstance => "Instance does not exist",
         }
     }
@@ -49,7 +49,9 @@ impl From<HolochainError> for HolochainInstanceError {
 }
 
 impl From<NoneError> for HolochainInstanceError {
-    fn from(_: NoneError) -> Self { HolochainInstanceError::NoSuchInstance }
+    fn from(_: NoneError) -> Self {
+        HolochainInstanceError::NoSuchInstance
+    }
 }
 
 #[cfg(test)]

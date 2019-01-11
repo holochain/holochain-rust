@@ -1,6 +1,6 @@
 use crate::{
     config::{DnaConfiguration, InstanceConfiguration},
-    container::{Container, notify},
+    container::{notify, Container},
     error::HolochainInstanceError,
 };
 use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
@@ -52,12 +52,14 @@ impl ContainerAdmin for Container {
     /// Then saves the config.
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        new_config.dnas = new_config.dnas
+        new_config.dnas = new_config
+            .dnas
             .into_iter()
             .filter(|dna| dna.id != *id)
             .collect();
 
-        let instance_ids: Vec<String> = new_config.instances
+        let instance_ids: Vec<String> = new_config
+            .instances
             .iter()
             .filter(|instance| instance.dna == *id)
             .map(|instance| instance.id.clone())
@@ -439,9 +441,7 @@ exclude = false
 pattern = ".*"
 "#
         );
-
     }
-
 
     #[test]
     /// Tests if the uninstalled DNA is gone from the config file
@@ -449,10 +449,7 @@ pattern = ".*"
     /// (to not render the config invalid).
     fn test_uninstall_dna() {
         let mut container = create_test_container();
-        assert_eq!(
-            container.uninstall_dna(&String::from("test-dna")),
-            Ok(()),
-        );
+        assert_eq!(container.uninstall_dna(&String::from("test-dna")), Ok(()),);
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");
@@ -500,7 +497,6 @@ exclude = false
 pattern = ".*"
 "#
         );
-
     }
 
     #[test]

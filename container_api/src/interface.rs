@@ -1,7 +1,5 @@
 use holochain_core::state::State;
-use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityCall,
-};
+use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -9,7 +7,7 @@ use serde_json;
 use std::{
     collections::HashMap,
     path::PathBuf,
-    sync::{Arc, RwLock, mpsc::Receiver},
+    sync::{mpsc::Receiver, Arc, RwLock},
 };
 
 use config::{InstanceConfiguration, StorageConfiguration};
@@ -52,7 +50,6 @@ macro_rules! container_call {
 
     }
 }
-
 
 /// ContainerApiBuilder creates IoHandlers that implement RPCs for exposure
 /// through interfaces or bridges.
@@ -200,17 +197,22 @@ impl ContainerApiBuilder {
         }
     }
 
-    fn get_as_string<T: Into<String>>(key: T, params_map: &Map<String, Value>) -> Result<String, jsonrpc_core::Error> {
+    fn get_as_string<T: Into<String>>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<String, jsonrpc_core::Error> {
         let key = key.into();
         Ok(params_map
             .get(&key)
-            .ok_or(jsonrpc_core::Error::invalid_params(
-                format!("`{}` param not provided", &key),
-            ))?
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param not provided",
+                &key
+            )))?
             .as_str()
-            .ok_or(jsonrpc_core::Error::invalid_params(
-                format!("`{}` is not a valid json string", &key),
-            ))?
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` is not a valid json string",
+                &key
+            )))?
             .to_string())
     }
 
@@ -227,13 +229,12 @@ impl ContainerApiBuilder {
                 Ok(serde_json::Value::String("success".into()))
             });
 
-        self.io
-            .add_method("admin/dna/uninstall", move |params| {
-                let params_map = Self::unwrap_params_map(params)?;
-                let id = Self::get_as_string("id", &params_map)?;
-                container_call!(|c| c.uninstall_dna(&id))?;
-                Ok(serde_json::Value::String("success".into()))
-            });
+        self.io.add_method("admin/dna/uninstall", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.uninstall_dna(&id))?;
+            Ok(serde_json::Value::String("success".into()))
+        });
 
         self.io.add_method("admin/instance/add", move |params| {
             let params_map = Self::unwrap_params_map(params)?;

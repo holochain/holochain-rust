@@ -21,7 +21,7 @@
   - [Intro to HDK](./zome/intro_to_hdk.md)
   - [Intro to Zome Definition](./zome/define_zome.md)
   - [App Entry Type Definitions](./zome/entry_type_definitions.md)
-  - [(E) Genesis](./zome/genesis.md)
+  - [Genesis](./zome/genesis.md)
   - [(E) Zome Functions](./zome/zome_functions.md)
   - [(E) Read & Write Data Operations](./zome/read_and_write.md)
   - [(E) Entry Validation](./zome/entry_validation.md)

@@ -206,10 +206,10 @@ impl ExampleEntityAttributeValueStorageNonSync {
 
     fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
 
-        if self.fetch_eav(Some(eav.entity()),Some(eav.attribute()),Some(eav.value()))?.len() ==0 
+        if self.unthreadable_fetch_eav(Some(eav.entity()),Some(eav.attribute()),Some(eav.value()))?.len() ==0 
         {
             
-             let key = create_key(Action::insert)?
+             let key = create_key(Action::insert)?;
              self.storage.insert(key, eav.clone());
              Ok(())
         }

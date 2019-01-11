@@ -66,8 +66,8 @@ pub fn mount_container_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
     instances: InstanceMap,
-    pub(crate) config: Configuration,
-    config_path: PathBuf,
+    pub (crate) config: Configuration,
+    pub config_path: PathBuf,
     interface_threads: HashMap<String, InterfaceThreadHandle>,
     pub(crate) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
@@ -390,7 +390,7 @@ impl Container {
 
     /// Default DnaLoader that actually reads files from the filesystem
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
-        println!("Reading DNA from {}", file);
+        notify(format!("Reading DNA from {}", file));
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;

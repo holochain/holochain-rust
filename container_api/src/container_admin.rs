@@ -1,10 +1,20 @@
-use crate::{config::DnaConfiguration, container::Container};
-use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
-use std::{path::PathBuf, sync::Arc};
+use crate::{
+    config::{DnaConfiguration, InstanceConfiguration},
+    container::Container,
+};
+use holochain_core_types::{
+    cas::content::AddressableContent,
+    error::HolochainError
+};
+use std::{
+    path::PathBuf,
+    sync::Arc,
+};
 
 pub trait ContainerAdmin {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: String) -> Result<(), HolochainError>;
+    fn add_instance_and_start(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -26,13 +36,28 @@ impl ContainerAdmin for Container {
             file: path_string.into(),
             hash: dna.address().to_string(),
         };
-        self.config.dnas.push(new_dna);
-        self.save_config()?;
+        let mut new_config = self.config.clone();
+        new_config.dnas.push(new_dna.clone());
+        new_config.check_consistency()?;
+        self.config = new_config;
         println!("Installed DNA from {} as \"{}\"", path_string, id);
         Ok(())
     }
 
     fn uninstall_dna(&mut self, _id: String) -> Result<(), HolochainError> {
+        Ok(())
+    }
+
+    fn add_instance_and_start(&mut self, instance: InstanceConfiguration) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        new_config.instances.push(instance.clone());
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+        self.load_config()?; // populate the instances
+        self.start_all_instances() // TODO: create new function to start instance by id to call here
+            .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
+        println!("Started new instance of {} as \"{}\"", instance.dna, instance.id);
         Ok(())
     }
 }
@@ -97,16 +122,22 @@ pattern = ".*"
             .to_string()
     }
 
-    #[test]
-    fn test_install_dna_from_file() {
+    fn create_test_container() -> Container {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
         container.load_config().unwrap();
 
         let mut tmp_config_path = PathBuf::new();
-        tmp_config_path.push("tmp-test-container-config.toml");
+        tmp_config_path.push("./tmp-test-container-config.toml");
         container.set_config_path(tmp_config_path.clone());
+        container
+    }
+
+    #[test]
+    fn test_install_dna_from_file() {
+
+        let mut container = create_test_container();
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
@@ -137,9 +168,14 @@ pattern = ".*"
         );
 
         let mut config_contents = String::new();
+<<<<<<< HEAD
         let mut file = File::open(&tmp_config_path).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
+=======
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents).expect("Could not read temp config file");
+>>>>>>> 1328b6cc1ad6282eaa356182f17ec0d2f10bc35c
 
         assert_eq!(
             config_contents,
@@ -187,5 +223,27 @@ exclude = false
 pattern = ".*"
 "#
         );
+    }
+
+    use crate::config::StorageConfiguration;
+    #[test]
+    fn test_add_instance_and_start() {
+        let mut container = create_test_container();
+        let mut new_dna_path = PathBuf::new();
+        new_dna_path.push("new-dna.hcpkg");
+        container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna"))
+            .expect("Could not install DNA");
+
+        let add_result = container.add_instance_and_start(InstanceConfiguration{
+            id: String::from("new-instance"),
+            dna: String::from("new-dna"),
+            agent: String::from("test-agent-1"),
+            storage: StorageConfiguration::Memory,
+        });
+
+        assert_eq!(
+            add_result,
+            Ok(())
+        )
     }
 }

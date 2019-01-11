@@ -168,15 +168,19 @@ impl ContainerApiBuilder {
             }?;
 
             let id = params_map.get("id")
-                .ok_or(jsonrpc_core::Error::invalid_params("`id` param not provided"))?;
+                .ok_or(jsonrpc_core::Error::invalid_params("`id` param not provided"))?
+                .as_str()
+                .ok_or(jsonrpc_core::Error::invalid_params("`id` is not a valid json string"))?;
 
             let path = params_map.get("file_path")
-                .ok_or(jsonrpc_core::Error::invalid_params("`file_path` param not provided"))?;
+                .ok_or(jsonrpc_core::Error::invalid_params("`file_path` param not provided"))?
+                .as_str()
+                .ok_or(jsonrpc_core::Error::invalid_params("`file_path` is not a valid json string"))?;
 
             // seems to lock here 
             match *CONTAINER.lock().unwrap() {
                 Some(ref mut container) => {
-                    container.install_dna_from_file(PathBuf::from(path.to_string()), id.to_string())
+                    container.install_dna_from_file(PathBuf::from(path), id.to_string())
                 },
                 None => {
                     println!("Admin function called without a container mounted as singleton!");

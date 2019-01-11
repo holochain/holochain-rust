@@ -382,6 +382,7 @@ impl Container {
 
     /// Default DnaLoader that actually reads files from the filesystem
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
+        println!("Reading DNA from {}", file);
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;

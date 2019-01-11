@@ -1,7 +1,7 @@
 use crate::{
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
-        NetworkConfig, StorageConfiguration,
+        StorageConfiguration,
     },
     context_builder::ContextBuilder,
     error::HolochainInstanceError,

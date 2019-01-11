@@ -12,6 +12,7 @@ pub trait ContainerAdmin {
         &mut self,
         new_instance: InstanceConfiguration,
     ) -> Result<(), HolochainError>;
+    fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -64,6 +65,37 @@ impl ContainerAdmin for Container {
         );
         Ok(())
     }
+
+    /// Removes the instance given by id from the config.
+    /// Also removes all mentions of that instance from all interfaces to not render the config
+    /// invalid.
+    /// Then saves the config.
+    fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+
+        new_config.instances = new_config.instances
+            .into_iter()
+            .filter(|instance| instance.id != *id)
+            .collect();
+
+        new_config.interfaces = new_config.interfaces
+            .into_iter()
+            .map(|mut interface| {
+                interface.instances = interface.instances
+                    .into_iter()
+                    .filter(|instance| instance.id != *id)
+                    .collect();
+                interface
+            })
+            .collect();
+
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+
+        println!("Removed instance \"{}\".", id);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -86,13 +118,18 @@ pub mod tests {
 
     pub fn test_toml() -> String {
         r#"bridges = []
-interfaces = []
 
 [[agents]]
 id = "test-agent-1"
 key_file = "holo_tester.key"
 name = "Holo Tester 1"
 public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+[[agents]]
+id = "test-agent-2"
+key_file = "holo_tester.key"
+name = "Holo Tester 2"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
 
 [[dnas]]
 file = "app_spec.hcpkg"
@@ -106,6 +143,28 @@ id = "test-instance-1"
 
 [instances.storage]
 type = "memory"
+
+[[instances]]
+agent = "test-agent-2"
+dna = "test-dna"
+id = "test-instance-2"
+
+[instances.storage]
+type = "memory"
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[[interfaces.instances]]
+id = "test-instance-1"
+
+[[interfaces.instances]]
+id = "test-instance-2"
+
+[interfaces.driver]
+port = 3000
+type = "websocket"
 
 [logger]
 type = ""
@@ -186,6 +245,12 @@ key_file = "holo_tester.key"
 name = "Holo Tester 1"
 public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
 
+[[agents]]
+id = "test-agent-2"
+key_file = "holo_tester.key"
+name = "Holo Tester 2"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
 [[dnas]]
 file = "app_spec.hcpkg"
 hash = "Qm328wyq38924y"
@@ -203,6 +268,28 @@ id = "test-instance-1"
 
 [instances.storage]
 type = "memory"
+
+[[instances]]
+agent = "test-agent-2"
+dna = "test-dna"
+id = "test-instance-2"
+
+[instances.storage]
+type = "memory"
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[[interfaces.instances]]
+id = "test-instance-1"
+
+[[interfaces.instances]]
+id = "test-instance-2"
+
+[interfaces.driver]
+port = 3000
+type = "websocket"
 
 [logger]
 type = ""
@@ -242,4 +329,81 @@ pattern = ".*"
 
         assert_eq!(add_result, Ok(()))
     }
+
+    #[test]
+    /// Tests if the removed instance is gone from the config file
+    /// as well as the mentions of the removed instance are gone from the interfaces
+    /// (to not render the config invalid).
+    fn test_remove_instance() {
+        let mut container = create_test_container();
+        assert_eq!(
+            container.remove_instance(&String::from("test-instance-1")),
+            Ok(()),
+        );
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        assert_eq!(
+            config_contents,
+            r#"bridges = []
+
+[[agents]]
+id = "test-agent-1"
+key_file = "holo_tester.key"
+name = "Holo Tester 1"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+[[agents]]
+id = "test-agent-2"
+key_file = "holo_tester.key"
+name = "Holo Tester 2"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
+[[dnas]]
+file = "app_spec.hcpkg"
+hash = "Qm328wyq38924y"
+id = "test-dna"
+
+[[instances]]
+agent = "test-agent-2"
+dna = "test-dna"
+id = "test-instance-2"
+
+[instances.storage]
+type = "memory"
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[[interfaces.instances]]
+id = "test-instance-2"
+
+[interfaces.driver]
+port = 3000
+type = "websocket"
+
+[logger]
+type = ""
+[[logger.rules.rules]]
+color = "red"
+exclude = false
+pattern = "^err/"
+
+[[logger.rules.rules]]
+color = "white"
+exclude = false
+pattern = "^debug/dna"
+
+[[logger.rules.rules]]
+exclude = false
+pattern = ".*"
+"#
+        );
+
+    }
+
 }

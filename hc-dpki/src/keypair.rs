@@ -8,9 +8,9 @@ use rustc_serialize::json;
 use std::str;
 
 pub struct Keypair {
-    pub_keys: String,
-    sign_priv: SecBuf,
-    enc_priv: SecBuf,
+    pub pub_keys: String,
+    pub sign_priv: SecBuf,
+    pub enc_priv: SecBuf,
 }
 
 pub const SEEDSIZE: usize = 32 as usize;

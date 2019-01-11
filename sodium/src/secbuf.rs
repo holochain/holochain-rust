@@ -10,7 +10,7 @@ pub trait Bufferable {
     fn new(s: usize) -> Box<Bufferable>
     where
         Self: Sized;
-    fn from_string(s:String) -> Box<Bufferable>
+    fn from_string(s: String) -> Box<Bufferable>
     where
         Self: Sized;
     fn len(&self) -> usize;

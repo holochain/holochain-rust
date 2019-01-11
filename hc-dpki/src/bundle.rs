@@ -17,3 +17,42 @@ pub struct ReturnBundleData {
     pub nonce: Vec<u8>,
     pub cipher: Vec<u8>,
 }
+
+/*
+/**
+ * This root seed should be pure entropy
+ */
+class RootSeed extends Seed {
+/**
+   * Get a new, completely random root seed
+   */
+  static async newRandom () {
+    const seed = new mosodium.SecBuf(32)
+    seed.randomize()
+    return new RootSeed(seed)
+  }
+
+  /**
+   * delegate to base class
+   */
+  async init (seed) {
+    await super.init('hcRootSeed', seed)
+  }
+
+  /**
+   * generate a device seed given an index based on this seed
+   * @param {number} index
+   * @return {DeviceSeed}
+   */
+  async getDeviceSeed (index) {
+    if (typeof index !== 'number' || parseInt(index, 10) !== index || index < 1) {
+      throw new Error('invalid index')
+    }
+
+    const seed = mosodium.kdf.derive(
+      index, Buffer.from('HCDEVICE'), this._seed, this._seed.lockLevel())
+
+    return new DeviceSeed(seed)
+  }
+}
+*/

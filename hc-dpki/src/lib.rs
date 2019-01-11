@@ -8,4 +8,5 @@ extern crate rustc_serialize;
 
 pub mod bundle;
 pub mod keypair;
+pub mod seed;
 pub mod util;

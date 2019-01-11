@@ -1,13 +1,13 @@
 [[agents]]
 id = "test agent 1"
 name = "Holo Tester 1"
-public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
 key_file = "holo_tester.key"
 
 [[agents]]
 id = "test agent 2"
 name = "Holo Tester 2"
-public_address = "HoloTester2-------------------------------------------------------------------------AJmU"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
 key_file = "holo_tester.key"
 
 [[dnas]]

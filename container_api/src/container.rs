@@ -1,7 +1,5 @@
 use crate::{
-    config::{
-        Configuration, InterfaceConfiguration, InterfaceDriver, NetworkConfig, StorageConfiguration,
-    },
+    config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration},
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
     logger::DebugLogger,
@@ -50,7 +48,7 @@ pub struct Container {
     dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
-    network_ipc_uri: Option<String>,
+    p2p_config: Option<JsonString>,
     network_child_process: NetShutdown,
 }
 
@@ -82,7 +80,7 @@ impl Container {
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
             logger: DebugLogger::new(rules),
-            network_ipc_uri: None,
+            p2p_config: None,
             network_child_process: None,
         }
     }
@@ -176,7 +174,7 @@ impl Container {
             )],
             network_config.n3h_persistence_path.clone(),
             hashmap! {
-                String::from("N3H_MODE") => String::from("HACK"),
+                String::from("N3H_MODE") => network_config.n3h_mode.clone(),
                 String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
                 String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
             },
@@ -191,41 +189,23 @@ impl Container {
         Ok(ipc_binding)
     }
 
-    fn instance_network_config(
-        &self,
-        net_config: &NetworkConfig,
-    ) -> Result<JsonString, HolochainError> {
-        match self.network_ipc_uri {
-            Some(ref uri) => Ok(JsonString::from(json!(
-                {
-                    "backend_kind": "IPC",
-                    "backend_config": {
-                        "socketType": "zmq",
-                        "bootstrapNodes": net_config.bootstrap_nodes,
-                        "ipcUri": uri.clone()
-                    }
-                }
-            ))),
-            None => Ok(JsonString::from(P2pConfig::unique_mock_config())),
-        }
+    fn instance_p2p_config(&self) -> Result<JsonString, HolochainError> {
+        let config = self.p2p_config.clone().unwrap_or_else(|| {
+            // This should never happen, but we'll throw out a named mock network rather than crashing,
+            // just to be nice (TODO make proper logging statement)
+            println!("warn: instance_network_config called before p2p_config initialized! Using default mock network name.");
+            JsonString::from(P2pConfig::named_mock_config("container-default-mock"))
+        });
+        Ok(config)
     }
 
-    /// Tries to create all instances configured in the given Configuration object.
-    /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
-    /// @TODO: clean up the container creation process to prevent loading config before proper setup,
-    ///        especially regarding the signal handler.
-    ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config(&mut self) -> Result<(), String> {
-        let _ = self.config.check_consistency()?;
-
-        // if there's no NetworkConfig we won't spawn a network process
-        // and instead configure instances to use the mock network
-        if self.config.network.is_some() {
+    fn initialize_p2p_config(&mut self) -> JsonString {
+        match self.config.network.clone() {
             // if there is a config then either we need to spawn a process and get the
             // ipc_uri for it and save it for future calls to `load_config`
             // or we use that uri value that was created from previous calls!
-            if self.network_ipc_uri.is_none() {
-                self.network_ipc_uri = self
+            Some(ref net_config) => {
+                let uri = self
                     .config
                     .clone()
                     .network
@@ -233,7 +213,36 @@ impl Container {
                     .n3h_ipc_uri
                     .clone()
                     .or_else(|| self.spawn_network().ok());
+                JsonString::from(json!(
+                    {
+                        "backend_kind": "IPC",
+                        "backend_config": {
+                            "socketType": "zmq",
+                            "bootstrapNodes": net_config.bootstrap_nodes,
+                            "ipcUri": uri
+                        }
+                    }
+                ))
             }
+            // if there's no NetworkConfig we won't spawn a network process
+            // and instead configure instances to use a unique mock network
+            None => JsonString::from(P2pConfig::unique_mock_config()),
+        }
+    }
+
+    /// Tries to create all instances configured in the given Configuration object.
+    /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
+    /// The first time we call this, we also initialize the container-wide config
+    /// for use with all instances
+    ///
+    /// @TODO: clean up the container creation process to prevent loading config before proper setup,
+    ///        especially regarding the signal handler.
+    ///        (see https://github.com/holochain/holochain-rust/issues/739)
+    pub fn load_config(&mut self) -> Result<(), String> {
+        let _ = self.config.check_consistency()?;
+
+        if self.p2p_config.is_none() {
+            self.p2p_config = Some(self.initialize_p2p_config());
         }
 
         let config = self.config.clone();
@@ -278,11 +287,7 @@ impl Container {
                 context_builder =
                     context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
-                // Network config (if it exists)
-                if let Some(network_config) = config.clone().network {
-                    context_builder = context_builder
-                        .with_network_config(self.instance_network_config(&network_config)?);
-                }
+                context_builder = context_builder.with_network_config(self.instance_p2p_config()?);
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
@@ -383,9 +388,17 @@ impl Container {
         interface_config: InterfaceConfiguration,
     ) -> InterfaceThreadHandle {
         let dispatcher = self.make_interface_handler(&interface_config);
+        let log_sender = self.logger.get_sender();
         thread::spawn(move || {
             let iface = make_interface(&interface_config);
-            iface.run(dispatcher)
+            iface.run(dispatcher).map_err(|error| {
+                let message = format!(
+                    "err/container: Error running interface '{}': {}",
+                    interface_config.id, error
+                );
+                let _ = log_sender.send((String::from("container"), message));
+                error
+            })
         })
     }
 }

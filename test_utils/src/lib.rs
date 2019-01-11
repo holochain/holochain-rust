@@ -11,14 +11,14 @@ use holochain_container_api::{context_builder::ContextBuilder, error::HolochainR
 use holochain_core::{
     action::Action,
     context::Context,
-    signal::Signal,
     logger::{test_logger, TestLogger},
+    signal::Signal,
 };
 use holochain_core_types::{
-    cas::content::Address,
     agent::AgentId,
+    cas::content::Address,
     dna::{
-        capabilities::{Capability, FnDeclaration, CapabilityType, CapabilityCall},
+        capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         wasm::DnaWasm,
         zome::{Config, Zome, ZomeFnDeclarations, ZomeCapabilities},
@@ -27,6 +27,7 @@ use holochain_core_types::{
     entry::entry_type::{AppEntryType, EntryType},
     json::JsonString,
 };
+use holochain_net::p2p_config::P2pConfig;
 
 use std::{
     collections::{hash_map::DefaultHasher, BTreeMap},
@@ -41,7 +42,8 @@ use wabt::Wat2Wasm;
 
 /// Load WASM from filesystem
 pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
-    let mut file = File::open(fname).unwrap();
+    let mut file = File::open(fname)
+        .unwrap_or_else(|err| panic!("Couldn't create WASM from file: {}; {}", fname, err));
     let mut buf = Vec::new();
     file.read_to_end(&mut buf).unwrap();
     buf
@@ -165,20 +167,33 @@ pub fn create_test_dna_with_defs(
 }
 
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+pub fn test_context_and_logger_with_network_name(
+    agent_name: &str,
+    network_name: Option<&str>,
+) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
     let agent = AgentId::generate_fake(agent_name);
     let logger = test_logger();
     (
-        Arc::new(
-            ContextBuilder::new()
+        Arc::new({
+            let mut builder = ContextBuilder::new()
                 .with_agent(agent)
                 .with_logger(logger.clone())
                 .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
-                .expect("Tempdir must be accessible")
-                .spawn()
-        ),
+                .expect("Tempdir must be accessible");
+            if let Some(network_name) = network_name {
+                let config =
+                    JsonString::from(String::from(P2pConfig::named_mock_config(network_name)));
+                builder = builder.with_network_config(config);
+            }
+            builder.spawn()
+        }),
         logger,
     )
+}
+
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    test_context_and_logger_with_network_name(agent_name, None)
 }
 
 pub fn test_context(agent_name: &str) -> Arc<Context> {
@@ -209,7 +224,16 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
-    return hc.call("test_zome", Some(CapabilityCall::new("test_cap".to_string(), Address::from("test_token"),None)), fn_name, r#"{}"#);
+    return hc.call(
+        "test_zome",
+        Some(CapabilityCall::new(
+            "test_cap".to_string(),
+            Address::from("test_token"),
+            None,
+        )),
+        fn_name,
+        r#"{}"#,
+    );
 }
 
 /// create a test context and TestLogger pair so we can use the logger in assertions
@@ -220,7 +244,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             .with_agent(agent)
             .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
             .expect("Tempdir must be accessible")
-            .spawn()
+            .spawn(),
     )
 }
 

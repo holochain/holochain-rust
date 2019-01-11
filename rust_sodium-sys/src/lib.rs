@@ -20,7 +20,7 @@
     missing_docs, non_upper_case_globals, trivial_casts, trivial_numeric_casts, unsafe_code,
     variant_size_differences
 )]
-#![cfg_attr(feature = "cargo-clippy", allow(decimal_literal_representation, unreadable_literal))]
+#![cfg_attr(feature = "cargo-clippy", allow(clippy::decimal_literal_representation, unreadable_literal))]
 
 #[macro_use]
 extern crate lazy_static;

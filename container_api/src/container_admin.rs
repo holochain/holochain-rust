@@ -9,7 +9,7 @@ use std::{path::PathBuf, sync::Arc};
 pub trait ContainerAdmin {
     fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn add_instance(&mut self, new_instance: InstanceConfiguration, ) -> Result<(), HolochainError>;
+    fn add_instance(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
     fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
@@ -81,10 +81,7 @@ impl ContainerAdmin for Container {
         Ok(())
     }
 
-    fn add_instance(
-        &mut self,
-        instance: InstanceConfiguration,
-    ) -> Result<(), HolochainError> {
+    fn add_instance(&mut self, instance: InstanceConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.instances.push(instance.clone());
         new_config.check_consistency()?;

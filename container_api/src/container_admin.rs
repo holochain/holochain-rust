@@ -105,8 +105,10 @@ impl ContainerAdmin for Container {
         self.config = new_config;
         self.save_config()?;
 
-        self.stop_instance(id)
-            .map_err(|err| HolochainError::ErrorGeneric(err.to_string()))?;
+        let result = self.stop_instance(id);
+        if result.is_err() {
+            notify(format!("Error stopping instance {}: \"{}\".", id, result.err().unwrap()));
+        }
         self.instances.remove(id);
 
         notify(format!("Removed instance \"{}\".", id));

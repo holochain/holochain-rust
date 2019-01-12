@@ -1,10 +1,4 @@
-use holochain_core_types::error::RibosomeErrorCode;
-use std::ffi::CStr;
-use std::os::raw::c_char;
-use serde::Deserialize;
-use holochain_core_types::error::HolochainError;
-use holochain_core_types::error::CoreError;
-use holochain_core_types::error::RibosomeMemoryAllocation;
+use holochain_core_types::error::RibosomeEncodedAllocation;
 use holochain_core_types::bits_n_pieces::u32_split_bits;
 use memory::MemoryBits;
 use memory::MEMORY_INT_MAX;
@@ -89,42 +83,11 @@ impl WasmAllocation {
         self.length
     }
 
-    fn read_str_raw<'a>(ptr_data: *mut c_char) -> &'a str {
-        let ptr_safe_c_str = unsafe { CStr::from_ptr(ptr_data) };
-        ptr_safe_c_str.to_str().unwrap()
-    }
-
-    /// Retrieve a stored string from an allocation.
-    /// Return error code if encoded_allocation is invalid.
-    pub fn read_to_string(&self) -> String {
-        WasmAllocation::read_str_raw(MemoryInt::from(self.offset()) as *mut c_char).to_string()
-    }
-
-    pub fn read_to_json<'s, T: Deserialize<'s>>(&self) -> Result<T, HolochainError> {
-        let s = WasmAllocation::read_str_raw(MemoryInt::from(self.offset()) as *mut c_char);
-        let maybe_obj: Result<T, serde_json::Error> = serde_json::from_str(&s);
-        match maybe_obj {
-            Ok(obj) => Ok(obj),
-            Err(_) => {
-                // TODO #394 - In Release, load error_string directly and not a CoreError
-                let maybe_hc_err: Result<CoreError, serde_json::Error> =
-                    serde_json::from_str(&s);
-
-                Err(match maybe_hc_err {
-                    Err(_) => {
-                        HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)
-                    }
-                    Ok(hc_err) => hc_err.kind,
-                })
-            }
-        }
-    }
-
 }
 
-impl TryFrom<RibosomeMemoryAllocation> for WasmAllocation {
+impl TryFrom<RibosomeEncodedAllocation> for WasmAllocation {
     type Error = AllocationError;
-    fn try_from(ribosome_memory_allocation: RibosomeMemoryAllocation) -> Result<Self, Self::Error> {
+    fn try_from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> Result<Self, Self::Error> {
         let (offset, length) = u32_split_bits(MemoryBits::from(ribosome_memory_allocation));
         WasmAllocation::new(offset.into(), length.into())
     }

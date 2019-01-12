@@ -1,7 +1,7 @@
 use holochain_core_types::error::{RibosomeErrorCode, RibosomeReturnCode};
 use holochain_core_types::bits_n_pieces::U16_MAX;
 use holochain_core_types::bits_n_pieces::u32_merge_bits;
-use holochain_core_types::error::RibosomeMemoryAllocation;
+use holochain_core_types::error::RibosomeEncodedAllocation;
 use holochain_core_types::bits_n_pieces::u32_split_bits;
 
 //--------------------------------------------------------------------------------------------------

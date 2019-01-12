@@ -31,6 +31,8 @@ use holochain_wasm_utils::{
 };
 use serde_json;
 use std::{convert::TryInto, os::raw::c_char};
+use holochain_wasm_utils::memory::stack::WasmStack;
+use holochain_core_types::error::RibosomeEncodedAllocation;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -201,7 +203,7 @@ pub enum BundleOnClose {
 pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
-    let allocation_of_input = store_as_json(&mut mem_stack, msg)?;
+    let allocation_of_input = mem_stack.write_json(msg)?;
 
     unsafe {
         hc_debug(allocation_of_input.encode());
@@ -363,14 +365,10 @@ pub fn call<S: Into<String>>(
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
+    let mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(
-        &mut mem_stack,
+    let input_allocation = mem_stack.write_json(
         ZomeFnCallArgs {
             instance_handle: instance_handle.into(),
             zome_name: zome_name.into(),
@@ -385,13 +383,16 @@ pub fn call<S: Into<String>>(
     )?;
 
     // Call WASMI-able commit
-    let encoded_allocation_of_result: u32 = unsafe { hc_call(allocation_of_input.encode() as u32) };
+    let return_code = unsafe { hc_call(input_allocation.into()) };
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result)?;
+    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+        Ok(allocation) => allocation.read_json(),
+        Err(err) => Err(err),
+    };
 
     // Free result & input allocations.
     mem_stack
-        .deallocate(allocation_of_input)
+        .deallocate(input_allocation)
         .expect("deallocate failed");
     // Done
     if result.ok {
@@ -449,24 +450,22 @@ pub fn call<S: Into<String>>(
 /// # }
 /// ```
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
+    let mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
-    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
+    let input_allocation = mem_stack.write_json(entry)?;
 
     // Call Ribosome's commit_entry()
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_commit_entry(allocation_of_input.encode() as u32);
-    }
+    let return_code = unsafe { hc_commit_entry(input_allocation.into()) };
 
-    // Deserialize complex result stored in wasm memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+        Ok(allocation) => allocation.read_json(),
+        Err(err) => Err(err),
+    };
+
     // Free result & input allocations
     mem_stack
-        .deallocate(allocation_of_input)
+        .deallocate(input_allocation)
         .expect("deallocate failed");
     // Done
     if result.ok {
@@ -544,29 +543,28 @@ pub fn get_entry_result(
     address: &Address,
     options: GetEntryOptions,
 ) -> ZomeApiResult<GetEntryResult> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
+    let mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
-    let entry_args = GetEntryArgs {
+    let args = GetEntryArgs {
         address: address.clone(),
         options,
     };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, entry_args)?;
+    let input_allocation = mem_stack.write_json(args)?;
 
     // Call WASMI-able get_entry
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_get_entry(allocation_of_input.encode() as u32);
-    }
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    let return_code = unsafe { hc_get_entry(RibosomeEncodedAllocation::from(input_allocation).into()) };
+
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+        Ok(allocation) => allocation.read_json(),
+        Err(err) => Err(err),
+    };
+
     // Free result & input allocations
     mem_stack
-        .deallocate(allocation_of_input)
+        .deallocate(input_allocation)
         .expect("deallocate failed");
     // Done
     if result.ok {
@@ -640,7 +638,7 @@ pub fn link_entries<S: Into<String>>(
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(
+    let input_allocation = mem_stack.write_json(
         &mut mem_stack,
         LinkEntriesArgs {
             base: base.clone(),
@@ -649,14 +647,17 @@ pub fn link_entries<S: Into<String>>(
         },
     )?;
 
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_link_entries(allocation_of_input.encode() as u32) };
+    let return_code = unsafe { hc_link_entries(input_allocation.into()) };
 
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+        Ok(allocation) => allocation.read_json(),
+        Err(err) => Err(err),
+    };
+
     // Free result & input allocations
     mem_stack
-        .deallocate(allocation_of_input)
+        .deallocate(input_allocation)
         .expect("deallocate failed");
     // Done
     if result.ok {
@@ -716,23 +717,22 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # }
 /// ```
 pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
-    // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, entry)?;
+    let mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_entry_address(allocation_of_input.encode() as u32);
-    }
+    // Put args in struct and serialize into memory
+    let input_allocation = mem_stack.write_json(entry)?;
+
+    let return_code = unsafe { hc_entry_address(input_allocation.into()) };
 
     // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+        Ok(allocation) => allocation.read_json(),
+        Err(err) => Err(err),
+    };
+
     // Free result & input allocations
     mem_stack
-        .deallocate(allocation_of_input)
+        .deallocate(input_allocation)
         .expect("deallocate failed");
     // Done
     if result.ok {
@@ -763,28 +763,27 @@ pub fn verify_signature<S: Into<String>>(
 /// The updated entry will hold the previous entry's address in its header,
 /// which will be used by validation routes.
 pub fn update_entry(new_entry: Entry, address: &Address) -> ZomeApiResult<Address> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
+    let mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
-    let update_args = UpdateEntryArgs {
+    let args = UpdateEntryArgs {
         new_entry,
         address: address.clone(),
     };
 
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, update_args)?;
-
+    let input_allocation = mem_stack.write_json(args)?;
     // Call Ribosome
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_update_entry(allocation_of_input.encode() as u32);
-    }
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    let return_code = unsafe { hc_update_entry(input_allocation.into()) };
+
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+        Ok(allocation) => allocation.read_json(),
+        Err(err) => Err(err),
+    };
+
     // Free result & input allocations
     mem_stack
-        .deallocate(allocation_of_input)
+        .deallocate(input_allocation)
         .expect("deallocate failed");
     // Done
     if result.ok {
@@ -803,25 +802,32 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
-    let mut mem_stack: SinglePageStack;
-    unsafe {
-        mem_stack = G_MEM_STACK.unwrap();
-    }
+    let mem_stack = unsafe { G_MEM_STACK.unwrap() };
+
+    let args = address.clone();
+
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, address.clone())?;
+    let input_allocation = mem_stack.write_json(args)?;
 
     // Call WASMI-able get_entry
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_remove_entry(allocation_of_input.encode() as u32);
-    }
-    let res = check_for_ribosome_error(encoded_allocation_of_result);
+    let return_code = unsafe { hc_remove_entry(input_allocation.into()) };
+
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+        Ok(allocation) => allocation.read_json(),
+        Err(err) => Err(err),
+    };
+
     // Free result & input allocations
     mem_stack
-        .deallocate(allocation_of_input)
+        .deallocate(input_allocation)
         .expect("deallocate failed");
     // Done
-    res
+    if result.ok {
+        Ok(JsonString::from(result.value).try_into()?)
+    } else {
+        Err(ZomeApiError::from(result.error))
+    }
 }
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links
@@ -852,35 +858,37 @@ pub fn get_links_with_options<S: Into<String>>(
     tag: S,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    let mem_stack = unsafe { G_MEM_STACK.unwrap() };
+
+    let args = GetLinksArgs {
+        entry_address: base.clone(),
+        tag: tag.into(),
+        options: options,
+    };
+
     // Put args in struct and serialize into memory
+    let input_allocation = mem_stack.write_json(args)?;
 
-    let allocation_of_input = store_as_json(
-        &mut mem_stack,
-        GetLinksArgs {
-            entry_address: base.clone(),
-            tag: tag.into(),
-            options: options,
-        },
-    )?;
+    // Call WASMI-able get_entry
+    let return_code = unsafe { hc_remove_entry(input_allocation.into()) };
 
-    // Call Ribosome
-    let encoded_allocation_of_result: u32 =
-        unsafe { hc_get_links(allocation_of_input.encode() as u32) };
-
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+        Ok(allocation) => allocation.read_json(),
+        Err(err) => Err(err),
+    };
 
     // Free result & input allocations
     mem_stack
-        .deallocate(allocation_of_input)
+        .deallocate(input_allocation)
         .expect("deallocate failed");
-
+    // Done
     if result.ok {
         Ok(JsonString::from(result.value).try_into()?)
     } else {
         Err(ZomeApiError::from(result.error))
     }
+
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
@@ -1115,32 +1123,4 @@ pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiR
 /// NOT YET AVAILABLE
 pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
-}
-
-//--------------------------------------------------------------------------------------------------
-// Helpers
-//--------------------------------------------------------------------------------------------------
-
-#[doc(hidden)]
-pub fn check_for_ribosome_error(encoded_allocation: u32) -> ZomeApiResult<()> {
-    // Check for error from Ribosome
-    let rib_result = decode_encoded_allocation(encoded_allocation);
-    match rib_result {
-        // Expecting a 'Success' return code
-        Err(ret_code) => match ret_code {
-            RibosomeReturnCode::Success => Ok(()),
-            RibosomeReturnCode::Failure(err_code) => {
-                Err(ZomeApiError::Internal(err_code.to_string()))
-            }
-        },
-        // If we have an allocation, than it should be a CoreError
-        Ok(allocation) => {
-            let maybe_err: Result<CoreError, HolochainError> =
-                load_json_from_raw(allocation.offset() as *mut c_char);
-            match maybe_err {
-                Err(hc_err) => Err(ZomeApiError::Internal(hc_err.to_string())),
-                Ok(core_err) => Err(ZomeApiError::Internal(core_err.to_string())),
-            }
-        }
-    }
 }

@@ -2,6 +2,7 @@ use holochain_core_types::bits_n_pieces::U16_MAX;
 
 pub mod allocation;
 pub mod stack;
+pub mod read;
 
 /// offsets, lengths, etc.
 type MemoryInt = u16;

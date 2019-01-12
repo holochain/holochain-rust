@@ -5,21 +5,21 @@ use std::{convert::TryFrom, str::FromStr};
 use bits_n_pieces::u32_split_bits;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct RibosomeMemoryAllocation(u32);
+pub struct RibosomeEncodedAllocation(u32);
 
-impl From<RibosomeMemoryAllocation> for u32 {
-    fn from(ribosome_memory_allocation: RibosomeMemoryAllocation) -> u32 {
+impl From<RibosomeEncodedAllocation> for u32 {
+    fn from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> u32 {
         ribosome_memory_allocation.0
     }
 }
 
-impl From<RibosomeMemoryAllocation> for i32 {
-    fn from(ribosome_memory_allocation: RibosomeMemoryAllocation) -> i32 {
+impl From<RibosomeEncodedAllocation> for i32 {
+    fn from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> i32 {
         u32::from(ribosome_memory_allocation) as i32
     }
 }
 
-impl ToString for RibosomeMemoryAllocation {
+impl ToString for RibosomeEncodedAllocation {
     fn to_string(&self) -> String {
         u32::from(self.to_owned()).to_string()
     }
@@ -32,7 +32,7 @@ impl ToString for RibosomeMemoryAllocation {
 #[derive(Clone, Debug, PartialEq)]
 pub enum RibosomeReturnCode {
     Success,
-    Allocation(RibosomeMemoryAllocation),
+    Allocation(RibosomeEncodedAllocation),
     Failure(RibosomeErrorCode),
 }
 
@@ -67,7 +67,7 @@ impl From<u32> for RibosomeReturnCode {
                 RibosomeReturnCode::Failure(RibosomeErrorCode::from_offset(offset))
             }
             else {
-                RibosomeReturnCode::Allocation(RibosomeMemoryAllocation(i))
+                RibosomeReturnCode::Allocation(RibosomeEncodedAllocation(i))
             }
         }
     }
@@ -117,6 +117,14 @@ impl RibosomeReturnCode {
         match offset {
             0 => Success,
             _ => Failure(RibosomeErrorCode::from_offset(offset)),
+        }
+    }
+
+    pub fn allocation_or_err(&self) -> Result<RibosomeEncodedAllocation, HolochainError> {
+        match self {
+            RibosomeReturnCode::Allocation(ribosome_allocation) => Ok(ribosome_allocation.to_owned()),
+            RibosomeReturnCode::Success => Err(HolochainError::Ribosome(RibosomeErrorCode::ZeroSizedAllocation)),
+            RibosomeReturnCode::Failure(err_code) => Err(HolochainError::Ribosome(err_code.to_owned())),
         }
     }
 }

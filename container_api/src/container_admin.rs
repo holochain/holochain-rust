@@ -73,7 +73,11 @@ impl ContainerAdmin for Container {
         for id in instance_ids.iter() {
             let result = self.stop_instance(id);
             if result.is_err() {
-                notify(format!("Error stopping instance {}: \"{}\".", id, result.err().unwrap()));
+                notify(format!(
+                    "Error stopping instance {}: \"{}\".",
+                    id,
+                    result.err().unwrap()
+                ));
             }
             notify(format!("Removed instance \"{}\".", id));
         }
@@ -107,7 +111,11 @@ impl ContainerAdmin for Container {
 
         let result = self.stop_instance(id);
         if result.is_err() {
-            notify(format!("Error stopping instance {}: \"{}\".", id, result.err().unwrap()));
+            notify(format!(
+                "Error stopping instance {}: \"{}\".",
+                id,
+                result.err().unwrap()
+            ));
         }
         self.instances.remove(id);
 

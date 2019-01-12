@@ -4,6 +4,7 @@ use memory::MemoryBits;
 use memory::MEMORY_INT_MAX;
 use std::convert::TryFrom;
 use memory::MemoryInt;
+use holochain_core_types::bits_n_pieces::u32_merge_bits;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Offset(MemoryInt);
@@ -96,5 +97,11 @@ impl TryFrom<RibosomeEncodedAllocation> for WasmAllocation {
     fn try_from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> Result<Self, Self::Error> {
         let (offset, length) = u32_split_bits(MemoryBits::from(ribosome_memory_allocation));
         WasmAllocation::new(offset.into(), length.into())
+    }
+}
+
+impl From<WasmAllocation> for RibosomeEncodedAllocation {
+    fn from(wasm_allocation: WasmAllocation) -> Self {
+        u32_merge_bits(wasm_allocation.offset().into(), wasm_allocation.length().into()).into()
     }
 }

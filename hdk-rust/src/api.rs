@@ -31,6 +31,7 @@ use holochain_wasm_utils::{
 };
 use serde_json;
 use std::{convert::TryInto};
+use holochain_core_types::error::RibosomeEncodingBits;
 use holochain_core_types::error::RibosomeEncodedAllocation;
 
 //--------------------------------------------------------------------------------------------------
@@ -382,7 +383,7 @@ pub fn call<S: Into<String>>(
 
 }
 
-fn execute<A, F, R>(args: A, f: F) -> ZomeApiResult<R> {
+fn execute<A, F, R>(args: A, f: unsafe extern "C" fn(RibosomeEncodingBits) -> RibosomeEncodingBits) -> ZomeApiResult<R> {
     let mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
     let wasm_allocation = mem_stack.write_json(args)?;

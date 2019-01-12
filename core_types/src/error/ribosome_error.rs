@@ -4,18 +4,23 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
 use bits_n_pieces::u32_split_bits;
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct RibosomeEncodedAllocation(u32);
+/// size of the integer that encodes ribosome codes
+pub type RibosomeEncodingBits = u32;
+/// size of the integer that represents a ribosome code
+pub type RibosomeCodeBits = u16;
 
-impl From<RibosomeEncodedAllocation> for u32 {
-    fn from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> u32 {
+#[derive(Clone, Debug, PartialEq)]
+pub struct RibosomeEncodedAllocation(RibosomeEncodingBits);
+
+impl From<RibosomeEncodedAllocation> for RibosomeEncodingBits {
+    fn from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> RibosomeEncodingBits {
         ribosome_memory_allocation.0
     }
 }
 
-impl From<RibosomeEncodedAllocation> for i32 {
-    fn from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> i32 {
-        u32::from(ribosome_memory_allocation) as i32
+impl From<RibosomeEncodingBits> for RibosomeEncodedAllocation {
+    fn from(i: RibosomeEncodingBits) -> Self {
+        Self(i)
     }
 }
 
@@ -36,35 +41,35 @@ pub enum RibosomeReturnCode {
     Failure(RibosomeErrorCode),
 }
 
-impl From<RibosomeReturnCode> for i32 {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> i32 {
+// impl From<RibosomeReturnCode> for i32 {
+//     fn from(ribosome_return_code: RibosomeReturnCode) -> i32 {
+//         match ribosome_return_code {
+//             RibosomeReturnCode::Success => 0,
+//             RibosomeReturnCode::Allocation(allocation) => i32::from(allocation),
+//             RibosomeReturnCode::Failure(code) => code as i32,
+//         }
+//     }
+// }
+
+impl From<RibosomeReturnCode> for RibosomeEncodingBits {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> RibosomeEncodingBits {
         match ribosome_return_code {
             RibosomeReturnCode::Success => 0,
-            RibosomeReturnCode::Allocation(allocation) => i32::from(allocation),
-            RibosomeReturnCode::Failure(code) => code as i32,
+            RibosomeReturnCode::Allocation(allocation) => RibosomeEncodingBits::from(allocation),
+            RibosomeReturnCode::Failure(code) => code as i32 as RibosomeEncodingBits,
         }
     }
 }
 
-impl From<RibosomeReturnCode> for u32 {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> u32 {
-        match ribosome_return_code {
-            RibosomeReturnCode::Success => 0,
-            RibosomeReturnCode::Allocation(allocation) => u32::from(allocation),
-            RibosomeReturnCode::Failure(code) => code as i32 as u32,
-        }
-    }
-}
-
-impl From<u32> for RibosomeReturnCode {
-    fn from(i: u32) -> Self {
+impl From<RibosomeEncodingBits> for RibosomeReturnCode {
+    fn from(i: RibosomeEncodingBits) -> Self {
         if i == 0 {
             RibosomeReturnCode::Success
         }
         else {
-            let (offset, length) = u32_split_bits(i);
-            if length == 0 {
-                RibosomeReturnCode::Failure(RibosomeErrorCode::from_offset(offset))
+            let (code_int, maybe_allocation_length) = u32_split_bits(i);
+            if maybe_allocation_length == 0 {
+                RibosomeReturnCode::Failure(RibosomeErrorCode::from_code_int(code_int))
             }
             else {
                 RibosomeReturnCode::Allocation(RibosomeEncodedAllocation(i))
@@ -111,13 +116,6 @@ impl TryFrom<JsonString> for RibosomeReturnCode {
 impl RibosomeReturnCode {
     pub fn from_error(err_code: RibosomeErrorCode) -> Self {
         Failure(err_code)
-    }
-
-    pub fn from_offset(offset: u16) -> Self {
-        match offset {
-            0 => Success,
-            _ => Failure(RibosomeErrorCode::from_offset(offset)),
-        }
     }
 
     pub fn allocation_or_err(&self) -> Result<RibosomeEncodedAllocation, HolochainError> {
@@ -177,8 +175,8 @@ impl From<RibosomeErrorCode> for String {
 }
 
 impl RibosomeErrorCode {
-    pub fn from_offset(offset: u16) -> Self {
-        match offset {
+    pub fn from_code_int(code: RibosomeCodeBits) -> Self {
+        match code {
             0 => unreachable!(),
             2 => ArgumentDeserializationFailed,
             3 => OutOfMemory,

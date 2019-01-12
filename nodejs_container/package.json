@@ -1,6 +1,6 @@
 {
   "name": "@holochain/holochain-nodejs-bleeding",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Nodejs Holochain Container primarily for test execution",
   "repository": {
     "type": "git",

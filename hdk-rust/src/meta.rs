@@ -20,6 +20,9 @@ use holochain_wasm_utils::{
     holochain_core_types::error::RibosomeErrorCode,
 };
 use std::collections::BTreeMap;
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use holochain_wasm_utils::memory::MemoryBits;
+use holochain_core_types::error::RibosomeEncodedAllocation;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -59,7 +62,7 @@ extern "C" {
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    encoded_allocation_of_input: u32,
+    encoded_allocation_of_input: MemoryBits,
 ) -> u32 {
     crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
@@ -69,7 +72,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     }
 
     // Deserialize input
-    let maybe_name = load_string(encoded_allocation_of_input);
+    let maybe_name = encoded_allocation_of_input.into().into().load_string();
     if let Err(err_code) = maybe_name {
         return err_code as u32;
     }
@@ -84,7 +87,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         None => RibosomeErrorCode::CallbackFailed as u32,
         Some(mut entry_type_definition) => {
             let package = (*entry_type_definition.package_creator)();
-            crate::global_fns::store_and_return_output(package)
+            crate::global_fns::write_json(package)
         }
     }
 }
@@ -99,9 +102,9 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     }
 
     // Deserialize input
-    let maybe_name = load_json(encoded_allocation_of_input);
+    let maybe_name = encoded_allocation_of_input.into().into().read_json();
     if let Err(hc_err) = maybe_name {
-        return crate::global_fns::store_and_return_output(hc_err);
+        return crate::global_fns::write_json(hc_err);
     }
     let entry_validation_args: EntryValidationArgs = maybe_name.unwrap();
 
@@ -120,7 +123,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
 
             match validation_result {
                 Ok(()) => 0,
-                Err(fail_string) => crate::global_fns::store_and_return_output(fail_string),
+                Err(fail_string) => crate::global_fns::write_json(fail_string),
             }
         }
     }
@@ -136,9 +139,9 @@ pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_in
     }
 
     // Deserialize input
-    let maybe_name = load_json(encoded_allocation_of_input);
+    let maybe_name = encoded_allocation_of_input.into().into().read_json();
     if let Err(hc_err) = maybe_name {
-        return ::global_fns::store_and_return_output(hc_err);
+        return ::global_fns::write_json(hc_err);
     }
     let link_validation_args: LinkValidationPackageArgs = maybe_name.unwrap();
 
@@ -155,7 +158,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_in
         })
         .and_then(|mut link_definition| {
             let package = (*link_definition.package_creator)();
-            Some(::global_fns::store_and_return_output(package))
+            Some(::global_fns::write_json(package))
         })
         .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)
 }
@@ -170,9 +173,9 @@ pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
     }
 
     // Deserialize input
-    let maybe_name = load_json(encoded_allocation_of_input);
+    let maybe_name = encoded_allocation_of_input.into().into().read_json();
     if let Err(hc_err) = maybe_name {
-        return ::global_fns::store_and_return_output(hc_err);
+        return ::global_fns::write_json(hc_err);
     }
     let link_validation_args: LinkValidationArgs = maybe_name.unwrap();
 
@@ -198,7 +201,7 @@ pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
             );
             Some(match validation_result {
                 Ok(()) => 0,
-                Err(fail_string) => ::global_fns::store_and_return_output(fail_string),
+                Err(fail_string) => ::global_fns::write_json(fail_string),
             })
         })
         .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)

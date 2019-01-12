@@ -8,7 +8,7 @@ fn write_in_wasm_memory(
     stack: &mut SinglePageStack,
     bytes: &[u8],
     len: u16,
-) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+) -> Result<WasmAllocation, RibosomeErrorCode> {
     if u32::from(len) + u32::from(stack.top()) > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
@@ -48,10 +48,10 @@ pub fn store_string_into_encoded_allocation(stack: &mut SinglePageStack, s: &str
 //-------------------------------------------------------------------------------------------------
 
 /// Write a data struct as a json string in wasm memory according to stack state.
-pub fn store_as_json<J: TryInto<JsonString>>(
+pub fn write_json<J: TryInto<JsonString>>(
     stack: &mut SinglePageStack,
     jsonable: J,
-) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+) -> Result<WasmAllocation, AllocationError> {
     let j: JsonString = jsonable
         .try_into()
         .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
@@ -62,12 +62,4 @@ pub fn store_as_json<J: TryInto<JsonString>>(
         return Err(RibosomeErrorCode::OutOfMemory);
     }
     write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16)
-}
-
-// Sugar
-pub fn store_as_json_into_encoded_allocation<J: TryInto<JsonString>>(
-    stack: &mut SinglePageStack,
-    jsonable: J,
-) -> i32 {
-    store_as_json(stack, jsonable).unwrap().encode() as i32
 }

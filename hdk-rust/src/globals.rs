@@ -3,9 +3,10 @@
 
 use crate::init_globals::init_globals;
 use holochain_wasm_utils::{api_serialization::ZomeApiGlobals};
+use holochain_wasm_utils::memory::stack::WasmStack;
 
 /// Internal global for memory usage
-pub static mut G_MEM_STACK: Option<SinglePageStack> = None;
+pub static mut G_MEM_STACK: Option<WasmStack> = None;
 
 // Internal global for retrieving all Zome API globals
 lazy_static! {

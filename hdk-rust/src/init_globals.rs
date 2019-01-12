@@ -4,7 +4,7 @@
 
 use error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
-use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory_serialization::load_json};
+use holochain_wasm_utils::{api_serialization::ZomeApiGlobals};
 use std::convert::TryInto;
 
 #[allow(dead_code)]

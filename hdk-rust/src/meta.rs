@@ -18,7 +18,6 @@ use holochain_wasm_utils::{
         EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
-    memory_serialization::{load_json, load_string, store_string_into_encoded_allocation},
 };
 use std::collections::BTreeMap;
 

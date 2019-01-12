@@ -28,8 +28,6 @@ use holochain_wasm_utils::{
         hash::HashString,
         json::{JsonString, RawString},
     },
-    memory_allocation::*,
-    memory_serialization::*,
 };
 use serde_json;
 use std::{convert::TryInto, os::raw::c_char};

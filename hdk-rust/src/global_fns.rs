@@ -4,14 +4,15 @@
 use crate::globals::G_MEM_STACK;
 use holochain_core_types::json::JsonString;
 pub use holochain_wasm_utils::api_serialization::validation::*;
-use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 use std::convert::TryInto;
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use holochain_wasm_utils::memory::stack::WasmStack;
 
 /// Init global memory stack
-pub fn init_global_memory(encoded_allocation_of_input: u32) {
+pub fn init_global_memory(initial_allocation: WasmAllocation) {
     unsafe {
         G_MEM_STACK =
-            Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
+            Some(WasmStack::from(initial_allocation));
     }
 }
 

@@ -2,6 +2,28 @@ use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use crate::{error::HolochainError, json::JsonString};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
+use bits_n_pieces::u32_split_bits;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct RibosomeMemoryAllocation(u32);
+
+impl From<RibosomeMemoryAllocation> for u32 {
+    fn from(ribosome_memory_allocation: RibosomeMemoryAllocation) -> u32 {
+        ribosome_memory_allocation.0
+    }
+}
+
+impl From<RibosomeMemoryAllocation> for i32 {
+    fn from(ribosome_memory_allocation: RibosomeMemoryAllocation) -> i32 {
+        u32::from(ribosome_memory_allocation) as i32
+    }
+}
+
+impl ToString for RibosomeMemoryAllocation {
+    fn to_string(&self) -> String {
+        u32::from(self.to_owned()).to_string()
+    }
+}
 
 /// Enum of all possible RETURN codes that a Zome API Function could return.
 /// Represents an encoded allocation of zero length with the return code as offset.
@@ -10,6 +32,7 @@ use std::{convert::TryFrom, str::FromStr};
 #[derive(Clone, Debug, PartialEq)]
 pub enum RibosomeReturnCode {
     Success,
+    Allocation(RibosomeMemoryAllocation),
     Failure(RibosomeErrorCode),
 }
 
@@ -17,6 +40,7 @@ impl From<RibosomeReturnCode> for i32 {
     fn from(ribosome_return_code: RibosomeReturnCode) -> i32 {
         match ribosome_return_code {
             RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Allocation(allocation) => i32::from(allocation),
             RibosomeReturnCode::Failure(code) => code as i32,
         }
     }
@@ -26,7 +50,25 @@ impl From<RibosomeReturnCode> for u32 {
     fn from(ribosome_return_code: RibosomeReturnCode) -> u32 {
         match ribosome_return_code {
             RibosomeReturnCode::Success => 0,
+            RibosomeReturnCode::Allocation(allocation) => u32::from(allocation),
             RibosomeReturnCode::Failure(code) => code as i32 as u32,
+        }
+    }
+}
+
+impl From<u32> for RibosomeReturnCode {
+    fn from(i: u32) -> Self {
+        if i == 0 {
+            RibosomeReturnCode::Success
+        }
+        else {
+            let (offset, length) = u32_split_bits(i);
+            if length == 0 {
+                RibosomeReturnCode::Failure(RibosomeErrorCode::from_offset(offset))
+            }
+            else {
+                RibosomeReturnCode::Allocation(RibosomeMemoryAllocation(i))
+            }
         }
     }
 }
@@ -35,6 +77,7 @@ impl ToString for RibosomeReturnCode {
     fn to_string(&self) -> String {
         match self {
             Success => "Success".to_string(),
+            Allocation(allocation) => allocation.to_string(),
             Failure(code) => code.to_string(),
         }
     }
@@ -144,8 +187,8 @@ impl RibosomeErrorCode {
 
     pub fn from_return_code(ret_code: RibosomeReturnCode) -> Self {
         match ret_code {
-            Success => unreachable!(),
             Failure(rib_err) => rib_err,
+            _ => unreachable!(),
         }
     }
 }

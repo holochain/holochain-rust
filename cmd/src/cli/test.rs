@@ -66,10 +66,10 @@ pub mod tests {
     use super::*;
     use crate::cli::{
         init::{init, tests::gen_dir},
-        package,
+//        package,
     };
-    use assert_cmd::prelude::*;
-    use std::{env, process::Command};
+//    use assert_cmd::prelude::*;
+//    use std::{env, process::Command};
 
     #[test]
     // flagged as broken for:

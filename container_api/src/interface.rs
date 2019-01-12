@@ -284,6 +284,19 @@ impl ContainerApiBuilder {
             Ok(serde_json::Value::String("success".into()))
         });
 
+        self.io.add_method("admin/instance/list", move |_params| {
+            let instances = container_call!(|c| Ok(c.config.instances.clone()) as Result<Vec<InstanceConfiguration>, String>)?;
+            Ok(serde_json::Value::Array(instances.iter()
+                .map(|instance|
+                    json!({
+                        "id": instance.id,
+                        "dna": instance.dna,
+                        "agent": instance.agent,
+                    }))
+                .collect()
+            ))
+        });
+
         self
     }
 }

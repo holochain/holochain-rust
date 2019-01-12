@@ -37,7 +37,7 @@ use crate::{
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
-    net_connection::NetConnection,
+    net_connection::NetSend,
     protocol_wrapper::{MessageData, ProtocolWrapper},
 };
 use snowflake::ProcessUniqueId;
@@ -122,7 +122,7 @@ pub fn send_message(
         data: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
     };
 
-    let _ = send(network_state, ProtocolWrapper::SendMessage(data))?;
+    let _ = send(network_state, ProtocolWrapper::GenericMessage(data))?;
 
     network_state.direct_message_connections.insert(id, message);
 

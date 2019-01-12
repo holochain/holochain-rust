@@ -1,7 +1,7 @@
 
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
-    net_connection::NetConnection,
+    net_connection::NetSend,
     protocol::Protocol,
     protocol_wrapper::{
         ProtocolWrapper,
@@ -14,7 +14,7 @@ static TIMEOUT_MS: usize = 5000;
 
 pub struct P2pNode {
     // Need to hold the tempdir to keep it alive, otherwise will get dir error
-    maybe_temp_dir: Option<tempfile::TempDir>,
+    _maybe_temp_dir: Option<tempfile::TempDir>,
     p2p_connection: P2pNetwork,
     receiver: mpsc::Receiver<Protocol>,
 }
@@ -22,10 +22,10 @@ pub struct P2pNode {
 impl P2pNode {
     /// Private constructor
     #[cfg_attr(tarpaulin, skip)]
-    fn new_with_config(config: &P2pConfig, maybe_temp_dir: Option<tempfile::TempDir>) -> Self {
+    fn new_with_config(config: &P2pConfig, _maybe_temp_dir: Option<tempfile::TempDir>) -> Self {
         // use a mpsc channel for messaging between p2p connection and main thread
         let (sender, receiver) = mpsc::channel::<Protocol>();
-        // create a new P2pNetwork instance
+        // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
                 sender.send(r?)?;
@@ -34,7 +34,7 @@ impl P2pNode {
             &config,
         ).expect("Failed to create P2pNetwork");
 
-        P2pNode { maybe_temp_dir, p2p_connection, receiver }
+        P2pNode { _maybe_temp_dir, p2p_connection, receiver }
     }
 
     // Constructor for a mock P2P Network
@@ -66,22 +66,35 @@ impl P2pNode {
     // See if there is a message to receive
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<ProtocolWrapper> {
-        // let data = self.receiver.try_recv()?;
-        let data = self.receiver.recv()?;
-        // println!("try_recv() data = {:?}", data);
+        //println!("try_recv() START");
+        let data = self.receiver.try_recv()?;
+
+        // Print non-ping messages
+        match data {
+            Protocol::NamedBinary(_) => println!("<< P2pNode recv: {:?}", data),
+            Protocol::Json(_) => println!("<< P2pNode recv: {:?}", data),
+            _ => (),
+        };
+
         match ProtocolWrapper::try_from(&data) {
             Ok(r) => Ok(r),
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    println!("##### Received parse error ##### {} {:?}", s, data);
+                    println!("###### Received parse error ###### {} {:?}", s, data);
                 }
                 Err(e)
             }
         }
     }
 
-    /// Wait for a message corresponding to predicate
+//    // See if there is a message to receive
+//    #[cfg_attr(tarpaulin, skip)]
+//    pub fn recv(&mut self) -> NetResult<ProtocolWrapper> {
+//        ProtocolWrapper::try_from(self.receiver.recv()?)
+//    }
+
+    /// Wait for receiving a message corresponding to predicate
     #[cfg_attr(tarpaulin, skip)]
     pub fn wait(
         &mut self,
@@ -92,9 +105,15 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
+                println!("P2pNode::wait() received: {:?}", p2p_msg);
                 did_something = true;
                 if predicate(&p2p_msg) {
+                    println!("P2pNode::wait() found match");
                     return Ok(p2p_msg);
+                }
+                else
+                {
+                    println!("P2pNode::wait() found NOT match");
                 }
             }
 
@@ -121,10 +140,10 @@ impl P2pNode {
     }
 }
 
-impl NetConnection for P2pNode {
+impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        // println!("P2pNode.send(): {:?}", data);
+        println!(">> P2pNode send: {:?}", data);
         self.p2p_connection.send(data)
     }
 }

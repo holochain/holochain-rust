@@ -3,7 +3,7 @@
 //! and at load-time instantiate the configured "backend"
 
 use holochain_net_connection::{
-    net_connection::{NetConnection, NetHandler, NetWorker},
+    net_connection::{NetSend, NetHandler, NetReceive, NetReceiverFactory},
     net_connection_thread::NetConnectionThread,
     protocol::Protocol,
     NetResult,
@@ -25,27 +25,24 @@ impl P2pNetwork {
     pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
         let network_config = config.backend_config.to_string().into();
-        // so far, we have only implemented the "ipc" backend type
-        let connection = match config.backend_kind {
+        // Provide worker factory dependening on backend kind
+        let worker_factory: NetReceiverFactory = match config.backend_kind {
+            // Creates an IpcNetWorker with the passed backend config
             P2pBackendKind::IPC => {
-                // create a new ipc backend with the passed sub "config" info
-                NetConnectionThread::new(
-                    handler,
-                    Box::new(move |h| {
-                        let out: Box<NetWorker> = Box::new(IpcNetWorker::new(h, &network_config)?);
-                        Ok(out)
-                    }),
-                    None,
-                )?
-            }
-            P2pBackendKind::MOCK => NetConnectionThread::new(
-                handler,
                 Box::new(move |h| {
-                    Ok(Box::new(MockWorker::new(h, &network_config)?) as Box<NetWorker>)
-                }),
-                None,
-            )?,
+                    Ok(Box::new(IpcNetWorker::new(h, &network_config)?) as Box<NetReceive>)
+                })
+            }
+            // Creates a MockWorker
+            P2pBackendKind::MOCK => {
+                Box::new(move |h| {
+                    Ok(Box::new(MockWorker::new(h, &network_config)) as Box<NetReceive>)
+                })
+            },
         };
+        // Create NetConnectionThread with appropriate worker factory
+        let connection = NetConnectionThread::new(handler, worker_factory, None)?;
+        // Done
         Ok(P2pNetwork { connection })
     }
 
@@ -66,7 +63,7 @@ impl std::fmt::Debug for P2pNetwork {
     }
 }
 
-impl NetConnection for P2pNetwork {
+impl NetSend for P2pNetwork {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         self.connection.send(data)

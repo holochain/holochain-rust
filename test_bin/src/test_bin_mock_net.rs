@@ -12,7 +12,7 @@ pub mod p2p_node;
 
 
 use holochain_net_connection::{
-    net_connection::NetConnection,
+    net_connection::NetSend,
     protocol::Protocol,
     protocol_wrapper::{MessageData, ProtocolWrapper, TrackAppData},
     NetResult,
@@ -24,6 +24,29 @@ use std::{convert::TryFrom, sync::mpsc};
 use failure::Error;
 
 use p2p_node::P2pNode;
+
+// MACROS
+macro_rules! one_let {
+    ($p:pat = $enum:ident $code:tt) => {
+        if let $p = $enum {
+            $code
+        } else {
+            unimplemented!();
+        }
+    };
+}
+
+/// Macro for transforming a type check into a predicate
+macro_rules! one_is {
+    ($p:pat) => {
+        |d| {
+            if let $p = d {
+                return true;
+            }
+            return false;
+        }
+    };
+}
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
@@ -40,7 +63,7 @@ fn exec_mock_test() -> NetResult<()> {
     let mut node_b = P2pNode::new_mock();
 
     node_a.send(
-        ProtocolWrapper::TrackApp(TrackAppData {
+        ProtocolWrapper::TrackDna(TrackAppData {
             dna_address: "sandwich".into(),
             agent_id: "node-1".to_string(),
         })
@@ -49,7 +72,7 @@ fn exec_mock_test() -> NetResult<()> {
 
 
     node_b.send(
-        ProtocolWrapper::TrackApp(TrackAppData {
+        ProtocolWrapper::TrackDna(TrackAppData {
             dna_address: "sandwich".into(),
             agent_id: "node-2".to_string(),
         })
@@ -57,7 +80,7 @@ fn exec_mock_test() -> NetResult<()> {
     ).expect("Failed sending TrackAppData on node_b");
 
     node_a.send(
-        ProtocolWrapper::SendMessage(MessageData {
+        ProtocolWrapper::GenericMessage(MessageData {
             dna_address: "sandwich".into(),
             to_agent_id: "node-2".to_string(),
             from_agent_id: "node-1".to_string(),
@@ -65,16 +88,16 @@ fn exec_mock_test() -> NetResult<()> {
             data: json!("hello"),
         })
         .into(),
-    ).expect("Failed sending SendMessage on node_a");
+    ).expect("Failed sending GenericMessage to node_b");
 
-    //let res = ProtocolWrapper::try_from(receiver1.recv()?)?;
-
-    let res = node_b.try_recv().expect("Failed to receive message on node_b");
+    let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleGenericMessage(_))))?;
+    // let res = node_b.recv().expect("Failed to receive message on node_b");
+    //let res = node_b.try_recv().expect("Failed to receive message on node_b");
     println!("got: {:?}", res);
 
-    if let ProtocolWrapper::HandleSend(msg) = res {
+    if let ProtocolWrapper::HandleGenericMessage(msg) = res {
         node_b.send(
-            ProtocolWrapper::HandleSendResult(MessageData {
+            ProtocolWrapper::HandleGenericMessageResponse(MessageData {
                 dna_address: "sandwich".into(),
                 to_agent_id: "node-1".to_string(),
                 from_agent_id: "node-2".to_string(),
@@ -84,13 +107,14 @@ fn exec_mock_test() -> NetResult<()> {
             .into(),
         ).expect("Failed sending HandleSendResult on node_b");;
     } else {
-        panic!("bad msg");
+        panic!("bad generic msg");
     }
 
-    let res = node_a.try_recv()?;
+    let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::GenericMessageResponse(_))))?;
+    // let res = node_a.recv().expect("Failed to receive message on node_a");
     println!("got: {:?}", res);
 
-    if let ProtocolWrapper::SendResult(msg) = res {
+    if let ProtocolWrapper::GenericMessageResponse(msg) = res {
         assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
     } else {
         panic!("bad msg");

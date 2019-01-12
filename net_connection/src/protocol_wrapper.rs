@@ -165,7 +165,14 @@ pub struct DhtMetaData {
     pub content: serde_json::Value,
 }
 
-/// High level p2p / network message
+/// Separate IpcProtocol from DnaNetworkProtocol ?
+/// Rename to: ProtocolMessage / NetworkMessage ?
+/// Enum holding all Messages types in the 'hc-core <-> P2P Network Module' protocol.
+/// There are 4 categories of messages:
+///  - Notify: Notify the network of peers without expecting anything.
+///  - Publish: Expects some action by other peers but not any returned message
+///  - Request: Request something from the network of peers. Expects a Response
+///  - Response/Send: A response to a request by another peer.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(tag = "method")]
 pub enum ProtocolWrapper {
@@ -173,7 +180,7 @@ pub enum ProtocolWrapper {
     #[serde(rename = "requestState")]
     RequestState,
 
-    /// [recv] p2p module is telling us the current state
+    /// [recv] p2p module is telling us its current state
     #[serde(rename = "state")]
     State(StateData),
 
@@ -199,23 +206,23 @@ pub enum ProtocolWrapper {
 
     /// [send] send a message to another node on the network
     #[serde(rename = "send")]
-    SendMessage(MessageData),
+    GenericMessage(MessageData),
 
-    /// [recv] recv the response back from a previous `SendMessage`
+    /// [recv] recv the response back from a previous `GenericMessage`
     #[serde(rename = "sendResult")]
-    SendResult(MessageData),
+    GenericMessageResponse(MessageData),
 
     /// [recv] another node has sent us a message
     #[serde(rename = "handleSend")]
-    HandleSend(MessageData),
+    HandleGenericMessage(MessageData),
 
-    /// [send] send our response to a previous `HandleSend`
+    /// [send] send our response to a previous `HandleGenericMessage`
     #[serde(rename = "handleSendResult")]
-    HandleSendResult(MessageData),
+    HandleGenericMessageResponse(MessageData),
 
     /// [send] send out a "trackApp" request
     #[serde(rename = "trackApp")]
-    TrackApp(TrackAppData),
+    TrackDna(TrackAppData),
 
     /// [send / recv] report success for a messages with _id parameter
     #[serde(rename = "successResult")]

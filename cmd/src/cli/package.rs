@@ -292,9 +292,9 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 // too slow!
 #[cfg(feature = "broken-tests")]
 mod tests {
+    use crate::cli::init::tests::gen_dir;
     use assert_cmd::prelude::*;
     use std::process::Command;
-    use crate::cli::init::tests::gen_dir;
 
     #[test]
     fn package_and_unpack_isolated() {

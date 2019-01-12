@@ -156,31 +156,33 @@ pub fn run(
 // 1. taking 60+ seconds
 //#[cfg(feature = "broken-tests")]
 mod tests {
+    use crate::cli::init::{init, tests::gen_dir};
     use assert_cmd::prelude::*;
-    use std::process::Command;
-    use crate::cli::init::tests::gen_dir;
-    use std::env;
+    use std::{env, process::Command};
 
     #[test]
     fn test_run() {
         let temp_dir = gen_dir();
         let temp_dir_path = temp_dir.path();
-        let _temp_dir_path_buf = temp_dir_path.to_path_buf();
+        let temp_dir_path_buf = temp_dir_path.to_path_buf();
+
+        let mut run_cmd = Command::main_binary().unwrap();
+        let mut run2_cmd = Command::main_binary().unwrap();
+
+        let _ = init(&temp_dir_path_buf);
 
         assert!(env::set_current_dir(&temp_dir_path).is_ok());
 
-        Command::main_binary()
-            .unwrap()
-            .args(&["init", "my_dna"])
-            .assert()
-            .success();
-
-        assert!(env::set_current_dir(&temp_dir_path.join("my_dna")).is_ok());
-
-        Command::main_binary()
-            .unwrap()
+        let output = run_cmd
             .args(&["run", "--package"])
-            .assert()
-            .success();
+            .output()
+            .expect("should run");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m bundle file at \\\"bundle.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development container started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the container and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+
+        let output = run2_cmd
+            .args(&["run", "--interface", "http"])
+            .output()
+            .expect("should run");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"Starting instance \\\"test-instance\\\"...\\nHolochain development container started. Running http server on port 8888\\nType \\\'exit\\\' to stop the container and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
     }
 }

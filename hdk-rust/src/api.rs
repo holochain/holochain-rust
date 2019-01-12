@@ -31,6 +31,7 @@ use holochain_wasm_utils::{
 };
 use std::convert::TryFrom;
 use holochain_core_types::error::RibosomeReturnCode;
+use init_globals::hc_init_globals;
 use serde_json;
 use std::{convert::TryInto};
 use holochain_core_types::error::RibosomeEncodingBits;
@@ -237,7 +238,7 @@ pub enum Dispatch {
 
 impl Dispatch {
     pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(&self, input: I) -> ZomeApiResult<O> {
-        let mem_stack = unsafe { G_MEM_STACK.unwrap() };
+        let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
         let wasm_allocation = mem_stack.write_json(input)?;
 
@@ -245,10 +246,16 @@ impl Dispatch {
         let encoded_input: RibosomeEncodingBits = RibosomeEncodedAllocation::from(wasm_allocation).into();
         let encoded_output: RibosomeEncodingBits = unsafe {
             match self {
-                Call => hc_call(encoded_input),
-                CommitEntry => hc_commit_entry(encoded_input),
-                GetEntry => hc_get_entry(encoded_input),
-                LinkEntries => hc_link_entries(encoded_input),
+                Dispatch::Call => hc_call(encoded_input),
+                Dispatch::CommitEntry => hc_commit_entry(encoded_input),
+                Dispatch::GetEntry => hc_get_entry(encoded_input),
+                Dispatch::LinkEntries => hc_link_entries(encoded_input),
+                Dispatch::InitGlobals => hc_init_globals(encoded_input),
+                Dispatch::EntryAddress => hc_entry_address(encoded_input),
+                Dispatch::UpdateEntry => hc_update_entry(encoded_input),
+                Dispatch::RemoveEntry => hc_remove_entry(encoded_input),
+                Dispatch::Query => hc_query(encoded_input),
+                Dispatch::Send => hc_send(encoded_input),
             }
         };
         let return_code: RibosomeReturnCode = encoded_output.into();
@@ -296,7 +303,7 @@ impl Dispatch {
         if result.ok {
             match JsonString::from(result.value).try_into() {
                 Ok(v) => Ok(v),
-                Err(e) => {
+                Err(_) => {
                     Err(ZomeApiError::from(String::from("Failed to deserialize return value")))
                 },
             }

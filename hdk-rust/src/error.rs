@@ -66,7 +66,10 @@ impl From<RibosomeErrorCode> for ZomeApiError {
 impl From<AllocationError> for ZomeApiError {
     fn from(allocation_error: AllocationError) -> ZomeApiError {
         match allocation_error {
-
+            AllocationError::OutOfBounds => ZomeApiError::Internal("Allocation out of bounds".into()),
+            AllocationError::ZeroLength => ZomeApiError::Internal("Allocation zero length".into()),
+            AllocationError::BadStackAlignment => ZomeApiError::Internal("Allocation out of alignment with stack".into()),
+            AllocationError::Serialization => ZomeApiError::Internal("Allocation serialization failure".into()),
         }
     }
 }

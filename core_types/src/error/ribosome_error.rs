@@ -6,6 +6,8 @@ use bits_n_pieces::u32_split_bits;
 
 /// size of the integer that encodes ribosome codes
 pub type RibosomeEncodingBits = u32;
+/// size of the integer that wasm sees
+pub type RibosomeRuntimeBits = i32;
 /// size of the integer that represents a ribosome code
 pub type RibosomeCodeBits = u16;
 
@@ -40,16 +42,6 @@ pub enum RibosomeReturnCode {
     Allocation(RibosomeEncodedAllocation),
     Failure(RibosomeErrorCode),
 }
-
-// impl From<RibosomeReturnCode> for i32 {
-//     fn from(ribosome_return_code: RibosomeReturnCode) -> i32 {
-//         match ribosome_return_code {
-//             RibosomeReturnCode::Success => 0,
-//             RibosomeReturnCode::Allocation(allocation) => i32::from(allocation),
-//             RibosomeReturnCode::Failure(code) => code as i32,
-//         }
-//     }
-// }
 
 impl From<RibosomeReturnCode> for RibosomeEncodingBits {
     fn from(ribosome_return_code: RibosomeReturnCode) -> RibosomeEncodingBits {
@@ -102,6 +94,12 @@ impl FromStr for RibosomeReturnCode {
 impl From<RibosomeReturnCode> for JsonString {
     fn from(ribosome_return_code: RibosomeReturnCode) -> JsonString {
         JsonString::from(ribosome_return_code.to_string())
+    }
+}
+
+impl From<HolochainError> for RibosomeReturnCode {
+    fn from(error: HolochainError) -> Self {
+        RibosomeReturnCode::Failure(RibosomeErrorCode::from(error))
     }
 }
 
@@ -158,6 +156,28 @@ impl RibosomeErrorCode {
             NotAnAllocation                 => "Not an allocation",
             ZeroSizedAllocation             => "Zero-sized allocation",
             UnknownEntryType                => "Unknown entry type",
+        }
+    }
+}
+
+impl From<HolochainError> for RibosomeErrorCode {
+    fn from(error: HolochainError) -> RibosomeErrorCode {
+        // the mapping between HolochainError and RibosomeErrorCode is pretty poor overall
+        match error {
+            HolochainError::ErrorGeneric(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::NotImplemented => RibosomeErrorCode::CallbackFailed,
+            HolochainError::LoggingError => RibosomeErrorCode::Unspecified,
+            HolochainError::DnaMissing => RibosomeErrorCode::Unspecified,
+            HolochainError::Dna(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::IoError(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::SerializationError(_) => RibosomeErrorCode::ArgumentDeserializationFailed,
+            HolochainError::InvalidOperationOnSysEntry => RibosomeErrorCode::UnknownEntryType,
+            HolochainError::CapabilityCheckFailed => RibosomeErrorCode::Unspecified,
+            HolochainError::ValidationFailed(_) => RibosomeErrorCode::CallbackFailed,
+            HolochainError::Ribosome(e) => e,
+            HolochainError::RibosomeFailed(_) => RibosomeErrorCode::CallbackFailed,
+            HolochainError::ConfigError(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::Timeout => RibosomeErrorCode::Unspecified,
         }
     }
 }

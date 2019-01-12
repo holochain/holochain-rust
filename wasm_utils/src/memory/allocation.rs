@@ -51,7 +51,13 @@ impl From<MemoryInt> for Length {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+impl From<Length> for usize {
+    fn from(length: Length) -> Self {
+        length.0 as usize
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub enum AllocationError {
     /// (de)allocation is either too large or implies negative values
     OutOfBounds,
@@ -74,9 +80,14 @@ impl From<AllocationError> for RibosomeErrorCode {
     }
 }
 
-impl From<AllocationError> for RibosomeReturnCode {
+impl From<AllocationError> for String {
     fn from(allocation_error: AllocationError) -> Self {
-        RibosomeReturnCode::Failure(RibosomeErrorCode::from(allocation_error))
+        match allocation_error {
+            AllocationError::OutOfBounds => "Allocation out of bounds".into(),
+            AllocationError::ZeroLength => "Allocation is zero length".into(),
+            AllocationError::BadStackAlignment => "Allocation is not aligned with stack".into(),
+            AllocationError::Serialization => "Allocation could not serialize data".into(),
+        }
     }
 }
 
@@ -88,7 +99,7 @@ pub struct WasmAllocation {
 
 impl WasmAllocation {
     // represent the max as MemoryBits type to allow gt comparisons
-    fn max()-> MemoryBits {
+    pub fn max()-> MemoryBits {
         MEMORY_INT_MAX
     }
 
@@ -131,5 +142,19 @@ impl From<WasmAllocation> for RibosomeEncodedAllocation {
 impl From<WasmAllocation> for RibosomeReturnCode {
     fn from(wasm_allocation: WasmAllocation) -> Self {
         RibosomeReturnCode::Allocation(RibosomeEncodedAllocation::from(wasm_allocation))
+    }
+}
+
+impl From<AllocationError> for RibosomeReturnCode {
+    fn from(allocation_error: AllocationError) -> Self {
+        RibosomeReturnCode::Failure(RibosomeErrorCode::from(allocation_error))
+    }
+}
+
+pub type AllocationResult = Result<WasmAllocation, AllocationError>;
+pub fn return_code_for_allocation_result(result: Result<WasmAllocation, AllocationError>) -> RibosomeReturnCode {
+    match result {
+        Ok(allocation) => RibosomeReturnCode::from(allocation),
+        Err(allocation_error) => RibosomeReturnCode::from(allocation_error),
     }
 }

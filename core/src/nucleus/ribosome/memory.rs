@@ -1,8 +1,12 @@
-use holochain_core_types::error::RibosomeErrorCode;
 
 use wasmi::{MemoryRef, ModuleRef};
+use holochain_wasm_utils::memory::MemoryInt;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::memory::stack::WasmStack;
+use holochain_wasm_utils::memory::allocation::AllocationResult;
+use holochain_wasm_utils::memory::MemoryBits;
+use holochain_wasm_utils::memory::allocation::Length;
+use holochain_wasm_utils::memory::allocation::AllocationError;
 
 //--------------------------------------------------------------------------------------------------
 // WASM Memory Manager
@@ -49,26 +53,24 @@ impl SinglePageManager {
     }
 
     /// Allocate on stack without writing in it
-    pub fn allocate(&mut self, length: MemoryInt) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-        if u32::from(self.stack.top()) + u32::from(length) > U16_MAX {
-            return Err(RibosomeErrorCode::OutOfMemory);
-        }
-        let offset = self.stack.allocate(length);
-        WasmAllocation::new(offset, length)
+    pub fn allocate(&mut self, length: Length) -> AllocationResult {
+        let allocation = self.stack.next_allocation(length)?;
+        let top = self.stack.allocate(allocation)?;
+        Ok(WasmAllocation::new(MemoryInt::from(top).into(), length)?)
     }
 
     /// Write data on top of stack
-    pub fn write(&mut self, data: &[u8]) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-        if data.len() > u16::max_value() as usize {
-            return Err(RibosomeErrorCode::OutOfMemory);
+    pub fn write(&mut self, data: &[u8]) -> AllocationResult {
+        if data.len() as MemoryBits > WasmAllocation::max() {
+            return Err(AllocationError::OutOfBounds);
         }
 
         if data.is_empty() {
-            return Err(RibosomeErrorCode::ZeroSizedAllocation);
+            return Err(AllocationError::ZeroLength);
         }
 
         // scope for mutable borrow of self
-        let mem_buf = self.allocate(data.len() as u16)?;
+        let mem_buf = self.allocate(MemoryInt::from(data.len() as u16).into())?;
 
         self.wasm_memory
             .set(u32::from(mem_buf.offset()), &data)
@@ -78,9 +80,9 @@ impl SinglePageManager {
     }
 
     /// Read data somewhere in stack
-    pub fn read(&self, allocation: SinglePageAllocation) -> Vec<u8> {
+    pub fn read(&self, allocation: WasmAllocation) -> Vec<u8> {
         self.wasm_memory
-            .get(u32::from(allocation.offset()), allocation.length() as usize)
+            .get(MemoryBits::from(allocation.offset()), MemoryInt::from(allocation.length()) as usize)
             .expect("Successfully retrieve the result")
     }
 }

@@ -9,7 +9,7 @@ use holochain_core_types::error::RibosomeEncodingBits;
 
 #[allow(dead_code)]
 extern "C" {
-    fn hc_init_globals(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
+    pub fn hc_init_globals(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
 }
 
 // HC INIT GLOBALS - Secret Api Function

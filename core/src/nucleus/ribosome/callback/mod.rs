@@ -29,9 +29,11 @@ use holochain_core_types::{
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
 };
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use num_traits::FromPrimitive;
 use serde_json;
 use std::{str::FromStr, sync::Arc};
+use std::convert::TryFrom;
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -173,6 +175,12 @@ impl From<RibosomeReturnCode> for CallbackResult {
             RibosomeReturnCode::Failure(ribosome_error_code) => {
                 CallbackResult::Fail(ribosome_error_code.to_string())
             }
+            RibosomeReturnCode::Allocation(ribosome_allocation) => {
+                match WasmAllocation::try_from(ribosome_allocation) {
+                    Ok(allocation) => CallbackResult::Fail(allocation.read_to_string()),
+                    Err(allocation_error) => CallbackResult::Fail(String::from(allocation_error)),
+                }
+            },
             RibosomeReturnCode::Success => CallbackResult::Pass,
         }
     }

@@ -4,6 +4,7 @@ use memory::MEMORY_INT_MAX;
 use memory::allocation::WasmAllocation;
 use std::convert::TryFrom;
 use memory::allocation::AllocationError;
+use memory::allocation::Length;
 
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Top(MemoryInt);
@@ -47,8 +48,8 @@ impl WasmStack {
         WasmStack { top: WasmStack::min().into() }
     }
 
-    pub fn next_allocation(&self, length: MemoryInt) -> Result<WasmAllocation, AllocationError> {
-        WasmAllocation::new(MemoryInt::from(self.top()).into(), length.into())
+    pub fn next_allocation(&self, length: Length) -> Result<WasmAllocation, AllocationError> {
+        WasmAllocation::new(MemoryInt::from(self.top()).into(), length)
     }
 
     pub fn allocate(&mut self, allocation: WasmAllocation) -> Result<Top, AllocationError> {

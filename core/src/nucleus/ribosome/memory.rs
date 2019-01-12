@@ -1,6 +1,8 @@
 use holochain_core_types::error::RibosomeErrorCode;
 
 use wasmi::{MemoryRef, ModuleRef};
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use holochain_wasm_utils::memory::stack::WasmStack;
 
 //--------------------------------------------------------------------------------------------------
 // WASM Memory Manager
@@ -9,7 +11,7 @@ use wasmi::{MemoryRef, ModuleRef};
 #[derive(Clone, Debug)]
 /// Struct for managing a WASM Memory Instance as a single page memory stack
 pub struct SinglePageManager {
-    stack: SinglePageStack,
+    stack: WasmStack,
     wasm_memory: MemoryRef,
 }
 
@@ -41,18 +43,18 @@ impl SinglePageManager {
             .clone();
 
         return SinglePageManager {
-            stack: SinglePageStack::default(),
+            stack: WasmStack::default(),
             wasm_memory,
         };
     }
 
     /// Allocate on stack without writing in it
-    pub fn allocate(&mut self, length: u16) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+    pub fn allocate(&mut self, length: MemoryInt) -> Result<SinglePageAllocation, RibosomeErrorCode> {
         if u32::from(self.stack.top()) + u32::from(length) > U16_MAX {
             return Err(RibosomeErrorCode::OutOfMemory);
         }
         let offset = self.stack.allocate(length);
-        SinglePageAllocation::new(offset, length)
+        WasmAllocation::new(offset, length)
     }
 
     /// Write data on top of stack

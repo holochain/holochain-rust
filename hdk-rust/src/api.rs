@@ -29,10 +29,16 @@ use holochain_wasm_utils::{
         json::{JsonString, RawString},
     },
 };
+use std::convert::TryFrom;
+use holochain_core_types::error::RibosomeReturnCode;
 use serde_json;
 use std::{convert::TryInto};
 use holochain_core_types::error::RibosomeEncodingBits;
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use holochain_core_types::error::HolochainError;
+use holochain_core_types::error::RibosomeErrorCode;
 use holochain_core_types::error::RibosomeEncodedAllocation;
+use holochain_core_types::error::CoreError;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -206,7 +212,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
     let allocation_of_input = mem_stack.write_json(msg)?;
 
     unsafe {
-        hc_debug(allocation_of_input.encode());
+        hc_debug(RibosomeEncodedAllocation::from(allocation_of_input).into());
     }
 
     mem_stack
@@ -214,6 +220,90 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
         .expect("should be able to deallocate input that has been allocated on memory stack");
 
     Ok(())
+}
+
+pub enum Dispatch {
+    InitGlobals,
+    Call,
+    CommitEntry,
+    GetEntry,
+    LinkEntries,
+    EntryAddress,
+    UpdateEntry,
+    RemoveEntry,
+    Query,
+    Send,
+}
+
+impl Dispatch {
+    pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(&self, input: I) -> ZomeApiResult<O> {
+        let mem_stack = unsafe { G_MEM_STACK.unwrap() };
+
+        let wasm_allocation = mem_stack.write_json(input)?;
+
+        // Call Ribosome's commit_entry()
+        let encoded_input: RibosomeEncodingBits = RibosomeEncodedAllocation::from(wasm_allocation).into();
+        let encoded_output: RibosomeEncodingBits = unsafe {
+            match self {
+                Call => hc_call(encoded_input),
+                CommitEntry => hc_commit_entry(encoded_input),
+                GetEntry => hc_get_entry(encoded_input),
+                LinkEntries => hc_link_entries(encoded_input),
+            }
+        };
+        let return_code: RibosomeReturnCode = encoded_output.into();
+
+        // Deserialize complex result stored in memory and check for ERROR in encoding
+        let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
+            Ok(allocation) => match WasmAllocation::try_from(allocation) {
+                Ok(wasm_allocation) => {
+                    let s = wasm_allocation.read_to_string();
+                    let maybe_o = O::try_from(JsonString::from(s.clone()));
+                    match maybe_o {
+                        Ok(o) => ZomeApiInternalResult::success(o),
+                        Err(_) => {
+                            // TODO #394 - In Release, load error_string directly and not a CoreError
+                            let maybe_hc_err: Result<CoreError, serde_json::Error> =
+                                serde_json::from_str(&s);
+
+                            mem_stack.deallocate(wasm_allocation)?;
+                            Err(match maybe_hc_err {
+                                Err(_) => {
+                                    HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)
+                                }
+                                Ok(hc_err) => hc_err.kind,
+                            })?
+                        }
+                    }
+                }
+                // the encoded allocation is not a valid wasm allocation
+                Err(err) => {
+                    mem_stack.deallocate(wasm_allocation)?;
+                    Err(err)?
+                },
+            },
+            // the return code is some kind of error
+            Err(err) => {
+                mem_stack.deallocate(wasm_allocation)?;
+                Err(err)?
+            },
+        };
+
+        // Free result & input allocations
+        mem_stack.deallocate(wasm_allocation)?;
+
+        // Done
+        if result.ok {
+            match JsonString::from(result.value).try_into() {
+                Ok(v) => Ok(v),
+                Err(e) => {
+                    Err(ZomeApiError::from(String::from("Failed to deserialize return value")))
+                },
+            }
+        } else {
+            Err(ZomeApiError::from(result.error))
+        }
+    }
 }
 
 /// Call an exposed function from another zome or another (bridged) instance running
@@ -365,8 +455,7 @@ pub fn call<S: Into<String>>(
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
-
-    execute(
+    Dispatch::Call.with_input(
         ZomeFnCallArgs {
             instance_handle: instance_handle.into(),
             zome_name: zome_name.into(),
@@ -377,36 +466,8 @@ pub fn call<S: Into<String>>(
             )),
             fn_name: fn_name.into(),
             fn_args: String::from(fn_args),
-        },
-        hc_call,
+        }
     )
-
-}
-
-fn execute<A, F, R>(args: A, f: unsafe extern "C" fn(RibosomeEncodingBits) -> RibosomeEncodingBits) -> ZomeApiResult<R> {
-    let mem_stack = unsafe { G_MEM_STACK.unwrap() };
-
-    let wasm_allocation = mem_stack.write_json(args)?;
-
-    // Call Ribosome's commit_entry()
-    let return_code = unsafe { f(RibosomeEncodedAllocation::from(wasm_allocation).into()) };
-
-    // Deserialize complex result stored in memory and check for ERROR in encoding
-    let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
-        Ok(allocation) => allocation.read_json(),
-        Err(err) => Err(err),
-    };
-
-    // Free result & input allocations
-    mem_stack
-        .deallocate(wasm_allocation)
-        .expect("deallocate failed");
-    // Done
-    if result.ok {
-        Ok(JsonString::from(result.value).try_into()?)
-    } else {
-        Err(ZomeApiError::from(result.error))
-    }
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -457,7 +518,7 @@ fn execute<A, F, R>(args: A, f: unsafe extern "C" fn(RibosomeEncodingBits) -> Ri
 /// # }
 /// ```
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
-    execute(entry, hc_commit_entry)
+    Dispatch::CommitEntry.with_input(entry)
 }
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
@@ -528,12 +589,11 @@ pub fn get_entry_result(
     address: &Address,
     options: GetEntryOptions,
 ) -> ZomeApiResult<GetEntryResult> {
-    execute(
+    Dispatch::GetEntry.with_input(
         GetEntryArgs {
             address: address.clone(),
             options,
         },
-        hc_get_entry,
     )
 }
 
@@ -599,13 +659,12 @@ pub fn link_entries<S: Into<String>>(
     tag: S,
 ) -> Result<(), ZomeApiError> {
 
-    execute(
+    Dispatch::LinkEntries.with_input(
         LinkEntriesArgs {
             base: base.clone(),
             target: target.clone(),
             tag: tag.into(),
         },
-        hc_link_entries,
     )
 
 }
@@ -660,12 +719,9 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # }
 /// ```
 pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
-
-    execute(
+    Dispatch::EntryAddress.with_input(
         entry,
-        hc_entry_address,
     )
-
 }
 
 /// NOT YET AVAILABLE
@@ -689,15 +745,12 @@ pub fn verify_signature<S: Into<String>>(
 /// The updated entry will hold the previous entry's address in its header,
 /// which will be used by validation routes.
 pub fn update_entry(new_entry: Entry, address: &Address) -> ZomeApiResult<Address> {
-
-    execute(
+    Dispatch::UpdateEntry.with_input(
         UpdateEntryArgs {
             new_entry,
             address: address.clone(),
-        },
-        hc_update_entry,
+        }
     )
-
 }
 
 /// NOT YET AVAILABLE
@@ -709,12 +762,9 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
-
-    execute(
-        address.clone(),
-        hc_remove_entry,
+    Dispatch::RemoveEntry.with_input(
+        address.clone()
     )
-
 }
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links
@@ -745,16 +795,13 @@ pub fn get_links_with_options<S: Into<String>>(
     tag: S,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
-
-    execute(
+    Dispatch::RemoveEntry.with_input(
         GetLinksArgs {
             entry_address: base.clone(),
             tag: tag.into(),
             options,
         },
-        hc_remove_entry,
     )
-
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
@@ -861,13 +908,12 @@ pub fn query(
     start: u32,
     limit: u32,
 ) -> ZomeApiResult<QueryResult> {
-    execute(
+    Dispatch::Query.with_input(
         QueryArgs {
             entry_type_names,
             start,
             limit,
         },
-        hc_query,
     )
 }
 
@@ -941,9 +987,8 @@ pub fn query(
 /// # }
 /// ```
 pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
-    execute(
+    Dispatch::Send.with_input(
         SendArgs { to_agent, payload },
-        hc_send,
     )
 }
 

@@ -5,6 +5,7 @@ use crate::holochain_core_types::{
     json::{JsonError, JsonString},
 };
 use std::{error::Error, fmt};
+use holochain_wasm_utils::memory::allocation::AllocationError;
 
 /// Error for DNA developers to use in their Zome code.
 /// This does not have to be sent back to Ribosome unless its an InternalError.
@@ -59,6 +60,14 @@ impl From<String> for ZomeApiError {
 impl From<RibosomeErrorCode> for ZomeApiError {
     fn from(ribosome_error_code: RibosomeErrorCode) -> ZomeApiError {
         ZomeApiError::from(ribosome_error_code.to_string())
+    }
+}
+
+impl From<AllocationError> for ZomeApiError {
+    fn from(allocation_error: AllocationError) -> ZomeApiError {
+        match allocation_error {
+
+        }
     }
 }
 

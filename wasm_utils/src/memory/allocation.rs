@@ -4,7 +4,11 @@ use memory::MemoryBits;
 use memory::MEMORY_INT_MAX;
 use std::convert::TryFrom;
 use memory::MemoryInt;
+use holochain_core_types::json::JsonString;
+use holochain_core_types::error::HolochainError;
 use holochain_core_types::bits_n_pieces::u32_merge_bits;
+use holochain_core_types::error::RibosomeReturnCode;
+use holochain_core_types::error::RibosomeErrorCode;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Offset(MemoryInt);
@@ -47,6 +51,7 @@ impl From<MemoryInt> for Length {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
 pub enum AllocationError {
     /// (de)allocation is either too large or implies negative values
     OutOfBounds,
@@ -56,6 +61,23 @@ pub enum AllocationError {
     BadStackAlignment,
     /// writes can fail to serialize data before allocation occurs e.g. json
     Serialization,
+}
+
+impl From<AllocationError> for RibosomeErrorCode {
+    fn from(allocation_error: AllocationError) -> Self {
+        match allocation_error {
+            AllocationError::OutOfBounds => RibosomeErrorCode::OutOfMemory,
+            AllocationError::ZeroLength => RibosomeErrorCode::ZeroSizedAllocation,
+            AllocationError::BadStackAlignment => RibosomeErrorCode::NotAnAllocation,
+            AllocationError::Serialization => RibosomeErrorCode::NotAnAllocation,
+        }
+    }
+}
+
+impl From<AllocationError> for RibosomeReturnCode {
+    fn from(allocation_error: AllocationError) -> Self {
+        RibosomeReturnCode::Failure(RibosomeErrorCode::from(allocation_error))
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -103,5 +125,11 @@ impl TryFrom<RibosomeEncodedAllocation> for WasmAllocation {
 impl From<WasmAllocation> for RibosomeEncodedAllocation {
     fn from(wasm_allocation: WasmAllocation) -> Self {
         u32_merge_bits(wasm_allocation.offset().into(), wasm_allocation.length().into()).into()
+    }
+}
+
+impl From<WasmAllocation> for RibosomeReturnCode {
+    fn from(wasm_allocation: WasmAllocation) -> Self {
+        RibosomeReturnCode::Allocation(RibosomeEncodedAllocation::from(wasm_allocation))
     }
 }

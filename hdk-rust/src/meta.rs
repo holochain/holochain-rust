@@ -13,6 +13,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
+use holochain_core_types::error::RibosomeReturnCode;
 use holochain_wasm_utils::{
     api_serialization::validation::{
         EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
@@ -20,8 +21,11 @@ use holochain_wasm_utils::{
     holochain_core_types::error::RibosomeErrorCode,
 };
 use std::collections::BTreeMap;
-use holochain_wasm_utils::memory::MemoryBits;
 use holochain_core_types::error::RibosomeEncodedAllocation;
+use holochain_core_types::error::RibosomeEncodingBits;
+use std::convert::TryInto;
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use std::convert::TryFrom;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -61,9 +65,9 @@ extern "C" {
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    encoded_allocation_of_input: MemoryBits,
-) -> u32 {
-    crate::global_fns::init_global_memory(encoded_allocation_of_input);
+    encoded_allocation_of_input: RibosomeEncodingBits,
+) -> RibosomeEncodingBits {
+    crate::global_fns::init_global_memory(RibosomeEncodedAllocation::from(encoded_allocation_of_input).try_into().unwrap());
 
     let mut zd = ZomeDefinition::new();
     unsafe {
@@ -71,11 +75,10 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     }
 
     // Deserialize input
-    let maybe_name = encoded_allocation_of_input.into().into().load_string();
-    if let Err(err_code) = maybe_name {
-        return err_code as u32;
-    }
-    let name: String = maybe_name.unwrap();
+    let name = match WasmAllocation::try_from(RibosomeEncodedAllocation::from(encoded_allocation_of_input)) {
+        Err(err_code) => return err_code as RibosomeEncodingBits,
+        Ok(allocation) => allocation.read_to_string(),
+    };
 
     match zd
         .entry_types
@@ -83,17 +86,20 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         .find(|ref validating_entry_type| {
             validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()))
         }) {
-        None => RibosomeErrorCode::CallbackFailed as u32,
+        None => RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits,
         Some(mut entry_type_definition) => {
             let package = (*entry_type_definition.package_creator)();
-            crate::global_fns::write_json(package)
+            RibosomeEncodingBits::from(match crate::global_fns::write_json(package) {
+                Ok(allocation) => RibosomeReturnCode::from(allocation),
+                Err(allocation_error) => RibosomeReturnCode::from(allocation_error),
+            })
         }
     }
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> u32 {
-    crate::global_fns::init_global_memory(encoded_allocation_of_input);
+pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    crate::global_fns::init_global_memory(RibosomeEncodedAllocation::from(encoded_allocation_of_input).try_into().unwrap());
 
     let mut zd = ZomeDefinition::new();
     unsafe {
@@ -101,11 +107,15 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
     }
 
     // Deserialize input
-    let maybe_name = encoded_allocation_of_input.into().into().read_json();
-    if let Err(hc_err) = maybe_name {
-        return crate::global_fns::write_json(hc_err);
-    }
-    let entry_validation_args: EntryValidationArgs = maybe_name.unwrap();
+    let entry_validation_args: EntryValidationArgs = match WasmAllocation::try_from(RibosomeEncodedAllocation::from(encoded_allocation_of_input)) {
+        Err(err_code) => {
+            return RibosomeEncodingBits::from(match crate::global_fns::write_json(err_code) {
+                Ok(allocation) => RibosomeReturnCode::from(allocation),
+                Err(allocation_error) => RibosomeReturnCode::from(allocation_error),
+            });
+        },
+        Ok(allocation) => allocation.read_to_string().into(),
+    };
 
     match zd
         .entry_types
@@ -113,7 +123,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
         .find(|ref validating_entry_type| {
             validating_entry_type.name == entry_validation_args.entry_type
         }) {
-        None => RibosomeErrorCode::CallbackFailed as u32,
+        None => RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits,
         Some(mut entry_type_definition) => {
             let validation_result = (*entry_type_definition.validator)(
                 entry_validation_args.entry,
@@ -129,7 +139,7 @@ pub extern "C" fn __hdk_validate_app_entry(encoded_allocation_of_input: u32) -> 
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_input: u32) -> u32 {
+pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
@@ -159,11 +169,11 @@ pub extern "C" fn __hdk_get_validation_package_for_link(encoded_allocation_of_in
             let package = (*link_definition.package_creator)();
             Some(::global_fns::write_json(package))
         })
-        .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)
+        .unwrap_or(RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits)
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
+pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
     ::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();
@@ -203,11 +213,11 @@ pub extern "C" fn __hdk_validate_link(encoded_allocation_of_input: u32) -> u32 {
                 Err(fail_string) => ::global_fns::write_json(fail_string),
             })
         })
-        .unwrap_or(RibosomeErrorCode::CallbackFailed as u32)
+        .unwrap_or(RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits)
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) -> u32 {
+pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
     crate::global_fns::init_global_memory(encoded_allocation_of_input);
 
     let mut zd = ZomeDefinition::new();

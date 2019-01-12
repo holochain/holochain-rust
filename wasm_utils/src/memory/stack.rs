@@ -42,20 +42,6 @@ impl WasmStack {
         0
     }
 
-    pub fn deallocation_is_valid(&self, allocation: WasmAllocation) -> bool {
-        // can't deallocate anywhere other than top
-        if MemoryInt::from(self.top()) == MemoryInt::from(allocation.offset()) + MemoryInt::from(allocation.length()) {
-            false
-        }
-        // can't deallocate past min
-        else if MemoryInt::from(allocation.offset()) < WasmStack::min() {
-            false
-        }
-        else {
-            true
-        }
-    }
-
     // A stack can be initialized by giving the last know allocation on this stack
     pub fn new() -> WasmStack {
         WasmStack { top: WasmStack::min().into() }
@@ -80,13 +66,17 @@ impl WasmStack {
         }
     }
 
-    pub fn deallocate(&mut self, allocation: WasmAllocation) -> Result<(), ()> {
-        if self.deallocation_is_valid(allocation) {
-            self.top = Top(allocation.offset().into());
-            Ok(())
+    pub fn deallocate(&mut self, allocation: WasmAllocation) -> Result<Top, AllocationError> {
+        if MemoryInt::from(self.top()) != MemoryInt::from(allocation.offset()) + MemoryInt::from(allocation.length()) {
+            Err(AllocationError::BadStackAlignment)
+        }
+        else if MemoryInt::from(allocation.offset()) < WasmStack::min() {
+            Err(AllocationError::OutOfBounds)
         }
         else {
-            Err(())
+            let old_top = self.top;
+            self.top = Top(allocation.offset().into());
+            Ok(old_top)
         }
     }
 

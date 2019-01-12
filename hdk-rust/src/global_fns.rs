@@ -7,17 +7,19 @@ pub use holochain_wasm_utils::api_serialization::validation::*;
 use std::convert::TryInto;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::memory::stack::WasmStack;
+use holochain_wasm_utils::memory::allocation::AllocationError;
+use std::convert::TryFrom;
 
 /// Init global memory stack
 pub fn init_global_memory(initial_allocation: WasmAllocation) {
     unsafe {
         G_MEM_STACK =
-            Some(WasmStack::from(initial_allocation));
+            Some(WasmStack::try_from(initial_allocation).expect("could not allocate initial wasm memory"));
     }
 }
 
 /// Serialize output as json in WASM memory
-pub fn write_json<J: TryInto<JsonString>>(jsonable: J) -> WasmAllocation {
+pub fn write_json<J: TryInto<JsonString>>(jsonable: J) -> Result<WasmAllocation, AllocationError> {
     let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
     mem_stack.write_json(jsonable)
 }

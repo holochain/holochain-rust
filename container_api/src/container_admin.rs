@@ -71,8 +71,10 @@ impl ContainerAdmin for Container {
         self.save_config()?;
 
         for id in instance_ids.iter() {
-            self.stop_instance(id)
-                .map_err(|err| HolochainError::ErrorGeneric(err.to_string()))?;
+            let result = self.stop_instance(id);
+            if result.is_err() {
+                notify(format!("Error stopping instance {}: \"{}\".", id, result.err().unwrap()));
+            }
             notify(format!("Removed instance \"{}\".", id));
         }
 
@@ -211,21 +213,21 @@ pattern = ".*"
             .to_string()
     }
 
-    fn create_test_container() -> Container {
+    fn create_test_container<T: Into<String>>(test_name: T) -> Container {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
         container.load_config().unwrap();
 
         let mut tmp_config_path = PathBuf::new();
-        tmp_config_path.push("./tmp-test-container-config.toml");
+        tmp_config_path.push(format!("./tmp-{}-container-config.toml", test_name.into()));
         container.set_config_path(tmp_config_path.clone());
         container
     }
 
     #[test]
     fn test_install_dna_from_file() {
-        let mut container = create_test_container();
+        let mut container = create_test_container("test_install_dna_from_file");
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
@@ -338,7 +340,7 @@ pattern = ".*"
     use crate::config::StorageConfiguration;
     #[test]
     fn test_add_instance_and_start() {
-        let mut container = create_test_container();
+        let mut container = create_test_container("test_add_instance_and_start");
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
         container
@@ -360,7 +362,7 @@ pattern = ".*"
     /// as well as the mentions of the removed instance are gone from the interfaces
     /// (to not render the config invalid).
     fn test_remove_instance() {
-        let mut container = create_test_container();
+        let mut container = create_test_container("test_remove_instance");
         assert_eq!(
             container.remove_instance(&String::from("test-instance-1")),
             Ok(()),
@@ -435,7 +437,7 @@ pattern = ".*"
     /// as well as the instances that use the DNA and their mentions are gone from the interfaces
     /// (to not render the config invalid).
     fn test_uninstall_dna() {
-        let mut container = create_test_container();
+        let mut container = create_test_container("test_uninstall_dna");
         assert_eq!(container.uninstall_dna(&String::from("test-dna")), Ok(()),);
 
         let mut config_contents = String::new();
@@ -446,6 +448,8 @@ pattern = ".*"
         assert_eq!(
             config_contents,
             r#"bridges = []
+dnas = []
+instances = []
 
 [[agents]]
 id = "test-agent-1"
@@ -462,6 +466,7 @@ public_address = "HoloTester2---------------------------------------------------
 [[interfaces]]
 admin = true
 id = "websocket interface"
+instances = []
 
 [interfaces.driver]
 port = 3000
@@ -488,7 +493,7 @@ pattern = ".*"
 
     #[test]
     fn test_start_stop_instance() {
-        let mut container = create_test_container();
+        let mut container = create_test_container("test_start_stop_instance");
         assert_eq!(
             container.start_instance(&String::from("test-instance-1")),
             Ok(()),

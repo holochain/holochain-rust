@@ -297,6 +297,28 @@ impl ContainerApiBuilder {
             ))
         });
 
+        self.io.add_method("admin/instance/running", move |_params| {
+            let active_ids = container_call!(|c|
+                Ok(c.instances
+                    .iter()
+                    .filter(|(_,hc)| hc.read().unwrap().active())
+                    .map(|(id,_)| id)
+                    .cloned()
+                    .collect()
+                ) as Result<Vec<String>, String>)?;
+            let instances = container_call!(|c| Ok(c.config.instances.clone()) as Result<Vec<InstanceConfiguration>, String>)?;
+            Ok(serde_json::Value::Array(instances.iter()
+                .filter(|instance| active_ids.contains(&instance.id))
+                .map(|instance|
+                    json!({
+                        "id": instance.id,
+                        "dna": instance.dna,
+                        "agent": instance.agent,
+                    }))
+                .collect()
+            ))
+        });
+
         self
     }
 }

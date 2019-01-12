@@ -7,6 +7,7 @@ use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
         DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData,
+        PeerData,
         ProtocolWrapper,
     },
     NetResult,
@@ -25,32 +26,33 @@ fn cat_dna_agent(dna_address: &Address, agent_id: &str) -> String {
 }
 
 /// a lazy_static! singleton for routing messages in-memory
-pub struct MockSingleton {
+pub struct MockServer {
     // keep track of senders by `dna_address::agent_id`
-    senders: HashMap<String, mpsc::Sender<Protocol>>,
+    clients: HashMap<String, mpsc::Sender<Protocol>>,
     // keep track of senders as arrays by dna_address
-    senders_by_dna: HashMap<Address, Vec<mpsc::Sender<Protocol>>>,
+    clients_by_dna: HashMap<Address, Vec<mpsc::Sender<Protocol>>>,
 }
 
-impl MockSingleton {
+impl MockServer {
     /// create a new mock singleton
     pub fn new() -> Self {
         Self {
-            senders: HashMap::new(),
-            senders_by_dna: HashMap::new(),
+            clients: HashMap::new(),
+            clients_by_dna: HashMap::new(),
         }
     }
 
-    /// register a data handler (from a MockWorker) (for message routing)
+    /// register a client, i.e. a data handler coming from a MockWorker (for message routing)
     pub fn register(
         &mut self,
         dna_address: &Address,
         agent_id: &str,
         sender: mpsc::Sender<Protocol>,
     ) -> NetResult<()> {
-        self.senders
+        // Add new client to client-book ; might be duplicate?
+        self.clients
             .insert(cat_dna_agent(dna_address, agent_id), sender.clone());
-        match self.senders_by_dna.entry(dna_address.to_owned()) {
+        match self.clients_by_dna.entry(dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 e.get_mut().push(sender.clone());
             }
@@ -58,13 +60,30 @@ impl MockSingleton {
                 e.insert(vec![sender.clone()]);
             }
         };
+        // TODO send PeerConnected messages to clients
+        let pd = PeerData {
+            dna_address: dna_address.clone(),
+            agent_id: agent_id.to_string(),
+        };
+        self.priv_send_all(
+            &dna_address,
+            ProtocolWrapper::PeerConnected(pd).into(),
+        )?;
+        // Done
         Ok(())
     }
 
-    /// process an incoming message
+    /// process an incoming message from a client
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
             match wrap {
+                // Can't handle RequestState as this is an IPC specific message
+                // ProtocolWrapper::RequestState => (),
+                ProtocolWrapper::Connect(msg) => {
+                    // todo: check if msg.address exists in our client-book
+                    // if no return failure
+                    // if yes mark requester as 'enabled'
+                },
                 ProtocolWrapper::GenericMessage(msg) => {
                     self.priv_handle_GenericMessage(&msg)?;
                 }
@@ -118,7 +137,7 @@ impl MockSingleton {
         agent_id: &str,
         data: Protocol,
     ) -> NetResult<()> {
-        if let Some(sender) = self.senders.get_mut(&cat_dna_agent(dna_address, agent_id)) {
+        if let Some(sender) = self.clients.get_mut(&cat_dna_agent(dna_address, agent_id)) {
             sender.send(data)?;
         }
         Ok(())
@@ -126,7 +145,7 @@ impl MockSingleton {
 
     /// send a message to all nodes connected with this dna address
     fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
-        if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
+        if let Some(arr) = self.clients_by_dna.get_mut(dna_address) {
             for val in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }
@@ -164,17 +183,23 @@ impl MockSingleton {
     /// this mock module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
     fn priv_handle_get_dht(&mut self, msg: &GetDhtData) -> NetResult<()> {
-        match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
+        println!("priv_handle_get_dht() START");
+        // find other nodes at that dna-address
+        match self.clients_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
+                println!("priv_handle_get_dht() entry Occupied: {:?}", e);
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
+                    println!("priv_handle_get_dht() entry Occupied -- sender: {:?}", r);
                     r.send(ProtocolWrapper::GetDht(msg.clone()).into())?;
+                    println!("priv_handle_get_dht() entry Occupied -- SENT");
                     return Ok(());
                 }
             }
             _ => (),
         };
-
+        println!("priv_handle_get_dht() priv_send_one");
+        // No other nodes found. Send a FailureResponse
         self.priv_send_one(
             &msg.dna_address,
             &msg.from_agent_id,
@@ -186,7 +211,7 @@ impl MockSingleton {
             })
                 .into(),
         )?;
-
+        // Done
         Ok(())
     }
 
@@ -213,7 +238,7 @@ impl MockSingleton {
     /// this mock module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
     fn priv_handle_get_dht_meta(&mut self, msg: &GetDhtMetaData) -> NetResult<()> {
-        match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
+        match self.clients_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
@@ -261,11 +286,11 @@ impl MockSingleton {
 
 /// this is the actual memory space for our mock singleton
 lazy_static! {
-    static ref MOCK: Mutex<MockSingleton> = Mutex::new(MockSingleton::new());
+    static ref MOCK: Mutex<MockServer> = Mutex::new(MockServer::new());
 }
 
 /// make fetching the singleton a little easier
-pub fn get_mock_singleton<'a>() -> NetResult<MutexGuard<'a, MockSingleton>> {
+pub fn get_mock_singleton<'a>() -> NetResult<MutexGuard<'a, MockServer>> {
     match MOCK.lock() {
         Ok(s) => Ok(s),
         Err(_) => bail!("mock singleton mutex fail"),
@@ -279,6 +304,8 @@ mod tests {
     use crate::p2p_config::P2pConfig;
 
     use holochain_net_connection::protocol_wrapper::{SuccessResultData, TrackAppData};
+
+    use crate::mock_worker::MockWorker;
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()

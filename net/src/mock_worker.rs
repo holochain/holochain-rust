@@ -15,7 +15,7 @@ use std::{
     sync::mpsc,
 };
 
-use mock_singleton::get_mock_singleton;
+use mock_server::get_mock_singleton;
 
 use holochain_net_ipc::util::get_millis;
 
@@ -34,25 +34,25 @@ impl NetReceive for MockWorker {
         Ok(())
     }
 
-    /// we got a message from holochain core
-    /// forward to our mock singleton
+    /// we got a message from hc-core
+    /// forward it to our mock server/network
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
 
         println!("MockWorker::receive(): {:?}", data);
 
-        let mut mock_singleton = get_mock_singleton()?;
+        let mut mock_server = get_mock_singleton()?;
 
         // Special case: Register tracking appropriately
         if let Ok(msg) = ProtocolWrapper::try_from(&data) {
             if let ProtocolWrapper::TrackDna(track_dna_msg) = msg {
                 let (tx, rx) = mpsc::channel();
                 self.receivers.push(rx);
-                mock_singleton.register(&track_dna_msg.dna_address, &track_dna_msg.agent_id, tx)?;
+                mock_server.register(&track_dna_msg.dna_address, &track_dna_msg.agent_id, tx)?;
                 return Ok(());
             }
         }
 
-        mock_singleton.handle(data)?;
+        mock_server.handle(data)?;
         Ok(())
     }
 
@@ -94,16 +94,16 @@ impl MockWorker {
         }
     }
 
-    /// send a ping twice per second
-    fn priv_check_init(&mut self) -> NetResult<()> {
-        let now = get_millis();
-
-        if now - self.last_state_query_millis > 500.0 {
-            let mut mock_singleton = get_mock_singleton()?;
-            mock_singleton.handle(ProtocolWrapper::RequestState.into())?;
-            self.last_state_query_millis = now;
-        }
-
-        Ok(())
-    }
+//    /// send a ping twice per second
+//    fn priv_check_init(&mut self) -> NetResult<()> {
+//        let now = get_millis();
+//
+//        if now - self.last_state_query_millis > 500.0 {
+//            let mut mock_singleton = get_mock_singleton()?;
+//            mock_singleton.handle(ProtocolWrapper::RequestState.into())?;
+//            self.last_state_query_millis = now;
+//        }
+//
+//        Ok(())
+//    }
 }

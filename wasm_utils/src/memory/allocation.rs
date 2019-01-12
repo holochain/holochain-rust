@@ -7,7 +7,7 @@ use holochain_core_types::error::CoreError;
 use holochain_core_types::error::RibosomeMemoryAllocation;
 use holochain_core_types::bits_n_pieces::u32_split_bits;
 use memory::MemoryBits;
-use memory::MemoryIntMax;
+use memory::MEMORY_INT_MAX;
 use std::convert::TryFrom;
 use memory::MemoryInt;
 
@@ -66,7 +66,7 @@ pub struct WasmAllocation {
 impl WasmAllocation {
     // represent the max as MemoryBits type to allow gt comparisons
     fn max()-> MemoryBits {
-        MemoryIntMax
+        MEMORY_INT_MAX
     }
 
     pub fn new(offset: Offset, length: Length) -> Result<Self, AllocationError> {
@@ -89,16 +89,19 @@ impl WasmAllocation {
         self.length
     }
 
+    fn read_str_raw<'a>(ptr_data: *mut c_char) -> &'a str {
+        let ptr_safe_c_str = unsafe { CStr::from_ptr(ptr_data) };
+        ptr_safe_c_str.to_str().unwrap()
+    }
+
     /// Retrieve a stored string from an allocation.
     /// Return error code if encoded_allocation is invalid.
     pub fn read_to_string(&self) -> String {
-        let ptr_data = MemoryInt::from(self.offset()) as *mut c_char;
-        let ptr_safe_c_str = unsafe {CStr::from_ptr(ptr_data) };
-        ptr_safe_c_str.to_str().unwrap().to_string()
+        WasmAllocation::read_str_raw(MemoryInt::from(self.offset()) as *mut c_char).to_string()
     }
 
     pub fn read_to_json<'s, T: Deserialize<'s>>(&self) -> Result<T, HolochainError> {
-        let s = self.read_to_string();
+        let s = WasmAllocation::read_str_raw(MemoryInt::from(self.offset()) as *mut c_char);
         let maybe_obj: Result<T, serde_json::Error> = serde_json::from_str(&s);
         match maybe_obj {
             Ok(obj) => Ok(obj),

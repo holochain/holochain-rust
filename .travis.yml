@@ -66,13 +66,18 @@ _unix_nodejs_container_template: &_unix_nodejs_container_template
 # the following is all for nodejs deployment
 _linux_nodejs_template: &_linux_nodejs_template
   os: linux
+  dist: bionic
   language: rust
   rust: nightly-2018-12-26
+  before_script:
+    - . ./scripts/install/release-deps-ubuntu.sh
 
 _macosx_nodejs_template: &_macosx_nodejs_template
   os: osx
   language: rust
   rust: nightly-2018-12-26
+  before_script:
+    - . ./scripts/install/release-deps-osx.sh
 
 _to_deploy_template: &_to_deploy_template
   if: tag =~ /^holochain-nodejs-v\d+\.\d+\.\d+/

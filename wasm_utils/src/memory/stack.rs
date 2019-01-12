@@ -3,6 +3,7 @@ use memory::MemoryBits;
 use memory::MEMORY_INT_MAX;
 use memory::allocation::WasmAllocation;
 use std::convert::TryFrom;
+use memory::allocation::AllocationError;
 
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Top(MemoryInt);
@@ -32,27 +33,13 @@ pub struct WasmStack {
 
 impl WasmStack {
     // represent the max as MemoryBits type to allow gt comparisons
-    fn max()-> MemoryBits {
+    pub fn max()-> MemoryBits {
         MEMORY_INT_MAX
     }
 
     // min compares lt so can be a MemoryInt
     pub fn min() -> MemoryInt {
         0
-    }
-
-    pub fn allocation_is_valid(&self, allocation: WasmAllocation) -> bool {
-        // can't allocate anywhere other than top
-        if MemoryInt::from(self.top()) != MemoryInt::from(allocation.offset()) {
-            false
-        }
-        // can't allocate past max
-        else if MemoryBits::from(self.top()) + MemoryBits::from(allocation.length()) > WasmStack::max() {
-            false
-        }
-        else {
-            true
-        }
     }
 
     pub fn deallocation_is_valid(&self, allocation: WasmAllocation) -> bool {
@@ -74,15 +61,22 @@ impl WasmStack {
         WasmStack { top: WasmStack::min().into() }
     }
 
-    pub fn allocate(&mut self, allocation: WasmAllocation) -> Result<Top, ()> {
-        if self.allocation_is_valid(allocation) {
+    pub fn next_allocation(&self, length: MemoryInt) -> Result<WasmAllocation, AllocationError> {
+        WasmAllocation::new(MemoryInt::from(self.top()).into(), length.into())
+    }
+
+    pub fn allocate(&mut self, allocation: WasmAllocation) -> Result<Top, AllocationError> {
+        if MemoryInt::from(self.top()) != MemoryInt::from(allocation.offset()) {
+            Err(AllocationError::BadStackAlignment)
+        }
+        else if MemoryBits::from(self.top()) + MemoryBits::from(allocation.length()) > WasmStack::max() {
+            Err(AllocationError::OutOfBounds)
+        }
+        else {
             // @todo i don't know why we return the old top instead of new one?
             let old_top = self.top;
             self.top = Top(MemoryInt::from(allocation.offset()) + MemoryInt::from(allocation.length()));
             Ok(old_top)
-        }
-        else {
-            Err(())
         }
     }
 
@@ -103,7 +97,7 @@ impl WasmStack {
 }
 
 impl TryFrom<WasmAllocation> for WasmStack {
-    type Error = ();
+    type Error = AllocationError;
     fn try_from(allocation: WasmAllocation) -> Result<Self, Self::Error> {
         let mut stack = WasmStack{ top: Top(allocation.offset().into()) };
         stack.allocate(allocation)?;

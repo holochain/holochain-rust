@@ -9,7 +9,6 @@ use holochain_core_types::{
     error::{HcResult, HolochainError, RibosomeErrorCode, RibosomeReturnCode},
     json::JsonString,
 };
-use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use std::{str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,

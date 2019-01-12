@@ -20,7 +20,6 @@ use holochain_wasm_utils::{
     holochain_core_types::error::RibosomeErrorCode,
 };
 use std::collections::BTreeMap;
-use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::memory::MemoryBits;
 use holochain_core_types::error::RibosomeEncodedAllocation;
 
@@ -233,10 +232,9 @@ pub extern "C" fn __hdk_get_json_definition(encoded_allocation_of_input: u32) ->
 
     let json_string = JsonString::from(partial_zome);
 
-    unsafe {
-        store_string_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), &String::from(json_string))
-            as u32
-    }
+    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    RibosomeEncodedAllocation::from(mem_stack.store_string(json_string.into())).into()
+
 }
 
 #[cfg(test)]

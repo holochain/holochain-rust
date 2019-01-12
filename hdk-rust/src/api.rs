@@ -10,7 +10,7 @@ use holochain_core_types::{
     cas::content::Address,
     dna::capabilities::CapabilityCall,
     entry::Entry,
-    error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
+    error::{ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -30,8 +30,7 @@ use holochain_wasm_utils::{
     },
 };
 use serde_json;
-use std::{convert::TryInto, os::raw::c_char};
-use holochain_wasm_utils::memory::stack::WasmStack;
+use std::{convert::TryInto};
 use holochain_core_types::error::RibosomeEncodedAllocation;
 
 //--------------------------------------------------------------------------------------------------

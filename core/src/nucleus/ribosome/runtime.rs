@@ -13,7 +13,6 @@ use holochain_core_types::{
     error::{HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
     json::JsonString,
 };
-use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
 use std::sync::Arc;
 use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 

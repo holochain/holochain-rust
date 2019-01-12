@@ -47,8 +47,14 @@ impl From<MemoryInt> for Length {
 }
 
 pub enum AllocationError {
+    /// (de)allocation is either too large or implies negative values
     OutOfBounds,
+    /// cannot allocate zero data
     ZeroLength,
+    /// (de)allocation must occur at the top of the stack
+    BadStackAlignment,
+    /// writes can fail to serialize data before allocation occurs e.g. json
+    Serialization,
 }
 
 #[derive(Copy, Clone, Debug)]

@@ -91,7 +91,10 @@ pub mod tests {
         assert!(env::set_current_dir(&temp_dir_path).is_ok());
 
         // do gen my_zome first, so there's a zome
-        gen_cmd.args(&["generate", "zomes/my_zome"]).assert().success();
+        gen_cmd
+            .args(&["generate", "zomes/my_zome"])
+            .assert()
+            .success();
 
         test(&temp_dir_path_buf, &TEST_DIR_NAME, "test/index.js", false)
             .unwrap_or_else(|e| panic!("test call failed: {}", e));

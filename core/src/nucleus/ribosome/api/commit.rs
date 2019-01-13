@@ -3,11 +3,7 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 use futures::executor::block_on;
-use holochain_core_types::{
-    cas::content::Address,
-    entry::{Entry, SerializedEntry},
-    error::HolochainError,
-};
+use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -18,24 +14,20 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
-    let serialized_entry = match SerializedEntry::try_from(args_str.clone()) {
+    let entry = match Entry::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            println!(
-                "invoke_commit_app_entry failed to deserialize SerializedEntry: {:?}",
+            runtime.context.log(format!(
+                "err/zome: invoke_commit_app_entry failed to deserialize Entry: {:?}",
                 args_str
-            );
+            ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-
-    // Create Chain Entry
-    let entry = Entry::from(serialized_entry);
-
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> =
-        block_on(author_entry(&entry, &runtime.context));
+        block_on(author_entry(&entry, None, &runtime.context));
 
     runtime.store_result(task_result)
 }
@@ -51,7 +43,7 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::Address,
-        entry::{test_entry, SerializedEntry},
+        entry::{test_entry, Entry},
         error::ZomeApiInternalResult,
         json::JsonString,
     };
@@ -60,7 +52,7 @@ pub mod tests {
     pub fn test_commit_args_bytes() -> Vec<u8> {
         let entry = test_entry();
 
-        let serialized_entry = SerializedEntry::from(entry);
+        let serialized_entry = Entry::from(entry);
         JsonString::from(serialized_entry).into_bytes()
     }
 
@@ -76,7 +68,7 @@ pub mod tests {
             call_result,
             JsonString::from(
                 String::from(JsonString::from(ZomeApiInternalResult::success(
-                    Address::from("QmeoLRiWhXLTQKEAHxd8s6Yt3KktYULatGoMsaXi62e5zT")
+                    Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq")
                 ))) + "\u{0}"
             ),
         );

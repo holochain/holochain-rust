@@ -15,11 +15,14 @@ pub mod tests {
         cas::content::AddressableContent,
         chain_header::ChainHeader,
         dna::{
-            zome::{capabilities::Capability, entry_types::EntryTypeDef},
+            capabilities::{Capability, CapabilityType},
+            entry_types::EntryTypeDef,
             Dna,
         },
-        entry::{entry_type::EntryType, Entry},
+        entry::Entry,
+        json::RawString,
     };
+    use holochain_wasm_utils::wasm_target_dir;
     use std::sync::Arc;
     use test_utils::*;
 
@@ -31,31 +34,39 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_dna() -> Dna {
         // Setup the holochain instance
-        let wasm =
-            create_wasm_from_file("src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm");
+        let wasm = create_wasm_from_file(&format!(
+            "{}/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
+            wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
+        ));
 
-        let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &Capability::new(), &wasm);
+        let mut dna = create_test_dna_with_cap(
+            "test_zome",
+            "test_cap",
+            &Capability::new(CapabilityType::Public),
+            &wasm,
+        );
 
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_entry"), EntryTypeDef::new());
+            .insert("package_entry".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_entries"), EntryTypeDef::new());
+            .insert("package_chain_entries".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_headers"), EntryTypeDef::new());
+            .insert("package_chain_headers".into(), EntryTypeDef::new());
         dna.zomes
             .get_mut("test_zome")
             .unwrap()
             .entry_types
-            .insert(String::from("package_chain_full"), EntryTypeDef::new());
+            .insert("package_chain_full".into(), EntryTypeDef::new());
+
         dna
     }
 
@@ -69,38 +80,29 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_entry() -> Entry {
-        Entry::new(EntryType::App(String::from("package_entry")), "test value")
+        Entry::App("package_entry".into(), RawString::from("test value").into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_entries() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_entries")),
-            "test value",
-        )
+        Entry::App("package_chain_entries".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_headers() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_headers")),
-            "test value",
-        )
+        Entry::App("package_chain_headers".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_entry_package_chain_full() -> Entry {
-        Entry::new(
-            EntryType::App(String::from("package_chain_full")),
-            "test value",
-        )
+        Entry::App("package_chain_full".into(), "test value".into())
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
         let chain = context.state().unwrap().agent().chain();
 
-        let commit_result = block_on(commit_entry(entry.clone(), &context.clone()));
+        let commit_result = block_on(commit_entry(entry.clone(), None, &context.clone()));
         assert!(commit_result.is_ok());
 
         let top_header = context.state().unwrap().agent().top_chain_header();

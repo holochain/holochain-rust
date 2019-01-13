@@ -50,7 +50,8 @@ pub fn store_string(
     if len > U16_MAX {
         return Err(RibosomeErrorCode::OutOfMemory);
     }
-    return write_in_wasm_memory(stack, bytes, len as u16);
+
+    write_in_wasm_memory(stack, bytes, len as u16)
 }
 
 // Sugar
@@ -83,6 +84,7 @@ pub fn store_as_json<J: TryInto<JsonString>>(
     let j: JsonString = jsonable
         .try_into()
         .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
+
     let json_bytes = j.into_bytes();
     let json_bytes_len = json_bytes.len() as u32;
     if json_bytes_len > U16_MAX {
@@ -118,7 +120,6 @@ pub fn load_json<'s, T: Deserialize<'s>>(encoded_allocation: u32) -> Result<T, H
 /// If json deserialization of custom struct failed, tries to deserialize a CoreError struct.
 /// If that also failed, tries to load a string directly, since we are expecting an error string at this stage.
 #[allow(unknown_lints)]
-#[allow(not_unsafe_ptr_arg_deref)]
 pub fn load_json_from_raw<'s, T: Deserialize<'s>>(
     ptr_data: *mut c_char,
 ) -> Result<T, HolochainError> {

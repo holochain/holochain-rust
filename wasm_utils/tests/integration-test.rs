@@ -13,33 +13,22 @@ extern crate tempfile;
 extern crate test_utils;
 
 use holochain_container_api::error::{HolochainInstanceError, HolochainResult};
-use holochain_core::logger::Logger;
 use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeErrorCode},
     json::{default_try_from_json, JsonString, RawString},
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{convert::TryFrom, error::Error};
 use test_utils::hc_setup_and_call_zome_fn;
 
-#[derive(Clone, Debug)]
-pub struct TestLogger {
-    pub log: Vec<String>,
-}
-
-impl Logger for TestLogger {
-    fn log(&mut self, msg: String) {
-        self.log.push(msg);
-    }
-
-    fn dump(&self) -> String {
-        format!("{:?}", self.log)
-    }
-}
-
 fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
     hc_setup_and_call_zome_fn(
-        "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
-        fn_name)
+        &format!(
+            "{}/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
+            wasm_target_dir("wasm_utils/", "wasm-test/integration-test/"),
+        ),
+        fn_name,
+    )
 }
 
 #[test]
@@ -68,7 +57,7 @@ fn call_store_as_json_str_ok() {
 fn call_store_as_json_obj_ok() {
     let call_result = call_zome_function_with_hc("test_store_as_json_obj_ok");
     assert_eq!(
-        JsonString::from("{\"value\":\"fish\"}"),
+        JsonString::from("{\"value\":\"fish\",\"list\":[\"hello\",\"world!\"]}"),
         call_result.unwrap()
     );
 }
@@ -114,7 +103,7 @@ fn call_load_json_from_raw_err() {
 fn call_load_json_ok() {
     let call_result = call_zome_function_with_hc("test_load_json_ok");
     assert_eq!(
-        JsonString::from("{\"value\":\"fish\"}"),
+        JsonString::from("{\"value\":\"fish\",\"list\":[\"hello\",\"world!\"]}"),
         call_result.unwrap()
     );
 }
@@ -124,11 +113,12 @@ fn call_load_json_err_test() {
     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
     struct TestStruct {
         value: String,
+        list: Vec<String>,
     }
     type TestResult = Result<TestStruct, HolochainError>;
 
     let try_result = call_zome_function_with_hc("test_load_json_err");
-    println!("{:?}", try_result);
+
     match try_result {
         Ok(result) => {
             let test_result: TestResult = default_try_from_json(result).unwrap();
@@ -169,7 +159,7 @@ fn call_stacked_json_str() {
 fn call_stacked_json_obj() {
     let call_result = call_zome_function_with_hc("test_stacked_json_obj");
     assert_eq!(
-        JsonString::from("{\"value\":\"first\"}"),
+        JsonString::from("{\"value\":\"first\",\"list\":[\"hello\",\"world!\"]}"),
         call_result.unwrap()
     );
 }

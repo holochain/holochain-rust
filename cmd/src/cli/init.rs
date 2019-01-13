@@ -1,4 +1,3 @@
-use colored::*;
 use crate::{
     cli::{
         package::{DEFAULT_BUNDLE_FILE_NAME, GITIGNORE_FILE_NAME, IGNORE_FILE_NAME},
@@ -7,6 +6,7 @@ use crate::{
     config_files::App as AppConfig,
     error::DefaultResult,
 };
+use colored::*;
 use serde_json;
 use std::{
     fs::{self, File, OpenOptions},
@@ -78,13 +78,14 @@ pub fn init(path: &PathBuf) -> DefaultResult<()> {
         &DEFAULT_BUNDLE_FILE_NAME,
         "README.md",
     ]
-        .join("\n");
+    .join("\n");
     let mut hcignore_file = File::create(path.join(&IGNORE_FILE_NAME))?;
     hcignore_file.write_all(ignores.as_bytes())?;
 
     // create a test folder with useful files
     setup_test_folder(&path, &TEST_DIR_NAME)?;
 
+    // CLI feedback
     println!(
         "{} new Holochain project at: {:?}",
         "Created".green().bold(),
@@ -129,11 +130,9 @@ pub mod tests {
         setup_test_folder(dir_path_buf, &TEST_DIR_NAME).expect("Test folder not set up");
 
         assert!(dir_path_buf.join(&TEST_DIR_NAME).join("index.js").exists());
-        assert!(
-            dir_path_buf
-                .join(&TEST_DIR_NAME)
-                .join("package.json")
-                .exists()
-        );
+        assert!(dir_path_buf
+            .join(&TEST_DIR_NAME)
+            .join("package.json")
+            .exists());
     }
 }

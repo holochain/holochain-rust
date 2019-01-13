@@ -1,0 +1,119 @@
+version: 2
+
+jobs:
+ # must be called build for local circle cli to work
+ # is actually unit tests
+ build:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+
+   - run: nix-shell --run hc-fmt-check
+   - run: nix-shell --run hc-test
+
+ integration-tests:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+
+   - run:
+       name: install cmd
+       command: nix-shell --run hc-install-cmd
+
+   - run:
+      name: test cmd
+      command: nix-shell --run hc-test-cmd
+
+   - run:
+       name: install node container
+       command: nix-shell --run hc-install-node-container
+
+   - run:
+       name: app spec tests
+       command: nix-shell --run hc-test-app-spec
+
+ # https://circleci.com/docs/2.0/building-docker-images/
+ docker.start:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile..start -t holochain/holochain-rust:circle..start .
+   - run: docker push holochain/holochain-rust:circle..start
+ docker.01:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.01.warm.nix -t holochain/holochain-rust:circle.01.warm.nix .
+   - run: docker push holochain/holochain-rust:circle.01.warm.nix
+ docker.02:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.02.warm.tests -t holochain/holochain-rust:circle.02.warm.tests .
+   - run: docker push holochain/holochain-rust:circle.02.warm.tests
+ docker.03:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.03.warm.tools -t holochain/holochain-rust:circle.03.warm.tools .
+   - run: docker push holochain/holochain-rust:circle.03.warm.tools
+ docker.end:
+  machine: true
+  steps:
+   - checkout
+   - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end .
+   - run: docker push holochain/holochain-rust:circle.zz.end
+
+ cold.ubuntu:
+  docker:
+   - image: ubuntu
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
+workflows:
+ version: 2
+ tests:
+  jobs:
+   - build
+   - integration-tests
+
+ cold:
+  jobs:
+   - cold.ubuntu:
+      filters:
+       branches:
+        only:
+         - develop
+
+ dockers:
+  # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
+  triggers:
+   - schedule:
+      cron: "0 0 * * *"
+      filters:
+       branches:
+        only:
+         - develop
+  jobs:
+   - docker.start
+   - docker.01:
+      requires:
+       - docker.start
+   - docker.02:
+      requires:
+       - docker.01
+   - docker.03:
+      requires:
+       - docker.02
+   - docker.end:
+      requires:
+       - docker.03

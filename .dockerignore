@@ -1,3 +1,7 @@
-target
-.git
-docker
+**/target
+**/dist
+**/.cargo
+**/.git
+**/node_modules
+**/docker
+**/bin-package

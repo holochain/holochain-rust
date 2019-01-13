@@ -24,13 +24,13 @@ use holochain_container_api::{
     container::Container,
 };
 use holochain_core_types::error::HolochainError;
-use std::{convert::TryFrom, fs::File, io::prelude::*, path::PathBuf};
+use std::{fs::File, io::prelude::*, path::PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "hcc")]
 struct Opt {
-    /// Output file
+    /// Path to the toml configuration file for the container
     #[structopt(short = "c", long = "config", parse(from_os_str))]
     config: Option<PathBuf>,
 }
@@ -45,10 +45,10 @@ fn main() {
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
         Ok(mut container) => {
-            if container.instances.len() > 0 {
+            if container.instances().len() > 0 {
                 println!(
                     "Successfully loaded {} instance configurations",
-                    container.instances.len()
+                    container.instances().len()
                 );
                 println!("Starting all of them...");
                 container
@@ -72,7 +72,9 @@ fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
     config
         .check_consistency()
         .map_err(|string| HolochainError::ConfigError(string))?;
-    Container::try_from(&config)
+    let mut container = Container::from_config(config);
+    container.load_config()?;
+    Ok(container)
 }
 
 #[cfg_attr(tarpaulin, skip)]

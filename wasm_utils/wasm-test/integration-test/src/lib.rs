@@ -19,11 +19,13 @@ use std::os::raw::c_char;
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
     value: String,
+    list: Vec<String>,
 }
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct OtherTestStruct {
     other: String,
+    list: Vec<String>,
 }
 
 #[no_mangle]
@@ -74,6 +76,7 @@ pub extern "C" fn test_store_as_json_obj_ok(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let obj = TestStruct {
         value: "fish".to_string(),
+        list: vec!["hello".to_string(), "world!".to_string()],
     };
     assert_eq!(0, stack.top());
     let res = store_as_json(&mut stack, obj.clone());
@@ -101,6 +104,7 @@ pub extern "C" fn test_store_as_json_err(_: u32) -> u32 {
     let mut stack = maybe_stack.unwrap();
     let obj = TestStruct {
         value: "fish".to_string(),
+        list: vec!["hello".to_string(), "world!".to_string()],
     };
     let res = store_as_json(&mut stack, obj.clone());
     assert!(res.is_err());
@@ -112,6 +116,7 @@ pub extern "C" fn test_load_json_from_raw_ok(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let obj = TestStruct {
         value: "fish".to_string(),
+        list: vec!["hello".to_string(), "world!".to_string()],
     };
     let res = store_as_json(&mut stack, obj.clone());
     let ptr = res.unwrap().offset() as *mut c_char;
@@ -125,6 +130,7 @@ pub extern "C" fn test_load_json_from_raw_err(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let obj = TestStruct {
         value: "fish".to_string(),
+        list: vec!["hello".to_string(), "world!".to_string()],
     };
     assert_eq!(0, stack.top());
     let store_res = store_as_json(&mut stack, obj.clone());
@@ -192,9 +198,11 @@ pub extern "C" fn test_stacked_json_obj(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let first = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
         value: "first".to_string(),
+        list: vec!["hello".to_string(), "world!".to_string()],
     });
     let _second = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
         value: "second".to_string(),
+        list: vec!["hello".to_string(), "world!".to_string()],
     });
     first as u32
 }
@@ -204,12 +212,14 @@ pub extern "C" fn test_stacked_mix(_: u32) -> u32 {
     let mut stack = SinglePageStack::default();
     let _first = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
         value: "first".to_string(),
+        list: vec!["hello".to_string(), "world!".to_string()],
     });
     let _second = store_as_json_into_encoded_allocation(&mut stack, "second");
     let third = store_string_into_encoded_allocation(&mut stack, "third");
     let _fourth = store_as_json_into_encoded_allocation(&mut stack, "fourth");
     let _fifth = store_as_json_into_encoded_allocation(&mut stack, TestStruct {
         value: "fifth".to_string(),
+        list: vec!["fifthlist".to_string()],
     });
     third as u32
 }

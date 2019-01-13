@@ -1,8 +1,8 @@
-use colored::*;
 use crate::error::DefaultResult;
+use colored::*;
 use std::{path::PathBuf, process::Command};
 
-pub fn run_cmd(base_path: PathBuf, bin: String, args: Vec<String>) -> DefaultResult<()> {
+pub fn run_cmd(base_path: PathBuf, bin: String, args: &[&str]) -> DefaultResult<()> {
     let pretty_command = format!("{} {}", bin.green(), args.join(" ").cyan());
 
     println!("> {}", pretty_command);

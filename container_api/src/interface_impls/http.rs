@@ -1,31 +1,23 @@
-// use holochain_core_types::json::JsonString;
-
-use std::sync::Arc;
-use tiny_http::{Response, Server};
-
-use interface::{DispatchRpc, Interface};
+use interface::Interface;
+use jsonrpc_http_server::{jsonrpc_core::IoHandler, ServerBuilder};
 
 pub struct HttpInterface {
     port: u16,
 }
 
-/// TODO: this is a stub, to be implemented later
 impl HttpInterface {
     pub fn new(port: u16) -> Self {
-        Self { port }
+        HttpInterface { port }
     }
 }
 
 impl Interface for HttpInterface {
-    fn run(&self, _dispatcher: Arc<DispatchRpc>) -> Result<(), String> {
-        let server_url = format!("0.0.0.0:{}", self.port);
-        let server = Server::http(server_url.as_str()).unwrap();
-        for request in server.incoming_requests() {
-            let method = request.url().to_string();
-            println!("{}", method);
-            let response = Response::from_string(method);
-            request.respond(response).unwrap();
-        }
-        unimplemented!();
+    fn run(&self, handler: IoHandler) -> Result<(), String> {
+        let url = format!("0.0.0.0:{}", self.port);
+        let server = ServerBuilder::new(handler)
+            .start_http(&url.parse().expect("Invalid URL!"))
+            .map_err(|e| e.to_string())?;
+        server.wait();
+        Ok(())
     }
 }

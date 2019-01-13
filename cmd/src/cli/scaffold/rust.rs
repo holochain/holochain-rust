@@ -4,6 +4,7 @@ use crate::{
     error::DefaultResult,
     util,
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -26,6 +27,7 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
 
     let authors_default = Value::from("[\"TODO\"]");
     let edition_default = Value::from("\"TODO\"");
+    let version_default = String::from("tag = \"v0.0.3\"");
     let maybe_package = config.get("package");
 
     let name = Value::from(name);
@@ -36,7 +38,7 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
         .and_then(|p| p.get("edition"))
         .unwrap_or(&edition_default);
 
-    interpolate_cargo_template(&name, authors, edition)
+    interpolate_cargo_template(&name, authors, edition, version_default)
 }
 
 /// Use the Cargo.toml.template file and interpolate values into the placeholders
@@ -45,24 +47,32 @@ fn interpolate_cargo_template(
     name: &Value,
     authors: &Value,
     edition: &Value,
+    version: String,
 ) -> DefaultResult<String> {
     let template = include_str!("rust/Cargo.template.toml");
     Ok(template
         .replace("<<NAME>>", toml::to_string(name)?.as_str())
         .replace("<<AUTHORS>>", toml::to_string(authors)?.as_str())
-        .replace("<<EDITION>>", toml::to_string(edition)?.as_str()))
+        .replace("<<EDITION>>", toml::to_string(edition)?.as_str())
+        .replace("<<VERSION>>", &version))
 }
 
 impl RustScaffold {
     pub fn new(package_name: String) -> RustScaffold {
+        let target_dir = wasm_target_dir(&package_name, "");
         let artifact_name = format!(
-            "target/wasm32-unknown-unknown/release/{}.wasm",
-            package_name
+            "{}/wasm32-unknown-unknown/release/{}.wasm",
+            &target_dir, &package_name,
         );
         RustScaffold {
             build_template: Build::with_artifact(artifact_name).cmd(
                 "cargo",
-                &["build", "--release", "--target=wasm32-unknown-unknown"],
+                &[
+                    "build",
+                    "--release",
+                    "--target=wasm32-unknown-unknown",
+                    &format!("--target-dir={}", target_dir),
+                ],
             ),
             package_name: package_name,
         }
@@ -106,12 +116,7 @@ impl Scaffold for RustScaffold {
         util::run_cmd(
             base_path.as_ref().to_path_buf(),
             "cargo".into(),
-            vec![
-                "init".to_owned(),
-                "--lib".to_owned(),
-                "--vcs".to_owned(),
-                "none".to_owned(),
-            ],
+            &["init", "--lib", "--vcs", "none"],
         )?;
 
         // immediately rewrite the generated Cargo file, using some values

@@ -24,9 +24,11 @@ extern crate serde_json;
 extern crate serde_derive;
 extern crate snowflake;
 #[macro_use]
-extern crate bitflags;
-#[macro_use]
 extern crate holochain_core_types_derive;
+extern crate regex;
+#[cfg(test)]
+#[macro_use]
+extern crate maplit;
 
 extern crate uuid;
 
@@ -40,12 +42,9 @@ pub mod error;
 extern crate objekt;
 pub mod agent;
 pub mod chain_migrate;
-pub mod delete;
 pub mod dna;
-pub mod file_validation;
 pub mod hash;
 pub mod json;
-pub mod keys;
 pub mod link;
 pub mod signature;
 pub mod time;

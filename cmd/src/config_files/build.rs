@@ -1,5 +1,5 @@
-use base64;
 use crate::{error::DefaultResult, util};
+use base64;
 use serde_json;
 use std::{
     collections::HashMap,
@@ -35,7 +35,8 @@ impl Build {
     /// Starts the build using the supplied build steps and returns the contents of the artifact
     pub fn run(&self, base_path: &PathBuf) -> DefaultResult<String> {
         for (bin, args) in &self.steps {
-            util::run_cmd(base_path.to_path_buf(), bin.to_string(), args.clone())?;
+            let slice_vec: Vec<_> = args.iter().map(|e| e.as_str()).collect();
+            util::run_cmd(base_path.to_path_buf(), bin.to_string(), &slice_vec[..])?;
         }
 
         let artifact_path = base_path.join(&self.artifact);
@@ -46,7 +47,10 @@ impl Build {
 
             Ok(base64::encode(&wasm_buf))
         } else {
-            bail!("artifact path either doesn't point to a file or doesn't exist")
+            bail!(
+                "artifact path {} either doesn't point to a file or doesn't exist",
+                artifact_path.to_string_lossy()
+            )
         }
     }
 
@@ -59,15 +63,12 @@ impl Build {
         }
     }
 
-    pub fn cmd<S: Into<String> + Clone>(mut self, cmd: S, args: &[S]) -> Build {
-        let cmd: String = cmd.into();
-        let args: Vec<_> = args
+    pub fn cmd(mut self, cmd: &str, args: &[&str]) -> Build {
+        let cmd: String = cmd.to_owned();
+        let args = args
+            .to_vec()
             .iter()
-            .map(|raw_arg| {
-                let arg: String = (*raw_arg).clone().into();
-
-                arg
-            })
+            .map(|raw_arg| raw_arg.to_string())
             .collect();
 
         self.steps.insert(cmd, args);

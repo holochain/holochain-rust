@@ -4,6 +4,9 @@ use crate::protocol::Protocol;
 /// closure for getting Protocol messages from the p2p abstraction system
 pub type NetHandler = Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send>;
 
+/// closure for signaling shutdown incase of required cleanup
+pub type NetShutdown = Option<Box<::std::boxed::FnBox() + Send>>;
+
 /// net connection - a worker manager can send Protocol messages
 pub trait NetConnection {
     fn send(&mut self, data: Protocol) -> NetResult<()>;
@@ -25,6 +28,11 @@ pub trait NetWorker {
     fn tick(&mut self) -> NetResult<bool> {
         Ok(false)
     }
+
+    /// Getter of the connection's endpoint
+    fn endpoint(&self) -> Option<String> {
+        Some(String::new())
+    }
 }
 
 /// closure for instantiating a NetWorker
@@ -35,6 +43,7 @@ pub type NetWorkerFactory =
 /// this struct can be use to compose one type of NetWorker into another
 pub struct NetConnectionRelay {
     worker: Box<NetWorker>,
+    done: NetShutdown,
 }
 
 impl NetConnection for NetConnectionRelay {
@@ -49,6 +58,9 @@ impl NetConnectionRelay {
     /// stop this NetConnectionRelay instance
     pub fn stop(self) -> NetResult<()> {
         self.worker.stop()?;
+        if let Some(done) = self.done {
+            done();
+        }
         Ok(())
     }
 
@@ -58,9 +70,14 @@ impl NetConnectionRelay {
     }
 
     /// create a new NetConnectionRelay instance with give handler / factory
-    pub fn new(handler: NetHandler, worker_factory: NetWorkerFactory) -> NetResult<Self> {
+    pub fn new(
+        handler: NetHandler,
+        worker_factory: NetWorkerFactory,
+        done: NetShutdown,
+    ) -> NetResult<Self> {
         Ok(NetConnectionRelay {
             worker: worker_factory(handler)?,
+            done,
         })
     }
 }
@@ -80,6 +97,7 @@ mod tests {
         let mut con = NetConnectionRelay::new(
             Box::new(move |_r| Ok(())),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 
@@ -113,6 +131,7 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 
@@ -135,6 +154,7 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 

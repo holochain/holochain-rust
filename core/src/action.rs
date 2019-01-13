@@ -1,15 +1,24 @@
 use crate::{
     agent::state::AgentState,
     context::Context,
-    network::state::NetworkState,
+    network::{direct_message::DirectMessage, state::NetworkState},
     nucleus::{
         state::{NucleusState, ValidationResult},
         ExecuteZomeFnResponse, ZomeFnCall,
     },
 };
 use holochain_core_types::{
-    cas::content::Address, dna::Dna, entry::Entry, error::HolochainError, json::JsonString,
-    link::Link, validation::ValidationPackage,
+    cas::content::Address,
+    chain_header::ChainHeader,
+    dna::Dna,
+    entry::{Entry, EntryWithMeta},
+    error::HolochainError,
+    json::JsonString,
+    link::Link,
+    validation::ValidationPackage,
+};
+use holochain_net_connection::protocol_wrapper::{
+    DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
 };
 use snowflake;
 use std::{
@@ -71,22 +80,92 @@ impl Hash for ActionWrapper {
 /// All Actions for the Holochain Instance Store, according to Redux pattern.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Action {
-    /// entry to Commit
-    /// MUST already have passed all callback checks
-    Commit(Entry),
+    // ----------------
+    // Agent actions:
+    // ----------------
+    /// Writes an entry to the source chain.
+    /// Does not validate, assumes entry is valid.
+    Commit((Entry, Option<Address>)),
+
+    // -------------
+    // DHT actions:
+    // -------------
+    /// Adds an entry to the local DHT shard.
+    /// Does not validate, assumes entry is valid.
+    Hold(Entry),
+
+    /// Adds a link to the local DHT shard's meta/EAV storage
+    /// Does not validate, assumes link is valid.
+    AddLink(Link),
+
+    // ----------------
+    // Network actions:
+    // ----------------
+    /// Create a network proxy instance from the given [NetworkSettings](struct.NetworkSettings.html)
+    InitNetwork(NetworkSettings),
+
+    /// Makes the network PUT the given entry to the DHT.
+    /// Distinguishes between different entry types and does
+    /// the right thing respectively.
+    /// (only publish for AppEntryType, publish and publish_meta for links etc)
+    Publish(Address),
+
     /// GetEntry by address
     GetEntry(Address),
 
-    /// link to add
-    AddLink(Link),
-    /// get links from entry address and attribute-name
-    //GetLinks(GetLinksArgs),
+    /// Lets the network module respond to a GET request.
+    /// Triggered from the corresponding workflow after retrieving the
+    /// requested entry from our local DHT shard.
+    RespondGet((GetDhtData, Option<EntryWithMeta>)),
 
-    /// execute a function in a zome WASM
-    ExecuteZomeFunction(ZomeFnCall),
-    /// return the result of a zome WASM function call
-    ReturnZomeFunctionResult(ExecuteZomeFnResponse),
+    /// We got a response for our GET request which needs to be
+    /// added to the state.
+    /// Triggered from the network handler.
+    HandleGetResult(DhtData),
 
+    ///
+    UpdateEntry((Address, Address)),
+    ///
+    RemoveEntry((Address, Address)),
+    ///
+    GetEntryTimeout(Address),
+
+    /// get links from entry address and tag name
+    GetLinks((Address, String)),
+    GetLinksTimeout((Address, String)),
+    RespondGetLinks((GetDhtMetaData, Vec<Address>)),
+    HandleGetLinksResult((DhtMetaData, String)),
+
+    /// Makes the network module send a direct (node-to-node) message
+    /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
+    SendDirectMessage(DirectMessageData),
+
+    /// Makes the direct message connection with the given ID timeout by adding an
+    /// Err(HolochainError::Timeout) to NetworkState::custom_direct_message_replys.
+    SendDirectMessageTimeout(String),
+
+    /// Makes the network module forget about the direct message
+    /// connection with the given ID.
+    /// Triggered when we got an answer to our initial DM.
+    ResolveDirectConnection(String),
+
+    /// Makes the network module DM the source of the given entry
+    /// and prepare for receiveing an answer
+    GetValidationPackage(ChainHeader),
+
+    /// Updates the state to hold the response that we got for
+    /// our previous request for a validation package.
+    /// Triggered from the network handler when we get the response.
+    HandleGetValidationPackage((Address, Option<ValidationPackage>)),
+
+    /// Updates the state to hold the response that we got for
+    /// our previous custom direct message.
+    /// /// Triggered from the network handler when we get the response.
+    HandleCustomSendResponse((String, Result<String, String>)),
+
+    // ----------------
+    // Nucleus actions:
+    // ----------------
     /// initialize an application from a Dna
     /// not the same as genesis
     /// may call genesis internally
@@ -95,24 +174,28 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
+    /// execute a function in a zome WASM
+    ExecuteZomeFunction(ZomeFnCall),
+
+    /// return the result of a zome WASM function call
+    ReturnZomeFunctionResult(ExecuteZomeFnResponse),
+
     /// Execute a zome function call called by another zome function
     Call(ZomeFnCall),
 
-    /// A validation result that should be stored
+    /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context
     /// and the hash of the entry that was validated
     ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
 
+    /// A validation package was created locally and is reported back
+    /// to be added to the state
     ReturnValidationPackage(
         (
             snowflake::ProcessUniqueId,
             Result<ValidationPackage, HolochainError>,
         ),
     ),
-
-    InitNetwork((JsonString, String, String)),
-    Publish(Address),
-    Hold(Entry),
 }
 
 /// function signature for action handler functions
@@ -122,6 +205,41 @@ pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
+
+/// Everything the network module needs to know in order to send a
+/// direct message.
+#[derive(Clone, PartialEq, Debug)]
+pub struct DirectMessageData {
+    /// The address of the node to send a message to
+    pub address: Address,
+
+    /// The message itself
+    pub message: DirectMessage,
+
+    /// A unique message ID that is used to identify the response and attribute
+    /// it to the right context
+    pub msg_id: String,
+
+    /// Should be true if we are responding to a previous message with this message.
+    /// msg_id should then be the same as the in the message that we received.
+    pub is_response: bool,
+}
+
+/// Everything the network needs to initialize
+#[derive(Clone, PartialEq, Debug)]
+pub struct NetworkSettings {
+    /// JSON config that gets passed to [P2pNetwork](struct.P2pNetwork.html)
+    /// determines how to connect to the network module.
+    pub config: JsonString,
+
+    /// DNA address is needed so the network module knows which network to
+    /// connect us to.
+    pub dna_address: Address,
+
+    /// The network module needs to know who we are.
+    /// This is this agent's address.
+    pub agent_id: String,
+}
 
 #[cfg(test)]
 pub mod tests {
@@ -145,7 +263,7 @@ pub mod tests {
 
     /// dummy action wrapper with commit of test_entry()
     pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit(test_entry()))
+        ActionWrapper::new(Action::Commit((test_entry(), None)))
     }
 
     /// dummy action for a get of test_hash()

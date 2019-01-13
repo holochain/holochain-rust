@@ -1,18 +1,23 @@
-use holochain_core_types::{
+//! This file contains defitions for Zome errors and also Zome Results.
+
+use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
-    json::JsonString,
+    json::{JsonError, JsonString},
 };
 use std::{error::Error, fmt};
 
-/// Error for DNA developers to use in their zome code.
-/// They do not have to send this error back to Ribosome unless its an InternalError.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+/// Error for DNA developers to use in their Zome code.
+/// This does not have to be sent back to Ribosome unless its an InternalError.
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,
     HashNotFound,
     ValidationFailed(String),
+    Timeout,
 }
+
+impl JsonError for ZomeApiError {}
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
@@ -33,6 +38,7 @@ impl From<HolochainError> for ZomeApiError {
     fn from(holochain_error: HolochainError) -> Self {
         match holochain_error {
             HolochainError::ValidationFailed(s) => ZomeApiError::ValidationFailed(s),
+            HolochainError::Timeout => ZomeApiError::Timeout,
             _ => ZomeApiError::Internal(holochain_error.description().into()),
         }
     }
@@ -41,12 +47,6 @@ impl From<HolochainError> for ZomeApiError {
 impl From<!> for ZomeApiError {
     fn from(_: !) -> Self {
         unreachable!();
-    }
-}
-
-impl From<ZomeApiError> for JsonString {
-    fn from(zome_api_error: ZomeApiError) -> JsonString {
-        JsonString::from(json!({ "error": zome_api_error }))
     }
 }
 
@@ -70,6 +70,7 @@ impl Error for ZomeApiError {
             ZomeApiError::FunctionNotImplemented  => "Function not implemented",
             ZomeApiError::HashNotFound            => "Hash not found",
             ZomeApiError::ValidationFailed(msg)   => &msg,
+            ZomeApiError::Timeout                 => "Timeout",
         }
     }
 }
@@ -85,3 +86,20 @@ impl fmt::Display for ZomeApiError {
 }
 
 pub type ZomeApiResult<T> = Result<T, ZomeApiError>;
+
+#[cfg(test)]
+mod tests {
+
+    use error::{ZomeApiError, ZomeApiResult};
+    use holochain_core_types::json::JsonString;
+
+    #[test]
+    fn zome_api_result_json_result_round_trip_test() {
+        let result: ZomeApiResult<String> = Err(ZomeApiError::FunctionNotImplemented);
+
+        assert_eq!(
+            JsonString::from(result),
+            JsonString::from("{\"Err\":\"FunctionNotImplemented\"}"),
+        );
+    }
+}

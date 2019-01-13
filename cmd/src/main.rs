@@ -2,6 +2,8 @@ extern crate holochain_cas_implementations;
 extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_net;
+extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
@@ -83,10 +85,7 @@ enum Cli {
             parse(from_os_str)
         )]
         zome: PathBuf,
-        #[structopt(
-            help = "The language of the generated zome",
-            default_value = "rust"
-        )]
+        #[structopt(help = "The language of the generated zome", default_value = "rust")]
         language: String,
     },
     #[structopt(
@@ -108,6 +107,10 @@ enum Cli {
             help = "Automatically package project before running"
         )]
         package: bool,
+        #[structopt(long, help = "Save generated data to file system")]
+        persist: bool,
+        #[structopt(long, help = "Use real networking")]
+        networked: bool,
     },
     #[structopt(
         name = "test",
@@ -118,20 +121,18 @@ enum Cli {
         #[structopt(
             long,
             short,
-            help = "The folder containing the test files, defaults to 'test'"
+            default_value = "test",
+            help = "The folder containing the test files"
         )]
-        dir: Option<String>,
+        dir: String,
         #[structopt(
             long,
             short,
-            help = "The path of the file to test, defaults to 'test/dist/bundle.js'"
+            default_value = "test/index.js",
+            help = "The path of the file to test"
         )]
-        testfile: Option<String>,
-        #[structopt(
-            long = "skip-package",
-            short = "s",
-            help = "Skip packaging DNA"
-        )]
+        testfile: String,
+        #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
     },
 }
@@ -148,30 +149,31 @@ fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
     match args {
-        Cli::Agent => cli::agent().map_err(|err| HolochainError::Default(err))?,
+        Cli::Agent => cli::agent().map_err(HolochainError::Default)?,
         Cli::Package { strip_meta, output } => {
-            cli::package(strip_meta, output).map_err(|err| HolochainError::Default(err))?
+            cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
-        Cli::Unpack { path, to } => {
-            cli::unpack(&path, &to).map_err(|err| HolochainError::Default(err))?
-        }
-        Cli::Init { path } => cli::init(&path).map_err(|err| HolochainError::Default(err))?,
+        Cli::Unpack { path, to } => cli::unpack(&path, &to).map_err(HolochainError::Default)?,
+        Cli::Init { path } => cli::init(&path).map_err(HolochainError::Default)?,
         Cli::Generate { zome, language } => {
-            cli::generate(&zome, &language).map_err(|err| HolochainError::Default(err))?
+            cli::generate(&zome, &language).map_err(HolochainError::Default)?
         }
-        Cli::Run { package, port } => {
-            cli::run(package, port).map_err(|err| HolochainError::Default(err))?
-        }
+        Cli::Run {
+            package,
+            port,
+            persist,
+            networked,
+        } => cli::run(package, port, persist, networked).map_err(HolochainError::Default)?,
         Cli::Test {
             dir,
             testfile,
             skip_build,
         } => {
-            let tests_folder = dir.unwrap_or(cli::TEST_DIR_NAME.to_string());
-            let test_file = testfile.unwrap_or("test/index.js".to_string());
-            cli::test(&PathBuf::from("."), &tests_folder, &test_file, skip_build)
-                .map_err(|err| HolochainError::Default(err))?
+            let current_path = std::env::current_dir()
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            cli::test(&current_path, &dir, &testfile, skip_build)
         }
+        .map_err(HolochainError::Default)?,
     }
 
     Ok(())

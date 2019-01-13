@@ -2,7 +2,7 @@ extern crate futures;
 extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
-    agent::{self, chain_header},
+    agent::{self, find_chain_header},
     context::Context,
     nucleus::ribosome::callback::{
         validation_package::get_validation_package_definition, CallbackResult,
@@ -14,47 +14,70 @@ use futures::{
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
-    entry::{entry_type::EntryType, Entry, SerializedEntry},
+    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition::*},
 };
 use snowflake;
-use std::{
-    convert::TryInto,
-    pin::{Pin, Unpin},
-    sync::Arc,
-    thread,
-};
+use std::{convert::TryInto, pin::Pin, sync::Arc, thread};
 
 pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> ValidationPackageFuture {
     let id = snowflake::ProcessUniqueId::new();
 
-    if let EntryType::App(_) = entry.entry_type() {
-        if context
-            .state()
-            .unwrap()
-            .nucleus()
-            .dna()
-            .unwrap()
-            .get_zome_name_for_entry_type(&entry.entry_type().to_string())
-            .is_none()
-        {
+    match entry.entry_type() {
+        EntryType::App(app_entry_type) => {
+            if context
+                .state()
+                .unwrap()
+                .nucleus()
+                .dna()
+                .unwrap()
+                .get_zome_name_for_app_entry_type(&app_entry_type)
+                .is_none()
+            {
+                return ValidationPackageFuture {
+                    context: context.clone(),
+                    key: id,
+                    error: Some(HolochainError::ValidationFailed(format!(
+                        "Unknown app entry type '{}'",
+                        String::from(app_entry_type),
+                    ))),
+                };
+            }
+        }
+
+        EntryType::LinkAdd => {
+            // LinkAdd can always be validated
+        }
+
+        EntryType::Deletion => {
+            // FIXME
+        }
+
+        EntryType::CapTokenGrant => {
+            // FIXME
+        }
+
+        EntryType::AgentId => {
+            // FIXME
+        }
+        _ => {
             return ValidationPackageFuture {
                 context: context.clone(),
                 key: id,
                 error: Some(HolochainError::ValidationFailed(format!(
-                    "Unknown entry type: '{}'",
-                    String::from(entry.entry_type().to_owned())
+                    "Attempted to validate system entry type {:?}",
+                    entry.entry_type(),
                 ))),
             };
         }
-    }
+    };
 
     {
         let id = id.clone();
         let entry = entry.clone();
         let context = context.clone();
-        let entry_header = chain_header(&entry.clone(), &context).unwrap_or(
+        let entry_header = find_chain_header(&entry.clone(), &context).unwrap_or(
             // TODO: make sure that we don't run into race conditions with respect to the chain
             // We need the source chain header as part of the validation package.
             // For an already committed entry (when asked to deliver the validation package to
@@ -67,7 +90,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
             // and just used for the validation, I don't see why it would be a problem.
             // If it was a problem, we would have to make sure that the whole commit process
             // (including validtion) is atomic.
-            agent::state::create_new_chain_header(&entry, &*context.state().unwrap().agent()),
+            agent::state::create_new_chain_header(&entry, context.clone(), &None),
         );
 
         thread::spawn(move || {
@@ -112,7 +135,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                 });
 
             context
-                .action_channel
+                .action_channel()
                 .send(ActionWrapper::new(Action::ReturnValidationPackage((
                     id,
                     maybe_validation_package,
@@ -128,7 +151,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
     }
 }
 
-fn all_public_chain_entries(context: &Arc<Context>) -> Vec<SerializedEntry> {
+fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
@@ -161,8 +184,6 @@ pub struct ValidationPackageFuture {
     key: snowflake::ProcessUniqueId,
     error: Option<HolochainError>,
 }
-
-impl Unpin for ValidationPackageFuture {}
 
 impl Future for ValidationPackageFuture {
     type Output = Result<ValidationPackage, HolochainError>;

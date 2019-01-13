@@ -10,10 +10,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{error::HolochainError, link::Link};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// AddLink Action Creator
 /// This action creator dispatches an AddLink action which is consumed by the DHT reducer.
@@ -25,7 +22,7 @@ use std::{
 /// Returns a future that resolves to an Ok(()) or an Err(HolochainError).
 pub fn add_link(link: &Link, context: &Arc<Context>) -> AddLinkFuture {
     let action_wrapper = ActionWrapper::new(Action::AddLink(link.clone()));
-    dispatch_action(&context.action_channel, action_wrapper.clone());
+    dispatch_action(context.action_channel(), action_wrapper.clone());
 
     AddLinkFuture {
         context: context.clone(),
@@ -38,8 +35,6 @@ pub struct AddLinkFuture {
     action: ActionWrapper,
 }
 
-impl Unpin for AddLinkFuture {}
-
 impl Future for AddLinkFuture {
     type Output = Result<(), HolochainError>;
 
@@ -50,8 +45,8 @@ impl Future for AddLinkFuture {
         //
         lw.wake();
         if let Some(state) = self.context.state() {
-            match state.dht().add_link_actions().get(&self.action) {
-                Some(Ok(())) => Poll::Ready(Ok(())),
+            match state.dht().actions().get(&self.action) {
+                Some(Ok(_)) => Poll::Ready(Ok(())),
                 Some(Err(e)) => Poll::Ready(Err(e.clone())),
                 None => Poll::Pending,
             }

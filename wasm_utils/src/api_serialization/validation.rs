@@ -1,11 +1,15 @@
 use holochain_core_types::{
-    error::HolochainError, json::*, link::Link, validation::ValidationData,
+    entry::{entry_type::EntryType, Entry},
+    error::HolochainError,
+    json::*,
+    link::Link,
+    validation::ValidationData,
 };
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson)]
 pub struct EntryValidationArgs {
-    pub entry_type: String,
-    pub entry: String,
+    pub entry_type: EntryType,
+    pub entry: Entry,
     pub validation_data: ValidationData,
 }
 

@@ -1,7 +1,7 @@
 use super::NetResult;
 
 use super::{
-    net_connection::{NetConnection, NetHandler, NetWorkerFactory},
+    net_connection::{NetConnection, NetHandler, NetShutdown, NetWorkerFactory},
     protocol::Protocol,
 };
 
@@ -13,11 +13,12 @@ use std::sync::{
 };
 
 /// a NetConnection instance that is managed on another thread
-#[derive(Debug)]
 pub struct NetConnectionThread {
-    keep_running: Arc<AtomicBool>,
+    can_keep_running: Arc<AtomicBool>,
     send_channel: mpsc::Sender<Protocol>,
     thread: thread::JoinHandle<()>,
+    done: NetShutdown,
+    pub endpoint: String,
 }
 
 impl NetConnection for NetConnectionThread {
@@ -31,61 +32,95 @@ impl NetConnection for NetConnectionThread {
 impl NetConnectionThread {
     /// stop (join) the worker thread
     pub fn stop(self) -> NetResult<()> {
-        self.keep_running.store(false, Ordering::Relaxed);
-        match self.thread.join() {
-            Ok(_) => Ok(()),
-            Err(_) => {
-                bail!("NetConnectionThread failed to join on stop() call");
-            }
+        self.can_keep_running.store(false, Ordering::Relaxed);
+        if self.thread.join().is_err() {
+            bail!("NetConnectionThread failed to join on stop() call");
         }
+        if let Some(done) = self.done {
+            done();
+        }
+        Ok(())
     }
 
-    /// create a new NetConnectionThread instance with given handler / worker
-    pub fn new(handler: NetHandler, worker_factory: NetWorkerFactory) -> NetResult<Self> {
-        let keep_running = Arc::new(AtomicBool::new(true));
-        let keep_running2 = keep_running.clone();
+    /// Create a new NetConnectionThread instance with given handler / worker
+    pub fn new(
+        handler: NetHandler,
+        worker_factory: NetWorkerFactory,
+        done: NetShutdown,
+    ) -> NetResult<Self> {
+        // Create atomic TRUE
+        let can_keep_running = Arc::new(AtomicBool::new(true));
+        let can_keep_running_shared = can_keep_running.clone();
+        // Create channel
+        let (send_channel, recv_channel) = mpsc::channel();
 
-        let (sender, receiver) = mpsc::channel();
-        Ok(NetConnectionThread {
-            keep_running,
-            send_channel: sender,
-            thread: thread::spawn(move || {
-                let mut us = 100_u64;
-                let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
+        let (send_endpoint, recv_endpoint) = mpsc::channel();
 
-                while keep_running2.load(Ordering::Relaxed) {
-                    let mut did_something = false;
-                    receiver
-                        .try_recv()
-                        .and_then(|data| {
+        // spawn worker thread
+        let thread = thread::spawn(move || {
+            // Create worker
+            let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
+
+            let endpoint = worker.endpoint();
+            send_endpoint
+                .send(endpoint)
+                .expect("Sending endpoint address should work.");
+            drop(send_endpoint);
+            // Loop as long NetConnectionThread wants to
+            let mut sleep_duration_us = 100_u64;
+            while can_keep_running_shared.load(Ordering::Relaxed) {
+                // Check if we received something from the network
+                let mut did_something = false;
+                recv_channel
+                    .try_recv()
+                    .and_then(|data| {
+                        // Send it to the worker
+                        did_something = true;
+                        worker.receive(data).unwrap_or_else(|e| panic!("{:?}", e));
+                        Ok(())
+                    })
+                    .unwrap_or(());
+                // Tick the worker (it might do a send)
+                worker
+                    .tick()
+                    .and_then(|b| {
+                        if b {
                             did_something = true;
-                            worker.receive(data).unwrap_or_else(|e| panic!("{:?}", e));
-                            Ok(())
-                        })
-                        .unwrap_or(());
-
-                    worker
-                        .tick()
-                        .and_then(|b| {
-                            if b {
-                                did_something = true;
-                            }
-                            Ok(())
-                        })
-                        .unwrap_or_else(|e| panic!("{:?}", e));
-
-                    if did_something {
-                        us = 100_u64;
-                    } else {
-                        us *= 2_u64;
-                        if us > 10_000_u64 {
-                            us = 10_000_u64;
                         }
-                    }
+                        Ok(())
+                    })
+                    .unwrap_or_else(|e| panic!("{:?}", e));
 
-                    thread::sleep(time::Duration::from_micros(us));
+                // Increase sleep duration if nothing was received or sent
+                if did_something {
+                    sleep_duration_us = 100_u64;
+                } else {
+                    sleep_duration_us *= 2_u64;
+                    if sleep_duration_us > 10_000_u64 {
+                        sleep_duration_us = 10_000_u64;
+                    }
                 }
-            }),
+                // Sleep
+                thread::sleep(time::Duration::from_micros(sleep_duration_us));
+            }
+            // Stop the worker
+            worker.stop().unwrap_or_else(|e| panic!("{:?}", e));
+        });
+
+        let endpoint = recv_endpoint
+            .recv()
+            .expect("Failed to receive endpoint address from net worker");
+        let endpoint = endpoint
+            .expect("Should have an endpoint address")
+            .to_string();
+
+        // Done
+        Ok(NetConnectionThread {
+            can_keep_running,
+            send_channel,
+            thread,
+            done,
+            endpoint,
         })
     }
 }
@@ -105,6 +140,7 @@ mod tests {
         let mut con = NetConnectionThread::new(
             Box::new(move |_r| Ok(())),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 
@@ -137,6 +173,7 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 
@@ -169,6 +206,7 @@ mod tests {
                 Ok(())
             }),
             Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+            None,
         )
         .unwrap();
 

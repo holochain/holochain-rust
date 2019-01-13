@@ -26,7 +26,7 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
 
     let file_name = util::file_name_string(&zome_name)?;
 
-    let zome_config_json = json!{
+    let zome_config_json = json! {
         {
             "description": format!("The {} App", file_name)
         }
@@ -66,6 +66,8 @@ fn scaffold<S: Scaffold>(tooling: &S, base_path: PathBuf) -> DefaultResult<()> {
 }
 
 #[cfg(test)]
+// too slow!
+#[cfg(feature = "broken-tests")]
 mod tests {
     use assert_cmd::prelude::*;
     use std::process::Command;

@@ -7,12 +7,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let payload = runtime.load_json_string_from_args(args);
-    println!("{}", payload);
-    // TODO #502 - log in logger as DEBUG log-level
-    runtime
-        .context
-        .log(&format!("zome_log:DEBUG: '{}'", payload))
-        .expect("Logger should work");
+    runtime.context.log(format!("debug/dna: '{}'", payload));
     // Done
     ribosome_success!()
 }
@@ -45,9 +40,9 @@ pub mod tests {
             call_result
         );
         assert_eq!(JsonString::null(), call_result,);
-        assert_eq!(
-            JsonString::from("[\"zome_log:DEBUG: \\\'foo\\\'\", \"Zome Function \\\'test\\\' returned: Success\"]"),
-            JsonString::from(format!("{}", (*context.logger.lock().unwrap()).dump())),
-        );
+        let expected_in_log =
+       "\"debug/dna: \\\'foo\\\'\", \"debug/zome: Zome Function \\\'test\\\' returned: Success\"";
+        let log_contents = format!("{}", (*context.logger.lock().unwrap()).dump());
+        assert!(log_contents.contains(expected_in_log));
     }
 }

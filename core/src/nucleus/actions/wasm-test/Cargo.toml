@@ -1,6 +1,6 @@
 [package]
 name = "nucleus-actions-tests"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
@@ -8,14 +8,13 @@ crate-type = ["cdylib"]
 
 [profile.release]
 panic = "abort"
-lto = true
-opt-level = 'z'
 
 [workspace]
 members = []
 
 [dependencies]
 hdk = { path = "../../../../../hdk-rust" }
+holochain_core_types_derive = { path = "../../../../../core_types_derive" }
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"

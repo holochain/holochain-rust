@@ -17,11 +17,7 @@ use holochain_core_types::{
     validation::ValidationData,
 };
 use snowflake;
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-    thread,
-};
+use std::{pin::Pin, sync::Arc, thread};
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -36,18 +32,47 @@ pub fn validate_entry<'a>(
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
-    if let EntryType::App(_) = entry.entry_type() {
-        if context
-            .state()
-            .unwrap()
-            .nucleus()
-            .dna()
-            .unwrap()
-            .get_zome_name_for_entry_type(&entry.entry_type().to_string())
-            .is_none()
-        {
+    match entry.entry_type() {
+        EntryType::App(app_entry_type) => {
+            if context
+                .state()
+                .unwrap()
+                .nucleus()
+                .dna()
+                .unwrap()
+                .get_zome_name_for_app_entry_type(&app_entry_type)
+                .is_none()
+            {
+                return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
+                    format!(
+                        "Attempted to validate unknown app entry type {:?}",
+                        app_entry_type,
+                    ),
+                ))));
+            }
+        }
+
+        EntryType::LinkAdd => {
+            // LinkAdd can always be validated
+        }
+
+        EntryType::Deletion => {
+            // FIXME
+        }
+
+        EntryType::CapTokenGrant => {
+            // FIXME
+        }
+
+        EntryType::AgentId => {
+            // FIXME
+        }
+        _ => {
             return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
-                format!("Unknown entry type: '{}'", entry.entry_type().to_string(),),
+                format!(
+                    "Attempted to validate system entry type {:?}",
+                    entry.entry_type(),
+                ),
             ))));
         }
     }
@@ -78,7 +103,7 @@ pub fn validate_entry<'a>(
             };
 
             context
-                .action_channel
+                .action_channel()
                 .send(ActionWrapper::new(Action::ReturnValidationResult((
                     (id, address),
                     result,
@@ -99,8 +124,6 @@ pub struct ValidationFuture {
     context: Arc<Context>,
     key: (snowflake::ProcessUniqueId, HashString),
 }
-
-impl Unpin for ValidationFuture {}
 
 impl Future for ValidationFuture {
     type Output = Result<HashString, HolochainError>;

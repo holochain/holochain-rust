@@ -1,6 +1,6 @@
 [package]
 name = "test-globals"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
@@ -8,8 +8,6 @@ crate-type = ["cdylib"]
 
 [profile.release]
 panic = "abort"
-lto = true
-opt-level = 'z'
 
 [workspace]
 members = []
@@ -18,7 +16,7 @@ members = []
 hdk = { path = ".." }
 holochain_wasm_utils = { path = "../../wasm_utils" }
 serde = "1.0"
-serde_json = "1.0"
 serde_derive = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
 boolinator = "2.4"
 holochain_core_types_derive = { path = "../../core_types_derive" }

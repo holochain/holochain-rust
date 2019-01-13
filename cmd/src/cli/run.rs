@@ -154,7 +154,7 @@ pub fn run(
 #[cfg(test)]
 // flagged as broken for:
 // 1. taking 60+ seconds
-//#[cfg(feature = "broken-tests")]
+#[cfg(feature = "broken-tests")]
 mod tests {
     use crate::cli::init::{init, tests::gen_dir};
     use assert_cmd::prelude::*;

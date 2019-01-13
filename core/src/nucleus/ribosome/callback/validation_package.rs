@@ -27,7 +27,9 @@ pub fn get_validation_package_definition(
         EntryType::App(app_entry_type) => {
             let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
             if zome_name.is_none() {
-                return Ok(CallbackResult::NotImplemented);
+                return Ok(CallbackResult::NotImplemented(
+                    "get_validation_package_definition/1".into(),
+                ));
             }
 
             let zome_name = zome_name.unwrap();
@@ -65,7 +67,9 @@ pub fn get_validation_package_definition(
                 &target.entry_type(),
                 &context,
             )
-            .map_err(|_| HolochainError::NotImplemented)?;
+            .map_err(|_| {
+                HolochainError::NotImplemented("get_validation_package_definition/2".into())
+            })?;
 
             let wasm = context
                 .get_wasm(&link_definition_path.zome_name)
@@ -90,7 +94,9 @@ pub fn get_validation_package_definition(
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),
         EntryType::CapTokenGrant => JsonString::from(ValidationPackageDefinition::Entry),
         EntryType::AgentId => JsonString::from(ValidationPackageDefinition::Entry),
-        _ => Err(HolochainError::NotImplemented)?,
+        _ => Err(HolochainError::NotImplemented(
+            "get_validation_package_definition/3".into(),
+        ))?,
     };
 
     if result.is_null() {

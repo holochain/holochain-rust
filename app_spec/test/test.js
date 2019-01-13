@@ -1,6 +1,5 @@
-const tape = require('tape')
-
 const { Config, Container, Scenario } = require('../../nodejs_container')
+Scenario.setTape(require('tape'))
 
 const dnaPath = "./dist/app_spec.hcpkg"
 
@@ -15,13 +14,13 @@ const instanceBob = Config.instance(agentBob, dna)
 const scenario1 = new Scenario([instanceAlice])
 const scenario2 = new Scenario([instanceAlice, instanceBob])
 
-scenario2.runTape(tape, 'agentId', async (t, { alice, bob }) => {
+scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.plan(2)
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
 
-scenario1.runTape(tape, 'call', async (t, { alice }) => {
+scenario1.runTape('call', async (t, { alice }) => {
   t.plan(1)
 
   const num1 = 2
@@ -32,7 +31,7 @@ scenario1.runTape(tape, 'call', async (t, { alice }) => {
   t.deepEqual(result.Ok, { "sum": "4" })
 })
 
-scenario1.runTape(tape, 'hash_post', async (t, { alice }) => {
+scenario1.runTape('hash_post', async (t, { alice }) => {
   t.plan(1)
 
   const params = { content: "Holo world" }
@@ -41,7 +40,7 @@ scenario1.runTape(tape, 'hash_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
-scenario1.runTape(tape, 'create_post', async (t, { alice }) => {
+scenario1.runTape('create_post', async (t, { alice }) => {
   t.plan(3)
 
   const content = "Holo world"
@@ -54,7 +53,7 @@ scenario1.runTape(tape, 'create_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
-scenario1.runTape(tape, 'create_post with bad reply to', async (t, { alice }) => {
+scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   t.plan(5)
 
   const content = "Holo world"
@@ -71,7 +70,7 @@ scenario1.runTape(tape, 'create_post with bad reply to', async (t, { alice }) =>
   t.equal(error.line, "86")
 })
 
-scenario1.runTape(tape, 'post max content size 280 characters', async (t, { alice }) => {
+scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
   t.plan(5)
 
   const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
@@ -90,7 +89,7 @@ scenario1.runTape(tape, 'post max content size 280 characters', async (t, { alic
   t.equals(inner.line, "86")
 })
 
-scenario1.runTape(tape, 'posts_by_agent', async (t, { alice }) => {
+scenario1.runTape('posts_by_agent', async (t, { alice }) => {
   t.plan(1)
 
   const agent = "Bob"
@@ -101,7 +100,7 @@ scenario1.runTape(tape, 'posts_by_agent', async (t, { alice }) => {
   t.deepEqual(result.Ok, { "addresses": [] })
 })
 
-scenario1.runTape(tape, 'my_posts', async (t, { alice }) => {
+scenario1.runTape('my_posts', async (t, { alice }) => {
   t.plan(1)
 
   await alice.callSync("blog", "main", "create_post",
@@ -117,7 +116,7 @@ scenario1.runTape(tape, 'my_posts', async (t, { alice }) => {
   t.equal(result.Ok.addresses.length, 2)
 })
 
-scenario1.runTape(tape, 'create/get_post roundtrip', async (t, { alice }) => {
+scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
   t.plan(2)
 
   const content = "Holo world"
@@ -136,7 +135,7 @@ scenario1.runTape(tape, 'create/get_post roundtrip', async (t, { alice }) => {
 
 })
 
-scenario1.runTape(tape, 'get_post with non-existant address returns null', async (t, { alice }) => {
+scenario1.runTape('get_post with non-existant address returns null', async (t, { alice }) => {
   t.plan(1)
 
   const post_address = "RANDOM"
@@ -150,7 +149,7 @@ scenario1.runTape(tape, 'get_post with non-existant address returns null', async
   t.same(entry, null)
 })
 
-scenario2.runTape(tape, 'scenario test create & publish post -> get from other instance', async (t, { alice, bob }) => {
+scenario2.runTape('scenario test create & publish post -> get from other instance', async (t, { alice, bob }) => {
 
   const initialContent = "Holo world"
   const params = { content: "Holo world", in_reply_to: null }

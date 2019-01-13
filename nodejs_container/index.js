@@ -1,6 +1,7 @@
 
 const binary = require('node-pre-gyp');
 const path = require('path');
+const tape = require('tape');
 
 // deals with ensuring the correct version for the machine/node version
 const binding_path = binary.find(path.resolve(path.join(__dirname, './package.json')));
@@ -102,7 +103,7 @@ class Scenario {
     }
 
     static setTape(tape) {
-        this.tape = tape
+        Scenario._tape = tape
     }
 
     /**
@@ -143,8 +144,11 @@ class Scenario {
         fn(() => container.stop(), callers)
     }
 
-    runTape(tape, description, fn) {
-        tape(description, t => {
+    runTape(description, fn) {
+        if (!Scenario._tape) {
+            throw new Error("must call `scenario.setTape(require('tape'))` before running tape-based tests!")
+        }
+        Scenario._tape(description, t => {
             this.run(async (stop, instances) => {
                 await fn(t, instances)
                 t.end()

@@ -70,7 +70,7 @@ impl SinglePageManager {
         }
 
         // scope for mutable borrow of self
-        let mem_buf = self.allocate(MemoryInt::from(data.len() as u16).into())?;
+        let mem_buf = self.allocate((data.len() as MemoryInt).into())?;
 
         self.wasm_memory
             .set(u32::from(mem_buf.offset()), &data)

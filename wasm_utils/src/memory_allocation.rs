@@ -24,8 +24,8 @@ pub mod tests {
         SinglePageAllocation::new(0, 20).expect("could not create test SinglePageAllocation")
     }
 
-    pub fn test_single_page_stack() -> SinglePageStack {
-        SinglePageStack::new(test_single_page_allocation())
+    pub fn test_wasm_stack() -> WasmStack {
+        WasmStack::new(test_single_page_allocation())
     }
 
     #[test]
@@ -35,9 +35,9 @@ pub mod tests {
     }
 
     #[test]
-    /// smoke test single_page_stack
-    fn single_page_stack_smoke_test() {
-        test_single_page_stack();
+    /// smoke test wasm_stack
+    fn wasm_stack_smoke_test() {
+        test_wasm_stack();
     }
 
     #[test]
@@ -51,22 +51,22 @@ pub mod tests {
     }
 
     #[test]
-    fn single_page_stack_from_encoded_test() {
+    fn wasm_stack_from_encoded_test() {
         let i = 0b1010101010101010_0101010101010101;
-        let single_page_stack = SinglePageStack::from_encoded_allocation(i);
+        let wasm_stack = WasmStack::from_encoded_allocation(i);
         // stack top is offset + length
-        assert_eq!(0b1111111111111111, single_page_stack.unwrap().top());
-        let single_page_stack = SinglePageStack::from_encoded_allocation(0);
+        assert_eq!(0b1111111111111111, wasm_stack.unwrap().top());
+        let wasm_stack = WasmStack::from_encoded_allocation(0);
         // stack top is 0
         assert_eq!(
             RibosomeErrorCode::NotAnAllocation,
-            single_page_stack.err().unwrap()
+            wasm_stack.err().unwrap()
         );
         let i = 0b0000000000000001_0000000000000000;
-        let single_page_stack = SinglePageStack::from_encoded_allocation(i);
+        let wasm_stack = WasmStack::from_encoded_allocation(i);
         assert_eq!(
             RibosomeErrorCode::NotAnAllocation,
-            single_page_stack.err().unwrap()
+            wasm_stack.err().unwrap()
         );
     }
 

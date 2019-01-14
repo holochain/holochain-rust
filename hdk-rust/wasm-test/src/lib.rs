@@ -36,8 +36,6 @@ use holochain_wasm_utils::{
         error::{HolochainError, RibosomeErrorCode},
         json::{JsonString, RawString},
     },
-    memory_allocation::*,
-    memory_serialization::*,
 };
 use std::convert::TryFrom;
 
@@ -65,7 +63,7 @@ pub extern "C" fn handle_check_global() -> Address {
 pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
     unsafe {
         G_MEM_STACK =
-            Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
+            Some(WasmStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
     }
 
     // Deserialize and check for an encoded error

@@ -1,5 +1,5 @@
 use crate::memory_allocation::{
- SinglePageAllocation, SinglePageStack,
+ SinglePageAllocation, WasmStack,
 };
 use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeErrorCode, RibosomeReturnCode},

@@ -819,7 +819,7 @@ for all zome funtions:
 
 ```rust
 pub fn store_as_json<J: TryInto<JsonString>>(
-    stack: &mut SinglePageStack,
+    stack: &mut WasmStack,
     jsonable: J,
 ) -> Result<SinglePageAllocation, RibosomeErrorCode> {
     let j: JsonString = jsonable

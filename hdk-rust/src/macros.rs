@@ -4,11 +4,20 @@
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
+        let encoded_bits: $crate::holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits: $encoded_allocation_of_input;
+        let ribosome_allocation = $crate::holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedAllocation(encoded_bits);
+        let allocation_result = match $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from(ribosome_allocation);
+        let allocation = match allocation_result {
+            Ok(allocation) => allocation,
+            Err(_) => return return_code_for_allocation_result(allocation_result),
+        };
+        let string = allocation.read_string();
+
         let maybe_input = $crate::holochain_wasm_utils::memory_serialization::load_json(
             $encoded_allocation_of_input,
         );
         if let Err(hc_err) = maybe_input {
-            return $crate::global_fns::store_and_return_output(hc_err);
+            return $crate::global_fns::write_json(hc_err);
         }
         maybe_input
     }};

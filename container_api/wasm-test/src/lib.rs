@@ -11,7 +11,6 @@ use holochain_core_types::{
     cas::content::Address, error::HolochainError,
     error::RibosomeReturnCode, error::ZomeApiInternalResult, json::JsonString, json::RawString,
 };
-use holochain_wasm_utils::{memory_allocation::*, memory_serialization::*};
 use std::convert::TryInto;
 use holochain_core_types::entry::Entry;
 
@@ -25,7 +24,7 @@ extern "C" {
 
 /// Call HC API DEBUG function with proper input struct: a string
 /// return error code
-fn hdk_debug(mem_stack: &mut SinglePageStack, json_string: &JsonString) {
+fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
     // Write input string on stack
     let maybe_allocation = store_as_json(mem_stack, json_string.to_owned());
     if let Err(_) = maybe_allocation {
@@ -52,7 +51,7 @@ fn hdk_debug(mem_stack: &mut SinglePageStack, json_string: &JsonString) {
 #[no_mangle]
 pub extern "C" fn debug_hello(encoded_allocation_of_input: usize) -> i32 {
     let mut mem_stack =
-        SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+        WasmStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     hdk_debug(
         &mut mem_stack,
         &JsonString::from(RawString::from("Hello world!")),
@@ -66,7 +65,7 @@ pub extern "C" fn debug_hello(encoded_allocation_of_input: usize) -> i32 {
 #[no_mangle]
 pub extern "C" fn debug_multiple(encoded_allocation_of_input: usize) -> i32 {
     let mut mem_stack =
-        SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+        WasmStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("Hello")));
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("world")));
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("!")));
@@ -85,7 +84,7 @@ pub extern "C" fn debug_stacked_hello(encoded_allocation_of_input: usize) -> i32
     }
 
     let mut mem_stack =
-        SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+        WasmStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     let fish = store_as_json_into_encoded_allocation(
         &mut mem_stack,
         TestStruct {
@@ -107,7 +106,7 @@ extern "C" {
 /// Call HC API COMMIT function with proper input struct
 /// return address of entry added source chain
 fn hdk_commit(
-    mem_stack: &mut SinglePageStack,
+    mem_stack: &mut WasmStack,
     entry_type_name: &str,
     entry_value: &str,
 ) -> Result<Address, String> {
@@ -142,7 +141,7 @@ fn hdk_commit(
 //-------------------------------------------------------------------------------------------------
 
 // Simulate error in commit function by inputing output struct as input
-fn hdk_commit_fail(mem_stack: &mut SinglePageStack) -> Result<Address, String> {
+fn hdk_commit_fail(mem_stack: &mut WasmStack) -> Result<Address, String> {
     // Put args in struct and serialize into memory
     let input = ZomeApiInternalResult::failure(Address::from("whatever"));
     let allocation_of_input = store_as_json(mem_stack, input)?;
@@ -200,7 +199,7 @@ fn test_inner(input: InputStruct) -> OutputStruct {
 #[no_mangle]
 pub extern "C" fn commit_test(encoded_allocation_of_input: usize) -> i32 {
     let mut mem_stack =
-        SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+        WasmStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     let result = hdk_commit(&mut mem_stack, "testEntryType", "hello");
     store_as_json_into_encoded_allocation(&mut mem_stack, result)
 }
@@ -212,7 +211,7 @@ pub extern "C" fn commit_test(encoded_allocation_of_input: usize) -> i32 {
 #[no_mangle]
 pub extern "C" fn commit_fail_test(encoded_allocation_of_input: usize) -> i32 {
     let mut mem_stack =
-        SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+        WasmStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     let result = hdk_commit_fail(&mut mem_stack);
     store_as_json_into_encoded_allocation(&mut mem_stack, result)
 }
@@ -227,7 +226,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     encoded_allocation_of_input: usize,
 ) -> i32 {
     let mut mem_stack =
-        SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+        WasmStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     store_string_into_encoded_allocation(&mut mem_stack, "\"ChainFull\"")
 }
 
@@ -238,7 +237,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 #[no_mangle]
 pub extern "C" fn round_trip_test(encoded_allocation_of_input: usize) -> i32 {
     let mut mem_stack =
-        SinglePageStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
+        WasmStack::from_encoded_allocation(encoded_allocation_of_input as u32).unwrap();
     let input = load_json(encoded_allocation_of_input as u32).unwrap();
     let output = test_inner(input);
     return store_as_json_into_encoded_allocation(&mut mem_stack, JsonString::from(output));

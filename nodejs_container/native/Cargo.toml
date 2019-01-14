@@ -27,3 +27,6 @@ holochain_net = { path = "../../net" }
 holochain_core_types = { path = "../../core_types" }
 holochain_cas_implementations = { path = "../../cas_implementations" }
 
+[patch.crates-io]
+rust_sodium-sys = { path = "../../rust_sodium-sys" }
+zmq-sys = { path = "../../zmq-sys" }

@@ -2,6 +2,7 @@ use crate::{
     bundle,
     holochain_sodium::{aead, kx, random::random_secbuf, secbuf::SecBuf, sign},
     util,
+    error::DPKIError,
 };
 use holochain_core_types::agent::KeyBuffer;
 use rustc_serialize::json;
@@ -48,7 +49,7 @@ impl Keypair {
     /// @param {SecBuf} passphrase - the encryption passphrase
     ///
     /// @param {string} hint - additional info / description for the bundle
-    pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> bundle::KeyBundle {
+    pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> Result<bundle::KeyBundle, DPKIError> {
         let mut passphrase = passphrase;
         let bundle_type: String = "hcKeypair".to_string();
         let skk = KeyBuffer::with_corrected(&self.pub_keys).unwrap();
@@ -80,11 +81,11 @@ impl Keypair {
         // conver to base64
         let bundle_data_encoded = base64::encode(&bundle_data_serialized);
 
-        return bundle::KeyBundle {
+        Ok(bundle::KeyBundle {
             bundle_type,
             hint,
             data: bundle_data_encoded,
-        };
+        })
     }
 
     /// initialize the pairs from an encrypted persistence bundle
@@ -92,7 +93,7 @@ impl Keypair {
     /// @param {object} bundle - persistence info
     ///
     /// @param {SecBuf} passphrase - decryption passphrase
-    pub fn from_bundle(bundle: &bundle::KeyBundle, passphrase: &mut SecBuf) -> Keypair {
+    pub fn from_bundle(bundle: &bundle::KeyBundle, passphrase: &mut SecBuf) -> Result<Keypair, DPKIError>  {
         // decoding the bundle.data of type utinl::Keys
         let bundle_decoded = base64::decode(&bundle.data).unwrap();
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
@@ -106,11 +107,11 @@ impl Keypair {
         let mut enc_public_key = util::pw_dec(ek, passphrase);
         let enc_priv = util::pw_dec(epk, passphrase);
         let sign_priv = util::pw_dec(spk, passphrase);
-        Keypair {
+       Ok( Keypair {
             pub_keys: util::encode_id(&mut sign_public_key, &mut enc_public_key),
             enc_priv,
             sign_priv,
-        }
+        })
     }
 
     /// sign some arbitrary data with the signing private key
@@ -118,11 +119,12 @@ impl Keypair {
     /// @param {SecBuf} data - the data to sign
     ///
     /// @param {SecBuf} signature - Empty Buf the sign
-    pub fn sign(&mut self, data: &mut SecBuf, signature: &mut SecBuf) {
+    pub fn sign(&mut self, data: &mut SecBuf, signature: &mut SecBuf)->Result<(), DPKIError>  {
         let mut data = data;
         let mut signature = signature;
         let mut sign_priv = &mut self.sign_priv;
         sign::sign(&mut data, &mut sign_priv, &mut signature).unwrap();
+        Ok(())
     }
 
     /// verify data that was signed with our private signing key
@@ -154,7 +156,7 @@ impl Keypair {
         recipient_id: Vec<&String>,
         data: &mut SecBuf,
         out: &mut Vec<SecBuf>,
-    ) {
+    )->Result<(), DPKIError>  {
         let mut sym_secret = SecBuf::with_secure(32);
         random_secbuf(&mut sym_secret);
 
@@ -199,6 +201,7 @@ impl Keypair {
         aead::enc(&mut data, &mut sym_secret, None, &mut nonce, &mut cipher).unwrap();
         out.push(nonce);
         out.push(cipher);
+        Ok(())
     }
 
     /// attempt to decrypt the cipher buffer (assuming it was targeting us)
@@ -212,7 +215,7 @@ impl Keypair {
         &mut self,
         source_id: String,
         cipher_bundle: &mut Vec<SecBuf>,
-    ) -> Result<SecBuf, String> {
+    ) -> Result<SecBuf, DPKIError> {
         let mut source_sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut source_enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
         util::decode_id(source_id, &mut source_sign_pub, &mut source_enc_pub);
@@ -280,7 +283,7 @@ impl Keypair {
             aead::dec(&mut dm, &mut secret, None, &mut n, &mut c).unwrap();
             Ok(dm)
         } else {
-            Err("could not decrypt - not a recipient?".to_string())
+            Err(DPKIError::new(&"could not decrypt - not a recipient?".to_string()))
         }
     }
 }
@@ -332,7 +335,7 @@ mod tests {
 
         let mut message_signed = SecBuf::with_insecure(64);
 
-        keypair.sign(&mut message, &mut message_signed);
+        keypair.sign(&mut message, &mut message_signed).unwrap();
 
         let check = keypair.verify(&mut message_signed, &mut message);
         assert_eq!(0, check);
@@ -354,7 +357,7 @@ mod tests {
         let recipient_id = vec![&keypair_1.pub_keys];
 
         let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out);
+        keypair_main.encrypt(recipient_id, &mut message, &mut out).unwrap();
 
         match keypair_1.decrypt(keypair_main.pub_keys, &mut out) {
             Ok(mut dm) => {
@@ -388,7 +391,7 @@ mod tests {
         let recipient_id = vec![&keypair_1.pub_keys, &keypair_2.pub_keys];
 
         let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out);
+        keypair_main.encrypt(recipient_id, &mut message, &mut out).unwrap();
 
         match keypair_2.decrypt(keypair_main.pub_keys, &mut out) {
             Ok(mut dm) => {
@@ -422,7 +425,7 @@ mod tests {
         let recipient_id = vec![&keypair_1.pub_keys, &keypair_2.pub_keys];
 
         let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out);
+        keypair_main.encrypt(recipient_id, &mut message, &mut out).unwrap();
 
         match keypair_1.decrypt(keypair_main.pub_keys, &mut out) {
             Ok(mut dm) => {
@@ -458,7 +461,7 @@ mod tests {
         let recipient_id = vec![&keypair_1.pub_keys];
 
         let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out);
+        keypair_main.encrypt(recipient_id, &mut message, &mut out).unwrap();
 
         keypair_2
             .decrypt(keypair_main.pub_keys, &mut out)
@@ -473,9 +476,9 @@ mod tests {
         let mut passphrase = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut passphrase);
 
-        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
+        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string()).unwrap();
 
-        let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase);
+        let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase).unwrap();
 
         assert_eq!(64, keypair_from_bundle.sign_priv.len());
         assert_eq!(32, keypair_from_bundle.enc_priv.len());
@@ -490,7 +493,7 @@ mod tests {
         let mut passphrase = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut passphrase);
 
-        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string());
+        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string()).unwrap();
 
         println!("Bundle.bundle_type: {}", bundle.bundle_type);
         println!("Bundle.Hint: {}", bundle.hint);

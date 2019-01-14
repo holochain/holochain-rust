@@ -1,27 +1,11 @@
-pub type SeedResult<T> = Result<T, SeedError>;
-
-/// Error for Seed lib to use in your code.
+/// Error for hc-dpki lib to use in your code.
 #[derive(Debug)]
-pub enum SeedError {
+pub enum DPKIError {
     ErrorMessage(String),
 }
 
-impl SeedError {
-    pub fn new(msg: &str) -> SeedError {
-        SeedError::ErrorMessage(msg.to_string())
-    }
-}
-
-pub type KeypairResult<T> = Result<T, SeedError>;
-
-/// Error for Keypair lib to use in your code.
-#[derive(Debug)]
-pub enum KeypairError {
-    ErrorMessage(String),
-}
-
-impl KeypairError {
-    pub fn new(msg: &str) -> KeypairError {
-        KeypairError::ErrorMessage(msg.to_string())
+impl DPKIError {
+    pub fn new(msg: &str) -> DPKIError {
+        DPKIError::ErrorMessage(msg.to_string())
     }
 }

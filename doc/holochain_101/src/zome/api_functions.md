@@ -139,7 +139,7 @@ Caller can request additional metadata on the entry such as type or sources
 
 - [View get_entry in the Rust HDK](https://developer.holochain.org/api/0.0.3/hdk/api/fn.get_entry.html)
 - [View get_entry_initial in the Rust HDK](https://developer.holochain.org/api/0.0.3/hdk/api/fn.get_entry_initial.html)
-- [View get_entry_initial in the Rust HDK](https://developer.holochain.org/api/0.0.3/hdk/api/fn.get_entry_initial.html)
+- [View get_entry_history in the Rust HDK](https://developer.holochain.org/api/0.0.3/hdk/api/fn.get_entry_history.html)
 - [View get_entry_result in the Rust HDK](https://developer.holochain.org/api/0.0.3/hdk/api/fn.get_entry_result.html)
 
 

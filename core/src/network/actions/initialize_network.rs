@@ -1,10 +1,10 @@
 extern crate futures;
 extern crate serde_json;
-use crate::network::actions::publish::publish;
 use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
     context::{get_dna_and_agent, Context},
     instance::dispatch_action,
+    network::actions::publish::publish,
 };
 use futures::{
     task::{LocalWaker, Poll},

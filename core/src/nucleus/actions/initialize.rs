@@ -92,13 +92,16 @@ pub async fn initialize_application(
         .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
         .collect();
 
-    let maybe_error = results.iter().find(|ref r| match r {
-        CallbackResult::Fail(_) => true,
-        _ => false,
-    }).and_then(|result| match result {
-        CallbackResult::Fail(error_string) => Some(error_string.clone()),
-        _ => None,
-    });
+    let maybe_error = results
+        .iter()
+        .find(|ref r| match r {
+            CallbackResult::Fail(_) => true,
+            _ => false,
+        })
+        .and_then(|result| match result {
+            CallbackResult::Fail(error_string) => Some(error_string.clone()),
+            _ => None,
+        });
 
     context_clone
         .action_channel()

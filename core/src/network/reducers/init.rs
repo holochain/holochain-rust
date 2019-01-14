@@ -1,3 +1,4 @@
+use crate::network::actions::publish::publish;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
@@ -38,4 +39,5 @@ pub fn reduce_init(
             state.agent_id = Some(network_settings.agent_id.clone());
             Ok(())
         });
+
 }

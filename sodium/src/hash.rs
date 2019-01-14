@@ -1,7 +1,7 @@
 //! This module provides access to libsodium
 
 use super::{check_init, secbuf::SecBuf};
-use crate::error::SodiumResult;
+use crate::error::SodiumError;
 
 /// Size of return value while converting to sha256
 pub const BYTES256: usize = rust_sodium_sys::crypto_hash_sha256_BYTES as usize;
@@ -14,7 +14,7 @@ pub const BYTES512: usize = rust_sodium_sys::crypto_hash_sha512_BYTES as usize;
 /// @param {SecBuf} input - the data to hash
 ///
 /// @param {SecBuf} output - Empty Buffer to be used as output
-pub fn sha256(input: &mut SecBuf, output: &mut SecBuf) -> SodiumResult<()> {
+pub fn sha256(input: &mut SecBuf, output: &mut SecBuf) -> Result<(), SodiumError>  {
     check_init();
     let input_len = input.len() as libc::c_ulonglong;
     let input = input.read_lock();
@@ -34,7 +34,7 @@ pub fn sha256(input: &mut SecBuf, output: &mut SecBuf) -> SodiumResult<()> {
 /// @param {Buffer} input - the data to hash
 ///
 /// @param {SecBuf} output - Empty Buffer to be used as output
-pub fn sha512(input: &mut SecBuf, output: &mut SecBuf) -> SodiumResult<()> {
+pub fn sha512(input: &mut SecBuf, output: &mut SecBuf) -> Result<(), SodiumError>  {
     check_init();
     let input = input.read_lock();
     let mut output = output.write_lock();

@@ -1,7 +1,7 @@
 //! This module provides access to libsodium
 
 use super::{check_init, secbuf::SecBuf};
-use crate::error::{SodiumError, SodiumResult};
+use crate::error::SodiumError;
 
 pub const CONTEXTBYTES: usize = rust_sodium_sys::crypto_kdf_CONTEXTBYTES as usize;
 pub const MINBYTES: usize = rust_sodium_sys::crypto_kdf_BYTES_MIN as usize;
@@ -22,7 +22,7 @@ pub fn derive(
     index: u64,
     context: &mut SecBuf,
     parent: &mut SecBuf,
-) -> SodiumResult<()> {
+) -> Result<(), SodiumError>  {
     check_init();
     {
         let out = out.read_lock();

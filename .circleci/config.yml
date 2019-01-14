@@ -76,7 +76,7 @@ jobs:
    - image: ubuntu
   steps:
    - checkout
-   - run: . ./scripts/install/ubuntu.sh
+   - run: . ./scripts/install/auto.sh
    - run: make test
 
 workflows:

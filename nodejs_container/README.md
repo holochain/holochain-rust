@@ -197,12 +197,14 @@ Note that you can build fully valid configuration similar to the above scenario 
 ```javascript
 const { Config, Container } = require('@holochain/holochain-nodejs')
 
-const dnaPath = "path/to/happ.hcpkg"
 
 // specify two agents...
-const agentAlice = Config.agent("alice")
-const agentBob = Config.agent("bob")
+const aliceName = "alice"
+const bobName = "bob"
+const agentAlice = Config.agent(aliceName)
+const agentBob = Config.agent(bobName)
 // ...and one DNA...
+const dnaPath = "path/to/happ.hcpkg"
 const dna = Config.dna(dnaPath)
 // ...then make instances out of them...
 const instanceAlice = Config.instance(agentAlice, dna)
@@ -225,10 +227,13 @@ container.start()
 // When building up a config using `Config`, the instance ID is automatically assigned
 // as the given agent ID plus a double colon plus the given dnaPath.
 // We'll need this to call the instance later.
-const aliceInstanceId = aliceAgentName + '::' + dnaPath
+const aliceInstanceId = aliceName + '::' + dnaPath
 
-// zome functions can be called using the following
+// zome functions can be called using the following, assuming the vars are defined with valid values
 const callResult = container.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
+// the same could be accomplished using the following, makeCaller is for convenience
+const alice = container.makeCaller(aliceName, dnaPath)
+const altCallResult = alice.call(zome, capability, fnName, paramsAsObject)
 
 // get the actual agent_id for an instance, by passing an instance id
 const aliceAgentId = container.agent_id(aliceInstanceId)
@@ -276,7 +281,7 @@ Until windows for travis can utilize secure environment variables without breaki
 - Julian Laubstein <contact@julianlaubstein.de>
 - Connor Turland <connor.turland@holo.host>
 - Willem Olding <willem.olding@holo.host>
-- Willem Olding <michael.dougherty@holo.host>
+- Michael Dougherty <michael.dougherty@holo.host>
 
 ## Acknowledgments
 

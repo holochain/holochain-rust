@@ -2,6 +2,8 @@ const { Config, Container, Scenario } = require('../../nodejs_container')
 Scenario.setTape(require('tape'))
 
 const dnaPath = "./dist/app_spec.hcpkg"
+const aliceName = "alice"
+const tashName = "tash"
 
 const agentAlice = Config.agent("alice")
 const agentBob = Config.agent("bob")

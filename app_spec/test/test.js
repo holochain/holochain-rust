@@ -29,6 +29,44 @@ container.start()
 const alice = container.makeCaller(aliceName, dnaPath)
 const tash = container.makeCaller(tashName, dnaPath)
 
+// run the following two tests ONE AT A TIME. The first fails, the second passes.
+
+test('ordering of get and create links (FAILS)', (t) => {
+
+  const get1 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get1.Ok)
+  sleep.sleep(1)
+
+  const create1 = alice.call("blog", "main", "create_post", {content: 'hi'})
+  t.ok(create1.Ok)
+  sleep.sleep(1)
+
+  const get2 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get2.Ok)
+
+  t.equal(get2.Ok.addresses.length, 1)
+  t.end()
+})
+
+test('ordering of get and create links (passes)', (t) => {
+
+  const create1 = alice.call("blog", "main", "create_post", {content: 'hi'})
+  t.ok(create1.Ok)
+  sleep.sleep(1)
+
+  const get1 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get1.Ok)
+
+  t.equal(get1.Ok.addresses.length, 1)
+  t.end()
+})
+
+
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+
+
 test('agentId', (t) => {
   t.plan(2)
   t.ok(alice.agentId)

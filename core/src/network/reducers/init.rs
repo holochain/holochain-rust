@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    network::{actions::publish::publish, handler::create_handler, state::NetworkState},
+    network::{handler::create_handler, state::NetworkState},
 };
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_net_connection::{

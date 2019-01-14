@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 ### Removed
 
-## [0.0.3] - 2019-01-09
+## [0.0.3] - 2019-01-13
 ### Added
 - Networking: beyond mock, using [n3h](https://github.com/holochain/n3h)
 - Bridging now works and is configurable in the container (no capabilities yet) [#779](https://github.com/holochain/holochain-rust/pull/779) & [#776](https://github.com/holochain/holochain-rust/pull/776)

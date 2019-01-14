@@ -19,18 +19,18 @@ The following demo shows how to spin up two separate instances of a DNA, within 
 After installing via npm the module can be used in a node script as follows:
 ```javascript
 const dnaPath = "path/to/happ.hcpkg"
-const aliceAgentId = "alice"
-const tashAgentId = "tash"
+const aliceName = "alice"
+const tashName = "tash"
 // destructure to get Config and Container off the main import, which is an object now
 const { Config, Container } = require('@holochain/holochain-nodejs')
 
 // build up a configuration for the container, step by step
-const agentAlice = Config.agent(aliceAgentId)
-const agentTash = Config.agent(tashAgentId)
+const agentAlice = Config.agent(aliceName)
+const agentTash = Config.agent(tashName)
 const dna = Config.dna(dnaPath)
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceTash = Config.instance(agentTash, dna)
-const config = Config.container(instanceAlice, instanceTash)
+const config = Config.container([instanceAlice, instanceTash])
 
 // create a new instance of a Container, from the config
 const container = new Container(config)
@@ -41,10 +41,13 @@ container.start()
 // When building up a config using `Config`, the instance ID is automatically assigned
 // as the given agent ID plus a double colon plus the given dnaPath.
 // We'll need this to call the instance later.
-const aliceInstanceId = aliceAgentId + '::' + dnaPath
+const aliceInstanceId = aliceName + '::' + dnaPath
 
-// zome functions can be called using the following
+// zome functions can be called using the following, assuming the vars are defined with valid values
 const callResult = container.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
+// the same could be accomplished using the following, makeCaller is for convenience
+const alice = container.makeCaller(aliceName, dnaPath)
+const altCallResult = alice.call(zome, capability, fnName, paramsAsObject)
 
 // get the actual agent_id for an instance, by passing an instance id
 const actualAliceAgentId = container.agent_id(aliceInstanceId)
@@ -52,18 +55,6 @@ const actualAliceAgentId = container.agent_id(aliceInstanceId)
 // stop all running instances
 container.stop()
 ```
-
-container.start, container.call, container.agent_id, and container.stop are the four functions of Container instances currently.
-
-Note about usage:
-Prior to version 0.0.3, a container would only return a single instance of an app. Now a container actually contains multiple instances. When performing a call to an instance, one must include the instance id. Take the following for example:
-
-```
-const callResult = container.call(someInstanceId, someZome, someCapability, someFunction, someParams)
-```
-
-## Scenario tests
-
 
 
 ## Deployment

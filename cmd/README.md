@@ -87,7 +87,7 @@ So in every Zome there must be a `code` folder, which can be compiled into a sin
 
 Now that you have your Rust Zome, check out the two sources of documentation about writing Holochain DNA source code:
 1. https://developer.holochain.org/guide/latest
-2. https://developer.holochain.org/api/latest/hdk
+2. https://developer.holochain.org/api/0.0.3/hdk
 
 In order for Holochain to run your app, you have to build your code into a single packaged file. Those instructions follow.
 

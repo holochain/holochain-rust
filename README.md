@@ -86,15 +86,18 @@ There are three approaches to building and testing Holochain: using `make`, `doc
 
 ### Make (ubuntu and macOS only)
 
-For Ubuntu you can install the prerequisites with :
+For Ubuntu/OSX you can install the prerequisites with :
 
 ``` shell
-. ./scripts/install/ubuntu.sh
+cd path/to/holochain
+. ./scripts/install/auto.sh
 ```
 
-If you are running on ubuntu or macOS, and you have `make` installed, you can do local development by simply typing:
+Note: the script will install [homebrew](https://brew.sh/) on mac os x
 
-`make` which will:
+After the install script completes successfully, you can start local development using `make`
+
+Running the `make` command will:
 
 1. install (or update to) the correct version of rust
 2. build all the rust libraries from the source code in this repository.
@@ -128,7 +131,7 @@ If you have `nix-shell` then feel free to use our `.nix` files.
 
 Not everything in the Makefile is implemented in nix, and a lot of things don't need to be. Notably the cross-platform and defensive installation of dependencies is not included.
 
-If you have a nix friendly system, this is probably the fastest way to develop and test.
+If you have a nix friendly system, this is the fastest way to develop and test.
 
 #### Running tests
 

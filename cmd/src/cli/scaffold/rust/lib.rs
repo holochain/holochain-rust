@@ -61,7 +61,7 @@ define_zome! {
     functions: {
         main (Public) {
             create_my_entry: {
-                inputs: |item: MyEntry|,
+                inputs: |entry: MyEntry|,
                 outputs: |result: ZomeApiResult<Address>|,
                 handler: handle_create_my_entry
             }

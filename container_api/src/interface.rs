@@ -1,5 +1,8 @@
 use holochain_core::state::State;
-use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
+use holochain_core_types::{
+    cas::content::Address,
+    dna::capabilities::CapabilityCall,
+};
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -50,6 +53,7 @@ macro_rules! container_call {
 
     }
 }
+
 
 /// ContainerApiBuilder creates IoHandlers that implement RPCs for exposure
 /// through interfaces or bridges.
@@ -197,6 +201,18 @@ impl ContainerApiBuilder {
         }
     }
 
+    /// To be consistent with holochain function calls the expected output of the admin calls
+    /// is stringified JSON. This performs that stringification and then wraps it in the format expected
+    /// by the jsonrpc add_method closure
+    fn format_response(response: &serde_json::Value) -> jsonrpc_core::Result<serde_json::Value> {
+        Ok(
+            Value::String(
+                serde_json::to_string(response)
+                    .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?
+                )
+        )
+    }
+
     fn get_as_string<T: Into<String>>(
         key: T,
         params_map: &Map<String, Value>,
@@ -217,30 +233,26 @@ impl ContainerApiBuilder {
     }
 
     pub fn with_admin_dna_functions(mut self) -> Self {
-        self.io
-            .add_method("admin/dna/install_from_file", move |params| {
-                let params_map = Self::unwrap_params_map(params)?;
-
-                let id = Self::get_as_string("id", &params_map)?;
-                let path = Self::get_as_string("path", &params_map)?;
-
-                container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string()))?;
-
-                Ok(serde_json::Value::String("success".into()))
-            });
+        self.io.add_method("admin/dna/install_from_file", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let path = Self::get_as_string("path", &params_map)?;
+            container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string()))?;
+            Self::format_response(&json!({"success": true}))
+        });
 
         self.io.add_method("admin/dna/uninstall", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.uninstall_dna(&id))?;
-            Ok(serde_json::Value::String("success".into()))
+            Self::format_response(&json!({"success": true}))
         });
 
         self.io.add_method("admin/dna/list", move |_params| {
             let dnas = container_call!(
                 |c| Ok(c.config.dnas.clone()) as Result<Vec<DnaConfiguration>, String>
             )?;
-            Ok(serde_json::Value::Array(
+            Self::format_response(&serde_json::Value::Array(
                 dnas.iter()
                     .map(|dna| json!({"id": dna.id, "hash": dna.hash}))
                     .collect(),
@@ -253,45 +265,43 @@ impl ContainerApiBuilder {
             let id = Self::get_as_string("id", &params_map)?;
             let dna_id = Self::get_as_string("dna_id", &params_map)?;
             let agent_id = Self::get_as_string("agent_id", &params_map)?;
-
             let new_instance = InstanceConfiguration {
                 id: id.to_string(),
                 dna: dna_id.to_string(),
                 agent: agent_id.to_string(),
                 storage: StorageConfiguration::Memory, // TODO: don't actually use this. Have some idea of default store
             };
-
             container_call!(|c| c.add_instance(new_instance))?;
-
-            Ok(serde_json::Value::String("success".into()))
+            Self::format_response(&json!({"success": true}))
         });
 
         self.io.add_method("admin/instance/remove", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.remove_instance(&id))?;
-            Ok(serde_json::Value::String("success".into()))
+            Self::format_response(&json!({"success": true}))
         });
 
         self.io.add_method("admin/instance/start", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.start_instance(&id))?;
-            Ok(serde_json::Value::String("success".into()))
+            Self::format_response(&json!({"success": true}))
         });
 
         self.io.add_method("admin/instance/stop", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.stop_instance(&id))?;
-            Ok(serde_json::Value::String("success".into()))
+            Self::format_response(&json!({"success": true}))
         });
 
         self.io.add_method("admin/instance/list", move |_params| {
             let instances =
                 container_call!(|c| Ok(c.config.instances.clone())
                     as Result<Vec<InstanceConfiguration>, String>)?;
-            Ok(serde_json::Value::Array(
+            Self::format_response(
+                &serde_json::Value::Array(
                 instances
                     .iter()
                     .map(|instance| {
@@ -302,35 +312,37 @@ impl ContainerApiBuilder {
                         })
                     })
                     .collect(),
-            ))
+                )
+            )
         });
 
-        self.io
-            .add_method("admin/instance/running", move |_params| {
-                let active_ids = container_call!(|c| Ok(c
-                    .instances
+        self.io.add_method("admin/instance/running", move |_params| {
+            let active_ids = container_call!(|c| Ok(c
+                .instances
+                .iter()
+                .filter(|(_, hc)| hc.read().unwrap().active())
+                .map(|(id, _)| id)
+                .cloned()
+                .collect())
+                as Result<Vec<String>, String>)?;
+            let instances = container_call!(|c| Ok(c.config.instances.clone())
+                as Result<Vec<InstanceConfiguration>, String>)?;
+            Self::format_response(
+                &serde_json::Value::Array(
+                instances
                     .iter()
-                    .filter(|(_, hc)| hc.read().unwrap().active())
-                    .map(|(id, _)| id)
-                    .cloned()
-                    .collect())
-                    as Result<Vec<String>, String>)?;
-                let instances = container_call!(|c| Ok(c.config.instances.clone())
-                    as Result<Vec<InstanceConfiguration>, String>)?;
-                Ok(serde_json::Value::Array(
-                    instances
-                        .iter()
-                        .filter(|instance| active_ids.contains(&instance.id))
-                        .map(|instance| {
-                            json!({
-                                "id": instance.id,
-                                "dna": instance.dna,
-                                "agent": instance.agent,
-                            })
+                    .filter(|instance| active_ids.contains(&instance.id))
+                    .map(|instance| {
+                        json!({
+                            "id": instance.id,
+                            "dna": instance.dna,
+                            "agent": instance.agent,
                         })
-                        .collect(),
-                ))
-            });
+                    })
+                    .collect(),
+                )
+            )
+        });
 
         self
     }

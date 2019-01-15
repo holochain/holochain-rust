@@ -6,9 +6,11 @@ use crate::{
     util,
 };
 use bip39::{Language, Mnemonic};
+use boolinator::*;
 use holochain_core_types::error::HolochainError;
 use rustc_serialize::json;
 use std::str;
+
 pub enum InitializeSeed {
     SeedInit(SecBuf),
     MnemonicInit(String),
@@ -141,9 +143,7 @@ impl DevicePinSeed {
     /// @param {number} index
     /// @return {Keypair}
     pub fn get_application_keypair(&mut self, index: u64) -> Result<Keypair, HolochainError> {
-        if index < 1 {
-            panic!("invalid index");
-        }
+        (index >= 1).ok_or(HolochainError::ErrorGeneric("Invalid index".to_string()))?;
 
         let mut out_seed = SecBuf::with_insecure(32);
         let mut placeholder = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
@@ -184,9 +184,8 @@ impl DeviceSeed {
     /// @param {string} pin - should be >= 4 characters 1-9
     /// @return {DevicePinSeed}
     pub fn get_device_pin_seed(&mut self, pin: String) -> Result<DevicePinSeed, HolochainError> {
-        if pin.len() < 4 {
-            panic!("invalid PIN Size");
-        }
+        (pin.len() >= 4).ok_or(HolochainError::ErrorGeneric("Invalid PIN Size".to_string()))?;
+
         // let pin_encoded = base64::encode(&pin);
         let mut pin_buf = SecBuf::with_insecure_from_string(pin);
 
@@ -229,9 +228,8 @@ impl RootSeed {
 
     /// Generate Device Seed
     pub fn get_device_seed(&mut self, index: u64) -> Result<DeviceSeed, HolochainError> {
-        if index < 1 {
-            panic!("invalid index");
-        }
+        (index >= 1).ok_or(HolochainError::ErrorGeneric("Invalid index".to_string()))?;
+
         let mut out_seed = SecBuf::with_insecure(32);
         let mut placeholder = SecBuf::with_insecure_from_string("HCDEVICE".to_string());
         kdf::derive(
@@ -302,6 +300,19 @@ mod tests {
     }
 
     #[test]
+    fn it_should_create_0_device_seed_from_root_seed() {
+        let mut seed_buf_in = SecBuf::with_insecure(16);
+        random_secbuf(&mut seed_buf_in);
+
+        let mut rs = RootSeed::new_random();
+
+        match rs.get_device_seed(0) {
+            Ok(_) => assert!(false),
+            Err(_) => assert!(true),
+        };
+    }
+
+    #[test]
     fn it_should_create_a_device_seed_from_root_seed() {
         let mut seed_buf_in = SecBuf::with_insecure(16);
         random_secbuf(&mut seed_buf_in);
@@ -310,6 +321,19 @@ mod tests {
 
         let ds: DeviceSeed = rs.get_device_seed(3).unwrap();
         assert_eq!("hcDeviceSeed".to_string(), ds.s.seed_type);
+    }
+    #[test]
+    fn it_should_error_with_invalid_device_pin_seed_from_root_seed() {
+        let mut seed_buf_in = SecBuf::with_insecure(16);
+        random_secbuf(&mut seed_buf_in);
+
+        let mut rs = RootSeed::new_random();
+
+        let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
+        match ds.get_device_pin_seed("802".to_string()) {
+            Ok(_) => assert!(false),
+            Err(_) => assert!(true),
+        }
     }
 
     #[test]

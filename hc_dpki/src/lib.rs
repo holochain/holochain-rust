@@ -7,6 +7,7 @@ extern crate base64;
 extern crate rustc_serialize;
 
 extern crate bip39;
+extern crate boolinator;
 
 pub mod bundle;
 pub mod error;

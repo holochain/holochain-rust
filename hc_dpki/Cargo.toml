@@ -8,6 +8,7 @@ edition = "2018"
 arrayref = "0.3.5"
 base64 = "0.10.0"
 bip39 = "0.6.0-beta.1"
+boolinator = "2.4.0"
 holochain_sodium = { path = "../sodium" }
 holochain_core_types = { path = "../core_types" }
 serde = "1.0"

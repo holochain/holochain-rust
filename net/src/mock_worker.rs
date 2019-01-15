@@ -1,5 +1,6 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
+use crate::mock_system::*;
 use holochain_core_types::json::JsonString;
 use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
@@ -7,7 +8,6 @@ use holochain_net_connection::{
     protocol_wrapper::ProtocolWrapper,
     NetResult,
 };
-use crate::mock_system::*;
 use std::{
     convert::TryFrom,
     sync::{mpsc, Mutex},
@@ -93,9 +93,8 @@ mod tests {
 
     use holochain_core_types::cas::content::Address;
     use holochain_net_connection::protocol_wrapper::{
-        SuccessResultData, TrackAppData,
-        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData,
-        PeerData, ProtocolWrapper,
+        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData, PeerData,
+        ProtocolWrapper, SuccessResultData, TrackAppData,
     };
 
     fn example_dna_address() -> Address {
@@ -122,7 +121,7 @@ mod tests {
                 }),
                 config,
             )
-                .unwrap(),
+            .unwrap(),
         );
 
         cli1.receive(
@@ -130,9 +129,9 @@ mod tests {
                 dna_address: example_dna_address(),
                 agent_id: AGENT_ID_1.to_string(),
             })
-                .into(),
+            .into(),
         )
-            .unwrap();
+        .unwrap();
 
         // -- setup client 2 -- //
 
@@ -146,7 +145,7 @@ mod tests {
                 }),
                 config,
             )
-                .unwrap(),
+            .unwrap(),
         );
 
         cli2.receive(
@@ -154,9 +153,9 @@ mod tests {
                 dna_address: example_dna_address(),
                 agent_id: AGENT_ID_2.to_string(),
             })
-                .into(),
+            .into(),
         )
-            .unwrap();
+        .unwrap();
 
         // -- node 2 node / send / receive -- //
 
@@ -168,9 +167,9 @@ mod tests {
                 msg_id: "yada".to_string(),
                 data: json!("hello"),
             })
-                .into(),
+            .into(),
         )
-            .unwrap();
+        .unwrap();
 
         cli2.tick().unwrap();
 
@@ -185,9 +184,9 @@ mod tests {
                     msg_id: msg.msg_id,
                     data: json!(format!("echo: {}", msg.data.to_string())),
                 })
-                    .into(),
+                .into(),
             )
-                .unwrap();
+            .unwrap();
         } else {
             panic!("bad msg");
         }
@@ -211,9 +210,9 @@ mod tests {
                 from_agent_id: AGENT_ID_2.to_string(),
                 address: "hello".to_string(),
             })
-                .into(),
+            .into(),
         )
-            .unwrap();
+        .unwrap();
 
         cli1.tick().unwrap();
 
@@ -228,9 +227,9 @@ mod tests {
                     address: msg.address.clone(),
                     content: json!(format!("data-for: {}", msg.address)),
                 })
-                    .into(),
+                .into(),
             )
-                .unwrap();
+            .unwrap();
         } else {
             panic!("bad msg");
         }
@@ -255,9 +254,9 @@ mod tests {
                 address: "hello".to_string(),
                 content: json!("test-data"),
             })
-                .into(),
+            .into(),
         )
-            .unwrap();
+        .unwrap();
 
         cli1.tick().unwrap();
         cli2.tick().unwrap();
@@ -275,9 +274,9 @@ mod tests {
                     to_agent_id: msg.agent_id.clone(),
                     success_info: json!("signature here"),
                 })
-                    .into(),
+                .into(),
             )
-                .unwrap();
+            .unwrap();
         } else {
             panic!("bad msg");
         }
@@ -301,9 +300,9 @@ mod tests {
                 address: "hello".to_string(),
                 attribute: "link:test".to_string(),
             })
-                .into(),
+            .into(),
         )
-            .unwrap();
+        .unwrap();
 
         cli1.tick().unwrap();
 
@@ -320,9 +319,9 @@ mod tests {
                     attribute: msg.attribute.clone(),
                     content: json!(format!("meta-data-for: {}", msg.address)),
                 })
-                    .into(),
+                .into(),
             )
-                .unwrap();
+            .unwrap();
         } else {
             panic!("bad msg");
         }
@@ -352,9 +351,9 @@ mod tests {
                 attribute: "link:test".to_string(),
                 content: json!("test-data"),
             })
-                .into(),
+            .into(),
         )
-            .unwrap();
+        .unwrap();
 
         cli1.tick().unwrap();
         cli2.tick().unwrap();
@@ -372,9 +371,9 @@ mod tests {
                     to_agent_id: msg.agent_id.clone(),
                     success_info: json!("signature here"),
                 })
-                    .into(),
+                .into(),
             )
-                .unwrap();
+            .unwrap();
         } else {
             panic!("bad msg");
         }

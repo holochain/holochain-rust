@@ -4,17 +4,16 @@ use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
-        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData,
-        PeerData, ProtocolWrapper,
+        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData, PeerData,
+        ProtocolWrapper,
     },
     NetResult,
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
-    sync::{mpsc, Mutex},
+    sync::{mpsc, Mutex, RwLock},
 };
-use std::sync::RwLock;
 
 type MockSystemMap = HashMap<String, Mutex<MockSystem>>;
 
@@ -78,7 +77,7 @@ impl MockSystem {
                             dna_address: msg.dna_address,
                             agent_id: msg.agent_id,
                         })
-                            .into(),
+                        .into(),
                     )?;
                 }
 
@@ -210,7 +209,7 @@ impl MockSystem {
                 to_agent_id: msg.from_agent_id.clone(),
                 error_info: json!("could not find nodes handling this dnaAddress"),
             })
-                .into(),
+            .into(),
         )?;
 
         Ok(())
@@ -259,7 +258,7 @@ impl MockSystem {
                 to_agent_id: msg.from_agent_id.clone(),
                 error_info: json!("could not find nodes handling this dnaAddress"),
             })
-                .into(),
+            .into(),
         )?;
 
         Ok(())

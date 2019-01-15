@@ -3,10 +3,7 @@ use crate::{
     holochain_sodium::{aead, kx, random::random_secbuf, secbuf::SecBuf, sign},
     util,
 };
-use holochain_core_types::{
-    agent::KeyBuffer,
-    error::HolochainError,
-};
+use holochain_core_types::{agent::KeyBuffer, error::HolochainError};
 use rustc_serialize::json;
 use std::str;
 
@@ -51,7 +48,11 @@ impl Keypair {
     /// @param {SecBuf} passphrase - the encryption passphrase
     ///
     /// @param {string} hint - additional info / description for the bundle
-    pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> Result<bundle::KeyBundle, HolochainError> {
+    pub fn get_bundle(
+        &mut self,
+        passphrase: &mut SecBuf,
+        hint: String,
+    ) -> Result<bundle::KeyBundle, HolochainError> {
         let mut passphrase = passphrase;
         let bundle_type: String = "hcKeypair".to_string();
         let skk = KeyBuffer::with_corrected(&self.pub_keys)?;
@@ -95,7 +96,10 @@ impl Keypair {
     /// @param {object} bundle - persistence info
     ///
     /// @param {SecBuf} passphrase - decryption passphrase
-    pub fn from_bundle(bundle: &bundle::KeyBundle, passphrase: &mut SecBuf) -> Result<Keypair, HolochainError>  {
+    pub fn from_bundle(
+        bundle: &bundle::KeyBundle,
+        passphrase: &mut SecBuf,
+    ) -> Result<Keypair, HolochainError> {
         // decoding the bundle.data of type utinl::Keys
         let bundle_decoded = base64::decode(&bundle.data).unwrap();
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
@@ -109,7 +113,7 @@ impl Keypair {
         let mut enc_public_key = util::pw_dec(ek, passphrase);
         let enc_priv = util::pw_dec(epk, passphrase);
         let sign_priv = util::pw_dec(spk, passphrase);
-       Ok( Keypair {
+        Ok(Keypair {
             pub_keys: util::encode_id(&mut sign_public_key, &mut enc_public_key),
             enc_priv,
             sign_priv,
@@ -121,7 +125,11 @@ impl Keypair {
     /// @param {SecBuf} data - the data to sign
     ///
     /// @param {SecBuf} signature - Empty Buf the sign
-    pub fn sign(&mut self, data: &mut SecBuf, signature: &mut SecBuf)->Result<(), HolochainError>  {
+    pub fn sign(
+        &mut self,
+        data: &mut SecBuf,
+        signature: &mut SecBuf,
+    ) -> Result<(), HolochainError> {
         let mut data = data;
         let mut signature = signature;
         let mut sign_priv = &mut self.sign_priv;
@@ -158,7 +166,7 @@ impl Keypair {
         recipient_id: Vec<&String>,
         data: &mut SecBuf,
         out: &mut Vec<SecBuf>,
-    )->Result<(), HolochainError>  {
+    ) -> Result<(), HolochainError> {
         let mut sym_secret = SecBuf::with_secure(32);
         random_secbuf(&mut sym_secret);
 
@@ -285,7 +293,9 @@ impl Keypair {
             aead::dec(&mut dm, &mut secret, None, &mut n, &mut c).unwrap();
             Ok(dm)
         } else {
-            Err(HolochainError::new(&"could not decrypt - not a recipient?".to_string()))
+            Err(HolochainError::new(
+                &"could not decrypt - not a recipient?".to_string(),
+            ))
         }
     }
 }
@@ -359,7 +369,9 @@ mod tests {
         let recipient_id = vec![&keypair_1.pub_keys];
 
         let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out).unwrap();
+        keypair_main
+            .encrypt(recipient_id, &mut message, &mut out)
+            .unwrap();
 
         match keypair_1.decrypt(keypair_main.pub_keys, &mut out) {
             Ok(mut dm) => {
@@ -393,7 +405,9 @@ mod tests {
         let recipient_id = vec![&keypair_1.pub_keys, &keypair_2.pub_keys];
 
         let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out).unwrap();
+        keypair_main
+            .encrypt(recipient_id, &mut message, &mut out)
+            .unwrap();
 
         match keypair_2.decrypt(keypair_main.pub_keys, &mut out) {
             Ok(mut dm) => {
@@ -427,7 +441,9 @@ mod tests {
         let recipient_id = vec![&keypair_1.pub_keys, &keypair_2.pub_keys];
 
         let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out).unwrap();
+        keypair_main
+            .encrypt(recipient_id, &mut message, &mut out)
+            .unwrap();
 
         match keypair_1.decrypt(keypair_main.pub_keys, &mut out) {
             Ok(mut dm) => {
@@ -463,7 +479,9 @@ mod tests {
         let recipient_id = vec![&keypair_1.pub_keys];
 
         let mut out = Vec::new();
-        keypair_main.encrypt(recipient_id, &mut message, &mut out).unwrap();
+        keypair_main
+            .encrypt(recipient_id, &mut message, &mut out)
+            .unwrap();
 
         keypair_2
             .decrypt(keypair_main.pub_keys, &mut out)
@@ -478,7 +496,9 @@ mod tests {
         let mut passphrase = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut passphrase);
 
-        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string()).unwrap();
+        let bundle: bundle::KeyBundle = keypair
+            .get_bundle(&mut passphrase, "hint".to_string())
+            .unwrap();
 
         let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase).unwrap();
 
@@ -495,7 +515,9 @@ mod tests {
         let mut passphrase = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut passphrase);
 
-        let bundle: bundle::KeyBundle = keypair.get_bundle(&mut passphrase, "hint".to_string()).unwrap();
+        let bundle: bundle::KeyBundle = keypair
+            .get_bundle(&mut passphrase, "hint".to_string())
+            .unwrap();
 
         println!("Bundle.bundle_type: {}", bundle.bundle_type);
         println!("Bundle.Hint: {}", bundle.hint);

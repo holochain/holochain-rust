@@ -37,7 +37,7 @@ pub fn hash(
     alg: i8,
     salt: &mut SecBuf,
     hash: &mut SecBuf,
-) -> Result<(), SodiumError>  {
+) -> Result<(), SodiumError> {
     check_init();
     let salt = salt.read_lock();
     let password = password.read_lock();

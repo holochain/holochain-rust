@@ -22,7 +22,7 @@ pub fn derive(
     index: u64,
     context: &mut SecBuf,
     parent: &mut SecBuf,
-) -> Result<(), SodiumError>  {
+) -> Result<(), SodiumError> {
     check_init();
     {
         let out = out.read_lock();

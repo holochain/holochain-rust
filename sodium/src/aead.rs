@@ -28,7 +28,7 @@ pub fn enc(
     adata: Option<&mut SecBuf>,
     nonce: &mut SecBuf,
     cipher: &mut SecBuf,
-) -> Result<(), SodiumError>{
+) -> Result<(), SodiumError> {
     check_init();
     let my_adata_locker;
     let mut my_adata = std::ptr::null();

@@ -28,7 +28,6 @@ pub enum FromBundle {
 }
 
 impl Seed {
-    
     /// Get the proper seed type from a persistence bundle
     ///
     /// @param {object} bundle - the persistence bundle
@@ -36,7 +35,10 @@ impl Seed {
     /// @param {string} passphrase - the decryption passphrase
     ///
     /// @return Type FromBundle
-    pub fn from_seed_bundle(bundle: bundle::KeyBundle, passphrase: String) -> Result<FromBundle, HolochainError> {
+    pub fn from_seed_bundle(
+        bundle: bundle::KeyBundle,
+        passphrase: String,
+    ) -> Result<FromBundle, HolochainError> {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
 
         let seed_data_decoded = base64::decode(&bundle.data).unwrap();
@@ -62,7 +64,11 @@ impl Seed {
     ///  @param {string} hint - additional info / description for persistence
     ///
     /// @return {KeyBundle} - bundle of the seed
-    pub fn get_seed_bundle(&mut self, passphrase: String, hint: String) -> Result<bundle::KeyBundle, HolochainError> {
+    pub fn get_seed_bundle(
+        &mut self,
+        passphrase: String,
+        hint: String,
+    ) -> Result<bundle::KeyBundle, HolochainError> {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
         let seed_data: bundle::ReturnBundleData = util::pw_enc(&mut self.seed_buf, &mut passphrase);
 
@@ -77,7 +83,6 @@ impl Seed {
         })
     }
 
-    
     ///  Initialize this seed class with persistence bundle type and private seed
     ///
     ///  @param {string} stype - the persistence bundle type
@@ -109,12 +114,15 @@ pub struct DevicePinSeed {
 }
 
 impl DevicePinSeed {
-   
     /// creates bundle for for the seed
-    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> Result<bundle::KeyBundle, HolochainError> {
+    pub fn get_bundle(
+        &mut self,
+        passphrase: String,
+        hint: String,
+    ) -> Result<bundle::KeyBundle, HolochainError> {
         Ok(self.s.get_seed_bundle(passphrase, hint)?)
     }
-    
+
     /// delegate to base struct
     pub fn new(s: SecBuf) -> Self {
         DevicePinSeed {
@@ -149,12 +157,15 @@ pub struct DeviceSeed {
 }
 
 impl DeviceSeed {
-
     /// creates bundle for for the seed
-    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> Result<bundle::KeyBundle, HolochainError> {
+    pub fn get_bundle(
+        &mut self,
+        passphrase: String,
+        hint: String,
+    ) -> Result<bundle::KeyBundle, HolochainError> {
         Ok(self.s.get_seed_bundle(passphrase, hint)?)
     }
-    
+
     /// delegate to base struct
     pub fn new(s: SecBuf) -> Self {
         DeviceSeed {
@@ -162,7 +173,6 @@ impl DeviceSeed {
         }
     }
 
-    
     /// generate a device pin seed by applying pwhash of pin with this seed as the salt
     /// @param {string} pin - should be >= 4 characters 1-9
     /// @return {DevicePinSeed}
@@ -187,12 +197,15 @@ pub struct RootSeed {
 }
 
 impl RootSeed {
-    
     /// creates bundle for for the seed
-    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> Result<bundle::KeyBundle, HolochainError> {
+    pub fn get_bundle(
+        &mut self,
+        passphrase: String,
+        hint: String,
+    ) -> Result<bundle::KeyBundle, HolochainError> {
         Ok(self.s.get_seed_bundle(passphrase, hint)?)
     }
-    
+
     /// Get a new, completely random root seed
     pub fn new_random() -> Self {
         let mut s = SecBuf::with_insecure(32);
@@ -200,7 +213,6 @@ impl RootSeed {
         RootSeed::new(s)
     }
 
-    
     /// delegate to base struct
     pub fn new(s: SecBuf) -> Self {
         RootSeed {
@@ -225,7 +237,6 @@ impl RootSeed {
         Ok(DeviceSeed::new(out_seed))
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -273,8 +284,9 @@ mod tests {
             seed_buf: seed_buf_in,
         };
 
-        let b: bundle::KeyBundle =
-            s.get_seed_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string()).unwrap();
+        let b: bundle::KeyBundle = s
+            .get_seed_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .unwrap();
 
         println!("Bundle type:{:?}", b.bundle_type);
         println!("Bundle data:{:?}", b.data);
@@ -331,8 +343,9 @@ mod tests {
             seed_type: "hcRootSeed".to_string(),
         };
         let passphrase: String = "PASSWORD!LNFA*".to_string();
-        let b: bundle::KeyBundle =
-            initial_seed.get_seed_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string()).unwrap();
+        let b: bundle::KeyBundle = initial_seed
+            .get_seed_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .unwrap();
 
         let s: FromBundle = Seed::from_seed_bundle(b, passphrase).unwrap();
 
@@ -352,8 +365,9 @@ mod tests {
         random_secbuf(&mut seed_buf_in);
         let mut initial_root_seed = RootSeed::new(seed_buf_in);
         let passphrase: String = "PASSWORD!LNFA*".to_string();
-        let b: bundle::KeyBundle =
-            initial_root_seed.get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string()).unwrap();
+        let b: bundle::KeyBundle = initial_root_seed
+            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .unwrap();
 
         let s: FromBundle = Seed::from_seed_bundle(b, passphrase).unwrap();
 
@@ -373,8 +387,9 @@ mod tests {
         random_secbuf(&mut seed_buf_in);
         let mut initial_device_seed = DeviceSeed::new(seed_buf_in);
         let passphrase: String = "PASSWORD!LNFA*".to_string();
-        let b: bundle::KeyBundle =
-            initial_device_seed.get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string()).unwrap();
+        let b: bundle::KeyBundle = initial_device_seed
+            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .unwrap();
 
         println!("TYPE: {}", b.bundle_type);
         let s: FromBundle = Seed::from_seed_bundle(b, passphrase).unwrap();
@@ -398,8 +413,9 @@ mod tests {
         random_secbuf(&mut seed_buf_in);
         let mut initial_device_pin_seed = DevicePinSeed::new(seed_buf_in);
         let passphrase: String = "PASSWORD!LNFA*".to_string();
-        let b: bundle::KeyBundle =
-            initial_device_pin_seed.get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string()).unwrap();
+        let b: bundle::KeyBundle = initial_device_pin_seed
+            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .unwrap();
 
         println!("TYPE: {}", b.bundle_type);
         let s: FromBundle = Seed::from_seed_bundle(b, passphrase).unwrap();

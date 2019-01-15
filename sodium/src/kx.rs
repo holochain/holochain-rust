@@ -12,7 +12,7 @@ pub const SESSIONKEYBYTES: usize = rust_sodium_sys::crypto_kx_SESSIONKEYBYTES as
 /// @param {SecBuf} pk - Empty Buffer to be used as publicKey return
 ///
 /// @param {SecBuf} sk - Empty Buffer to be used as secretKey return
-pub fn keypair(pk: &mut SecBuf, sk: &mut SecBuf) -> Result<(), SodiumError>  {
+pub fn keypair(pk: &mut SecBuf, sk: &mut SecBuf) -> Result<(), SodiumError> {
     check_init();
     let mut pk = pk.write_lock();
     let mut sk = sk.write_lock();
@@ -29,7 +29,11 @@ pub fn keypair(pk: &mut SecBuf, sk: &mut SecBuf) -> Result<(), SodiumError>  {
 /// @param {SecBuf} pk - Empty Buffer to be used as publicKey return
 ///
 /// @param {SecBuf} sk - Empty Buffer to be used as secretKey return
-pub fn seed_keypair(seed: &mut SecBuf, pk: &mut SecBuf, sk: &mut SecBuf) -> Result<(), SodiumError>  {
+pub fn seed_keypair(
+    seed: &mut SecBuf,
+    pk: &mut SecBuf,
+    sk: &mut SecBuf,
+) -> Result<(), SodiumError> {
     check_init();
     let seed = seed.read_lock();
     let mut pk = pk.write_lock();
@@ -61,7 +65,7 @@ pub fn client_session(
     server_pk: &mut SecBuf,
     rx: &mut SecBuf,
     tx: &mut SecBuf,
-) -> Result<(), SodiumError>  {
+) -> Result<(), SodiumError> {
     check_init();
     let mut rx = rx.write_lock();
     let mut tx = tx.write_lock();
@@ -97,7 +101,7 @@ pub fn server_session(
     client_pk: &mut SecBuf,
     rx: &mut SecBuf,
     tx: &mut SecBuf,
-) -> Result<(), SodiumError>  {
+) -> Result<(), SodiumError> {
     check_init();
     let mut rx = rx.write_lock();
     let mut tx = tx.write_lock();

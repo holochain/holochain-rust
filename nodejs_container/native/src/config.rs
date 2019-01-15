@@ -71,7 +71,7 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
         bridges: Vec::new(),
         logger: LoggerConfiguration {
             logger_type: "debug".to_string(),
-            rules: LogRules::new(),
+            rules: LogRules::default(),
         },
         ..Default::default()
     };

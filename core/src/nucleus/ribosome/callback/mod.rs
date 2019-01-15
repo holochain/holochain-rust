@@ -145,7 +145,7 @@ impl ToString for CallbackParams {
 pub enum CallbackResult {
     Pass,
     Fail(String),
-    NotImplemented,
+    NotImplemented(String),
     ValidationPackageDefinition(ValidationPackageDefinition),
     ReceiveResult(String),
 }
@@ -198,7 +198,7 @@ pub(crate) fn run_callback(
                 CallbackResult::Fail(call_result.to_string())
             }
         }
-        Err(_) => CallbackResult::NotImplemented,
+        Err(_) => CallbackResult::NotImplemented("run_callback".into()),
     }
 }
 
@@ -224,10 +224,10 @@ pub fn call(
     let dna = context.get_dna().expect("Callback called without DNA set!");
 
     match dna.get_wasm_from_zome_name(zome) {
-        None => CallbackResult::NotImplemented,
+        None => CallbackResult::NotImplemented("call/1".into()),
         Some(wasm) => {
             if wasm.code.is_empty() {
-                CallbackResult::NotImplemented
+                CallbackResult::NotImplemented("call/2".into())
             } else {
                 run_callback(context.clone(), zome_call, wasm, dna.name.clone())
             }

@@ -10,7 +10,7 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 multihash = "0.8.0"
-futures-preview = "=0.3.0-alpha.11"
+futures-preview = "= 0.3.0-alpha.11"
 reed-solomon = "0.2.1"
 rust-base58 = "0.0.4"
 snowflake = "1.2"

@@ -164,43 +164,57 @@ pub mod tests {
         Arc::new(loader)
     }
 
-    pub fn test_toml() -> String {
-        r#"bridges = []
-
-[[agents]]
+    pub fn agent1() -> String {
+r#"[[agents]]
 id = "test-agent-1"
 key_file = "holo_tester.key"
 name = "Holo Tester 1"
-public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB""#
+    .to_string()
+    }
 
-[[agents]]
+    pub fn agent2() -> String {
+r#"[[agents]]
 id = "test-agent-2"
 key_file = "holo_tester.key"
 name = "Holo Tester 2"
-public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e""#
+    .to_string()
+    }
 
-[[dnas]]
+    pub fn dna() -> String {
+r#"[[dnas]]
 file = "app_spec.hcpkg"
 hash = "Qm328wyq38924y"
-id = "test-dna"
+id = "test-dna""#
+            .to_string()
+    }
 
-[[instances]]
+
+    pub fn instance1() -> String {
+r#"[[instances]]
 agent = "test-agent-1"
 dna = "test-dna"
 id = "test-instance-1"
 
 [instances.storage]
-type = "memory"
+type = "memory""#
+            .to_string()
+    }
 
-[[instances]]
+    pub fn instance2() -> String {
+r#"[[instances]]
 agent = "test-agent-2"
 dna = "test-dna"
 id = "test-instance-2"
 
 [instances.storage]
-type = "memory"
+type = "memory""#
+            .to_string()
+    }
 
-[[interfaces]]
+    pub fn interface() -> String {
+r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -212,9 +226,12 @@ id = "test-instance-2"
 
 [interfaces.driver]
 port = 3000
-type = "websocket"
+type = "websocket""#
+    .to_string()
+    }
 
-[logger]
+    pub fn logger() -> String {
+r#"[logger]
 type = ""
 [[logger.rules.rules]]
 color = "red"
@@ -228,9 +245,24 @@ pattern = "^debug/dna"
 
 [[logger.rules.rules]]
 exclude = false
-pattern = ".*"
-    "#
-            .to_string()
+pattern = ".*""#
+    .to_string()
+    }
+
+    fn add_block(base: String, new_block: String) -> String {
+        format!("{}\n\n{}", base, new_block)
+    }
+
+    pub fn test_toml() -> String {
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, interface());
+        toml = add_block(toml, logger());
+        toml
     }
 
     fn create_test_container<T: Into<String>>(test_name: T) -> Container {
@@ -282,78 +314,25 @@ pattern = ".*"
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        assert_eq!(
-            config_contents,
-r#"bridges = []
-
-[[agents]]
-id = "test-agent-1"
-key_file = "holo_tester.key"
-name = "Holo Tester 1"
-public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-
-[[agents]]
-id = "test-agent-2"
-key_file = "holo_tester.key"
-name = "Holo Tester 2"
-public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
-
-[[dnas]]
-file = "app_spec.hcpkg"
-hash = "Qm328wyq38924y"
-id = "test-dna"
-
-[[dnas]]
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, String::from(
+r#"[[dnas]]
 file = "new-dna.hcpkg"
 hash = "QmPB7PJUjwj6zap7jB7oyk616sCRSSnNFRNouqhit6kMTr"
-id = "new-dna"
+id = "new-dna""#
+        ));
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, interface());
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
 
-[[instances]]
-agent = "test-agent-1"
-dna = "test-dna"
-id = "test-instance-1"
-
-[instances.storage]
-type = "memory"
-
-[[instances]]
-agent = "test-agent-2"
-dna = "test-dna"
-id = "test-instance-2"
-
-[instances.storage]
-type = "memory"
-
-[[interfaces]]
-admin = true
-id = "websocket interface"
-
-[[interfaces.instances]]
-id = "test-instance-1"
-
-[[interfaces.instances]]
-id = "test-instance-2"
-
-[interfaces.driver]
-port = 3000
-type = "websocket"
-
-[logger]
-type = ""
-[[logger.rules.rules]]
-color = "red"
-exclude = false
-pattern = "^err/"
-
-[[logger.rules.rules]]
-color = "white"
-exclude = false
-pattern = "^debug/dna"
-
-[[logger.rules.rules]]
-exclude = false
-pattern = ".*"
-"#
+        assert_eq!(
+            config_contents,
+            toml,
         );
     }
 
@@ -381,86 +360,34 @@ pattern = ".*"
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        assert_eq!(
-            config_contents,
-       r#"bridges = []
-
-[[agents]]
-id = "test-agent-1"
-key_file = "holo_tester.key"
-name = "Holo Tester 1"
-public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-
-[[agents]]
-id = "test-agent-2"
-key_file = "holo_tester.key"
-name = "Holo Tester 2"
-public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
-
-[[dnas]]
-file = "app_spec.hcpkg"
-hash = "Qm328wyq38924y"
-id = "test-dna"
-
-[[dnas]]
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, String::from(
+            r#"[[dnas]]
 file = "new-dna.hcpkg"
 hash = "QmPB7PJUjwj6zap7jB7oyk616sCRSSnNFRNouqhit6kMTr"
-id = "new-dna"
-
-[[instances]]
-agent = "test-agent-1"
-dna = "test-dna"
-id = "test-instance-1"
-
-[instances.storage]
-type = "memory"
-
-[[instances]]
-agent = "test-agent-2"
-dna = "test-dna"
-id = "test-instance-2"
-
-[instances.storage]
-type = "memory"
-
-[[instances]]
+id = "new-dna""#
+        ));
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, String::from(
+r#"[[instances]]
 agent = "test-agent-1"
 dna = "new-dna"
 id = "new-instance"
 
 [instances.storage]
-type = "memory"
+type = "memory""#
+        ));
+        toml = add_block(toml, interface());
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
 
-[[interfaces]]
-admin = true
-id = "websocket interface"
-
-[[interfaces.instances]]
-id = "test-instance-1"
-
-[[interfaces.instances]]
-id = "test-instance-2"
-
-[interfaces.driver]
-port = 3000
-type = "websocket"
-
-[logger]
-type = ""
-[[logger.rules.rules]]
-color = "red"
-exclude = false
-pattern = "^err/"
-
-[[logger.rules.rules]]
-color = "white"
-exclude = false
-pattern = "^debug/dna"
-
-[[logger.rules.rules]]
-exclude = false
-pattern = ".*"
-"#
+        assert_eq!(
+            config_contents,
+            toml,
         );
     }
 
@@ -480,36 +407,14 @@ pattern = ".*"
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        assert_eq!(
-            config_contents,
-            r#"bridges = []
-
-[[agents]]
-id = "test-agent-1"
-key_file = "holo_tester.key"
-name = "Holo Tester 1"
-public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-
-[[agents]]
-id = "test-agent-2"
-key_file = "holo_tester.key"
-name = "Holo Tester 2"
-public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
-
-[[dnas]]
-file = "app_spec.hcpkg"
-hash = "Qm328wyq38924y"
-id = "test-dna"
-
-[[instances]]
-agent = "test-agent-2"
-dna = "test-dna"
-id = "test-instance-2"
-
-[instances.storage]
-type = "memory"
-
-[[interfaces]]
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        //toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, String::from(
+r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -518,24 +423,14 @@ id = "test-instance-2"
 
 [interfaces.driver]
 port = 3000
-type = "websocket"
+type = "websocket""#
+        ));
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
 
-[logger]
-type = ""
-[[logger.rules.rules]]
-color = "red"
-exclude = false
-pattern = "^err/"
-
-[[logger.rules.rules]]
-color = "white"
-exclude = false
-pattern = "^debug/dna"
-
-[[logger.rules.rules]]
-exclude = false
-pattern = ".*"
-"#
+        assert_eq!(
+            config_contents,
+            toml,
         );
     }
 
@@ -552,49 +447,28 @@ pattern = ".*"
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        assert_eq!(
-            config_contents,
-            r#"bridges = []
-dnas = []
-instances = []
-
-[[agents]]
-id = "test-agent-1"
-key_file = "holo_tester.key"
-name = "Holo Tester 1"
-public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-
-[[agents]]
-id = "test-agent-2"
-key_file = "holo_tester.key"
-name = "Holo Tester 2"
-public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
-
-[[interfaces]]
+        let mut toml = String::from("bridges = []\ndnas = []\ninstances = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        //toml = add_block(toml, dna());
+        //toml = add_block(toml, instance1());
+        //toml = add_block(toml, instance2());
+        toml = add_block(toml, String::from(
+r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 instances = []
 
 [interfaces.driver]
 port = 3000
-type = "websocket"
+type = "websocket""#
+        ));
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
 
-[logger]
-type = ""
-[[logger.rules.rules]]
-color = "red"
-exclude = false
-pattern = "^err/"
-
-[[logger.rules.rules]]
-color = "white"
-exclude = false
-pattern = "^debug/dna"
-
-[[logger.rules.rules]]
-exclude = false
-pattern = ".*"
-"#
+        assert_eq!(
+            config_contents,
+            toml,
         );
     }
 
@@ -626,96 +500,43 @@ pattern = ".*"
     #[test]
     fn test_add_interface() {
         let mut container = create_test_container("test_add_interface");
-        let interface = InterfaceConfiguration {
+        let interface_config = InterfaceConfiguration {
             id: String::from("new-interface"),
-            driver: InterfaceDriver::Http{port: 8080},
+            driver: InterfaceDriver::Http { port: 8080 },
             admin: false,
             instances: Vec::new(),
         };
 
-        assert_eq!(container.add_interface(interface), Ok(()), );
+        assert_eq!(container.add_interface(interface_config), Ok(()), );
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        assert_eq!(
-            config_contents,
-            r#"bridges = []
-
-[[agents]]
-id = "test-agent-1"
-key_file = "holo_tester.key"
-name = "Holo Tester 1"
-public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-
-[[agents]]
-id = "test-agent-2"
-key_file = "holo_tester.key"
-name = "Holo Tester 2"
-public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
-
-[[dnas]]
-file = "app_spec.hcpkg"
-hash = "Qm328wyq38924y"
-id = "test-dna"
-
-[[instances]]
-agent = "test-agent-1"
-dna = "test-dna"
-id = "test-instance-1"
-
-[instances.storage]
-type = "memory"
-
-[[instances]]
-agent = "test-agent-2"
-dna = "test-dna"
-id = "test-instance-2"
-
-[instances.storage]
-type = "memory"
-
-[[interfaces]]
-admin = true
-id = "websocket interface"
-
-[[interfaces.instances]]
-id = "test-instance-1"
-
-[[interfaces.instances]]
-id = "test-instance-2"
-
-[interfaces.driver]
-port = 3000
-type = "websocket"
-
-[[interfaces]]
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, interface());
+        toml = add_block(toml, String::from(
+            r#"[[interfaces]]
 admin = false
 id = "new-interface"
 instances = []
 
 [interfaces.driver]
 port = 8080
-type = "http"
+type = "http""#
+        ));
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
 
-[logger]
-type = ""
-[[logger.rules.rules]]
-color = "red"
-exclude = false
-pattern = "^err/"
-
-[[logger.rules.rules]]
-color = "white"
-exclude = false
-pattern = "^debug/dna"
-
-[[logger.rules.rules]]
-exclude = false
-pattern = ".*"
-"#
-                .to_string());
+        assert_eq!(
+            config_contents,
+            toml,
+        );
     }
 }

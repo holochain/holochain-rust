@@ -53,6 +53,12 @@ impl From<RibosomeReturnCode> for RibosomeEncodingBits {
     }
 }
 
+impl From<RibosomeReturnCode> for RibosomeRuntimeBits {
+    fn from(ribosome_return_code: RibosomeReturnCode) -> RibosomeRuntimeBits {
+        RibosomeEncodingBits::from(ribosome_return_code) as RibosomeRuntimeBits
+    }
+}
+
 impl From<RibosomeEncodingBits> for RibosomeReturnCode {
     fn from(i: RibosomeEncodingBits) -> Self {
         if i == 0 {

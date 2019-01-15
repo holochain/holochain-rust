@@ -51,22 +51,28 @@ impl From<AllocationError> for RibosomeErrorCode {
     }
 }
 
-/// equivalent to TryFrom<RibosomeEncodingBits> for WasmAllocation
-/// not implemented as a trait because RibosomeEncodingBits is a primitive and that would couple
-/// allocations to ribosome encoding
-pub fn allocation_from_ribosome_encoding(encoded_value: RibosomeEncodingBits) -> AllocationResult {
+impl WasmAllocation {
 
-    match RibosomeReturnCode::from(encoded_value) {
-        RibosomeReturnCode::Success => Err(AllocationError::ZeroLength),
-        RibosomeReturnCode::Failure(_) => Err(AllocationError::OutOfBounds),
-        RibosomeReturnCode::Allocation(ribosome_allocation) => WasmAllocation::try_from(ribosome_allocation),
+    /// equivalent to TryFrom<RibosomeEncodingBits> for WasmAllocation
+    /// not implemented as a trait because RibosomeEncodingBits is a primitive and that would couple
+    /// allocations to ribosome encoding
+    pub fn try_from_ribosome_encoding(encoded_value: RibosomeEncodingBits) -> AllocationResult {
+        match RibosomeReturnCode::from(encoded_value) {
+            RibosomeReturnCode::Success => Err(AllocationError::ZeroLength),
+            RibosomeReturnCode::Failure(_) => Err(AllocationError::OutOfBounds),
+            RibosomeReturnCode::Allocation(ribosome_allocation) => WasmAllocation::try_from(ribosome_allocation),
+        }
+    }
+
+    pub fn as_ribosome_encoding(&self) -> RibosomeEncodingBits {
+        RibosomeReturnCode::from(self.clone()).into()
     }
 
 }
 
 /// Equivalent to From<AllocationResult> for RibosomeReturnCode
 /// not possible to implement the trait as Result and RibosomeReturnCode from different crates
-pub fn return_code_for_allocation_result(result: Result<WasmAllocation, AllocationError>) -> RibosomeReturnCode {
+pub fn return_code_for_allocation_result(result: AllocationResult) -> RibosomeReturnCode {
 
     match result {
         Ok(allocation) => RibosomeReturnCode::from(allocation),
@@ -77,7 +83,7 @@ pub fn return_code_for_allocation_result(result: Result<WasmAllocation, Allocati
 
 pub fn load_ribosome_encoded_string(encoded_value: RibosomeEncodingBits) -> Result<String, HolochainError> {
 
-    // almost the same as allocation_from_ribosome_encoding but maps to HolochainError
+    // almost the same as WasmAllocation::try_from_ribosome_encoding but maps to HolochainError
     match RibosomeReturnCode::from(encoded_value) {
         RibosomeReturnCode::Success => Err(HolochainError::Ribosome(RibosomeErrorCode::ZeroSizedAllocation))?,
         RibosomeReturnCode::Failure(err_code) => Err(HolochainError::Ribosome(err_code))?,
@@ -89,7 +95,7 @@ pub fn load_ribosome_encoded_string(encoded_value: RibosomeEncodingBits) -> Resu
 }
 
 pub fn load_ribosome_encoded_json<J: TryFrom<JsonString>>(encoded_value: RibosomeEncodingBits) -> Result<J, HolochainError>
-    where J::Error: Into<HolochainError>{
+    where J::Error: Into<HolochainError> {
 
         let s = load_ribosome_encoded_string(encoded_value)?;
         let j = JsonString::from(s);

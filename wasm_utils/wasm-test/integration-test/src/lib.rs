@@ -18,9 +18,9 @@ use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
 use std::convert::TryFrom;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
-use holochain_wasm_utils::memory::ribosome::allocation_from_ribosome_encoding;
 use holochain_wasm_utils::memory::MemoryInt;
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
@@ -102,7 +102,7 @@ pub extern "C" fn test_store_as_json_obj_ok(_: RibosomeEncodingBits) -> Ribosome
 pub extern "C" fn test_store_string_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let allmost_full_alloc = 0b1111111111111101_0000000000000010;
 
-    let allocation = allocation_from_ribosome_encoding(allmost_full_alloc).unwrap();
+    let allocation = WasmAllocation::try_from_ribosome_encoding(allmost_full_alloc).unwrap();
     let mut stack = WasmStack::try_from(allocation).unwrap();
 
     let s = "fish";
@@ -115,7 +115,7 @@ pub extern "C" fn test_store_string_err(_: RibosomeEncodingBits) -> RibosomeEnco
 #[no_mangle]
 pub extern "C" fn test_store_as_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let allmost_full_alloc = 0b1111111111111101_0000000000000010;
-    let allocation = allocation_from_ribosome_encoding(allmost_full_alloc).unwrap();
+    let allocation = WasmAllocation::try_from_ribosome_encoding(allmost_full_alloc).unwrap();
     let mut stack = WasmStack::try_from(allocation).unwrap();
 
     let obj = TestStruct {
@@ -133,7 +133,7 @@ pub extern "C" fn test_store_as_json_err(_: RibosomeEncodingBits) -> RibosomeEnc
 pub extern "C" fn test_load_json_ok(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let encoded = test_store_as_json_obj_ok(0);
 
-    let allocation = allocation_from_ribosome_encoding(encoded).unwrap();
+    let allocation = WasmAllocation::try_from_ribosome_encoding(encoded).unwrap();
     let mut stack = WasmStack::try_from(allocation).unwrap();
 
     let res: Result<TestStruct, HolochainError> = load_ribosome_encoded_json(encoded);
@@ -159,7 +159,7 @@ pub extern "C" fn test_load_json_err(_: RibosomeEncodingBits) -> RibosomeEncodin
 pub extern "C" fn test_load_string_ok(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let encoded = test_store_string_ok(0);
 
-    let allocation = allocation_from_ribosome_encoding(encoded).unwrap();
+    let allocation = WasmAllocation::try_from_ribosome_encoding(encoded).unwrap();
     let mut stack = WasmStack::try_from(allocation).unwrap();
 
     let res = allocation.read_to_string();
@@ -171,7 +171,7 @@ pub extern "C" fn test_load_string_ok(_: RibosomeEncodingBits) -> RibosomeEncodi
 #[no_mangle]
 pub extern "C" fn test_load_string_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let encoded = 1 << 16;
-    let allocation = allocation_from_ribosome_encoding(encoded).unwrap();
+    let allocation = WasmAllocation::try_from_ribosome_encoding(encoded).unwrap();
 
     let mut stack = WasmStack::try_from(allocation).unwrap();
 

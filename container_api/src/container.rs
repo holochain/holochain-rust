@@ -580,6 +580,7 @@ pub mod tests {
 
     [[interfaces]]
     id = "test-interface"
+    admin = true
     [interfaces.driver]
     type = "websocket"
     port = 8888

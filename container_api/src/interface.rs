@@ -369,8 +369,8 @@ pub mod tests {
         (container.config(), instances)
     }
 
-    fn create_call_str(method: &str, _params: &str) -> String {
-        json!({"jsonrpc": "2.0", "id": "0", "method": method}).to_string()
+    fn create_call_str(method: &str, params: Option<&str>) -> String {
+        json!({"jsonrpc": "2.0", "id": "0", "method": method, "params": params}).to_string()
     }
 
     /// checks that the response is a valid JSON string containing a `result` field which is stringified JSON
@@ -418,18 +418,23 @@ pub mod tests {
         assert!(!result.contains(r#""test-instance-1//test/test""#));
     }
 
+    /// The below test cannot be extented to test the other RPC methods due to the singleton design of the container
+    /// It may be worth removing this test but I have included it as an example of testing the responses for the 
+    /// other rpc methods if this becomes possible in the future
     #[test]
-    fn test_call_responses() {
+    fn test_rpc_call_responses() {
         let (config, instances) = example_config_and_instances();
         let handler = ContainerApiBuilder::new()
             .with_instances(instances.clone())
             .with_instance_configs(config.instances)
             .with_admin_dna_functions()
             .spawn();
+
         
-        let response_str = handler.handle_request_sync(&create_call_str("info/instances", ""))
+        let response_str = handler.handle_request_sync(&create_call_str("info/instances", None))
             .expect("Invalid call to handler");
+        println!("{}", response_str);
         let result = unwrap_response_if_valid(&response_str);
-        assert_eq!(result, "[{\"id\":\"test-instance-1\",\"dna\":\"bridge-callee\",\"agent\":\"test-agent-1\",\"storage\":{\"type\":\"memory\"}}]")
+        assert_eq!(result, r#"[{"id":"test-instance-1","dna":"bridge-callee","agent":"test-agent-1","storage":{"type":"memory"}}]"#);
     }
 }

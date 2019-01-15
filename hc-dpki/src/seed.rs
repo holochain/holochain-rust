@@ -5,10 +5,10 @@ use crate::{
     keypair::Keypair,
     util,
 };
+use bip39::{Language, Mnemonic};
 use holochain_core_types::error::HolochainError;
 use rustc_serialize::json;
 use std::str;
-
 pub enum InitializeSeed {
     SeedInit(SecBuf),
     MnemonicInit(String),
@@ -102,11 +102,12 @@ impl Seed {
         }
     }
 
-    // // TODO : BIP39 cargo
-    // pub fn get_mnemonic(&mut self) {
-    //     let mut self.seed_buf = self.seed_buf.read_lock();
-
-    // }
+    pub fn get_mnemonic(&mut self) -> Result<String, HolochainError> {
+        let entropy = self.seed_buf.read_lock();
+        let e = &*entropy;
+        let mnemonic = Mnemonic::from_entropy(e, Language::English).unwrap();
+        Ok(mnemonic.phrase().to_string())
+    }
 }
 
 pub struct DevicePinSeed {
@@ -242,6 +243,26 @@ impl RootSeed {
 mod tests {
     use super::*;
     use crate::holochain_sodium::random::random_secbuf;
+
+    #[test]
+    fn it_should_creat_a_menemonic() {
+        let mut seed_buf_in = SecBuf::with_insecure(16);
+        // random_secbuf(&mut seed_buf_in);
+        {
+            let mut seed_buf_in = seed_buf_in.write_lock();
+            // assert_eq!(ProtectState::ReadWrite, b.protect_state());
+            seed_buf_in[0] = 12;
+            seed_buf_in[1] = 70;
+            seed_buf_in[2] = 88;
+        }
+        let seed_type = "hcRootSeed".to_string();
+
+        let mut s = Seed::new(&seed_type, SeedInit(seed_buf_in));
+
+        let m = s.get_mnemonic().unwrap();
+        println!("Menemenoc: {:?}", m);
+        assert_eq!("arrange crazy abandon abandon abandon abandon abandon abandon abandon abandon abandon absent".to_string(), m);
+    }
 
     #[test]
     fn it_should_creat_a_new_seed() {

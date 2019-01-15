@@ -29,6 +29,12 @@ impl PartialEq for ChainStore {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum ChainStoreQueryResult {
+    Addresses(Vec<Address>),
+    Headers(Vec<ChainHeader>),
+}
+
 impl ChainStore {
     pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         ChainStore { content_storage }
@@ -63,9 +69,8 @@ impl ChainStore {
         entry_type_names: &[&str],
         start: u32,
         limit: u32,
-        entries: bool,
         headers: bool,
-    ) -> Result<QueryResult, RibosomeErrorCode> {
+    ) -> Result<ChainStoreQueryResult, RibosomeErrorCode> {
         // Get entry_type name(s), if any.  If empty/blank, returns the complete source chain.  A
         // single matching entry type name with no glob pattern matching will use the single
         // entry_type optimization.  Otherwise, we'll construct a GlobSet match and scan the list to
@@ -77,17 +82,23 @@ impl ChainStore {
             s.chars().any(|c| is_glob(&c))
         }
 
-        let headers = match entry_type_names {
-            [] | [""] => {
+        let vector = match entry_type_names { // Vec<Address> or Vec<ChainHeader>
+            [] | [""] | ["**"] => {
                 // No filtering desired; uses bare .iter()
-                let base_iter = self
-                    .iter(start_chain_header)
-                    .skip(start as usize)
-                    .map(|header| header.clone());
-                if limit > 0 {
-                    base_iter.take(limit as usize).collect()
+                if headers {
+                    ChainStoreQueryResult::Headers(
+                        self.iter(start_chain_header)
+                            .skip(start as usize)
+                            .take(if limit > 0 { limit as usize } else { usize::max_value() })
+                            .map(|header| header.to_owned())
+                            .collect::<Vec<ChainHeader>>())
                 } else {
-                    base_iter.collect()
+                    ChainStoreQueryResult::Addresses(
+                        self.iter(start_chain_header)
+                            .skip(start as usize)
+                            .take(if limit > 0 { limit as usize } else { usize::max_value() })
+                            .map(|header| header.entry_address().to_owned())
+                            .collect::<Vec<Address>>())
                 }
             }
             [one] if !is_glob_str(one) => {
@@ -96,12 +107,21 @@ impl ChainStore {
                     Ok(inner) => inner,
                     Err(..) => return Err(UnknownEntryType),
                 };
-                self
-                    .iter_type(start_chain_header, &entry_type)
-                    .skip(start as usize)
-                    .map(|header| header.clone())
-                    .take( if limit > 0 { limit } else { usize::max_value() } )
-                    .collect()
+                if headers {
+                    ChainStoreQueryResult::Headers(
+                        self.iter_type(start_chain_header, &entry_type)
+                            .skip(start as usize)
+                            .take( if limit > 0 { limit as usize } else { usize::max_value() } )
+                            .map(|header| header.to_owned())
+                            .collect::<Vec<ChainHeader>>())
+                } else {
+                    ChainStoreQueryResult::Addresses(
+                        self.iter_type(start_chain_header, &entry_type)
+                            .skip(start as usize)
+                            .take( if limit > 0 { limit as usize } else { usize::max_value() } )
+                            .map(|header| header.entry_address().to_owned())
+                            .collect::<Vec<Address>>())
+                }
             }
             rest => {
                 // 1 or more EntryTypes, may or may not include glob wildcards.  Create a
@@ -119,43 +139,37 @@ impl ChainStore {
                     );
                 }
                 let globset = builder.build().map_err(|_| UnknownEntryType)?;
-                let base_iter = self
-                    .iter(start_chain_header)
-                    .filter(|header| {
-                        globset
-                            .matches(String::from((*header.entry_type()).clone()))
-                            .len()
-                            > 0
-                    })
-                    .skip(start as usize)
-                    .map(|header| header.clone());
-                if limit > 0 {
-                    base_iter.take(limit as usize).collect()
+                if headers {
+                    ChainStoreQueryResult::Headers(
+                        self.iter(start_chain_header)
+                            .filter(|header| {
+                                globset
+                                    .matches(header.entry_type().to_string())
+                                    .len()
+                                    > 0
+                            })
+                            .skip(start as usize)
+                            .take(if limit > 0 { limit as usize } else { usize::max_value() })
+                            .map(|header| header.to_owned())
+                            .collect::<Vec<ChainHeader>>())
                 } else {
-                    base_iter.collect()
+                    ChainStoreQueryResult::Addresses(
+                        self.iter(start_chain_header)
+                            .filter(|header| {
+                                globset
+                                    .matches(header.entry_type().to_string())
+                                    .len()
+                                    > 0
+                            })
+                            .skip(start as usize)
+                            .take(if limit > 0 { limit as usize } else { usize::max_value() })
+                            .map(|header| header.entry_address().to_owned())
+                            .collect::<Vec<Address>>())
                 }
             }
         };
 
-        // We have all the matching headers in the specified start/limit range.  Now, decide if
-        // we're returning just Vec<Address>, or if we want Vec<QueryResultAddr>
-        if ( headers || entries ) {
-            Ok(QueryResult::Data(
-                headers.iter()
-                    .map( |header| {
-                        QueryResultItem {
-                            address: header.entry_address().to_owned(),
-                            header: if headers { Some( header ) } else { None },
-                            entry: None, // TODO: Get entry from header.entry_address()
-                        }
-                    })
-                    .collect()))
-        } else {
-            Ok(QueryResult::Addresses(
-                headers.iter()
-                    .map( |header| header.entry_address().to_owned() )
-                    .collect()))
-        }
+        Ok(vector)
     }
 }
 

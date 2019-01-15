@@ -1,5 +1,8 @@
-use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames};
+use crate:: {
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    agent::chain_store::ChainStoreQueryResult,
+};
+use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -59,7 +62,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
-    let data = match query.entry_type_names {
+    let maybe_result = match query.entry_type_names { // Result<ChainStoreQueryResult,...>
         QueryArgsNames::QueryList(pats) => {
             let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>
             agent.chain().query(
@@ -67,8 +70,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 refs.as_slice(), // Vec<&str> -> Vec[&str]
                 query.start.unwrap_or( 0 ),
                 query.limit.unwrap_or( 0 ),
-                query.entries.unwrap_or( false.into() ),
-                query.headers.unwrap_or( false.into() ),
+                query.headers.unwrap_or( false ),
             )
         }
         QueryArgsNames::QueryName(name) => {
@@ -78,16 +80,20 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 refs.as_slice(), // Vec<&str> -> &[&str]
                 query.start.unwrap_or( 0 ),
                 query.limit.unwrap_or( 0 ),
-                query.entries.unwrap_or( false.into() ),
-                query.headers.unwrap_or( false.into() ),
+                query.headers.unwrap_or( false ),
             )
         }
     };
-    let result = match data {
+    let result = match maybe_result {
         // TODO #793: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
         // Perhaps return chain().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
-        Ok(result) => Ok(result),
+        Ok(result) => {
+            Ok(match result {
+                ChainStoreQueryResult::Addresses(addresses) => QueryResult::Addresses(addresses),
+                ChainStoreQueryResult::Headers(headers) => QueryResult::Headers(headers),
+            })
+        }
         Err(_code) => return ribosome_error_code!(UnknownEntryType),
     };
 

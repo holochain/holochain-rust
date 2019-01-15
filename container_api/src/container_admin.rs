@@ -349,8 +349,8 @@ pattern = ".*"
 
     use crate::config::StorageConfiguration;
     #[test]
-    fn test_add_instance_and_start() {
-        let mut container = create_test_container("test_add_instance_and_start");
+    fn test_add_instance() {
+        let mut container = create_test_container("test_add_instance");
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
         container
@@ -364,7 +364,94 @@ pattern = ".*"
             storage: StorageConfiguration::Memory,
         });
 
-        assert_eq!(add_result, Ok(()))
+        assert_eq!(add_result, Ok(()));
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        assert_eq!(
+            config_contents,
+       r#"bridges = []
+
+[[agents]]
+id = "test-agent-1"
+key_file = "holo_tester.key"
+name = "Holo Tester 1"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+[[agents]]
+id = "test-agent-2"
+key_file = "holo_tester.key"
+name = "Holo Tester 2"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
+[[dnas]]
+file = "app_spec.hcpkg"
+hash = "Qm328wyq38924y"
+id = "test-dna"
+
+[[dnas]]
+file = "new-dna.hcpkg"
+hash = "QmPB7PJUjwj6zap7jB7oyk616sCRSSnNFRNouqhit6kMTr"
+id = "new-dna"
+
+[[instances]]
+agent = "test-agent-1"
+dna = "test-dna"
+id = "test-instance-1"
+
+[instances.storage]
+type = "memory"
+
+[[instances]]
+agent = "test-agent-2"
+dna = "test-dna"
+id = "test-instance-2"
+
+[instances.storage]
+type = "memory"
+
+[[instances]]
+agent = "test-agent-1"
+dna = "new-dna"
+id = "new-instance"
+
+[instances.storage]
+type = "memory"
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[[interfaces.instances]]
+id = "test-instance-1"
+
+[[interfaces.instances]]
+id = "test-instance-2"
+
+[interfaces.driver]
+port = 3000
+type = "websocket"
+
+[logger]
+type = ""
+[[logger.rules.rules]]
+color = "red"
+exclude = false
+pattern = "^err/"
+
+[[logger.rules.rules]]
+color = "white"
+exclude = false
+pattern = "^debug/dna"
+
+[[logger.rules.rules]]
+exclude = false
+pattern = ".*"
+"#
+        );
     }
 
     #[test]

@@ -19,21 +19,21 @@ impl Keypair {
     /// derive the pairs from a 32 byte seed buffer
     ///  
     /// @param {SecBuf} seed - the seed buffer
-    pub fn new_from_seed(seed: &mut SecBuf) -> Self {
+    pub fn new_from_seed(seed: &mut SecBuf) -> Result<Self, HolochainError>  {
         let mut seed = seed;
         let mut sign_public_key = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut sign_secret_key = SecBuf::with_secure(sign::SECRETKEYBYTES);
         let mut enc_public_key = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
         let mut enc_secret_key = SecBuf::with_secure(kx::SECRETKEYBYTES);
 
-        sign::seed_keypair(&mut sign_public_key, &mut sign_secret_key, &mut seed).unwrap();
-        kx::seed_keypair(&mut seed, &mut enc_public_key, &mut enc_secret_key).unwrap();
+        sign::seed_keypair(&mut sign_public_key, &mut sign_secret_key, &mut seed)?;
+        kx::seed_keypair(&mut seed, &mut enc_public_key, &mut enc_secret_key)?;
 
-        Keypair {
+        Ok(Keypair {
             pub_keys: util::encode_id(&mut sign_public_key, &mut enc_public_key),
             sign_priv: sign_secret_key,
             enc_priv: enc_secret_key,
-        }
+        })
     }
 
     /// get the keypair identifier string
@@ -310,7 +310,7 @@ mod tests {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
 
-        let keypair = Keypair::new_from_seed(&mut seed);
+        let keypair = Keypair::new_from_seed(&mut seed).unwrap();
 
         // let pub_keys = keypair.pub_keys.read_lock();
         // println!("{:?}",pub_keys);
@@ -327,7 +327,7 @@ mod tests {
     fn it_should_get_id() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
 
         let pk: String = keypair.get_id();
         println!("pk: {:?}", pk);
@@ -340,7 +340,7 @@ mod tests {
     fn it_should_sign_message_and_verify() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
 
         let mut message = SecBuf::with_insecure(16);
         random_secbuf(&mut message);
@@ -357,11 +357,11 @@ mod tests {
     fn it_should_encode_n_decode_data() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed).unwrap();
 
         let mut seed_1 = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed_1);
-        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
+        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1).unwrap();
 
         let mut message = SecBuf::with_insecure(16);
         random_secbuf(&mut message);
@@ -389,15 +389,15 @@ mod tests {
     fn it_should_encode_n_decode_data_for_multiple_users2() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed).unwrap();
 
         let mut seed_1 = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed_1);
-        let keypair_1 = Keypair::new_from_seed(&mut seed_1);
+        let keypair_1 = Keypair::new_from_seed(&mut seed_1).unwrap();
 
         let mut seed_2 = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed_2);
-        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
+        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2).unwrap();
 
         let mut message = SecBuf::with_insecure(16);
         random_secbuf(&mut message);
@@ -425,15 +425,15 @@ mod tests {
     fn it_should_encode_n_decode_data_for_multiple_users1() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed).unwrap();
 
         let mut seed_1 = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed_1);
-        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1);
+        let mut keypair_1 = Keypair::new_from_seed(&mut seed_1).unwrap();
 
         let mut seed_2 = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed_2);
-        let keypair_2 = Keypair::new_from_seed(&mut seed_2);
+        let keypair_2 = Keypair::new_from_seed(&mut seed_2).unwrap();
 
         let mut message = SecBuf::with_insecure(16);
         random_secbuf(&mut message);
@@ -463,15 +463,15 @@ mod tests {
     fn it_should_with_fail_when_wrong_key_used_to_decrypt() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair_main = Keypair::new_from_seed(&mut seed);
+        let mut keypair_main = Keypair::new_from_seed(&mut seed).unwrap();
 
         let mut seed_1 = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed_1);
-        let keypair_1 = Keypair::new_from_seed(&mut seed_1);
+        let keypair_1 = Keypair::new_from_seed(&mut seed_1).unwrap();
 
         let mut seed_2 = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed_2);
-        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2);
+        let mut keypair_2 = Keypair::new_from_seed(&mut seed_2).unwrap();
 
         let mut message = SecBuf::with_insecure(16);
         random_secbuf(&mut message);
@@ -492,7 +492,7 @@ mod tests {
     fn it_should_get_from_bundle() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
         let mut passphrase = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut passphrase);
 
@@ -511,7 +511,7 @@ mod tests {
     fn it_should_get_bundle() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
         let mut passphrase = SecBuf::with_insecure(SEEDSIZE);
         random_secbuf(&mut passphrase);
 

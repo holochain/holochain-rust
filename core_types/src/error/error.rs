@@ -10,6 +10,7 @@ use std::{
     fmt,
     io::{self, Error as IoError},
 };
+use holochain_sodium::error::SodiumError;
 
 //--------------------------------------------------------------------------------------------------
 // CoreError
@@ -133,6 +134,14 @@ impl Error for HolochainError {
             RibosomeFailed(fail_msg) => &fail_msg,
             ConfigError(err_msg) => &err_msg,
             Timeout => "timeout",
+        }
+    }
+}
+
+impl From<SodiumError> for HolochainError {
+    fn from(error: SodiumError) -> Self {
+        match error {
+            SodiumError::OutputLength(s)=>HolochainError::new(&s),
         }
     }
 }

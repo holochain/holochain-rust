@@ -412,7 +412,6 @@ pub mod tests {
         error::DnaError,
         json::{JsonString, RawString},
     };
-    use std::error::Error;
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {

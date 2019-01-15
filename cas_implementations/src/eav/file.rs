@@ -227,7 +227,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
-
         let _guard = self.lock.read()?;
         let entity_set = self.read_from_dir::<Entity>(
             self.current_hash.clone(),
@@ -252,7 +251,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .into_iter()
             .map(|(hash, content)| {
                 (
-                    from_key(hash).unwrap_or(Key(0,Action::None)),
+                    from_key(hash).unwrap_or(Key(0, Action::None)),
                     EntityAttributeValue::try_from_content(&JsonString::from(content)),
                 )
             })

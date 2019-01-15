@@ -55,10 +55,9 @@ impl Keypair {
     ) -> Result<bundle::KeyBundle, HolochainError> {
         let mut passphrase = passphrase;
         let bundle_type: String = "hcKeypair".to_string();
-        let skk = KeyBuffer::with_corrected(&self.pub_keys)?;
-        let sk = skk.get_sig() as &[u8];
-        let ekk = KeyBuffer::with_corrected(&self.pub_keys)?;
-        let ek = ekk.get_enc() as &[u8];
+        let kk = KeyBuffer::with_corrected(&self.pub_keys)?;
+        let sk = kk.get_sig() as &[u8];
+        let ek = kk.get_enc() as &[u8];
         let mut sk_buf = SecBuf::with_insecure(32);
         let mut ek_buf = SecBuf::with_insecure(32);
         util::convert_array_to_secbuf(&sk, &mut sk_buf);
@@ -101,7 +100,7 @@ impl Keypair {
         passphrase: &mut SecBuf,
     ) -> Result<Keypair, HolochainError> {
         // decoding the bundle.data of type utinl::Keys
-        let bundle_decoded = base64::decode(&bundle.data).unwrap();
+        let bundle_decoded = base64::decode(&bundle.data)?;
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
         let data: bundle::Keys = json::decode(&bundle_string).unwrap();
 
@@ -133,7 +132,7 @@ impl Keypair {
         let mut data = data;
         let mut signature = signature;
         let mut sign_priv = &mut self.sign_priv;
-        sign::sign(&mut data, &mut sign_priv, &mut signature).unwrap();
+        sign::sign(&mut data, &mut sign_priv, &mut signature)?;
         Ok(())
     }
 
@@ -192,14 +191,13 @@ impl Keypair {
                 &mut r_enc_pub,
                 &mut srv_rx,
                 &mut srv_tx,
-            )
-            .unwrap();
+            )?;
 
             let mut nonce = SecBuf::with_insecure(16);
             random_secbuf(&mut nonce);
             let mut cipher = SecBuf::with_insecure(sym_secret.len() + aead::ABYTES);
 
-            aead::enc(&mut sym_secret, &mut srv_tx, None, &mut nonce, &mut cipher).unwrap();
+            aead::enc(&mut sym_secret, &mut srv_tx, None, &mut nonce, &mut cipher)?;
             out.push(nonce);
             out.push(cipher);
         }
@@ -208,7 +206,7 @@ impl Keypair {
         random_secbuf(&mut nonce);
         let mut cipher = SecBuf::with_insecure(data.len() + aead::ABYTES);
         let mut data = data;
-        aead::enc(&mut data, &mut sym_secret, None, &mut nonce, &mut cipher).unwrap();
+        aead::enc(&mut data, &mut sym_secret, None, &mut nonce, &mut cipher)?;
         out.push(nonce);
         out.push(cipher);
         Ok(())
@@ -249,7 +247,7 @@ impl Keypair {
             &mut cli_rx,
             &mut cli_tx,
         )
-        .unwrap();
+        ?;
 
         let mut sys_secret_check: Option<SecBuf> = None;
 
@@ -290,7 +288,7 @@ impl Keypair {
         let mut dm = SecBuf::with_insecure(c.len() - aead::ABYTES);
 
         if let Some(mut secret) = sys_secret_check {
-            aead::dec(&mut dm, &mut secret, None, &mut n, &mut c).unwrap();
+            aead::dec(&mut dm, &mut secret, None, &mut n, &mut c)?;
             Ok(dm)
         } else {
             Err(HolochainError::new(

@@ -37,7 +37,7 @@ pub fn pw_hash(password: &mut SecBuf, salt: &mut SecBuf, hash: &mut SecBuf) {
 ///
 /// @return {bundle::ReturnBundleData} - the encrypted data
 pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> bundle::ReturnBundleData {
-    let mut secret = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
+    let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
     holochain_sodium::random::random_secbuf(&mut salt);
     let mut nonce = SecBuf::with_insecure(aead::NONCEBYTES);
@@ -73,7 +73,7 @@ pub fn pw_enc(data: &mut SecBuf, passphrase: &mut SecBuf) -> bundle::ReturnBundl
 ///
 /// @return {SecBuf} - the decrypted data
 pub fn pw_dec(bundle: &bundle::ReturnBundleData, passphrase: &mut SecBuf) -> SecBuf {
-    let mut secret = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
+    let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
     convert_vec_to_secbuf(&bundle.salt, &mut salt);
     let mut nonce = SecBuf::with_insecure(bundle.nonce.len());
@@ -82,7 +82,7 @@ pub fn pw_dec(bundle: &bundle::ReturnBundleData, passphrase: &mut SecBuf) -> Sec
     convert_vec_to_secbuf(&bundle.cipher, &mut cipher);
     let mut passphrase = passphrase;
     pw_hash(&mut passphrase, &mut salt, &mut secret);
-    let mut decrypted_message = SecBuf::with_insecure(cipher.len() - aead::ABYTES);
+    let mut decrypted_message = SecBuf::with_secure(cipher.len() - aead::ABYTES);
     aead::dec(
         &mut decrypted_message,
         &mut secret,

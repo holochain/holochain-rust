@@ -140,7 +140,6 @@ impl From<SodiumError> for HolochainError {
 
 impl Error for HolochainError {}
 
-
 impl From<HolochainError> for String {
     fn from(holochain_error: HolochainError) -> Self {
         holochain_error.to_string()

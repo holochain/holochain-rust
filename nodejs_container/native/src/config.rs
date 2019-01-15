@@ -17,6 +17,7 @@ pub struct AgentData {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DnaData {
     pub path: PathBuf,
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -105,7 +106,7 @@ pub fn js_instance_id(mut cx: FunctionContext) -> JsResult<JsString> {
 fn make_dna_config(dna: DnaData) -> Result<DnaConfiguration, String> {
     let path = dna.path.to_string_lossy().to_string();
     Ok(DnaConfiguration {
-        id: path.clone(),
+        id: dna.name.clone(),
         hash: String::from("DONTCARE"),
         file: path,
     })

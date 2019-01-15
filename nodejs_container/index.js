@@ -24,7 +24,12 @@ const defaultOpts = {
 
 const Config = {
     agent: name => ({ name }),
-    dna: (path) => ({ path }),
+    dna: (path, name) => {
+        if (!name) {
+            name = path
+        }
+        return { path, name }
+    },
     instance: (agent, dna, name) => {
         if (!name) {
             name = agent.name
@@ -129,7 +134,7 @@ class Scenario {
         }
         const callers = {}
         this.instances.forEach(instance => {
-            const id = makeInstanceId(instance.agent.name, instance.dna.path)
+            const id = makeInstanceId(instance.agent.name, instance.dna.name)
             const name = instance.name
             if (name in callers) {
                 throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`

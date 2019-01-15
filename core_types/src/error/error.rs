@@ -284,7 +284,7 @@ mod tests {
             (HolochainError::ErrorGeneric(String::from("foo")), "foo"),
             (
                 HolochainError::NotImplemented("reason".into()),
-                "not implemented",
+                "not implemented: reason",
             ),
             (HolochainError::LoggingError, "logging failed"),
             (HolochainError::DnaMissing, "DNA is missing"),

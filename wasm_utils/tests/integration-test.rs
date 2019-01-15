@@ -35,7 +35,9 @@ fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
 fn can_return_core_error_test() {
     let call_result = call_zome_function_with_hc("test_error_report").unwrap();
     let core_err = CoreError::try_from(call_result).unwrap();
-    assert_eq!("Zome assertion failed: `false`", core_err.to_string());
+    assert!(core_err
+        .to_string()
+        .contains("Holochain Core error: Zome assertion failed: `false`"));
 }
 
 #[test]

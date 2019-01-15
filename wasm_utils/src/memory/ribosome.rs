@@ -111,3 +111,24 @@ where
 
     J::try_from(j).map_err(|e| e.into())
 }
+
+#[cfg(test)]
+pub mod tests {
+
+    use holochain_core_types::error::{
+        RibosomeEncodingBits, RibosomeErrorCode, RibosomeReturnCode,
+    };
+
+    #[test]
+    fn ribosome_return_code_round_trip() {
+        let oom = RibosomeReturnCode::from(
+            (RibosomeErrorCode::OutOfMemory as RibosomeEncodingBits) >> 16,
+        );
+        assert_eq!(
+            RibosomeReturnCode::Failure(RibosomeErrorCode::OutOfMemory),
+            oom
+        );
+        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
+    }
+
+}

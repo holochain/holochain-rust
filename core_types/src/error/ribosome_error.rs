@@ -283,17 +283,10 @@ pub mod tests {
     use super::*;
 
     #[test]
-    fn ribosome_return_code_round_trip() {
-        let oom =
-            RibosomeReturnCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
-        assert_eq!(Failure(RibosomeErrorCode::OutOfMemory), oom);
-        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
-    }
-
-    #[test]
     fn ribosome_error_code_round_trip() {
-        let oom =
-            RibosomeErrorCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
+        let oom = RibosomeErrorCode::from_code_int(
+            ((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16,
+        );
         assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
     }
@@ -301,7 +294,7 @@ pub mod tests {
     #[test]
     fn error_conversion() {
         for code in 1..=10 {
-            let mut err = RibosomeErrorCode::from_offset(code);
+            let mut err = RibosomeErrorCode::from_code_int(code);
 
             let err_str = err.as_str().to_owned();
 
@@ -317,6 +310,6 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn code_zero() {
-        RibosomeErrorCode::from_offset(0);
+        RibosomeErrorCode::from_code_int(0);
     }
 }

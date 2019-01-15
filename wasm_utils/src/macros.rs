@@ -15,8 +15,9 @@ macro_rules! zome_assert {
 macro_rules! ribosome_success {
     () => {
         Ok(Some(RuntimeValue::I32(
-            $crate::holochain_core_types::error::RibosomeReturnCode::Success
-                as $crate::holochain_core_types::error::RibosomeRuntimeBits,
+            $crate::holochain_core_types::error::RibosomeRuntimeBits::from(
+                $crate::holochain_core_types::error::RibosomeReturnCode::Success,
+            ),
         )))
     };
 }

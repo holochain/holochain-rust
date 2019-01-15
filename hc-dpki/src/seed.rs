@@ -98,12 +98,12 @@ impl Seed {
                 let mnemonic = Mnemonic::from_phrase(phrase, Language::English).unwrap();
                 let entropy: &[u8] = mnemonic.entropy();
                 let mut buf = SecBuf::with_insecure(entropy.len());
-                util::convert_array_to_secbuf(entropy,&mut buf);
+                util::convert_array_to_secbuf(entropy, &mut buf);
                 Seed {
                     seed_type: stype.clone(),
                     seed_buf: buf,
                 }
-            },
+            }
         }
     }
 
@@ -457,9 +457,9 @@ mod tests {
         let seed_type = "hcRootSeed".to_string();
 
         let mut rs = Seed::new(&seed_type, MnemonicInit(m));
-        
+
         println!("SEED: {:?}", s.seed_type);
-        
+
         let fs = s.seed_buf.read_lock();
         let is = rs.seed_buf.read_lock();
         assert_eq!(format!("{:?}", *fs), format!("{:?}", *is));

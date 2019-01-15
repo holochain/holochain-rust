@@ -8,6 +8,7 @@ use std::convert::TryInto;
 use holochain_wasm_utils::memory::allocation::AllocationResult;
 use holochain_wasm_utils::memory::stack::WasmStack;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use holochain_wasm_utils::memory::allocation::AllocationError;
 use std::convert::TryFrom;
 
 /// Init global memory stack
@@ -21,6 +22,9 @@ pub fn init_global_memory(initial_allocation: WasmAllocation) -> AllocationResul
 
 /// Serialize output as json in WASM memory
 pub fn write_json<J: TryInto<JsonString>>(jsonable: J) -> AllocationResult {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    let mut mem_stack = unsafe { match G_MEM_STACK {
+        Some(mem_stack) => mem_stack,
+        None => return Err(AllocationError::BadStackAlignment),
+    } };
     mem_stack.write_json(jsonable)
 }

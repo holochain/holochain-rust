@@ -6,7 +6,7 @@ macro_rules! zome_assert {
         if !$cond {
             let error_report =
                 core_error_generic!(format!(r#"Zome assertion failed: `{}`"#, stringify!($cond)));
-            let res = store_as_json(&mut $stack, error_report);
+            let res = stack.store_as_json(error_report);
             return res.unwrap().encode();
         }
     };

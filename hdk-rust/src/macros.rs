@@ -190,23 +190,37 @@ macro_rules! define_zome {
         }
 
         #[no_mangle]
-        pub extern "C" fn genesis(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
-            $crate::global_fns::init_global_memory(allocation_from_ribosome_encoding(encoded_allocation_of_input));
+        pub extern "C" fn genesis(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+            let maybe_allocation = $crate::holochain_wasm_utils::memory::ribosome::allocation_from_ribosome_encoding(encoded_allocation_of_input);
+            let allocation = match maybe_allocation {
+                Ok(allocation) => allocation,
+                Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
+            };
+            $crate::global_fns::init_global_memory(allocation);
 
             fn execute() -> Result<(), String> {
                 $genesis_expr
             }
 
             match execute() {
-                Ok(_) => 0,
-                Err(e) => $crate::global_fns::write_json($crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)),
+                Ok(_) => hdk::holochain_core_types::error::RibosomeReturnCode::Success.into(),
+                Err(e) => $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                    $crate::global_fns::write_json(
+                        $crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)
+                    )
+                ).into(),
             }
         }
 
         $(
             #[no_mangle]
-            pub extern "C" fn receive(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
-                $crate::global_fns::init_global_memory(allocation_from_ribosome_encoding(encoded_allocation_of_input));
+            pub extern "C" fn receive(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+                let maybe_allocation = $crate::holochain_wasm_utils::memory::ribosome::allocation_from_ribosome_encoding(encoded_allocation_of_input);
+                let allocation = match maybe_allocation {
+                    Ok(allocation) => allocation,
+                    Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
+                };
+                $crate::global_fns::init_global_memory(allocation);
 
                 // Deserialize input
                 let input = load_string!(encoded_allocation_of_input).unwrap();
@@ -216,7 +230,11 @@ macro_rules! define_zome {
                     $receive_expr
                 }
 
-                $crate::global_fns::write_json(execute(input))
+                $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                    $crate::global_fns::write_json(
+                        execute(input)
+                    )
+                ).into()
             }
         )*
 
@@ -268,8 +286,13 @@ macro_rules! define_zome {
         $(
             $(
                 #[no_mangle]
-                pub extern "C" fn $zome_function_name(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
-                    $crate::global_fns::init_global_memory(allocation_from_ribosome_encoding(encoded_allocation_of_input));
+                pub extern "C" fn $zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+                    let maybe_allocation = $crate::holochain_wasm_utils::memory::ribosome::allocation_from_ribosome_encoding(encoded_allocation_of_input);
+                    let allocation = match maybe_allocation {
+                        Ok(allocation) => allocation,
+                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
+                    };
+                    $crate::global_fns::init_global_memory(allocation);
 
                     // Macro'd InputStruct
                     #[derive(Deserialize, Debug)]
@@ -288,7 +311,9 @@ macro_rules! define_zome {
                         $handler_path($($input_param_name),*)
                     }
 
-                    $crate::global_fns::write_json(execute(input))
+                    $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                        $crate::global_fns::write_json(execute(input))
+                    ).into()
                 }
             )+
         )*

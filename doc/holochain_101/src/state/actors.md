@@ -1,6 +1,6 @@
 # Internal actors
 
-Actors are discussed in two context:
+Actors are discussed in two contexts:
 
 - Each Holochain agent as an actor in a networking context
 - Riker actors as an implemenation detail in the Holochain core lib

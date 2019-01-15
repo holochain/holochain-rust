@@ -26,7 +26,7 @@ use holochain_core_types::error::RibosomeEncodingBits;
 use std::convert::TryInto;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use std::convert::TryFrom;
-use holochain_wasm_utils::memory::allocation::return_code_for_allocation_result;
+use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);

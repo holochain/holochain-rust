@@ -4,6 +4,7 @@ pub mod allocation;
 pub mod stack;
 pub mod read;
 pub mod write;
+pub mod ribosome;
 
 /// offsets, lengths, etc.
 pub type MemoryInt = u16;

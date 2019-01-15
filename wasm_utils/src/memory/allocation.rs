@@ -1,14 +1,8 @@
-use holochain_core_types::error::RibosomeEncodedAllocation;
-use holochain_core_types::bits_n_pieces::u32_split_bits;
 use memory::MemoryBits;
 use memory::MEMORY_INT_MAX;
-use std::convert::TryFrom;
 use memory::MemoryInt;
 use holochain_core_types::json::JsonString;
 use holochain_core_types::error::HolochainError;
-use holochain_core_types::bits_n_pieces::u32_merge_bits;
-use holochain_core_types::error::RibosomeReturnCode;
-use holochain_core_types::error::RibosomeErrorCode;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Offset(MemoryInt);
@@ -69,17 +63,6 @@ pub enum AllocationError {
     Serialization,
 }
 
-impl From<AllocationError> for RibosomeErrorCode {
-    fn from(allocation_error: AllocationError) -> Self {
-        match allocation_error {
-            AllocationError::OutOfBounds => RibosomeErrorCode::OutOfMemory,
-            AllocationError::ZeroLength => RibosomeErrorCode::ZeroSizedAllocation,
-            AllocationError::BadStackAlignment => RibosomeErrorCode::NotAnAllocation,
-            AllocationError::Serialization => RibosomeErrorCode::NotAnAllocation,
-        }
-    }
-}
-
 impl From<AllocationError> for String {
     fn from(allocation_error: AllocationError) -> Self {
         match allocation_error {
@@ -88,6 +71,12 @@ impl From<AllocationError> for String {
             AllocationError::BadStackAlignment => "Allocation is not aligned with stack".into(),
             AllocationError::Serialization => "Allocation could not serialize data".into(),
         }
+    }
+}
+
+impl From<AllocationError> for HolochainError {
+    fn from(allocation_error: AllocationError) -> Self {
+        HolochainError::ErrorGeneric(String::from(allocation_error))
     }
 }
 
@@ -125,36 +114,4 @@ impl WasmAllocation {
 
 }
 
-impl TryFrom<RibosomeEncodedAllocation> for WasmAllocation {
-    type Error = AllocationError;
-    fn try_from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> Result<Self, Self::Error> {
-        let (offset, length) = u32_split_bits(MemoryBits::from(ribosome_memory_allocation));
-        WasmAllocation::new(offset.into(), length.into())
-    }
-}
-
-impl From<WasmAllocation> for RibosomeEncodedAllocation {
-    fn from(wasm_allocation: WasmAllocation) -> Self {
-        u32_merge_bits(wasm_allocation.offset().into(), wasm_allocation.length().into()).into()
-    }
-}
-
-impl From<WasmAllocation> for RibosomeReturnCode {
-    fn from(wasm_allocation: WasmAllocation) -> Self {
-        RibosomeReturnCode::Allocation(RibosomeEncodedAllocation::from(wasm_allocation))
-    }
-}
-
-impl From<AllocationError> for RibosomeReturnCode {
-    fn from(allocation_error: AllocationError) -> Self {
-        RibosomeReturnCode::Failure(RibosomeErrorCode::from(allocation_error))
-    }
-}
-
 pub type AllocationResult = Result<WasmAllocation, AllocationError>;
-pub fn return_code_for_allocation_result(result: Result<WasmAllocation, AllocationError>) -> RibosomeReturnCode {
-    match result {
-        Ok(allocation) => RibosomeReturnCode::from(allocation),
-        Err(allocation_error) => RibosomeReturnCode::from(allocation_error),
-    }
-}

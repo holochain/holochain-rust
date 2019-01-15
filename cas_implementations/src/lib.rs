@@ -8,15 +8,14 @@
 extern crate holochain_core_types;
 extern crate snowflake;
 
-
 extern crate uuid;
 
 extern crate serde;
 extern crate serde_json;
 
 extern crate chrono;
-extern crate im;
 extern crate glob;
+extern crate im;
 
 pub mod cas;
 pub mod eav;

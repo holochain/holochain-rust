@@ -30,8 +30,8 @@ pub type Attribute = String;
 /// Address of AddressableContent representing the EAV value
 pub type Value = Address;
 
-#[derive(PartialEq,Eq,Debug,Clone,Hash)]
-pub struct Key(i64,Action);
+#[derive(PartialEq, Eq, Debug, Clone, Hash)]
+pub struct Key(i64, Action);
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering
@@ -43,7 +43,9 @@ pub struct Key(i64,Action);
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default,PartialOrd,Ord)]
+#[derive(
+    PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default, PartialOrd, Ord,
+)]
 pub struct EntityAttributeValue {
     entity: Entity,
     attribute: Attribute,
@@ -52,7 +54,7 @@ pub struct EntityAttributeValue {
     // source: Source,
 }
 
-#[derive(Clone,Debug,PartialEq,Eq,Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Action {
     Insert,
     Delete,
@@ -66,7 +68,7 @@ impl ToString for Action {
             Action::Insert => String::from("Insert"),
             Action::Delete => String::from("Delete"),
             Action::Update => String::from("Update"),
-            _ =>String::from("None")
+            _ => String::from("None"),
         }
     }
 }
@@ -86,7 +88,7 @@ impl From<String> for Action {
 }
 
 pub fn create_key(action: Action) -> Result<Key, HolochainError> {
-    Ok(Key(Utc::now().timestamp_millis(),action))
+    Ok(Key(Utc::now().timestamp_millis(), action))
 }
 
 pub fn from_key(key: HashString) -> Result<Key, HolochainError> {
@@ -102,7 +104,10 @@ pub fn from_key(key: HashString) -> Result<Key, HolochainError> {
     let unix_timestamp = timestamp
         .parse::<i64>()
         .map_err(|_| HolochainError::ErrorGeneric("Could not get action".to_string()))?;
-    Ok(Key(unix_timestamp, Action::from(action.clone().to_string())))
+    Ok(Key(
+        unix_timestamp,
+        Action::from(action.clone().to_string()),
+    ))
 }
 
 impl AddressableContent for EntityAttributeValue {
@@ -190,16 +195,22 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError>
-    {
-        let eavs = self.fetch_eav(entity,attribute,value)?;
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
+        let eavs = self.fetch_eav(entity, attribute, value)?;
         Ok(eavs
-        .iter()
-        .cloned()
-        .filter(|(key,_)|{
-            key.0 <= start_date.map(|s|s.timestamp_millis()).unwrap_or(i64::min_value())  && end_date.map(|s|s.timestamp_millis()).unwrap_or(i64::max_value()) >= key.0
-        }).collect())
-        
+            .iter()
+            .cloned()
+            .filter(|(key, _)| {
+                key.0
+                    <= start_date
+                        .map(|s| s.timestamp_millis())
+                        .unwrap_or(i64::min_value())
+                    && end_date
+                        .map(|s| s.timestamp_millis())
+                        .unwrap_or(i64::max_value())
+                        >= key.0
+            })
+            .collect())
     }
 }
 
@@ -218,17 +229,16 @@ impl ExampleEntityAttributeValueStorageNonSync {
     }
 
     fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
-
-        if self.unthreadable_fetch_eav(Some(eav.entity()),Some(eav.attribute()),Some(eav.value()))?.len() ==0 
+        if self
+            .unthreadable_fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
+            .len()
+            == 0
         {
-            
-             let key = create_key(Action::Insert)?;
-             self.storage.insert(key, eav.clone());
-             Ok(())
-        }
-        else
-        {
-           Ok(()) 
+            let key = create_key(Action::Insert)?;
+            self.storage.insert(key, eav.clone());
+            Ok(())
+        } else {
+            Ok(())
         }
     }
 

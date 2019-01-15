@@ -3,9 +3,9 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::{Key,EntityAttributeValue},
+    eav::{EntityAttributeValue, Key},
     entry::{Entry, EntryWithMeta},
-    error::HolochainError
+    error::HolochainError,
 };
 use im::hashmap::HashMap;
 use std::{convert::TryInto, str::FromStr, sync::Arc};

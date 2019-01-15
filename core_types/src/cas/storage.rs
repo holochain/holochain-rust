@@ -239,8 +239,7 @@ where
     }
 }
 
-fn create_hash() ->HashString
-{
+fn create_hash() -> HashString {
     HashString::from("")
 }
 
@@ -309,8 +308,14 @@ impl EavTestSuite {
                 (None, None, None),
             ] {
                 assert_eq!(
-                    expected.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
-                    eav_storage.fetch_eav(e, a, v).expect("could not fetch eav").iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+                    expected.iter().map(|(_k, v)| v).collect::<Vec<_>>().sort(),
+                    eav_storage
+                        .fetch_eav(e, a, v)
+                        .expect("could not fetch eav")
+                        .iter()
+                        .map(|(_k, v)| v)
+                        .collect::<Vec<_>>()
+                        .sort(),
                 );
             }
         }
@@ -359,30 +364,37 @@ impl EavTestSuite {
 
         // show the many results for one
         assert_eq!(
-            expected.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>().sort(),
             eav_storage
                 .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
-                .expect("could not fetch eav").iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+                .expect("could not fetch eav")
+                .iter()
+                .map(|(_k, v)| v)
+                .collect::<Vec<_>>()
+                .sort(),
         );
 
         // show one for the many results
-        for many in vec![many_two.clone(),many_one.clone(), many_three.clone()] {
+        for many in vec![many_two.clone(), many_one.clone(), many_three.clone()] {
             let mut expected_one = HashMap::new();
             let eav =
                 EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
                     .expect("Could not create eav");
-            let key = vec![
-                create_hash().to_string(),
-                eav.address().to_string(),
-            ]
-            .join("_");
+            let key = vec![create_hash().to_string(), eav.address().to_string()].join("_");
             expected_one.insert(HashString::from(key), eav);
             assert_eq!(
-                expected_one.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+                expected_one
+                    .iter()
+                    .map(|(_k, v)| v)
+                    .collect::<Vec<_>>()
+                    .sort(),
                 eav_storage
                     .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
                     .expect("could not fetch eav")
-                    .iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+                    .iter()
+                    .map(|(_k, v)| v)
+                    .collect::<Vec<_>>()
+                    .sort(),
             );
         }
     }
@@ -412,11 +424,7 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
-            let key = vec![
-                create_hash().to_string(),
-                eav.address().to_string(),
-            ]
-            .join("_");
+            let key = vec![create_hash().to_string(), eav.address().to_string()].join("_");
             eav_storage.add_eav(&eav).expect("could not add eav");
             expected.insert(HashString::from(key), eav);
         }
@@ -435,10 +443,14 @@ impl EavTestSuite {
 
         // show the many referencing one
         assert_eq!(
-            expected.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>().sort(),
             eav_storage
                 .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
-                .expect("could not fetch eav").iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+                .expect("could not fetch eav")
+                .iter()
+                .map(|(_k, v)| v)
+                .collect::<Vec<_>>()
+                .sort(),
         );
 
         // show one for the many results
@@ -447,17 +459,21 @@ impl EavTestSuite {
             let eav =
                 EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
                     .expect("Could not create eav");
-            let key = vec![
-                create_hash().to_string(),
-                eav.address().to_string(),
-            ]
-            .join("_");
+            let key = vec![create_hash().to_string(), eav.address().to_string()].join("_");
             expected_one.insert(HashString::from(key), eav);
             assert_eq!(
-                expected_one.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+                expected_one
+                    .iter()
+                    .map(|(_k, v)| v)
+                    .collect::<Vec<_>>()
+                    .sort(),
                 eav_storage
                     .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
-                    .expect("could not fetch eav").iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+                    .expect("could not fetch eav")
+                    .iter()
+                    .map(|(_k, v)| v)
+                    .collect::<Vec<_>>()
+                    .sort(),
             );
         }
     }

@@ -1,8 +1,8 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
-    eav::{EntityAttributeValue, EntityAttributeValueStorage,Key},
-    error::HolochainError
+    eav::{EntityAttributeValue, EntityAttributeValueStorage, Key},
+    error::HolochainError,
 };
 
 use im::hashmap::HashMap;

@@ -4,13 +4,13 @@ use crate::{
     json::*,
 };
 use futures::channel::oneshot::Canceled as FutureCanceled;
+use holochain_sodium::error::SodiumError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
     fmt,
     io::{self, Error as IoError},
 };
-use holochain_sodium::error::SodiumError;
 
 //--------------------------------------------------------------------------------------------------
 // CoreError
@@ -141,7 +141,7 @@ impl Error for HolochainError {
 impl From<SodiumError> for HolochainError {
     fn from(error: SodiumError) -> Self {
         match error {
-            SodiumError::OutputLength(s)=>HolochainError::new(&s),
+            SodiumError::OutputLength(s) => HolochainError::new(&s),
         }
     }
 }

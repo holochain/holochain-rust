@@ -1,7 +1,7 @@
 /// This struct is the bundle for the Key pairs. i.e. signing and encryption keys
-/// 
+///
 /// The bundle_type tells if the bundle is a RootSeed bundle | DeviceSeed bundle | DevicePINSeed Bundle | ApplicationKeys Bundle
-/// 
+///
 /// the data includes a base64 encoded string of the Keys Struct
 pub struct KeyBundle {
     pub bundle_type: String,

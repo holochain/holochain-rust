@@ -19,7 +19,7 @@ impl Keypair {
     /// derive the pairs from a 32 byte seed buffer
     ///  
     /// @param {SecBuf} seed - the seed buffer
-    pub fn new_from_seed(seed: &mut SecBuf) -> Result<Self, HolochainError>  {
+    pub fn new_from_seed(seed: &mut SecBuf) -> Result<Self, HolochainError> {
         let mut seed = seed;
         let mut sign_public_key = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut sign_secret_key = SecBuf::with_secure(sign::SECRETKEYBYTES);
@@ -246,8 +246,7 @@ impl Keypair {
             &mut source_enc_pub,
             &mut cli_rx,
             &mut cli_tx,
-        )
-        ?;
+        )?;
 
         let mut sys_secret_check: Option<SecBuf> = None;
 

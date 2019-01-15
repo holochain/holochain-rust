@@ -56,7 +56,7 @@ impl<'a> From<Vec<&'a str>> for QueryArgsNames {
 pub struct QueryArgs {
     pub entry_type_names: QueryArgsNames,
     pub start: Option<u32>, // TODO: These should be "typed", so order cannot be confued
-    pub limit: Option<u32>,
+    pub limit: Option<u32>, //   see: https://rust-lang-nursery.github.io/api-guidelines/type-safety.html
     pub headers: Option<bool>,
 }
 

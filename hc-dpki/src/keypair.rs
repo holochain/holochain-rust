@@ -2,7 +2,6 @@ use crate::{
     bundle,
     holochain_sodium::{aead, kx, random::random_secbuf, secbuf::SecBuf, sign},
     util,
-    // error::DPKIError,
 };
 use holochain_core_types::{
     agent::KeyBuffer,

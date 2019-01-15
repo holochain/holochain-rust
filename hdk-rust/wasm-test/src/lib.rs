@@ -94,11 +94,11 @@ fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
 }
 
 fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<GetEntryResult> {
-    hdk::get_entry_result(entry_address, GetEntryOptions::default())
+    hdk::get_entry_result(&entry_address, GetEntryOptions::default())
 }
 
 fn handle_check_get_entry(entry_address: Address) -> ZomeApiResult<Option<Entry>> {
-    hdk::get_entry(entry_address)
+    hdk::get_entry(&entry_address)
 }
 
 fn handle_commit_validation_package_tester() -> ZomeApiResult<Address> {
@@ -440,7 +440,7 @@ define_zome! {
                         hdk::ValidationPackageDefinition::Entry
                     },
                     validation: |base: Address, target: Address, ctx: hdk::ValidationData | {
-                        let base = match hdk::get_entry(base)? {
+                        let base = match hdk::get_entry(&base)? {
                             Some(entry) => match entry {
                                 Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
                                 _ => Err("System entry found")?
@@ -448,7 +448,7 @@ define_zome! {
                             None => Err("Base not found")?,
                         };
 
-                        let target = match hdk::get_entry(target)? {
+                        let target = match hdk::get_entry(&target)? {
                             Some(entry) => match entry {
                                 Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
                                 _ => Err("System entry found")?,

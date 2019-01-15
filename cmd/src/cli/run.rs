@@ -3,7 +3,7 @@ use colored::*;
 use error::DefaultResult;
 use holochain_container_api::{config::*, container::Container, logger::LogRules};
 use holochain_core_types::agent::AgentId;
-use std::fs;
+use std::{env, fs};
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
@@ -13,12 +13,19 @@ const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 /// Starts a small container with the current application running
-pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
+pub fn run(
+    package: bool,
+    port: u16,
+    persist: bool,
+    networked: bool,
+    interface: String,
+) -> DefaultResult<()> {
     if package {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
-    let agent = AgentId::generate_fake("testAgent");
+    let agent_name = env::var("HC_AGENT").ok();
+    let agent = AgentId::generate_fake(&agent_name.unwrap_or_else(|| String::from("testAgent")));
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
         name: agent.nick,
@@ -49,9 +56,18 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         storage,
     };
 
+    let interface_type = env::var("HC_INTERFACE").ok().unwrap_or_else(|| interface);
+    let driver = if interface_type == String::from("websocket") {
+        InterfaceDriver::Websocket { port }
+    } else if interface_type == String::from("http") {
+        InterfaceDriver::Http { port }
+    } else {
+        return Err(format_err!("unknown interface type: {}", interface_type));
+    };
+
     let interface_config = InterfaceConfiguration {
         id: INTERFACE_CONFIG_ID.into(),
-        driver: InterfaceDriver::Websocket { port },
+        driver,
         admin: true,
         instances: vec![InstanceReferenceConfiguration {
             id: INSTANCE_CONFIG_ID.into(),
@@ -65,11 +81,39 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
         rules,
     };
 
+    let n3h_path = env::var("HC_N3H_PATH").ok();
+
+    // create an n3h network config if the --networked flag is set
+    // or if a value where to find n3h has been put into the
+    // HC_N3H_PATH environment variable
+    let network_config = if networked || n3h_path.is_some() {
+        let n3h_mode = env::var("HC_N3H_MODE").ok();
+        let n3h_persistence_path = env::var("HC_N3H_WORK_DIR").ok();
+        let n3h_bootstrap_node = env::var("HC_N3H_BOOTSTRAP_NODE").ok();
+        let mut n3h_bootstrap = Vec::new();
+
+        if n3h_bootstrap_node.is_some() {
+            n3h_bootstrap.push(n3h_bootstrap_node.unwrap())
+        }
+
+        Some(NetworkConfig {
+            bootstrap_nodes: n3h_bootstrap,
+            n3h_path: n3h_path.unwrap_or_else(|| default_n3h_path()),
+            n3h_mode: n3h_mode.unwrap_or_else(|| default_n3h_mode()),
+            n3h_persistence_path: n3h_persistence_path
+                .unwrap_or_else(|| default_n3h_persistence_path()),
+            n3h_ipc_uri: Default::default(),
+        })
+    } else {
+        None
+    };
+
     let base_config = Configuration {
         agents: vec![agent_config],
         dnas: vec![dna_config],
         instances: vec![instance_config],
         interfaces: vec![interface_config],
+        network: network_config,
         logger: logger_config,
         ..Default::default()
     };
@@ -84,8 +128,8 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
     container.start_all_instances()?;
 
     println!(
-        "Holochain development container started. Running websocket server on port {}",
-        port
+        "Holochain development container started. Running {} server on port {}",
+        interface_type, port
     );
     println!("Type 'exit' to stop the container and exit the program");
 
@@ -105,4 +149,40 @@ pub fn run(package: bool, port: u16, persist: bool) -> DefaultResult<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+// flagged as broken for:
+// 1. taking 60+ seconds
+#[cfg(feature = "broken-tests")]
+mod tests {
+    use crate::cli::init::{init, tests::gen_dir};
+    use assert_cmd::prelude::*;
+    use std::{env, process::Command};
+
+    #[test]
+    fn test_run() {
+        let temp_dir = gen_dir();
+        let temp_dir_path = temp_dir.path();
+        let temp_dir_path_buf = temp_dir_path.to_path_buf();
+
+        let mut run_cmd = Command::main_binary().unwrap();
+        let mut run2_cmd = Command::main_binary().unwrap();
+
+        let _ = init(&temp_dir_path_buf);
+
+        assert!(env::set_current_dir(&temp_dir_path).is_ok());
+
+        let output = run_cmd
+            .args(&["run", "--package"])
+            .output()
+            .expect("should run");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m bundle file at \\\"bundle.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development container started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the container and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+
+        let output = run2_cmd
+            .args(&["run", "--interface", "http"])
+            .output()
+            .expect("should run");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"Starting instance \\\"test-instance\\\"...\\nHolochain development container started. Running http server on port 8888\\nType \\\'exit\\\' to stop the container and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+    }
 }

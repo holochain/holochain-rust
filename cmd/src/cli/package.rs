@@ -48,7 +48,7 @@ impl Packager {
     }
 
     fn run(&self, output: &PathBuf) -> DefaultResult<()> {
-        let dir_obj_bundle = self.bundle_recurse(&PathBuf::from("."))?;
+        let dir_obj_bundle = self.bundle_recurse(&std::env::current_dir()?)?;
 
         let out_file = File::create(&output)?;
 
@@ -292,18 +292,9 @@ fn unpack_recurse(mut obj: Object, to: &PathBuf) -> DefaultResult<()> {
 // too slow!
 #[cfg(feature = "broken-tests")]
 mod tests {
+    use crate::cli::init::tests::gen_dir;
     use assert_cmd::prelude::*;
     use std::process::Command;
-    use tempfile::{Builder, TempDir};
-
-    const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
-
-    fn gen_dir() -> TempDir {
-        Builder::new()
-            .prefix(HOLOCHAIN_TEST_PREFIX)
-            .tempdir()
-            .unwrap()
-    }
 
     #[test]
     fn package_and_unpack_isolated() {

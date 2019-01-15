@@ -8,19 +8,20 @@ This crate implements a reference container for serving Holochain DNAs.
 
 ## Install
 
-Our recommended pattern for the installation of the container is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install `libzmq` dependency e.g.:
+Our recommended pattern for the installation of the container is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install the `zmq` dependency e.g.:
 
 On MacOS:
 
-``` shell`
-brew intall zmq
+```
+brew install zmq
 ```
 
 On Ubuntu:
 
-``` shell`
+```
 apt-get install libzmq3-dev
 ```
+
 
 ### Building From Source
 

@@ -18,7 +18,7 @@ use holochain_core_types::{
     json::{default_try_from_json, JsonString, RawString},
 };
 use holochain_wasm_utils::wasm_target_dir;
-use std::{convert::TryFrom, error::Error};
+use std::convert::TryFrom;
 use test_utils::hc_setup_and_call_zome_fn;
 
 fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
@@ -35,7 +35,7 @@ fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
 fn can_return_core_error_test() {
     let call_result = call_zome_function_with_hc("test_error_report").unwrap();
     let core_err = CoreError::try_from(call_result).unwrap();
-    assert_eq!("Zome assertion failed: `false`", core_err.description());
+    assert_eq!("Zome assertion failed: `false`", core_err.to_string());
 }
 
 #[test]

@@ -69,9 +69,7 @@ impl fmt::Display for CoreError {
         write!(
             f,
             "Holochain Core error: {}\n  --> {}:{}\n",
-            self.description(),
-            self.file,
-            self.line,
+            self.kind, self.file, self.line,
         )
     }
 }
@@ -115,7 +113,7 @@ impl fmt::Display for HolochainError {
             NotImplemented(description) => write!(f, "not implemented: {}", description),
             LoggingError => write!(f, "logging failed"),
             DnaMissing => write!(f, "DNA is missing"),
-            Dna(dna_err) => write!(f, "{}", dna_err.description()),
+            Dna(dna_err) => write!(f, "{}", dna_err),
             IoError(err_msg) => write!(f, "{}", err_msg),
             SerializationError(err_msg) => write!(f, "{}", err_msg),
             InvalidOperationOnSysEntry => {
@@ -318,7 +316,7 @@ mod tests {
             ),
             (HolochainError::Timeout, "timeout"),
         ] {
-            assert_eq!(output, input.description());
+            assert_eq!(output, &format!("{}", input));
         }
     }
 

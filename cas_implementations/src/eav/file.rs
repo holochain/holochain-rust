@@ -212,7 +212,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
             let key = (Utc::now().timestamp_millis(), Action::Insert);
-            println!("key {:?}", key.0.clone());
             self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
                 .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
                 .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))

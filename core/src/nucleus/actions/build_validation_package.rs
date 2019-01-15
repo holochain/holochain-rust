@@ -101,10 +101,13 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                         Err(HolochainError::ErrorGeneric(error_string))
                     }
                     CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-                    CallbackResult::NotImplemented => Err(HolochainError::ErrorGeneric(format!(
-                        "ValidationPackage callback not implemented for {:?}",
-                        entry.entry_type().clone()
-                    ))),
+                    CallbackResult::NotImplemented(reason) => {
+                        Err(HolochainError::ErrorGeneric(format!(
+                            "ValidationPackage callback not implemented for {:?} ({})",
+                            entry.entry_type().clone(),
+                            reason
+                        )))
+                    }
                     _ => unreachable!(),
                 })
                 .and_then(|package_definition| {

@@ -9,8 +9,8 @@ use std::sync::{
     mpsc, Arc,
 };
 
-/// Struct for holding a network connections running on a separate thread.
-/// It is itself a NetSend, and spawns the NetReceiver in separate thread.
+/// Struct for holding a network connection running on a separate thread.
+/// It is itself a NetSend, and spawns a NetWorker.
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
     send_channel: mpsc::Sender<Protocol>,
@@ -29,8 +29,8 @@ impl NetSend for NetConnectionThread {
 
 impl NetConnectionThread {
     /// NetSendThread Constructor.
-    /// Spawns a thread that will create and run a NetWorker with factory and shutdown closure.
-    /// The spawned Networker will call/use `handler` when receiving data.
+    /// Spawns a thread that will create and run a NetWorker with the given factory, handler and
+    /// shutdown closure.
     pub fn new(
         handler: NetHandler,
         worker_factory: NetWorkerFactory,
@@ -68,7 +68,8 @@ impl NetConnectionThread {
                         Ok(())
                     })
                     .unwrap_or(());
-                // Tick the worker (it might do a send back to hc-core / call handler?)
+                // Tick the worker
+                // (it might call the handler if it received a message from the network)
                 worker
                     .tick()
                     .and_then(|b| {

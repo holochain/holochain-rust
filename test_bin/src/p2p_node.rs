@@ -13,16 +13,17 @@ use std::{convert::TryFrom, sync::mpsc};
 static TIMEOUT_MS: usize = 5000;
 
 pub struct P2pNode {
-    // Need to hold the tempdir to keep it alive, otherwise will get dir error
+    // Need to hold the tempdir to keep it alive, otherwise we will get a dir error.
     _maybe_temp_dir: Option<tempfile::TempDir>,
     p2p_connection: P2pNetwork,
     receiver: mpsc::Receiver<Protocol>,
+    pub config: P2pConfig,
 }
 
 impl P2pNode {
     /// Private constructor
     #[cfg_attr(tarpaulin, skip)]
-    fn new_with_config(config: &P2pConfig, _maybe_temp_dir: Option<tempfile::TempDir>) -> Self {
+    pub fn new_with_config(config: &P2pConfig, _maybe_temp_dir: Option<tempfile::TempDir>) -> Self {
         // use a mpsc channel for messaging between p2p connection and main thread
         let (sender, receiver) = mpsc::channel::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
@@ -34,7 +35,7 @@ impl P2pNode {
             &config,
         ).expect("Failed to create P2pNetwork");
 
-        P2pNode { _maybe_temp_dir, p2p_connection, receiver }
+        P2pNode { _maybe_temp_dir, p2p_connection, receiver, config: config.clone() }
     }
 
     // Constructor for a mock P2P Network
@@ -66,9 +67,7 @@ impl P2pNode {
     // See if there is a message to receive
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<ProtocolWrapper> {
-        //println!("try_recv() START");
         let data = self.receiver.try_recv()?;
-
         // Print non-ping messages
         match data {
             Protocol::NamedBinary(_) => println!("<< P2pNode recv: {:?}", data),
@@ -87,12 +86,6 @@ impl P2pNode {
             }
         }
     }
-
-//    // See if there is a message to receive
-//    #[cfg_attr(tarpaulin, skip)]
-//    pub fn recv(&mut self) -> NetResult<ProtocolWrapper> {
-//        ProtocolWrapper::try_from(self.receiver.recv()?)
-//    }
 
     /// Wait for receiving a message corresponding to predicate
     #[cfg_attr(tarpaulin, skip)]
@@ -143,7 +136,8 @@ impl P2pNode {
 impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        println!(">> P2pNode send: {:?}", data);
+        // Debugging code (do not delete)
+        // println!(">> P2pNode send: {:?}", data);
         self.p2p_connection.send(data)
     }
 }

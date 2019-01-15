@@ -13,7 +13,7 @@ use holochain_net_connection::{
     net_connection::{
         NetSend, NetHandler, NetShutdown, NetWorker, NetWorkerFactory,
     },
-    net_relay::NetSendRelay,
+    net_relay::NetConnectionRelay,
     protocol::Protocol,
     protocol_wrapper::{ConfigData, ConnectData, ProtocolWrapper, StateData},
     NetResult,
@@ -28,7 +28,7 @@ pub struct IpcNetWorker {
 
     handler: NetHandler,
 
-    ipc_relay: NetSendRelay,
+    ipc_relay: NetConnectionRelay,
     ipc_relay_receiver: mpsc::Receiver<Protocol>,
 
     is_ready: bool,
@@ -177,7 +177,7 @@ impl IpcNetWorker {
     ) -> NetResult<Self> {
         let (ipc_relay_sender, ipc_relay_receiver) = mpsc::channel::<Protocol>();
 
-        let ipc_relay = NetSendRelay::new(
+        let ipc_relay = NetConnectionRelay::new(
             Box::new(move |data| {
                 // Relay valid data received from its worker (the network) back to its receiver (IpcNetWorker)
                 ipc_relay_sender.send(data?)?;
@@ -305,7 +305,6 @@ impl IpcNetWorker {
         // Keep track of IPC server's state
         self.last_known_state = state.state;
         // if the internal worker needs configuration, fetch the default config
-        // wtf?
         if &self.last_known_state == "need_config" {
             self.ipc_relay
                 .send(ProtocolWrapper::RequestDefaultConfig.into())?;

@@ -3,13 +3,13 @@ use crate::protocol::Protocol;
 use crate::net_connection::*;
 
 /// a simple pass-through NetSend instance
-/// this struct can be use to compose one type of NetReceive into another
-pub struct NetSendRelay {
+/// this struct can be use to compose one type of NetWorker into another
+pub struct NetConnectionRelay {
     worker: Box<NetWorker>,
     done: NetShutdown,
 }
 
-impl NetSend for NetSendRelay {
+impl NetSend for NetConnectionRelay {
     /// send a message to the worker within this NetConnectionRelay instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         self.worker.receive(data)?;
@@ -17,7 +17,7 @@ impl NetSend for NetSendRelay {
     }
 }
 
-impl NetSendRelay {
+impl NetConnectionRelay {
     ///
     pub fn stop(self) -> NetResult<()> {
         self.worker.stop()?;
@@ -38,7 +38,7 @@ impl NetSendRelay {
         worker_factory: NetWorkerFactory,
         done: NetShutdown,
     ) -> NetResult<Self> {
-        Ok(NetSendRelay {
+        Ok(NetConnectionRelay {
             worker: worker_factory(handler)?,
             done,
         })
@@ -58,7 +58,7 @@ mod tests {
 
     #[test]
     fn it_can_defaults() {
-        let mut con = NetSendRelay::new(
+        let mut con = NetConnectionRelay::new(
             Box::new(move |_r| Ok(())),
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
             None,
@@ -89,7 +89,7 @@ mod tests {
     fn it_invokes_connection_relay() {
         let (sender, receiver) = mpsc::channel();
 
-        let mut con = NetSendRelay::new(
+        let mut con = NetConnectionRelay::new(
             Box::new(move |r| {
                 sender.send(r?)?;
                 Ok(())
@@ -112,7 +112,7 @@ mod tests {
     fn it_can_tick() {
         let (sender, receiver) = mpsc::channel();
 
-        let mut con = NetSendRelay::new(
+        let mut con = NetConnectionRelay::new(
             Box::new(move |r| {
                 sender.send(r?)?;
                 Ok(())

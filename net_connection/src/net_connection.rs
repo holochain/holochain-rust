@@ -1,28 +1,30 @@
 use super::NetResult;
 use crate::protocol::Protocol;
 
-/// closure for processing a Network Protocol message
+/// closure for processing a Protocol message received from the network
 pub type NetHandler = Box<FnMut(NetResult<Protocol>) -> NetResult<()> + Send>;
 
 /// closure for doing any clean up at shutdown of a NetWorker
 pub type NetShutdown = Option<Box<::std::boxed::FnBox() + Send>>;
 
-///  Trait for sending Network Protocol messages
+///  Trait for sending a Protocol message to the network
 pub trait NetSend {
     fn send(&mut self, data: Protocol) -> NetResult<()>;
 }
 
-
-/// Trait for receiving Network Protocol messages
-/// represents a worker that handles protocol messages
+/// Trait that represents a worker thread that relays incoming and outgoing protocol messages
+/// between a handler closure and a p2p module.
 pub trait NetWorker {
-    /// The receiving method when something has called `send()` to send this worker a message
+    /// The receiving method when NetSend's `send()` is called.
+    /// It should relay that Protocol message to the p2p module.
     fn receive(&mut self, _data: Protocol) -> NetResult<()> {
         Ok(())
     }
 
-    /// perform any upkeep
-    /// return `false` if no particular upkeep has been processed
+    /// Polls the p2p module for Protocol messages received from the network,
+    /// and perform any other upkeep.
+    /// It should realy those messages back to the handler closure.
+    /// Return `false` if no particular upkeep has been processed
     fn tick(&mut self) -> NetResult<bool> {
         Ok(false)
     }
@@ -38,8 +40,6 @@ pub trait NetWorker {
     }
 }
 
-// TODO trait NetTicker/NetWorker with tick() and stop()
-
-/// closure for instantiating a NetReceive from a NetHandler
+/// closure for instantiating a NetWorker from a NetHandler
 pub type NetWorkerFactory =
     Box<::std::boxed::FnBox(NetHandler) -> NetResult<Box<NetWorker>> + Send>;

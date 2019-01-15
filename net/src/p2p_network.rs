@@ -11,17 +11,18 @@ use holochain_net_connection::{
 
 use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, p2p_config::*};
 
-/// Facade handling a network connection
-/// Holds a NetConnectionThread and implements itself the NetConnection Trait
+/// Facade handling a p2p module responsable for the network connection
+/// Holds a NetConnectionThread and implements itself the NetSend Trait
+/// `send()` is used for sending Protocol messages to the network
+/// `handler` closure provide on construction for handling Protocol messages received from the network.
 pub struct P2pNetwork {
     connection: NetConnectionThread,
 }
 
 impl P2pNetwork {
-    /// Create a new p2p network connection
-    /// `config` is the configuration of the p2p connection
-    /// `handler` is the closure for handling received Protocol messages
-    /// `send()` is used for sending Protocol messages to the network
+    /// Constructor
+    /// `config` is the configuration of the p2p module
+    /// `handler` is the closure for handling Protocol messages received from the network.
     pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
         let network_config = config.backend_config.to_string().into();

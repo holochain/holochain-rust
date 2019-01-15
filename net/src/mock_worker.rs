@@ -6,7 +6,7 @@ use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
         DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData,
-        ProtocolWrapper,
+        ProtocolWrapper, PeerData,
     },
     NetResult,
 };
@@ -62,8 +62,20 @@ impl MockSystem {
 
     /// process an incoming message
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
+        // Debugging code (do not remove)
+        // println!(">>>> MockSystem recv: {:?}", data);
         if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
             match wrap {
+                ProtocolWrapper::TrackApp(msg) => {
+                    self.priv_send_all(
+                        &msg.dna_address.clone(),
+                        ProtocolWrapper::PeerConnected(PeerData {
+                         dna_address: msg.dna_address,
+                        agent_id: msg.agent_id,
+                        }).into(),
+                    )?;
+                }
+
                 ProtocolWrapper::SendMessage(msg) => {
                     self.priv_handle_send(&msg)?;
                 }
@@ -117,15 +129,24 @@ impl MockSystem {
         agent_id: &str,
         data: Protocol,
     ) -> NetResult<()> {
-        if let Some(sender) = self.senders.get_mut(&cat_dna_agent(dna_address, agent_id)) {
-            sender.send(data)?;
+        let name = cat_dna_agent(dna_address, agent_id);
+        let maybe_sender = self.senders.get_mut(&name);
+        if maybe_sender.is_none() {
+            // println!("#### MockSystem error: No sender channel found");
+            return Err(format_err!("No sender channel found"));
         }
+        let sender = maybe_sender.unwrap();
+        // Debugging code (do not remove)
+        // println!("<<<< MockSystem send: {:?}", data);
+        sender.send(data)?;
         Ok(())
     }
 
     /// send a message to all nodes connected with this dna address
     fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
+           // Debugging code (do not remove)
+           // println!("<<<< MockSystem send all: {:?} ({})", data.clone(), dna_address.clone());
             for val in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }
@@ -165,6 +186,8 @@ impl MockSystem {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
+                    // Debugging code (do not remove)
+                    // println!("<<<< MockSystem send: {:?}", msg.clone());
                     r.send(ProtocolWrapper::GetDht(msg.clone()).into())?;
                     return Ok(());
                 }
@@ -285,7 +308,6 @@ impl NetWorker for MockWorker {
                 let (tx, rx) = mpsc::channel();
                 self.mock_msgs.push(rx);
                 mock.register(&app.dna_address, &app.agent_id, tx)?;
-                return Ok(());
             }
         }
         mock.handle(data)?;
@@ -295,14 +317,12 @@ impl NetWorker for MockWorker {
     /// check for messages from our mock singleton
     fn tick(&mut self) -> NetResult<bool> {
         let mut did_something = false;
-
         for msg in self.mock_msgs.iter_mut() {
             if let Ok(data) = msg.try_recv() {
                 did_something = true;
                 (self.handler)(Ok(data))?;
             }
         }
-
         Ok(did_something)
     }
 
@@ -311,9 +331,9 @@ impl NetWorker for MockWorker {
         Ok(())
     }
 
-    /// No endpoint for local MockWorker
+    /// Set network's name as worker's endpoint
     fn endpoint(&self) -> Option<String> {
-        None
+        Some(self.network_name.clone())
     }
 }
 

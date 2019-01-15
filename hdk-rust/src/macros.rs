@@ -4,21 +4,15 @@
 #[macro_export]
 macro_rules! load_json {
     ($encoded_allocation_of_input:ident) => {{
-        let encoded_bits: $crate::holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits: $encoded_allocation_of_input;
-        let ribosome_allocation = $crate::holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedAllocation(encoded_bits);
-        let allocation_result = match $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from(ribosome_allocation);
-        let allocation = match allocation_result {
-            Ok(allocation) => allocation,
-            Err(_) => return return_code_for_allocation_result(allocation_result),
-        };
-        let string = allocation.read_string();
 
-        let maybe_input = $crate::holochain_wasm_utils::memory_serialization::load_json(
+        let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json(
             $encoded_allocation_of_input,
         );
+
         if let Err(hc_err) = maybe_input {
             return $crate::global_fns::write_json(hc_err);
         }
+
         maybe_input
     }};
 }
@@ -26,11 +20,11 @@ macro_rules! load_json {
 #[macro_export]
 macro_rules! load_string {
     ($encoded_allocation_of_input:ident) => {{
-        let maybe_input = $crate::holochain_wasm_utils::memory_serialization::load_string(
+        let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_string(
             $encoded_allocation_of_input,
         );
         if let Err(hc_err) = maybe_input {
-            return $crate::global_fns::store_and_return_output(hc_err);
+            return $crate::global_fns::write_json(hc_err);
         }
         maybe_input
     }};
@@ -196,8 +190,8 @@ macro_rules! define_zome {
         }
 
         #[no_mangle]
-        pub extern "C" fn genesis(encoded_allocation_of_input: u32) -> u32 {
-            $crate::global_fns::init_global_memory(encoded_allocation_of_input);
+        pub extern "C" fn genesis(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
+            $crate::global_fns::init_global_memory(allocation_from_ribosome_encoding(encoded_allocation_of_input));
 
             fn execute() -> Result<(), String> {
                 $genesis_expr
@@ -205,14 +199,14 @@ macro_rules! define_zome {
 
             match execute() {
                 Ok(_) => 0,
-                Err(e) => $crate::global_fns::store_and_return_output($crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)),
+                Err(e) => $crate::global_fns::write_json($crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)),
             }
         }
 
         $(
             #[no_mangle]
-            pub extern "C" fn receive(encoded_allocation_of_input: u32) -> u32 {
-                $crate::global_fns::init_global_memory(encoded_allocation_of_input);
+            pub extern "C" fn receive(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
+                $crate::global_fns::init_global_memory(allocation_from_ribosome_encoding(encoded_allocation_of_input));
 
                 // Deserialize input
                 let input = load_string!(encoded_allocation_of_input).unwrap();
@@ -222,7 +216,7 @@ macro_rules! define_zome {
                     $receive_expr
                 }
 
-                $crate::global_fns::store_and_return_output(execute(input))
+                $crate::global_fns::write_json(execute(input))
             }
         )*
 
@@ -274,8 +268,8 @@ macro_rules! define_zome {
         $(
             $(
                 #[no_mangle]
-                pub extern "C" fn $zome_function_name(encoded_allocation_of_input: u32) -> u32 {
-                    $crate::global_fns::init_global_memory(encoded_allocation_of_input);
+                pub extern "C" fn $zome_function_name(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
+                    $crate::global_fns::init_global_memory(allocation_from_ribosome_encoding(encoded_allocation_of_input));
 
                     // Macro'd InputStruct
                     #[derive(Deserialize, Debug)]
@@ -294,7 +288,7 @@ macro_rules! define_zome {
                         $handler_path($($input_param_name),*)
                     }
 
-                    $crate::global_fns::store_and_return_output(execute(input))
+                    $crate::global_fns::write_json(execute(input))
                 }
             )+
         )*

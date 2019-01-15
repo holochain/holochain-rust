@@ -37,6 +37,9 @@ use holochain_wasm_utils::{
         json::{JsonString, RawString},
     },
 };
+use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits;
+use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
+use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
 use std::convert::TryFrom;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -60,17 +63,13 @@ pub extern "C" fn handle_check_global() -> Address {
 }
 
 #[no_mangle]
-pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
-    unsafe {
-        G_MEM_STACK =
-            Some(WasmStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
-    }
+pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     // Deserialize and check for an encoded error
-    let result = load_json(encoded_allocation_of_input as u32);
+    let result = load_ribosome_encoded_json(encoded_allocation_of_input as RibosomeEncodingBits);
     if let Err(hc_err) = result {
         hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
-        return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
+        return RibosomeErrorCode::ArgumentDeserializationFailed as RibosomeEncodingBits;
     }
 
     let entry: Entry = result.unwrap();
@@ -82,9 +81,9 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
         Err(e) => e.into(),
     };
 
-    unsafe {
-        return store_as_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), res_obj) as u32;
-    }
+    let wasm_stack = unsafe { G_MEM_STACK.unwrap() };
+    RibosomeReturnCode::from(wasm_stack.write_json(res_obj).unwrap()).into()
+
 }
 
 fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {

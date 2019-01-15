@@ -1,8 +1,5 @@
 use holochain_core::state::State;
-use holochain_core_types::{
-    cas::content::Address,
-    dna::capabilities::CapabilityCall,
-};
+use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -53,7 +50,6 @@ macro_rules! container_call {
 
     }
 }
-
 
 /// ContainerApiBuilder creates IoHandlers that implement RPCs for exposure
 /// through interfaces or bridges.
@@ -205,12 +201,9 @@ impl ContainerApiBuilder {
     /// is stringified JSON. This performs that stringification and then wraps it in the format expected
     /// by the jsonrpc add_method closure
     fn format_response(response: &serde_json::Value) -> jsonrpc_core::Result<serde_json::Value> {
-        Ok(
-            Value::String(
-                serde_json::to_string(response)
-                    .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?
-                )
-        )
+        Ok(Value::String(serde_json::to_string(response).map_err(
+            |e| jsonrpc_core::Error::invalid_params(e.to_string()),
+        )?))
     }
 
     fn get_as_string<T: Into<String>>(
@@ -233,13 +226,14 @@ impl ContainerApiBuilder {
     }
 
     pub fn with_admin_dna_functions(mut self) -> Self {
-        self.io.add_method("admin/dna/install_from_file", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            let path = Self::get_as_string("path", &params_map)?;
-            container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string()))?;
-            Self::format_response(&json!({"success": true}))
-        });
+        self.io
+            .add_method("admin/dna/install_from_file", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                let path = Self::get_as_string("path", &params_map)?;
+                container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string()))?;
+                Self::format_response(&json!({"success": true}))
+            });
 
         self.io.add_method("admin/dna/uninstall", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
@@ -300,8 +294,7 @@ impl ContainerApiBuilder {
             let instances =
                 container_call!(|c| Ok(c.config.instances.clone())
                     as Result<Vec<InstanceConfiguration>, String>)?;
-            Self::format_response(
-                &serde_json::Value::Array(
+            Self::format_response(&serde_json::Value::Array(
                 instances
                     .iter()
                     .map(|instance| {
@@ -312,37 +305,35 @@ impl ContainerApiBuilder {
                         })
                     })
                     .collect(),
-                )
-            )
+            ))
         });
 
-        self.io.add_method("admin/instance/running", move |_params| {
-            let active_ids = container_call!(|c| Ok(c
-                .instances
-                .iter()
-                .filter(|(_, hc)| hc.read().unwrap().active())
-                .map(|(id, _)| id)
-                .cloned()
-                .collect())
-                as Result<Vec<String>, String>)?;
-            let instances = container_call!(|c| Ok(c.config.instances.clone())
-                as Result<Vec<InstanceConfiguration>, String>)?;
-            Self::format_response(
-                &serde_json::Value::Array(
-                instances
+        self.io
+            .add_method("admin/instance/running", move |_params| {
+                let active_ids = container_call!(|c| Ok(c
+                    .instances
                     .iter()
-                    .filter(|instance| active_ids.contains(&instance.id))
-                    .map(|instance| {
-                        json!({
-                            "id": instance.id,
-                            "dna": instance.dna,
-                            "agent": instance.agent,
+                    .filter(|(_, hc)| hc.read().unwrap().active())
+                    .map(|(id, _)| id)
+                    .cloned()
+                    .collect())
+                    as Result<Vec<String>, String>)?;
+                let instances = container_call!(|c| Ok(c.config.instances.clone())
+                    as Result<Vec<InstanceConfiguration>, String>)?;
+                Self::format_response(&serde_json::Value::Array(
+                    instances
+                        .iter()
+                        .filter(|instance| active_ids.contains(&instance.id))
+                        .map(|instance| {
+                            json!({
+                                "id": instance.id,
+                                "dna": instance.dna,
+                                "agent": instance.agent,
+                            })
                         })
-                    })
-                    .collect(),
-                )
-            )
-        });
+                        .collect(),
+                ))
+            });
 
         self
     }
@@ -377,7 +368,8 @@ pub mod tests {
     fn unwrap_response_if_valid(response_str: &String) -> String {
         let result_str = &serde_json::from_str::<serde_json::Value>(response_str)
             .expect("Response not valid JSON")["result"]
-            .as_str().expect("result is not a string")
+            .as_str()
+            .expect("result is not a string")
             .to_owned();
         let result = &serde_json::from_str::<serde_json::Value>(result_str)
             .expect("result is not valid stringified json");
@@ -419,7 +411,7 @@ pub mod tests {
     }
 
     /// The below test cannot be extented to test the other RPC methods due to the singleton design of the container
-    /// It may be worth removing this test but I have included it as an example of testing the responses for the 
+    /// It may be worth removing this test but I have included it as an example of testing the responses for the
     /// other rpc methods if this becomes possible in the future
     #[test]
     fn test_rpc_call_responses() {
@@ -430,8 +422,8 @@ pub mod tests {
             .with_admin_dna_functions()
             .spawn();
 
-        
-        let response_str = handler.handle_request_sync(&create_call_str("info/instances", None))
+        let response_str = handler
+            .handle_request_sync(&create_call_str("info/instances", None))
             .expect("Invalid call to handler");
         println!("{}", response_str);
         let result = unwrap_response_if_valid(&response_str);

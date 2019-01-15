@@ -1,56 +1,36 @@
+const path = require('path')
+const { Config, Container, Scenario } = require('../../nodejs_container')
+Scenario.setTape(require('tape'))
 
-const sleep = require('sleep');
-const test = require('tape')
-const { pollFor } = require('./util')
+const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")
+const dna = Config.dna(dnaPath, 'app-spec')
+const agentAlice = Config.agent("alice")
+const agentTash = Config.agent("tash")
 
-const { Config, Container } = require('../../nodejs_container')
+const instanceAlice = Config.instance(agentAlice, dna)
+const instanceTash = Config.instance(agentTash, dna)
 
-const dnaPath = "./dist/app_spec.hcpkg"
-const aliceName = "alice"
-const tashName = "tash"
+const scenario = new Scenario([instanceAlice, instanceTash])
 
-// IIFE to keep config-only stuff out of test scope
-const container = (() => {
-  const agentAlice = Config.agent(aliceName)
-  const agentTash = Config.agent(tashName)
-
-  const dna = Config.dna(dnaPath)
-
-  const instanceAlice = Config.instance(agentAlice, dna)
-  const instanceTash = Config.instance(agentTash, dna)
-
-  const containerConfig = Config.container([instanceAlice, instanceTash])
-  return new Container(containerConfig)
-})()
-
-// Initialize the Container
-container.start()
-
-const alice = container.makeCaller(aliceName, dnaPath)
-const tash = container.makeCaller(tashName, dnaPath)
-
-test('alice create & publish post -> recommend own post to self', async (t) => {
+scenario.runTape('alice create & publish post -> recommend own post to self', async (t, {alice, tash}) => {
   t.plan(4)
-  const content1 = "Holo world...1"
+  const content = "Holo world...1"
   const in_reply_to = null
-  const params = { content: content1, in_reply_to }
-  const postAddr = alice.call("blog", "main", "create_post", params).Ok
-  t.ok(postAddr)
+  const params = { content: content, in_reply_to }
+  const postResult = await alice.callSync("blog", "main", "create_post", params)
+  const postAddr = postResult.Ok
+  t.ok(postAddr, `error: ${postResult}`)
 
-  const gotPost = await pollFor(
-    () => alice.call("blog", "main", "get_post", {post_address: postAddr})
-  ).catch(t.fail)
+  const gotPost = alice.call("blog", "main", "get_post", {post_address: postAddr})
   t.ok(gotPost.Ok)
   
-  let linked = alice.call('blog', 'main', 'recommend_post', {
+  let linked = await alice.callSync('blog', 'main', 'recommend_post', {
     post_address: postAddr, 
     agent_address: alice.agentId
   })
   console.log("linked: ", linked)
   t.equal(linked.Ok, null)
-  
-  sleep.sleep(3)
-  
+    
   const recommendedPosts = alice.call('blog', 'main', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, alice.agentId)
@@ -58,28 +38,25 @@ test('alice create & publish post -> recommend own post to self', async (t) => {
   t.equal(recommendedPosts.Ok.addresses.length, 1)
 })
 
-test('alice create & publish post -> tash recommend to self', async (t) => {
+scenario.runTape('alice create & publish post -> tash recommend to self', async (t, {alice, tash}) => {
   t.plan(4)
-  const content1 = "Holo world...2"
+  const content = "Holo world...2"
   const in_reply_to = null
-  const params = { content: content1, in_reply_to }
-  const postAddr = alice.call("blog", "main", "create_post", params).Ok
-  t.ok(postAddr)
+  const params = { content: content, in_reply_to }
+  const postResult = await alice.callSync("blog", "main", "create_post", params)
+  const postAddr = postResult.Ok
+  t.ok(postAddr, `error: ${postResult}`)
 
-  const gotPost = await pollFor(
-    () => tash.call("blog", "main", "get_post", {post_address: postAddr})
-  ).catch(t.fail)
+  const gotPost = tash.call("blog", "main", "get_post", {post_address: postAddr})
   t.ok(gotPost.Ok)
   
-  let linked = tash.call('blog', 'main', 'recommend_post', {
+  let linked = await tash.callSync('blog', 'main', 'recommend_post', {
     post_address: postAddr, 
     agent_address: tash.agentId
   })
   console.log("linked: ", linked)
   t.equal(linked.Ok, null)
   
-  sleep.sleep(3)
-
   const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
@@ -87,27 +64,24 @@ test('alice create & publish post -> tash recommend to self', async (t) => {
   t.equal(recommendedPosts.Ok.addresses.length, 1)
 })
 
-test('create & publish post -> recommend to other agent', async (t) => {
+scenario.runTape('create & publish post -> recommend to other agent', async (t, {alice, tash}) => {
   t.plan(4)
-  const content1 = "Holo world...3"
+  const content = "Holo world...3"
   const in_reply_to = null
-  const params = { content: content1, in_reply_to }
-  const postAddr = alice.call("blog", "main", "create_post", params).Ok
-  t.ok(postAddr)
+  const params = { content: content, in_reply_to }
+  const postResult = await alice.callSync("blog", "main", "create_post", params)
+  const postAddr = postResult.Ok
+  t.ok(postAddr, `error: ${postResult}`)
 
-  const gotPost = await pollFor(
-    () => tash.call("blog", "main", "get_post", {post_address: postAddr})
-  ).catch(t.fail)
+  const gotPost = tash.call("blog", "main", "get_post", {post_address: postAddr})
   t.ok(gotPost.Ok)
   
-  let linked = alice.call('blog', 'main', 'recommend_post', {
+  let linked = await alice.callSync('blog', 'main', 'recommend_post', {
     post_address: postAddr, 
     agent_address: tash.agentId
   })
   console.log("linked: ", linked)
   t.equal(linked.Ok, null)
-
-  sleep.sleep(3)
   
   const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)

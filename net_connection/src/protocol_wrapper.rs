@@ -179,93 +179,84 @@ pub enum ProtocolWrapper {
     /// [send] request the current state from the p2p module
     #[serde(rename = "requestState")]
     RequestState,
-
     /// [recv] p2p module is telling us its current state
     #[serde(rename = "state")]
     State(StateData),
-
     /// [send] request the default config from the p2p module
     #[serde(rename = "requestDefaultConfig")]
     RequestDefaultConfig,
-
     /// [recv] the default config from the p2p module
     #[serde(rename = "defaultConfig")]
     DefaultConfig(ConfigData),
-
     /// [send] set the p2p config
     #[serde(rename = "setConfig")]
     SetConfig(ConfigData),
 
+
     /// [send] connect to the specified multiaddr
     #[serde(rename = "connect")]
     Connect(ConnectData),
-
     /// [recv] notification of a peer connected
     #[serde(rename = "peerConnected")]
     PeerConnected(PeerData),
 
+
     /// [send] send a message to another node on the network
     #[serde(rename = "send")]
     GenericMessage(MessageData),
-
     /// [recv] recv the response back from a previous `GenericMessage`
     #[serde(rename = "sendResult")]
     GenericMessageResponse(MessageData),
-
     /// [recv] another node has sent us a message
     #[serde(rename = "handleSend")]
     HandleGenericMessage(MessageData),
-
     /// [send] send our response to a previous `HandleGenericMessage`
     #[serde(rename = "handleSendResult")]
     HandleGenericMessageResponse(MessageData),
+
 
     /// [send] send out a "trackApp" request
     #[serde(rename = "trackApp")]
     TrackDna(TrackAppData),
 
+
     /// [send / recv] report success for a messages with _id parameter
     #[serde(rename = "successResult")]
     SuccessResult(SuccessResultData),
-
     /// [send / recv] for any message with _id parameter to indicate failure
     #[serde(rename = "failureResult")]
     FailureResult(FailureResultData),
+
 
     /// [send] request data from the dht
     /// [recv] another node, or the network module itself is requesting data
     ///        from us... send a GetDhtResult message back
     #[serde(rename = "getDht")]
     GetDht(GetDhtData),
-
     /// [recv] response from requesting dht data from the network
     /// [send] success response if network is requesting this data of us
     #[serde(rename = "getDhtResult")]
     GetDhtResult(DhtData),
-
     /// [send] publish content to the dht
     #[serde(rename = "publishDht")]
     PublishDht(DhtData),
-
     /// [recv] the network is requesting that we store this data
     #[serde(rename = "storeDht")]
     StoreDht(DhtData),
+
 
     /// [send] request meta data from the dht
     /// [recv] another node, or the network module itself is requesting data
     ///        from us... send a GetDhtResult message back
     #[serde(rename = "getDhtMeta")]
     GetDhtMeta(GetDhtMetaData),
-
     /// [recv] response from requesting meta dht data from the network
     /// [send] success response if network is requesting this data of us
     #[serde(rename = "getDhtMetaResult")]
     GetDhtMetaResult(DhtMetaData),
-
     /// [send] publish meta content to the dht
     #[serde(rename = "publishDhtMeta")]
     PublishDhtMeta(DhtMetaData),
-
     /// [recv] the network is requesting that we store this meta data
     #[serde(rename = "storeDhtMeta")]
     StoreDhtMeta(DhtMetaData),

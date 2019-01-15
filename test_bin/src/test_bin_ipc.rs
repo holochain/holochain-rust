@@ -52,45 +52,25 @@ fn main() {
         usage();
     }
 
-    // Launch rust-mock test
-//    let res = launch_test_with_rust_mock();
-//    assert!(res.is_ok());
-    // Launch ipc-mock test
-//    let res = launch_test_with_ipc_mock(&n3h_path, "test_bin/data/mock_network_config.json");
-//    assert!(res.is_ok());
-//    // Launch hackmode test
-    let res = launch_test_with_config(&n3h_path, "test_bin/data/network_config.json");
-    assert!(res.is_ok());
+    // List of tests
+    let test_fns: Vec<TwoNodesTestFn> = vec![
+        //meta_test,
+        //dht_test,
+        generic_message_test,
+    ];
+
+    // Launch test for each setup
+    for test_fn in test_fns.clone() {
+        // launch_two_nodes_rust_mock_test(test_fn).unwrap();
+        //launch_two_nodes_test_with_ipc_mock(&n3h_path, "test_bin/data/mock_network_config.json", test_fn).unwrap();
+        launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+    }
 
     // Wait a bit before closing
     for i in (0..4).rev() {
         println!("tick... {}", i);
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
-}
-
-// Do rust-mock tests according to config
-fn launch_test_with_rust_mock() -> NetResult<()> {
-    // launch_two_nodes_rust_mock_test(generic_message_test)?;
-    launch_two_nodes_rust_mock_test(dht_test)?;
-//    launch_two_nodes_rust_mock_test(meta_test)?;
-    Ok(())
-}
-
-// Do ipc-mock tests according to config
-fn launch_test_with_ipc_mock(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
-    // launch_two_nodes_test_with_ipc_mock(n3h_path, config_filepath, generic_message_test)?;
-    launch_two_nodes_test_with_ipc_mock(n3h_path, config_filepath, dht_test)?;
-//    launch_two_nodes_test_with_ipc_mock(n3h_path, config_filepath, meta_test)?;
-    Ok(())
-}
-
-// Do normal tests according to config
-fn launch_test_with_config(n3h_path: &str, config_filepath: &str) -> NetResult<()> {
-    // launch_two_nodes_test(n3h_path, config_filepath, generic_message_test)?;
-    launch_two_nodes_test(n3h_path, config_filepath, dht_test)?;
-//    launch_two_nodes_test(n3h_path, config_filepath, meta_test)?;
-    Ok(())
 }
 
 
@@ -212,9 +192,11 @@ fn launch_two_nodes_test(
 // TODO make test: No connect must fail
 // fn no_connect_test()
 
+
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+
     // Get each node's current state
     let node1_state = node1.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
     let node2_state = node2.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;

@@ -30,6 +30,7 @@ const alice = container.makeCaller(aliceName, dnaPath)
 const tash = container.makeCaller(tashName, dnaPath)
 
 test('alice create & publish post -> recommend own post to self', async (t) => {
+  t.plan(4)
   const content1 = "Holo world...1"
   const in_reply_to = null
   const params = { content: content1, in_reply_to }
@@ -55,10 +56,10 @@ test('alice create & publish post -> recommend own post to self', async (t) => {
   console.log('agent addresses: ', alice.agentId, alice.agentId)
 
   t.equal(recommendedPosts.Ok.addresses.length, 1)
-  t.end()
 })
 
 test('alice create & publish post -> tash recommend to self', async (t) => {
+  t.plan(4)
   const content1 = "Holo world...2"
   const in_reply_to = null
   const params = { content: content1, in_reply_to }
@@ -84,10 +85,10 @@ test('alice create & publish post -> tash recommend to self', async (t) => {
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
   t.equal(recommendedPosts.Ok.addresses.length, 1)
-  t.end()
 })
 
 test('create & publish post -> recommend to other agent', async (t) => {
+  t.plan(4)
   const content1 = "Holo world...3"
   const in_reply_to = null
   const params = { content: content1, in_reply_to }
@@ -113,5 +114,4 @@ test('create & publish post -> recommend to other agent', async (t) => {
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
   t.equal(recommendedPosts.Ok.addresses.length, 1)
-  t.end()
 })

@@ -271,11 +271,6 @@ pub struct MockWorker {
 }
 
 impl NetWorker for MockWorker {
-    /// stop the net worker
-    fn stop(self: Box<Self>) -> NetResult<()> {
-        Ok(())
-    }
-
     /// we got a message from holochain core
     /// forward to our mock singleton
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
@@ -309,6 +304,16 @@ impl NetWorker for MockWorker {
         }
 
         Ok(did_something)
+    }
+
+    /// stop the net worker
+    fn stop(self: Box<Self>) -> NetResult<()> {
+        Ok(())
+    }
+
+    /// No endpoint for local MockWorker
+    fn endpoint(&self) -> Option<String> {
+        None
     }
 }
 

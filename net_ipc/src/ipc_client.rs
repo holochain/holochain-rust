@@ -2,7 +2,7 @@
 
 use crate::{socket::IpcSocket, util::get_millis};
 use holochain_net_connection::{
-    net_connection::{NetHandler, NetReceive},
+    net_connection::{NetHandler, NetWorker},
     protocol::{NamedBinaryData, PingData, PongData, Protocol},
     NetResult,
 };
@@ -22,7 +22,7 @@ pub struct IpcClient {
     id: ProcessUniqueId,
 }
 
-impl NetReceive for IpcClient {
+impl NetWorker for IpcClient {
     /// stop the worker
     fn stop(self: Box<Self>) -> NetResult<()> {
         self.socket.close()?;

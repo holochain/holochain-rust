@@ -15,7 +15,7 @@ pub trait NetSend {
 
 /// Trait for receiving Network Protocol messages
 /// represents a worker that handles protocol messages
-pub trait NetReceive {
+pub trait NetWorker {
     /// The receiving method when something has called `send()` to send this worker a message
     fn receive(&mut self, _data: Protocol) -> NetResult<()> {
         Ok(())
@@ -41,5 +41,5 @@ pub trait NetReceive {
 // TODO trait NetTicker/NetWorker with tick() and stop()
 
 /// closure for instantiating a NetReceive from a NetHandler
-pub type NetReceiverFactory =
-    Box<::std::boxed::FnBox(NetHandler) -> NetResult<Box<NetReceive>> + Send>;
+pub type NetWorkerFactory =
+    Box<::std::boxed::FnBox(NetHandler) -> NetResult<Box<NetWorker>> + Send>;

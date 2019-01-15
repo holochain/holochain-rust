@@ -217,7 +217,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
     }
     // Send TrackApp message on both nodes
     node1.send(
-        ProtocolWrapper::TrackDna(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
         })
@@ -225,7 +225,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
     )?;
     let connect_result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     node2.send(
-        ProtocolWrapper::TrackDna(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_2.to_string(),
         })
@@ -443,7 +443,7 @@ fn send_and_confirm_metadata(
 
 fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode) {
     node_a.send(
-        ProtocolWrapper::TrackDna(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
         })
@@ -452,7 +452,7 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode) {
 
 
     node_b.send(
-        ProtocolWrapper::TrackDna(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_2.to_string(),
         })
@@ -473,7 +473,7 @@ fn generic_message_test(node_a: &mut P2pNode, node_b: &mut P2pNode, _can_test_co
     println!("#### sending: hello");
 
     node_a.send(
-        ProtocolWrapper::GenericMessage(MessageData {
+        ProtocolWrapper::SendMessage(MessageData {
             dna_address: example_dna_address(),
             to_agent_id: AGENT_ID_2.to_string(),
             from_agent_id: AGENT_ID_1.to_string(),
@@ -483,16 +483,16 @@ fn generic_message_test(node_a: &mut P2pNode, node_b: &mut P2pNode, _can_test_co
             .into(),
     ).expect("Failed sending GenericMessage to node_b");
 
-    let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleGenericMessage(_))))?;
+    let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
     println!("#### got: {:?}", res);
 
     let msg = match res {
-        ProtocolWrapper::HandleGenericMessage(msg) => msg,
+        ProtocolWrapper::HandleSend(msg) => msg,
         _ => unreachable!(),
     };
 
     node_b.send(
-        ProtocolWrapper::HandleGenericMessageResponse(MessageData {
+        ProtocolWrapper::HandleSendResult(MessageData {
             dna_address: example_dna_address(),
             to_agent_id: AGENT_ID_1.to_string(),
             from_agent_id: AGENT_ID_2.to_string(),
@@ -503,11 +503,11 @@ fn generic_message_test(node_a: &mut P2pNode, node_b: &mut P2pNode, _can_test_co
     ).expect("Failed sending HandleGenericMessageResponse on node_b");
 
 
-    let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::GenericMessageResponse(_))))?;
+    let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
     println!("#### got: {:?}", res);
 
     let msg = match res {
-        ProtocolWrapper::GenericMessageResponse(msg) => msg,
+        ProtocolWrapper::SendResult(msg) => msg,
         _ => unreachable!(),
     };
 
@@ -530,7 +530,7 @@ fn dht_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> Ne
 
     // Send TrackApp message on both nodes
     node_a.send(
-        ProtocolWrapper::TrackDna(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
         })
@@ -541,7 +541,7 @@ fn dht_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> Ne
     println!("self connected result 1: {:?}", connect_result_1);
 
     node_b.send(
-        ProtocolWrapper::TrackDna(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_2.to_string(),
         })

@@ -63,7 +63,7 @@ fn exec_mock_test() -> NetResult<()> {
     let mut node_b = P2pNode::new_mock();
 
     node_a.send(
-        ProtocolWrapper::TrackDna(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: "sandwich".into(),
             agent_id: "node-1".to_string(),
         })
@@ -72,7 +72,7 @@ fn exec_mock_test() -> NetResult<()> {
 
 
     node_b.send(
-        ProtocolWrapper::TrackDna(TrackAppData {
+        ProtocolWrapper::TrackApp(TrackAppData {
             dna_address: "sandwich".into(),
             agent_id: "node-2".to_string(),
         })
@@ -80,7 +80,7 @@ fn exec_mock_test() -> NetResult<()> {
     ).expect("Failed sending TrackAppData on node_b");
 
     node_a.send(
-        ProtocolWrapper::GenericMessage(MessageData {
+        ProtocolWrapper::SendMessage(MessageData {
             dna_address: "sandwich".into(),
             to_agent_id: "node-2".to_string(),
             from_agent_id: "node-1".to_string(),
@@ -90,14 +90,14 @@ fn exec_mock_test() -> NetResult<()> {
         .into(),
     ).expect("Failed sending GenericMessage to node_b");
 
-    let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleGenericMessage(_))))?;
+    let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
     // let res = node_b.recv().expect("Failed to receive message on node_b");
     //let res = node_b.try_recv().expect("Failed to receive message on node_b");
     println!("got: {:?}", res);
 
-    if let ProtocolWrapper::HandleGenericMessage(msg) = res {
+    if let ProtocolWrapper::HandleSend(msg) = res {
         node_b.send(
-            ProtocolWrapper::HandleGenericMessageResponse(MessageData {
+            ProtocolWrapper::HandleSendResult(MessageData {
                 dna_address: "sandwich".into(),
                 to_agent_id: "node-1".to_string(),
                 from_agent_id: "node-2".to_string(),
@@ -110,11 +110,11 @@ fn exec_mock_test() -> NetResult<()> {
         panic!("bad generic msg");
     }
 
-    let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::GenericMessageResponse(_))))?;
+    let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
     // let res = node_a.recv().expect("Failed to receive message on node_a");
     println!("got: {:?}", res);
 
-    if let ProtocolWrapper::GenericMessageResponse(msg) = res {
+    if let ProtocolWrapper::SendResult(msg) = res {
         assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
     } else {
         panic!("bad msg");

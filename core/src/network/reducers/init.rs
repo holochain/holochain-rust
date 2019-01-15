@@ -26,7 +26,7 @@ pub fn reduce_init(
 
     let _ = network
         .send(
-            ProtocolWrapper::TrackDna(TrackAppData {
+            ProtocolWrapper::TrackApp(TrackAppData {
                 dna_address: network_settings.dna_address.clone(),
                 agent_id: network_settings.agent_id.clone(),
             })

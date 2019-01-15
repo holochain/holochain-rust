@@ -5,7 +5,7 @@ use crate::net_connection::*;
 /// a simple pass-through NetSend instance
 /// this struct can be use to compose one type of NetReceive into another
 pub struct NetSendRelay {
-    worker: Box<NetReceive>,
+    worker: Box<NetWorker>,
     done: NetShutdown,
 }
 
@@ -35,7 +35,7 @@ impl NetSendRelay {
     /// create a new NetSendRelay instance with given handler & factory
     pub fn new(
         handler: NetHandler,
-        worker_factory: NetReceiverFactory,
+        worker_factory: NetWorkerFactory,
         done: NetShutdown,
     ) -> NetResult<Self> {
         Ok(NetSendRelay {
@@ -54,13 +54,13 @@ mod tests {
 
     struct DefWorker;
 
-    impl NetReceive for DefWorker {}
+    impl NetWorker for DefWorker {}
 
     #[test]
     fn it_can_defaults() {
         let mut con = NetSendRelay::new(
             Box::new(move |_r| Ok(())),
-            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetReceive>)),
+            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
             None,
         )
             .unwrap();
@@ -74,7 +74,7 @@ mod tests {
         handler: NetHandler,
     }
 
-    impl NetReceive for SimpleWorker {
+    impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
             (self.handler)(Ok("tick".into()))?;
             Ok(true)
@@ -94,7 +94,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetReceive>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
             .unwrap();
@@ -117,7 +117,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetReceive>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
             .unwrap();

@@ -128,7 +128,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     //}
                 }
             }
-            Ok(ProtocolWrapper::HandleGenericMessage(message_data)) => {
+            Ok(ProtocolWrapper::HandleSend(message_data)) => {
                 if !is_me(
                     &context,
                     &message_data.dna_address,
@@ -138,7 +138,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_send(message_data, context.clone())
             }
-            Ok(ProtocolWrapper::GenericMessageResponse(message_data)) => {
+            Ok(ProtocolWrapper::SendResult(message_data)) => {
                 if !is_me(
                     &context,
                     &message_data.dna_address,

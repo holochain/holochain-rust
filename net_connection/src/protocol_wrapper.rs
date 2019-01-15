@@ -203,21 +203,21 @@ pub enum ProtocolWrapper {
 
     /// [send] send a message to another node on the network
     #[serde(rename = "send")]
-    GenericMessage(MessageData),
+    SendMessage(MessageData),
     /// [recv] recv the response back from a previous `GenericMessage`
     #[serde(rename = "sendResult")]
-    GenericMessageResponse(MessageData),
+    SendResult(MessageData),
     /// [recv] another node has sent us a message
     #[serde(rename = "handleSend")]
-    HandleGenericMessage(MessageData),
+    HandleSend(MessageData),
     /// [send] send our response to a previous `HandleGenericMessage`
     #[serde(rename = "handleSendResult")]
-    HandleGenericMessageResponse(MessageData),
+    HandleSendResult(MessageData),
 
 
     /// [send] send out a "trackApp" request
     #[serde(rename = "trackApp")]
-    TrackDna(TrackAppData),
+    TrackApp(TrackAppData),
 
 
     /// [send / recv] report success for a messages with _id parameter

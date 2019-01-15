@@ -1,6 +1,6 @@
 use super::NetResult;
 use super::{
-    net_connection::{NetSend, NetHandler, NetShutdown, NetReceiverFactory},
+    net_connection::{NetSend, NetHandler, NetShutdown, NetWorkerFactory},
     protocol::Protocol,
 };
 use std::{thread, time};
@@ -33,7 +33,7 @@ impl NetConnectionThread {
     /// The spawned Networker will call/use `handler` when receiving data.
     pub fn new(
         handler: NetHandler,
-        worker_factory: NetReceiverFactory,
+        worker_factory: NetWorkerFactory,
         done: NetShutdown,
     ) -> NetResult<Self> {
         // Create shared bool between self and spawned thread
@@ -130,17 +130,17 @@ impl NetConnectionThread {
 
 #[cfg(test)]
 mod tests {
-    use super::{super::net_connection::NetReceive, *};
+    use super::{super::net_connection::NetWorker, *};
 
     struct DefWorker;
 
-    impl NetReceive for DefWorker {}
+    impl NetWorker for DefWorker {}
 
     #[test]
     fn it_can_defaults() {
         let mut con = NetConnectionThread::new(
             Box::new(move |_r| Ok(())),
-            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetReceive>)),
+            Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
             None,
         )
         .unwrap();
@@ -153,7 +153,7 @@ mod tests {
         handler: NetHandler,
     }
 
-    impl NetReceive for SimpleWorker {
+    impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
             (self.handler)(Ok("tick".into()))?;
             Ok(true)
@@ -173,7 +173,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetReceive>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
         .unwrap();
@@ -206,7 +206,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetReceive>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
         .unwrap();

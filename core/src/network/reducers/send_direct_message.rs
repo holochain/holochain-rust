@@ -23,12 +23,12 @@ fn inner(
     };
 
     let protocol_object = if direct_message_data.is_response {
-        ProtocolWrapper::HandleGenericMessageResponse(data)
+        ProtocolWrapper::HandleSendResult(data)
     } else {
         network_state
             .direct_message_connections
             .insert(data.msg_id.clone(), direct_message_data.message.clone());
-        ProtocolWrapper::GenericMessage(data)
+        ProtocolWrapper::SendMessage(data)
     };
 
     send(network_state, protocol_object)

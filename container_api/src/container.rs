@@ -194,7 +194,7 @@ impl Container {
             // This should never happen, but we'll throw out a named mock network rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default mock network name.");
-            JsonString::from(P2pConfig::named_mock_config("container-default-mock"))
+            JsonString::from(P2pConfig::named_mock_as_string("container-default-mock"))
         });
         Ok(config)
     }

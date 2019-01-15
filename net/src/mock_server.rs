@@ -84,10 +84,10 @@ impl MockServer {
                     // if no return failure
                     // if yes mark requester as 'enabled'
                 },
-                ProtocolWrapper::GenericMessage(msg) => {
+                ProtocolWrapper::SendMessage(msg) => {
                     self.priv_handle_GenericMessage(&msg)?;
                 }
-                ProtocolWrapper::HandleGenericMessageResponse(msg) => {
+                ProtocolWrapper::HandleSendResult(msg) => {
                     self.priv_handle_HandleGenericMessageResponse(&msg)?;
                 }
                 ProtocolWrapper::SuccessResult(msg) => {
@@ -161,7 +161,7 @@ impl MockServer {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
-            ProtocolWrapper::HandleGenericMessage(msg.clone()).into(),
+            ProtocolWrapper::HandleSend(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -174,7 +174,7 @@ impl MockServer {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
-            ProtocolWrapper::GenericMessageResponse(msg.clone()).into(),
+            ProtocolWrapper::SendResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -370,7 +370,7 @@ mod tests {
         // -- node 2 node / send / receive -- //
 
         cli1.receive(
-            ProtocolWrapper::GenericMessage(MessageData {
+            ProtocolWrapper::SendMessage(MessageData {
                 dna_address: example_dna_address(),
                 to_agent_id: AGENT_ID_2.to_string(),
                 from_agent_id: AGENT_ID_1.to_string(),
@@ -385,9 +385,9 @@ mod tests {
 
         let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::HandleGenericMessage(msg) = res {
+        if let ProtocolWrapper::HandleSend(msg) = res {
             cli2.receive(
-                ProtocolWrapper::HandleGenericMessageResponse(MessageData {
+                ProtocolWrapper::HandleSendResult(MessageData {
                     dna_address: msg.dna_address,
                     to_agent_id: msg.from_agent_id,
                     from_agent_id: AGENT_ID_2.to_string(),
@@ -405,7 +405,7 @@ mod tests {
 
         let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GenericMessageResponse(msg) = res {
+        if let ProtocolWrapper::SendResult(msg) = res {
             assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
         } else {
             panic!("bad msg");

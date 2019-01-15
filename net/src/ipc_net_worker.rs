@@ -11,7 +11,7 @@ use holochain_net_ipc::{
 
 use holochain_net_connection::{
     net_connection::{
-        NetSend, NetHandler, NetShutdown, NetReceive, NetReceiverFactory,
+        NetSend, NetHandler, NetShutdown, NetWorker, NetWorkerFactory,
     },
     net_relay::NetSendRelay,
     protocol::Protocol,
@@ -101,7 +101,7 @@ impl IpcNetWorker {
             Box::new(move |h| {
                 let mut socket = ZmqIpcSocket::new()?;
                 socket.connect(&uri)?;
-                let out: Box<NetReceive> = Box::new(IpcClient::new(h, socket, block_connect)?);
+                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
                 Ok(out)
             }),
             None,
@@ -118,7 +118,7 @@ impl IpcNetWorker {
             Box::new(move |h| {
                 let mut socket = MockIpcSocket::new_test(test_struct)?;
                 socket.connect(default_local_endpoint)?;
-                let out: Box<NetReceive> = Box::new(IpcClient::new(h, socket, true)?);
+                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, true)?);
                 Ok(out)
             }),
             None,
@@ -152,7 +152,7 @@ impl IpcNetWorker {
         let factory = Box::new(move |h| {
             let mut socket = ZmqIpcSocket::new()?;
             socket.connect(&ipc_binding)?;
-            let out: Box<NetReceive> = Box::new(IpcClient::new(h, socket, block_connect)?);
+            let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
             Ok(out)
         });
 
@@ -170,7 +170,7 @@ impl IpcNetWorker {
     /// Using a NetConnectionRelay as socket
     fn priv_new(
         handler: NetHandler,
-        factory: NetReceiverFactory,
+        factory: NetWorkerFactory,
         done: NetShutdown,
         bootstrap_nodes: Vec<String>,
         endpoint: String,
@@ -200,7 +200,7 @@ impl IpcNetWorker {
     }
 }
 
-impl NetReceive for IpcNetWorker {
+impl NetWorker for IpcNetWorker {
     /// stop the net worker
     fn stop(self: Box<Self>) -> NetResult<()> {
         self.ipc_relay.stop()?;

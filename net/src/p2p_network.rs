@@ -3,7 +3,7 @@
 //! and at load-time instantiate the configured "backend"
 
 use holochain_net_connection::{
-    net_connection::{NetSend, NetHandler, NetReceive, NetReceiverFactory},
+    net_connection::{NetSend, NetHandler, NetWorker, NetWorkerFactory},
     net_connection_thread::NetConnectionThread,
     protocol::Protocol,
     NetResult,
@@ -26,17 +26,17 @@ impl P2pNetwork {
         // Create Config struct
         let network_config = config.backend_config.to_string().into();
         // Provide worker factory dependening on backend kind
-        let worker_factory: NetReceiverFactory = match config.backend_kind {
+        let worker_factory: NetWorkerFactory = match config.backend_kind {
             // Creates an IpcNetWorker with the passed backend config
             P2pBackendKind::IPC => {
                 Box::new(move |h| {
-                    Ok(Box::new(IpcNetWorker::new(h, &network_config)?) as Box<NetReceive>)
+                    Ok(Box::new(IpcNetWorker::new(h, &network_config)?) as Box<NetWorker>)
                 })
             }
             // Creates a MockWorker
             P2pBackendKind::MOCK => {
                 Box::new(move |h| {
-                    Ok(Box::new(MockWorker::new(h, &network_config)) as Box<NetReceive>)
+                    Ok(Box::new(MockWorker::new(h, &network_config)?) as Box<NetWorker>)
                 })
             },
         };

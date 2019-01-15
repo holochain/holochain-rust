@@ -2,8 +2,7 @@
 //! Also contains the functions declarations of the external functions provided by the Ribosome.
 
 use crate::init_globals::init_globals;
-use holochain_wasm_utils::{api_serialization::ZomeApiGlobals};
-use holochain_wasm_utils::memory::stack::WasmStack;
+use holochain_wasm_utils::{api_serialization::ZomeApiGlobals, memory::stack::WasmStack};
 
 /// Internal global for memory usage
 pub static mut G_MEM_STACK: Option<WasmStack> = None;

@@ -10,15 +10,15 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    error::{HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
+    error::{
+        HolochainError, RibosomeEncodingBits, RibosomeReturnCode, RibosomeRuntimeBits,
+        ZomeApiInternalResult,
+    },
     json::JsonString,
 };
-use std::sync::Arc;
-use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
-use holochain_core_types::error::RibosomeEncodingBits;
-use holochain_core_types::error::RibosomeRuntimeBits;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, sync::Arc};
+use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 
 /// Object holding data to pass around to invoked Zome API functions
 #[derive(Clone)]
@@ -48,10 +48,12 @@ impl Runtime {
         let return_code = RibosomeReturnCode::from(encoded);
         let allocation = match return_code {
             RibosomeReturnCode::Success => return JsonString::null(),
-            RibosomeReturnCode::Failure(_) => panic!("received error code instead of valid encoded allocation"),
+            RibosomeReturnCode::Failure(_) => {
+                panic!("received error code instead of valid encoded allocation")
+            }
             RibosomeReturnCode::Allocation(ribosome_allocation) => {
                 WasmAllocation::try_from(ribosome_allocation).unwrap()
-            },
+            }
         };
 
         let bin_arg = self.memory_manager.read(allocation);
@@ -76,17 +78,10 @@ impl Runtime {
 
         match self.memory_manager.write(&s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
-            Ok(allocation) => Ok(
-                Some(
-                    RuntimeValue::I32(
-                        RibosomeEncodingBits::from(
-                            RibosomeReturnCode::Allocation(
-                                allocation.into()
-                            )
-                        ) as RibosomeRuntimeBits
-                    )
-                )
-            ),
+            Ok(allocation) => Ok(Some(RuntimeValue::I32(RibosomeEncodingBits::from(
+                RibosomeReturnCode::Allocation(allocation.into()),
+            )
+                as RibosomeRuntimeBits))),
         }
     }
 

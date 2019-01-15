@@ -1,12 +1,9 @@
-
+use holochain_wasm_utils::memory::{
+    allocation::{AllocationError, AllocationResult, Length, WasmAllocation},
+    stack::WasmStack,
+    MemoryBits, MemoryInt,
+};
 use wasmi::{MemoryRef, ModuleRef};
-use holochain_wasm_utils::memory::MemoryInt;
-use holochain_wasm_utils::memory::allocation::WasmAllocation;
-use holochain_wasm_utils::memory::stack::WasmStack;
-use holochain_wasm_utils::memory::allocation::AllocationResult;
-use holochain_wasm_utils::memory::MemoryBits;
-use holochain_wasm_utils::memory::allocation::Length;
-use holochain_wasm_utils::memory::allocation::AllocationError;
 
 //--------------------------------------------------------------------------------------------------
 // WASM Memory Manager
@@ -82,7 +79,10 @@ impl SinglePageManager {
     /// Read data somewhere in stack
     pub fn read(&self, allocation: WasmAllocation) -> Vec<u8> {
         self.wasm_memory
-            .get(MemoryBits::from(allocation.offset()), MemoryInt::from(allocation.length()) as usize)
+            .get(
+                MemoryBits::from(allocation.offset()),
+                MemoryInt::from(allocation.length()) as usize,
+            )
             .expect("Successfully retrieve the result")
     }
 }

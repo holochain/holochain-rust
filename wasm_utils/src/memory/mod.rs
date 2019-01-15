@@ -1,10 +1,10 @@
 use holochain_core_types::bits_n_pieces::U16_MAX;
 
 pub mod allocation;
-pub mod stack;
 pub mod read;
-pub mod write;
 pub mod ribosome;
+pub mod stack;
+pub mod write;
 
 /// offsets, lengths, etc.
 pub type MemoryInt = u16;

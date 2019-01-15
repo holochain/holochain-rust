@@ -4,8 +4,8 @@ use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
     json::{JsonError, JsonString},
 };
-use std::{error::Error, fmt};
 use holochain_wasm_utils::memory::allocation::AllocationError;
+use std::{error::Error, fmt};
 
 /// Error for DNA developers to use in their Zome code.
 /// This does not have to be sent back to Ribosome unless its an InternalError.
@@ -66,10 +66,16 @@ impl From<RibosomeErrorCode> for ZomeApiError {
 impl From<AllocationError> for ZomeApiError {
     fn from(allocation_error: AllocationError) -> ZomeApiError {
         match allocation_error {
-            AllocationError::OutOfBounds => ZomeApiError::Internal("Allocation out of bounds".into()),
+            AllocationError::OutOfBounds => {
+                ZomeApiError::Internal("Allocation out of bounds".into())
+            }
             AllocationError::ZeroLength => ZomeApiError::Internal("Allocation zero length".into()),
-            AllocationError::BadStackAlignment => ZomeApiError::Internal("Allocation out of alignment with stack".into()),
-            AllocationError::Serialization => ZomeApiError::Internal("Allocation serialization failure".into()),
+            AllocationError::BadStackAlignment => {
+                ZomeApiError::Internal("Allocation out of alignment with stack".into())
+            }
+            AllocationError::Serialization => {
+                ZomeApiError::Internal("Allocation serialization failure".into())
+            }
         }
     }
 }

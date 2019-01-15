@@ -7,10 +7,8 @@ use crate::{
     globals::*,
 };
 use holochain_core_types::{
-    cas::content::Address,
-    dna::capabilities::CapabilityCall,
-    entry::Entry,
-    error::{ZomeApiInternalResult},
+    cas::content::Address, dna::capabilities::CapabilityCall, entry::Entry,
+    error::ZomeApiInternalResult,
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -31,10 +29,10 @@ use holochain_wasm_utils::{
 };
 use std::convert::TryFrom;
 // use holochain_core_types::error::RibosomeReturnCode;
+use holochain_core_types::error::RibosomeEncodingBits;
 use init_globals::hc_init_globals;
 use serde_json;
-use std::{convert::TryInto};
-use holochain_core_types::error::RibosomeEncodingBits;
+use std::convert::TryInto;
 // use holochain_wasm_utils::memory::allocation::WasmAllocation;
 // use holochain_core_types::error::HolochainError;
 // use holochain_core_types::error::RibosomeErrorCode;
@@ -238,13 +236,17 @@ pub enum Dispatch {
 }
 
 impl Dispatch {
-    pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(&self, input: I) -> ZomeApiResult<O> {
+    pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString> + Into<JsonString>>(
+        &self,
+        input: I,
+    ) -> ZomeApiResult<O> {
         let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
 
         let wasm_allocation = mem_stack.write_json(input)?;
 
         // Call Ribosome's commit_entry()
-        let encoded_input: RibosomeEncodingBits = RibosomeEncodedAllocation::from(wasm_allocation).into();
+        let encoded_input: RibosomeEncodingBits =
+            RibosomeEncodedAllocation::from(wasm_allocation).into();
         let encoded_output: RibosomeEncodingBits = unsafe {
             match self {
                 Dispatch::Call => hc_call(encoded_input),
@@ -265,7 +267,7 @@ impl Dispatch {
             Err(e) => {
                 mem_stack.deallocate(wasm_allocation)?;
                 return Err(e.into());
-            },
+            }
         };
 
         // Free result & input allocations
@@ -275,9 +277,9 @@ impl Dispatch {
         if result.ok {
             match JsonString::from(result.value).try_into() {
                 Ok(v) => Ok(v),
-                Err(_) => {
-                    Err(ZomeApiError::from(String::from("Failed to deserialize return value")))
-                },
+                Err(_) => Err(ZomeApiError::from(String::from(
+                    "Failed to deserialize return value",
+                ))),
             }
         } else {
             Err(ZomeApiError::from(result.error))
@@ -434,19 +436,17 @@ pub fn call<S: Into<String>>(
     fn_name: S,
     fn_args: JsonString,
 ) -> ZomeApiResult<JsonString> {
-    Dispatch::Call.with_input(
-        ZomeFnCallArgs {
-            instance_handle: instance_handle.into(),
-            zome_name: zome_name.into(),
-            cap: Some(CapabilityCall::new(
-                cap_name.into(),
-                Address::from(cap_token.into()),
-                None,
-            )),
-            fn_name: fn_name.into(),
-            fn_args: String::from(fn_args),
-        }
-    )
+    Dispatch::Call.with_input(ZomeFnCallArgs {
+        instance_handle: instance_handle.into(),
+        zome_name: zome_name.into(),
+        cap: Some(CapabilityCall::new(
+            cap_name.into(),
+            Address::from(cap_token.into()),
+            None,
+        )),
+        fn_name: fn_name.into(),
+        fn_args: String::from(fn_args),
+    })
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -568,12 +568,10 @@ pub fn get_entry_result(
     address: &Address,
     options: GetEntryOptions,
 ) -> ZomeApiResult<GetEntryResult> {
-    Dispatch::GetEntry.with_input(
-        GetEntryArgs {
-            address: address.clone(),
-            options,
-        },
-    )
+    Dispatch::GetEntry.with_input(GetEntryArgs {
+        address: address.clone(),
+        options,
+    })
 }
 
 /// Consumes three values, two of which are the addresses of entries, and one of which is a string that defines a
@@ -637,15 +635,11 @@ pub fn link_entries<S: Into<String>>(
     target: &Address,
     tag: S,
 ) -> Result<(), ZomeApiError> {
-
-    Dispatch::LinkEntries.with_input(
-        LinkEntriesArgs {
-            base: base.clone(),
-            target: target.clone(),
-            tag: tag.into(),
-        },
-    )
-
+    Dispatch::LinkEntries.with_input(LinkEntriesArgs {
+        base: base.clone(),
+        target: target.clone(),
+        tag: tag.into(),
+    })
 }
 
 /// NOT YET AVAILABLE
@@ -698,9 +692,7 @@ pub fn property<S: Into<String>>(_name: S) -> ZomeApiResult<String> {
 /// # }
 /// ```
 pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
-    Dispatch::EntryAddress.with_input(
-        entry,
-    )
+    Dispatch::EntryAddress.with_input(entry)
 }
 
 /// NOT YET AVAILABLE
@@ -724,12 +716,10 @@ pub fn verify_signature<S: Into<String>>(
 /// The updated entry will hold the previous entry's address in its header,
 /// which will be used by validation routes.
 pub fn update_entry(new_entry: Entry, address: &Address) -> ZomeApiResult<Address> {
-    Dispatch::UpdateEntry.with_input(
-        UpdateEntryArgs {
-            new_entry,
-            address: address.clone(),
-        }
-    )
+    Dispatch::UpdateEntry.with_input(UpdateEntryArgs {
+        new_entry,
+        address: address.clone(),
+    })
 }
 
 /// NOT YET AVAILABLE
@@ -741,9 +731,7 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
-    Dispatch::RemoveEntry.with_input(
-        address.clone()
-    )
+    Dispatch::RemoveEntry.with_input(address.clone())
 }
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links
@@ -774,13 +762,11 @@ pub fn get_links_with_options<S: Into<String>>(
     tag: S,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
-    Dispatch::RemoveEntry.with_input(
-        GetLinksArgs {
-            entry_address: base.clone(),
-            tag: tag.into(),
-            options,
-        },
-    )
+    Dispatch::RemoveEntry.with_input(GetLinksArgs {
+        entry_address: base.clone(),
+        tag: tag.into(),
+        options,
+    })
 }
 
 /// Helper function for get_links. Returns a vector with the default return results.
@@ -887,13 +873,11 @@ pub fn query(
     start: u32,
     limit: u32,
 ) -> ZomeApiResult<QueryResult> {
-    Dispatch::Query.with_input(
-        QueryArgs {
-            entry_type_names,
-            start,
-            limit,
-        },
-    )
+    Dispatch::Query.with_input(QueryArgs {
+        entry_type_names,
+        start,
+        limit,
+    })
 }
 
 /// Sends a node-to-node message to the given agent, specified by their address.
@@ -966,9 +950,7 @@ pub fn query(
 /// # }
 /// ```
 pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
-    Dispatch::Send.with_input(
-        SendArgs { to_agent, payload },
-    )
+    Dispatch::Send.with_input(SendArgs { to_agent, payload })
 }
 
 /// NOT YET AVAILABLE

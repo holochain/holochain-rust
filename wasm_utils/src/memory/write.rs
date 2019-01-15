@@ -1,16 +1,13 @@
-use std::slice;
-use crate::memory::allocation::WasmAllocation;
-use crate::memory::stack::WasmStack;
-use crate::memory::allocation::AllocationError;
-use std::os::raw::c_char;
-use crate::memory::MemoryInt;
-use std::convert::TryInto;
+use crate::memory::{
+    allocation::{AllocationError, WasmAllocation},
+    stack::WasmStack,
+    MemoryBits, MemoryInt,
+};
 use holochain_core_types::json::JsonString;
-use crate::memory::MemoryBits;
 use memory::allocation::Length;
+use std::{convert::TryInto, os::raw::c_char, slice};
 
 impl WasmStack {
-
     /// Write in wasm memory according to stack state.
     fn write_in_wasm_memory(
         &mut self,
@@ -26,14 +23,10 @@ impl WasmStack {
         }
 
         WasmAllocation::new((ptr as MemoryInt).into(), length)
-
     }
 
     /// Write a string in wasm memory according to stack state.
-    pub fn write_string(
-        &mut self,
-        s: &str,
-    ) -> Result<WasmAllocation, AllocationError> {
+    pub fn write_string(&mut self, s: &str) -> Result<WasmAllocation, AllocationError> {
         let bytes = s.as_bytes();
         let length = bytes.len() as MemoryInt;
         if MemoryBits::from(length) > WasmStack::max() {
@@ -59,5 +52,4 @@ impl WasmStack {
         }
         self.write_in_wasm_memory(&json_bytes, Length::from(json_bytes_len))
     }
-
 }

@@ -1,4 +1,3 @@
-
 pub const U16_MAX: u32 = u16::max_value() as u32;
 
 /// returns the u16 high bits from a u32

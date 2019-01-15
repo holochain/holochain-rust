@@ -1,8 +1,5 @@
-use memory::MemoryBits;
-use memory::MEMORY_INT_MAX;
-use memory::MemoryInt;
-use holochain_core_types::json::JsonString;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{error::HolochainError, json::JsonString};
+use memory::{MemoryBits, MemoryInt, MEMORY_INT_MAX};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Offset(MemoryInt);
@@ -88,18 +85,16 @@ pub struct WasmAllocation {
 
 impl WasmAllocation {
     // represent the max as MemoryBits type to allow gt comparisons
-    pub fn max()-> MemoryBits {
+    pub fn max() -> MemoryBits {
         MEMORY_INT_MAX
     }
 
     pub fn new(offset: Offset, length: Length) -> Result<Self, AllocationError> {
         if (MemoryBits::from(offset) + MemoryBits::from(length)) > WasmAllocation::max() {
             Err(AllocationError::OutOfBounds)
-        }
-        else if MemoryInt::from(length) == 0 {
+        } else if MemoryInt::from(length) == 0 {
             Err(AllocationError::ZeroLength)
-        }
-        else {
+        } else {
             Ok(WasmAllocation { offset, length })
         }
     }
@@ -111,7 +106,6 @@ impl WasmAllocation {
     pub fn length(self) -> Length {
         self.length
     }
-
 }
 
 pub type AllocationResult = Result<WasmAllocation, AllocationError>;

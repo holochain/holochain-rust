@@ -1,8 +1,8 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
 use crate::{error::HolochainError, json::JsonString};
+use bits_n_pieces::u32_split_bits;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
-use bits_n_pieces::u32_split_bits;
 
 /// size of the integer that encodes ribosome codes
 pub type RibosomeEncodingBits = u32;
@@ -48,7 +48,9 @@ impl From<RibosomeReturnCode> for RibosomeEncodingBits {
         match ribosome_return_code {
             RibosomeReturnCode::Success => 0,
             RibosomeReturnCode::Allocation(allocation) => RibosomeEncodingBits::from(allocation),
-            RibosomeReturnCode::Failure(code) => code as RibosomeRuntimeBits as RibosomeEncodingBits,
+            RibosomeReturnCode::Failure(code) => {
+                code as RibosomeRuntimeBits as RibosomeEncodingBits
+            }
         }
     }
 }
@@ -63,13 +65,11 @@ impl From<RibosomeEncodingBits> for RibosomeReturnCode {
     fn from(i: RibosomeEncodingBits) -> Self {
         if i == 0 {
             RibosomeReturnCode::Success
-        }
-        else {
+        } else {
             let (code_int, maybe_allocation_length) = u32_split_bits(i);
             if maybe_allocation_length == 0 {
                 RibosomeReturnCode::Failure(RibosomeErrorCode::from_code_int(code_int))
-            }
-            else {
+            } else {
                 RibosomeReturnCode::Allocation(RibosomeEncodedAllocation(i))
             }
         }
@@ -124,9 +124,15 @@ impl RibosomeReturnCode {
 
     pub fn allocation_or_err(&self) -> Result<RibosomeEncodedAllocation, HolochainError> {
         match self {
-            RibosomeReturnCode::Allocation(ribosome_allocation) => Ok(ribosome_allocation.to_owned()),
-            RibosomeReturnCode::Success => Err(HolochainError::Ribosome(RibosomeErrorCode::ZeroSizedAllocation)),
-            RibosomeReturnCode::Failure(err_code) => Err(HolochainError::Ribosome(err_code.to_owned())),
+            RibosomeReturnCode::Allocation(ribosome_allocation) => {
+                Ok(ribosome_allocation.to_owned())
+            }
+            RibosomeReturnCode::Success => Err(HolochainError::Ribosome(
+                RibosomeErrorCode::ZeroSizedAllocation,
+            )),
+            RibosomeReturnCode::Failure(err_code) => {
+                Err(HolochainError::Ribosome(err_code.to_owned()))
+            }
         }
     }
 }
@@ -176,7 +182,9 @@ impl From<HolochainError> for RibosomeErrorCode {
             HolochainError::DnaMissing => RibosomeErrorCode::Unspecified,
             HolochainError::Dna(_) => RibosomeErrorCode::Unspecified,
             HolochainError::IoError(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::SerializationError(_) => RibosomeErrorCode::ArgumentDeserializationFailed,
+            HolochainError::SerializationError(_) => {
+                RibosomeErrorCode::ArgumentDeserializationFailed
+            }
             HolochainError::InvalidOperationOnSysEntry => RibosomeErrorCode::UnknownEntryType,
             HolochainError::CapabilityCheckFailed => RibosomeErrorCode::Unspecified,
             HolochainError::ValidationFailed(_) => RibosomeErrorCode::CallbackFailed,

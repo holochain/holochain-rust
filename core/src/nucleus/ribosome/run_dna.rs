@@ -6,20 +6,17 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    error::{HcResult, HolochainError, },
+    error::{
+        HcResult, HolochainError, RibosomeEncodingBits, RibosomeReturnCode, RibosomeRuntimeBits,
+    },
     json::JsonString,
 };
-use std::{str::FromStr, sync::Arc};
+use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
+use std::{convert::TryFrom, str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,
     ModuleInstance, NopExternals, RuntimeValue, Signature, ValueType,
 };
-use holochain_core_types::error::RibosomeEncodingBits;
-use holochain_core_types::error::RibosomeRuntimeBits;
-use holochain_wasm_utils::memory::allocation::WasmAllocation;
-use std::convert::TryFrom;
-use holochain_core_types::error::RibosomeReturnCode;
-use holochain_wasm_utils::memory::allocation::AllocationError;
 
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
@@ -132,7 +129,9 @@ pub fn run_dna(
         returned_encoding = wasm_instance
             .invoke_export(
                 zome_call.fn_name.clone().as_str(),
-                &[RuntimeValue::I32(RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits)],
+                &[RuntimeValue::I32(
+                    RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
+                )],
                 mut_runtime,
             )
             .map_err(|err| HolochainError::RibosomeFailed(err.to_string()))?
@@ -148,16 +147,15 @@ pub fn run_dna(
     let return_result: HcResult<JsonString>;
 
     match return_code.clone() {
-
         RibosomeReturnCode::Success => {
             return_log_msg = return_code.to_string();
             return_result = Ok(JsonString::null());
-        },
+        }
 
         RibosomeReturnCode::Failure(err_code) => {
             return_log_msg = return_code.to_string();
             return_result = Err(HolochainError::RibosomeFailed(err_code.to_string()));
-        },
+        }
 
         RibosomeReturnCode::Allocation(ribosome_allocation) => {
             match WasmAllocation::try_from(ribosome_allocation) {
@@ -167,20 +165,21 @@ pub fn run_dna(
                         Ok(json_string) => {
                             return_log_msg = json_string.clone();
                             return_result = Ok(JsonString::from(json_string));
-                        },
+                        }
                         Err(err) => {
                             return_log_msg = err.to_string();
                             return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
                         }
                     }
-                },
+                }
                 Err(allocation_error) => {
                     return_log_msg = String::from(allocation_error.clone());
-                    return_result = Err(HolochainError::RibosomeFailed(String::from(allocation_error)));
+                    return_result = Err(HolochainError::RibosomeFailed(String::from(
+                        allocation_error,
+                    )));
                 }
             }
         }
-
     };
 
     // Log & done

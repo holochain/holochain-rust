@@ -144,6 +144,12 @@ impl ContainerAdmin for Container {
 
     fn add_interface(&mut self, interface: InterfaceConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
+        if new_config.interfaces
+            .iter()
+            .find(|i| i.id == interface.id)
+            .is_some() {
+            return Err(HolochainError::ErrorGeneric(format!("Interface with ID '{}' already exists", interface.id)))
+        }
         new_config.interfaces.push(interface.clone());
         new_config.check_consistency()?;
         self.config = new_config;
@@ -154,6 +160,13 @@ impl ContainerAdmin for Container {
 
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
+
+        if new_config.interfaces
+            .iter()
+            .find(|interface| interface.id == *id)
+            .is_none() {
+            return Err(HolochainError::ErrorGeneric(format!("No such interface: '{}'", id)))
+        }
 
         new_config.interfaces = new_config.interfaces
             .into_iter()
@@ -171,10 +184,19 @@ impl ContainerAdmin for Container {
     }
 
     fn add_instance_to_interface(&mut self, interface_id: &String, instance_id: &String) -> Result<(), HolochainError> {
-        let _ = self.config.instance_by_id(instance_id)
-            .ok_or(HolochainError::ErrorGeneric(format!("Instance with ID {} not found", instance_id)))?;
-
         let mut new_config = self.config.clone();
+
+        if new_config.interface_by_id(interface_id)
+            .ok_or(HolochainError::ErrorGeneric(format!("Instance with ID {} not found", instance_id)))?
+            .instances
+            .iter()
+            .find(|i| i.id == *instance_id)
+            .is_some()
+        {
+            return Err(HolochainError::ErrorGeneric(
+                format!("Instance '{}' already in interface '{}'", instance_id, interface_id))
+            )
+        }
 
         new_config.interfaces = new_config.interfaces
             .into_iter()
@@ -200,6 +222,18 @@ impl ContainerAdmin for Container {
 
     fn remove_instance_from_interface(&mut self, interface_id: &String, instance_id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
+
+        if new_config.interface_by_id(interface_id)
+            .ok_or(HolochainError::ErrorGeneric(format!("Instance with ID {} not found", instance_id)))?
+            .instances
+            .iter()
+            .find(|i| i.id == *instance_id)
+            .is_none()
+        {
+            return Err(HolochainError::ErrorGeneric(
+                format!("No Instance '{}' in interface '{}'", instance_id, interface_id))
+            )
+        }
 
         new_config.interfaces = new_config.interfaces
             .into_iter()

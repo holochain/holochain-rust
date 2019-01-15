@@ -1,7 +1,7 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
-    eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    eav::{EntityAttributeValue, EntityAttributeValueStorage,Key},
     error::HolochainError,
     hash::HashString,
 };
@@ -51,7 +51,7 @@ impl DhtStore {
         &self,
         address: Address,
         tag: String,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         self.meta_storage
             .read()?
             .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)

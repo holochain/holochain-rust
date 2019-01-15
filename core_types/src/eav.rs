@@ -20,6 +20,7 @@ use std::{
 
 use regex::RegexBuilder;
 use std::fmt::Debug;
+use std::hash::Hash;
 
 /// Address of AddressableContent representing the EAV entity
 pub type Entity = Address;
@@ -29,6 +30,9 @@ pub type Attribute = String;
 
 /// Address of AddressableContent representing the EAV value
 pub type Value = Address;
+
+#[derive(PartialEq,Eq,Debug,Clone,Hash)]
+pub struct Key(i64,Action);
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering
@@ -49,7 +53,7 @@ pub struct EntityAttributeValue {
     // source: Source,
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone,Debug,PartialEq,Eq,Hash)]
 pub enum Action {
     insert,
     delete,
@@ -81,13 +85,11 @@ impl From<String> for Action {
     }
 }
 
-pub fn create_key(action: Action) -> Result<HashString, HolochainError> {
-    let unix_time = Utc::now().timestamp_millis();
-    let key = vec![unix_time.to_string(), action.to_string()].join("_");
-    Ok(HashString::from(key))
+pub fn create_key(action: Action) -> Result<Key, HolochainError> {
+    Ok(Key(Utc::now().timestamp_millis(),action))
 }
 
-pub fn from_key(key: HashString) -> Result<(i64, Action), HolochainError> {
+pub fn from_key(key: HashString) -> Result<Key, HolochainError> {
     let string_key = key.to_string();
     let split = string_key.split("-").collect::<Vec<&str>>();
     let mut split_iter = split.iter();
@@ -100,7 +102,7 @@ pub fn from_key(key: HashString) -> Result<(i64, Action), HolochainError> {
     let unix_timestamp = timestamp
         .parse::<i64>()
         .map_err(|_| HolochainError::ErrorGeneric("Could not get action".to_string()))?;
-    Ok((unix_timestamp, Action::from(action.clone().to_string())))
+    Ok(Key(unix_timestamp, Action::from(action.clone().to_string())))
 }
 
 impl AddressableContent for EntityAttributeValue {
@@ -178,8 +180,9 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>;
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError>;
 
+    //optimize this according to the trait store
     fn fetch_eav_range(
         &self,
         start_date: Option<DateTime<Utc>>,
@@ -187,14 +190,24 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError>;
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError>
+    {
+        let eavs = self.fetch_eav(entity,attribute,value)?;
+        Ok(eavs
+        .iter()
+        .cloned()
+        .filter(|(key,_)|{
+            start_date.map(|s|s.timestamp_millis()).unwrap_or(i64::min_value()) >= key.0 && end_date.map(|s|s.timestamp_millis()).unwrap_or(i64::max_value()) <= key.0
+        }).collect())
+        
+    }
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
-    storage: HashMap<HashString, EntityAttributeValue>,
+    storage: HashMap<Key, EntityAttributeValue>,
 }
 
 impl ExampleEntityAttributeValueStorageNonSync {
@@ -224,7 +237,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         let filtered = self
             .clone()
             .storage
@@ -242,7 +255,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
                 Some(ref v) => &eav.value() == v,
                 None => true,
             })
-            .collect::<HashMap<HashString, EntityAttributeValue>>();
+            .collect::<HashMap<Key, EntityAttributeValue>>();
         Ok(filtered)
     }
 }
@@ -275,7 +288,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         self.content
             .read()
             .unwrap()
@@ -289,7 +302,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         unimplemented!("Could not implment eav on range")
     }
 }
@@ -355,8 +368,8 @@ pub fn eav_round_trip_test_runner(
     eav_storage.add_eav(&eav).expect("could not add eav");
 
     let mut expected = HashMap::new();
-    let key = vec![create_hash().to_string(), eav.address().to_string()].join("_");
-    expected.insert(HashString::from(key), eav.clone());
+    let key = create_key(Action::insert).expect("Could not create key");
+    expected.insert(key, eav.clone());
     // some examples of constraints that should all return the eav
     for (e, a, v) in vec![
         // constrain all

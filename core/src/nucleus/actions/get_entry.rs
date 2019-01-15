@@ -3,7 +3,7 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::EntityAttributeValue,
+    eav::{Key,EntityAttributeValue},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
     hash::HashString,
@@ -48,7 +48,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         .filter(|(_, e)| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
         })
-        .collect::<HashMap<HashString, EntityAttributeValue>>()
+        .collect::<HashMap<Key, EntityAttributeValue>>()
         .len()
         > 0;
     if has_deleted {
@@ -60,7 +60,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
             .filter(|(_, e)| {
                 CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
             })
-            .collect::<HashMap<HashString, EntityAttributeValue>>()
+            .collect::<HashMap<Key, EntityAttributeValue>>()
             .len()
             > 0;
         if has_modified {

@@ -1,7 +1,7 @@
 use chrono::{offset::Utc, DateTime};
 use holochain_core_types::{
     cas::content::{AddressableContent, Content},
-    eav::{Action, Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
+    eav::{Action, Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value,Key,from_key},
     error::{HcResult, HolochainError},
     hash::HashString,
     json::JsonString,
@@ -209,7 +209,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
 
         println!("FETCH EAV");
         let _guard = self.lock.read()?;
@@ -241,7 +241,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .into_iter()
             .map(|(hash, content)| {
                 (
-                    hash,
+                    from_key(hash).expect("Could not convert from hash"),
                     EntityAttributeValue::try_from_content(&JsonString::from(content)),
                 )
             })
@@ -253,13 +253,13 @@ impl EntityAttributeValueStorage for EavFileStorage {
         } else {
             Ok(eav
                 .into_iter()
-                .map(|key_value: (HashString, HcResult<EntityAttributeValue>)| {
+                .map(|key_value: (Key, HcResult<EntityAttributeValue>)| {
                     (
                         key_value.0,
                         key_value.1.unwrap_or(EntityAttributeValue::default()),
                     )
                 })
-                .collect::<HashMap<HashString, EntityAttributeValue>>())
+                .collect::<HashMap<Key, EntityAttributeValue>>())
         }
     }
 
@@ -270,7 +270,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<HashString, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         unimplemented!("Could not implment eav on range")
     }
 }

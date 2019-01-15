@@ -8,7 +8,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::EntityAttributeValue,
+    eav::{Key,EntityAttributeValue},
     entry::Entry,
     error::HolochainError,
     hash::HashString,
@@ -249,7 +249,7 @@ fn reduce_remove_entry_inner(
         .filter(|(_, e)| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live)
         })
-        .collect::<HashMap<HashString, EntityAttributeValue>>();
+        .collect::<HashMap<Key, EntityAttributeValue>>();
     if !status_eavs.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "entry_status != CrudStatus::Live",

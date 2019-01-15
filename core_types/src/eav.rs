@@ -31,7 +31,7 @@ pub type Attribute = String;
 pub type Value = Address;
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
-pub struct Key(i64, Action);
+pub struct Key(pub i64, pub Action);
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering

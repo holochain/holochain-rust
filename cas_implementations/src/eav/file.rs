@@ -47,7 +47,6 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<(HashString, String)>> {
         "*.txt".to_string(),
     ]
     .join(&MAIN_SEPARATOR.to_string());
-    println!("full path {:?}", full_path.clone());
 
     let paths = glob(&*full_path)
         .map_err(|_| HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
@@ -198,7 +197,6 @@ impl EavFileStorage {
                 Ok(hashmap)
             }
         } else {
-            println!("Cant find");
             Ok(HashMap::new())
         }
     }
@@ -229,7 +227,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
-        println!("FETCH EAV");
+
         let _guard = self.lock.read()?;
         let entity_set = self.read_from_dir::<Entity>(
             self.current_hash.clone(),
@@ -237,7 +235,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
             entity.clone(),
         )?;
 
-        println!("ENTITY SET {:?}", entity_set.clone());
         let attribute_set = self
             .read_from_dir::<Attribute>(
                 self.current_hash.clone(),
@@ -245,21 +242,17 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 attribute,
             )?
             .clone();
-        println!("ATTRIBUTE SET {:?}", attribute_set.clone());
         let value_set =
             self.read_from_dir::<Value>(self.current_hash.clone(), VALUE_DIR.to_string(), value)?;
-        println!("VALUE SET {:?}", value_set.clone());
 
         let attribute_value_inter = attribute_set.intersection(value_set);
-        println!("intersection {:?}", attribute_value_inter.clone());
 
         let entity_attribute_value_inter = entity_set.intersection(attribute_value_inter);
-        println!("intersection {:?}", entity_attribute_value_inter.clone());
         let (eav, error): (HashMap<_, _>, HashMap<_, _>) = entity_attribute_value_inter
             .into_iter()
             .map(|(hash, content)| {
                 (
-                    from_key(hash).expect("Could not convert from hash"),
+                    from_key(hash).unwrap_or(Key(0,Action::None)),
                     EntityAttributeValue::try_from_content(&JsonString::from(content)),
                 )
             })

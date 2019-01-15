@@ -8,7 +8,19 @@ This crate implements a set of tools for building and running Holochain DNA from
 
 ## Install
 
-Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/app-spec-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
+Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install `libzmq` dependency e.g.:
+
+On MacOS:
+
+``` shell`
+brew intall zmq
+```
+
+On Ubuntu:
+
+``` shell`
+apt-get install libzmq3-dev
+```
 
 ### Building From Source
 

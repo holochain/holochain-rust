@@ -2,9 +2,12 @@ use crate::{
     bundle,
     holochain_sodium::{aead, kx, random::random_secbuf, secbuf::SecBuf, sign},
     util,
-    error::DPKIError,
+    // error::DPKIError,
 };
-use holochain_core_types::agent::KeyBuffer;
+use holochain_core_types::{
+    agent::KeyBuffer,
+    error::HolochainError,
+};
 use rustc_serialize::json;
 use std::str;
 
@@ -49,12 +52,12 @@ impl Keypair {
     /// @param {SecBuf} passphrase - the encryption passphrase
     ///
     /// @param {string} hint - additional info / description for the bundle
-    pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> Result<bundle::KeyBundle, DPKIError> {
+    pub fn get_bundle(&mut self, passphrase: &mut SecBuf, hint: String) -> Result<bundle::KeyBundle, HolochainError> {
         let mut passphrase = passphrase;
         let bundle_type: String = "hcKeypair".to_string();
-        let skk = KeyBuffer::with_corrected(&self.pub_keys).unwrap();
+        let skk = KeyBuffer::with_corrected(&self.pub_keys)?;
         let sk = skk.get_sig() as &[u8];
-        let ekk = KeyBuffer::with_corrected(&self.pub_keys).unwrap();
+        let ekk = KeyBuffer::with_corrected(&self.pub_keys)?;
         let ek = ekk.get_enc() as &[u8];
         let mut sk_buf = SecBuf::with_insecure(32);
         let mut ek_buf = SecBuf::with_insecure(32);
@@ -93,7 +96,7 @@ impl Keypair {
     /// @param {object} bundle - persistence info
     ///
     /// @param {SecBuf} passphrase - decryption passphrase
-    pub fn from_bundle(bundle: &bundle::KeyBundle, passphrase: &mut SecBuf) -> Result<Keypair, DPKIError>  {
+    pub fn from_bundle(bundle: &bundle::KeyBundle, passphrase: &mut SecBuf) -> Result<Keypair, HolochainError>  {
         // decoding the bundle.data of type utinl::Keys
         let bundle_decoded = base64::decode(&bundle.data).unwrap();
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
@@ -119,7 +122,7 @@ impl Keypair {
     /// @param {SecBuf} data - the data to sign
     ///
     /// @param {SecBuf} signature - Empty Buf the sign
-    pub fn sign(&mut self, data: &mut SecBuf, signature: &mut SecBuf)->Result<(), DPKIError>  {
+    pub fn sign(&mut self, data: &mut SecBuf, signature: &mut SecBuf)->Result<(), HolochainError>  {
         let mut data = data;
         let mut signature = signature;
         let mut sign_priv = &mut self.sign_priv;
@@ -156,7 +159,7 @@ impl Keypair {
         recipient_id: Vec<&String>,
         data: &mut SecBuf,
         out: &mut Vec<SecBuf>,
-    )->Result<(), DPKIError>  {
+    )->Result<(), HolochainError>  {
         let mut sym_secret = SecBuf::with_secure(32);
         random_secbuf(&mut sym_secret);
 
@@ -215,7 +218,7 @@ impl Keypair {
         &mut self,
         source_id: String,
         cipher_bundle: &mut Vec<SecBuf>,
-    ) -> Result<SecBuf, DPKIError> {
+    ) -> Result<SecBuf, HolochainError> {
         let mut source_sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut source_enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
         util::decode_id(source_id, &mut source_sign_pub, &mut source_enc_pub);
@@ -283,7 +286,7 @@ impl Keypair {
             aead::dec(&mut dm, &mut secret, None, &mut n, &mut c).unwrap();
             Ok(dm)
         } else {
-            Err(DPKIError::new(&"could not decrypt - not a recipient?".to_string()))
+            Err(HolochainError::new(&"could not decrypt - not a recipient?".to_string()))
         }
     }
 }

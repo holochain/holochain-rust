@@ -7,7 +7,6 @@ use crate::{
 };
 use rustc_serialize::json;
 use std::str;
-// use seed::FromBundle::{Rs,Ds,Dps};
 
 pub enum InitializeSeed {
     SeedInit(SecBuf),
@@ -28,12 +27,14 @@ pub enum FromBundle {
 }
 
 impl Seed {
-    /**
-     * Get the proper seed type from a persistence bundle
-     * @param {object} bundle - the persistence bundle
-     * @param {string} passphrase - the decryption passphrase
-     * @return {RootSeed|DeviceSeed|DevicePinSeed}
-     */
+    
+    /// Get the proper seed type from a persistence bundle
+    ///
+    /// @param {object} bundle - the persistence bundle
+    ///
+    /// @param {string} passphrase - the decryption passphrase
+    ///
+    /// @return Type FromBundle
     pub fn from_seed_bundle(bundle: bundle::KeyBundle, passphrase: String) -> FromBundle {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
 
@@ -53,11 +54,13 @@ impl Seed {
         }
     }
 
-    /**
-     * generate a persistence bundle with hint info
-     * @param {string} passphrase - the encryption passphrase
-     * @param {string} hint - additional info / description for persistence
-     */
+    ///  generate a persistence bundle with hint info
+    ///
+    ///  @param {string} passphrase - the encryption passphrase
+    ///
+    ///  @param {string} hint - additional info / description for persistence
+    ///
+    /// @return {KeyBundle} - bundle of the seed
     pub fn get_seed_bundle(&mut self, passphrase: String, hint: String) -> bundle::KeyBundle {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
         let seed_data: bundle::ReturnBundleData = util::pw_enc(&mut self.seed_buf, &mut passphrase);
@@ -73,11 +76,12 @@ impl Seed {
         }
     }
 
-    /**
-     * Initialize this seed class with persistence bundle type and private seed
-     * @param {string} type - the persistence bundle type
-     * @param {SecBuf|string} seed - the private seed data (as a buffer or mnemonic)
-     */
+    
+    ///  Initialize this seed class with persistence bundle type and private seed
+    ///
+    ///  @param {string} stype - the persistence bundle type
+    ///
+    ///  @param {SecBuf|string} seed - the private seed data (as a buffer or mnemonic)
     pub fn new(stype: &String, sm: InitializeSeed) -> Self {
         match sm {
             SeedInit(s) => Seed {
@@ -98,6 +102,129 @@ impl Seed {
 
     // }
 }
+
+pub struct DevicePinSeed {
+    s: Seed,
+}
+
+impl DevicePinSeed {
+   
+    /// creates bundle for for the seed
+    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> bundle::KeyBundle {
+        self.s.get_seed_bundle(passphrase, hint)
+    }
+    
+    /// delegate to base struct
+    pub fn new(s: SecBuf) -> Self {
+        DevicePinSeed {
+            s: Seed::new(&"hcDevicePinSeed".to_string(), SeedInit(s)),
+        }
+    }
+
+    /// generate an application keypair given an index based on this seed
+    /// @param {number} index
+    /// @return {Keypair}
+    pub fn get_application_keypair(&mut self, index: u64) -> Keypair {
+        if index < 1 {
+            panic!("invalid index");
+        }
+
+        let mut out_seed = SecBuf::with_insecure(32);
+        let mut placeholder = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
+        kdf::derive(
+            &mut out_seed,
+            index.clone(),
+            &mut placeholder,
+            &mut self.s.seed_buf,
+        )
+        .unwrap();
+
+        Keypair::new_from_seed(&mut out_seed)
+    }
+}
+
+pub struct DeviceSeed {
+    s: Seed,
+}
+
+impl DeviceSeed {
+
+    /// creates bundle for for the seed
+    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> bundle::KeyBundle {
+        self.s.get_seed_bundle(passphrase, hint)
+    }
+    
+    /// delegate to base struct
+    pub fn new(s: SecBuf) -> Self {
+        DeviceSeed {
+            s: Seed::new(&"hcDeviceSeed".to_string(), SeedInit(s)),
+        }
+    }
+
+    
+    /// generate a device pin seed by applying pwhash of pin with this seed as the salt
+    /// @param {string} pin - should be >= 4 characters 1-9
+    /// @return {DevicePinSeed}
+    pub fn get_device_pin_seed(&mut self, pin: String) -> DevicePinSeed {
+        if pin.len() < 4 {
+            panic!("invalid PIN Size");
+        }
+        // let pin_encoded = base64::encode(&pin);
+        let mut pin_buf = SecBuf::with_insecure_from_string(pin);
+
+        let mut hash = SecBuf::with_insecure(pwhash::HASHBYTES);
+
+        util::pw_hash(&mut pin_buf, &mut self.s.seed_buf, &mut hash);
+
+        DevicePinSeed::new(hash)
+    }
+}
+
+#[derive(Debug)]
+pub struct RootSeed {
+    s: Seed,
+}
+
+impl RootSeed {
+    
+    /// creates bundle for for the seed
+    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> bundle::KeyBundle {
+        self.s.get_seed_bundle(passphrase, hint)
+    }
+    
+    /// Get a new, completely random root seed
+    pub fn new_random() -> Self {
+        let mut s = SecBuf::with_insecure(32);
+        random_secbuf(&mut s);
+        RootSeed::new(s)
+    }
+
+    
+    /// delegate to base struct
+    pub fn new(s: SecBuf) -> Self {
+        RootSeed {
+            s: Seed::new(&"hcRootSeed".to_string(), SeedInit(s)),
+        }
+    }
+
+    /// Generate Device Seed
+    pub fn get_device_seed(&mut self, index: u64) -> DeviceSeed {
+        if index < 1 {
+            panic!("invalid index");
+        }
+        let mut out_seed = SecBuf::with_insecure(32);
+        let mut placeholder = SecBuf::with_insecure_from_string("HCDEVICE".to_string());
+        kdf::derive(
+            &mut out_seed,
+            index.clone(),
+            &mut placeholder,
+            &mut self.s.seed_buf,
+        )
+        .unwrap();
+        DeviceSeed::new(out_seed)
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -297,128 +424,5 @@ mod tests {
             }
             _ => println!("FAIL"),
         }
-    }
-}
-
-// #[warn(dead_code)]
-pub struct DevicePinSeed {
-    s: Seed,
-}
-
-impl DevicePinSeed {
-    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> bundle::KeyBundle {
-        self.s.get_seed_bundle(passphrase, hint)
-    }
-    /**
-     * delegate to base struct
-     */
-    pub fn new(s: SecBuf) -> Self {
-        DevicePinSeed {
-            s: Seed::new(&"hcDevicePinSeed".to_string(), SeedInit(s)),
-        }
-    }
-
-    /**
-     * generate an application keypair given an index based on this seed
-     * @param {number} index
-     * @return {Keypair}
-     */
-    pub fn get_application_keypair(&mut self, index: u64) -> Keypair {
-        if index < 1 {
-            panic!("invalid index");
-        }
-
-        let mut out_seed = SecBuf::with_insecure(32);
-        let mut placeholder = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
-        kdf::derive(
-            &mut out_seed,
-            index.clone(),
-            &mut placeholder,
-            &mut self.s.seed_buf,
-        )
-        .unwrap();
-
-        Keypair::new_from_seed(&mut out_seed)
-    }
-}
-
-pub struct DeviceSeed {
-    s: Seed,
-}
-
-impl DeviceSeed {
-    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> bundle::KeyBundle {
-        self.s.get_seed_bundle(passphrase, hint)
-    }
-    /**
-     * delegate to base struct
-     */
-    pub fn new(s: SecBuf) -> Self {
-        DeviceSeed {
-            s: Seed::new(&"hcDeviceSeed".to_string(), SeedInit(s)),
-        }
-    }
-
-    /**
-     * generate a device pin seed by applying pwhash of pin with this seed as the salt
-     * @param {string} pin - should be >= 4 characters 1-9
-     * @return {DevicePinSeed}
-     */
-    pub fn get_device_pin_seed(&mut self, pin: String) -> DevicePinSeed {
-        if pin.len() < 4 {
-            panic!("invalid PIN Size");
-        }
-        // let pin_encoded = base64::encode(&pin);
-        let mut pin_buf = SecBuf::with_insecure_from_string(pin);
-
-        let mut hash = SecBuf::with_insecure(pwhash::HASHBYTES);
-
-        util::pw_hash(&mut pin_buf, &mut self.s.seed_buf, &mut hash);
-
-        DevicePinSeed::new(hash)
-    }
-}
-
-#[derive(Debug)]
-pub struct RootSeed {
-    s: Seed,
-}
-
-impl RootSeed {
-    pub fn get_bundle(&mut self, passphrase: String, hint: String) -> bundle::KeyBundle {
-        self.s.get_seed_bundle(passphrase, hint)
-    }
-    /**
-     * Get a new, completely random root seed
-     */
-    pub fn new_random() -> Self {
-        let mut s = SecBuf::with_insecure(32);
-        random_secbuf(&mut s);
-        RootSeed::new(s)
-    }
-
-    /**
-     * delegate to base struct
-     */
-    pub fn new(s: SecBuf) -> Self {
-        RootSeed {
-            s: Seed::new(&"hcRootSeed".to_string(), SeedInit(s)),
-        }
-    }
-
-    pub fn get_device_seed(&mut self, index: u64) -> DeviceSeed {
-        if index < 1 {
-            panic!("invalid index");
-        }
-        let mut out_seed = SecBuf::with_insecure(32);
-        let mut placeholder = SecBuf::with_insecure_from_string("HCDEVICE".to_string());
-        kdf::derive(
-            &mut out_seed,
-            index.clone(),
-            &mut placeholder,
-            &mut self.s.seed_buf,
-        )
-        .unwrap();
-        DeviceSeed::new(out_seed)
     }
 }

@@ -23,6 +23,10 @@ jobs:
        command: nix-shell --run hc-install-cmd
 
    - run:
+      name: test cmd
+      command: nix-shell --run hc-test-cmd
+
+   - run:
        name: install node container
        command: nix-shell --run hc-install-node-container
 
@@ -67,12 +71,29 @@ jobs:
    - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end .
    - run: docker push holochain/holochain-rust:circle.zz.end
 
+ cold.ubuntu:
+  docker:
+   - image: ubuntu
+  steps:
+   - checkout
+   - run: . ./scripts/install/auto.sh
+   - run: make test
+
 workflows:
  version: 2
  tests:
   jobs:
    - build
    - integration-tests
+
+ cold:
+  jobs:
+   - cold.ubuntu:
+      filters:
+       branches:
+        only:
+         - develop
+
  dockers:
   # https://circleci.com/docs/2.0/workflows/#scheduling-a-workflow
   triggers:

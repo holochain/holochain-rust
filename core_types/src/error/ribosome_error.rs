@@ -81,7 +81,7 @@ impl RibosomeReturnCode {
 /// Enum of all possible ERROR codes that a Zome API Function could return.
 #[repr(u32)]
 #[derive(Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub enum RibosomeErrorCode {
     Unspecified                     = 1 << 16,
     ArgumentDeserializationFailed   = 2 << 16,
@@ -95,7 +95,7 @@ pub enum RibosomeErrorCode {
     UnknownEntryType                = 10 << 16,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl RibosomeErrorCode {
     pub fn as_str(&self) -> &str {
         match self {

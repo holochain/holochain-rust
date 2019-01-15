@@ -387,13 +387,11 @@ pub fn call<S: Into<String>>(
     )?;
 
     // Call WASMI-able commit
-    let encoded_allocation_of_result: u32;
-    unsafe {
-        encoded_allocation_of_result = hc_call(allocation_of_input.encode() as u32);
-    }
-    // Deserialize complex result stored in wasm memory
-    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result as u32)?;
-    // Free result & input allocations
+    let encoded_allocation_of_result: u32 = unsafe { hc_call(allocation_of_input.encode() as u32) };
+    // Deserialize complex result stored in memory and check for ERROR in encoding
+    let result: ZomeApiInternalResult = load_json(encoded_allocation_of_result)?;
+
+    // Free result & input allocations.
     mem_stack
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
@@ -498,21 +496,25 @@ pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
 ///     // where T is the type that you used to commit the entry, in this case a Blog
 ///     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
 ///     // Otherwise its a Some(T) or a None
-///     hdk::get_entry(post_address)
+///     hdk::get_entry(&post_address)
 /// }
 /// # }
 /// ```
-pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
+pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(address, GetEntryOptions::default())?;
-    if !entry_result.found() {
-        return Ok(None);
-    }
-    Ok(entry_result.latest())
+
+    let entry = if !entry_result.found() {
+        None
+    } else {
+        entry_result.latest()
+    };
+
+    Ok(entry)
 }
 
 /// Returns the Entry at the exact address specified, whatever its crud-status.
 /// Returns None if no entry exists at the specified address.
-pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
+pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(
         address,
         GetEntryOptions::new(StatusRequestKind::Initial, true, false, false),
@@ -523,7 +525,7 @@ pub fn get_entry_initial(address: Address) -> ZomeApiResult<Option<Entry>> {
 /// Return an EntryHistory filled with all the versions of the entry from the version at
 /// the specified address to the latest.
 /// Returns None if no entry exists at the specified address.
-pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<EntryHistory>> {
+pub fn get_entry_history(address: &Address) -> ZomeApiResult<Option<EntryHistory>> {
     let entry_result = get_entry_result(
         address,
         GetEntryOptions::new(StatusRequestKind::All, true, false, false),
@@ -541,7 +543,7 @@ pub fn get_entry_history(address: Address) -> ZomeApiResult<Option<EntryHistory>
 /// the specified address.
 /// The data returned is configurable with the GetEntryOptions argument.
 pub fn get_entry_result(
-    address: Address,
+    address: &Address,
     options: GetEntryOptions,
 ) -> ZomeApiResult<GetEntryResult> {
     let mut mem_stack: SinglePageStack;
@@ -549,7 +551,10 @@ pub fn get_entry_result(
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let entry_args = GetEntryArgs { address, options };
+    let entry_args = GetEntryArgs {
+        address: address.clone(),
+        options,
+    };
 
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(&mut mem_stack, entry_args)?;
@@ -620,7 +625,7 @@ pub fn get_entry_result(
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(in_reply_to_address.clone(), GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false })?;
+///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///
@@ -759,13 +764,16 @@ pub fn verify_signature<S: Into<String>>(
 /// entry's address in the previous entry's metadata.
 /// The updated entry will hold the previous entry's address in its header,
 /// which will be used by validation routes.
-pub fn update_entry(new_entry: Entry, address: Address) -> ZomeApiResult<Address> {
+pub fn update_entry(new_entry: Entry, address: &Address) -> ZomeApiResult<Address> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
 
-    let update_args = UpdateEntryArgs { new_entry, address };
+    let update_args = UpdateEntryArgs {
+        new_entry,
+        address: address.clone(),
+    };
 
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(&mut mem_stack, update_args)?;
@@ -796,13 +804,13 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// Commit a DeletionEntry to your local source chain that marks an entry as 'deleted' by setting
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
-pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
+pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
     let mut mem_stack: SinglePageStack;
     unsafe {
         mem_stack = G_MEM_STACK.unwrap();
     }
     // Put args in struct and serialize into memory
-    let allocation_of_input = store_as_json(&mut mem_stack, address)?;
+    let allocation_of_input = store_as_json(&mut mem_stack, address.clone())?;
 
     // Call WASMI-able get_entry
     let encoded_allocation_of_result: u32;
@@ -818,8 +826,8 @@ pub fn remove_entry(address: Address) -> ZomeApiResult<()> {
     res
 }
 
-/// Consumes three values, the address of an entry get get links from (the base); the tag of the links
-/// to be retrieved, and an options struct for selecting what meta data, and crud staus links to retrieve.
+/// Consumes three values; the address of an entry get get links from (the base), the tag of the links
+/// to be retrieved, and an options struct for selecting what meta data and crud status links to retrieve.
 /// Note: the tag is intended to describe the relationship between the `base` and other entries you wish to lookup.
 /// This function returns a list of addresses of other entries which matched as being linked by the given `tag`.
 /// Links are created using the Zome API function [link_entries](fn.link_entries.html).
@@ -912,7 +920,7 @@ pub fn get_links_result<S: Into<String>>(
     let result = get_links_result
         .addresses()
         .iter()
-        .map(|address| get_entry_result(address.to_owned(), get_entry_options.clone()))
+        .map(|address| get_entry_result(&address, get_entry_options.clone()))
         .collect();
     Ok(result)
 }
@@ -943,8 +951,18 @@ pub fn get_links_and_load<S: Into<String>>(
     Ok(entries)
 }
 
-/// Returns a list of entries from your local source chain, that match a given type.
-/// entry_type_names: Specify type of entry(s) to retrieve, as a Vec<String> of 0 or more names.
+/// Returns a list of entries from your local source chain, that match a given entry type name or names.
+///
+/// Each name may be a plain entry type name, or a "glob" pattern such as "prefix/*" (matches all
+/// entry types starting with "prefix/"), or "[!%]*e" (matches all non-system non-name-spaced entry
+/// types ending in "e").  All names and patterns are merged into a single efficient Regular
+/// Expression for scanning.
+///
+/// Entry type name-spaces are supported by including "/" in your entry type names; use vec![], "",
+/// or "**" to match all names in all name-spaces, "*" to match all non-namespaced names.
+///
+/// entry_type_names: Specify type of entry(s) to retrieve, as a String or Vec<String> of 0 or more names, converted into the QueryArgNames type
+/// start: First entry in result list to retrieve
 /// limit: Max number of entries to retrieve
 /// # Examples
 /// ```rust
@@ -957,6 +975,12 @@ pub fn get_links_and_load<S: Into<String>>(
 /// # fn main() {
 /// pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
 ///     hdk::query("post".into(), 0, 0)
+/// }
+/// pub fn all_system_plus_mine() -> ZomeApiResult<Vec<Address>> {
+///     hdk::query(vec!["[%]*","mine"].into(), 0, 0)
+/// }
+/// pub fn everything_including_namespaced_except_system() -> ZomeApiResult<Vec<Address>> {
+///     hdk::query("**/[!%]*".into(), 0, 0)
 /// }
 /// # }
 /// ```

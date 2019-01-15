@@ -30,7 +30,7 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "hcc")]
 struct Opt {
-    /// Output file
+    /// Path to the toml configuration file for the container
     #[structopt(short = "c", long = "config", parse(from_os_str))]
     config: Option<PathBuf>,
 }

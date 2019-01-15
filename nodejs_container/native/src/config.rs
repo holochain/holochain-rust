@@ -6,7 +6,6 @@ use holochain_container_api::{
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
-use holochain_net::p2p_config::P2pConfig;
 use neon::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -27,12 +26,8 @@ pub struct InstanceData {
 }
 
 pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let mut i = 0;
-    let mut instances = Vec::<InstanceData>::new();
-    while let Some(arg) = cx.argument_opt(i) {
-        instances.push(neon_serde::from_value(&mut cx, arg)?);
-        i += 1;
-    }
+    let instances_arg: Handle<JsValue> = cx.argument(0)?;
+    let instances: Vec<InstanceData> = neon_serde::from_value(&mut cx, instances_arg)?;
     let config = make_config(instances);
     Ok(neon_serde::to_value(&mut cx, &config)?)
 }
@@ -57,7 +52,6 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             .entry(dna_data.path.clone())
             .or_insert_with(|| make_dna_config(dna_data).expect("DNA file not found"));
 
-        let network_mock = Some(P2pConfig::unique_mock_config());
         let agent_id = agent_config.id.clone();
         let dna_id = dna_config.id.clone();
         let instance = InstanceConfiguration {
@@ -65,7 +59,6 @@ fn make_config(instance_data: Vec<InstanceData>) -> Configuration {
             agent: agent_id,
             dna: dna_id,
             storage: StorageConfiguration::Memory,
-            network: network_mock,
         };
         instance_configs.push(instance);
     }

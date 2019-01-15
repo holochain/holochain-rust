@@ -12,16 +12,6 @@ pub enum HolochainInstanceError {
 }
 
 impl Error for HolochainInstanceError {
-    fn description(&self) -> &str {
-        match self {
-            HolochainInstanceError::InternalFailure(ref err) => err.description(),
-            HolochainInstanceError::InstanceNotActiveYet => "Holochain instance is not active yet.",
-            HolochainInstanceError::InstanceAlreadyActive => {
-                "Holochain instance is already active."
-            }
-        }
-    }
-
     // not sure how to test this because dyn reference to the Error is not implementing PartialEq
     #[cfg_attr(rustfmt, rustfmt_skip)]
     fn cause(&self) -> Option<&Error> {
@@ -35,7 +25,16 @@ impl Error for HolochainInstanceError {
 
 impl fmt::Display for HolochainInstanceError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Holochain Instance Error: {}", self.description())
+        let prefix = "Holochain Instance Error";
+        match self {
+            HolochainInstanceError::InternalFailure(ref err) => write!(f, "{}: {}", prefix, err),
+            HolochainInstanceError::InstanceNotActiveYet => {
+                write!(f, "{}: Holochain instance is not active yet.", prefix)
+            }
+            HolochainInstanceError::InstanceAlreadyActive => {
+                write!(f, "{}: Holochain instance is already active.", prefix)
+            }
+        }
     }
 }
 
@@ -50,28 +49,6 @@ pub mod tests {
 
     use crate::error::HolochainInstanceError;
     use holochain_core_types::error::HolochainError;
-    use std::error::Error;
-
-    #[test]
-    /// show ToString for HolochainInstanceError
-    fn holochain_instance_error_description_test() {
-        for (i, o) in vec![
-            (
-                HolochainInstanceError::InstanceNotActiveYet,
-                "Holochain instance is not active yet.",
-            ),
-            (
-                HolochainInstanceError::InstanceAlreadyActive,
-                "Holochain instance is already active.",
-            ),
-            (
-                HolochainInstanceError::InternalFailure(HolochainError::DnaMissing),
-                "DNA is missing",
-            ),
-        ] {
-            assert_eq!(i.description(), o,);
-        }
-    }
 
     #[test]
     /// show ToString for HolochainInstanceError

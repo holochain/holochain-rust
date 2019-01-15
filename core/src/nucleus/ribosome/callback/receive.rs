@@ -23,7 +23,7 @@ pub fn receive(
 ) -> CallbackResult {
     let params = match params {
         CallbackParams::Receive(payload) => payload,
-        _ => return CallbackResult::NotImplemented,
+        _ => return CallbackResult::NotImplemented("receive/1".into()),
     };
 
     let zome_call = ZomeFnCall::new(
@@ -37,11 +37,11 @@ pub fn receive(
 
     let maybe_wasm = dna.get_wasm_from_zome_name(zome);
     if maybe_wasm.is_none() {
-        return CallbackResult::NotImplemented;
+        return CallbackResult::NotImplemented("receive/2".into());
     }
     let wasm = maybe_wasm.unwrap();
     if wasm.code.is_empty() {
-        return CallbackResult::NotImplemented;
+        return CallbackResult::NotImplemented("receive/3".into());
     }
 
     match ribosome::run_dna(
@@ -52,7 +52,7 @@ pub fn receive(
         Some(zome_call.clone().parameters.into_bytes()),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
-        Err(_) => CallbackResult::NotImplemented,
+        Err(_) => CallbackResult::NotImplemented("receive/4".into()),
     }
 }
 
@@ -80,9 +80,13 @@ pub mod tests {
         .expect("Test callback instance could not be initialized");
         let context = instance.initialize_context(test_context("test"));
 
-        let result = receive(context, zome, &CallbackParams::Receive(String::from("")));
-
-        assert_eq!(CallbackResult::NotImplemented, result);
+        if let CallbackResult::NotImplemented(_) =
+            receive(context, zome, &CallbackParams::Receive(String::from("")))
+        {
+            ()
+        } else {
+            panic!("unexpected result");
+        }
     }
 
     #[test]

@@ -19,7 +19,7 @@ const promiser = (fulfill, reject) => (err, val) => {
 /////////////////////////////////////////////////////////////
 
 const defaultOpts = {
-    debugLog: false
+    debugLog: true
 }
 
 const Config = {

@@ -41,7 +41,7 @@ pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
         Default::default()
     } else {
         LoggerConfiguration {
-            logger_type: "none".into(),
+            logger_type: "debug".into(),
             rules: LogRules::new(),
         }
     };

@@ -56,7 +56,7 @@ pub struct Configuration {
 /// There might be different kinds of loggers in the future.
 /// Currently there is a "debug" and "simple" logger.
 /// TODO: make this an enum
-#[derive(Deserialize, Serialize, Clone, Default, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
     pub logger_type: String,
@@ -64,6 +64,16 @@ pub struct LoggerConfiguration {
     pub rules: LogRules,
     //    pub file: Option<String>,
 }
+
+impl Default for LoggerConfiguration {
+    fn default() -> LoggerConfiguration {
+        LoggerConfiguration {
+            logger_type: "debug".into(),
+            rules: Default::default(),
+        }
+    }
+}
+
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.

@@ -199,7 +199,3 @@ test('scenario test create & publish post -> get from other instance', async (t)
   t.equal(value.content, content1)
   t.end()
 })
-
-
-// Just pull in extra tests like this for now: can do this more gracefully with Scenario API
-require('./regressions')

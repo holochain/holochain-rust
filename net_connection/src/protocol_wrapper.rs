@@ -192,14 +192,12 @@ pub enum ProtocolWrapper {
     #[serde(rename = "setConfig")]
     SetConfig(ConfigData),
 
-
     /// [send] connect to the specified multiaddr
     #[serde(rename = "connect")]
     Connect(ConnectData),
     /// [recv] notification of a peer connected
     #[serde(rename = "peerConnected")]
     PeerConnected(PeerData),
-
 
     /// [send] send a message to another node on the network
     #[serde(rename = "send")]
@@ -214,11 +212,9 @@ pub enum ProtocolWrapper {
     #[serde(rename = "handleSendResult")]
     HandleSendResult(MessageData),
 
-
     /// [send] send out a "trackApp" request
     #[serde(rename = "trackApp")]
     TrackApp(TrackAppData),
-
 
     /// [send / recv] report success for a messages with _id parameter
     #[serde(rename = "successResult")]
@@ -226,7 +222,6 @@ pub enum ProtocolWrapper {
     /// [send / recv] for any message with _id parameter to indicate failure
     #[serde(rename = "failureResult")]
     FailureResult(FailureResultData),
-
 
     /// [send] request data from the dht
     /// [recv] another node, or the network module itself is requesting data
@@ -243,7 +238,6 @@ pub enum ProtocolWrapper {
     /// [recv] the network is requesting that we store this data
     #[serde(rename = "storeDht")]
     StoreDht(DhtData),
-
 
     /// [send] request meta data from the dht
     /// [recv] another node, or the network module itself is requesting data

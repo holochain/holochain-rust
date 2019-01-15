@@ -33,11 +33,11 @@ impl NetWorker for IpcClient {
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not delete)
         // Print non-ping messages
-//        match data {
-//            Protocol::NamedBinary(_) =>  println!(">>>> IpcClient send: {:?}", data),
-//            Protocol::Json(_) =>  println!(">>>> IpcClient send: {:?}", data),
-//           _ => (),
-//        };
+        //        match data {
+        //            Protocol::NamedBinary(_) =>  println!(">>>> IpcClient send: {:?}", data),
+        //            Protocol::Json(_) =>  println!(">>>> IpcClient send: {:?}", data),
+        //           _ => (),
+        //        };
         self.priv_send(&data)
     }
 
@@ -56,11 +56,11 @@ impl NetWorker for IpcClient {
             }
             // Debugging code (do not delete)
             // Print non-ping messages
-//            match msg {
-//                Protocol::NamedBinary(_) => println!("<<<< IpcClient recv: {:?}", msg),
-//                Protocol::Json(_) => println!("<<<< IpcClient recv: {:?}", msg),
-//                _ => (),
-//            };
+            //            match msg {
+            //                Protocol::NamedBinary(_) => println!("<<<< IpcClient recv: {:?}", msg),
+            //                Protocol::Json(_) => println!("<<<< IpcClient recv: {:?}", msg),
+            //                _ => (),
+            //            };
             (self.handler)(Ok(msg))?;
         }
         let now = get_millis();

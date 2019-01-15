@@ -36,9 +36,7 @@ fn example_dna_address() -> Address {
 }
 
 type TwoNodesTestFn =
-fn(node1: &mut P2pNode, node2: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
-
-
+    fn(node1: &mut P2pNode, node2: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
@@ -61,17 +59,17 @@ fn main() {
     }
 
     // List of tests
-    let test_fns: Vec<TwoNodesTestFn> = vec![
-        setup_normal,
-        send_test,
-        dht_test,
-        meta_test,
-    ];
+    let test_fns: Vec<TwoNodesTestFn> = vec![setup_normal, send_test, dht_test, meta_test];
 
     // Launch tests on each setup
     for test_fn in test_fns.clone() {
         launch_two_nodes_rust_mock_test(test_fn).unwrap();
-        launch_two_nodes_test_with_ipc_mock(&n3h_path, "test_bin/data/mock_network_config.json", test_fn).unwrap();
+        launch_two_nodes_test_with_ipc_mock(
+            &n3h_path,
+            "test_bin/data/mock_network_config.json",
+            test_fn,
+        )
+        .unwrap();
         launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
     }
 
@@ -135,7 +133,6 @@ fn launch_two_nodes_test_with_ipc_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_rust_mock_test(test_fn: TwoNodesTestFn) -> NetResult<()> {
-
     let mut node_a = P2pNode::new_mock();
     let mut node_b = P2pNode::new_with_config(&node_a.config, None);
 
@@ -150,7 +147,6 @@ fn launch_two_nodes_rust_mock_test(test_fn: TwoNodesTestFn) -> NetResult<()> {
 
     Ok(())
 }
-
 
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
@@ -197,7 +193,11 @@ fn launch_two_nodes_test(
 // fn no_connect_test()
 
 #[cfg_attr(tarpaulin, skip)]
-fn send_and_confirm_data(node_a: &mut P2pNode, node_b: &mut P2pNode, address: &str) -> NetResult<()> {
+fn send_and_confirm_data(
+    node_a: &mut P2pNode,
+    node_b: &mut P2pNode,
+    address: &str,
+) -> NetResult<()> {
     // Send 'Store DHT data' message on node 1
     node_a.send(
         ProtocolWrapper::PublishDht(DhtData {
@@ -302,23 +302,27 @@ fn send_and_confirm_metadata(
 #[cfg_attr(tarpaulin, skip)]
 fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Send TrackApp message on both nodes
-    node_a.send(
-        ProtocolWrapper::TrackApp(TrackAppData {
-            dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
-        })
+    node_a
+        .send(
+            ProtocolWrapper::TrackApp(TrackAppData {
+                dna_address: example_dna_address(),
+                agent_id: AGENT_ID_1.to_string(),
+            })
             .into(),
-    ).expect("Failed sending TrackAppData on node_a");
+        )
+        .expect("Failed sending TrackAppData on node_a");
     let connect_result_1 = node_a.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     println!("self connected result 1: {:?}", connect_result_1);
 
-    node_b.send(
-        ProtocolWrapper::TrackApp(TrackAppData {
-            dna_address: example_dna_address(),
-            agent_id: AGENT_ID_2.to_string(),
-        })
+    node_b
+        .send(
+            ProtocolWrapper::TrackApp(TrackAppData {
+                dna_address: example_dna_address(),
+                agent_id: AGENT_ID_2.to_string(),
+            })
             .into(),
-    ).expect("Failed sending TrackAppData on node_b");
+        )
+        .expect("Failed sending TrackAppData on node_b");
     let connect_result_2 = node_b.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
     println!("self connected result 2: {:?}", connect_result_2);
 
@@ -327,11 +331,13 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
         let mut _node1_id = String::new();
         let mut node2_binding = String::new();
 
-        node_a.send(ProtocolWrapper::RequestState.into())
-              .expect("Failed sending RequestState on node_a");
+        node_a
+            .send(ProtocolWrapper::RequestState.into())
+            .expect("Failed sending RequestState on node_a");
         let node_state_A = node_a.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
-        node_b.send(ProtocolWrapper::RequestState.into())
-              .expect("Failed sending RequestState on node_b");
+        node_b
+            .send(ProtocolWrapper::RequestState.into())
+            .expect("Failed sending RequestState on node_b");
         let node_state_B = node_b.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
 
         one_let!(ProtocolWrapper::State(state) = node_state_A {
@@ -350,7 +356,7 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
             ProtocolWrapper::Connect(ConnectData {
                 address: node2_binding.into(),
             })
-                .into(),
+            .into(),
         )?;
 
         // Make sure Peers are connected
@@ -377,16 +383,18 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
     setup_normal(node_a, node_b, can_connect);
 
     // Send a message from node_a to node_b
-    node_a.send(
-        ProtocolWrapper::SendMessage(MessageData {
-            dna_address: example_dna_address(),
-            to_agent_id: AGENT_ID_2.to_string(),
-            from_agent_id: AGENT_ID_1.to_string(),
-            msg_id: "yada".to_string(),
-            data: json!("hello"),
-        })
+    node_a
+        .send(
+            ProtocolWrapper::SendMessage(MessageData {
+                dna_address: example_dna_address(),
+                to_agent_id: AGENT_ID_2.to_string(),
+                from_agent_id: AGENT_ID_1.to_string(),
+                msg_id: "yada".to_string(),
+                data: json!("hello"),
+            })
             .into(),
-    ).expect("Failed sending SendMessage to node_b");
+        )
+        .expect("Failed sending SendMessage to node_b");
     // Check if node_b received it
     let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
     println!("#### got: {:?}", res);
@@ -397,16 +405,18 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
     assert_eq!("\"hello\"".to_string(), msg.data.to_string());
 
     // Send a message from node_b to node_a
-    node_b.send(
-        ProtocolWrapper::HandleSendResult(MessageData {
-            dna_address: example_dna_address(),
-            to_agent_id: AGENT_ID_1.to_string(),
-            from_agent_id: AGENT_ID_2.to_string(),
-            msg_id: "yada".to_string(),
-            data: json!(format!("echo: {}", msg.data.to_string())),
-        })
+    node_b
+        .send(
+            ProtocolWrapper::HandleSendResult(MessageData {
+                dna_address: example_dna_address(),
+                to_agent_id: AGENT_ID_1.to_string(),
+                from_agent_id: AGENT_ID_2.to_string(),
+                msg_id: "yada".to_string(),
+                data: json!(format!("echo: {}", msg.data.to_string())),
+            })
             .into(),
-    ).expect("Failed sending HandleSendResult on node_b");
+        )
+        .expect("Failed sending HandleSendResult on node_b");
     // Check if node_a received it
     let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
     println!("#### got: {:?}", res);
@@ -445,7 +455,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
             address: ENTRY_ADDRESS_3.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     // Send 'Store DHT metadata' message on node 1
     node1.send(
@@ -458,7 +468,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello-meta"),
         })
-            .into(),
+        .into(),
     )?;
     // Send 'get DHT data' message on node 2
     node2.send(
@@ -468,7 +478,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
             from_agent_id: AGENT_ID_2.to_string(),
             address: ENTRY_ADDRESS_3.to_string(),
         })
-            .into(),
+        .into(),
     )?;
     // Send 'Get DHT data result' message on node 2
     node2.send(
@@ -479,7 +489,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
             address: ENTRY_ADDRESS_3.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     // Send a 'Get DHT metadata' message on node 2
     node2.send(
@@ -490,7 +500,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
             address: ENTRY_ADDRESS_3.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
         })
-            .into(),
+        .into(),
     )?;
     // Send a 'Get DHT metadata result' message on node 2
     node1.send(
@@ -503,7 +513,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
-            .into(),
+        .into(),
     )?;
     let result = node1.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
     println!("got GetDhtMetaResult: {:?}", result);

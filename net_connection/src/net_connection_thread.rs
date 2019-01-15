@@ -1,12 +1,14 @@
-use super::NetResult;
 use super::{
-    net_connection::{NetSend, NetHandler, NetShutdown, NetWorkerFactory},
+    net_connection::{NetHandler, NetSend, NetShutdown, NetWorkerFactory},
     protocol::Protocol,
+    NetResult,
 };
-use std::{thread, time};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    mpsc, Arc,
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc, Arc,
+    },
+    thread, time,
 };
 
 /// Struct for holding a network connection running on a separate thread.

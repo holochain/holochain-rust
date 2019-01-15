@@ -5,8 +5,8 @@ use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
     protocol_wrapper::{
-        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData,
-        ProtocolWrapper, PeerData,
+        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData, PeerData,
+        ProtocolWrapper,
     },
     NetResult,
 };
@@ -70,9 +70,10 @@ impl MockSystem {
                     self.priv_send_all(
                         &msg.dna_address.clone(),
                         ProtocolWrapper::PeerConnected(PeerData {
-                         dna_address: msg.dna_address,
-                        agent_id: msg.agent_id,
-                        }).into(),
+                            dna_address: msg.dna_address,
+                            agent_id: msg.agent_id,
+                        })
+                        .into(),
                     )?;
                 }
 
@@ -145,8 +146,8 @@ impl MockSystem {
     /// send a message to all nodes connected with this dna address
     fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
-           // Debugging code (do not remove)
-           // println!("<<<< MockSystem send all: {:?} ({})", data.clone(), dna_address.clone());
+            // Debugging code (do not remove)
+            // println!("<<<< MockSystem send all: {:?} ({})", data.clone(), dna_address.clone());
             for val in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }

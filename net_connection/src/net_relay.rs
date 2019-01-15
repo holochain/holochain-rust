@@ -1,6 +1,5 @@
 use super::NetResult;
-use crate::protocol::Protocol;
-use crate::net_connection::*;
+use crate::{net_connection::*, protocol::Protocol};
 
 /// a simple pass-through NetSend instance
 /// this struct can be use to compose one type of NetWorker into another
@@ -45,7 +44,6 @@ impl NetConnectionRelay {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,7 +61,7 @@ mod tests {
             Box::new(|_h| Ok(Box::new(DefWorker) as Box<NetWorker>)),
             None,
         )
-            .unwrap();
+        .unwrap();
 
         con.send("test".into()).unwrap();
         con.tick().unwrap();
@@ -97,7 +95,7 @@ mod tests {
             Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
-            .unwrap();
+        .unwrap();
 
         con.send("test".into()).unwrap();
 
@@ -120,7 +118,7 @@ mod tests {
             Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
-            .unwrap();
+        .unwrap();
 
         con.tick().unwrap();
 

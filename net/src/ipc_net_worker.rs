@@ -10,9 +10,7 @@ use holochain_net_ipc::{
 };
 
 use holochain_net_connection::{
-    net_connection::{
-        NetSend, NetHandler, NetShutdown, NetWorker, NetWorkerFactory,
-    },
+    net_connection::{NetHandler, NetSend, NetShutdown, NetWorker, NetWorkerFactory},
     net_relay::NetConnectionRelay,
     protocol::Protocol,
     protocol_wrapper::{ConfigData, ConnectData, ProtocolWrapper, StateData},
@@ -25,7 +23,6 @@ use serde_json;
 
 /// a NetWorker talking to the network via another process through an IPC connection.
 pub struct IpcNetWorker {
-
     handler: NetHandler,
 
     ipc_relay: NetConnectionRelay,
@@ -128,7 +125,6 @@ impl IpcNetWorker {
     }
 }
 
-
 /// Private Constructors
 impl IpcNetWorker {
     /// Constructor with IpcNetWorker instance pointing to a process that we spawn here
@@ -157,13 +153,7 @@ impl IpcNetWorker {
         });
 
         // Done
-        IpcNetWorker::priv_new(
-            handler,
-            factory,
-            kill,
-            bootstrap_nodes,
-            endpoint,
-        )
+        IpcNetWorker::priv_new(handler, factory, kill, bootstrap_nodes, endpoint)
     }
 
     /// Constructor without config
@@ -270,10 +260,8 @@ impl NetWorker for IpcNetWorker {
     }
 }
 
-
 // private
 impl IpcNetWorker {
-
     // Send 'Connect to bootstrap nodes' request to Ipc server
     fn priv_send_connects(&mut self) -> NetResult<()> {
         for bs_node in &self.bootstrap_nodes {

@@ -1,12 +1,6 @@
-
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
-    net_connection::NetSend,
-    protocol::Protocol,
-    protocol_wrapper::{
-        ProtocolWrapper,
-    },
-    NetResult,
+    net_connection::NetSend, protocol::Protocol, protocol_wrapper::ProtocolWrapper, NetResult,
 };
 use std::{convert::TryFrom, sync::mpsc};
 
@@ -33,9 +27,15 @@ impl P2pNode {
                 Ok(())
             }),
             &config,
-        ).expect("Failed to create P2pNetwork");
+        )
+        .expect("Failed to create P2pNetwork");
 
-        P2pNode { _maybe_temp_dir, p2p_connection, receiver, config: config.clone() }
+        P2pNode {
+            _maybe_temp_dir,
+            p2p_connection,
+            receiver,
+            config: config.clone(),
+        }
     }
 
     // Constructor for a mock P2P Network
@@ -43,7 +43,6 @@ impl P2pNode {
     pub fn new_mock() -> Self {
         let config = P2pConfig::unique_mock();
         return P2pNode::new_with_config(&config, None);
-
     }
 
     // Constructor for an IPC node that uses an existing n3h process and a temp folder
@@ -60,7 +59,8 @@ impl P2pNode {
         maybe_config_filepath: Option<&str>,
         bootstrap_nodes: Vec<String>,
     ) -> Self {
-        let (p2p_config, temp_dir) = create_ipc_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
+        let (p2p_config, temp_dir) =
+            create_ipc_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
         return P2pNode::new_with_config(&p2p_config, Some(temp_dir));
     }
 
@@ -103,9 +103,7 @@ impl P2pNode {
                 if predicate(&p2p_msg) {
                     println!("P2pNode::wait() found match");
                     return Ok(p2p_msg);
-                }
-                else
-                {
+                } else {
                     println!("P2pNode::wait() found NOT match");
                 }
             }
@@ -123,7 +121,9 @@ impl P2pNode {
     // Stop node
     #[cfg_attr(tarpaulin, skip)]
     pub fn stop(self) {
-        self.p2p_connection.stop().expect("Failed to stop p2p connection properly");
+        self.p2p_connection
+            .stop()
+            .expect("Failed to stop p2p connection properly");
     }
 
     /// Getter of the endpoint of its connection
@@ -209,10 +209,8 @@ fn create_ipc_config(
                 }
             },
             }}))
-                .unwrap()
+            .unwrap()
         }
     };
     return (config, dir_ref);
 }
-
-

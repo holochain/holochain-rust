@@ -154,7 +154,7 @@ scenario1.runTape('get_post with non-existant address returns null', async (t, {
 scenario2.runTape('scenario test create & publish post -> get from other instance', async (t, { alice, bob }) => {
 
   const initialContent = "Holo world"
-  const params = { content: "Holo world", in_reply_to: null }
+  const params = { content: initialContent, in_reply_to: null }
   const create_result = await alice.callSync("blog", "main", "create_post", params)
   console.log("create_result: ", create_result)
 

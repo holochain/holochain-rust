@@ -178,7 +178,7 @@ pub mod tests {
             .expect("valid ZomeApiInternalResult JsonString");
 
         let core_err = CoreError::try_from(result).expect("valid CoreError JsonString");
-        assert_eq!("not implemented", core_err.kind.to_string(),);
+        assert_eq!("Unknown entry type", core_err.kind.to_string(),);
     }
 
     #[test]

@@ -94,14 +94,20 @@ impl Seed {
                 seed_type: stype.clone(),
                 seed_buf: s,
             },
-            MnemonicInit(m) => Seed {
-                seed_type: stype.clone(),
-                // TODO : incorect implementation
-                seed_buf: SecBuf::with_insecure_from_string(m),
+            MnemonicInit(phrase) => {
+                let mnemonic = Mnemonic::from_phrase(phrase, Language::English).unwrap();
+                let entropy: &[u8] = mnemonic.entropy();
+                let mut buf = SecBuf::with_insecure(entropy.len());
+                util::convert_array_to_secbuf(entropy,&mut buf);
+                Seed {
+                    seed_type: stype.clone(),
+                    seed_buf: buf,
+                }
             },
         }
     }
 
+    /// Generated a mnemonic for the seed.
     pub fn get_mnemonic(&mut self) -> Result<String, HolochainError> {
         let entropy = self.seed_buf.read_lock();
         let e = &*entropy;
@@ -243,26 +249,6 @@ impl RootSeed {
 mod tests {
     use super::*;
     use crate::holochain_sodium::random::random_secbuf;
-
-    #[test]
-    fn it_should_creat_a_menemonic() {
-        let mut seed_buf_in = SecBuf::with_insecure(16);
-        // random_secbuf(&mut seed_buf_in);
-        {
-            let mut seed_buf_in = seed_buf_in.write_lock();
-            // assert_eq!(ProtectState::ReadWrite, b.protect_state());
-            seed_buf_in[0] = 12;
-            seed_buf_in[1] = 70;
-            seed_buf_in[2] = 88;
-        }
-        let seed_type = "hcRootSeed".to_string();
-
-        let mut s = Seed::new(&seed_type, SeedInit(seed_buf_in));
-
-        let m = s.get_mnemonic().unwrap();
-        println!("Menemenoc: {:?}", m);
-        assert_eq!("arrange crazy abandon abandon abandon abandon abandon abandon abandon abandon abandon absent".to_string(), m);
-    }
 
     #[test]
     fn it_should_creat_a_new_seed() {
@@ -452,4 +438,49 @@ mod tests {
             _ => assert!(false),
         }
     }
+    #[test]
+    fn it_should_create_a_mnemonic_and_get_seed_back() {
+        let mut seed_buf_in = SecBuf::with_insecure(16);
+        {
+            let mut seed_buf_in = seed_buf_in.write_lock();
+            seed_buf_in[0] = 12;
+            seed_buf_in[1] = 70;
+            seed_buf_in[2] = 88;
+        }
+        let seed_type = "hcRootSeed".to_string();
+
+        let mut s = Seed::new(&seed_type, SeedInit(seed_buf_in));
+
+        let m = s.get_mnemonic().unwrap();
+        println!("Menemenoc: {:?}", m);
+
+        let seed_type = "hcRootSeed".to_string();
+
+        let mut rs = Seed::new(&seed_type, MnemonicInit(m));
+        
+        println!("SEED: {:?}", s.seed_type);
+        
+        let fs = s.seed_buf.read_lock();
+        let is = rs.seed_buf.read_lock();
+        assert_eq!(format!("{:?}", *fs), format!("{:?}", *is));
+    }
+
+    #[test]
+    fn it_should_create_a_mnemonic() {
+        let mut seed_buf_in = SecBuf::with_insecure(16);
+        {
+            let mut seed_buf_in = seed_buf_in.write_lock();
+            seed_buf_in[0] = 12;
+            seed_buf_in[1] = 70;
+            seed_buf_in[2] = 88;
+        }
+        let seed_type = "hcRootSeed".to_string();
+
+        let mut s = Seed::new(&seed_type, SeedInit(seed_buf_in));
+
+        let m = s.get_mnemonic().unwrap();
+        println!("Menemenoc: {:?}", m);
+        assert_eq!("arrange crazy abandon abandon abandon abandon abandon abandon abandon abandon abandon absent".to_string(), m);
+    }
+
 }

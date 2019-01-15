@@ -165,14 +165,7 @@ pub struct DhtMetaData {
     pub content: serde_json::Value,
 }
 
-/// Separate IpcProtocol from DnaNetworkProtocol ?
-/// Rename to: ProtocolMessage / NetworkMessage ?
-/// Enum holding all Messages types in the 'hc-core <-> P2P Network Module' protocol.
-/// There are 4 categories of messages:
-///  - Notify: Notify the network of peers without expecting anything.
-///  - Publish: Expects some action by other peers but not any returned message
-///  - Request: Request something from the network of peers. Expects a Response
-///  - Response/Send: A response to a request by another peer.
+/// Enum holding all Message types in the 'hc-core <-> P2P Network Module' protocol.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(tag = "method")]
 pub enum ProtocolWrapper {

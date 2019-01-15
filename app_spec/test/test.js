@@ -4,26 +4,28 @@ const { pollFor } = require('./util')
 const { Config, Container } = require('../../nodejs_container')
 
 const dnaPath = "./dist/app_spec.hcpkg"
+const aliceName = "alice"
+const tashName = "tash"
 
 // IIFE to keep config-only stuff out of test scope
 const container = (() => {
-  const agentAlice = Config.agent("alice")
-  const agentTash = Config.agent("tash")
+  const agentAlice = Config.agent(aliceName)
+  const agentTash = Config.agent(tashName)
 
   const dna = Config.dna(dnaPath)
 
   const instanceAlice = Config.instance(agentAlice, dna)
-  const instanceBob = Config.instance(agentTash, dna)
+  const instanceTash = Config.instance(agentTash, dna)
 
-  const containerConfig = Config.container(instanceAlice, instanceBob)
+  const containerConfig = Config.container([instanceAlice, instanceTash])
   return new Container(containerConfig)
 })()
 
 // Initialize the Container
 container.start()
 
-const alice = container.makeCaller('alice', dnaPath)
-const tash = container.makeCaller('tash', dnaPath)
+const alice = container.makeCaller(aliceName, dnaPath)
+const tash = container.makeCaller(tashName, dnaPath)
 
 test('agentId', (t) => {
   t.plan(2)

@@ -19,18 +19,18 @@ The following demo shows how to spin up two separate instances of a DNA, within 
 After installing via npm the module can be used in a node script as follows:
 ```javascript
 const dnaPath = "path/to/happ.hcpkg"
-const aliceAgentId = "alice"
-const tashAgentId = "tash"
+const aliceName = "alice"
+const tashName = "tash"
 // destructure to get Config and Container off the main import, which is an object now
 const { Config, Container } = require('@holochain/holochain-nodejs')
 
 // build up a configuration for the container, step by step
-const agentAlice = Config.agent(aliceAgentId)
-const agentTash = Config.agent(tashAgentId)
+const agentAlice = Config.agent(aliceName)
+const agentTash = Config.agent(tashName)
 const dna = Config.dna(dnaPath)
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceTash = Config.instance(agentTash, dna)
-const config = Config.container(instanceAlice, instanceTash)
+const config = Config.container([instanceAlice, instanceTash])
 
 // create a new instance of a Container, from the config
 const container = new Container(config)
@@ -41,10 +41,13 @@ container.start()
 // When building up a config using `Config`, the instance ID is automatically assigned
 // as the given agent ID plus a double colon plus the given dnaPath.
 // We'll need this to call the instance later.
-const aliceInstanceId = aliceAgentId + '::' + dnaPath
+const aliceInstanceId = aliceName + '::' + dnaPath
 
-// zome functions can be called using the following
+// zome functions can be called using the following, assuming the vars are defined with valid values
 const callResult = container.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
+// the same could be accomplished using the following, makeCaller is for convenience
+const alice = container.makeCaller(aliceName, dnaPath)
+const altCallResult = alice.call(zome, capability, fnName, paramsAsObject)
 
 // get the actual agent_id for an instance, by passing an instance id
 const actualAliceAgentId = container.agent_id(aliceInstanceId)
@@ -52,18 +55,6 @@ const actualAliceAgentId = container.agent_id(aliceInstanceId)
 // stop all running instances
 container.stop()
 ```
-
-container.start, container.call, container.agent_id, and container.stop are the four functions of Container instances currently.
-
-Note about usage:
-Prior to version 0.0.3, a container would only return a single instance of an app. Now a container actually contains multiple instances. When performing a call to an instance, one must include the instance id. Take the following for example:
-
-```
-const callResult = container.call(someInstanceId, someZome, someCapability, someFunction, someParams)
-```
-
-## Scenario tests
-
 
 
 ## Deployment
@@ -100,3 +91,18 @@ Until windows for travis can utilize secure environment variables without breaki
 ## Acknowledgments
 
 - Thanks to IronCoreLabs for the example of deploying neon modules via npm (https://github.com/IronCoreLabs/recrypt-node-binding)
+
+## Contribute
+Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](../CONTRIBUTING.md) for our general practices and protocols on participating in the community.
+
+## License
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
+
+Copyright (C) 2018, Holochain Trust
+
+This program is free software: you can redistribute it and/or modify it under the terms of the license p
+rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu
+t WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.
+
+**Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are using GPL while we're getting the matter sorted out.  See [this article](https://medium.com/holochain/licensing-needs-for-truly-p2p-software-a3e0fa42be6c) for some of our thinking on licensing for distributed application frameworks.

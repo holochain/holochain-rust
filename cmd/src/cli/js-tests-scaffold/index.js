@@ -4,7 +4,6 @@ const test = require('tape');
 
 const { Config, Container } = require("@holochain/holochain-nodejs")
 
-//const dnaPath = "./dist/app_spec.hcpkg"
 const dnaPath = "./dist/bundle.json"
 
 // closure to keep config-only stuff out of test scope

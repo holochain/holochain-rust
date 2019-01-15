@@ -16,7 +16,7 @@ use hdk::holochain_core_types::{
     cas::content::Address, entry::Entry, dna::entry_types::Sharing, error::HolochainError, json::JsonString,
 };
 
-// see https://developer.holochain.org/api/0.0.2/hdk/ for info on using the hdk library
+// see https://developer.holochain.org/api/0.0.3/hdk/ for info on using the hdk library
 
 // This is a sample zome that defines an entry type "MyEntry" that can be committed to the
 // agent's chain via the exposed function create_my_entry
@@ -33,7 +33,7 @@ pub fn handle_create_my_entry(entry: MyEntry) -> ZomeApiResult<Address> {
 }
 
 pub fn handle_get_my_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
-    hdk::get_entry(address)
+    hdk::get_entry(&address)
 }
 
 fn definition() -> ValidatingEntryType {
@@ -61,7 +61,7 @@ define_zome! {
     functions: {
         main (Public) {
             create_my_entry: {
-                inputs: |item: MyEntry|,
+                inputs: |entry: MyEntry|,
                 outputs: |result: ZomeApiResult<Address>|,
                 handler: handle_create_my_entry
             }

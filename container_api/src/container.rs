@@ -75,7 +75,7 @@ pub struct Container {
     pub(crate) instances: InstanceMap,
     pub(crate) config: Configuration,
     pub config_path: PathBuf,
-    interface_threads: HashMap<String, Sender<()>>,
+    pub(crate) interface_threads: HashMap<String, Sender<()>>,
     pub(crate) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
@@ -148,14 +148,26 @@ impl Container {
     pub fn stop_all_interfaces(&mut self) {
         for (id, kill_switch) in self.interface_threads.iter() {
             notify(format!("Stopping interface {}", id));
-            let send_result = kill_switch.send(());
-            if send_result.is_err() {
-                notify(format!(
-                    "Error stopping interface: {}",
-                    send_result.err().unwrap()
-                ));
-            }
+            let _ = kill_switch.send(())
+                .map_err(|err| {
+                    let message = format!("Error stopping interface: {}", err);
+                    notify(message.clone());
+                    err
+                });
         }
+    }
+
+    pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
+        let kill_switch = self.interface_threads.get(id)
+            .ok_or(HolochainError::ErrorGeneric(format!("Interface {} not found.", id)))?;
+        notify(format!("Stopping interface {}", id));
+        kill_switch.send(())
+            .map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                HolochainError::ErrorGeneric(message)
+            })?;
+        Ok(())
     }
 
     pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {

@@ -14,6 +14,7 @@ pub trait ContainerAdmin {
     fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn add_interface(&mut self, new_instance: InterfaceConfiguration) -> Result<(), HolochainError>;
+    fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -142,6 +143,25 @@ impl ContainerAdmin for Container {
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
+        Ok(())
+    }
+
+    fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+
+        new_config.interfaces = new_config.interfaces
+            .into_iter()
+            .filter(|interface| interface.id != *id)
+            .collect();
+
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+
+        let _ = self.stop_interface_by_id(id);
+        self.interface_threads.remove(id);
+
+        notify(format!("Removed interface \"{}\".", id));
         Ok(())
     }
 }
@@ -538,5 +558,35 @@ type = "http""#
             config_contents,
             toml,
         );
+    }
+
+    #[test]
+    fn test_remove_interface() {
+        let mut container = create_test_container("test_remove_interface");
+        container.start_all_interfaces();
+        assert!(container.interface_threads.get("websocket interface").is_some());
+
+        assert_eq!(container.remove_interface(&String::from("websocket interface")), Ok(()));
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = String::from("bridges = []\ninterfaces = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
+
+        assert_eq!(
+            config_contents,
+            toml,
+        );
+
+        assert!(container.interface_threads.get("websocket interface").is_none());
     }
 }

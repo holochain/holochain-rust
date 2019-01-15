@@ -28,7 +28,7 @@ impl From<RibosomeEncodingBits> for RibosomeEncodedAllocation {
 
 impl ToString for RibosomeEncodedAllocation {
     fn to_string(&self) -> String {
-        u32::from(self.to_owned()).to_string()
+        RibosomeEncodingBits::from(self.to_owned()).to_string()
     }
 }
 
@@ -48,7 +48,7 @@ impl From<RibosomeReturnCode> for RibosomeEncodingBits {
         match ribosome_return_code {
             RibosomeReturnCode::Success => 0,
             RibosomeReturnCode::Allocation(allocation) => RibosomeEncodingBits::from(allocation),
-            RibosomeReturnCode::Failure(code) => code as i32 as RibosomeEncodingBits,
+            RibosomeReturnCode::Failure(code) => code as RibosomeRuntimeBits as RibosomeEncodingBits,
         }
     }
 }

@@ -32,13 +32,11 @@ pub struct CoreError {
 
 // Error trait by using the inner Error
 impl Error for CoreError {
-    fn description(&self) -> &str {
-        self.kind.description()
-    }
     fn cause(&self) -> Option<&Error> {
         self.kind.source()
     }
 }
+
 impl CoreError {
     pub fn new(hc_err: HolochainError) -> Self {
         CoreError {
@@ -72,9 +70,7 @@ impl fmt::Display for CoreError {
         write!(
             f,
             "Holochain Core error: {}\n  --> {}:{}\n",
-            self.description(),
-            self.file,
-            self.line,
+            self.kind, self.file, self.line,
         )
     }
 }
@@ -88,7 +84,7 @@ impl fmt::Display for CoreError {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash)]
 pub enum HolochainError {
     ErrorGeneric(String),
-    NotImplemented,
+    NotImplemented(String),
     LoggingError,
     DnaMissing,
     Dna(DnaError),
@@ -113,27 +109,23 @@ impl HolochainError {
 
 impl fmt::Display for HolochainError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
-    }
-}
-
-impl Error for HolochainError {
-    fn description(&self) -> &str {
         match self {
-            ErrorGeneric(err_msg) => &err_msg,
-            NotImplemented => "not implemented",
-            LoggingError => "logging failed",
-            DnaMissing => "DNA is missing",
-            Dna(dna_err) => dna_err.description(),
-            IoError(err_msg) => &err_msg,
-            SerializationError(err_msg) => &err_msg,
-            InvalidOperationOnSysEntry => "operation cannot be done on a system entry type",
-            CapabilityCheckFailed => "Caller does not have Capability to make that call",
-            ValidationFailed(fail_msg) => &fail_msg,
-            Ribosome(err_code) => err_code.as_str(),
-            RibosomeFailed(fail_msg) => &fail_msg,
-            ConfigError(err_msg) => &err_msg,
-            Timeout => "timeout",
+            ErrorGeneric(err_msg) => write!(f, "{}", err_msg),
+            NotImplemented(description) => write!(f, "not implemented: {}", description),
+            LoggingError => write!(f, "logging failed"),
+            DnaMissing => write!(f, "DNA is missing"),
+            Dna(dna_err) => write!(f, "{}", dna_err),
+            IoError(err_msg) => write!(f, "{}", err_msg),
+            SerializationError(err_msg) => write!(f, "{}", err_msg),
+            InvalidOperationOnSysEntry => {
+                write!(f, "operation cannot be done on a system entry type")
+            }
+            CapabilityCheckFailed => write!(f, "Caller does not have Capability to make that call"),
+            ValidationFailed(fail_msg) => write!(f, "{}", fail_msg),
+            Ribosome(err_code) => write!(f, "{}", err_code.as_str()),
+            RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
+            ConfigError(err_msg) => write!(f, "{}", err_msg),
+            Timeout => write!(f, "timeout"),
         }
     }
 }
@@ -145,6 +137,9 @@ impl From<SodiumError> for HolochainError {
         }
     }
 }
+
+impl Error for HolochainError {}
+
 
 impl From<HolochainError> for String {
     fn from(holochain_error: HolochainError) -> Self {
@@ -297,7 +292,10 @@ mod tests {
     fn error_test() {
         for (input, output) in vec![
             (HolochainError::ErrorGeneric(String::from("foo")), "foo"),
-            (HolochainError::NotImplemented, "not implemented"),
+            (
+                HolochainError::NotImplemented("reason".into()),
+                "not implemented: reason",
+            ),
             (HolochainError::LoggingError, "logging failed"),
             (HolochainError::DnaMissing, "DNA is missing"),
             (HolochainError::ConfigError(String::from("foo")), "foo"),
@@ -328,7 +326,7 @@ mod tests {
             ),
             (HolochainError::Timeout, "timeout"),
         ] {
-            assert_eq!(output, input.description());
+            assert_eq!(output, &format!("{}", input));
         }
     }
 

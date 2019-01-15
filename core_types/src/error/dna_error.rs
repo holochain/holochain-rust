@@ -7,22 +7,15 @@ pub enum DnaError {
     ZomeFunctionNotFound(String),
 }
 
-impl Error for DnaError {
-    fn description(&self) -> &str {
-        match self {
-            DnaError::ZomeNotFound(err_msg) => &err_msg,
-            DnaError::CapabilityNotFound(err_msg) => &err_msg,
-            DnaError::ZomeFunctionNotFound(err_msg) => &err_msg,
-        }
-    }
-}
+impl Error for DnaError {}
 
 impl fmt::Display for DnaError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // @TODO seems weird to use debug for display
-        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
-        // what is the right way to do this?
-        // @see https://github.com/holochain/holochain-rust/issues/223
-        write!(f, "{:?}", self)
+        let msg = match self {
+            DnaError::ZomeNotFound(err_msg) => err_msg,
+            DnaError::CapabilityNotFound(err_msg) => err_msg,
+            DnaError::ZomeFunctionNotFound(err_msg) => err_msg,
+        };
+        write!(f, "{}", msg)
     }
 }

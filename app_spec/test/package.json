@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "json3": "*",
+    "sleep": "^5.2.3",
     "tape": "^4.9.1"
   },
   "scripts": {

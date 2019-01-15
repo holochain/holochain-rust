@@ -1,5 +1,8 @@
 use crate::{
-    config::{DnaConfiguration, InstanceConfiguration, InterfaceConfiguration},
+    config::{
+        DnaConfiguration, InstanceConfiguration,
+        InstanceReferenceConfiguration, InterfaceConfiguration,
+    },
     container::{notify, Container},
     error::HolochainInstanceError,
 };
@@ -15,6 +18,7 @@ pub trait ContainerAdmin {
     fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn add_interface(&mut self, new_instance: InterfaceConfiguration) -> Result<(), HolochainError>;
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn add_instance_to_interface(&mut self, interface_id: &String, instance_id: &String) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -159,9 +163,36 @@ impl ContainerAdmin for Container {
         self.save_config()?;
 
         let _ = self.stop_interface_by_id(id);
-        self.interface_threads.remove(id);
 
         notify(format!("Removed interface \"{}\".", id));
+        Ok(())
+    }
+
+    fn add_instance_to_interface(&mut self, interface_id: &String, instance_id: &String) -> Result<(), HolochainError> {
+        let _ = self.config.instance_by_id(instance_id)
+            .ok_or(HolochainError::ErrorGeneric(format!("Instance with ID {} not found", instance_id)))?;
+
+        let mut new_config = self.config.clone();
+
+        new_config.interfaces = new_config.interfaces
+            .into_iter()
+            .map(|mut interface| {
+                if interface.id == *interface_id {
+                    interface.instances.push(
+                        InstanceReferenceConfiguration{id: instance_id.clone()}
+                    );
+                }
+                interface
+            })
+            .collect();
+
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+
+        let _ = self.stop_interface_by_id(interface_id);
+        self.start_interface_by_id(interface_id)?;
+
         Ok(())
     }
 }
@@ -588,5 +619,73 @@ type = "http""#
         );
 
         assert!(container.interface_threads.get("websocket interface").is_none());
+    }
+
+    #[test]
+    fn test_add_instance_to_interface() {
+        let mut container = create_test_container("test_add_instance_to_interface");
+        container.start_all_interfaces();
+        assert!(container.interface_threads.get("websocket interface").is_some());
+
+        let instance_config = InstanceConfiguration {
+            id: String::from("new-instance"),
+            dna: String::from("test-dna"),
+            agent: String::from("test-agent-1"),
+            storage: StorageConfiguration::Memory,
+        };
+
+        assert_eq!(container.add_instance(instance_config.clone()), Ok(()));
+        assert_eq!(
+            container.add_instance_to_interface(
+            &String::from("websocket interface"),
+            &String::from("new-instance")
+            ),
+            Ok(()));
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, String::from(
+r#"[[instances]]
+agent = "test-agent-1"
+dna = "test-dna"
+id = "new-instance"
+
+[instances.storage]
+type = "memory""#
+        ));
+        toml = add_block(toml, String::from(
+r#"[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[[interfaces.instances]]
+id = "test-instance-1"
+
+[[interfaces.instances]]
+id = "test-instance-2"
+
+[[interfaces.instances]]
+id = "new-instance"
+
+[interfaces.driver]
+port = 3000
+type = "websocket""#
+        ));
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
+
+        assert_eq!(
+            config_contents,
+            toml,
+        );
     }
 }

@@ -412,7 +412,6 @@ pub mod tests {
         error::DnaError,
         json::{JsonString, RawString},
     };
-    use std::error::Error;
 
     /// dummy zome name compatible with ZomeFnCall
     pub fn test_zome() -> String {
@@ -665,7 +664,7 @@ pub mod tests {
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
-            Err(HolochainError::Dna(err)) => assert_eq!(err.description(), "Zome 'xxx' not found"),
+            Err(HolochainError::Dna(err)) => assert_eq!(err.to_string(), "Zome 'xxx' not found"),
             _ => assert!(false),
         }
 
@@ -679,7 +678,7 @@ pub mod tests {
 
         match result {
             Err(HolochainError::Dna(err)) => assert_eq!(
-                err.description(),
+                err.to_string(),
                 "Capability 'xxx' not found in Zome 'test_zome'"
             ),
             _ => assert!(false),
@@ -691,12 +690,12 @@ pub mod tests {
         let mut cap_call2 = test_capability_call();
         cap_call2.cap_name = "xxx".to_string();
 
-        let base = ZomeFnCall::new("zozo", Some(test_capability_call()), "fufu", "papa");
-        let copy = ZomeFnCall::new("zozo", Some(test_capability_call()), "fufu", "papa");
-        let same = ZomeFnCall::new("zozo", Some(test_capability_call()), "fufu", "papa1");
-        let diff1 = ZomeFnCall::new("zozo1", Some(test_capability_call()), "fufu", "papa");
-        let diff2 = ZomeFnCall::new("zozo", Some(cap_call2), "fufu", "papa");
-        let diff3 = ZomeFnCall::new("zozo", Some(test_capability_call()), "fufu3", "papa");
+        let base = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa");
+        let copy = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa");
+        let same = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa1");
+        let diff1 = ZomeFnCall::new("yoyo1", Some(test_capability_call()), "fufu", "papa");
+        let diff2 = ZomeFnCall::new("yoyo", Some(cap_call2), "fufu", "papa");
+        let diff3 = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu3", "papa");
 
         assert_ne!(base, copy);
         assert!(base.same_fn_as(&copy));

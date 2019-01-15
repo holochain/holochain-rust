@@ -69,7 +69,7 @@ pub fn validate_entry(
         //                    )?
         EntryType::AgentId => Ok(CallbackResult::Pass),
 
-        _ => Ok(CallbackResult::NotImplemented),
+        _ => Ok(CallbackResult::NotImplemented("validate_entry".into())),
     }
 }
 
@@ -94,7 +94,7 @@ fn validate_link_entry(
         &target.entry_type(),
         &context,
     )
-    .map_err(|_| HolochainError::NotImplemented)?;
+    .map_err(|_| HolochainError::NotImplemented("validate_link_entry".into()))?;
 
     let wasm = context
         .get_wasm(&link_definition_path.zome_name)
@@ -129,7 +129,9 @@ fn validate_app_entry(
     let dna = context.get_dna().expect("Callback called without DNA set!");
     let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
     if zome_name.is_none() {
-        return Ok(CallbackResult::NotImplemented);
+        return Ok(CallbackResult::NotImplemented(
+            "validate_app_entry/1".into(),
+        ));
     }
 
     let zome_name = zome_name.unwrap();
@@ -148,7 +150,9 @@ fn validate_app_entry(
                 dna.name.clone(),
             ))
         }
-        None => Ok(CallbackResult::NotImplemented),
+        None => Ok(CallbackResult::NotImplemented(
+            "validate_app_entry/2".into(),
+        )),
     }
 }
 

@@ -148,6 +148,7 @@ impl ContainerAdmin for Container {
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
+        self.start_interface_by_id(&interface.id)?;
         Ok(())
     }
 

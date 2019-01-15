@@ -417,6 +417,7 @@ impl Container {
         if self.interface_threads.contains_key(&config.id) {
             return Err(format!("Interface {} already started!", config.id));
         }
+        notify(format!("Starting interface '{}'.", config.id));
         let handle = self.spawn_interface_thread(config.clone());
         self.interface_threads.insert(config.id.clone(), handle);
         Ok(())

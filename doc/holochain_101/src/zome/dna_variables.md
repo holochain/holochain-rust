@@ -1,8 +1,8 @@
-# API App Variables
+# API DNA Variables
 
 Note: Full reference is available in language-specific API Reference documentation.
 
-For the Rust `hdk`, [see here](https://holochain.github.io/rust-api/0.0.1/hdk/#structs)
+For the Rust `hdk`, [see here](https://developer.holochain.org/api/0.0.3/hdk/api/index.html#structs)
 
 | Name        | Purpose           |
 | ------------- |:-------------|

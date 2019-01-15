@@ -91,7 +91,7 @@ enum Cli {
     #[structopt(
         name = "run",
         alias = "r",
-        about = "Starts a development container with an open websocket"
+        about = "Starts a development container with a websocket or http interface"
     )]
     Run {
         #[structopt(
@@ -111,6 +111,13 @@ enum Cli {
         persist: bool,
         #[structopt(long, help = "Use real networking")]
         networked: bool,
+        #[structopt(
+            long,
+            short,
+            help = "Specify interface type to use: websocket/http",
+            default_value = "websocket"
+        )]
+        interface: String,
     },
     #[structopt(
         name = "test",
@@ -163,7 +170,9 @@ fn run() -> HolochainResult<()> {
             port,
             persist,
             networked,
-        } => cli::run(package, port, persist, networked).map_err(HolochainError::Default)?,
+            interface,
+        } => cli::run(package, port, persist, networked, interface)
+            .map_err(HolochainError::Default)?,
         Cli::Test {
             dir,
             testfile,

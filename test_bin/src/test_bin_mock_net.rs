@@ -5,35 +5,16 @@ extern crate holochain_net;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
 extern crate failure;
 
 pub mod p2p_node;
 
 use holochain_net_connection::{
     net_connection::NetSend,
-    protocol::Protocol,
     protocol_wrapper::{MessageData, ProtocolWrapper, TrackAppData},
     NetResult,
 };
-
-use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
-
-use failure::Error;
-use std::{convert::TryFrom, sync::mpsc};
-
 use p2p_node::P2pNode;
-
-// MACROS
-macro_rules! one_let {
-    ($p:pat = $enum:ident $code:tt) => {
-        if let $p = $enum {
-            $code
-        } else {
-            unimplemented!();
-        }
-    };
-}
 
 /// Macro for transforming a type check into a predicate
 macro_rules! one_is {

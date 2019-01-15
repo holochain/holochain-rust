@@ -380,7 +380,7 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
 fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: send_test()");
-    setup_normal(node_a, node_b, can_connect);
+    setup_normal(node_a, node_b, can_connect)?;
 
     // Send a message from node_a to node_b
     node_a
@@ -435,7 +435,7 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
 fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: meta_test()");
-    setup_normal(node1, node2, can_connect);
+    setup_normal(node1, node2, can_connect)?;
 
     // Send data & metadata on same address
     send_and_confirm_data(node1, node2, ENTRY_ADDRESS_1)?;
@@ -527,7 +527,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
 fn dht_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: dht_test()");
-    setup_normal(node_a, node_b, can_connect);
+    setup_normal(node_a, node_b, can_connect)?;
 
     // Send Publish DHT data
     node_a.send(

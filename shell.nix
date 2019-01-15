@@ -70,8 +70,8 @@ let
    "hdk-rust/wasm-test"
    "wasm_utils/wasm-test/integration-test"
    "container_api/wasm-test"
-   # "container_api/test-bridge-caller"
-   # "core/src/nucleus/actions/wasm-test"
+   "container_api/test-bridge-caller"
+   "core/src/nucleus/actions/wasm-test"
   ];
   hc-build-wasm = nixpkgs.writeShellScriptBin "hc-build-wasm"
   ''

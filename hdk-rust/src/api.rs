@@ -22,7 +22,7 @@ use holochain_wasm_utils::{
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         link_entries::LinkEntriesArgs,
         send::SendArgs,
-        QueryArgs, QueryArgsNames, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
+        QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
         hash::HashString,
@@ -986,25 +986,28 @@ pub fn get_links_and_load<S: Into<String>>(
 /// ```
 pub fn query(
     entry_type_names: QueryArgsNames,
-    start: u32,
-    limit: u32,
-) -> ZomeApiResult<QueryResult> {
-    let data = query_entries( entry_type_names, start, limit,
-                              false.into(), false.into() )?;
-    let addresses = data.iter()
-        .map( |i| i.address )
-        .collect();
-
-    Ok(addresses)
+    start: usize,
+    limit: usize,
+) -> ZomeApiResult<Vec<Address>> {
+    // The hdk::query API always returns a simple Vec<Address>
+    match query_result( entry_type_names,
+                        QueryArgsOptions {
+                            start: Some(start),
+                            limit: Some(limit),
+                            headers: None,
+                        }) {
+        Ok(result) => match result {
+            QueryResult::Addresses(addresses) => Ok(addresses),
+            _ => return Err(ZomeApiError::FunctionNotImplemented), // should never occur
+        }
+        Err(e) => Err(e),
+    }
 }
 
-pub fn query_entries(
+pub fn query_result(
     entry_type_names: QueryArgsNames,
-    start: u32,
-    limit: u32,
-    entries: QueryArgsEntries,
-    header: QueryArgsHeaders,
-) -> ZomeApiResult<QueryResultData> {
+    options: QueryArgsOptions,
+) -> ZomeApiResult<QueryResult> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
@@ -1012,10 +1015,7 @@ pub fn query_entries(
         &mut mem_stack,
         QueryArgs {
             entry_type_names,
-            start,
-            limit,
-            entries,
-            headers,
+            options: Some(options),
         },
     )?;
 

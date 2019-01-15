@@ -1,7 +1,7 @@
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
-    entry::Entry, 
+    //entry::Entry, 
     entry::entry_type::EntryType,
     error::HolochainError,
     json::*,
@@ -52,22 +52,25 @@ impl<'a> From<Vec<&'a str>> for QueryArgsNames {
     }
 }
 
+// All version of the hdk::query...() API vector to these Args
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct QueryArgs {
     pub entry_type_names: QueryArgsNames,
-    pub start: Option<u32>, // TODO: These should be "typed", so order cannot be confued
-    pub limit: Option<u32>, //   see: https://rust-lang-nursery.github.io/api-guidelines/type-safety.html
+    pub options: Option<QueryArgsOptions>,
+}
+
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
+pub struct QueryArgsOptions {
+    pub start: Option<usize>,
+    pub limit: Option<usize>,
     pub headers: Option<bool>,
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
-pub struct QueryResultItem {
-    header: Option<ChainHeader>,
-    entry: Option<Entry>,
-}
-
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
+#[serde(untagged)] // No type in serialized data; try deserializing as a String, then as a Vec<String>
 pub enum QueryResult {
     Addresses(Vec<Address>),
     Headers(Vec<ChainHeader>),
+    // Entries(Vec<Entry>),
+    // Everything(Vec<(ChainHeader,Entry))
 }

@@ -29,7 +29,14 @@ impl PartialEq for ChainStore {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
+pub struct ChainStoreQueryOptions {
+    pub start: Option<usize>,
+    pub limit: Option<usize>,
+    pub headers: Option<bool>,
+}
+
+#[derive(Debug)]
 pub enum ChainStoreQueryResult {
     Addresses(Vec<Address>),
     Headers(Vec<ChainHeader>),
@@ -63,13 +70,12 @@ impl ChainStore {
         )
     }
 
+    // Supply a None for options to get defaults (all elements, no ChainHeaders just Addresses)
     pub fn query(
         &self,
         start_chain_header: &Option<ChainHeader>,
         entry_type_names: &[&str],
-        start: u32,
-        limit: u32,
-        headers: bool,
+        options: Option<ChainStoreQueryOptions>
     ) -> Result<ChainStoreQueryResult, RibosomeErrorCode> {
         // Get entry_type name(s), if any.  If empty/blank, returns the complete source chain.  A
         // single matching entry type name with no glob pattern matching will use the single
@@ -82,21 +88,34 @@ impl ChainStore {
             s.chars().any(|c| is_glob(&c))
         }
 
+        // Unpack options; start == 0 --> start at beginning, limit == 0 --> take all remaining
+        let ( start, limit, headers ) = match options {
+            None => ( 0_usize, usize::max_value(), false ),
+            Some(o) => (
+                o.start.unwrap_or( 0_usize ),
+                match o.limit {
+                    Some(l) => if l == 0 { usize::max_value() } else { l },
+                    None => usize::max_value()
+                },
+                o.headers.unwrap_or( false )
+            )
+        };
+
         let vector = match entry_type_names { // Vec<Address> or Vec<ChainHeader>
             [] | [""] | ["**"] => {
                 // No filtering desired; uses bare .iter()
                 if headers {
                     ChainStoreQueryResult::Headers(
                         self.iter(start_chain_header)
-                            .skip(start as usize)
-                            .take(if limit > 0 { limit as usize } else { usize::max_value() })
+                            .skip(start)
+                            .take(limit)
                             .map(|header| header.to_owned())
                             .collect::<Vec<ChainHeader>>())
                 } else {
                     ChainStoreQueryResult::Addresses(
                         self.iter(start_chain_header)
-                            .skip(start as usize)
-                            .take(if limit > 0 { limit as usize } else { usize::max_value() })
+                            .skip(start)
+                            .take(limit)
                             .map(|header| header.entry_address().to_owned())
                             .collect::<Vec<Address>>())
                 }
@@ -110,15 +129,15 @@ impl ChainStore {
                 if headers {
                     ChainStoreQueryResult::Headers(
                         self.iter_type(start_chain_header, &entry_type)
-                            .skip(start as usize)
-                            .take( if limit > 0 { limit as usize } else { usize::max_value() } )
+                            .skip(start)
+                            .take(limit)
                             .map(|header| header.to_owned())
                             .collect::<Vec<ChainHeader>>())
                 } else {
                     ChainStoreQueryResult::Addresses(
                         self.iter_type(start_chain_header, &entry_type)
-                            .skip(start as usize)
-                            .take( if limit > 0 { limit as usize } else { usize::max_value() } )
+                            .skip(start)
+                            .take(limit)
                             .map(|header| header.entry_address().to_owned())
                             .collect::<Vec<Address>>())
                 }
@@ -148,8 +167,8 @@ impl ChainStore {
                                     .len()
                                     > 0
                             })
-                            .skip(start as usize)
-                            .take(if limit > 0 { limit as usize } else { usize::max_value() })
+                            .skip(start)
+                            .take(limit)
                             .map(|header| header.to_owned())
                             .collect::<Vec<ChainHeader>>())
                 } else {
@@ -161,8 +180,8 @@ impl ChainStore {
                                     .len()
                                     > 0
                             })
-                            .skip(start as usize)
-                            .take(if limit > 0 { limit as usize } else { usize::max_value() })
+                            .skip(start)
+                            .take(limit)
                             .map(|header| header.entry_address().to_owned())
                             .collect::<Vec<Address>>())
                 }
@@ -284,7 +303,7 @@ impl Iterator for ChainStoreTypeIterator {
 pub mod tests {
     extern crate tempfile;
     use self::tempfile::tempdir;
-    use crate::agent::chain_store::ChainStore;
+    use crate::agent::chain_store::{ ChainStore, ChainStoreQueryOptions, ChainStoreQueryResult, };
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -497,14 +516,17 @@ pub mod tests {
             .expect("could not add header to cas");
 
         // First, lets see if we can find the EntryType "testEntryTypeB" Entries
-        let found = chain_store
+        let found = match chain_store
             .query(
                 &Some(chain_header_e.clone()),
                 &vec![test_entry_type_b().to_string().as_ref()],
-                0,
-                0,
+                None,
             )
-            .unwrap();
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
+                
         let expected = vec![
             chain_header_c.entry_address().clone(),
             chain_header_b.entry_address().clone(),
@@ -512,21 +534,32 @@ pub mod tests {
         assert_eq!(expected, found);
 
         // Then, limit to 1 at a time, starting from the 0'th match
-        let found = chain_store
+        let found = match chain_store
             .query(
                 &Some(chain_header_e.clone()),
                 &vec![test_entry_type_b().to_string().as_ref()],
-                0,
-                1,
+                Some(ChainStoreQueryOptions {
+                    start: Some(0),
+                    limit: Some(1),
+                    headers: Some(false),
+                })
             )
-            .unwrap();
-        let expected = vec![chain_header_c.entry_address().clone()];
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
+        let expected = vec![
+                chain_header_c.entry_address().clone()
+            ];
         assert_eq!(expected, found);
 
         // Now query for all EntryTypes via entry_type == None
-        let found = chain_store
-            .query(&Some(chain_header_e.clone()), &[], 0, 0)
-            .unwrap();
+        let found = match chain_store
+            .query(&Some(chain_header_e.clone()), &[], None)
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         let expected = vec![
             chain_header_e.entry_address().clone(),
             chain_header_d.entry_address().clone(),
@@ -539,36 +572,42 @@ pub mod tests {
         // Test Glob matching, namespacing.
 
         // Wildcard glob, all paths
-        let found = chain_store
+        let found = match chain_store
             .query(
                 &Some(chain_header_e.clone()),
                 &vec!["**".to_string().as_ref()],
-                0,
-                0,
+                None,
             )
-            .unwrap();
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         assert_eq!(expected, found);
 
         // Globbing plus some arbitrary EntryType names, thus matches everything again
-        let found = chain_store
+        let found = match chain_store
             .query(
                 &Some(chain_header_e.clone()),
                 &vec!["another/*".to_string().as_ref(), "testEntryType*"],
-                0,
-                0,
+                None,
             )
-            .unwrap();
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         assert_eq!(expected, found);
 
         // Just globbing
-        let found = chain_store
+        let found = match chain_store
             .query(
                 &Some(chain_header_e.clone()),
                 &vec!["another/*".to_string().as_ref()],
-                0,
-                0,
+                None,
             )
-            .unwrap();
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         let expected = vec![
             chain_header_e.entry_address().clone(),
             chain_header_d.entry_address().clone(),
@@ -619,14 +658,16 @@ pub mod tests {
             .expect("could not add header to cas");
 
         // Multiple complex globs.  The leading '**/' matches 0 or more leading .../ segments, so returns
-        let found = chain_store
+        let found = match chain_store
             .query(
                 &Some(chain_header_h.clone()),
                 &vec!["another/*", "ns/**/t*"],
-                0,
-                0,
+                None,
             )
-            .unwrap();
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         let expected = vec![
             chain_header_h.entry_address().clone(),
             chain_header_g.entry_address().clone(),
@@ -636,9 +677,12 @@ pub mod tests {
         assert_eq!(expected, found);
 
         // So, we should be able to find EntryType names by suffix at any depth
-        let found = chain_store
-            .query(&Some(chain_header_h.clone()), &vec!["**/*{e,B}"], 0, 0)
-            .unwrap();
+        let found = match chain_store
+            .query(&Some(chain_header_h.clone()), &vec!["**/*{e,B}"], None)
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         let expected = vec![
             chain_header_h.entry_address().clone(), // .../three
             chain_header_f.entry_address().clone(), // .../one
@@ -667,26 +711,35 @@ pub mod tests {
             .expect("could not add header to cas");
 
         // Find EntryTypes which are/not System (start with '%'), and end in 'e'
-        let found = chain_store
-            .query(&Some(chain_header_i.clone()), &vec!["[!%]*e"], 0, 0)
-            .unwrap();
+        let found = match chain_store
+            .query(&Some(chain_header_i.clone()), &vec!["[!%]*e"], None)
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         let expected = vec![
             chain_header_a.entry_address().clone(), // testEntryType
         ];
         assert_eq!(expected, found);
         // Including all namespaced EntryTypes
-        let found = chain_store
-            .query(&Some(chain_header_i.clone()), &vec!["**/[!%]*e"], 0, 0)
-            .unwrap();
+        let found = match chain_store
+            .query(&Some(chain_header_i.clone()), &vec!["**/[!%]*e"], None)
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         let expected = vec![
             chain_header_h.entry_address().clone(), // .../three
             chain_header_f.entry_address().clone(), // .../one
             chain_header_a.entry_address().clone(), // testEntryType
         ];
         assert_eq!(expected, found);
-        let found = chain_store
-            .query(&Some(chain_header_i.clone()), &vec!["%*e"], 0, 0)
-            .unwrap();
+        let found = match chain_store
+            .query(&Some(chain_header_i.clone()), &vec!["%*e"], None)
+            .unwrap() {
+                ChainStoreQueryResult::Addresses(addresses) => addresses,
+                other => panic!("Unexpected query value {:?}", other ),
+            };
         let expected = vec![
             chain_header_i.entry_address().clone(), // %system_entry_type
         ];

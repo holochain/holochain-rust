@@ -1,8 +1,14 @@
 use crate:: {
-    nucleus::ribosome::{api::ZomeApiResult, Runtime},
-    agent::chain_store::ChainStoreQueryResult,
+    nucleus::ribosome::{
+        api::ZomeApiResult, Runtime,
+    },
+    agent::chain_store::{
+        ChainStoreQueryOptions, ChainStoreQueryResult,
+    }
 };
-use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
+use holochain_wasm_utils::api_serialization::{
+    QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult,
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -50,7 +56,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// // **/         Zero or more of any namespace component
 ///
 pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    // deserialize args
+    // deserialize args.
     let args_str = runtime.load_json_string_from_args(&args);
     let query = match QueryArgs::try_from(args_str) {
         Ok(input) => input,
@@ -62,15 +68,18 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
+    let options = query.options.unwrap_or( QueryArgsOptions::default() );
     let maybe_result = match query.entry_type_names { // Result<ChainStoreQueryResult,...>
         QueryArgsNames::QueryList(pats) => {
             let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>
             agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> Vec[&str]
-                query.start.unwrap_or( 0 ),
-                query.limit.unwrap_or( 0 ),
-                query.headers.unwrap_or( false ),
+                Some(ChainStoreQueryOptions {
+                    start: options.start,
+                    limit: options.limit,
+                    headers: options.headers,
+                })
             )
         }
         QueryArgsNames::QueryName(name) => {
@@ -78,9 +87,11 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
             agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> &[&str]
-                query.start.unwrap_or( 0 ),
-                query.limit.unwrap_or( 0 ),
-                query.headers.unwrap_or( false ),
+                Some(ChainStoreQueryOptions {
+                    start: options.start,
+                    limit:  options.limit,
+                    headers: options.headers,
+                })
             )
         }
     };

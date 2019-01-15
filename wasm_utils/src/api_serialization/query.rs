@@ -1,5 +1,10 @@
 use holochain_core_types::{
-    cas::content::Address, entry::entry_type::EntryType, error::HolochainError, json::*,
+    cas::content::Address,
+    chain_header::ChainHeader,
+    entry::Entry, 
+    entry::entry_type::EntryType,
+    error::HolochainError,
+    json::*,
 };
 
 // QueryArgsNames -- support querying single/multiple EntryType names
@@ -49,10 +54,29 @@ impl<'a> From<Vec<&'a str>> for QueryArgsNames {
 
 // Query{Args,Result} -- the query API parameters and return type
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
+pub struct QueryArgsEntries(bool);
+
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
+pub struct QueryArgsHeaders(bool);    
+
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct QueryArgs {
     pub entry_type_names: QueryArgsNames,
-    pub start: u32,
-    pub limit: u32,
+    pub start: Option<u32>,
+    pub limit: Option<u32>,
+    pub entries: Option<QueryArgsEntries>,
+    pub headers: Option<QueryArgsHeaders>,
 }
 
-pub type QueryResult = Vec<Address>;
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
+pub struct QueryResultItem {
+    header: Option<ChainHeader>,
+    entry: Option<Entry>,
+}
+
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
+#[serde(untagged)] // No type in serialized data; try deserializing QueryResultAddr, ...Data
+pub enum QueryResult {
+    Addresses(Vec<Address>),
+    EntryData(Vec<QueryResultItem>),
+}

@@ -8,7 +8,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: ?
 /// Returns an HcApiReturnCode as I32
 ///
-/// Specify 0 or more simple or "glob" patterns matching EntryType names.
+/// Specify 0 or more simple or "glob" patterns matching EntryType names, returning Vec<Address>.
 ///
 /// The empty String or an empty Vec matches all.  The '*' glob pattern matches all simple EntryType
 /// names (with no '/'), while the ** pattern matches everything (use "" or [] for efficiency).
@@ -59,14 +59,16 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
-    let addresses = match query.entry_type_names {
+    let data = match query.entry_type_names {
         QueryArgsNames::QueryList(pats) => {
             let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>
             agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> Vec[&str]
-                query.start,
-                query.limit,
+                query.start.unwrap_or( 0 ),
+                query.limit.unwrap_or( 0 ),
+                query.entries.unwrap_or( false.into() ),
+                query.headers.unwrap_or( false.into() ),
             )
         }
         QueryArgsNames::QueryName(name) => {
@@ -74,12 +76,14 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
             agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> &[&str]
-                query.start,
-                query.limit,
+                query.start.unwrap_or( 0 ),
+                query.limit.unwrap_or( 0 ),
+                query.entries.unwrap_or( false.into() ),
+                query.headers.unwrap_or( false.into() ),
             )
         }
     };
-    let result = match addresses {
+    let result = match data {
         // TODO #793: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
         // Perhaps return chain().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
@@ -89,3 +93,4 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
 
     runtime.store_result(result)
 }
+

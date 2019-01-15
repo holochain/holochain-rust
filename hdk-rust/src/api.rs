@@ -989,6 +989,22 @@ pub fn query(
     start: u32,
     limit: u32,
 ) -> ZomeApiResult<QueryResult> {
+    let data = query_entries( entry_type_names, start, limit,
+                              false.into(), false.into() )?;
+    let addresses = data.iter()
+        .map( |i| i.address )
+        .collect();
+
+    Ok(addresses)
+}
+
+pub fn query_entries(
+    entry_type_names: QueryArgsNames,
+    start: u32,
+    limit: u32,
+    entries: QueryArgsEntries,
+    header: QueryArgsHeaders,
+) -> ZomeApiResult<QueryResultData> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 
     // Put args in struct and serialize into memory
@@ -998,6 +1014,8 @@ pub fn query(
             entry_type_names,
             start,
             limit,
+            entries,
+            headers,
         },
     )?;
 
@@ -1017,7 +1035,6 @@ pub fn query(
         Err(ZomeApiError::from(result.error))
     }
 }
-
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
 /// This works in conjunction with the `receive` callback that has to be defined in the

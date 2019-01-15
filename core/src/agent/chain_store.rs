@@ -63,7 +63,9 @@ impl ChainStore {
         entry_type_names: &[&str],
         start: u32,
         limit: u32,
-    ) -> Result<Vec<Address>, RibosomeErrorCode> {
+        entries: bool,
+        headers: bool,
+    ) -> Result<QueryResult, RibosomeErrorCode> {
         // Get entry_type name(s), if any.  If empty/blank, returns the complete source chain.  A
         // single matching entry type name with no glob pattern matching will use the single
         // entry_type optimization.  Otherwise, we'll construct a GlobSet match and scan the list to
@@ -75,13 +77,13 @@ impl ChainStore {
             s.chars().any(|c| is_glob(&c))
         }
 
-        Ok(match entry_type_names {
+        let headers = match entry_type_names {
             [] | [""] => {
                 // No filtering desired; uses bare .iter()
                 let base_iter = self
                     .iter(start_chain_header)
                     .skip(start as usize)
-                    .map(|header| header.entry_address().clone());
+                    .map(|header| header.clone());
                 if limit > 0 {
                     base_iter.take(limit as usize).collect()
                 } else {
@@ -94,15 +96,12 @@ impl ChainStore {
                     Ok(inner) => inner,
                     Err(..) => return Err(UnknownEntryType),
                 };
-                let base_iter = self
+                self
                     .iter_type(start_chain_header, &entry_type)
                     .skip(start as usize)
-                    .map(|header| header.entry_address().clone());
-                if limit > 0 {
-                    base_iter.take(limit as usize).collect()
-                } else {
-                    base_iter.collect()
-                }
+                    .map(|header| header.clone())
+                    .take( if limit > 0 { limit } else { usize::max_value() } )
+                    .collect()
             }
             rest => {
                 // 1 or more EntryTypes, may or may not include glob wildcards.  Create a
@@ -129,14 +128,34 @@ impl ChainStore {
                             > 0
                     })
                     .skip(start as usize)
-                    .map(|header| header.entry_address().clone());
+                    .map(|header| header.clone());
                 if limit > 0 {
                     base_iter.take(limit as usize).collect()
                 } else {
                     base_iter.collect()
                 }
             }
-        })
+        };
+
+        // We have all the matching headers in the specified start/limit range.  Now, decide if
+        // we're returning just Vec<Address>, or if we want Vec<QueryResultAddr>
+        if ( headers || entries ) {
+            Ok(QueryResult::Data(
+                headers.iter()
+                    .map( |header| {
+                        QueryResultItem {
+                            address: header.entry_address().to_owned(),
+                            header: if headers { Some( header ) } else { None },
+                            entry: None, // TODO: Get entry from header.entry_address()
+                        }
+                    })
+                    .collect()))
+        } else {
+            Ok(QueryResult::Addresses(
+                headers.iter()
+                    .map( |header| header.entry_address().to_owned() )
+                    .collect()))
+        }
     }
 }
 

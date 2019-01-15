@@ -6,9 +6,10 @@ const path = require('path');
 // deals with ensuring the correct version for the machine/node version
 const binding_path = binary.find(path.resolve(path.join(__dirname, './package.json')));
 
-const { ConfigBuilder, Container } = require(binding_path);
+const { makeConfig, Container } = require(binding_path);
 
 Container.prototype.callRaw = Container.prototype.call
+
 Container.prototype.call = function (id, zome, trait, fn, params) {
     const stringInput = JSON.stringify(params);
     const rawResult = this.callRaw(id, zome, trait, fn, stringInput);
@@ -22,7 +23,26 @@ Container.prototype.call = function (id, zome, trait, fn, params) {
     return result;
 }
 
-module.exports = {
-    ConfigBuilder: new ConfigBuilder(),
-    Container: Container,
-};
+// Convenience function for making an object that can call into the container
+// in the context of a particular instance. This may be temporary.
+Container.prototype.makeCaller = function (agentId, dnaPath) {
+  const instanceId = agentId + '::' + dnaPath
+  return {
+    call: (zome, cap, fn, params) => this.call(instanceId, zome, cap, fn, params),
+    agentId: this.agent_id(instanceId)
+  }
+}
+
+const Config = {
+    agent: name => ({ name }),
+    dna: (path) => ({ path }),
+    instance: (agent, dna, name) => {
+        if (!name) {
+            name = agent.name
+        }
+        return { agent, dna, name }
+    },
+    container: (instances) => makeConfig(instances),
+}
+
+module.exports = { Config, Container };

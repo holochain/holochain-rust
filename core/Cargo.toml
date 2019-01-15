@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -24,7 +24,7 @@ num-traits = "0.2"
 num-derive = "0.2"
 config = "0.8"
 regex = "1"
-toml="0.4.8"
+toml = "0.4.8"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_cas_implementations = { path = "../cas_implementations" }
@@ -38,4 +38,4 @@ globset = "0.4.2"
 [dev-dependencies]
 wabt = "0.7.2"
 test_utils = { path = "../test_utils"}
-tempfile="3"
+tempfile = "3"

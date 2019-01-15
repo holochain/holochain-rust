@@ -13,33 +13,22 @@ extern crate tempfile;
 extern crate test_utils;
 
 use holochain_container_api::error::{HolochainInstanceError, HolochainResult};
-use holochain_core::logger::Logger;
 use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeErrorCode},
     json::{default_try_from_json, JsonString, RawString},
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{convert::TryFrom, error::Error};
 use test_utils::hc_setup_and_call_zome_fn;
 
-#[derive(Clone, Debug)]
-pub struct TestLogger {
-    pub log: Vec<String>,
-}
-
-impl Logger for TestLogger {
-    fn log(&mut self, msg: String) {
-        self.log.push(msg);
-    }
-
-    fn dump(&self) -> String {
-        format!("{:?}", self.log)
-    }
-}
-
 fn call_zome_function_with_hc(fn_name: &str) -> HolochainResult<JsonString> {
     hc_setup_and_call_zome_fn(
-        "wasm-test/integration-test/target/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
-        fn_name)
+        &format!(
+            "{}/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
+            wasm_target_dir("wasm_utils/", "wasm-test/integration-test/"),
+        ),
+        fn_name,
+    )
 }
 
 #[test]

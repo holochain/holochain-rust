@@ -57,6 +57,10 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
         EntryType::CapTokenGrant => {
             // FIXME
         }
+
+        EntryType::AgentId => {
+            // FIXME
+        }
         _ => {
             return ValidationPackageFuture {
                 context: context.clone(),

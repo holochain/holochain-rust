@@ -17,7 +17,7 @@ pub fn handle_store_dht(dht_data: DhtData, context: Arc<Context>) {
         serde_json::from_str(&serde_json::to_string(&dht_data.content).unwrap()).unwrap();
     thread::spawn(move || {
         match block_on(hold_entry_workflow(&entry_with_header, &context.clone())) {
-            Err(error) => context.log(error),
+            Err(error) => context.log(format!("err/net/dht: {}", error)),
             _ => (),
         }
     });
@@ -28,6 +28,7 @@ pub fn handle_store_dht(dht_data: DhtData, context: Arc<Context>) {
 pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     match dht_meta_data.attribute.as_ref() {
         "link" => {
+            context.log("debug/net/handle: StoreDhtMeta: got LINK. processing...");
             let entry_with_header: EntryWithHeader = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content)
                     .expect("dht_meta_data should be EntryWithHader"),
@@ -35,12 +36,13 @@ pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) 
             .expect("dht_meta_data should be EntryWithHader");
             thread::spawn(move || {
                 match block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
-                    Err(error) => context.log(error),
+                    Err(error) => context.log(format!("err/net/dht: {}", error)),
                     _ => (),
                 }
             });
         }
         STATUS_NAME => {
+            context.log("debug/net/handle: StoreDhtMeta: got CRUD status. processing...");
             let _crud_status: CrudStatus = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content)
                     .expect("dht_meta_data should be crud_status"),
@@ -49,6 +51,7 @@ pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) 
             // FIXME: block_on hold crud_status metadata in DHT?
         }
         LINK_NAME => {
+            context.log("debug/net/handle: StoreDhtMeta: got CRUD LINK. processing...");
             let _crud_link: Address = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content)
                     .expect("dht_meta_data should be crud_link"),

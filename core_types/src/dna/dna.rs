@@ -1,4 +1,5 @@
 use crate::{
+    cas::content::{AddressableContent, Content},
     dna::{bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
@@ -9,9 +10,9 @@ use multihash;
 use serde_json::{self, Value};
 use std::{
     collections::BTreeMap,
+    convert::TryFrom,
     hash::{Hash, Hasher},
 };
-use uuid::Uuid;
 
 /// serde helper, provides a default empty object
 fn empty_object() -> Value {
@@ -19,8 +20,8 @@ fn empty_object() -> Value {
 }
 
 /// serde helper, provides a default newly generated v4 uuid
-fn new_uuid() -> String {
-    Uuid::new_v4().to_string()
+fn zero_uuid() -> String {
+    String::from("00000000-0000-0000-0000-000000000000")
 }
 
 /// Represents the top-level holochain dna object.
@@ -39,7 +40,7 @@ pub struct Dna {
     pub version: String,
 
     /// A unique identifier to distinguish your holochain application.
-    #[serde(default = "new_uuid")]
+    #[serde(default = "zero_uuid")]
     pub uuid: String,
 
     /// Which version of the holochain dna spec does this represent?
@@ -55,6 +56,16 @@ pub struct Dna {
     pub zomes: BTreeMap<String, zome::Zome>,
 }
 
+impl AddressableContent for Dna {
+    fn content(&self) -> Content {
+        Content::from(self.to_owned())
+    }
+
+    fn try_from_content(content: &Content) -> Result<Self, HolochainError> {
+        Ok(Dna::try_from(content.to_owned())?)
+    }
+}
+
 impl Default for Dna {
     /// Provide defaults for a dna object.
     fn default() -> Self {
@@ -62,7 +73,7 @@ impl Default for Dna {
             name: String::new(),
             description: String::new(),
             version: String::new(),
-            uuid: new_uuid(),
+            uuid: zero_uuid(),
             dna_spec_version: String::from("2.0"),
             properties: empty_object(),
             zomes: BTreeMap::new(),

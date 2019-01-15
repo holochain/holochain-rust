@@ -1,3 +1,4 @@
+use crate::logger::LogRules;
 /// Container Configuration
 /// This module provides structs that represent the different aspects of how
 /// a container can be configured.
@@ -10,6 +11,7 @@
 ///   the container
 /// * bridges, which are
 use boolinator::*;
+use directories;
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
@@ -18,7 +20,7 @@ use holochain_core_types::{
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
+use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*};
 use toml;
 
 /// Main container configuration struct
@@ -43,8 +45,25 @@ pub struct Configuration {
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
+    /// Configures how logging should behave
+    #[serde(default)]
+    pub logger: LoggerConfiguration,
+    /// Configuration options for the network module n3h
+    #[serde(default)]
+    pub network: Option<NetworkConfig>,
 }
 
+/// There might be different kinds of loggers in the future.
+/// Currently there is a "debug" and "simple" logger.
+/// TODO: make this an enum
+#[derive(Deserialize, Serialize, Clone, Default)]
+pub struct LoggerConfiguration {
+    #[serde(rename = "type")]
+    pub logger_type: String,
+    #[serde(default)]
+    pub rules: LogRules,
+    //    pub file: Option<String>,
+}
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
@@ -236,25 +255,13 @@ impl TryFrom<DnaConfiguration> for Dna {
 }
 
 /// An instance combines a DNA with an agent.
-/// Each instance has its own network, storage and logger configuration.
+/// Each instance has its own storage configuration.
 #[derive(Deserialize, Serialize, Clone)]
 pub struct InstanceConfiguration {
     pub id: String,
     pub dna: String,
     pub agent: String,
-    pub logger: LoggerConfiguration,
     pub storage: StorageConfiguration,
-    pub network: Option<String>,
-}
-
-/// There might be different kinds of loggers in the future.
-/// Currently there is no logger at all.
-/// TODO: make this an enum when it's actually in use
-#[derive(Deserialize, Serialize, Clone, Default)]
-pub struct LoggerConfiguration {
-    #[serde(rename = "type")]
-    pub logger_type: String,
-    pub file: Option<String>,
 }
 
 /// This configures the Content Addressable Storage (CAS) that
@@ -265,11 +272,9 @@ pub struct LoggerConfiguration {
 ///
 /// Projected are various DB adapters.
 #[derive(Deserialize, Serialize, Clone)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
-    #[serde(rename = "memory")]
     Memory,
-    #[serde(rename = "file")]
     File { path: String },
 }
 
@@ -326,6 +331,50 @@ pub struct Bridge {
     pub handle: String,
 }
 
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct NetworkConfig {
+    /// List of URIs that point to other nodes to bootstrap p2p connections.
+    #[serde(default)]
+    pub bootstrap_nodes: Vec<String>,
+    /// Absolute path to the local installation/repository of n3h
+    #[serde(default)]
+    pub n3h_path: String,
+    /// networking mode used by n3h
+    #[serde(default = "default_n3h_mode")]
+    pub n3h_mode: String,
+    /// Absolute path to the directory that n3h uses to store persisted data.
+    #[serde(default)]
+    pub n3h_persistence_path: String,
+    /// URI pointing a n3h process that is already running and not managed by this
+    /// container.
+    /// If this is set the container does not spawn n3h itself and ignores the path
+    /// configs above. Default is None.
+    #[serde(default)]
+    pub n3h_ipc_uri: Option<String>,
+}
+
+pub fn default_n3h_mode() -> String {
+    String::from("HACK")
+}
+
+pub fn default_n3h_path() -> String {
+    if let Some(user_dirs) = directories::UserDirs::new() {
+        user_dirs
+            .home_dir()
+            .join(".hc")
+            .join("net")
+            .join("n3h")
+            .to_string_lossy()
+            .to_string()
+    } else {
+        String::from("n3h")
+    }
+}
+
+pub fn default_n3h_persistence_path() -> String {
+    env::temp_dir().to_string_lossy().to_string()
+}
+
 /// Use this function to load a `Configuration` from a string.
 pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where
@@ -338,7 +387,8 @@ where
 
 #[cfg(test)]
 pub mod tests {
-    use crate::config::{load_configuration, Configuration};
+    use super::*;
+    use crate::config::{load_configuration, Configuration, NetworkConfig};
     use holochain_core::context::mock_network_config;
 
     pub fn example_serialized_network_config() -> String {
@@ -404,8 +454,7 @@ pub mod tests {
 
     #[test]
     fn test_load_complete_config() {
-        let toml = &format!(
-            r#"
+        let toml = r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester 1"
@@ -421,10 +470,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    network = "{}"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -438,15 +483,26 @@ pub mod tests {
     id = "app spec instance"
 
     [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
     id = "app spec domainsocket interface"
     [interfaces.driver]
     type = "domainsocket"
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
-    "#,
-            "{\\\"backend_kind\\\":\\\"special\\\"}"
-        );
+
+    [network]
+    bootstrap_nodes = ["/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"]
+    n3h_path = "/Users/cnorris/.holochain/n3h"
+    n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
+    "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
@@ -459,9 +515,21 @@ pub mod tests {
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
+        assert_eq!(instance_config.id, "app spec instance");
+        assert_eq!(instance_config.dna, "app spec rust");
+        assert_eq!(instance_config.agent, "test agent");
+        assert_eq!(config.logger.logger_type, "");
         assert_eq!(
-            instance_config.network,
-            Some("{\"backend_kind\":\"special\"}".to_string())
+            config.network.unwrap(),
+            NetworkConfig {
+                bootstrap_nodes: vec![String::from(
+                    "/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"
+                )],
+                n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
+                n3h_mode: String::from("HACK"),
+                n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
+                n3h_ipc_uri: None,
+            }
         );
     }
 
@@ -483,9 +551,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -499,12 +564,27 @@ pub mod tests {
     id = "app spec instance"
 
     [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
     id = "app spec domainsocket interface"
     [interfaces.driver]
     type = "domainsocket"
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
+
+    [logger]
+    type = "debug"
+    [[logger.rules.rules]]
+    pattern = ".*"
+    color = "red"
+
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -521,7 +601,10 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(instance_config.network, None);
+        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.rules.rules.len(), 1);
+
+        assert_eq!(config.network, None);
     }
 
     #[test]
@@ -542,9 +625,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "WRONG DNA ID"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -575,9 +655,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -622,9 +699,6 @@ pub mod tests {
     dna = "app spec rust"
     agent = "test agent"
     network = "{}"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -667,9 +741,6 @@ pub mod tests {
     id = "app1"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -678,9 +749,6 @@ pub mod tests {
     id = "app2"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -689,9 +757,6 @@ pub mod tests {
     id = "app3"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -821,5 +886,18 @@ pub mod tests {
             bridged_ids,
             vec![String::from("app2"), String::from("app3"),]
         );
+    }
+
+    #[test]
+    fn test_n3h_defaults() {
+        assert_eq!(default_n3h_mode(), String::from("HACK"));
+
+        #[cfg(not(windows))]
+        assert!(default_n3h_path().contains("/.hc/net/n3h"));
+
+        // the path can be lots of things in different environments (travis CI etc)
+        // so we are just testing that it isn't null
+        #[cfg(not(windows))]
+        assert!(default_n3h_persistence_path() != String::from(""));
     }
 }

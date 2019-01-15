@@ -1,5 +1,5 @@
 use crate::{
-    config::{DnaConfiguration, InstanceConfiguration},
+    config::{DnaConfiguration, InstanceConfiguration, InterfaceConfiguration},
     container::{notify, Container},
     error::HolochainInstanceError,
 };
@@ -13,6 +13,7 @@ pub trait ContainerAdmin {
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
     fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
+    fn add_interface(&mut self, new_instance: InterfaceConfiguration) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -134,13 +135,22 @@ impl ContainerAdmin for Container {
         notify(format!("Stopping instance \"{}\"...", id));
         instance.write().unwrap().stop()
     }
+
+    fn add_interface(&mut self, interface: InterfaceConfiguration) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        new_config.interfaces.push(interface.clone());
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::{
-        config::{load_configuration, Configuration},
+        config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
         container::{tests::example_dna_string, DnaLoader},
     };
     use holochain_core_types::{dna::Dna, json::JsonString};
@@ -611,5 +621,101 @@ pattern = ".*"
             container.stop_instance(&String::from("test-instance-1")),
             Err(HolochainInstanceError::InstanceNotActiveYet),
         );
+    }
+
+    #[test]
+    fn test_add_interface() {
+        let mut container = create_test_container("test_add_interface");
+        let interface = InterfaceConfiguration {
+            id: String::from("new-interface"),
+            driver: InterfaceDriver::Http{port: 8080},
+            admin: false,
+            instances: Vec::new(),
+        };
+
+        assert_eq!(container.add_interface(interface), Ok(()), );
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        assert_eq!(
+            config_contents,
+            r#"bridges = []
+
+[[agents]]
+id = "test-agent-1"
+key_file = "holo_tester.key"
+name = "Holo Tester 1"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+[[agents]]
+id = "test-agent-2"
+key_file = "holo_tester.key"
+name = "Holo Tester 2"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
+[[dnas]]
+file = "app_spec.hcpkg"
+hash = "Qm328wyq38924y"
+id = "test-dna"
+
+[[instances]]
+agent = "test-agent-1"
+dna = "test-dna"
+id = "test-instance-1"
+
+[instances.storage]
+type = "memory"
+
+[[instances]]
+agent = "test-agent-2"
+dna = "test-dna"
+id = "test-instance-2"
+
+[instances.storage]
+type = "memory"
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[[interfaces.instances]]
+id = "test-instance-1"
+
+[[interfaces.instances]]
+id = "test-instance-2"
+
+[interfaces.driver]
+port = 3000
+type = "websocket"
+
+[[interfaces]]
+admin = false
+id = "new-interface"
+instances = []
+
+[interfaces.driver]
+port = 8080
+type = "http"
+
+[logger]
+type = ""
+[[logger.rules.rules]]
+color = "red"
+exclude = false
+pattern = "^err/"
+
+[[logger.rules.rules]]
+color = "white"
+exclude = false
+pattern = "^debug/dna"
+
+[[logger.rules.rules]]
+exclude = false
+pattern = ".*"
+"#
+                .to_string());
     }
 }

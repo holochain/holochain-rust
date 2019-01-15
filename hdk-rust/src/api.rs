@@ -30,16 +30,17 @@ use holochain_wasm_utils::{
     },
 };
 use std::convert::TryFrom;
-use holochain_core_types::error::RibosomeReturnCode;
+// use holochain_core_types::error::RibosomeReturnCode;
 use init_globals::hc_init_globals;
 use serde_json;
 use std::{convert::TryInto};
 use holochain_core_types::error::RibosomeEncodingBits;
-use holochain_wasm_utils::memory::allocation::WasmAllocation;
-use holochain_core_types::error::HolochainError;
-use holochain_core_types::error::RibosomeErrorCode;
+// use holochain_wasm_utils::memory::allocation::WasmAllocation;
+// use holochain_core_types::error::HolochainError;
+// use holochain_core_types::error::RibosomeErrorCode;
 use holochain_core_types::error::RibosomeEncodedAllocation;
-use holochain_core_types::error::CoreError;
+// use holochain_core_types::error::CoreError;
+use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -258,41 +259,12 @@ impl Dispatch {
                 Dispatch::Send => hc_send(encoded_input),
             }
         };
-        let return_code: RibosomeReturnCode = encoded_output.into();
 
-        // Deserialize complex result stored in memory and check for ERROR in encoding
-        let result: ZomeApiInternalResult = match return_code.allocation_or_err() {
-            Ok(allocation) => match WasmAllocation::try_from(allocation) {
-                Ok(wasm_allocation) => {
-                    let s = wasm_allocation.read_to_string();
-                    let maybe_o = O::try_from(JsonString::from(s.clone()));
-                    match maybe_o {
-                        Ok(o) => ZomeApiInternalResult::success(o),
-                        Err(_) => {
-                            // TODO #394 - In Release, load error_string directly and not a CoreError
-                            let maybe_hc_err: Result<CoreError, serde_json::Error> =
-                                serde_json::from_str(&s);
-
-                            mem_stack.deallocate(wasm_allocation)?;
-                            Err(match maybe_hc_err {
-                                Err(_) => {
-                                    HolochainError::Ribosome(RibosomeErrorCode::ArgumentDeserializationFailed)
-                                }
-                                Ok(hc_err) => hc_err.kind,
-                            })?
-                        }
-                    }
-                }
-                // the encoded allocation is not a valid wasm allocation
-                Err(err) => {
-                    mem_stack.deallocate(wasm_allocation)?;
-                    Err(err)?
-                },
-            },
-            // the return code is some kind of error
-            Err(err) => {
+        let result: ZomeApiInternalResult = match load_ribosome_encoded_json(encoded_output) {
+            Ok(r) => r,
+            Err(e) => {
                 mem_stack.deallocate(wasm_allocation)?;
-                Err(err)?
+                return Err(e.into());
             },
         };
 

@@ -57,7 +57,7 @@ pub fn return_code_for_allocation_result(result: Result<WasmAllocation, Allocati
     }
 }
 
-pub fn load_json<J: TryFrom<JsonString>>(encoded_value: RibosomeEncodingBits) -> Result<J, HolochainError>
+pub fn load_ribosome_encoded_json<J: TryFrom<JsonString>>(encoded_value: RibosomeEncodingBits) -> Result<J, HolochainError>
     where J::Error: Into<HolochainError>{
 
     match RibosomeReturnCode::from(encoded_value) {

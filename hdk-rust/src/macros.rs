@@ -9,24 +9,32 @@ macro_rules! load_json {
             $encoded_allocation_of_input,
         );
 
-        if let Err(hc_err) = maybe_input {
-            return $crate::global_fns::write_json(hc_err);
+        match maybe_input {
+            Ok(input) => input,
+            Err(hc_err) => return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                $crate::global_fns::write_json(hc_err)
+            ).into(),
         }
 
-        maybe_input
     }};
 }
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! load_string {
     ($encoded_allocation_of_input:ident) => {{
+
         let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_string(
             $encoded_allocation_of_input,
         );
-        if let Err(hc_err) = maybe_input {
-            return $crate::global_fns::write_json(hc_err);
+
+        match maybe_input {
+            Ok(input) => input,
+            Err(hc_err) => return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                $crate::global_fns::write_json(hc_err)
+            ).into(),
         }
-        maybe_input
+
     }};
 }
 
@@ -196,7 +204,12 @@ macro_rules! define_zome {
                 Ok(allocation) => allocation,
                 Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
             };
-            $crate::global_fns::init_global_memory(allocation);
+            let init = $crate::global_fns::init_global_memory(allocation);
+            if init.is_err() {
+                return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                    init
+                ).into();
+            }
 
             fn execute() -> Result<(), String> {
                 $genesis_expr
@@ -220,10 +233,15 @@ macro_rules! define_zome {
                     Ok(allocation) => allocation,
                     Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
                 };
-                $crate::global_fns::init_global_memory(allocation);
+                let init = $crate::global_fns::init_global_memory(allocation);
+                if init.is_err() {
+                    return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                        init
+                    ).into();
+                }
 
                 // Deserialize input
-                let input = load_string!(encoded_allocation_of_input).unwrap();
+                let input = load_string!(encoded_allocation_of_input);
 
                 fn execute(payload: String) -> String {
                     let $receive_param = payload;
@@ -292,17 +310,21 @@ macro_rules! define_zome {
                         Ok(allocation) => allocation,
                         Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
                     };
-                    $crate::global_fns::init_global_memory(allocation);
+                    let init = $crate::global_fns::init_global_memory(allocation);
+                    if init.is_err() {
+                        return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+                            init
+                        ).into();
+                    }
 
                     // Macro'd InputStruct
-                    #[derive(Deserialize, Debug)]
+                    #[derive(Deserialize, Serialize, Debug, $crate::holochain_core_types_derive::DefaultJson)]
                     struct InputStruct {
                         $($input_param_name : $input_param_type),*
                     }
 
                     // Deserialize input
-                    let maybe_input = load_json!(encoded_allocation_of_input);
-                    let input: InputStruct = maybe_input.unwrap();
+                    let input: InputStruct = load_json!(encoded_allocation_of_input);
 
                     // Macro'd function body
                     fn execute (params: InputStruct) -> $( $output_param_type )* {

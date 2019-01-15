@@ -54,7 +54,7 @@ fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
 #[no_mangle]
 pub extern "C" fn debug_hello(encoded_allocation_of_input: usize) -> RibosomeRuntimeBits {
     let mut mem_stack =
-        WasmStack::from_encoded_allocation(encoded_allocation_of_input as RibosomeEncodingBits).unwrap();
+        WasmStack::try_from(encoded_allocation_of_input as RibosomeEncodingBits).unwrap();
     hdk_debug(
         &mut mem_stack,
         &JsonString::from(RawString::from("Hello world!")),

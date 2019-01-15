@@ -6,8 +6,9 @@ macro_rules! zome_assert {
         if !$cond {
             let error_report =
                 core_error_generic!(format!(r#"Zome assertion failed: `{}`"#, stringify!($cond)));
-            let res = stack.store_as_json(error_report);
-            return res.unwrap().encode();
+            return return_code_for_allocation_result(
+                $stack.write_json(error_report)
+            ).into();
         }
     };
 }
@@ -15,7 +16,7 @@ macro_rules! zome_assert {
 #[macro_export]
 macro_rules! ribosome_success {
     () => {
-        Ok(Some(RuntimeValue::I32(0 as i32)))
+        Ok(Some(RuntimeValue::I32($crate::holochain_core_types::error::RibosomeReturnCode::Success as $crate::holochain_core_types::error::RibosomeRuntimeBits)))
     };
 }
 
@@ -24,7 +25,7 @@ macro_rules! ribosome_success {
 macro_rules! ribosome_error_code {
     ($s:ident) => {
         Ok(Some(RuntimeValue::I32(
-            $crate::holochain_core_types::error::RibosomeErrorCode::$s as i32,
+            $crate::holochain_core_types::error::RibosomeErrorCode::$s as $crate::holochain_core_types::error::RibosomeRuntimeBits,
         )))
     };
 }

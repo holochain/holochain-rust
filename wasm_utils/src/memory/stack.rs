@@ -15,6 +15,12 @@ impl From<Top> for MemoryInt {
     }
 }
 
+impl From<Top> for usize {
+    fn from(top: Top) -> Self {
+        Self::from(MemoryInt::from(top))
+    }
+}
+
 impl From<Top> for MemoryBits {
     fn from(top: Top) -> Self {
         top.0 as MemoryBits

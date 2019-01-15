@@ -1,8 +1,11 @@
+#![feature(try_from)]
 #[macro_use]
 extern crate hdk;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
+use hdk::holochain_core_types::error::HolochainError;
 use hdk::holochain_core_types::json::JsonString;
 
 

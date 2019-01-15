@@ -67,10 +67,12 @@ pub fn allocation_from_ribosome_encoding(encoded_value: RibosomeEncodingBits) ->
 /// Equivalent to From<AllocationResult> for RibosomeReturnCode
 /// not possible to implement the trait as Result and RibosomeReturnCode from different crates
 pub fn return_code_for_allocation_result(result: Result<WasmAllocation, AllocationError>) -> RibosomeReturnCode {
+
     match result {
         Ok(allocation) => RibosomeReturnCode::from(allocation),
         Err(allocation_error) => RibosomeReturnCode::from(allocation_error),
     }
+
 }
 
 pub fn load_ribosome_encoded_string(encoded_value: RibosomeEncodingBits) -> Result<String, HolochainError> {

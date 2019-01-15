@@ -81,7 +81,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodi
         Err(e) => e.into(),
     };
 
-    let wasm_stack = unsafe { G_MEM_STACK.unwrap() };
+    let mut wasm_stack = unsafe { G_MEM_STACK.unwrap() };
     RibosomeReturnCode::from(wasm_stack.write_json(res_obj).unwrap()).into()
 
 }

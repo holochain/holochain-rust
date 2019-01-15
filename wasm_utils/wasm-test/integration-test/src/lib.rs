@@ -16,7 +16,11 @@ use holochain_wasm_utils::{
 };
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
-use std::os::raw::c_char;
+use std::convert::TryFrom;
+use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
+use holochain_wasm_utils::memory::ribosome::allocation_from_ribosome_encoding;
+use holochain_wasm_utils::memory::MemoryInt;
+use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
@@ -55,22 +59,26 @@ pub extern "C" fn test_error_report(_: RibosomeEncodingBits) -> RibosomeEncoding
 pub extern "C" fn test_store_string_ok(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let mut stack = WasmStack::default();
     let s = "fish";
-    assert_eq!(0, stack.top());
+    assert_eq!(0, MemoryInt::from(stack.top()));
     let res = stack.write_string(s);
-    assert_eq!(s.len(), usize::from(stack.top()));
-    res.unwrap().encode()
+    assert_eq!(usize::from(s.len()), usize::from(stack.top()));
+
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
 pub extern "C" fn test_store_as_json_str_ok(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let mut stack = WasmStack::default();
     let s = "fish";
-    assert_eq!(0, stack.top());
+    assert_eq!(0, MemoryInt::from(stack.top()));
 
     let res = stack.write_json(RawString::from(s));
-    assert_eq!(json!(s).to_string().len(), usize::from(stack.top()));
+    assert_eq!(
+        usize::from(json!(s).to_string().len()),
+        usize::from(stack.top()),
+    );
 
-    res.unwrap().encode()
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
@@ -80,104 +88,97 @@ pub extern "C" fn test_store_as_json_obj_ok(_: RibosomeEncodingBits) -> Ribosome
         value: "fish".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     };
-    assert_eq!(0, stack.top());
+    assert_eq!(0, MemoryInt::from(stack.top()));
     let res = stack.write_json(obj.clone());
-    assert_eq!(json!(obj).to_string().len(), stack.top() as usize);
-    res.unwrap().encode()
+    assert_eq!(
+        usize::from(json!(obj).to_string().len()),
+        usize::from(stack.top()),
+    );
+
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
 pub extern "C" fn test_store_string_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let allmost_full_alloc = 0b1111111111111101_0000000000000010;
-    let maybe_stack = WasmStack::from_encoded_allocation(allmost_full_alloc);
-    assert!(maybe_stack.is_ok());
-    let mut stack = maybe_stack.unwrap();
+
+    let allocation = allocation_from_ribosome_encoding(allmost_full_alloc).unwrap();
+    let mut stack = WasmStack::try_from(allocation).unwrap();
+
     let s = "fish";
     let res = stack.write_string(s);
     assert!(res.is_err());
-    res.err().unwrap() as RibosomeEncodingBits
+
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
 pub extern "C" fn test_store_as_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let allmost_full_alloc = 0b1111111111111101_0000000000000010;
-    let maybe_stack = WasmStack::from_encoded_allocation(allmost_full_alloc);
-    assert!(maybe_stack.is_ok());
-    let mut stack = maybe_stack.unwrap();
+    let allocation = allocation_from_ribosome_encoding(allmost_full_alloc).unwrap();
+    let mut stack = WasmStack::try_from(allocation).unwrap();
+
     let obj = TestStruct {
         value: "fish".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     };
     let res = stack.write_json(obj.clone());
+
     assert!(res.is_err());
-    res.err().unwrap() as RibosomeEncodingBits
-}
 
-#[no_mangle]
-pub extern "C" fn test_load_json_from_raw_ok(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    let mut stack = WasmStack::default();
-    let obj = TestStruct {
-        value: "fish".to_string(),
-        list: vec!["hello".to_string(), "world!".to_string()],
-    };
-    let res = stack.write_json(obj.clone());
-    let ptr = res.unwrap().offset() as *mut c_char;
-    let res = load_json_from_raw(ptr);
-    assert!(obj == res.unwrap());
-
-    RibosomeReturnCode::Success.into()
-}
-
-#[no_mangle]
-pub extern "C" fn test_load_json_from_raw_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    let mut stack = WasmStack::default();
-    let obj = TestStruct {
-        value: "fish".to_string(),
-        list: vec!["hello".to_string(), "world!".to_string()],
-    };
-    assert_eq!(0, stack.top());
-    let store_res = stack.write_json(obj.clone());
-    let ptr = store_res.clone().unwrap().offset() as *mut c_char;
-    let load_res: Result<OtherTestStruct, HolochainError> = load_json_from_raw(ptr);
-    zome_assert!(stack, load_res.is_err());
-    let store_err_res = stack.write_json(load_res.err().unwrap().to_string());
-    store_err_res.unwrap().encode()
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
 pub extern "C" fn test_load_json_ok(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let encoded = test_store_as_json_obj_ok(0);
-    let mut stack = WasmStack::from_encoded_allocation(encoded).unwrap();
-    let res: Result<TestStruct, HolochainError> = load_json(encoded);
+
+    let allocation = allocation_from_ribosome_encoding(encoded).unwrap();
+    let mut stack = WasmStack::try_from(allocation).unwrap();
+
+    let res: Result<TestStruct, HolochainError> = load_ribosome_encoded_json(encoded);
     let res = stack.write_json(res.unwrap().clone());
-    res.unwrap().encode()
+
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
 pub extern "C" fn test_load_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    let encoded = 1 << 16;
+
     let mut stack = WasmStack::default();
-    let res: Result<TestStruct, HolochainError> = load_json(1 << 16);
+
+    let res: Result<TestStruct, HolochainError> = load_ribosome_encoded_json(encoded);
     zome_assert!(stack, res.is_err());
     let res = stack.write_json(res);
-    res.unwrap().encode()
+
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
 pub extern "C" fn test_load_string_ok(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let encoded = test_store_string_ok(0);
-    let mut stack = WasmStack::from_encoded_allocation(encoded).unwrap();
-    let res = load_string(encoded);
-    let res = stack.write_string(&res.unwrap());
-    res.unwrap().encode()
+
+    let allocation = allocation_from_ribosome_encoding(encoded).unwrap();
+    let mut stack = WasmStack::try_from(allocation).unwrap();
+
+    let res = allocation.read_to_string();
+    let res = stack.write_string(&res);
+
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
 pub extern "C" fn test_load_string_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    let mut stack = WasmStack::default();
-    let res = load_string(1 << 16);
-    zome_assert!(stack, res.is_err());
-    let res = stack.write_string(&res.err().unwrap().to_string());
-    res.unwrap().encode()
+    let encoded = 1 << 16;
+    let allocation = allocation_from_ribosome_encoding(encoded).unwrap();
+
+    let mut stack = WasmStack::try_from(allocation).unwrap();
+
+    let s = allocation.read_to_string();
+    let res = stack.write_string(&s);
+
+    return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]
@@ -185,7 +186,8 @@ pub extern "C" fn test_stacked_strings(_: RibosomeEncodingBits) -> RibosomeEncod
     let mut stack = WasmStack::default();
     let first = stack.write_string("first");
     let _second = stack.write_string("second");
-    first as RibosomeEncodingBits
+
+    return_code_for_allocation_result(first).into()
 }
 
 #[no_mangle]
@@ -193,13 +195,14 @@ pub extern "C" fn test_stacked_json_str(_: RibosomeEncodingBits) -> RibosomeEnco
     let mut stack = WasmStack::default();
     let first = stack.write_json("first");
     let _second = stack.write_json("second");
-    first as RibosomeEncodingBits
+
+    return_code_for_allocation_result(first).into()
 }
 
 #[no_mangle]
 pub extern "C" fn test_stacked_json_obj(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let mut stack = WasmStack::default();
-    let first = stack.write_json(testStruct {
+    let first = stack.write_json(TestStruct {
         value: "first".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     });
@@ -207,7 +210,8 @@ pub extern "C" fn test_stacked_json_obj(_: RibosomeEncodingBits) -> RibosomeEnco
         value: "second".to_string(),
         list: vec!["hello".to_string(), "world!".to_string()],
     });
-    first as RibosomeEncodingBits
+
+    return_code_for_allocation_result(first).into()
 }
 
 #[no_mangle]
@@ -224,5 +228,6 @@ pub extern "C" fn test_stacked_mix(_: RibosomeEncodingBits) -> RibosomeEncodingB
         value: "fifth".to_string(),
         list: vec!["fifthlist".to_string()],
     });
-    third as RibosomeEncodingBits
+
+    return_code_for_allocation_result(third).into()
 }

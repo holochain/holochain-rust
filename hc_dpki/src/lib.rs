@@ -12,5 +12,4 @@ extern crate boolinator;
 pub mod bundle;
 pub mod error;
 pub mod keypair;
-pub mod seed;
 pub mod util;

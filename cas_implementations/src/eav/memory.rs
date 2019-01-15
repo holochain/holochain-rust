@@ -1,12 +1,9 @@
-use chrono::{offset::Utc, DateTime};
 use holochain_core_types::{
-    cas::content::AddressableContent,
     eav::{
-        create_key, from_key, Action, Attribute, Entity, EntityAttributeValue,Key,
+        Action, Attribute, Entity, EntityAttributeValue,Key,create_key,
         EntityAttributeValueStorage, Value,
     },
-    error::HolochainError,
-    hash::HashString,
+    error::HolochainError
 };
 use im::hashmap::HashMap;
 use std::sync::{Arc, RwLock};
@@ -40,7 +37,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
        {
         
         let mut map = self.storage.write()?;
-        let key = create_key(Action::insert)?;
+        let key = create_key(Action::Insert)?;
         map.insert(key, eav.clone());
         Ok(())
        }

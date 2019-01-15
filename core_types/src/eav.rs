@@ -20,7 +20,6 @@ use std::{
 
 use regex::RegexBuilder;
 use std::fmt::Debug;
-use std::hash::Hash;
 
 /// Address of AddressableContent representing the EAV entity
 pub type Entity = Address;
@@ -55,18 +54,19 @@ pub struct EntityAttributeValue {
 
 #[derive(Clone,Debug,PartialEq,Eq,Hash)]
 pub enum Action {
-    insert,
-    delete,
-    update,
+    Insert,
+    Delete,
+    Update,
     None,
 }
 
 impl ToString for Action {
     fn to_string(&self) -> String {
         match self {
-            insert => String::from("Insert"),
-            delete => String::from("Delete"),
-            update => String::from("Update"),
+            Action::Insert => String::from("Insert"),
+            Action::Delete => String::from("Delete"),
+            Action::Update => String::from("Update"),
+            _ =>String::from("None")
         }
     }
 }
@@ -74,11 +74,11 @@ impl ToString for Action {
 impl From<String> for Action {
     fn from(action: String) -> Self {
         if action == String::from("Insert") {
-            Action::insert
+            Action::Insert
         } else if action == String::from("Delete") {
-            Action::delete
+            Action::Delete
         } else if action == String::from("Update") {
-            Action::update
+            Action::Update
         } else {
             Action::None
         }
@@ -197,7 +197,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         .iter()
         .cloned()
         .filter(|(key,_)|{
-            start_date.map(|s|s.timestamp_millis()).unwrap_or(i64::min_value()) >= key.0 && end_date.map(|s|s.timestamp_millis()).unwrap_or(i64::max_value()) <= key.0
+            key.0 <= start_date.map(|s|s.timestamp_millis()).unwrap_or(i64::min_value())  && end_date.map(|s|s.timestamp_millis()).unwrap_or(i64::max_value()) >= key.0
         }).collect())
         
     }
@@ -222,7 +222,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
         if self.unthreadable_fetch_eav(Some(eav.entity()),Some(eav.attribute()),Some(eav.value()))?.len() ==0 
         {
             
-             let key = create_key(Action::insert)?;
+             let key = create_key(Action::Insert)?;
              self.storage.insert(key, eav.clone());
              Ok(())
         }
@@ -297,11 +297,11 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
 
     fn fetch_eav_range(
         &self,
-        start_date: Option<DateTime<Utc>>,
-        end_date: Option<DateTime<Utc>>,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>,
+        _start_date: Option<DateTime<Utc>>,
+        _end_date: Option<DateTime<Utc>>,
+        _entity: Option<Entity>,
+        _attribute: Option<Attribute>,
+        _value: Option<Value>,
     ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         unimplemented!("Could not implment eav on range")
     }
@@ -336,10 +336,6 @@ pub fn test_eav_address() -> Address {
     test_eav().address()
 }
 
-fn create_hash() -> HashString {
-    HashString::from("")
-}
-
 pub fn eav_round_trip_test_runner(
     entity_content: impl AddressableContent + Clone,
     attribute: String,
@@ -368,7 +364,7 @@ pub fn eav_round_trip_test_runner(
     eav_storage.add_eav(&eav).expect("could not add eav");
 
     let mut expected = HashMap::new();
-    let key = create_key(Action::insert).expect("Could not create key");
+    let key = create_key(Action::Insert).expect("Could not create key");
     expected.insert(key, eav.clone());
     // some examples of constraints that should all return the eav
     for (e, a, v) in vec![

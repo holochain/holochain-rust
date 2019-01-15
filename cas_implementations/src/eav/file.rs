@@ -1,6 +1,6 @@
 use chrono::{offset::Utc, DateTime};
 use holochain_core_types::{
-    cas::content::{AddressableContent, Content},
+    cas::content::AddressableContent,
     eav::{Action, Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value,Key,from_key},
     error::{HcResult, HolochainError},
     hash::HashString,
@@ -9,7 +9,7 @@ use holochain_core_types::{
 use im::hashmap::HashMap;
 use std::{
     fs::{create_dir_all, File, OpenOptions},
-    io::{prelude::*, ErrorKind},
+    io::prelude::*,
     path::{Path,PathBuf, MAIN_SEPARATOR},
     sync::{Arc, RwLock},
 };
@@ -49,7 +49,7 @@ pub fn read_eav(parent_path:PathBuf) -> HcResult<Vec<(HashString, String)>> {
         .map(|mut file|{
             let mut content: String = String::new();
             file.read_to_string(&mut content)
-            .map(|_|Ok((get_key_from_path(&path_buf).unwrap_or((HashString::from(""))),content)))
+            .map(|_|Ok((get_key_from_path(&path_buf).unwrap_or(HashString::from("")),content)))
             .unwrap_or(Err(HolochainError::ErrorGeneric("Could not read from string".to_string())))
         }).unwrap_or(Err(HolochainError::ErrorGeneric("Could not read from string".to_string())))
     }).partition(Result::is_ok);
@@ -133,7 +133,7 @@ impl EavFileStorage {
 
     fn read_from_dir<T>(
         &self,
-        hash: HashString,
+        _hash: HashString,
         subscript: String,
         eav_constraint: Option<T>,
     ) -> HcResult<HashMap<HashString, String>>
@@ -192,7 +192,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         {
         let _guard = self.lock.write()?;
         create_dir_all(self.dir_path.clone())?;
-        let key = (Utc::now().timestamp_millis(), Action::insert);
+        let key = (Utc::now().timestamp_millis(), Action::Insert);
         println!("key {:?}",key.0.clone());
         self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
             .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
@@ -265,11 +265,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
 
     fn fetch_eav_range(
         &self,
-        start_date: Option<DateTime<Utc>>,
-        end_date: Option<DateTime<Utc>>,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>,
+        _start_date: Option<DateTime<Utc>>,
+        _end_date: Option<DateTime<Utc>>,
+        _entity: Option<Entity>,
+        _attribute: Option<Attribute>,
+        _value: Option<Value>,
     ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         unimplemented!("Could not implment eav on range")
     }

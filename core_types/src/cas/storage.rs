@@ -309,8 +309,8 @@ impl EavTestSuite {
                 (None, None, None),
             ] {
                 assert_eq!(
-                    expected.iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
-                    eav_storage.fetch_eav(e, a, v).expect("could not fetch eav").iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+                    expected.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
+                    eav_storage.fetch_eav(e, a, v).expect("could not fetch eav").iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
                 );
             }
         }
@@ -359,10 +359,10 @@ impl EavTestSuite {
 
         // show the many results for one
         assert_eq!(
-            expected.iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+            expected.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
             eav_storage
                 .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
-                .expect("could not fetch eav").iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+                .expect("could not fetch eav").iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
         );
 
         // show one for the many results
@@ -378,11 +378,11 @@ impl EavTestSuite {
             .join("_");
             expected_one.insert(HashString::from(key), eav);
             assert_eq!(
-                expected_one.iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+                expected_one.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
                 eav_storage
                     .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
                     .expect("could not fetch eav")
-                    .iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+                    .iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
             );
         }
     }
@@ -435,10 +435,10 @@ impl EavTestSuite {
 
         // show the many referencing one
         assert_eq!(
-            expected.iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+            expected.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
             eav_storage
                 .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
-                .expect("could not fetch eav").iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+                .expect("could not fetch eav").iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
         );
 
         // show one for the many results
@@ -454,10 +454,10 @@ impl EavTestSuite {
             .join("_");
             expected_one.insert(HashString::from(key), eav);
             assert_eq!(
-                expected_one.iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+                expected_one.iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
                 eav_storage
                     .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
-                    .expect("could not fetch eav").iter().map(|(k,v)|v).collect::<Vec<_>>().sort(),
+                    .expect("could not fetch eav").iter().map(|(_k,v)|v).collect::<Vec<_>>().sort(),
             );
         }
     }

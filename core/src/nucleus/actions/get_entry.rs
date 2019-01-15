@@ -5,8 +5,7 @@ use holochain_core_types::{
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
     eav::{Key,EntityAttributeValue},
     entry::{Entry, EntryWithMeta},
-    error::HolochainError,
-    hash::HashString,
+    error::HolochainError
 };
 use im::hashmap::HashMap;
 use std::{convert::TryInto, str::FromStr, sync::Arc};

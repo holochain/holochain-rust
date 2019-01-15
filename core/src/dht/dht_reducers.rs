@@ -10,8 +10,7 @@ use holochain_core_types::{
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
     eav::{Key,EntityAttributeValue},
     entry::Entry,
-    error::HolochainError,
-    hash::HashString,
+    error::HolochainError
 };
 use im::hashmap::HashMap;
 use std::{convert::TryFrom, str::FromStr, sync::Arc};

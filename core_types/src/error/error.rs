@@ -31,13 +31,11 @@ pub struct CoreError {
 
 // Error trait by using the inner Error
 impl Error for CoreError {
-    fn description(&self) -> &str {
-        self.kind.description()
-    }
     fn cause(&self) -> Option<&Error> {
         self.kind.source()
     }
 }
+
 impl CoreError {
     pub fn new(hc_err: HolochainError) -> Self {
         CoreError {

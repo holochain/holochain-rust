@@ -3,6 +3,7 @@ extern crate holochain_container_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
+extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
@@ -108,6 +109,8 @@ enum Cli {
         package: bool,
         #[structopt(long, help = "Save generated data to file system")]
         persist: bool,
+        #[structopt(long, help = "Use real networking")]
+        networked: bool,
     },
     #[structopt(
         name = "test",
@@ -159,13 +162,18 @@ fn run() -> HolochainResult<()> {
             package,
             port,
             persist,
-        } => cli::run(package, port, persist).map_err(HolochainError::Default)?,
+            networked,
+        } => cli::run(package, port, persist, networked).map_err(HolochainError::Default)?,
         Cli::Test {
             dir,
             testfile,
             skip_build,
-        } => cli::test(&PathBuf::from("."), &dir, &testfile, skip_build)
-            .map_err(HolochainError::Default)?,
+        } => {
+            let current_path = std::env::current_dir()
+                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
+            cli::test(&current_path, &dir, &testfile, skip_build)
+        }
+        .map_err(HolochainError::Default)?,
     }
 
     Ok(())

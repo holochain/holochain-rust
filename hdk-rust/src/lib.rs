@@ -9,6 +9,10 @@
 //! The HDK lets the developer focus on application logic and, as much as possible, forget about the
 //! underlying low-level implementation. It would be possible to write DNA source code without an
 //! HDK, but it would be extremely tedious!
+//!
+//! Throughout the development process it will be helpful to click around through this reference, but
+//! the most useful places to start reading are the [define_zome! macro](macro.define_zome.html), and the list of exposed functions
+//! that Holochain offers: [the API](api/index.html).
 
 #![feature(try_from)]
 #![feature(never_type)]

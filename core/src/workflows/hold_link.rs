@@ -28,10 +28,15 @@ pub async fn hold_link_workflow<'a>(
     };
     let link = link_add.link().clone();
 
+    context.log(format!("debug/workflow/hold_link: {:?}", link));
     // 1. Get validation package from source
+    context.log(format!(
+        "debug/workflow/hold_link: getting validation package..."
+    ));
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
+    context.log(format!("debug/workflow/hold_link: got validation package!"));
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -42,10 +47,17 @@ pub async fn hold_link_workflow<'a>(
     };
 
     // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
+    context.log(format!("debug/workflow/hold_link: validate..."));
+    await!(validate_entry(entry.clone(), validation_data, &context)).map_err(|err| {
+        context.log(format!("debug/workflow/hold_link: invalid! {:?}", err));
+        err
+    })?;
+    context.log(format!("debug/workflow/hold_link: is valid!"));
 
     // 3. If valid store the entry in the local DHT shard
-    await!(add_link(&link, &context))
+    await!(add_link(&link, &context))?;
+    context.log(format!("debug/workflow/hold_link: added! {:?}", link));
+    Ok(())
 }
 
 #[cfg(test)]
@@ -64,7 +76,7 @@ pub mod tests {
     /// Test that an invalid link will be rejected by this workflow.
     ///
     /// This test simulates an attack where a node is changing its local copy of the DNA to
-    /// allow otherwise invalid entries while spoofing the unmodified dna_hash.
+    /// allow otherwise invalid entries while spoofing the unmodified dna_address.
     ///
     /// hold_link_workflow is then expected to fail in its validation step
     fn test_reject_invalid_link_on_hold_workflow() {
@@ -76,10 +88,11 @@ pub mod tests {
             create_test_dna_with_wat("test_zome", "test_cap", Some(&test_wat_always_invalid()));
         dna.uuid = String::from("test_reject_invalid_link_on_hold_workflow");
 
-        // Hash of the original DNA
-        let dna_hash = base64::encode(&dna.multihash().unwrap());
+        // Address of the original DNA
+        let dna_address = dna.address();
 
-        let (_, context1) = test_instance_with_spoofed_dna(hacked_dna, dna_hash, "alice").unwrap();
+        let (_, context1) =
+            test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
         let (_instance2, context2) = instance_by_name("jack", dna);
 
         // Commit entry on attackers node

@@ -44,7 +44,7 @@
 /// #[derive(StructOpt, Debug)]
 /// #[structopt(name = "hcc")]
 /// struct Opt {
-///     /// Output file
+///     /// Path to the toml configuration file for the container
 ///     #[structopt(short = "c", long = "config", parse(from_os_str))]
 ///     config: Option<PathBuf>,
 /// }
@@ -94,19 +94,32 @@ extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
+extern crate holochain_net_connection;
+extern crate holochain_net_ipc;
 
+extern crate chrono;
 extern crate serde;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+extern crate colored;
+#[cfg(test)]
+extern crate holochain_wasm_utils;
+extern crate jsonrpc_http_server;
 extern crate jsonrpc_ws_server;
 extern crate petgraph;
+extern crate regex;
+#[macro_use]
 extern crate serde_json;
+extern crate serde_regex;
 #[cfg(test)]
 extern crate test_utils;
 extern crate tiny_http;
 extern crate toml;
+#[macro_use]
+extern crate maplit;
+extern crate directories;
 
 pub mod config;
 pub mod container;
@@ -115,5 +128,6 @@ pub mod error;
 pub mod holochain;
 pub mod interface;
 pub mod interface_impls;
+pub mod logger;
 
 pub use crate::holochain::Holochain;

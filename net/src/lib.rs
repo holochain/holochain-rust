@@ -13,6 +13,7 @@ extern crate holochain_net_ipc;
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
+extern crate snowflake;
 // macros used in tests
 #[allow(unused_imports)]
 #[macro_use]

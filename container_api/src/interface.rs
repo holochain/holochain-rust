@@ -369,6 +369,21 @@ pub mod tests {
         (container.config(), instances)
     }
 
+    fn create_call_str(method: &str, _params: &str) -> String {
+        json!({"jsonrpc": "2.0", "id": "0", "method": method}).to_string()
+    }
+
+    /// checks that the response is a valid JSON string containing a `result` field which is stringified JSON
+    fn unwrap_response_if_valid(response_str: &String) -> String {
+        let result_str = &serde_json::from_str::<serde_json::Value>(response_str)
+            .expect("Response not valid JSON")["result"]
+            .as_str().expect("result is not a string")
+            .to_owned();
+        let result = &serde_json::from_str::<serde_json::Value>(result_str)
+            .expect("result is not valid stringified json");
+        result.to_string()
+    }
+
     #[test]
     fn test_new_dispatcher() {
         let (config, instances) = example_config_and_instances();
@@ -401,5 +416,20 @@ pub mod tests {
         assert!(result.contains("info/instances"));
         assert!(result.contains(r#""happ-store/greeter/public/hello""#));
         assert!(!result.contains(r#""test-instance-1//test/test""#));
+    }
+
+    #[test]
+    fn test_call_responses() {
+        let (config, instances) = example_config_and_instances();
+        let handler = ContainerApiBuilder::new()
+            .with_instances(instances.clone())
+            .with_instance_configs(config.instances)
+            .with_admin_dna_functions()
+            .spawn();
+        
+        let response_str = handler.handle_request_sync(&create_call_str("info/instances", ""))
+            .expect("Invalid call to handler");
+        let result = unwrap_response_if_valid(&response_str);
+        assert_eq!(result, "[{\"id\":\"test-instance-1\",\"dna\":\"bridge-callee\",\"agent\":\"test-agent-1\",\"storage\":{\"type\":\"memory\"}}]")
     }
 }

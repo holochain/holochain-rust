@@ -133,7 +133,7 @@ mod tests {
             .unwrap();
         // Should receive PeerConnected
         mock_worker_1.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let _res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
         // setup client 2
         let (handler_send_2, handler_recv_2) = mpsc::channel::<Protocol>();
@@ -158,9 +158,9 @@ mod tests {
             .unwrap();
         // Should receive PeerConnected
         mock_worker_1.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let _res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
         mock_worker_2.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let _res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         // node2node:  send & receive
         mock_worker_1

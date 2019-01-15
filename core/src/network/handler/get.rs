@@ -8,9 +8,9 @@ use holochain_core_types::cas::content::Address;
 use holochain_net_connection::protocol_wrapper::{
     DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
 };
+use im::hashmap::HashMap;
 use regex::Regex;
 use std::sync::Arc;
-use im::hashmap::HashMap;
 
 lazy_static! {
     static ref LINK: Regex =
@@ -59,7 +59,7 @@ pub fn handle_get_dht_meta(get_dht_meta_data: GetDhtMetaData, context: Arc<Conte
             )
             .unwrap_or(HashMap::new())
             .into_iter()
-            .map(|(_,eav)| eav.value())
+            .map(|(_, eav)| eav.value())
             .collect::<Vec<_>>();
         let action_wrapper =
             ActionWrapper::new(Action::RespondGetLinks((get_dht_meta_data, links)));

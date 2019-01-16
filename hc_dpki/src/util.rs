@@ -55,15 +55,9 @@ pub fn pw_enc(
     pw_hash(&mut passphrase, &mut salt, &mut secret)?;
     aead::enc(&mut data, &mut secret, None, &mut nonce, &mut cipher)?;
 
-    let salt = salt.read_lock();
-    let nonce = nonce.read_lock();
-    let cipher = cipher.read_lock();
-    let salt = &*salt;
-    let nonce = &*nonce;
-    let cipher = &*cipher;
-    let salt: Vec<u8> = salt.iter().cloned().collect();
-    let nonce: Vec<u8> = nonce.iter().cloned().collect();
-    let cipher: Vec<u8> = cipher.iter().cloned().collect();
+    let salt = salt.read_lock().to_vec();
+    let nonce = nonce.read_lock().to_vec();
+    let cipher = cipher.read_lock().to_vec();
     let data = bundle::ReturnBundleData {
         salt,
         nonce,

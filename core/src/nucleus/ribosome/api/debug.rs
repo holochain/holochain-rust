@@ -1,6 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use wasmi::RuntimeArgs;
-use wasmi::RuntimeValue;
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32

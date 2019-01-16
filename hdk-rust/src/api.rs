@@ -208,10 +208,13 @@ impl Dispatch {
         &self,
         input: I,
     ) -> ZomeApiResult<O> {
-
         let mut mem_stack = match unsafe { G_MEM_STACK } {
             Some(mem_stack) => mem_stack,
-            None => return Err(ZomeApiError::Internal("debug failed to load mem_stack".to_string())),
+            None => {
+                return Err(ZomeApiError::Internal(
+                    "debug failed to load mem_stack".to_string(),
+                ));
+            }
         };
 
         let wasm_allocation = mem_stack.write_json(input)?;
@@ -271,6 +274,7 @@ impl Dispatch {
 ///
 /// This first one, is the one that is called into, with the Zome name `summer`.
 /// ```rust
+/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate serde;
@@ -279,6 +283,7 @@ impl Dispatch {
 /// # #[macro_use]
 /// # extern crate serde_json;
 /// # use hdk::holochain_core_types::json::JsonString;
+/// # use hdk::holochain_core_types::error::HolochainError;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -885,6 +890,7 @@ pub fn query(
 /// by the `receive` callback of the other node.
 /// # Examples
 /// ```rust
+/// # #![feature(try_from)]
 /// # #[macro_use]
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
@@ -895,6 +901,8 @@ pub fn query(
 /// # extern crate serde_json;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_core_types::cas::content::Address;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]

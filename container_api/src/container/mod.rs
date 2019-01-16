@@ -1,8 +1,10 @@
-pub mod base;
 pub mod admin;
+pub mod base;
 
-pub use self::base::{mount_container_from_config, CONTAINER, Container};
-pub use self::admin::ContainerAdmin;
+pub use self::{
+    admin::ContainerAdmin,
+    base::{mount_container_from_config, Container, CONTAINER},
+};
 
 #[cfg(test)]
 pub use self::base::tests;

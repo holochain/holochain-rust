@@ -11,7 +11,7 @@ use std::{
 };
 
 use config::{DnaConfiguration, InstanceConfiguration, StorageConfiguration};
-use container::{CONTAINER, ContainerAdmin};
+use container::{ContainerAdmin, CONTAINER};
 use serde_json::map::Map;
 
 pub type InterfaceError = String;
@@ -237,9 +237,8 @@ impl ContainerApiBuilder {
         });
 
         self.io.add_method("admin/dna/list", move |_params| {
-            let dnas = container_call!(
-                |c| Ok(c.config().dnas) as Result<Vec<DnaConfiguration>, String>
-            )?;
+            let dnas =
+                container_call!(|c| Ok(c.config().dnas) as Result<Vec<DnaConfiguration>, String>)?;
             Ok(serde_json::Value::Array(
                 dnas.iter()
                     .map(|dna| json!({"id": dna.id, "hash": dna.hash}))
@@ -285,9 +284,9 @@ impl ContainerApiBuilder {
         });
 
         self.io.add_method("admin/instance/list", move |_params| {
-            let instances =
-                container_call!(|c| Ok(c.config().instances)
-                    as Result<Vec<InstanceConfiguration>, String>)?;
+            let instances = container_call!(
+                |c| Ok(c.config().instances) as Result<Vec<InstanceConfiguration>, String>
+            )?;
             Ok(serde_json::Value::Array(
                 instances
                     .iter()
@@ -312,8 +311,9 @@ impl ContainerApiBuilder {
                     .cloned()
                     .collect())
                     as Result<Vec<String>, String>)?;
-                let instances = container_call!(|c| Ok(c.config().instances)
-                    as Result<Vec<InstanceConfiguration>, String>)?;
+                let instances = container_call!(
+                    |c| Ok(c.config().instances) as Result<Vec<InstanceConfiguration>, String>
+                )?;
                 Ok(serde_json::Value::Array(
                     instances
                         .iter()

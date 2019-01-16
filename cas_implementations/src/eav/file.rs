@@ -236,10 +236,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
             ENTITY_DIR.to_string(),
             entity.clone(),
         )?;
-        println!("entity {:?}", entity.clone());
-        println!("attribute {:?}", attribute.clone());
-        println!("value {:?}", value.clone());
-        println!("entity_set {:?}", entity_set.clone());
         let attribute_set = self
             .read_from_dir::<Attribute>(
                 self.current_hash.clone(),
@@ -247,18 +243,14 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 attribute,
             )?
             .clone();
-
-        println!("attribute_set {:?}", attribute_set.clone());
         let value_set =
             self.read_from_dir::<Value>(self.current_hash.clone(), VALUE_DIR.to_string(), value)?;
-        println!("value_set {:?}", value_set.clone());
         let attribute_value_inter = attribute_set.intersection(value_set);
 
         let entity_attribute_value_inter = entity_set.intersection(attribute_value_inter);
         let (eav, error): (HashMap<_, _>, HashMap<_, _>) = entity_attribute_value_inter
             .into_iter()
             .map(|(hash, content)| {
-                println!("key {:?}", hash.clone());
                 (
                     from_key(hash).unwrap_or(Key(0, Action::None)),
                     EntityAttributeValue::try_from_content(&JsonString::from(content)),
@@ -282,16 +274,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         }
     }
 
-    fn fetch_eav_range(
-        &self,
-        _start_date: Option<DateTime<Utc>>,
-        _end_date: Option<DateTime<Utc>>,
-        _entity: Option<Entity>,
-        _attribute: Option<Attribute>,
-        _value: Option<Value>,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
-        unimplemented!("Could not implment eav on range")
-    }
+    
 }
 
 #[cfg(test)]

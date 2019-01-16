@@ -114,39 +114,33 @@ impl ContainerApiBuilder {
         match dna {
             Some(dna) => {
                 for (zome_name, zome) in dna.zomes {
-                    for (_,func) in zome.functions {
-                            let func_name = String::from(func.name);
-                            let zome_name = zome_name.clone();
-                            let cap_name = String::from("test_cap");
-                            let method_name = format!(
-                                "{}/{}/{}/{}",
-                                instance_name, zome_name, cap_name, func_name
-                            );
-                            let hc_lock_inner = hc_lock.clone();
-                            self.io.add_method(&method_name, move |params| {
-                                let mut hc = hc_lock_inner.write().unwrap();
-                                let params_string =
-                                    serde_json::to_string(&params).map_err(|e| {
-                                        jsonrpc_core::Error::invalid_params(e.to_string())
-                                    })?;
-                                let response = hc
-                                    .call(
-                                        &zome_name,
-                                        Some(CapabilityCall::new(
-                                            cap_name.clone(),
-                                            Address::from("fake_token"),
-                                            None,
-                                        )),
-                                        &func_name,
-                                        &params_string,
-                                    )
-                                    .map_err(|e| {
-                                        jsonrpc_core::Error::invalid_params(e.to_string())
-                                    })?;
-                                Ok(Value::String(response.to_string()))
-                            })
-                        }
+                    for (_, func) in zome.functions {
+                        let func_name = String::from(func.name);
+                        let zome_name = zome_name.clone();
+                        let cap_name = String::from("test_cap");
+                        let method_name =
+                            format!("{}/{}/{}/{}", instance_name, zome_name, cap_name, func_name);
+                        let hc_lock_inner = hc_lock.clone();
+                        self.io.add_method(&method_name, move |params| {
+                            let mut hc = hc_lock_inner.write().unwrap();
+                            let params_string = serde_json::to_string(&params)
+                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                            let response = hc
+                                .call(
+                                    &zome_name,
+                                    Some(CapabilityCall::new(
+                                        cap_name.clone(),
+                                        Address::from("fake_token"),
+                                        None,
+                                    )),
+                                    &func_name,
+                                    &params_string,
+                                )
+                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                            Ok(Value::String(response.to_string()))
+                        })
                     }
+                }
             }
             None => unreachable!(),
         };

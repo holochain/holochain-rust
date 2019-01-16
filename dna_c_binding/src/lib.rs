@@ -253,10 +253,7 @@ pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
 }
 
 #[cfg_attr(tarpaulin, skip)] //Tested in c_bindings_test by C based test code
-fn fn_names_as_vec(
-    dna: &Dna,
-    zome_name: &str,
-) -> Option<Vec<*const c_char>> {
+fn fn_names_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
     let result = dna
         .zomes
         .get(zome_name)?

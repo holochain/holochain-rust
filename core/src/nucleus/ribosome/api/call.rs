@@ -166,7 +166,9 @@ pub fn validate_call(
     let dna = state.dna.clone().unwrap();
 
     // make sure the zome and function exists
-    let _ = dna.get_function_with_zome_name(&fn_call.zome_name,&fn_call.fn_name).map_err(|e| HolochainError::Dna(e))?;
+    let _ = dna
+        .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
+        .map_err(|e| HolochainError::Dna(e))?;
 
     let public = is_fn_public(&dna, &fn_call)?;
     if !public && !check_capability(context.clone(), &fn_call.clone()) {

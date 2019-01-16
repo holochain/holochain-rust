@@ -1,6 +1,11 @@
 use crate::{
     cas::content::{AddressableContent, Content},
-    dna::{bridges::Bridge, capabilities::{Capability, FnDeclaration}, entry_types::EntryTypeDef, wasm, zome},
+    dna::{
+        bridges::Bridge,
+        capabilities::{Capability, FnDeclaration},
+        entry_types::EntryTypeDef,
+        wasm, zome,
+    },
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
@@ -140,7 +145,7 @@ impl Dna {
         &self,
         zome_name: &str,
         fn_name: &str,
-    ) -> Result<&FnDeclaration,DnaError> {
+    ) -> Result<&FnDeclaration, DnaError> {
         // Zome must exist in DNA
         let zome = self.get_zome(zome_name);
         if zome.is_none() {

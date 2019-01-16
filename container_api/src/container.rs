@@ -793,7 +793,8 @@ pub mod tests {
             vec![dna::capabilities::FnParameter {
                 name: String::from("greeting"),
                 parameter_type: String::from("String"),
-            }]);
+            }],
+        );
         dna
     }
 

@@ -209,7 +209,7 @@ impl NetWorker for IpcNetWorker {
     fn tick(&mut self) -> NetResult<bool> {
         let mut has_done_something = false;
 
-        // WTF?
+        // Request p2p module's state if its not ready yet
         if &self.last_known_state != "ready" {
             self.priv_request_state()?;
         }
@@ -235,15 +235,15 @@ impl NetWorker for IpcNetWorker {
                         self.priv_handle_default_config(config)?;
                     }
                     _ => (),
-                    // Send all other message back to handler
-                    // _ => (self.handler)(Ok(data))?,
                 };
             }
 
             // Send data back to handler
             (self.handler)(Ok(data))?;
 
-            // Notify handler that Network is ready
+            // When p2p module is ready:
+            // - Notify handler that the p2p module is ready
+            // - Try connecting to boostrap nodes
             if !self.is_ready && &self.last_known_state == "ready" {
                 self.is_ready = true;
                 (self.handler)(Ok(Protocol::P2pReady))?;

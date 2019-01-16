@@ -1,3 +1,5 @@
+
+const sleep = require('sleep');
 const test = require('tape')
 const { pollFor } = require('./util')
 
@@ -172,16 +174,14 @@ test('get_post with non-existant address returns null', (t) => {
 })
 
 test('scenario test create & publish post -> get from other instance', async (t) => {
-  t.plan(3)
-
-  const content = "Holo world"
+  const content1 = "Holo world"
   const in_reply_to = null
-  const params = { content, in_reply_to }
+  const params = { content: content1, in_reply_to }
   const create_result = alice.call("blog", "main", "create_post", params)
   t.comment("create_result = " + create_result.address + "")
 
   const content2 = "post 2"
-  const params2 = { content2, in_reply_to }
+  const params2 = { content: content2, in_reply_to }
   const create_result2 = tash.call("blog", "main", "create_post", params2)
   t.comment("create_result2 = " + create_result2.address + "")
 
@@ -194,6 +194,8 @@ test('scenario test create & publish post -> get from other instance', async (t)
   const result = await pollFor(
     () => tash.call("blog", "main", "get_post", params_get)
   ).catch(t.fail)
+
   const value = JSON.parse(result.Ok.App[1])
-  t.equal(value.content, content)
+  t.equal(value.content, content1)
+  t.end()
 })

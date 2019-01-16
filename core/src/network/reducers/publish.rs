@@ -150,7 +150,9 @@ fn reduce_publish_inner(
                 maybe_crud_link,
             )
         }),
-        _ => Err(HolochainError::NotImplemented),
+        _ => Err(HolochainError::NotImplemented(
+            "reduce_publish_inner".into(),
+        )),
     }
 }
 

@@ -182,7 +182,7 @@ pub fn test_context_and_logger_with_network_name(
                 .expect("Tempdir must be accessible");
             if let Some(network_name) = network_name {
                 let config =
-                    JsonString::from(String::from(P2pConfig::named_mock_config(network_name)));
+                    JsonString::from(P2pConfig::named_mock_as_string(network_name));
                 builder = builder.with_network_config(config);
             }
             builder.spawn()

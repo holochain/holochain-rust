@@ -726,6 +726,13 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
     Dispatch::RemoveEntry.with_input(address.to_owned())
+    // let res = Dispatch::RemoveEntry.with_input(address.to_owned());
+    // // @todo standardize or remove this
+    // match res {
+    //     // RibosomeReturnCode::Success
+    //     Err(ZomeApiError::ZeroSizeAllocation) => Ok(()),
+    //     _ => Err(res),
+    // }
 }
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links

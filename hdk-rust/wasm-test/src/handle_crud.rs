@@ -192,7 +192,6 @@ pub fn handle_remove_entry_ok() -> JsonString {
     // Delete it
     hdk::debug("**** Delete it").ok();
     let res = hdk::remove_entry(&addr_v1);
-    hdk::debug(res.clone()).ok();
     assert!(res.is_ok());
 
     // Get it should fail

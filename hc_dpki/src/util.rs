@@ -11,7 +11,7 @@ pub const PW_HASH_ALGO: i8 = pwhash::ALG_ARGON2ID13;
 ///
 /// @param {SecBuf} pass - the password buffer to hash
 ///
-/// @param {Buffer} [salt] - if specified, hash with this salt (otherwise random)
+/// @param {SecBuf} salt - if specified, hash with this salt (otherwise random)
 ///
 /// @param {SecBuf} -  Empty hash buf
 pub fn pw_hash(

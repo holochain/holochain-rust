@@ -38,7 +38,7 @@ impl Keypair {
 
     /// get the keypair identifier string
     ///
-    /// @return {SecBuf}
+    /// @return {string}
     pub fn get_id(&mut self) -> String {
         return self.pub_keys.clone();
     }

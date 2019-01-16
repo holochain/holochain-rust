@@ -787,32 +787,13 @@ pub mod tests {
         let wat = &callee_wat();
         let mut dna = create_test_dna_with_wat("greeter", "test_cap", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
-        dna.zomes
-            .get_mut("greeter")
-            .unwrap()
-            .capabilities
-            .get_mut("test_cap")
-            .unwrap()
-            .functions
-            .push(dna::capabilities::FnDeclaration {
-                name: String::from("hello"),
-                inputs: vec![],
-                outputs: vec![dna::capabilities::FnParameter {
-                    name: String::from("greeting"),
-                    parameter_type: String::from("String"),
-                }],
-            });
-        dna.zomes.get_mut("greeter").unwrap().functions.insert(
+        dna.zomes.get_mut("greeter").unwrap().add_fndeclaration(
             String::from("hello"),
-            dna::capabilities::FnDeclaration {
-                name: String::from("hello"),
-                inputs: vec![],
-                outputs: vec![dna::capabilities::FnParameter {
-                    name: String::from("greeting"),
-                    parameter_type: String::from("String"),
-                }],
-            },
-        );
+            vec![],
+            vec![dna::capabilities::FnParameter {
+                name: String::from("greeting"),
+                parameter_type: String::from("String"),
+            }]);
         dna
     }
 

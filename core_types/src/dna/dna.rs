@@ -1,6 +1,6 @@
 use crate::{
     cas::content::{AddressableContent, Content},
-    dna::{bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
+    dna::{bridges::Bridge, capabilities::{Capability, FnDeclaration}, entry_types::EntryTypeDef, wasm, zome},
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
@@ -124,6 +124,42 @@ impl Dna {
         capability_name: &str,
     ) -> Option<&'a Capability> {
         zome.capabilities.get(capability_name)
+    }
+
+    /// Return a Function declaration from a Zome
+    pub fn get_function<'a>(
+        &'a self,
+        zome: &'a zome::Zome,
+        function_name: &str,
+    ) -> Option<&'a FnDeclaration> {
+        zome.functions.get(function_name)
+    }
+
+    /// Return a Zome Function declaration from a Zome name and Function name.
+    pub fn get_function_with_zome_name(
+        &self,
+        zome_name: &str,
+        fn_name: &str,
+    ) -> Result<&FnDeclaration,DnaError> {
+        // Zome must exist in DNA
+        let zome = self.get_zome(zome_name);
+        if zome.is_none() {
+            return Err(DnaError::ZomeNotFound(format!(
+                "Zome '{}' not found",
+                &zome_name,
+            )));
+        }
+        let zome = zome.unwrap();
+        // Function must exist in Zome
+        let fn_decl = self.get_function(zome, &fn_name);
+        if fn_decl.is_none() {
+            return Err(DnaError::ZomeFunctionNotFound(format!(
+                "Zome function '{}' not found in Zome '{}'",
+                &fn_name, &zome_name
+            )));
+        }
+        // Everything OK
+        Ok(fn_decl.unwrap())
     }
 
     /// Find a Zome and return it's WASM bytecode for a specified Capability

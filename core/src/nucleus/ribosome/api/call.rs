@@ -12,7 +12,7 @@ use crate::{
 use holochain_core_types::{
     dna::{capabilities::CapabilityCall, Dna},
     entry::cap_entries::CapTokenGrant,
-    error::{DnaError, HolochainError},
+    error::HolochainError,
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
@@ -165,39 +165,8 @@ pub fn validate_call(
     }
     let dna = state.dna.clone().unwrap();
 
-    // Get zome
-    let zome = match dna.zomes.get(&fn_call.zome_name) {
-        None => {
-            return Err(HolochainError::Dna(DnaError::ZomeNotFound(format!(
-                "Zome '{}' not found",
-                fn_call.zome_name.clone()
-            ))));
-        }
-        Some(zome) => zome,
-    };
-
-    // Get capability
-    // NOTE, this will go away soon because function won't be inside the capability.
-    let capability = match zome.capabilities.get(&fn_call.cap_name()) {
-        None => {
-            return Err(HolochainError::Dna(DnaError::CapabilityNotFound(format!(
-                "Capability '{}' not found in Zome '{}'",
-                fn_call.cap_name().clone(),
-                fn_call.zome_name.clone()
-            ))));
-        }
-        Some(capability) => capability,
-    };
-    // Get ZomeFn
-    let maybe_fn = capability
-        .functions
-        .iter()
-        .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name);
-    if maybe_fn.is_none() {
-        return Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(
-            format!("Zome function '{}' not found", fn_call.fn_name.clone()),
-        )));
-    }
+    // make sure the zome and function exists
+    let _ = dna.get_function_with_zome_name(&fn_call.zome_name,&fn_call.fn_name).map_err(|e| HolochainError::Dna(e))?;
 
     let public = is_fn_public(&dna, &fn_call)?;
     if !public && !check_capability(context.clone(), &fn_call.clone()) {
@@ -234,7 +203,7 @@ pub(crate) fn reduce_call(
     // 2. Get the exposed Zome function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
     let code =
-        maybe_code.expect("zome not found, Should have failed before when getting capability.");
+        maybe_code.expect("zome not found, Should have failed before when validating the call.");
     state.zome_calls.insert(fn_call.clone(), None);
     launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }

@@ -646,7 +646,7 @@ pub mod tests {
 
         match result {
             Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(err))) => {
-                assert_eq!(err, "Zome function \'xxx\' not found")
+                assert_eq!(err, "Zome function \'xxx\' not found in Zome 'test_zome'")
             }
             _ => assert!(false),
         }

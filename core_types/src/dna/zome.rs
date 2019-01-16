@@ -2,6 +2,7 @@
 
 use crate::{
     dna::{
+        capabilities::{FnParameter, FnDeclaration},
         bridges::{Bridge, BridgePresence},
         wasm::DnaWasm,
     },
@@ -131,19 +132,36 @@ impl Zome {
         }
     }
 
-    pub fn get_required_bridges(&self) -> Vec<Bridge> {
+    pub fn get_required_bridges(&self ) -> Vec<Bridge> {
         self.bridges
             .iter()
             .filter(|bridge| bridge.presence == BridgePresence::Required)
             .cloned()
             .collect()
     }
+
+    pub fn add_fndeclaration(
+        &mut self,
+        name: String,
+        inputs: Vec<FnParameter>,
+        outputs: Vec<FnParameter>) {
+        self.functions.insert(
+            name.clone(),
+            FnDeclaration {
+                name,
+                inputs,
+                outputs,
+            });
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::dna::zome::{entry_types::EntryTypeDef, Zome};
+    use crate::dna::{
+        capabilities::FnParameter,
+        zome::{entry_types::EntryTypeDef, Zome}
+    };
     use serde_json;
     use std::{collections::BTreeMap, convert::TryFrom};
 
@@ -190,5 +208,25 @@ pub mod tests {
         );
 
         assert_eq!(zome, Zome::try_from(JsonString::from(expected)).unwrap(),);
+    }
+
+    #[test]
+    fn test_zome_add_fndecl() {
+        let mut zome = Zome::default();
+        assert_eq!(zome.functions.len(),0);
+        zome.add_fndeclaration(
+            String::from("hello"),
+            vec![],
+            vec![FnParameter {
+                name: String::from("greeting"),
+                parameter_type: String::from("String"),
+            }]);
+        assert_eq!(zome.functions.len(),1);
+
+        let expected = "{\"hello\": FnDeclaration { name: \"hello\", inputs: [], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }}";
+        assert_eq!(
+            expected,
+            format!("{:?}", zome.functions),
+        );
     }
 }

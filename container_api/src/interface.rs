@@ -114,11 +114,10 @@ impl ContainerApiBuilder {
         match dna {
             Some(dna) => {
                 for (zome_name, zome) in dna.zomes {
-                    for (cap_name, cap) in zome.capabilities {
-                        for func in cap.functions {
-                            let func_name = func.name;
+                    for (_,func) in zome.functions {
+                            let func_name = String::from(func.name);
                             let zome_name = zome_name.clone();
-                            let cap_name = cap_name.clone();
+                            let cap_name = String::from("test_cap");
                             let method_name = format!(
                                 "{}/{}/{}/{}",
                                 instance_name, zome_name, cap_name, func_name
@@ -148,7 +147,6 @@ impl ContainerApiBuilder {
                             })
                         }
                     }
-                }
             }
             None => unreachable!(),
         };

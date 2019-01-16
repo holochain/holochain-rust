@@ -256,16 +256,13 @@ pub unsafe extern "C" fn holochain_dna_get_capabilities_names(
 fn fn_names_as_vec(
     dna: &Dna,
     zome_name: &str,
-    capability_name: &str,
 ) -> Option<Vec<*const c_char>> {
     let result = dna
         .zomes
         .get(zome_name)?
-        .capabilities
-        .get(capability_name)?
         .functions
         .iter()
-        .map(|fn_declaration| {
+        .map(|(_name, fn_declaration)| {
             let raw = match CString::new(fn_declaration.name.clone()) {
                 Ok(s) => s.into_raw(),
                 Err(_) => std::ptr::null(),
@@ -281,15 +278,13 @@ fn fn_names_as_vec(
 pub unsafe extern "C" fn holochain_dna_get_function_names(
     ptr: *mut Dna,
     zome_name: *const c_char,
-    capability_name: *const c_char,
     string_vec: *mut CStringVec,
 ) {
     let dna = &*ptr;
 
     let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
-    let capability_name = CStr::from_ptr(capability_name).to_string_lossy();
 
-    let fn_names = fn_names_as_vec(dna, &*zome_name, &*capability_name);
+    let fn_names = fn_names_as_vec(dna, &*zome_name);
     vec_char_to_cstringvec(fn_names, string_vec)
 }
 
@@ -297,17 +292,13 @@ pub unsafe extern "C" fn holochain_dna_get_function_names(
 fn fn_parameters_as_vec(
     dna: &Dna,
     zome_name: &str,
-    capability_name: &str,
     function_name: &str,
 ) -> Option<Vec<*const c_char>> {
     let result = dna
         .zomes
         .get(zome_name)?
-        .capabilities
-        .get(capability_name)?
         .functions
-        .iter()
-        .find(|&function| function.name == function_name)?
+        .get(function_name)?
         .inputs
         .iter()
         .map(|input| {
@@ -326,17 +317,15 @@ fn fn_parameters_as_vec(
 pub unsafe extern "C" fn holochain_dna_get_function_parameters(
     ptr: *mut Dna,
     zome_name: *const c_char,
-    capability_name: *const c_char,
     function_name: *const c_char,
     string_vec: *mut CStringVec,
 ) {
     let dna = &*ptr;
 
     let zome_name = CStr::from_ptr(zome_name).to_string_lossy();
-    let capability_name = CStr::from_ptr(capability_name).to_string_lossy();
     let function_name = CStr::from_ptr(function_name).to_string_lossy();
 
-    let fn_parameters = fn_parameters_as_vec(dna, &*zome_name, &*capability_name, &*function_name);
+    let fn_parameters = fn_parameters_as_vec(dna, &*zome_name, &*function_name);
     vec_char_to_cstringvec(fn_parameters, string_vec)
 }
 

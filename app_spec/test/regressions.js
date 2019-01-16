@@ -1,11 +1,12 @@
 
-const sleep = require('sleep');
+const path = require('path')
+const sleep = require('sleep')
 const test = require('tape')
 const { pollFor } = require('./util')
 
 const { Config, Container } = require('../../nodejs_container')
 
-const dnaPath = "./dist/app_spec.hcpkg"
+const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")
 const aliceName = "alice"
 const tashName = "tash"
 
@@ -29,11 +30,74 @@ container.start()
 const alice = container.makeCaller(aliceName, dnaPath)
 const tash = container.makeCaller(tashName, dnaPath)
 
+
+// run the following three tests ONE AT A TIME. 
+// The first fails, the second and third pass.
+
+test('calling get_links before link_entries makes a difference (FAILS)', (t) => {
+
+  const get1 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get1.Ok)
+  sleep.sleep(1)
+
+  const create1 = alice.call("blog", "main", "create_post", {content: 'hi'})
+  t.ok(create1.Ok)
+  sleep.sleep(1)
+
+  const get2 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get2.Ok)
+
+  t.equal(get2.Ok.addresses.length, 1)
+  t.end()
+})
+
+
+test('calling get_links twice in a row is different than calling it once (PASSES)', (t) => {
+  // This test is exactly the same as the previous one, but calls my_posts twice in a row.
+  // This makes the links come through the second time.
+
+  const get1 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get1.Ok)
+  sleep.sleep(1)
+
+  const create1 = alice.call("blog", "main", "create_post", {content: 'hi'})
+  t.ok(create1.Ok)
+  sleep.sleep(1)
+
+  alice.call("blog", "main", "my_posts", {})
+  const get2 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get2.Ok)
+
+  t.equal(get2.Ok.addresses.length, 1)
+  t.end()
+})
+
+test('not calling get_links in the beginning helps (PASSES)', (t) => {
+
+  const create1 = alice.call("blog", "main", "create_post", {content: 'hi'})
+  t.ok(create1.Ok)
+  sleep.sleep(1)
+
+  const get1 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get1.Ok)
+
+  t.equal(get1.Ok.addresses.length, 1)
+  t.end()
+})
+
+//////////////////////////////////
+//////////////////////////////////
+
 test('alice create & publish post -> recommend own post to self', async (t) => {
   t.plan(4)
   const content1 = "Holo world...1"
   const in_reply_to = null
   const params = { content: content1, in_reply_to }
+
+  
+  // TODO can go away after scenario-api merge
+  const numInitialRecommendedPosts = alice.call('blog', 'main', 'my_recommended_posts', {}).Ok.addresses.length
+
   const postAddr = alice.call("blog", "main", "create_post", params).Ok
   t.ok(postAddr)
 
@@ -49,13 +113,13 @@ test('alice create & publish post -> recommend own post to self', async (t) => {
   console.log("linked: ", linked)
   t.equal(linked.Ok, null)
   
-  sleep.sleep(3)
+  sleep.sleep(1)
   
   const recommendedPosts = alice.call('blog', 'main', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, alice.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.addresses.length, numInitialRecommendedPosts + 1)
 })
 
 test('alice create & publish post -> tash recommend to self', async (t) => {
@@ -63,6 +127,10 @@ test('alice create & publish post -> tash recommend to self', async (t) => {
   const content1 = "Holo world...2"
   const in_reply_to = null
   const params = { content: content1, in_reply_to }
+  
+  // TODO can go away after scenario-api merge
+  const numInitialRecommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {}).Ok.addresses.length
+
   const postAddr = alice.call("blog", "main", "create_post", params).Ok
   t.ok(postAddr)
 
@@ -78,13 +146,13 @@ test('alice create & publish post -> tash recommend to self', async (t) => {
   console.log("linked: ", linked)
   t.equal(linked.Ok, null)
   
-  sleep.sleep(3)
+  sleep.sleep(1)
 
   const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.addresses.length, numInitialRecommendedPosts + 1)
 })
 
 test('create & publish post -> recommend to other agent', async (t) => {
@@ -92,6 +160,10 @@ test('create & publish post -> recommend to other agent', async (t) => {
   const content1 = "Holo world...3"
   const in_reply_to = null
   const params = { content: content1, in_reply_to }
+  
+  // TODO can go away after scenario-api merge
+  const numInitialRecommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {}).Ok.addresses.length
+
   const postAddr = alice.call("blog", "main", "create_post", params).Ok
   t.ok(postAddr)
 
@@ -107,11 +179,11 @@ test('create & publish post -> recommend to other agent', async (t) => {
   console.log("linked: ", linked)
   t.equal(linked.Ok, null)
 
-  sleep.sleep(3)
+  sleep.sleep(1)
   
   const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)
 
-  t.equal(recommendedPosts.Ok.addresses.length, 1)
+  t.equal(recommendedPosts.Ok.addresses.length, numInitialRecommendedPosts + 1)
 })

@@ -528,7 +528,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(config.logger.logger_type, "");
+        assert_eq!(config.logger.logger_type, "debug");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig {

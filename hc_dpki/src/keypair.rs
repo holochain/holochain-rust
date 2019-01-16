@@ -68,12 +68,12 @@ impl Keypair {
         let mut enc_pub = ek.to_vec();
         let mut sign_priv = self.sign_priv.read_lock().to_vec();
         let mut enc_priv = self.enc_priv.read_lock().to_vec();
-   
+
         sign_pub.append(&mut enc_pub);
         sign_pub.append(&mut sign_priv);
         sign_pub.append(&mut enc_priv);
         let mut key_buf = SecBuf::with_insecure(sign_pub.len());
-        util::convert_vec_to_secbuf(&sign_pub,&mut key_buf);
+        util::convert_vec_to_secbuf(&sign_pub, &mut key_buf);
 
         let pw_enc: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, &mut passphrase)?;
         let bundle_data_serialized = json::encode(&pw_enc).unwrap();
@@ -105,13 +105,14 @@ impl Keypair {
         let key_buf = keys_salt.read_lock();
         let mut sign_priv = SecBuf::with_secure(64);
         let mut enc_priv = SecBuf::with_secure(32);
-        util::convert_array_to_secbuf(&key_buf[64..128],&mut sign_priv);
-        util::convert_array_to_secbuf(&key_buf[128..160],&mut enc_priv);
+        util::convert_array_to_secbuf(&key_buf[64..128], &mut sign_priv);
+        util::convert_array_to_secbuf(&key_buf[128..160], &mut enc_priv);
 
         let sp = &key_buf[0..32];
         let ep = &key_buf[32..64];
         Ok(Keypair {
-            pub_keys: KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32]).render(),
+            pub_keys: KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32])
+                .render(),
             enc_priv,
             sign_priv,
         })
@@ -524,7 +525,7 @@ mod tests {
 
         assert_eq!("hint", bundle.hint);
     }
-    
+
     #[test]
     fn it_should_try_get_bundle_and_decode_it() {
         let mut seed = SecBuf::with_insecure(SEEDSIZE);

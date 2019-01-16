@@ -9,7 +9,6 @@ pub struct KeyBundle {
     pub data: String,
 }
 
-
 /// This struct type is for the return type for  util::pw_enc
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct ReturnBundleData {

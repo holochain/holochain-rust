@@ -254,10 +254,10 @@ fn can_commit_entry() {
     );
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
-    // assert_eq!(
-    //     result.unwrap(),
-    //     JsonString::from(example_valid_entry_address()),
-    // );
+    assert_eq!(
+        result.unwrap(),
+        JsonString::from(example_valid_entry_address()),
+    );
 }
 #[test]
 fn can_commit_entry_macro() {

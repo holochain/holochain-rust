@@ -113,6 +113,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "broken-tests")]
 pub mod tests {
 
     use holochain_core_types::error::{

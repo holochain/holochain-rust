@@ -16,6 +16,7 @@ use holochain_wasm_utils::{
 };
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
+use holochain_wasm_utils::holochain_core_types::error::RibosomeErrorCode;
 use std::convert::TryFrom;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 use holochain_wasm_utils::memory::MemoryInt;
@@ -170,15 +171,23 @@ pub extern "C" fn test_load_string_ok(_: RibosomeEncodingBits) -> RibosomeEncodi
 
 #[no_mangle]
 pub extern "C" fn test_load_string_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    let encoded = 1 << 16;
-    let allocation = WasmAllocation::try_from_ribosome_encoding(encoded).unwrap();
+    let encoded = RibosomeEncodingBits::from(RibosomeReturnCode::Failure(RibosomeErrorCode::Unspecified));
 
-    let mut stack = WasmStack::try_from(allocation).unwrap();
+    let _allocation = match WasmAllocation::try_from_ribosome_encoding(encoded) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+    };
+    return RibosomeReturnCode::Success.into()
 
-    let s = allocation.read_to_string();
-    let res = stack.write_string(&s);
-
-    return_code_for_allocation_result(res).into()
+    // let mut stack = match WasmStack::try_from(allocation) {
+    //     Ok(stack) => stack,
+    //     Err(stack_error) => return return_code_for_allocation_result(Err(stack_error)).into(),
+    // };
+    //
+    // let s = allocation.read_to_string();
+    // let res = stack.write_string(&s);
+    //
+    // return_code_for_allocation_result(res).into()
 }
 
 #[no_mangle]

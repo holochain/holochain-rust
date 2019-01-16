@@ -1,5 +1,6 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
 use wasmi::RuntimeArgs;
+use wasmi::RuntimeValue;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u32
@@ -10,7 +11,7 @@ pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     println!("debug: {}", &payload);
     runtime.context.log(format!("debug/dna: '{}'", payload));
 
-    runtime.store_result(Ok(()))
+    ribosome_success!()
 }
 
 #[cfg(test)]

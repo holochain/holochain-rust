@@ -86,6 +86,12 @@ impl ToString for RibosomeReturnCode {
     }
 }
 
+impl From<RibosomeReturnCode> for String {
+    fn from(return_code: RibosomeReturnCode) -> String {
+        return_code.to_string()
+    }
+}
+
 impl FromStr for RibosomeReturnCode {
     type Err = HolochainError;
 

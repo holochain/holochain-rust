@@ -14,7 +14,12 @@ extern crate test_utils;
 
 use holochain_container_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::{
-    error::{CoreError, HolochainError, RibosomeErrorCode},
+    error::{
+        CoreError,
+        HolochainError,
+        RibosomeErrorCode,
+        RibosomeReturnCode,
+    },
     json::{default_try_from_json, JsonString, RawString},
 };
 use holochain_wasm_utils::wasm_target_dir;
@@ -85,21 +90,6 @@ fn call_store_as_json_err() {
 }
 
 #[test]
-fn call_load_json_from_raw_ok() {
-    let call_result = call_zome_function_with_hc("test_load_json_from_raw_ok");
-    assert_eq!(JsonString::null(), call_result.unwrap());
-}
-
-#[test]
-fn call_load_json_from_raw_err() {
-    let call_result = call_zome_function_with_hc("test_load_json_from_raw_err");
-    assert_eq!(
-        JsonString::from(RibosomeErrorCode::ArgumentDeserializationFailed.to_string()),
-        call_result.unwrap()
-    );
-}
-
-#[test]
 fn call_load_json_ok() {
     let call_result = call_zome_function_with_hc("test_load_json_ok");
     assert_eq!(
@@ -140,7 +130,17 @@ fn call_load_string_ok() {
 #[test]
 fn call_load_string_err() {
     let call_result = call_zome_function_with_hc("test_load_string_err");
-    assert_eq!(JsonString::from("Unspecified"), call_result.unwrap());
+    println!("{:?}", call_result);
+    assert_eq!(
+        Err(
+            HolochainInstanceError::InternalFailure(
+                HolochainError::RibosomeFailed(
+                    RibosomeReturnCode::Failure(
+                        RibosomeErrorCode::Unspecified
+                    ).into()
+                ))),
+        call_result,
+    );
 }
 
 #[test]

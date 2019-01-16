@@ -7,7 +7,7 @@ use crate:: {
     }
 };
 use holochain_wasm_utils::api_serialization::{
-    QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult,
+    QueryArgs, QueryArgsNames, QueryResult,
 };
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -68,18 +68,17 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
-    let options = query.options.unwrap_or( QueryArgsOptions::default() );
     let maybe_result = match query.entry_type_names { // Result<ChainStoreQueryResult,...>
         QueryArgsNames::QueryList(pats) => {
             let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>
             agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> Vec[&str]
-                Some(ChainStoreQueryOptions {
-                    start: options.start,
-                    limit: options.limit,
-                    headers: options.headers,
-                })
+                ChainStoreQueryOptions {
+                    start: query.options.start,
+                    limit: query.options.limit,
+                    headers: query.options.headers,
+                }
             )
         }
         QueryArgsNames::QueryName(name) => {
@@ -87,11 +86,11 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
             agent.chain().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> &[&str]
-                Some(ChainStoreQueryOptions {
-                    start: options.start,
-                    limit:  options.limit,
-                    headers: options.headers,
-                })
+                ChainStoreQueryOptions {
+                    start: query.options.start,
+                    limit:  query.options.limit,
+                    headers: query.options.headers,
+                }
             )
         }
     };

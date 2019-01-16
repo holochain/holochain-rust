@@ -991,11 +991,11 @@ pub fn get_links_and_load<S: Into<String>>(
 /// # }
 /// ```
 /// 
-/// With hdk::query_result, you can specify a package of optional QueryArgsOptions, and get a
+/// With hdk::query_result, you can specify a package of QueryArgsOptions, and get a
 /// variety of return values, including a vector of Headers as a `Vec<ChainHeader>`:
 /// 
 /// pub fn get_post_headers() -> ZomeApiResult<QueryResult> {
-///     hdk::query_result("post".into(), Some(QueryArgsOptions{ headers: true, ..Default::default()}))
+///     hdk::query_result("post".into(), QueryArgsOptions{ headers: true, ..Default::default()})
 /// }
 /// 
 pub fn query(
@@ -1006,9 +1006,9 @@ pub fn query(
     // The hdk::query API always returns a simple Vec<Address>
     match query_result( entry_type_names,
                         QueryArgsOptions {
-                            start: Some(start),
-                            limit: Some(limit),
-                            headers: None,
+                            start: start,
+                            limit: limit,
+                            headers: false,
                         }) {
         Ok(result) => match result {
             QueryResult::Addresses(addresses) => Ok(addresses),
@@ -1029,7 +1029,7 @@ pub fn query_result(
         &mut mem_stack,
         QueryArgs {
             entry_type_names,
-            options: Some(options),
+            options,
         },
     )?;
 

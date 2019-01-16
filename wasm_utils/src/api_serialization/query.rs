@@ -56,14 +56,14 @@ impl<'a> From<Vec<&'a str>> for QueryArgsNames {
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct QueryArgs {
     pub entry_type_names: QueryArgsNames,
-    pub options: Option<QueryArgsOptions>,
+    pub options: QueryArgsOptions,
 }
 
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct QueryArgsOptions {
-    pub start: Option<usize>,
-    pub limit: Option<usize>,
-    pub headers: Option<bool>,
+    pub start: usize,
+    pub limit: usize,
+    pub headers: bool,
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]

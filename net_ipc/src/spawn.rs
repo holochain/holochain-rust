@@ -28,8 +28,6 @@ pub fn ipc_spawn(
         .envs(&env)
         .current_dir(work_dir);
 
-    println!("SPAWN ({:?})", child);
-
     let mut child = child.spawn()?;
 
     let mut out = SpawnResult {

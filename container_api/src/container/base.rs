@@ -248,7 +248,7 @@ impl Container {
             // This should never happen, but we'll throw out a named mock network rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default mock network name.");
-            JsonString::from(P2pConfig::named_mock_config("container-default-mock"))
+            JsonString::from(P2pConfig::named_mock_as_string("container-default-mock"))
         });
         Ok(config)
     }
@@ -268,19 +268,19 @@ impl Container {
                     .clone()
                     .or_else(|| self.spawn_network().ok());
                 JsonString::from(json!(
-                    {
-                        "backend_kind": "IPC",
-                        "backend_config": {
-                            "socketType": "zmq",
-                            "bootstrapNodes": net_config.bootstrap_nodes,
+                {
+                    "backend_kind": "IPC",
+                    "backend_config": {
+                        "socketType": "zmq",
+                        "bootstrapNodes": net_config.bootstrap_nodes,
                             "ipcUri": uri
-                        }
                     }
+                }
                 ))
             }
             // if there's no NetworkConfig we won't spawn a network process
             // and instead configure instances to use a unique mock network
-            None => JsonString::from(P2pConfig::unique_mock_config()),
+            None => JsonString::from(P2pConfig::unique_mock_as_string()),
         }
     }
 

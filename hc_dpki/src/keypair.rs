@@ -97,7 +97,7 @@ impl Keypair {
         bundle: &bundle::KeyBundle,
         passphrase: &mut SecBuf,
     ) -> Result<Keypair, HolochainError> {
-        // decoding the bundle.data of type utinl::Keys
+        // decoding the bundle.data of type util::ReturnBundledata
         let bundle_decoded = base64::decode(&bundle.data)?;
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
         let data: bundle::ReturnBundleData = json::decode(&bundle_string).unwrap();

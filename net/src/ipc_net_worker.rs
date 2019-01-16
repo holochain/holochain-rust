@@ -241,7 +241,9 @@ impl NetWorker for IpcNetWorker {
             // Send data back to handler
             (self.handler)(Ok(data))?;
 
-            // Notify handler that Network is ready
+            // When p2p module is ready:
+            // - Notify handler that the p2p module is ready
+            // - Try connecting to boostrap nodes
             if !self.is_ready && &self.last_known_state == "ready" {
                 self.is_ready = true;
                 (self.handler)(Ok(Protocol::P2pReady))?;

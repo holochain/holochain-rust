@@ -153,11 +153,9 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const initialContent = "Holo world"
   const params = { content: initialContent, in_reply_to: null }
   const create_result = await alice.callSync("blog", "main", "create_post", params)
-  console.log("create_result: ", create_result)
 
   const params2 = { content: "post 2", in_reply_to: null }
   const create_result2 = await bob.callSync("blog", "main", "create_post", params2)
-  console.log("create_result2: ", create_result2)
 
   t.equal(create_result.Ok.length, 46)
   t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")

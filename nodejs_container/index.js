@@ -112,14 +112,14 @@ class Scenario {
     }
 
     /**
-     * Run a test case, specified by a curried function:
-     * stop => (instances) => { body }
+     * Run a test case, specified by a closure:
+     * (stop, {instances}) => { test body }
      * where `stop` is a function that ends the test and shuts down the running Container
      * and the `instances` is an Object of instances specified in the config, keyed by "name"
      * (name is the optional third parameter of `Config.instance`)
      *
      * e.g.:
-     *      scenario.run(stop => async ({alice, bob, carol}) => {
+     *      scenario.run(async (stop, {alice, bob, carol}) => {
      *          const resultAlice = await alice.callSync(...)
      *          const resultBob = await bob.callSync(...)
      *          assert(resultAlice === resultBob)

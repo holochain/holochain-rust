@@ -156,6 +156,7 @@ pub mod tests {
 
     pub fn test_toml() -> String {
         r#"bridges = []
+persistence_dir = "./tmp-test/"
 
 [[agents]]
 id = "test-agent-1"
@@ -275,6 +276,7 @@ pattern = ".*"
         assert_eq!(
             config_contents,
 r#"bridges = []
+persistence_dir = "./tmp-test/"
 
 [[agents]]
 id = "test-agent-1"
@@ -374,6 +376,7 @@ pattern = ".*"
         assert_eq!(
             config_contents,
        r#"bridges = []
+persistence_dir = "./tmp-test/"
 
 [[agents]]
 id = "test-agent-1"
@@ -473,6 +476,7 @@ pattern = ".*"
         assert_eq!(
             config_contents,
             r#"bridges = []
+persistence_dir = "./tmp-test/"
 
 [[agents]]
 id = "test-agent-1"
@@ -547,6 +551,7 @@ pattern = ".*"
             r#"bridges = []
 dnas = []
 instances = []
+persistence_dir = "./tmp-test/"
 
 [[agents]]
 id = "test-agent-1"

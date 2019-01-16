@@ -17,6 +17,7 @@ use holochain_core_types::{
     dna::Dna,
     error::HolochainError,
     json::JsonString,
+    // cas::content::AddressableContent,
 };
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 
@@ -101,18 +102,14 @@ pub fn notify(msg: String) {
 }
 
 impl Container {
-    /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
-        let config_path = dirs::home_dir()
-            .expect("No home dir defined. Don't know where to store config file")
-            .join(std::path::PathBuf::from(".holochain/container-config.toml"));
 
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
+            config_path: config.persistence_dir.join(PathBuf::from("container-config.toml")),
             config,
-            config_path,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
             logger: DebugLogger::new(rules),
@@ -468,6 +465,16 @@ impl Container {
         file.write(serialize_configuration(&self.config)?.as_bytes())?;
         Ok(())
     }
+
+    // pub fn save_dna(&self, dna: &Dna) -> Result<(), HolochainError> {
+    //     let mut file = File::create(
+    //         &self.config.persistence_dir
+    //         .join("dnas")
+    //         .join(dna.address().to_string())
+    //     )?;
+    //     file.write(dna)?;
+    //     Ok(())
+    // }
 }
 
 impl<'a> TryFrom<&'a Configuration> for Container {

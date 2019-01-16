@@ -20,7 +20,7 @@ use holochain_core_types::{
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*};
+use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*, path::PathBuf};
 use toml;
 
 /// Main container configuration struct
@@ -52,6 +52,15 @@ pub struct Configuration {
     /// Configuration options for the network module n3h
     #[serde(default)]
     pub network: Option<NetworkConfig>,
+    /// where to persist the config file and DNAs
+    #[serde(default = "default_persistence_dir")]
+    pub persistence_dir: PathBuf,
+}
+
+fn default_persistence_dir() -> PathBuf {
+    dirs::home_dir()
+        .expect("No persistence_dir given in config file and no HOME dir defined. Don't know where to store config file!")
+        .join(std::path::PathBuf::from(".holochain/container"))
 }
 
 /// There might be different kinds of loggers in the future.

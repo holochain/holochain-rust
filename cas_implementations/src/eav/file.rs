@@ -212,6 +212,9 @@ impl EntityAttributeValueStorage for EavFileStorage {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
             let key = (Utc::now().timestamp_millis(), Action::Insert);
+
+            println!("file key {:?}", key.0.clone());
+            println!("eav {:?}", eav.clone());
             self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
                 .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
                 .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))
@@ -233,6 +236,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             entity.clone(),
         )?;
 
+        println!("entity_set {:?}", entity_set.clone());
         let attribute_set = self
             .read_from_dir::<Attribute>(
                 self.current_hash.clone(),
@@ -240,9 +244,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 attribute,
             )?
             .clone();
+
+        println!("attribute_set {:?}", attribute_set.clone());
         let value_set =
             self.read_from_dir::<Value>(self.current_hash.clone(), VALUE_DIR.to_string(), value)?;
-
+        println!("value_set {:?}", value_set.clone());
         let attribute_value_inter = attribute_set.intersection(value_set);
 
         let entity_attribute_value_inter = entity_set.intersection(attribute_value_inter);

@@ -40,6 +40,8 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         {
             let mut map = self.storage.write()?;
             let key = create_key(Action::Insert)?;
+            println!("insert key {:?}", key.0.clone());
+            println!("eav {:?}", eav.clone());
             map.insert(key, eav.clone());
             Ok(())
         } else {

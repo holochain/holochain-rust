@@ -747,20 +747,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_rpc_info_instances() {
-        let container = test_container();
-        let interface_config = &container.config.interfaces[0];
-        let io = container.make_interface_handler(&interface_config);
-
-        let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = io
-            .handle_request_sync(request)
-            .expect("No response returned for info/instances");
-        assert!(response.contains("test-instance-1"));
-        assert!(response.contains("test-instance-2"));
-    }
-
-    #[test]
     fn test_container_signal_handler() {
         let (signal_tx, signal_rx) = signal_channel();
         let _container = test_container_with_signals(signal_tx);

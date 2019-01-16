@@ -281,7 +281,7 @@ pub mod tests {
     pub fn test_action() -> Action {
         Action::GetEntry(GetEntryKey {
             address: expected_entry_address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: String::from("test-id"),
         })
     }
 

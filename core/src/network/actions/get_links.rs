@@ -1,6 +1,6 @@
 extern crate futures;
 use crate::{
-    action::{Action, ActionWrapper},
+    action::{Action, ActionWrapper, GetLinksKey},
     context::Context,
     instance::dispatch_action,
 };
@@ -9,8 +9,8 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, error::HcResult};
-use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
 use snowflake::ProcessUniqueId;
+use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
@@ -20,14 +20,17 @@ pub async fn get_links<'a>(
     address: &'a Address,
     tag: String,
 ) -> HcResult<Vec<Address>> {
-    let key = (address.clone(), tag.clone(), ProcessUniqueId::new().to_string());
+    let key = GetLinksKey {
+        base_address: address.clone(),
+        tag: tag.clone(),
+        id: ProcessUniqueId::new().to_string(),
+    };
     let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let _ = async {
         sleep(Duration::from_secs(60));
-        let action_wrapper =
-            ActionWrapper::new(Action::GetLinksTimeout(key.clone()));
+        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key.clone()));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     };
 
@@ -41,7 +44,7 @@ pub async fn get_links<'a>(
 /// Tracks the state of the network module
 pub struct GetLinksFuture {
     context: Arc<Context>,
-    key: (Address, String, String),
+    key: GetLinksKey,
 }
 
 impl Future for GetLinksFuture {

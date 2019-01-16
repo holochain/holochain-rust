@@ -1,4 +1,8 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use crate::{
+    action::{ActionWrapper, GetLinksKey},
+    context::Context,
+    network::state::NetworkState,
+};
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::DhtMetaData;
 use std::sync::Arc;
@@ -29,14 +33,15 @@ pub fn reduce_handle_get_links_result(
 
     context.log(format!(
         "debug/reduce/handle_get_links_result: Got response from {}: {}",
-        dht_meta_data.from_agent_id,
-        dht_meta_data.content,
+        dht_meta_data.from_agent_id, dht_meta_data.content,
     ));
 
     let result = inner(network_state, dht_meta_data);
+    let key = GetLinksKey {
+        base_address: Address::from(dht_meta_data.address.clone()),
+        tag: tag.clone(),
+        id: dht_meta_data.msg_id.clone(),
+    };
 
-    network_state.get_links_results.insert(
-        (Address::from(dht_meta_data.address.clone()), tag.clone(), dht_meta_data.msg_id.clone()),
-        Some(result),
-    );
+    network_state.get_links_results.insert(key, Some(result));
 }

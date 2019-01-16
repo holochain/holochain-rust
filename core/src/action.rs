@@ -132,8 +132,8 @@ pub enum Action {
 
     /// get links from entry address and tag name
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
-    GetLinks((Address, String, String)),
-    GetLinksTimeout((Address, String, String)),
+    GetLinks(GetLinksKey),
+    GetLinksTimeout(GetLinksKey),
     RespondGetLinks((GetDhtMetaData, Vec<Address>)),
     HandleGetLinksResult((DhtMetaData, String)),
 
@@ -206,6 +206,20 @@ pub type AgentReduceFn = ReduceFn<AgentState>;
 pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
+
+/// The unique key that represents a GetLinks request, used to associate the eventual
+/// response with this GetLinks request
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct GetLinksKey {
+    /// The address of the Link base
+    pub base_address: Address,
+
+    /// The link tag
+    pub tag: String,
+
+    /// A unique ID that is used to pair the eventual result to this request
+    pub id: String,
+}
 
 /// Everything the network module needs to know in order to send a
 /// direct message.

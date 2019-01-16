@@ -1,5 +1,5 @@
 use crate::{
-    action::ActionWrapper,
+    action::{ActionWrapper, GetLinksKey},
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
 use boolinator::*;
@@ -55,7 +55,7 @@ pub struct NetworkState {
     /// The key of this map is the base address and the tag name for which the links
     /// are requested.
     /// None means that we are still waiting for a result from the network.
-    pub get_links_results: HashMap<(Address, String, String), GetLinksResult>,
+    pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.

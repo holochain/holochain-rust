@@ -102,14 +102,14 @@ impl ChainStore {
                             .skip(start)
                             .take(limit)
                             .map(|header| header.to_owned())
-                            .collect::<Vec<ChainHeader>>())
+                            .collect())
                 } else {
                     ChainStoreQueryResult::Addresses(
                         self.iter(start_chain_header)
                             .skip(start)
                             .take(limit)
                             .map(|header| header.entry_address().to_owned())
-                            .collect::<Vec<Address>>())
+                            .collect())
                 }
             }
             [one] if !is_glob_str(one) => {
@@ -124,14 +124,14 @@ impl ChainStore {
                             .skip(start)
                             .take(limit)
                             .map(|header| header.to_owned())
-                            .collect::<Vec<ChainHeader>>())
+                            .collect())
                 } else {
                     ChainStoreQueryResult::Addresses(
                         self.iter_type(start_chain_header, &entry_type)
                             .skip(start)
                             .take(limit)
                             .map(|header| header.entry_address().to_owned())
-                            .collect::<Vec<Address>>())
+                            .collect())
                 }
             }
             rest => {
@@ -162,7 +162,7 @@ impl ChainStore {
                             .skip(start)
                             .take(limit)
                             .map(|header| header.to_owned())
-                            .collect::<Vec<ChainHeader>>())
+                            .collect())
                 } else {
                     ChainStoreQueryResult::Addresses(
                         self.iter(start_chain_header)
@@ -175,7 +175,7 @@ impl ChainStore {
                             .skip(start)
                             .take(limit)
                             .map(|header| header.entry_address().to_owned())
-                            .collect::<Vec<Address>>())
+                            .collect())
                 }
             }
         };

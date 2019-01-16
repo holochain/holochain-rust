@@ -1,11 +1,14 @@
 # holochain-rust Makefile
 # currently only supports 'debug' builds
 
-.PHONY: all help
-all: build_holochain build_cmd
+.PHONY: all install help
+all: build_holochain build_cmd build_nodejs
+
+install: install_cmd build_nodejs
 
 help:
-	@echo "run 'make' to build all the libraries and binaries"
+	@echo "run 'make' to build all the libraries and binaries, and the nodejs bin-package"
+	@echo "run 'make install' to build and install all the libraries and binaries, and the nodejs bin-package"
 	@echo "run 'make test' to execute all the tests"
 	@echo "run 'make test_app_spec' to build and test app_spec API tests"
 	@echo "run 'make clean' to clean up the build environment"
@@ -184,6 +187,10 @@ build_holochain: core_toolchain wasm_build
 .PHONY: build_cmd
 build_cmd: core_toolchain ensure_wasm_target
 	$(CARGO) build -p hc
+
+.PHONY: build_nodejs
+build_nodejs:
+	cd nodejs_container && npm run compile && mkdir -p bin-package && cp native/index.node bin-package
 
 .PHONY: install_cmd
 install_cmd: build_cmd

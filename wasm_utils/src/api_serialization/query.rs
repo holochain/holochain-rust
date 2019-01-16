@@ -67,7 +67,6 @@ pub struct QueryArgsOptions {
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
-#[serde(untagged)] // No type in serialized data; try deserializing as a String, then as a Vec<String>
 pub enum QueryResult {
     Addresses(Vec<Address>),
     Headers(Vec<ChainHeader>),

@@ -47,11 +47,7 @@ pub fn reduce_get_entry_timeout(
     let action = action_wrapper.action();
     let key = unwrap_to!(action => crate::action::Action::GetEntryTimeout);
 
-    if network_state
-        .get_entry_with_meta_results
-        .get(key)
-        .is_none()
-    {
+    if network_state.get_entry_with_meta_results.get(key).is_none() {
         return;
     }
 
@@ -88,7 +84,10 @@ mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let key = GetEntryKey{address: entry.address(), id: snowflake::ProcessUniqueId::new().to_string()};
+        let key = GetEntryKey {
+            address: entry.address(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
@@ -120,7 +119,10 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
 
         let entry = test_entry();
-        let key = GetEntryKey{address: entry.address(), id: snowflake::ProcessUniqueId::new().to_string()};
+        let key = GetEntryKey {
+            address: entry.address(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
@@ -152,7 +154,10 @@ mod tests {
         }
 
         let entry = test_entry();
-        let key = GetEntryKey{address: entry.address(), id: snowflake::ProcessUniqueId::new().to_string()};
+        let key = GetEntryKey {
+            address: entry.address(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         {

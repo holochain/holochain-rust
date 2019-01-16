@@ -279,7 +279,7 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(GetEntryKey{
+        Action::GetEntry(GetEntryKey {
             address: expected_entry_address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         })
@@ -297,7 +297,7 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(GetEntryKey{
+        ActionWrapper::new(Action::GetEntry(GetEntryKey {
             address: expected_entry_address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         }))

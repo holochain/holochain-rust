@@ -54,7 +54,8 @@ lazy_static! {
     pub static ref CONTAINER: Arc<Mutex<Option<Container>>> = Arc::new(Mutex::new(None));
 }
 
-/// Container constructor that makes sure the instance is mounted in above static CONTAINER.
+/// Container constructor that makes sure the Container instance object is mounted
+/// in above static CONTAINER.
 /// It replaces any Container instance that was mounted before to CONTAINER with a new one
 /// create from the given configuration.
 pub fn mount_container_from_config(config: Configuration) {

@@ -61,7 +61,7 @@ pub fn reduce_get_links_timeout(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, NetworkSettings},
+        action::{Action, ActionWrapper, GetLinksKey, NetworkSettings},
         context::mock_network_config,
         instance::tests::test_context,
         state::test_store,
@@ -76,11 +76,11 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (
-            entry.address(),
-            tag.clone(),
-            snowflake::ProcessUniqueId::new().to_string(),
-        );
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            tag: tag.clone(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
@@ -113,11 +113,11 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (
-            entry.address(),
-            tag.clone(),
-            snowflake::ProcessUniqueId::new().to_string(),
-        );
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            tag: tag.clone(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
@@ -150,11 +150,11 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (
-            entry.address(),
-            tag.clone(),
-            snowflake::ProcessUniqueId::new().to_string(),
-        );
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            tag: tag.clone(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         {

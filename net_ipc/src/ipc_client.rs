@@ -29,8 +29,15 @@ impl NetWorker for IpcClient {
         Ok(())
     }
 
-    /// handle messages sent to us from holochain_net
+    /// send message sent to us from holochain_net to the ipc server handling the network
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        // Debugging code (do not delete)
+        // Print non-ping messages
+        //        match data {
+        //            Protocol::NamedBinary(_) =>  println!(">>>> IpcClient send: {:?}", data),
+        //            Protocol::Json(_) =>  println!(">>>> IpcClient send: {:?}", data),
+        //           _ => (),
+        //        };
         self.priv_send(&data)
     }
 
@@ -40,11 +47,20 @@ impl NetWorker for IpcClient {
         if let Some(msg) = self.priv_proc_message()? {
             did_something = true;
             if let Protocol::Ping(ref p) = msg {
+                // received Ping from network
+                // => send back a Pong
                 self.priv_send(&Protocol::Pong(PongData {
                     orig: p.sent,
                     recv: get_millis(),
                 }))?;
             }
+            // Debugging code (do not delete)
+            // Print non-ping messages
+            //            match msg {
+            //                Protocol::NamedBinary(_) => println!("<<<< IpcClient recv: {:?}", msg),
+            //                Protocol::Json(_) => println!("<<<< IpcClient recv: {:?}", msg),
+            //                _ => (),
+            //            };
             (self.handler)(Ok(msg))?;
         }
         let now = get_millis();

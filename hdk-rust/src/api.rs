@@ -207,7 +207,10 @@ pub enum BundleOnClose {
 /// # }
 /// ```
 pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    let mut mem_stack = match unsafe { G_MEM_STACK } {
+        Some(mem_stack) => mem_stack,
+        None => return Err(ZomeApiError::Internal("debug failed to load mem_stack".to_string())),
+    };
 
     let allocation_of_input = mem_stack.write_json(msg)?;
 
@@ -215,9 +218,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
         hc_debug(RibosomeEncodedAllocation::from(allocation_of_input).into());
     }
 
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("should be able to deallocate input that has been allocated on memory stack");
+    mem_stack.deallocate(allocation_of_input)?;
 
     Ok(())
 }

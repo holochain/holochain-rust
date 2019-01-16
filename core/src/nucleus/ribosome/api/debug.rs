@@ -7,6 +7,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let payload = runtime.load_json_string_from_args(args);
+    println!("debug: {}", &payload);
     runtime.context.log(format!("debug/dna: '{}'", payload));
     // Done
     ribosome_success!()

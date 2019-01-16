@@ -149,6 +149,7 @@ impl EavFileStorage {
         create_dir_all(path.clone())?;
         let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
         let full_path = vec![address_path.clone(), "txt".to_string()].join(&".".to_string());
+        println!("full path{:?}", full_path);
         let mut f = File::create(full_path)?;
         writeln!(f, "{}", eav.content())?;
         Ok(())
@@ -235,7 +236,9 @@ impl EntityAttributeValueStorage for EavFileStorage {
             ENTITY_DIR.to_string(),
             entity.clone(),
         )?;
-
+        println!("entity {:?}", entity.clone());
+        println!("attribute {:?}", attribute.clone());
+        println!("value {:?}", value.clone());
         println!("entity_set {:?}", entity_set.clone());
         let attribute_set = self
             .read_from_dir::<Attribute>(
@@ -255,6 +258,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         let (eav, error): (HashMap<_, _>, HashMap<_, _>) = entity_attribute_value_inter
             .into_iter()
             .map(|(hash, content)| {
+                println!("key {:?}", hash.clone());
                 (
                     from_key(hash).unwrap_or(Key(0, Action::None)),
                     EntityAttributeValue::try_from_content(&JsonString::from(content)),

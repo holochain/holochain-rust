@@ -23,8 +23,8 @@ use holochain_net_connection::{
 use p2p_node::P2pNode;
 
 // CONSTS
-static AGENT_ID_1: &'static str = "DUMMY_AGENT_1";
-static AGENT_ID_2: &'static str = "DUMMY_AGENT_2";
+static ALEX_AGENT_ID: &'static str = "alex";
+static BILLY_AGENT_ID: &'static str = "billy";
 static ENTRY_ADDRESS_1: &'static str = "dummy_addr_1";
 static ENTRY_ADDRESS_2: &'static str = "dummy_addr_2";
 static ENTRY_ADDRESS_3: &'static str = "dummy_addr_3";
@@ -59,7 +59,13 @@ fn main() {
     }
 
     // List of tests
-    let test_fns: Vec<TwoNodesTestFn> = vec![setup_normal, send_test, dht_test, meta_test];
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    let test_fns: Vec<TwoNodesTestFn> = vec![
+        setup_normal,
+        send_test,
+        dht_test,
+        meta_test,
+    ];
 
     // Launch tests on each setup
     for test_fn in test_fns.clone() {
@@ -192,138 +198,143 @@ fn launch_two_nodes_test(
 // TODO make test: Sending a Message before doing a 'Connect' should fail.
 // fn no_connect_test()
 
+/// Tests if we can get back data published on the network
 #[cfg_attr(tarpaulin, skip)]
-fn send_and_confirm_data(
-    node_a: &mut P2pNode,
-    node_b: &mut P2pNode,
+fn confirm_published_data(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
     address: &str,
 ) -> NetResult<()> {
-    // Send 'Store DHT data' message on node 1
-    node_a.send(
+    // Alex publishs data on the network
+    alex.send(
         ProtocolMessage::PublishDhtData(DhtData {
             msg_id: "testPublishEntry".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
             address: address.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    // Check if both nodes received a Store it
-    let result_a = node_a.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
+    // Check if both nodes received a HandleStore command.
+    let result_a = alex.wait(Box::new(one_is!(ProtocolMessage::HandleStoreDhtData(_))))?;
     println!(" got store result A: {:?}\n", result_a);
-    let result_b = node_b.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
+    let result_b = billy.wait(Box::new(one_is!(ProtocolMessage::HandleStoreDhtData(_))))?;
     println!("got store result B: {:?}\n", result_b);
 
-    // Send 'get DHT data' message on node 2
-    node_b.send(
+    // Billy asks for that data on the network.
+    billy.send(
         ProtocolMessage::GetDhtData(GetDhtData {
             msg_id: "testGetEntry".to_string(),
             dna_address: example_dna_address(),
-            from_agent_id: AGENT_ID_2.to_string(),
+            from_agent_id: BILLY_AGENT_ID.to_string(),
             address: address.to_string(),
         })
         .into(),
     )?;
-    // Send 'Get DHT data result' message on node 2
-    node_a.send(
-        ProtocolMessage::GetDhtDataResult(DhtData {
+    // Alex having that data, sends it to the network.
+    alex.send(
+        ProtocolMessage::HandleGetDhtDataResult(DhtData {
             msg_id: "testGetEntryResult".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
             address: address.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    let result = node_a.wait(Box::new(one_is!(ProtocolWrapper::GetDhtResult(_))))?;
-    println!("got dht get result: {:?}", result);
+    // Alex should receive the data it requested from the netowrk
+    // FIXME: Should be Billy instead!
+    let result = alex.wait(Box::new(one_is!(ProtocolMessage::GetDhtDataResult(_))))?;
+    println!("got dht data result: {:?}", result);
 
     Ok(())
 }
 
+/// Tests if we can get back metadata published on the network
 #[cfg_attr(tarpaulin, skip)]
-fn send_and_confirm_metadata(
-    node1: &mut P2pNode,
-    node2: &mut P2pNode,
+fn confirm_published_metadata(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
     address: &str,
 ) -> NetResult<()> {
-    // Send 'Store DHT metadata' message on node 1
-    node1.send(
+    // Alex publishs metadata on the network
+    alex.send(
         ProtocolMessage::PublishDhtMeta(DhtMetaData {
             msg_id: "testPublishMeta".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
-            from_agent_id: AGENT_ID_1.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+            from_agent_id: ALEX_AGENT_ID.to_string(),
             address: address.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello-meta"),
         })
         .into(),
     )?;
-    // Check if both nodes received a 'Store DHT Metadata' message
-    let result_1 = node1.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
-    println!("got store meta result 1: {:?}", result_1);
-    let result_2 = node2.wait(Box::new(one_is!(ProtocolWrapper::StoreDhtMeta(_))))?;
-    println!("got store meta result 2: {:?}", result_2);
+    // Check if both nodes received a HandleStore command.
+    let result_a = alex.wait(Box::new(one_is!(ProtocolMessage::HandleStoreDhtMeta(_))))?;
+    println!("got store meta result 1: {:?}", result_a);
+    let result_b = billy.wait(Box::new(one_is!(ProtocolMessage::HandleStoreDhtMeta(_))))?;
+    println!("got store meta result 2: {:?}", result_b);
 
-    // Send a 'Get DHT metadata' message on node 2
-    node2.send(
+    // Billy asks for that metadata on the network.
+    billy.send(
         ProtocolMessage::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
             dna_address: example_dna_address(),
-            from_agent_id: AGENT_ID_2.to_string(),
+            from_agent_id: BILLY_AGENT_ID.to_string(),
             address: address.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
         })
         .into(),
     )?;
-    // Send a 'Get DHT metadata result' message on node 2
-    node1.send(
-        ProtocolMessage::GetDhtMetaResult(DhtMetaData {
+    // Alex having that metadata, sends it to the network.
+    alex.send(
+        ProtocolMessage::HandleGetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
-            from_agent_id: AGENT_ID_2.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+            from_agent_id: BILLY_AGENT_ID.to_string(),
             address: address.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    let result = node1.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
+    // Alex should receive the metadata it requested from the netowrk
+    // FIXME: Billy should be the one asking instead!
+    let result = alex.wait(Box::new(one_is!(ProtocolMessage::GetDhtMetaResult(_))))?;
     println!("got dht meta result: {:?}", result);
 
     Ok(())
 }
 
-/// Do normal setup: 'TrackApp' & 'Connect'
+/// Do normal setup: 'TrackApp' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
-fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Send TrackApp message on both nodes
-    node_a
+    alex
         .send(
             ProtocolMessage::TrackDna(TrackAppData {
                 dna_address: example_dna_address(),
-                agent_id: AGENT_ID_1.to_string(),
+                agent_id: ALEX_AGENT_ID.to_string(),
             })
             .into(),
         )
-        .expect("Failed sending TrackAppData on node_a");
-    let connect_result_1 = node_a.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+        .expect("Failed sending TrackAppData on alex");
+    let connect_result_1 = alex.wait(Box::new(one_is!(ProtocolMessage::PeerConnected(_))))?;
     println!("self connected result 1: {:?}", connect_result_1);
-
-    node_b
+    billy
         .send(
             ProtocolMessage::TrackDna(TrackAppData {
                 dna_address: example_dna_address(),
-                agent_id: AGENT_ID_2.to_string(),
+                agent_id: BILLY_AGENT_ID.to_string(),
             })
             .into(),
         )
-        .expect("Failed sending TrackAppData on node_b");
-    let connect_result_2 = node_b.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
+        .expect("Failed sending TrackAppData on billy");
+    let connect_result_2 = billy.wait(Box::new(one_is!(ProtocolMessage::PeerConnected(_))))?;
     println!("self connected result 2: {:?}", connect_result_2);
 
     // get ipcServer IDs for each node from the IpcServer's state
@@ -331,19 +342,19 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
         let mut _node1_id = String::new();
         let mut node2_binding = String::new();
 
-        node_a
+        alex
             .send(ProtocolMessage::GetState.into())
-            .expect("Failed sending RequestState on node_a");
-        let node_state_A = node_a.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
-        node_b
+            .expect("Failed sending RequestState on alex");
+        let node_state_A = alex.wait(Box::new(one_is!(ProtocolMessage::GetStateResult(_))))?;
+        billy
             .send(ProtocolMessage::GetState.into())
-            .expect("Failed sending RequestState on node_b");
-        let node_state_B = node_b.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
+            .expect("Failed sending RequestState on billy");
+        let node_state_B = billy.wait(Box::new(one_is!(ProtocolMessage::GetStateResult(_))))?;
 
-        one_let!(ProtocolWrapper::State(state) = node_state_A {
+        one_let!(ProtocolMessage::GetStateResult(state) = node_state_A {
             _node1_id = state.id
         });
-        one_let!(ProtocolWrapper::State(state) = node_state_B {
+        one_let!(ProtocolMessage::GetStateResult(state) = node_state_B {
             // No bindings in mock mode
             if !state.bindings.is_empty() {
                 node2_binding = state.bindings[0].clone();
@@ -352,7 +363,7 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
 
         // Connect nodes between them
         println!("connect: node2_binding = {}", node2_binding);
-        node_a.send(
+        alex.send(
             ProtocolMessage::Connect(ConnectData {
                 address: node2_binding.into(),
             })
@@ -360,15 +371,15 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
         )?;
 
         // Make sure Peers are connected
-        let result_1 = node_a.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
-        println!("got connect result 1: {:?}", result_1);
-        one_let!(ProtocolWrapper::PeerConnected(d) = result_1 {
-            assert_eq!(d.agent_id, AGENT_ID_2);
+        let result_a = alex.wait(Box::new(one_is!(ProtocolMessage::PeerConnected(_))))?;
+        println!("got connect result A: {:?}", result_a);
+        one_let!(ProtocolMessage::PeerConnected(d) = result_a {
+            assert_eq!(d.agent_id, BILLY_AGENT_ID);
         });
-        let result_2 = node_b.wait(Box::new(one_is!(ProtocolWrapper::PeerConnected(_))))?;
-        println!("got connect result 2: {:?}", result_2);
-        one_let!(ProtocolWrapper::PeerConnected(d) = result_2 {
-            assert_eq!(d.agent_id, AGENT_ID_1);
+        let result_b = billy.wait(Box::new(one_is!(ProtocolMessage::PeerConnected(_))))?;
+        println!("got connect result B: {:?}", result_b);
+        one_let!(ProtocolMessage::PeerConnected(d) = result_b {
+            assert_eq!(d.agent_id, ALEX_AGENT_ID);
         });
     }
 
@@ -377,26 +388,26 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
 }
 
 #[cfg_attr(tarpaulin, skip)]
-fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: send_test()");
-    setup_normal(node_a, node_b, can_connect)?;
+    setup_normal(alex, billy, can_connect)?;
 
-    // Send a message from node_a to node_b
-    node_a
+    // Send a message from alex to billy
+    alex
         .send(
             ProtocolMessage::SendMessage(MessageData {
                 dna_address: example_dna_address(),
-                to_agent_id: AGENT_ID_2.to_string(),
-                from_agent_id: AGENT_ID_1.to_string(),
+                to_agent_id: BILLY_AGENT_ID.to_string(),
+                from_agent_id: ALEX_AGENT_ID.to_string(),
                 msg_id: "yada".to_string(),
                 data: json!("hello"),
             })
             .into(),
         )
-        .expect("Failed sending SendMessage to node_b");
-    // Check if node_b received it
-    let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
+        .expect("Failed sending SendMessage to billy");
+    // Check if billy received it
+    let res = billy.wait(Box::new(one_is!(ProtocolMessage::HandleSendMessage(_))))?;
     println!("#### got: {:?}", res);
     let msg = match res {
         ProtocolMessage::HandleSendMessage(msg) => msg,
@@ -404,21 +415,21 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
     };
     assert_eq!("\"hello\"".to_string(), msg.data.to_string());
 
-    // Send a message from node_b to node_a
-    node_b
+    // Send a message back from billy to alex
+    billy
         .send(
             ProtocolMessage::HandleSendMessageResult(MessageData {
                 dna_address: example_dna_address(),
-                to_agent_id: AGENT_ID_1.to_string(),
-                from_agent_id: AGENT_ID_2.to_string(),
+                to_agent_id: ALEX_AGENT_ID.to_string(),
+                from_agent_id: BILLY_AGENT_ID.to_string(),
                 msg_id: "yada".to_string(),
                 data: json!(format!("echo: {}", msg.data.to_string())),
             })
             .into(),
         )
-        .expect("Failed sending HandleSendResult on node_b");
-    // Check if node_a received it
-    let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
+        .expect("Failed sending HandleSendResult on billy");
+    // Check if alex received it
+    let res = alex.wait(Box::new(one_is!(ProtocolMessage::SendMessageResult(_))))?;
     println!("#### got: {:?}", res);
     let msg = match res {
         ProtocolMessage::SendMessageResult(msg) => msg,
@@ -432,144 +443,145 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: meta_test()");
-    setup_normal(node1, node2, can_connect)?;
+    setup_normal(alex, billy, can_connect)?;
 
     // Send data & metadata on same address
-    send_and_confirm_data(node1, node2, ENTRY_ADDRESS_1)?;
-    send_and_confirm_metadata(node1, node2, ENTRY_ADDRESS_1)?;
+    confirm_published_data(alex, billy, ENTRY_ADDRESS_1)?;
+    confirm_published_metadata(alex, billy, ENTRY_ADDRESS_1)?;
 
     // Again but now send metadata first
-    send_and_confirm_metadata(node1, node2, ENTRY_ADDRESS_2)?;
-    send_and_confirm_data(node1, node2, ENTRY_ADDRESS_2)?;
+    confirm_published_metadata(alex, billy, ENTRY_ADDRESS_2)?;
+    confirm_published_data(alex, billy, ENTRY_ADDRESS_2)?;
 
-    // Again but do 'wait' at the end
-    // Send 'Store DHT data' message on node 1
-    node1.send(
+    // Again but 'wait' at the end
+    // Alex publishs data & meta on the network
+    alex.send(
         ProtocolMessage::PublishDhtData(DhtData {
             msg_id: "testPublishEntry".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_3.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    // Send 'Store DHT metadata' message on node 1
-    node1.send(
+    alex.send(
         ProtocolMessage::PublishDhtMeta(DhtMetaData {
             msg_id: "testPublishMeta".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
-            from_agent_id: AGENT_ID_1.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+            from_agent_id: ALEX_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_3.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello-meta"),
         })
         .into(),
     )?;
-    // Send 'get DHT data' message on node 2
-    node2.send(
+    // Billy sends GetDhtData message
+    billy.send(
         ProtocolMessage::GetDhtData(GetDhtData {
             msg_id: "testGetEntry".to_string(),
             dna_address: example_dna_address(),
-            from_agent_id: AGENT_ID_2.to_string(),
+            from_agent_id: BILLY_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_3.to_string(),
         })
         .into(),
     )?;
-    // Send 'Get DHT data result' message on node 2
-    node2.send(
-        ProtocolMessage::GetDhtDataResult(DhtData {
+    // Billy sends HandleGetDhtDataResult message
+    billy.send(
+        ProtocolMessage::HandleGetDhtDataResult(DhtData {
             msg_id: "testGetEntryResult".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_3.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    // Send a 'Get DHT metadata' message on node 2
-    node2.send(
+    // Billy sends GetDhtMeta message
+    billy.send(
         ProtocolMessage::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
             dna_address: example_dna_address(),
-            from_agent_id: AGENT_ID_2.to_string(),
+            from_agent_id: BILLY_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_3.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
         })
         .into(),
     )?;
-    // Send a 'Get DHT metadata result' message on node 2
-    node1.send(
-        ProtocolMessage::GetDhtMetaResult(DhtMetaData {
+    // Alex sends HandleGetDhtMetaResult message
+    alex.send(
+        ProtocolMessage::HandleGetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
-            from_agent_id: AGENT_ID_2.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+            from_agent_id: BILLY_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_3.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    let result = node1.wait(Box::new(one_is!(ProtocolWrapper::GetDhtMetaResult(_))))?;
+    // Alex should receive requested metadata
+    // FIXME: Billy should be the one asking instead!
+    let result = alex.wait(Box::new(one_is!(ProtocolMessage::GetDhtMetaResult(_))))?;
     println!("got GetDhtMetaResult: {:?}", result);
-
     // Done
     Ok(())
 }
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-fn dht_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: dht_test()");
-    setup_normal(node_a, node_b, can_connect)?;
+    setup_normal(alex, billy, can_connect)?;
 
-    // Send Publish DHT data
-    node_a.send(
+    // Alex publish data on the network
+    alex.send(
         ProtocolMessage::PublishDhtData(DhtData {
             msg_id: "testPub".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_1.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    // Check if both nodes received a StoreDht command
-    let result_1 = node_a.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
-    println!("got store result 1: {:?}", result_1);
-    let result_2 = node_b.wait(Box::new(one_is!(ProtocolWrapper::StoreDht(_))))?;
-    println!("got store result 2: {:?}", result_2);
+    // Check if both nodes are asked to store it
+    let result_a = alex.wait(Box::new(one_is!(ProtocolMessage::HandleStoreDhtData(_))))?;
+    println!("got HandleStoreDhtData on node A: {:?}", result_a);
+    let result_b = billy.wait(Box::new(one_is!(ProtocolMessage::HandleStoreDhtData(_))))?;
+    println!("got HandleStoreDhtData on node B: {:?}", result_b);
 
-    // Send get DHT data
-    node_b.send(
+    // Billy asks for that data
+    billy.send(
         ProtocolMessage::GetDhtData(GetDhtData {
             msg_id: "testGet".to_string(),
             dna_address: example_dna_address(),
-            from_agent_id: AGENT_ID_2.to_string(),
+            from_agent_id: BILLY_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_1.to_string(),
         })
         .into(),
     )?;
-    // Send get DHT data result
-    node_a.send(
-        ProtocolMessage::GetDhtDataResult(DhtData {
+    // Alex sends that data back to the network
+    alex.send(
+        ProtocolMessage::HandleGetDhtDataResult(DhtData {
             msg_id: "testGetResult".to_string(),
             dna_address: example_dna_address(),
-            agent_id: AGENT_ID_1.to_string(),
+            agent_id: ALEX_AGENT_ID.to_string(),
             address: ENTRY_ADDRESS_1.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    let result_2 = node_a.wait(Box::new(one_is!(ProtocolWrapper::GetDhtResult(_))))?;
-    println!("got dht get result: {:?}", result_2);
-
+    // Alex should receive requested data
+    // FIXME: Billy should be the one asking instead!
+    let result = alex.wait(Box::new(one_is!(ProtocolMessage::GetDhtDataResult(_))))?;
+    println!("got GetDhtDataResult: {:?}", result);
     // Done
     Ok(())
 }

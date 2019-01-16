@@ -82,10 +82,10 @@ impl MockSystem {
                 }
 
                 ProtocolMessage::SendMessage(msg) => {
-                    self.priv_handle_send(&msg)?;
+                    self.priv_handle_send_message(&msg)?;
                 }
                 ProtocolMessage::HandleSendMessageResult(msg) => {
-                    self.priv_handle_send_result(&msg)?;
+                    self.priv_handle_handle_send_message_result(&msg)?;
                 }
                 ProtocolMessage::SuccessResult(msg) => {
                     self.priv_send_one(
@@ -102,20 +102,23 @@ impl MockSystem {
                     )?;
                 }
                 ProtocolMessage::GetDhtData(msg) => {
-                    self.priv_handle_get_dht(&msg)?;
+                    self.priv_handle_get_dht_data(&msg)?;
                 }
-                ProtocolMessage::GetDhtDataResult(msg) => {
-                    self.priv_handle_get_dht_result(&msg)?;
+                ProtocolMessage::HandleGetDhtDataResult(msg) => {
+                    self.priv_handle_handle_get_dht_data_result(&msg)?;
                 }
+
                 ProtocolMessage::PublishDhtData(msg) => {
-                    self.priv_handle_publish_dht(&msg)?;
+                    self.priv_handle_publish_dht_data(&msg)?;
                 }
+
                 ProtocolMessage::GetDhtMeta(msg) => {
                     self.priv_handle_get_dht_meta(&msg)?;
                 }
-                ProtocolMessage::GetDhtMetaResult(msg) => {
-                    self.priv_handle_get_dht_meta_result(&msg)?;
+                ProtocolMessage::HandleGetDhtMetaResult(msg) => {
+                    self.priv_handle_handle_get_dht_meta_result(&msg)?;
                 }
+
                 ProtocolMessage::PublishDhtMeta(msg) => {
                     self.priv_handle_publish_dht_meta(&msg)?;
                 }
@@ -162,7 +165,7 @@ impl MockSystem {
     /// we received a SendMessage message...
     /// normally this would travel over the network, then
     /// show up as a HandleSend message, fabricate that message && deliver
-    fn priv_handle_send(&mut self, msg: &MessageData) -> NetResult<()> {
+    fn priv_handle_send_message(&mut self, msg: &MessageData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
@@ -174,7 +177,7 @@ impl MockSystem {
     /// we received a SendResult message...
     /// normally this would travel over the network, then
     /// show up as a SendResult message, fabricate that message && deliver
-    fn priv_handle_send_result(&mut self, msg: &MessageData) -> NetResult<()> {
+    fn priv_handle_handle_send_message_result(&mut self, msg: &MessageData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
@@ -186,14 +189,14 @@ impl MockSystem {
     /// when someone makes a dht data request,
     /// this mock module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
-    fn priv_handle_get_dht(&mut self, msg: &GetDhtData) -> NetResult<()> {
+    fn priv_handle_get_dht_data(&mut self, msg: &GetDhtData) -> NetResult<()> {
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
                     // Debugging code (do not remove)
                     // println!("<<<< MockSystem send: {:?}", msg.clone());
-                    r.send(ProtocolMessage::GetDhtData(msg.clone()).into())?;
+                    r.send(ProtocolMessage::HandleGetDhtData(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -216,7 +219,7 @@ impl MockSystem {
     }
 
     /// send back a response to a request for dht data
-    fn priv_handle_get_dht_result(&mut self, msg: &DhtData) -> NetResult<()> {
+    fn priv_handle_handle_get_dht_data_result(&mut self, msg: &DhtData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.agent_id,
@@ -226,7 +229,7 @@ impl MockSystem {
     }
 
     /// on publish meta, we send store requests to all nodes connected on this dna
-    fn priv_handle_publish_dht(&mut self, msg: &DhtData) -> NetResult<()> {
+    fn priv_handle_publish_dht_data(&mut self, msg: &DhtData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
             ProtocolMessage::HandleStoreDhtData(msg.clone()).into(),
@@ -242,7 +245,7 @@ impl MockSystem {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
-                    r.send(ProtocolMessage::GetDhtMeta(msg.clone()).into())?;
+                    r.send(ProtocolMessage::HandleGetDhtMeta(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -265,7 +268,7 @@ impl MockSystem {
     }
 
     /// send back a response to a request for dht meta data
-    fn priv_handle_get_dht_meta_result(&mut self, msg: &DhtMetaData) -> NetResult<()> {
+    fn priv_handle_handle_get_dht_meta_result(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.agent_id,

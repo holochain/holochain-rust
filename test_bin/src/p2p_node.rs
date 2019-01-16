@@ -98,13 +98,13 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!("P2pNode::wait() received: {:?}", p2p_msg);
+                println!("P2pNode::wait() - received: {:?}", p2p_msg);
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    println!("P2pNode::wait() found match");
+                    println!("\t P2pNode::wait() - match");
                     return Ok(p2p_msg);
                 } else {
-                    println!("P2pNode::wait() found NOT match");
+                    println!("\t P2pNode::wait() - NO match");
                 }
             }
 

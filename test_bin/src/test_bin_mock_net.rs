@@ -74,7 +74,7 @@ fn exec_mock_test() -> NetResult<()> {
             .into(),
         )
         .expect("Failed sending GenericMessage to node_b");
-    let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
+    let res = node_b.wait(Box::new(one_is!(ProtocolMessage::HandleSendMessage(_))))?;
     println!("got: {:?}", res);
 
     if let ProtocolMessage::HandleSendMessage(msg) = res {
@@ -94,7 +94,7 @@ fn exec_mock_test() -> NetResult<()> {
         panic!("bad generic msg");
     }
 
-    let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
+    let res = node_a.wait(Box::new(one_is!(ProtocolMessage::SendMessageResult(_))))?;
     println!("got response: {:?}", res);
 
     if let ProtocolMessage::SendMessageResult(msg) = res {

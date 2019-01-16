@@ -198,20 +198,20 @@ pub enum ProtocolMessage {
     PeerConnected(PeerData),
 
     /// Send a message to another peer on the network
-    #[serde(rename = "send")]
+    #[serde(rename = "sendMessage")]
     SendMessage(MessageData),
     /// the response from a previous `SendMessage`
-    #[serde(rename = "sendResult")]
+    #[serde(rename = "sendMessageResult")]
     SendMessageResult(MessageData),
     /// Request to handle a message another peer has sent us.
-    #[serde(rename = "handleSend")]
+    #[serde(rename = "handleSendMessage")]
     HandleSendMessage(MessageData),
     /// Our response to a message from another peer.
-    #[serde(rename = "handleSendResult")]
+    #[serde(rename = "handleSendMessageResult")]
     HandleSendMessageResult(MessageData),
 
     /// Order the p2p module to be part of the network of the specified DNA.
-    #[serde(rename = "trackApp")]
+    #[serde(rename = "trackDna")]
     TrackDna(TrackAppData),
 
     /// Success response to any message with an _id field.
@@ -232,11 +232,16 @@ pub enum ProtocolMessage {
     #[serde(rename = "getDhtResult")]
     GetDhtDataResult(DhtData),
 
+    #[serde(rename = "handleGetDht")]
+    HandleGetDhtData(GetDhtData),
+    #[serde(rename = "handleGetDhtResult")]
+    HandleGetDhtDataResult(DhtData),
+
     /// Publish data to the dht.
     #[serde(rename = "publishDht")]
     PublishDhtData(DhtData),
     /// Store data on a node's dht slice.
-    #[serde(rename = "storeDht")]
+    #[serde(rename = "handleStoreDht")]
     HandleStoreDhtData(DhtData),
 
     /// [send] request meta data from the dht
@@ -249,11 +254,16 @@ pub enum ProtocolMessage {
     #[serde(rename = "getDhtMetaResult")]
     GetDhtMetaResult(DhtMetaData),
 
+    #[serde(rename = "handleGetDhtMeta")]
+    HandleGetDhtMeta(GetDhtMetaData),
+    #[serde(rename = "handleGetDhtMetaResult")]
+    HandleGetDhtMetaResult(DhtMetaData),
+
     /// Publish metadata to the dht.
     #[serde(rename = "publishDhtMeta")]
     PublishDhtMeta(DhtMetaData),
     /// Store metadata on a node's dht slice.
-    #[serde(rename = "storeDhtMeta")]
+    #[serde(rename = "handleStoreDhtMeta")]
     HandleStoreDhtMeta(DhtMetaData),
 }
 

@@ -85,13 +85,13 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodi
     // Deserialize and check for an encoded error
     let entry: Entry = match load_ribosome_encoded_json(encoded_allocation_of_input) {
         Ok(entry) => entry,
-        Err(hc_err) => {
-            hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
+        Err(_hc_err) => {
+            // hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
             return RibosomeReturnCode::Failure(RibosomeErrorCode::ArgumentDeserializationFailed).into();
         },
     };
 
-    hdk::debug(format!("Entry: {:?}", entry)).expect("debug() must work");
+    // hdk::debug(format!("Entry: {:?}", entry)).expect("debug() must work");
 
     let res = hdk::commit_entry(&entry.into());
 

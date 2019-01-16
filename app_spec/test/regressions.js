@@ -34,7 +34,7 @@ const tash = container.makeCaller(tashName, dnaPath)
 // run the following three tests ONE AT A TIME. 
 // The first fails, the second and third pass.
 
-test('calling get_links before link_entries makes a difference (FAILS)', (t) => {
+test('calling get_links before link_entries makes a difference', (t) => {
 
   const get1 = alice.call("blog", "main", "my_posts", {})
   t.ok(get1.Ok)
@@ -52,7 +52,7 @@ test('calling get_links before link_entries makes a difference (FAILS)', (t) => 
 })
 
 
-test('calling get_links twice in a row is different than calling it once (PASSES)', (t) => {
+test('calling get_links twice in a row is different than calling it once', (t) => {
   // This test is exactly the same as the previous one, but calls my_posts twice in a row.
   // This makes the links come through the second time.
 
@@ -72,7 +72,7 @@ test('calling get_links twice in a row is different than calling it once (PASSES
   t.end()
 })
 
-test('not calling get_links in the beginning helps (PASSES)', (t) => {
+test('not calling get_links in the beginning helps', (t) => {
 
   const create1 = alice.call("blog", "main", "create_post", {content: 'hi'})
   t.ok(create1.Ok)

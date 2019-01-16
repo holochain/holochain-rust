@@ -174,6 +174,18 @@ pub struct DhtMetaData {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(tag = "method")]
 pub enum ProtocolMessage {
+    /// Success response to any message with an _id field.
+    #[serde(rename = "successResult")]
+    SuccessResult(SuccessResultData),
+    /// Failure response to any message with an _id field.
+    /// Can also be a response to a mal-formed request.
+    #[serde(rename = "failureResult")]
+    FailureResult(FailureResultData),
+
+    /// Order the p2p module to be part of the network of the specified DNA.
+    #[serde(rename = "trackDna")]
+    TrackDna(TrackAppData),
+    
     /// Request the current state from the p2p module
     #[serde(rename = "requestState")]
     GetState,
@@ -210,30 +222,16 @@ pub enum ProtocolMessage {
     #[serde(rename = "handleSendMessageResult")]
     HandleSendMessageResult(MessageData),
 
-    /// Order the p2p module to be part of the network of the specified DNA.
-    #[serde(rename = "trackDna")]
-    TrackDna(TrackAppData),
-
-    /// Success response to any message with an _id field.
-    #[serde(rename = "successResult")]
-    SuccessResult(SuccessResultData),
-    /// Failure response to any message with an _id field.
-    /// Can also be a response to a mal-formed request.
-    #[serde(rename = "failureResult")]
-    FailureResult(FailureResultData),
-
-    /// [send] request data from the dht
-    /// [recv] another node, or the network module itself is requesting data
-    ///        from us... send a GetDhtResult message back
+    /// Request data from the dht network
     #[serde(rename = "getDht")]
     GetDhtData(GetDhtData),
-    /// [recv] response from requesting dht data from the network
-    /// [send] success response if network is requesting this data of us
+    /// Response from requesting dht data from the network
     #[serde(rename = "getDhtResult")]
     GetDhtDataResult(DhtData),
-
+    /// Another node, or the network module itself is requesting data from us
     #[serde(rename = "handleGetDht")]
     HandleGetDhtData(GetDhtData),
+    /// Successful data response for a `HandleGetDhtData` request
     #[serde(rename = "handleGetDhtResult")]
     HandleGetDhtDataResult(DhtData),
 
@@ -244,18 +242,16 @@ pub enum ProtocolMessage {
     #[serde(rename = "handleStoreDht")]
     HandleStoreDhtData(DhtData),
 
-    /// [send] request meta data from the dht
-    /// [recv] another node, or the network module itself is requesting data
-    ///        from us... send a GetDhtResult message back
+    /// Request metadata from the dht
     #[serde(rename = "getDhtMeta")]
     GetDhtMeta(GetDhtMetaData),
-    /// [recv] response from requesting meta dht data from the network
-    /// [send] success response if network is requesting this data of us
+    /// Response by the network for our metadata request
     #[serde(rename = "getDhtMetaResult")]
     GetDhtMetaResult(DhtMetaData),
-
+    /// Another node, or the network module itself, is requesting data from us
     #[serde(rename = "handleGetDhtMeta")]
     HandleGetDhtMeta(GetDhtMetaData),
+    /// Successful metadata response for a `HandleGetDhtMeta` request
     #[serde(rename = "handleGetDhtMetaResult")]
     HandleGetDhtMetaResult(DhtMetaData),
 

@@ -500,14 +500,11 @@ mod tests {
         let wasm = example_api_wasm();
         let capability = create_test_cap_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _, _) = test_context("alex");
+        let (context, _, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
@@ -525,10 +522,14 @@ mod tests {
             JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
         );
 
-        // Check in holochain instance's history that the commit event has been processed
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        expect_action(&signal_rx, |action| {
+            if let Action::ReturnZomeFunctionResult(_) = action {
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap();
     }
 
     #[test]
@@ -539,15 +540,11 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_hello");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, test_logger, _) = test_context("alex");
+        let (context, test_logger, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
-
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
@@ -562,10 +559,14 @@ mod tests {
         assert!(format!("{:?}", test_logger.log).contains(
             "\"debug/dna: \\\'\\\"Hello world!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_hello\\\' returned: Success\""));
 
-        // Check in holochain instance's history that the debug event has been processed
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        expect_action(&signal_rx, |action| {
+            if let Action::ReturnZomeFunctionResult(_) = action {
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap();
     }
 
     #[test]
@@ -576,14 +577,11 @@ mod tests {
         let capability = create_test_cap_with_fn_name("debug_multiple");
         let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
 
-        let (context, test_logger, _) = test_context("alex");
+        let (context, test_logger, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
@@ -602,10 +600,14 @@ mod tests {
         assert!(format!("{:?}", test_logger.log).contains(
             "\"debug/dna: \\\'\\\"Hello\\\"\\\'\", \"debug/dna: \\\'\\\"world\\\"\\\'\", \"debug/dna: \\\'\\\"!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_multiple\\\' returned: Success\""));
 
-        // Check in holochain instance's history that the deb event has been processed
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        expect_action(&signal_rx, |action| {
+            if let Action::ReturnZomeFunctionResult(_) = action {
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap();
     }
 
     #[test]

@@ -37,11 +37,11 @@ test('calling get_links before link_entries makes a difference (FAILS)', (t) => 
 
   const get1 = alice.call("blog", "main", "my_posts", {})
   t.ok(get1.Ok)
-  sleep.sleep(10)
+  sleep.sleep(1)
 
   const create1 = alice.call("blog", "main", "create_post", {content: 'hi'})
   t.ok(create1.Ok)
-  sleep.sleep(10)
+  sleep.sleep(1)
 
   const get2 = alice.call("blog", "main", "my_posts", {})
   t.ok(get2.Ok)
@@ -50,7 +50,7 @@ test('calling get_links before link_entries makes a difference (FAILS)', (t) => 
   t.end()
 })
 
-/*
+
 test('calling get_links twice in a row is different than calling it once (PASSES)', (t) => {
   // This test is exactly the same as the previous one, but calls my_posts twice in a row.
   // This makes the links come through the second time.
@@ -87,90 +87,102 @@ test('not calling get_links in the beginning helps (PASSES)', (t) => {
 //////////////////////////////////
 //////////////////////////////////
 
-// test('alice create & publish post -> recommend own post to self', async (t) => {
-//   t.plan(4)
-//   const content1 = "Holo world...1"
-//   const in_reply_to = null
-//   const params = { content: content1, in_reply_to }
-//   const postAddr = alice.call("blog", "main", "create_post", params).Ok
-//   t.ok(postAddr)
+test('alice create & publish post -> recommend own post to self', async (t) => {
+  t.plan(4)
+  const content1 = "Holo world...1"
+  const in_reply_to = null
+  const params = { content: content1, in_reply_to }
 
-//   const gotPost = await pollFor(
-//     () => alice.call("blog", "main", "get_post", {post_address: postAddr})
-//   ).catch(t.fail)
-//   t.ok(gotPost.Ok)
   
-//   let linked = alice.call('blog', 'main', 'recommend_post', {
-//     post_address: postAddr, 
-//     agent_address: alice.agentId
-//   })
-//   console.log("linked: ", linked)
-//   t.equal(linked.Ok, null)
+  // TODO can go away after scenario-api merge
+  const numInitialRecommendedPosts = alice.call('blog', 'main', 'my_recommended_posts', {}).Ok.addresses.length
+
+  const postAddr = alice.call("blog", "main", "create_post", params).Ok
+  t.ok(postAddr)
+
+  const gotPost = await pollFor(
+    () => alice.call("blog", "main", "get_post", {post_address: postAddr})
+  ).catch(t.fail)
+  t.ok(gotPost.Ok)
   
-//   sleep.sleep(3)
+  let linked = alice.call('blog', 'main', 'recommend_post', {
+    post_address: postAddr, 
+    agent_address: alice.agentId
+  })
+  console.log("linked: ", linked)
+  t.equal(linked.Ok, null)
   
-//   const recommendedPosts = alice.call('blog', 'main', 'my_recommended_posts', {})
-//   console.log("recommendedPosts", recommendedPosts)
-//   console.log('agent addresses: ', alice.agentId, alice.agentId)
-
-//   t.equal(recommendedPosts.Ok.addresses.length, 1)
-// })
-
-// test('alice create & publish post -> tash recommend to self', async (t) => {
-//   t.plan(4)
-//   const content1 = "Holo world...2"
-//   const in_reply_to = null
-//   const params = { content: content1, in_reply_to }
-//   const postAddr = alice.call("blog", "main", "create_post", params).Ok
-//   t.ok(postAddr)
-
-//   const gotPost = await pollFor(
-//     () => tash.call("blog", "main", "get_post", {post_address: postAddr})
-//   ).catch(t.fail)
-//   t.ok(gotPost.Ok)
+  sleep.sleep(1)
   
-//   let linked = tash.call('blog', 'main', 'recommend_post', {
-//     post_address: postAddr, 
-//     agent_address: tash.agentId
-//   })
-//   console.log("linked: ", linked)
-//   t.equal(linked.Ok, null)
+  const recommendedPosts = alice.call('blog', 'main', 'my_recommended_posts', {})
+  console.log("recommendedPosts", recommendedPosts)
+  console.log('agent addresses: ', alice.agentId, alice.agentId)
+
+  t.equal(recommendedPosts.Ok.addresses.length, numInitialRecommendedPosts + 1)
+})
+
+test('alice create & publish post -> tash recommend to self', async (t) => {
+  t.plan(4)
+  const content1 = "Holo world...2"
+  const in_reply_to = null
+  const params = { content: content1, in_reply_to }
   
-//   sleep.sleep(3)
+  // TODO can go away after scenario-api merge
+  const numInitialRecommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {}).Ok.addresses.length
 
-//   const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
-//   console.log("recommendedPosts", recommendedPosts)
-//   console.log('agent addresses: ', alice.agentId, tash.agentId)
+  const postAddr = alice.call("blog", "main", "create_post", params).Ok
+  t.ok(postAddr)
 
-//   t.equal(recommendedPosts.Ok.addresses.length, 1)
-// })
-
-// test('create & publish post -> recommend to other agent', async (t) => {
-//   t.plan(4)
-//   const content1 = "Holo world...3"
-//   const in_reply_to = null
-//   const params = { content: content1, in_reply_to }
-//   const postAddr = alice.call("blog", "main", "create_post", params).Ok
-//   t.ok(postAddr)
-
-//   const gotPost = await pollFor(
-//     () => tash.call("blog", "main", "get_post", {post_address: postAddr})
-//   ).catch(t.fail)
-//   t.ok(gotPost.Ok)
+  const gotPost = await pollFor(
+    () => tash.call("blog", "main", "get_post", {post_address: postAddr})
+  ).catch(t.fail)
+  t.ok(gotPost.Ok)
   
-//   let linked = alice.call('blog', 'main', 'recommend_post', {
-//     post_address: postAddr, 
-//     agent_address: tash.agentId
-//   })
-//   console.log("linked: ", linked)
-//   t.equal(linked.Ok, null)
-
-//   sleep.sleep(3)
+  let linked = tash.call('blog', 'main', 'recommend_post', {
+    post_address: postAddr, 
+    agent_address: tash.agentId
+  })
+  console.log("linked: ", linked)
+  t.equal(linked.Ok, null)
   
-//   const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
-//   console.log("recommendedPosts", recommendedPosts)
-//   console.log('agent addresses: ', alice.agentId, tash.agentId)
+  sleep.sleep(1)
 
-//   t.equal(recommendedPosts.Ok.addresses.length, 1)
-// })
-*/
+  const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
+  console.log("recommendedPosts", recommendedPosts)
+  console.log('agent addresses: ', alice.agentId, tash.agentId)
+
+  t.equal(recommendedPosts.Ok.addresses.length, numInitialRecommendedPosts + 1)
+})
+
+test('create & publish post -> recommend to other agent', async (t) => {
+  t.plan(4)
+  const content1 = "Holo world...3"
+  const in_reply_to = null
+  const params = { content: content1, in_reply_to }
+  
+  // TODO can go away after scenario-api merge
+  const numInitialRecommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {}).Ok.addresses.length
+
+  const postAddr = alice.call("blog", "main", "create_post", params).Ok
+  t.ok(postAddr)
+
+  const gotPost = await pollFor(
+    () => tash.call("blog", "main", "get_post", {post_address: postAddr})
+  ).catch(t.fail)
+  t.ok(gotPost.Ok)
+  
+  let linked = alice.call('blog', 'main', 'recommend_post', {
+    post_address: postAddr, 
+    agent_address: tash.agentId
+  })
+  console.log("linked: ", linked)
+  t.equal(linked.Ok, null)
+
+  sleep.sleep(1)
+  
+  const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
+  console.log("recommendedPosts", recommendedPosts)
+  console.log('agent addresses: ', alice.agentId, tash.agentId)
+
+  t.equal(recommendedPosts.Ok.addresses.length, numInitialRecommendedPosts + 1)
+})

@@ -168,7 +168,7 @@ By default, when you use `hc init` to create a new project folder, it creates a 
 Once you have a project folder initiated, you can run `hc test` to execute your tests. This combines the following steps:
   1. Packaging your files into a DNA file, located at `dist/bundle.json`. This step will fail if your packaging step fails.
   2. Installing build and testing dependencies, if they're not installed (`npm install`)
-  4. Executing (with [holochain-nodejs](https://github.com/holochain/holochain-nodejs)) the test file found at `test/index.js`
+  4. Executing (with [holochain-nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs)) the test file found at `test/index.js`
 
 `hc test` also has some configurable options.
 

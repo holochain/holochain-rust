@@ -316,9 +316,9 @@ and this bug:
 
 ```rust
 type Foo = Result<String, String>;
-let foo_json_a = json!({"Err": some_error.description()}); // <-- good key `Err`
+let foo_json_a = json!({"Err": some_error.to_string()}); // <-- good key `Err`
 // somewhere else... maybe a different crate or old crate version...
-let foo_json_b = json!({"error": some_error.description()}); // <-- bad key `error` :/
+let foo_json_b = json!({"error": some_error.to_string()}); // <-- bad key `error` :/
 
 let foo: Foo = serde_json::from(&foo_json_a)?; // <-- works, key matches variant name
 let foo: Foo = serde_json::from(&foo_json_b)?; // <-- runtime error! :(
@@ -328,10 +328,10 @@ Because the structure of the JSON data is defined centrally at compile time:
 
 ```rust
 // Result<Into<JsonString>, Into<JsonString>> is implemented for you by HC core
-let foo_json_a = JsonString::from(Err(some_error.description()));
+let foo_json_a = JsonString::from(Err(some_error.to_string()));
 // only one way to do things, automatically consistent across all crates
 // doing anything different is a compiler issue
-let foo_json_b = JsonString::from(Err(some_error.description()));
+let foo_json_b = JsonString::from(Err(some_error.to_string()));
 ```
 
 Which is great for the majority of data that needs serializing. There are some

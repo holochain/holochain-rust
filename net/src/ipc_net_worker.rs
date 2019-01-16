@@ -209,7 +209,7 @@ impl NetWorker for IpcNetWorker {
     fn tick(&mut self) -> NetResult<bool> {
         let mut has_done_something = false;
 
-        // WTF?
+        // Request p2p module's state if its not ready yet
         if &self.last_known_state != "ready" {
             self.priv_request_state()?;
         }
@@ -235,8 +235,6 @@ impl NetWorker for IpcNetWorker {
                         self.priv_handle_default_config(config)?;
                     }
                     _ => (),
-                    // Send all other message back to handler
-                    // _ => (self.handler)(Ok(data))?,
                 };
             }
 

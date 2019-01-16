@@ -51,8 +51,8 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     Box::new(move |message| {
         let message = message.unwrap();
         //context.log(format!("debug/net/handle: {:?}", message));
-        let protocol_wrapper = JsonProtocol::try_from(message);
-        match protocol_wrapper {
+        let json_msg = JsonProtocol::try_from(message);
+        match json_msg {
             Ok(JsonProtocol::HandleStoreDhtData(dht_data)) => {
                 // NOTE data in message doesn't allow us to confirm agent!
                 if !is_me(&context, &dht_data.dna_address, "") {
@@ -63,19 +63,19 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
             }
             Ok(JsonProtocol::HandleStoreDhtMeta(dht_meta_data)) => {
                 context.log(format!(
-                    "debug/net/handle: StoreDhtMeta: {:?}",
+                    "debug/net/handle: HandleStoreDhtMeta: {:?}",
                     dht_meta_data
                 ));
                 if !is_me(&context, &dht_meta_data.dna_address, "") {
                     context.log(format!(
-                        "debug/net/handle: StoreDhtMeta: ignoring, not for me. {:?}",
+                        "debug/net/handle: HandleStoreDhtMeta: ignoring, not for me. {:?}",
                         dht_meta_data
                     ));
                     return Ok(());
                 }
                 handle_store_dht_meta(dht_meta_data, context.clone())
             }
-            Ok(JsonProtocol::GetDhtData(get_dht_data)) => {
+            Ok(JsonProtocol::HandleGetDhtData(get_dht_data)) => {
                 // NOTE data in message doesn't allow us to confirm agent!
                 if !is_me(&context, &get_dht_data.dna_address, "") {
                     return Ok(());
@@ -90,7 +90,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 context.log(format!("debug/net/handle: GetDhtResult: {:?}", dht_data));
                 handle_get_dht_result(dht_data, context.clone())
             }
-            Ok(JsonProtocol::GetDhtMeta(get_dht_meta_data)) => {
+            Ok(JsonProtocol::HandleGetDhtMeta(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
                     context.log(format!(
                         "debug/net/handle: GetDhtMeta: {:?}",

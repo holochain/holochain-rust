@@ -16,7 +16,7 @@ fn reduce_respond_get_inner(
 
     send(
         network_state,
-        JsonProtocol::GetDhtDataResult(DhtData {
+        JsonProtocol::HandleGetDhtDataResult(DhtData {
             msg_id: get_dht_data.msg_id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: get_dht_data.from_agent_id.clone(),

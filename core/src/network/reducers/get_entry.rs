@@ -1,22 +1,22 @@
 use crate::{
-    action::ActionWrapper,
+    action::{ActionWrapper, GetEntryKey},
     context::Context,
     network::{reducers::send, state::NetworkState},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use holochain_net_connection::protocol_wrapper::{GetDhtData, ProtocolWrapper};
 use std::sync::Arc;
 
-fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), HolochainError> {
+fn inner(network_state: &mut NetworkState, key: &GetEntryKey) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
     send(
         network_state,
         ProtocolWrapper::GetDht(GetDhtData {
-            msg_id: "?".to_string(),
+            msg_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: address.to_string(),
+            address: key.address.to_string(),
         }),
     )
 }
@@ -27,16 +27,16 @@ pub fn reduce_get_entry(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let address = unwrap_to!(action => crate::action::Action::GetEntry);
+    let key = unwrap_to!(action => crate::action::Action::GetEntry);
 
-    let result = match inner(network_state, &address) {
+    let result = match inner(network_state, &key) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
 
     network_state
         .get_entry_with_meta_results
-        .insert(address.clone(), result);
+        .insert(key.clone(), result);
 }
 
 pub fn reduce_get_entry_timeout(
@@ -45,11 +45,11 @@ pub fn reduce_get_entry_timeout(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let address = unwrap_to!(action => crate::action::Action::GetEntryTimeout);
+    let key = unwrap_to!(action => crate::action::Action::GetEntryTimeout);
 
     if network_state
         .get_entry_with_meta_results
-        .get(address)
+        .get(key)
         .is_none()
     {
         return;
@@ -57,13 +57,13 @@ pub fn reduce_get_entry_timeout(
 
     if network_state
         .get_entry_with_meta_results
-        .get(address)
+        .get(key)
         .unwrap()
         .is_none()
     {
         network_state
             .get_entry_with_meta_results
-            .insert(address.clone(), Some(Err(HolochainError::Timeout)));
+            .insert(key.clone(), Some(Err(HolochainError::Timeout)));
     }
 }
 
@@ -71,7 +71,7 @@ pub fn reduce_get_entry_timeout(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, NetworkSettings},
+        action::{Action, ActionWrapper, GetEntryKey, NetworkSettings},
         context::mock_network_config,
         instance::tests::test_context,
         state::test_store,
@@ -88,13 +88,14 @@ mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let action_wrapper = ActionWrapper::new(Action::GetEntry(entry.address()));
+        let key = GetEntryKey{address: entry.address(), id: snowflake::ProcessUniqueId::new().to_string()};
+        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
             .get_entry_with_meta_results
-            .get(&entry.address())
+            .get(&key)
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_entry_result,
@@ -119,13 +120,14 @@ mod tests {
         let store = store.reduce(context.clone(), action_wrapper);
 
         let entry = test_entry();
-        let action_wrapper = ActionWrapper::new(Action::GetEntry(entry.address()));
+        let key = GetEntryKey{address: entry.address(), id: snowflake::ProcessUniqueId::new().to_string()};
+        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
         let maybe_get_entry_result = store
             .network()
             .get_entry_with_meta_results
-            .get(&entry.address())
+            .get(&key)
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
     }
@@ -150,7 +152,8 @@ mod tests {
         }
 
         let entry = test_entry();
-        let action_wrapper = ActionWrapper::new(Action::GetEntry(entry.address()));
+        let key = GetEntryKey{address: entry.address(), id: snowflake::ProcessUniqueId::new().to_string()};
+        let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
 
         {
             let mut new_store = store.write().unwrap();
@@ -161,11 +164,11 @@ mod tests {
             .unwrap()
             .network()
             .get_entry_with_meta_results
-            .get(&entry.address())
+            .get(&key)
             .map(|result| result.clone());
         assert_eq!(maybe_get_entry_result, Some(None));
 
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(entry.address()));
+        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key.clone()));
         {
             let mut new_store = store.write().unwrap();
             *new_store = new_store.reduce(context.clone(), action_wrapper);
@@ -175,7 +178,7 @@ mod tests {
             .unwrap()
             .network()
             .get_entry_with_meta_results
-            .get(&entry.address())
+            .get(&key)
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_entry_result,
@@ -207,7 +210,7 @@ mod tests {
             .unwrap()
             .network()
             .get_entry_with_meta_results
-            .get(&entry.address())
+            .get(&key)
             .map(|result| result.clone());
         assert!(maybe_entry_with_meta_result.is_some());
         let maybe_entry_with_meta = maybe_entry_with_meta_result.unwrap().unwrap();
@@ -215,7 +218,7 @@ mod tests {
         assert_eq!(entry_with_meta.entry, entry.clone());
 
         // Ok we got a positive result in the state
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(entry.address()));
+        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key.clone()));
         {
             let mut new_store = store.write().unwrap();
             *new_store = new_store.reduce(context.clone(), action_wrapper);
@@ -225,7 +228,7 @@ mod tests {
             .unwrap()
             .network()
             .get_entry_with_meta_results
-            .get(&entry.address())
+            .get(&key)
             .map(|result| result.clone());
         // The timeout should not have overwritten the entry
         assert!(maybe_entry_with_meta_result.is_some());

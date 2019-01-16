@@ -1,4 +1,4 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use crate::{action::{ActionWrapper, GetEntryKey}, context::Context, network::state::NetworkState};
 use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HolochainError};
 use holochain_net_connection::protocol_wrapper::DhtData;
 use std::sync::Arc;
@@ -28,7 +28,12 @@ pub fn reduce_handle_get_result(
 
     let result = inner(network_state, dht_data);
 
+    let key = GetEntryKey {
+        address: Address::from(dht_data.address.clone()),
+        id: dht_data.msg_id.clone(),
+    };
+
     network_state
         .get_entry_with_meta_results
-        .insert(Address::from(dht_data.address.clone()), Some(result));
+        .insert(key, Some(result));
 }

@@ -444,7 +444,6 @@ fn can_link_entries() {
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
-
     // Create links
     let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
     let maybe_address: Result<Address, String> =

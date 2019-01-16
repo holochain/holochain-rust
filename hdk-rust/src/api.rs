@@ -194,6 +194,7 @@ pub enum Dispatch {
     Call,
     CommitEntry,
     GetEntry,
+    GetLinks,
     LinkEntries,
     EntryAddress,
     UpdateEntry,
@@ -219,19 +220,20 @@ impl Dispatch {
         let encoded_input: RibosomeEncodingBits =
             RibosomeEncodedAllocation::from(wasm_allocation).into();
         let encoded_output: RibosomeEncodingBits = unsafe {
-            match self {
-                Dispatch::Debug => hc_debug(encoded_input),
-                Dispatch::Call => hc_call(encoded_input),
-                Dispatch::CommitEntry => hc_commit_entry(encoded_input),
-                Dispatch::GetEntry => hc_get_entry(encoded_input),
-                Dispatch::LinkEntries => hc_link_entries(encoded_input),
-                Dispatch::InitGlobals => hc_init_globals(encoded_input),
-                Dispatch::EntryAddress => hc_entry_address(encoded_input),
-                Dispatch::UpdateEntry => hc_update_entry(encoded_input),
-                Dispatch::RemoveEntry => hc_remove_entry(encoded_input),
-                Dispatch::Query => hc_query(encoded_input),
-                Dispatch::Send => hc_send(encoded_input),
-            }
+            (match self {
+                Dispatch::Debug => hc_debug,
+                Dispatch::Call => hc_call,
+                Dispatch::CommitEntry => hc_commit_entry,
+                Dispatch::GetEntry => hc_get_entry,
+                Dispatch::GetLinks => hc_get_links,
+                Dispatch::LinkEntries => hc_link_entries,
+                Dispatch::InitGlobals => hc_init_globals,
+                Dispatch::EntryAddress => hc_entry_address,
+                Dispatch::UpdateEntry => hc_update_entry,
+                Dispatch::RemoveEntry => hc_remove_entry,
+                Dispatch::Query => hc_query,
+                Dispatch::Send => hc_send,
+            })(encoded_input)
         };
 
         let result: ZomeApiInternalResult = match load_ribosome_encoded_json(encoded_output) {
@@ -726,13 +728,6 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
     Dispatch::RemoveEntry.with_input(address.to_owned())
-    // let res = Dispatch::RemoveEntry.with_input(address.to_owned());
-    // // @todo standardize or remove this
-    // match res {
-    //     // RibosomeReturnCode::Success
-    //     Err(ZomeApiError::ZeroSizeAllocation) => Ok(()),
-    //     _ => Err(res),
-    // }
 }
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links
@@ -763,7 +758,7 @@ pub fn get_links_with_options<S: Into<String>>(
     tag: S,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
-    Dispatch::RemoveEntry.with_input(GetLinksArgs {
+    Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
         tag: tag.into(),
         options,

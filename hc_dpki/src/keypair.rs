@@ -63,22 +63,20 @@ impl Keypair {
         util::convert_array_to_secbuf(&sk, &mut sk_buf);
         util::convert_array_to_secbuf(&ek, &mut ek_buf);
 
-        let pw_sign_pub: bundle::ReturnBundleData = util::pw_enc(&mut sk_buf, &mut passphrase)?;
-        let pw_enc_pub: bundle::ReturnBundleData = util::pw_enc(&mut ek_buf, &mut passphrase)?;
+        // Merge all the secbuf together before encoding
+        let mut sign_pub = sk.to_vec();
+        let mut enc_pub = ek.to_vec();
+        let mut sign_priv = self.sign_priv.read_lock().to_vec();
+        let mut enc_priv = self.enc_priv.read_lock().to_vec();
+   
+        sign_pub.append(&mut enc_pub);
+        sign_pub.append(&mut sign_priv);
+        sign_pub.append(&mut enc_priv);
+        let mut key_buf = SecBuf::with_insecure(sign_pub.len());
+        util::convert_vec_to_secbuf(&sign_pub,&mut key_buf);
 
-        let pw_sign_priv: bundle::ReturnBundleData =
-            util::pw_enc(&mut self.sign_priv, &mut passphrase)?;
-        let pw_enc_priv: bundle::ReturnBundleData =
-            util::pw_enc(&mut self.enc_priv, &mut passphrase)?;
-
-        // convert to string
-        let bundle_data = bundle::Keys {
-            pw_sign_pub,
-            pw_enc_pub,
-            pw_sign_priv,
-            pw_enc_priv,
-        };
-        let bundle_data_serialized = json::encode(&bundle_data).unwrap();
+        let pw_enc: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, &mut passphrase)?;
+        let bundle_data_serialized = json::encode(&pw_enc).unwrap();
 
         // conver to base64
         let bundle_data_encoded = base64::encode(&bundle_data_serialized);
@@ -102,18 +100,18 @@ impl Keypair {
         // decoding the bundle.data of type utinl::Keys
         let bundle_decoded = base64::decode(&bundle.data)?;
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
-        let data: bundle::Keys = json::decode(&bundle_string).unwrap();
+        let data: bundle::ReturnBundleData = json::decode(&bundle_string).unwrap();
+        let mut keys_salt = util::pw_dec(&data, passphrase)?;
+        let key_buf = keys_salt.read_lock();
+        let mut sign_priv = SecBuf::with_secure(64);
+        let mut enc_priv = SecBuf::with_secure(32);
+        util::convert_array_to_secbuf(&key_buf[64..128],&mut sign_priv);
+        util::convert_array_to_secbuf(&key_buf[128..160],&mut enc_priv);
 
-        let sk: &bundle::ReturnBundleData = &data.pw_sign_pub;
-        let ek: &bundle::ReturnBundleData = &data.pw_enc_pub;
-        let epk: &bundle::ReturnBundleData = &data.pw_enc_priv;
-        let spk: &bundle::ReturnBundleData = &data.pw_sign_priv;
-        let mut sign_public_key = util::pw_dec(sk, passphrase)?;
-        let mut enc_public_key = util::pw_dec(ek, passphrase)?;
-        let enc_priv = util::pw_dec(epk, passphrase)?;
-        let sign_priv = util::pw_dec(spk, passphrase)?;
+        let sp = &key_buf[0..32];
+        let ep = &key_buf[32..64];
         Ok(Keypair {
-            pub_keys: util::encode_id(&mut sign_public_key, &mut enc_public_key),
+            pub_keys: KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32]).render(),
             enc_priv,
             sign_priv,
         })
@@ -525,5 +523,28 @@ mod tests {
         println!("Bundle.data: {}", bundle.data);
 
         assert_eq!("hint", bundle.hint);
+    }
+    
+    #[test]
+    fn it_should_try_get_bundle_and_decode_it() {
+        let mut seed = SecBuf::with_insecure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+        let mut passphrase = SecBuf::with_insecure(SEEDSIZE);
+        random_secbuf(&mut passphrase);
+
+        let bundle: bundle::KeyBundle = keypair
+            .get_bundle(&mut passphrase, "hint".to_string())
+            .unwrap();
+
+        println!("Bundle.bundle_type: {}", bundle.bundle_type);
+        println!("Bundle.Hint: {}", bundle.hint);
+        println!("Bundle.data: {}", bundle.data);
+
+        let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase).unwrap();
+
+        assert_eq!(64, keypair_from_bundle.sign_priv.len());
+        assert_eq!(32, keypair_from_bundle.enc_priv.len());
+        assert_eq!(92, keypair_from_bundle.pub_keys.len());
     }
 }

@@ -92,7 +92,7 @@ pub fn pw_dec(
     convert_vec_to_secbuf(&bundle.cipher, &mut cipher);
     let mut passphrase = passphrase;
     pw_hash(&mut passphrase, &mut salt, &mut secret)?;
-    let mut decrypted_message = SecBuf::with_secure(cipher.len() - aead::ABYTES);
+    let mut decrypted_message = SecBuf::with_insecure(cipher.len() - aead::ABYTES);
     aead::dec(
         &mut decrypted_message,
         &mut secret,

@@ -200,11 +200,7 @@ fn launch_two_nodes_test(
 
 /// Tests if we can get back data published on the network
 #[cfg_attr(tarpaulin, skip)]
-fn confirm_published_data(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    address: &str,
-) -> NetResult<()> {
+fn confirm_published_data(alex: &mut P2pNode, billy: &mut P2pNode, address: &str) -> NetResult<()> {
     // Alex publishs data on the network
     alex.send(
         ProtocolMessage::PublishDhtData(DhtData {
@@ -314,15 +310,14 @@ fn confirm_published_metadata(
 #[cfg_attr(tarpaulin, skip)]
 fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Send TrackApp message on both nodes
-    alex
-        .send(
-            ProtocolMessage::TrackDna(TrackAppData {
-                dna_address: example_dna_address(),
-                agent_id: ALEX_AGENT_ID.to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackAppData on alex");
+    alex.send(
+        ProtocolMessage::TrackDna(TrackAppData {
+            dna_address: example_dna_address(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+        })
+        .into(),
+    )
+    .expect("Failed sending TrackAppData on alex");
     let connect_result_1 = alex.wait(Box::new(one_is!(ProtocolMessage::PeerConnected(_))))?;
     println!("self connected result 1: {:?}", connect_result_1);
     billy
@@ -342,8 +337,7 @@ fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
         let mut _node1_id = String::new();
         let mut node2_binding = String::new();
 
-        alex
-            .send(ProtocolMessage::GetState.into())
+        alex.send(ProtocolMessage::GetState.into())
             .expect("Failed sending RequestState on alex");
         let node_state_A = alex.wait(Box::new(one_is!(ProtocolMessage::GetStateResult(_))))?;
         billy
@@ -394,18 +388,17 @@ fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
     setup_normal(alex, billy, can_connect)?;
 
     // Send a message from alex to billy
-    alex
-        .send(
-            ProtocolMessage::SendMessage(MessageData {
-                dna_address: example_dna_address(),
-                to_agent_id: BILLY_AGENT_ID.to_string(),
-                from_agent_id: ALEX_AGENT_ID.to_string(),
-                msg_id: "yada".to_string(),
-                data: json!("hello"),
-            })
-            .into(),
-        )
-        .expect("Failed sending SendMessage to billy");
+    alex.send(
+        ProtocolMessage::SendMessage(MessageData {
+            dna_address: example_dna_address(),
+            to_agent_id: BILLY_AGENT_ID.to_string(),
+            from_agent_id: ALEX_AGENT_ID.to_string(),
+            msg_id: "yada".to_string(),
+            data: json!("hello"),
+        })
+        .into(),
+    )
+    .expect("Failed sending SendMessage to billy");
     // Check if billy received it
     let res = billy.wait(Box::new(one_is!(ProtocolMessage::HandleSendMessage(_))))?;
     println!("#### got: {:?}", res);

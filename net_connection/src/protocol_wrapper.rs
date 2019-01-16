@@ -185,7 +185,7 @@ pub enum ProtocolMessage {
     /// Order the p2p module to be part of the network of the specified DNA.
     #[serde(rename = "trackDna")]
     TrackDna(TrackAppData),
-    
+
     /// Request the current state from the p2p module
     #[serde(rename = "requestState")]
     GetState,

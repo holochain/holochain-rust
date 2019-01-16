@@ -52,11 +52,11 @@ test('can create config from TOML', t => {
     const container = new Container(toml)
     container.start()
     t.throws(
-        () => container.callRaw('x', 'x', 'x', 'x', 'x'),
+        () => container.call('x', 'x', 'x', 'x', 'x'),
         /No instance with id/
     )
     t.throws(
-        () => container.callRaw(
+        () => container.call(
             'test/instance/1', 'blog', 'main', 'not-a-function', 'param'
         ),
         /Zome function .*? not found/

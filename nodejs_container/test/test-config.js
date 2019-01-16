@@ -10,10 +10,17 @@ test('agent construction', t => {
     t.end()
 })
 
-test('DNA construction', t => {
+test('DNA construction with implicit name', t => {
     const path = 'path/to/dna'
     const dna = C.dna(path)
-    t.deepEqual(dna, { path })
+    t.deepEqual(dna, { path, name: path })
+    t.end()
+})
+
+test('DNA construction with explicit name', t => {
+    const path = 'path/to/dna'
+    const dna = C.dna(path, 'george')
+    t.deepEqual(dna, { path, name: 'george' })
     t.end()
 })
 

@@ -12,5 +12,4 @@ echo "--------------------------------------------------------------------------
 cd test
 npm install
 cd ..
-node test/test.js | test/node_modules/faucet/bin/cmd.js
-node test/regressions.js | test/node_modules/faucet/bin/cmd.js
+node test

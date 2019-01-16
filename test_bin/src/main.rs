@@ -15,7 +15,7 @@ use holochain_net_connection::{
     net_connection::NetSend,
     protocol_wrapper::{
         ConnectData, DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, MessageData,
-        ProtocolMessage, TrackAppData,
+        ProtocolMessage, TrackDnaData,
     },
     NetResult,
 };
@@ -305,30 +305,30 @@ fn confirm_published_metadata(
     Ok(())
 }
 
-/// Do normal setup: 'TrackApp' & 'Connect',
+/// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
 fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
-    // Send TrackApp message on both nodes
+    // Send TrackDna message on both nodes
     alex.send(
-        ProtocolMessage::TrackDna(TrackAppData {
+        ProtocolMessage::TrackDna(TrackDnaData {
             dna_address: example_dna_address(),
             agent_id: ALEX_AGENT_ID.to_string(),
         })
         .into(),
     )
-    .expect("Failed sending TrackAppData on alex");
+    .expect("Failed sending TrackDnaData on alex");
     let connect_result_1 = alex.wait(Box::new(one_is!(ProtocolMessage::PeerConnected(_))))?;
     println!("self connected result 1: {:?}", connect_result_1);
     billy
         .send(
-            ProtocolMessage::TrackDna(TrackAppData {
+            ProtocolMessage::TrackDna(TrackDnaData {
                 dna_address: example_dna_address(),
                 agent_id: BILLY_AGENT_ID.to_string(),
             })
             .into(),
         )
-        .expect("Failed sending TrackAppData on billy");
+        .expect("Failed sending TrackDnaData on billy");
     let connect_result_2 = billy.wait(Box::new(one_is!(ProtocolMessage::PeerConnected(_))))?;
     println!("self connected result 2: {:?}", connect_result_2);
 

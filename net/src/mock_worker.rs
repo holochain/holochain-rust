@@ -94,7 +94,7 @@ mod tests {
     use holochain_core_types::cas::content::Address;
     use holochain_net_connection::protocol_wrapper::{
         DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, MessageData, ProtocolMessage,
-        SuccessResultData, TrackAppData,
+        SuccessResultData, TrackDnaData,
     };
 
     fn example_dna_address() -> Address {
@@ -124,7 +124,7 @@ mod tests {
 
         mock_worker_1
             .receive(
-                ProtocolMessage::TrackDna(TrackAppData {
+                ProtocolMessage::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_1.to_string(),
                 })
@@ -149,7 +149,7 @@ mod tests {
         );
         mock_worker_2
             .receive(
-                ProtocolMessage::TrackDna(TrackAppData {
+                ProtocolMessage::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_2.to_string(),
                 })

@@ -64,7 +64,7 @@ pub struct MessageData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct TrackAppData {
+pub struct TrackDnaData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
 
@@ -184,7 +184,7 @@ pub enum ProtocolMessage {
 
     /// Order the p2p module to be part of the network of the specified DNA.
     #[serde(rename = "trackDna")]
-    TrackDna(TrackAppData),
+    TrackDna(TrackDnaData),
 
     /// Request the current state from the p2p module
     #[serde(rename = "requestState")]
@@ -274,7 +274,7 @@ impl<'a> TryFrom<&'a Protocol> for ProtocolMessage {
                 Err(e) => bail!("{:?}", e),
             };
         }
-        bail!("could not ProtocolWrapper: {:?}", p);
+        bail!("could not ProtocolMessage: {:?}", p);
     }
 }
 
@@ -305,19 +305,19 @@ mod tests {
         ($e:expr) => {
             let orig = $e;
             let p = Protocol::from(orig.clone());
-            let w = ProtocolWrapper::try_from(p).unwrap();
+            let w = ProtocolMessage::try_from(p).unwrap();
             assert_eq!(orig, w);
         };
     }
 
     #[test]
     fn it_can_convert_request_state() {
-        test_convert!(ProtocolWrapper::RequestState);
+        test_convert!(ProtocolMessage::GetState);
     }
 
     #[test]
     fn it_can_convert_state() {
-        test_convert!(ProtocolWrapper::State(StateData {
+        test_convert!(ProtocolMessage::GetStateResult(StateData {
             state: "test_state".to_string(),
             id: "test_id".to_string(),
             bindings: vec!["test_binding".to_string()],
@@ -343,33 +343,33 @@ mod tests {
 
     #[test]
     fn it_can_convert_request_default_config() {
-        test_convert!(ProtocolWrapper::RequestDefaultConfig);
+        test_convert!(ProtocolMessage::GetDefaultConfig);
     }
 
     #[test]
     fn it_can_convert_default_config() {
-        test_convert!(ProtocolWrapper::DefaultConfig(ConfigData {
+        test_convert!(ProtocolMessage::GetDefaultConfigResult(ConfigData {
             config: "test".to_string(),
         }));
     }
 
     #[test]
     fn it_can_convert_set_config() {
-        test_convert!(ProtocolWrapper::SetConfig(ConfigData {
+        test_convert!(ProtocolMessage::SetConfig(ConfigData {
             config: "test".to_string(),
         }));
     }
 
     #[test]
     fn it_can_convert_set_connect() {
-        test_convert!(ProtocolWrapper::Connect(ConnectData {
+        test_convert!(ProtocolMessage::Connect(ConnectData {
             address: "test".into(),
         }));
     }
 
     #[test]
     fn it_can_convert_peer_connected() {
-        test_convert!(ProtocolWrapper::PeerConnected(PeerData {
+        test_convert!(ProtocolMessage::PeerConnected(PeerData {
             dna_address: "test_dna".into(),
             agent_id: "test_id".to_string(),
         }));
@@ -377,7 +377,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_send_message() {
-        test_convert!(ProtocolWrapper::SendMessage(MessageData {
+        test_convert!(ProtocolMessage::SendMessage(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_send_result() {
-        test_convert!(ProtocolWrapper::SendResult(MessageData {
+        test_convert!(ProtocolMessage::SendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -399,7 +399,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_handle_send() {
-        test_convert!(ProtocolWrapper::HandleSend(MessageData {
+        test_convert!(ProtocolMessage::HandleSendMessage(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -410,7 +410,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_handle_send_result() {
-        test_convert!(ProtocolWrapper::HandleSendResult(MessageData {
+        test_convert!(ProtocolMessage::HandleSendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -421,7 +421,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_track_app() {
-        test_convert!(ProtocolWrapper::TrackApp(TrackAppData {
+        test_convert!(ProtocolMessage::TrackDna(TrackDnaData {
             dna_address: "test_dna".into(),
             agent_id: "test_to".to_string(),
         }));

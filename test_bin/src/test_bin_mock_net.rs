@@ -11,7 +11,7 @@ pub mod p2p_node;
 
 use holochain_net_connection::{
     net_connection::NetSend,
-    protocol_wrapper::{MessageData, ProtocolMessage, TrackAppData},
+    protocol_wrapper::{MessageData, ProtocolMessage, TrackDnaData},
     NetResult,
 };
 use p2p_node::P2pNode;
@@ -45,22 +45,22 @@ fn exec_mock_test() -> NetResult<()> {
 
     node_a
         .send(
-            ProtocolMessage::TrackDna(TrackAppData {
+            ProtocolMessage::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
                 agent_id: "node-1".to_string(),
             })
             .into(),
         )
-        .expect("Failed sending TrackAppData on node_a");
+        .expect("Failed sending TrackDnaData on node_a");
     node_b
         .send(
-            ProtocolMessage::TrackDna(TrackAppData {
+            ProtocolMessage::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
                 agent_id: "node-2".to_string(),
             })
             .into(),
         )
-        .expect("Failed sending TrackAppData on node_b");
+        .expect("Failed sending TrackDnaData on node_b");
 
     node_a
         .send(
@@ -73,7 +73,7 @@ fn exec_mock_test() -> NetResult<()> {
             })
             .into(),
         )
-        .expect("Failed sending GenericMessage to node_b");
+        .expect("Failed sending message to node_b");
     let res = node_b.wait(Box::new(one_is!(ProtocolMessage::HandleSendMessage(_))))?;
     println!("got: {:?}", res);
 
@@ -89,7 +89,7 @@ fn exec_mock_test() -> NetResult<()> {
                 })
                 .into(),
             )
-            .expect("Failed sending HandleSendResult on node_b");;
+            .expect("Failed sending HandleSendMessageResult on node_b");;
     } else {
         panic!("bad generic msg");
     }

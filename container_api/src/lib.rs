@@ -125,7 +125,6 @@ extern crate directories;
 
 pub mod config;
 pub mod container;
-pub mod container_admin;
 pub mod context_builder;
 pub mod error;
 pub mod holochain;

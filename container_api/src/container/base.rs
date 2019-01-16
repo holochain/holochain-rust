@@ -72,11 +72,11 @@ pub fn mount_container_from_config(config: Configuration) {
 /// and also enable easier testing, a DnaLoader ()which is a closure that returns a
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
-    pub(crate) instances: InstanceMap,
-    pub(crate) config: Configuration,
-    pub config_path: PathBuf,
+    pub(in crate::container) instances: InstanceMap,
+    pub(in crate::container) config: Configuration,
+    pub(in crate::container) config_path: PathBuf,
     interface_threads: HashMap<String, Sender<()>>,
-    pub(crate) dna_loader: DnaLoader,
+    pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<JsonString>,

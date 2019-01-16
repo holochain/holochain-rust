@@ -95,14 +95,14 @@ impl ContainerApiBuilder {
             .instances
             .iter()
             .filter(|&(name, _)| instance_configs.contains_key(name))
-            .map(|(name, _)| {instance_configs.get(name).unwrap()})
+            .map(|(name, _)| instance_configs.get(name).unwrap())
             .map(|instance| {
-                    json!({
-                        "id": instance.id,
-                        "dna": instance.dna,
-                        "agent": instance.agent,
-                    })
+                json!({
+                    "id": instance.id,
+                    "dna": instance.dna,
+                    "agent": instance.agent,
                 })
+            })
             .collect();
 
         self.io.add_method("info/instances", move |_| {
@@ -418,6 +418,9 @@ pub mod tests {
             .expect("Invalid call to handler");
         println!("{}", response_str);
         let result = unwrap_response_if_valid(&response_str);
-        assert_eq!(result, r#"[{"id":"test-instance-1","dna":"bridge-callee","agent":"test-agent-1"}]"#);
+        assert_eq!(
+            result,
+            r#"[{"id":"test-instance-1","dna":"bridge-callee","agent":"test-agent-1"}]"#
+        );
     }
 }

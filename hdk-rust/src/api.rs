@@ -188,42 +188,8 @@ pub enum BundleOnClose {
 // API FUNCTIONS
 //--------------------------------------------------------------------------------------------------
 
-/// Prints a string through the stdout of the running service, and also
-/// writes that string to the logger in the execution context
-/// # Examples
-/// ```rust
-/// # #[macro_use]
-/// # extern crate hdk;
-/// # use hdk::error::ZomeApiResult;
-///
-/// # fn main() {
-/// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
-///     // ...
-///     hdk::debug("write a message to the logs");
-///     // ...
-///     Ok(())
-/// }
-///
-/// # }
-/// ```
-pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
-    let mut mem_stack = match unsafe { G_MEM_STACK } {
-        Some(mem_stack) => mem_stack,
-        None => return Err(ZomeApiError::Internal("debug failed to load mem_stack".to_string())),
-    };
-
-    let allocation_of_input = mem_stack.write_json(msg)?;
-
-    unsafe {
-        hc_debug(RibosomeEncodedAllocation::from(allocation_of_input).into());
-    }
-
-    mem_stack.deallocate(allocation_of_input)?;
-
-    Ok(())
-}
-
 pub enum Dispatch {
+    Debug,
     InitGlobals,
     Call,
     CommitEntry,
@@ -241,7 +207,11 @@ impl Dispatch {
         &self,
         input: I,
     ) -> ZomeApiResult<O> {
-        let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+
+        let mut mem_stack = match unsafe { G_MEM_STACK } {
+            Some(mem_stack) => mem_stack,
+            None => return Err(ZomeApiError::Internal("debug failed to load mem_stack".to_string())),
+        };
 
         let wasm_allocation = mem_stack.write_json(input)?;
 
@@ -250,6 +220,7 @@ impl Dispatch {
             RibosomeEncodedAllocation::from(wasm_allocation).into();
         let encoded_output: RibosomeEncodingBits = unsafe {
             match self {
+                Dispatch::Debug => hc_debug(encoded_input),
                 Dispatch::Call => hc_call(encoded_input),
                 Dispatch::CommitEntry => hc_commit_entry(encoded_input),
                 Dispatch::GetEntry => hc_get_entry(encoded_input),
@@ -448,6 +419,28 @@ pub fn call<S: Into<String>>(
         fn_name: fn_name.into(),
         fn_args: String::from(fn_args),
     })
+}
+
+/// Prints a string through the stdout of the running service, and also
+/// writes that string to the logger in the execution context
+/// # Examples
+/// ```rust
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # use hdk::error::ZomeApiResult;
+///
+/// # fn main() {
+/// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
+///     // ...
+///     hdk::debug("write a message to the logs");
+///     // ...
+///     Ok(())
+/// }
+///
+/// # }
+/// ```
+pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
+    Dispatch::Debug.with_input(msg)
 }
 
 /// Attempts to commit an entry to your local source chain. The entry
@@ -732,7 +725,7 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<()> {
-    Dispatch::RemoveEntry.with_input(address.clone())
+    Dispatch::RemoveEntry.with_input(address.to_owned())
 }
 
 /// Consumes three values; the address of an entry get get links from (the base), the tag of the links

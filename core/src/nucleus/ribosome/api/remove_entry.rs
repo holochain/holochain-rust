@@ -29,6 +29,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
+    println!("xxx {:?}", args_str);
     let try_address = Address::try_from(args_str.clone());
     // Exit on error
     if try_address.is_err() {
@@ -94,6 +95,9 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Done
     match result {
         Err(_) => ribosome_error_code!(Unspecified),
-        Ok(_) => ribosome_success!(),
+        Ok(_) => {
+            println!("yyz {:?}", &result);
+            ribosome_success!()
+        },
     }
 }

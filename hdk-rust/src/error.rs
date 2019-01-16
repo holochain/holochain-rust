@@ -9,7 +9,7 @@ use std::{error::Error, fmt};
 
 /// Error for DNA developers to use in their Zome code.
 /// This does not have to be sent back to Ribosome unless its an InternalError.
-#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,

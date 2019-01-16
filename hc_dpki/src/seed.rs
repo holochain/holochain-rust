@@ -49,7 +49,7 @@ impl Seed {
         let seed_data_deserialized: bundle::ReturnBundleData =
             json::decode(&seed_data_string).unwrap();
 
-        let seed_data: SecBuf = util::pw_dec(&seed_data_deserialized, &mut passphrase);
+        let seed_data: SecBuf = util::pw_dec(&seed_data_deserialized, &mut passphrase)?;
 
         match bundle.bundle_type.as_ref() {
             "hcRootSeed" => Ok(FromBundle::Rs(RootSeed::new(seed_data))),
@@ -72,7 +72,7 @@ impl Seed {
         hint: String,
     ) -> Result<bundle::KeyBundle, HolochainError> {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let seed_data: bundle::ReturnBundleData = util::pw_enc(&mut self.seed_buf, &mut passphrase);
+        let seed_data: bundle::ReturnBundleData = util::pw_enc(&mut self.seed_buf, &mut passphrase)?;
 
         // convert -> to string -> to base64
         let seed_data_serialized = json::encode(&seed_data).unwrap();
@@ -152,10 +152,9 @@ impl DevicePinSeed {
             index.clone(),
             &mut placeholder,
             &mut self.s.seed_buf,
-        )
-        .unwrap();
+        )?;
 
-        Ok(Keypair::new_from_seed(&mut out_seed))
+        Ok(Keypair::new_from_seed(&mut out_seed)?)
     }
 }
 
@@ -191,7 +190,7 @@ impl DeviceSeed {
 
         let mut hash = SecBuf::with_insecure(pwhash::HASHBYTES);
 
-        util::pw_hash(&mut pin_buf, &mut self.s.seed_buf, &mut hash);
+        util::pw_hash(&mut pin_buf, &mut self.s.seed_buf, &mut hash)?;
 
         Ok(DevicePinSeed::new(hash))
     }
@@ -237,8 +236,7 @@ impl RootSeed {
             index.clone(),
             &mut placeholder,
             &mut self.s.seed_buf,
-        )
-        .unwrap();
+        )?;
         Ok(DeviceSeed::new(out_seed))
     }
 }

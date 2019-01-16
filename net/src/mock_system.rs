@@ -4,8 +4,8 @@ use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
-        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData, PeerData,
-        ProtocolMessage,
+        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, JsonProtocol,
+        MessageData, PeerData,
     },
     NetResult,
 };
@@ -68,12 +68,12 @@ impl MockSystem {
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not remove)
         // println!(">>>> MockSystem recv: {:?}", data);
-        if let Ok(wrap) = ProtocolMessage::try_from(&data) {
+        if let Ok(wrap) = JsonProtocol::try_from(&data) {
             match wrap {
-                ProtocolMessage::TrackDna(msg) => {
+                JsonProtocol::TrackDna(msg) => {
                     self.priv_send_all(
                         &msg.dna_address.clone(),
-                        ProtocolMessage::PeerConnected(PeerData {
+                        JsonProtocol::PeerConnected(PeerData {
                             dna_address: msg.dna_address,
                             agent_id: msg.agent_id,
                         })
@@ -81,45 +81,45 @@ impl MockSystem {
                     )?;
                 }
 
-                ProtocolMessage::SendMessage(msg) => {
+                JsonProtocol::SendMessage(msg) => {
                     self.priv_handle_send_message(&msg)?;
                 }
-                ProtocolMessage::HandleSendMessageResult(msg) => {
+                JsonProtocol::HandleSendMessageResult(msg) => {
                     self.priv_handle_handle_send_message_result(&msg)?;
                 }
-                ProtocolMessage::SuccessResult(msg) => {
+                JsonProtocol::SuccessResult(msg) => {
                     self.priv_send_one(
                         &msg.dna_address,
                         &msg.to_agent_id,
-                        ProtocolMessage::SuccessResult(msg.clone()).into(),
+                        JsonProtocol::SuccessResult(msg.clone()).into(),
                     )?;
                 }
-                ProtocolMessage::FailureResult(msg) => {
+                JsonProtocol::FailureResult(msg) => {
                     self.priv_send_one(
                         &msg.dna_address,
                         &msg.to_agent_id,
-                        ProtocolMessage::FailureResult(msg.clone()).into(),
+                        JsonProtocol::FailureResult(msg.clone()).into(),
                     )?;
                 }
-                ProtocolMessage::GetDhtData(msg) => {
+                JsonProtocol::GetDhtData(msg) => {
                     self.priv_handle_get_dht_data(&msg)?;
                 }
-                ProtocolMessage::HandleGetDhtDataResult(msg) => {
+                JsonProtocol::HandleGetDhtDataResult(msg) => {
                     self.priv_handle_handle_get_dht_data_result(&msg)?;
                 }
 
-                ProtocolMessage::PublishDhtData(msg) => {
+                JsonProtocol::PublishDhtData(msg) => {
                     self.priv_handle_publish_dht_data(&msg)?;
                 }
 
-                ProtocolMessage::GetDhtMeta(msg) => {
+                JsonProtocol::GetDhtMeta(msg) => {
                     self.priv_handle_get_dht_meta(&msg)?;
                 }
-                ProtocolMessage::HandleGetDhtMetaResult(msg) => {
+                JsonProtocol::HandleGetDhtMetaResult(msg) => {
                     self.priv_handle_handle_get_dht_meta_result(&msg)?;
                 }
 
-                ProtocolMessage::PublishDhtMeta(msg) => {
+                JsonProtocol::PublishDhtMeta(msg) => {
                     self.priv_handle_publish_dht_meta(&msg)?;
                 }
                 _ => (),
@@ -169,7 +169,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
-            ProtocolMessage::HandleSendMessage(msg.clone()).into(),
+            JsonProtocol::HandleSendMessage(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -181,7 +181,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
-            ProtocolMessage::SendMessageResult(msg.clone()).into(),
+            JsonProtocol::SendMessageResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -196,7 +196,7 @@ impl MockSystem {
                     let r = &e.get_mut()[0];
                     // Debugging code (do not remove)
                     // println!("<<<< MockSystem send: {:?}", msg.clone());
-                    r.send(ProtocolMessage::HandleGetDhtData(msg.clone()).into())?;
+                    r.send(JsonProtocol::HandleGetDhtData(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -206,7 +206,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.from_agent_id,
-            ProtocolMessage::FailureResult(FailureResultData {
+            JsonProtocol::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
@@ -223,7 +223,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.agent_id,
-            ProtocolMessage::GetDhtDataResult(msg.clone()).into(),
+            JsonProtocol::GetDhtDataResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -232,7 +232,7 @@ impl MockSystem {
     fn priv_handle_publish_dht_data(&mut self, msg: &DhtData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
-            ProtocolMessage::HandleStoreDhtData(msg.clone()).into(),
+            JsonProtocol::HandleStoreDhtData(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -245,7 +245,7 @@ impl MockSystem {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
-                    r.send(ProtocolMessage::HandleGetDhtMeta(msg.clone()).into())?;
+                    r.send(JsonProtocol::HandleGetDhtMeta(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -255,7 +255,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.from_agent_id,
-            ProtocolMessage::FailureResult(FailureResultData {
+            JsonProtocol::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
@@ -272,7 +272,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.agent_id,
-            ProtocolMessage::GetDhtMetaResult(msg.clone()).into(),
+            JsonProtocol::GetDhtMetaResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -281,7 +281,7 @@ impl MockSystem {
     fn priv_handle_publish_dht_meta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
-            ProtocolMessage::HandleStoreDhtMeta(msg.clone()).into(),
+            JsonProtocol::HandleStoreDhtMeta(msg.clone()).into(),
         )?;
         Ok(())
     }

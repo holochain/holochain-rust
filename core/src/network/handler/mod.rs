@@ -14,7 +14,7 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
 };
-use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolMessage};
+use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::JsonProtocol};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
@@ -51,9 +51,9 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     Box::new(move |message| {
         let message = message.unwrap();
         //context.log(format!("debug/net/handle: {:?}", message));
-        let protocol_wrapper = ProtocolMessage::try_from(message);
+        let protocol_wrapper = JsonProtocol::try_from(message);
         match protocol_wrapper {
-            Ok(ProtocolMessage::HandleStoreDhtData(dht_data)) => {
+            Ok(JsonProtocol::HandleStoreDhtData(dht_data)) => {
                 // NOTE data in message doesn't allow us to confirm agent!
                 if !is_me(&context, &dht_data.dna_address, "") {
                     return Ok(());
@@ -61,7 +61,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 context.log(format!("debug/net/handle: StoreDht: {:?}", dht_data));
                 handle_store_dht(dht_data, context.clone())
             }
-            Ok(ProtocolMessage::HandleStoreDhtMeta(dht_meta_data)) => {
+            Ok(JsonProtocol::HandleStoreDhtMeta(dht_meta_data)) => {
                 context.log(format!(
                     "debug/net/handle: StoreDhtMeta: {:?}",
                     dht_meta_data
@@ -75,7 +75,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_store_dht_meta(dht_meta_data, context.clone())
             }
-            Ok(ProtocolMessage::GetDhtData(get_dht_data)) => {
+            Ok(JsonProtocol::GetDhtData(get_dht_data)) => {
                 // NOTE data in message doesn't allow us to confirm agent!
                 if !is_me(&context, &get_dht_data.dna_address, "") {
                     return Ok(());
@@ -83,14 +83,14 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 context.log(format!("debug/net/handle: GetDht: {:?}", get_dht_data));
                 handle_get_dht(get_dht_data, context.clone())
             }
-            Ok(ProtocolMessage::GetDhtDataResult(dht_data)) => {
+            Ok(JsonProtocol::GetDhtDataResult(dht_data)) => {
                 if !is_me(&context, &dht_data.dna_address, &dht_data.agent_id) {
                     return Ok(());
                 }
                 context.log(format!("debug/net/handle: GetDhtResult: {:?}", dht_data));
                 handle_get_dht_result(dht_data, context.clone())
             }
-            Ok(ProtocolMessage::GetDhtMeta(get_dht_meta_data)) => {
+            Ok(JsonProtocol::GetDhtMeta(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
                     context.log(format!(
                         "debug/net/handle: GetDhtMeta: {:?}",
@@ -99,7 +99,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     handle_get_dht_meta(get_dht_meta_data, context.clone())
                 }
             }
-            Ok(ProtocolMessage::GetDhtMetaResult(get_dht_meta_data)) => {
+            Ok(JsonProtocol::GetDhtMetaResult(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
                     // TODO: Find a proper solution for selecting DHT meta responses.
                     // Current network implementation broadcasts messages to all nodes which means
@@ -128,7 +128,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     //}
                 }
             }
-            Ok(ProtocolMessage::HandleSendMessage(message_data)) => {
+            Ok(JsonProtocol::HandleSendMessage(message_data)) => {
                 if !is_me(
                     &context,
                     &message_data.dna_address,
@@ -138,7 +138,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_send(message_data, context.clone())
             }
-            Ok(ProtocolMessage::SendMessageResult(message_data)) => {
+            Ok(JsonProtocol::SendMessageResult(message_data)) => {
                 if !is_me(
                     &context,
                     &message_data.dna_address,
@@ -148,7 +148,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_send_result(message_data, context.clone())
             }
-            Ok(ProtocolMessage::PeerConnected(peer_data)) => {
+            Ok(JsonProtocol::PeerConnected(peer_data)) => {
                 // if is not my DNA ignore
                 if !is_me(&context, &peer_data.dna_address, "") {
                     return Ok(());

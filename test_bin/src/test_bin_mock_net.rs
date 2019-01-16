@@ -11,7 +11,7 @@ pub mod p2p_node;
 
 use holochain_net_connection::{
     net_connection::NetSend,
-    protocol_wrapper::{MessageData, ProtocolMessage, TrackDnaData},
+    protocol_wrapper::{JsonProtocol, MessageData, TrackDnaData},
     NetResult,
 };
 use p2p_node::P2pNode;
@@ -45,7 +45,7 @@ fn exec_mock_test() -> NetResult<()> {
 
     node_a
         .send(
-            ProtocolMessage::TrackDna(TrackDnaData {
+            JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
                 agent_id: "node-1".to_string(),
             })
@@ -54,7 +54,7 @@ fn exec_mock_test() -> NetResult<()> {
         .expect("Failed sending TrackDnaData on node_a");
     node_b
         .send(
-            ProtocolMessage::TrackDna(TrackDnaData {
+            JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
                 agent_id: "node-2".to_string(),
             })
@@ -64,7 +64,7 @@ fn exec_mock_test() -> NetResult<()> {
 
     node_a
         .send(
-            ProtocolMessage::SendMessage(MessageData {
+            JsonProtocol::SendMessage(MessageData {
                 dna_address: "sandwich".into(),
                 from_agent_id: "node-1".to_string(),
                 to_agent_id: "node-2".to_string(),
@@ -74,13 +74,13 @@ fn exec_mock_test() -> NetResult<()> {
             .into(),
         )
         .expect("Failed sending message to node_b");
-    let res = node_b.wait(Box::new(one_is!(ProtocolMessage::HandleSendMessage(_))))?;
+    let res = node_b.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))?;
     println!("got: {:?}", res);
 
-    if let ProtocolMessage::HandleSendMessage(msg) = res {
+    if let JsonProtocol::HandleSendMessage(msg) = res {
         node_b
             .send(
-                ProtocolMessage::HandleSendMessageResult(MessageData {
+                JsonProtocol::HandleSendMessageResult(MessageData {
                     dna_address: "sandwich".into(),
                     from_agent_id: "node-2".to_string(),
                     to_agent_id: "node-1".to_string(),
@@ -94,10 +94,10 @@ fn exec_mock_test() -> NetResult<()> {
         panic!("bad generic msg");
     }
 
-    let res = node_a.wait(Box::new(one_is!(ProtocolMessage::SendMessageResult(_))))?;
+    let res = node_a.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))?;
     println!("got response: {:?}", res);
 
-    if let ProtocolMessage::SendMessageResult(msg) = res {
+    if let JsonProtocol::SendMessageResult(msg) = res {
         assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
     } else {
         panic!("bad msg");

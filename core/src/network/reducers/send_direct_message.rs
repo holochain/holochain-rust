@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net_connection::protocol_wrapper::{MessageData, ProtocolMessage};
+use holochain_net_connection::protocol_wrapper::{JsonProtocol, MessageData};
 use std::sync::Arc;
 
 fn inner(
@@ -23,12 +23,12 @@ fn inner(
     };
 
     let protocol_object = if direct_message_data.is_response {
-        ProtocolMessage::HandleSendMessageResult(data)
+        JsonProtocol::HandleSendMessageResult(data)
     } else {
         network_state
             .direct_message_connections
             .insert(data.msg_id.clone(), direct_message_data.message.clone());
-        ProtocolMessage::SendMessage(data)
+        JsonProtocol::SendMessage(data)
     };
 
     send(network_state, protocol_object)

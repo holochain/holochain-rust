@@ -13,7 +13,7 @@ use holochain_net_connection::{
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorker, NetWorkerFactory},
     net_relay::NetConnectionRelay,
     protocol::Protocol,
-    protocol_wrapper::{ConfigData, ConnectData, ProtocolMessage, StateData},
+    protocol_wrapper::{ConfigData, ConnectData, JsonProtocol, StateData},
     NetResult,
 };
 
@@ -224,14 +224,14 @@ impl NetWorker for IpcNetWorker {
             has_done_something = true;
 
             // handle init/config special cases
-            if let Ok(msg) = ProtocolMessage::try_from(&data) {
+            if let Ok(msg) = JsonProtocol::try_from(&data) {
                 match msg {
                     // ipc-server sent us its current state
-                    ProtocolMessage::GetStateResult(state) => {
+                    JsonProtocol::GetStateResult(state) => {
                         self.priv_handle_state(state)?;
                     }
                     // ipc-server is requesting us the default config
-                    ProtocolMessage::GetDefaultConfigResult(config) => {
+                    JsonProtocol::GetDefaultConfigResult(config) => {
                         self.priv_handle_default_config(config)?;
                     }
                     _ => (),
@@ -266,7 +266,7 @@ impl IpcNetWorker {
     fn priv_send_connects(&mut self) -> NetResult<()> {
         for bs_node in &self.bootstrap_nodes {
             self.ipc_relay.send(
-                ProtocolMessage::Connect(ConnectData {
+                JsonProtocol::Connect(ConnectData {
                     address: bs_node.clone().into(),
                 })
                 .into(),
@@ -281,7 +281,7 @@ impl IpcNetWorker {
         let now = get_millis();
 
         if now - self.last_state_millis > 500.0 {
-            self.ipc_relay.send(ProtocolMessage::GetState.into())?;
+            self.ipc_relay.send(JsonProtocol::GetState.into())?;
             self.last_state_millis = now;
         }
 
@@ -294,8 +294,7 @@ impl IpcNetWorker {
         self.last_known_state = state.state;
         // if the internal worker needs configuration, fetch the default config
         if &self.last_known_state == "need_config" {
-            self.ipc_relay
-                .send(ProtocolMessage::GetDefaultConfig.into())?;
+            self.ipc_relay.send(JsonProtocol::GetDefaultConfig.into())?;
         }
         Ok(())
     }
@@ -305,7 +304,7 @@ impl IpcNetWorker {
     fn priv_handle_default_config(&mut self, config_msg: ConfigData) -> NetResult<()> {
         if &self.last_known_state == "need_config" {
             self.ipc_relay.send(
-                ProtocolMessage::SetConfig(ConfigData {
+                JsonProtocol::SetConfig(ConfigData {
                     config: config_msg.config,
                 })
                 .into(),

@@ -165,7 +165,7 @@ pub struct DhtMetaData {
     pub content: serde_json::Value,
 }
 
-/// Enum holding all Message types in the 'hc-core <-> P2P network module' protocol.
+/// Enum holding all message types that serialize as json in the 'hc-core <-> P2P network module' protocol.
 /// There are 4 categories of messages:
 ///  - Command: An order from the local node to the p2p module. Local node expects a reponse. Starts with a verb.
 ///  - Handle-command: An order from the p2p module to the local node. The p2p module expects a response. Start withs 'Handle' followed by a verb.
@@ -173,7 +173,7 @@ pub struct DhtMetaData {
 ///  - Notification: Notify that something happened. Not expecting any response. Ends with verb in past form, i.e. '-ed'.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(tag = "method")]
-pub enum ProtocolMessage {
+pub enum JsonProtocol {
     /// Success response to any message with an _id field.
     #[serde(rename = "successResult")]
     SuccessResult(SuccessResultData),
@@ -263,36 +263,36 @@ pub enum ProtocolMessage {
     HandleStoreDhtMeta(DhtMetaData),
 }
 
-impl<'a> TryFrom<&'a Protocol> for ProtocolMessage {
+impl<'a> TryFrom<&'a Protocol> for JsonProtocol {
     type Error = Error;
     fn try_from(p: &Protocol) -> Result<Self, Error> {
         if let Protocol::Json(json) = p {
-            match ProtocolMessage::try_from(json) {
+            match JsonProtocol::try_from(json) {
                 Ok(w) => {
                     return Ok(w);
                 }
                 Err(e) => bail!("{:?}", e),
             };
         }
-        bail!("could not ProtocolMessage: {:?}", p);
+        bail!("could not convert into JsonProtocol: {:?}", p);
     }
 }
 
-impl TryFrom<Protocol> for ProtocolMessage {
+impl TryFrom<Protocol> for JsonProtocol {
     type Error = Error;
     fn try_from(p: Protocol) -> Result<Self, Error> {
-        ProtocolMessage::try_from(&p)
+        JsonProtocol::try_from(&p)
     }
 }
 
-impl<'a> From<&'a ProtocolMessage> for Protocol {
-    fn from(w: &ProtocolMessage) -> Self {
+impl<'a> From<&'a JsonProtocol> for Protocol {
+    fn from(w: &JsonProtocol) -> Self {
         Protocol::Json(JsonString::from(w))
     }
 }
 
-impl From<ProtocolMessage> for Protocol {
-    fn from(w: ProtocolMessage) -> Self {
+impl From<JsonProtocol> for Protocol {
+    fn from(w: JsonProtocol) -> Self {
         Protocol::from(&w)
     }
 }
@@ -305,19 +305,19 @@ mod tests {
         ($e:expr) => {
             let orig = $e;
             let p = Protocol::from(orig.clone());
-            let w = ProtocolMessage::try_from(p).unwrap();
+            let w = JsonProtocol::try_from(p).unwrap();
             assert_eq!(orig, w);
         };
     }
 
     #[test]
     fn it_can_convert_request_state() {
-        test_convert!(ProtocolMessage::GetState);
+        test_convert!(JsonProtocol::GetState);
     }
 
     #[test]
     fn it_can_convert_state() {
-        test_convert!(ProtocolMessage::GetStateResult(StateData {
+        test_convert!(JsonProtocol::GetStateResult(StateData {
             state: "test_state".to_string(),
             id: "test_id".to_string(),
             bindings: vec!["test_binding".to_string()],
@@ -326,14 +326,14 @@ mod tests {
 
     #[test]
     fn it_can_convert_funky_state() {
-        let w = ProtocolMessage::try_from(JsonString::from(
+        let w = JsonProtocol::try_from(JsonString::from(
             r#"{
             "method": "state",
             "state": "test_state"
         }"#,
         ))
         .unwrap();
-        if let ProtocolMessage::GetStateResult(s) = w {
+        if let JsonProtocol::GetStateResult(s) = w {
             assert_eq!("undefined", &s.id);
             assert_eq!(0, s.bindings.len());
         } else {
@@ -343,33 +343,33 @@ mod tests {
 
     #[test]
     fn it_can_convert_request_default_config() {
-        test_convert!(ProtocolMessage::GetDefaultConfig);
+        test_convert!(JsonProtocol::GetDefaultConfig);
     }
 
     #[test]
     fn it_can_convert_default_config() {
-        test_convert!(ProtocolMessage::GetDefaultConfigResult(ConfigData {
+        test_convert!(JsonProtocol::GetDefaultConfigResult(ConfigData {
             config: "test".to_string(),
         }));
     }
 
     #[test]
     fn it_can_convert_set_config() {
-        test_convert!(ProtocolMessage::SetConfig(ConfigData {
+        test_convert!(JsonProtocol::SetConfig(ConfigData {
             config: "test".to_string(),
         }));
     }
 
     #[test]
     fn it_can_convert_set_connect() {
-        test_convert!(ProtocolMessage::Connect(ConnectData {
+        test_convert!(JsonProtocol::Connect(ConnectData {
             address: "test".into(),
         }));
     }
 
     #[test]
     fn it_can_convert_peer_connected() {
-        test_convert!(ProtocolMessage::PeerConnected(PeerData {
+        test_convert!(JsonProtocol::PeerConnected(PeerData {
             dna_address: "test_dna".into(),
             agent_id: "test_id".to_string(),
         }));
@@ -377,7 +377,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_send_message() {
-        test_convert!(ProtocolMessage::SendMessage(MessageData {
+        test_convert!(JsonProtocol::SendMessage(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_send_result() {
-        test_convert!(ProtocolMessage::SendMessageResult(MessageData {
+        test_convert!(JsonProtocol::SendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -399,7 +399,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_handle_send() {
-        test_convert!(ProtocolMessage::HandleSendMessage(MessageData {
+        test_convert!(JsonProtocol::HandleSendMessage(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -410,7 +410,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_handle_send_result() {
-        test_convert!(ProtocolMessage::HandleSendMessageResult(MessageData {
+        test_convert!(JsonProtocol::HandleSendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -421,7 +421,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_track_app() {
-        test_convert!(ProtocolMessage::TrackDna(TrackDnaData {
+        test_convert!(JsonProtocol::TrackDna(TrackDnaData {
             dna_address: "test_dna".into(),
             agent_id: "test_to".to_string(),
         }));

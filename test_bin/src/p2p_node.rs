@@ -1,6 +1,6 @@
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
-    net_connection::NetSend, protocol::Protocol, protocol_wrapper::ProtocolMessage, NetResult,
+    net_connection::NetSend, protocol::Protocol, protocol_wrapper::JsonProtocol, NetResult,
 };
 use std::{convert::TryFrom, sync::mpsc};
 
@@ -66,7 +66,7 @@ impl P2pNode {
 
     // See if there is a message to receive
     #[cfg_attr(tarpaulin, skip)]
-    pub fn try_recv(&mut self) -> NetResult<ProtocolMessage> {
+    pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
         // Print non-ping messages
         match data {
@@ -75,7 +75,7 @@ impl P2pNode {
             _ => (),
         };
 
-        match ProtocolMessage::try_from(&data) {
+        match JsonProtocol::try_from(&data) {
             Ok(r) => Ok(r),
             Err(e) => {
                 let s = format!("{:?}", e);
@@ -91,8 +91,8 @@ impl P2pNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn wait(
         &mut self,
-        predicate: Box<dyn Fn(&ProtocolMessage) -> bool>,
-    ) -> NetResult<ProtocolMessage> {
+        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
+    ) -> NetResult<JsonProtocol> {
         let mut time_ms: usize = 0;
         loop {
             let mut did_something = false;

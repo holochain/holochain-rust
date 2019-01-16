@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::protocol_wrapper::{GetDhtMetaData, ProtocolMessage};
+use holochain_net_connection::protocol_wrapper::{GetDhtMetaData, JsonProtocol};
 use std::sync::Arc;
 
 fn inner(
@@ -16,7 +16,7 @@ fn inner(
 
     send(
         network_state,
-        ProtocolMessage::GetDhtMeta(GetDhtMetaData {
+        JsonProtocol::GetDhtMeta(GetDhtMetaData {
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             from_agent_id: network_state.agent_id.clone().unwrap(),

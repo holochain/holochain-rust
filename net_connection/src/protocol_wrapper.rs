@@ -165,54 +165,60 @@ pub struct DhtMetaData {
     pub content: serde_json::Value,
 }
 
-/// Enum holding all Message types in the 'hc-core <-> P2P Network Module' protocol.
+/// Enum holding all Message types in the 'hc-core <-> P2P network module' protocol.
+/// There are 4 categories of messages:
+///  - Command: An order from the local node to the p2p module. Local node expects a reponse. Starts with a verb.
+///  - Handle-command: An order from the p2p module to the local node. The p2p module expects a response. Start withs 'Handle' followed by a verb.
+///  - Result: A response to a Command. Starts with the name of the Command it responds to and ends with 'Result'.
+///  - Notification: Notify that something happened. Not expecting any response. Ends with verb in past form, i.e. '-ed'.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(tag = "method")]
-pub enum ProtocolWrapper {
-    /// [send] request the current state from the p2p module
+pub enum ProtocolMessage {
+    /// Request the current state from the p2p module
     #[serde(rename = "requestState")]
-    RequestState,
-    /// [recv] p2p module is telling us its current state
+    GetState,
+    /// p2p module's current state response.
     #[serde(rename = "state")]
-    State(StateData),
-    /// [send] request the default config from the p2p module
+    GetStateResult(StateData),
+    /// Request the default config from the p2p module
     #[serde(rename = "requestDefaultConfig")]
-    RequestDefaultConfig,
-    /// [recv] the default config from the p2p module
+    GetDefaultConfig,
+    /// the p2p module's default config response
     #[serde(rename = "defaultConfig")]
-    DefaultConfig(ConfigData),
-    /// [send] set the p2p config
+    GetDefaultConfigResult(ConfigData),
+    /// Set the p2p config
     #[serde(rename = "setConfig")]
     SetConfig(ConfigData),
 
-    /// [send] connect to the specified multiaddr
+    /// Connect to the specified multiaddr
     #[serde(rename = "connect")]
     Connect(ConnectData),
-    /// [recv] notification of a peer connected
+    /// Notification of a connection from another peer.
     #[serde(rename = "peerConnected")]
     PeerConnected(PeerData),
 
-    /// [send] send a message to another node on the network
+    /// Send a message to another peer on the network
     #[serde(rename = "send")]
     SendMessage(MessageData),
-    /// [recv] recv the response back from a previous `GenericMessage`
+    /// the response from a previous `SendMessage`
     #[serde(rename = "sendResult")]
-    SendResult(MessageData),
-    /// [recv] another node has sent us a message
+    SendMessageResult(MessageData),
+    /// Request to handle a message another peer has sent us.
     #[serde(rename = "handleSend")]
-    HandleSend(MessageData),
-    /// [send] send our response to a previous `HandleGenericMessage`
+    HandleSendMessage(MessageData),
+    /// Our response to a message from another peer.
     #[serde(rename = "handleSendResult")]
-    HandleSendResult(MessageData),
+    HandleSendMessageResult(MessageData),
 
-    /// [send] send out a "trackApp" request
+    /// Order the p2p module to be part of the network of the specified DNA.
     #[serde(rename = "trackApp")]
-    TrackApp(TrackAppData),
+    TrackDna(TrackAppData),
 
-    /// [send / recv] report success for a messages with _id parameter
+    /// Success response to any message with an _id field.
     #[serde(rename = "successResult")]
     SuccessResult(SuccessResultData),
-    /// [send / recv] for any message with _id parameter to indicate failure
+    /// Failure response to any message with an _id field.
+    /// Can also be a response to a mal-formed request.
     #[serde(rename = "failureResult")]
     FailureResult(FailureResultData),
 
@@ -220,17 +226,18 @@ pub enum ProtocolWrapper {
     /// [recv] another node, or the network module itself is requesting data
     ///        from us... send a GetDhtResult message back
     #[serde(rename = "getDht")]
-    GetDht(GetDhtData),
+    GetDhtData(GetDhtData),
     /// [recv] response from requesting dht data from the network
     /// [send] success response if network is requesting this data of us
     #[serde(rename = "getDhtResult")]
-    GetDhtResult(DhtData),
-    /// [send] publish content to the dht
+    GetDhtDataResult(DhtData),
+
+    /// Publish data to the dht.
     #[serde(rename = "publishDht")]
-    PublishDht(DhtData),
-    /// [recv] the network is requesting that we store this data
+    PublishDhtData(DhtData),
+    /// Store data on a node's dht slice.
     #[serde(rename = "storeDht")]
-    StoreDht(DhtData),
+    HandleStoreDhtData(DhtData),
 
     /// [send] request meta data from the dht
     /// [recv] another node, or the network module itself is requesting data
@@ -241,19 +248,20 @@ pub enum ProtocolWrapper {
     /// [send] success response if network is requesting this data of us
     #[serde(rename = "getDhtMetaResult")]
     GetDhtMetaResult(DhtMetaData),
-    /// [send] publish meta content to the dht
+
+    /// Publish metadata to the dht.
     #[serde(rename = "publishDhtMeta")]
     PublishDhtMeta(DhtMetaData),
-    /// [recv] the network is requesting that we store this meta data
+    /// Store metadata on a node's dht slice.
     #[serde(rename = "storeDhtMeta")]
-    StoreDhtMeta(DhtMetaData),
+    HandleStoreDhtMeta(DhtMetaData),
 }
 
-impl<'a> TryFrom<&'a Protocol> for ProtocolWrapper {
+impl<'a> TryFrom<&'a Protocol> for ProtocolMessage {
     type Error = Error;
     fn try_from(p: &Protocol) -> Result<Self, Error> {
         if let Protocol::Json(json) = p {
-            match ProtocolWrapper::try_from(json) {
+            match ProtocolMessage::try_from(json) {
                 Ok(w) => {
                     return Ok(w);
                 }
@@ -264,21 +272,21 @@ impl<'a> TryFrom<&'a Protocol> for ProtocolWrapper {
     }
 }
 
-impl TryFrom<Protocol> for ProtocolWrapper {
+impl TryFrom<Protocol> for ProtocolMessage {
     type Error = Error;
     fn try_from(p: Protocol) -> Result<Self, Error> {
-        ProtocolWrapper::try_from(&p)
+        ProtocolMessage::try_from(&p)
     }
 }
 
-impl<'a> From<&'a ProtocolWrapper> for Protocol {
-    fn from(w: &ProtocolWrapper) -> Self {
+impl<'a> From<&'a ProtocolMessage> for Protocol {
+    fn from(w: &ProtocolMessage) -> Self {
         Protocol::Json(JsonString::from(w))
     }
 }
 
-impl From<ProtocolWrapper> for Protocol {
-    fn from(w: ProtocolWrapper) -> Self {
+impl From<ProtocolMessage> for Protocol {
+    fn from(w: ProtocolMessage) -> Self {
         Protocol::from(&w)
     }
 }
@@ -312,14 +320,14 @@ mod tests {
 
     #[test]
     fn it_can_convert_funky_state() {
-        let w = ProtocolWrapper::try_from(JsonString::from(
+        let w = ProtocolMessage::try_from(JsonString::from(
             r#"{
             "method": "state",
             "state": "test_state"
         }"#,
         ))
         .unwrap();
-        if let ProtocolWrapper::State(s) = w {
+        if let ProtocolMessage::GetStateResult(s) = w {
             assert_eq!("undefined", &s.id);
             assert_eq!(0, s.bindings.len());
         } else {

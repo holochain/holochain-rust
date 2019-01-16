@@ -5,7 +5,7 @@ use holochain_net_connection::{
     protocol::Protocol,
     protocol_wrapper::{
         DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData, PeerData,
-        ProtocolWrapper,
+        ProtocolMessage,
     },
     NetResult,
 };
@@ -68,12 +68,12 @@ impl MockSystem {
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not remove)
         // println!(">>>> MockSystem recv: {:?}", data);
-        if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
+        if let Ok(wrap) = ProtocolMessage::try_from(&data) {
             match wrap {
-                ProtocolWrapper::TrackApp(msg) => {
+                ProtocolMessage::TrackDna(msg) => {
                     self.priv_send_all(
                         &msg.dna_address.clone(),
-                        ProtocolWrapper::PeerConnected(PeerData {
+                        ProtocolMessage::PeerConnected(PeerData {
                             dna_address: msg.dna_address,
                             agent_id: msg.agent_id,
                         })
@@ -81,42 +81,42 @@ impl MockSystem {
                     )?;
                 }
 
-                ProtocolWrapper::SendMessage(msg) => {
+                ProtocolMessage::SendMessage(msg) => {
                     self.priv_handle_send(&msg)?;
                 }
-                ProtocolWrapper::HandleSendResult(msg) => {
+                ProtocolMessage::HandleSendMessageResult(msg) => {
                     self.priv_handle_send_result(&msg)?;
                 }
-                ProtocolWrapper::SuccessResult(msg) => {
+                ProtocolMessage::SuccessResult(msg) => {
                     self.priv_send_one(
                         &msg.dna_address,
                         &msg.to_agent_id,
-                        ProtocolWrapper::SuccessResult(msg.clone()).into(),
+                        ProtocolMessage::SuccessResult(msg.clone()).into(),
                     )?;
                 }
-                ProtocolWrapper::FailureResult(msg) => {
+                ProtocolMessage::FailureResult(msg) => {
                     self.priv_send_one(
                         &msg.dna_address,
                         &msg.to_agent_id,
-                        ProtocolWrapper::FailureResult(msg.clone()).into(),
+                        ProtocolMessage::FailureResult(msg.clone()).into(),
                     )?;
                 }
-                ProtocolWrapper::GetDht(msg) => {
+                ProtocolMessage::GetDhtData(msg) => {
                     self.priv_handle_get_dht(&msg)?;
                 }
-                ProtocolWrapper::GetDhtResult(msg) => {
+                ProtocolMessage::GetDhtDataResult(msg) => {
                     self.priv_handle_get_dht_result(&msg)?;
                 }
-                ProtocolWrapper::PublishDht(msg) => {
+                ProtocolMessage::PublishDhtData(msg) => {
                     self.priv_handle_publish_dht(&msg)?;
                 }
-                ProtocolWrapper::GetDhtMeta(msg) => {
+                ProtocolMessage::GetDhtMeta(msg) => {
                     self.priv_handle_get_dht_meta(&msg)?;
                 }
-                ProtocolWrapper::GetDhtMetaResult(msg) => {
+                ProtocolMessage::GetDhtMetaResult(msg) => {
                     self.priv_handle_get_dht_meta_result(&msg)?;
                 }
-                ProtocolWrapper::PublishDhtMeta(msg) => {
+                ProtocolMessage::PublishDhtMeta(msg) => {
                     self.priv_handle_publish_dht_meta(&msg)?;
                 }
                 _ => (),
@@ -166,7 +166,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
-            ProtocolWrapper::HandleSend(msg.clone()).into(),
+            ProtocolMessage::HandleSendMessage(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -178,7 +178,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
-            ProtocolWrapper::SendResult(msg.clone()).into(),
+            ProtocolMessage::SendMessageResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -193,7 +193,7 @@ impl MockSystem {
                     let r = &e.get_mut()[0];
                     // Debugging code (do not remove)
                     // println!("<<<< MockSystem send: {:?}", msg.clone());
-                    r.send(ProtocolWrapper::GetDht(msg.clone()).into())?;
+                    r.send(ProtocolMessage::GetDhtData(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -203,7 +203,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.from_agent_id,
-            ProtocolWrapper::FailureResult(FailureResultData {
+            ProtocolMessage::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
@@ -220,7 +220,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.agent_id,
-            ProtocolWrapper::GetDhtResult(msg.clone()).into(),
+            ProtocolMessage::GetDhtDataResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -229,7 +229,7 @@ impl MockSystem {
     fn priv_handle_publish_dht(&mut self, msg: &DhtData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
-            ProtocolWrapper::StoreDht(msg.clone()).into(),
+            ProtocolMessage::HandleStoreDhtData(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -242,7 +242,7 @@ impl MockSystem {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
-                    r.send(ProtocolWrapper::GetDhtMeta(msg.clone()).into())?;
+                    r.send(ProtocolMessage::GetDhtMeta(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -252,7 +252,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.from_agent_id,
-            ProtocolWrapper::FailureResult(FailureResultData {
+            ProtocolMessage::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
@@ -269,7 +269,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.agent_id,
-            ProtocolWrapper::GetDhtMetaResult(msg.clone()).into(),
+            ProtocolMessage::GetDhtMetaResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -278,7 +278,7 @@ impl MockSystem {
     fn priv_handle_publish_dht_meta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
-            ProtocolWrapper::StoreDhtMeta(msg.clone()).into(),
+            ProtocolMessage::HandleStoreDhtMeta(msg.clone()).into(),
         )?;
         Ok(())
     }

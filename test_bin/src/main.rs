@@ -15,7 +15,7 @@ use holochain_net_connection::{
     net_connection::NetSend,
     protocol_wrapper::{
         ConnectData, DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, MessageData,
-        ProtocolWrapper, TrackAppData,
+        ProtocolMessage, TrackAppData,
     },
     NetResult,
 };
@@ -200,7 +200,7 @@ fn send_and_confirm_data(
 ) -> NetResult<()> {
     // Send 'Store DHT data' message on node 1
     node_a.send(
-        ProtocolWrapper::PublishDht(DhtData {
+        ProtocolMessage::PublishDhtData(DhtData {
             msg_id: "testPublishEntry".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -217,7 +217,7 @@ fn send_and_confirm_data(
 
     // Send 'get DHT data' message on node 2
     node_b.send(
-        ProtocolWrapper::GetDht(GetDhtData {
+        ProtocolMessage::GetDhtData(GetDhtData {
             msg_id: "testGetEntry".to_string(),
             dna_address: example_dna_address(),
             from_agent_id: AGENT_ID_2.to_string(),
@@ -227,7 +227,7 @@ fn send_and_confirm_data(
     )?;
     // Send 'Get DHT data result' message on node 2
     node_a.send(
-        ProtocolWrapper::GetDhtResult(DhtData {
+        ProtocolMessage::GetDhtDataResult(DhtData {
             msg_id: "testGetEntryResult".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -250,7 +250,7 @@ fn send_and_confirm_metadata(
 ) -> NetResult<()> {
     // Send 'Store DHT metadata' message on node 1
     node1.send(
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+        ProtocolMessage::PublishDhtMeta(DhtMetaData {
             msg_id: "testPublishMeta".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -269,7 +269,7 @@ fn send_and_confirm_metadata(
 
     // Send a 'Get DHT metadata' message on node 2
     node2.send(
-        ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
+        ProtocolMessage::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
             dna_address: example_dna_address(),
             from_agent_id: AGENT_ID_2.to_string(),
@@ -280,7 +280,7 @@ fn send_and_confirm_metadata(
     )?;
     // Send a 'Get DHT metadata result' message on node 2
     node1.send(
-        ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
+        ProtocolMessage::GetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -304,7 +304,7 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
     // Send TrackApp message on both nodes
     node_a
         .send(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            ProtocolMessage::TrackDna(TrackAppData {
                 dna_address: example_dna_address(),
                 agent_id: AGENT_ID_1.to_string(),
             })
@@ -316,7 +316,7 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
 
     node_b
         .send(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            ProtocolMessage::TrackDna(TrackAppData {
                 dna_address: example_dna_address(),
                 agent_id: AGENT_ID_2.to_string(),
             })
@@ -332,11 +332,11 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
         let mut node2_binding = String::new();
 
         node_a
-            .send(ProtocolWrapper::RequestState.into())
+            .send(ProtocolMessage::GetState.into())
             .expect("Failed sending RequestState on node_a");
         let node_state_A = node_a.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
         node_b
-            .send(ProtocolWrapper::RequestState.into())
+            .send(ProtocolMessage::GetState.into())
             .expect("Failed sending RequestState on node_b");
         let node_state_B = node_b.wait(Box::new(one_is!(ProtocolWrapper::State(_))))?;
 
@@ -353,7 +353,7 @@ fn setup_normal(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -
         // Connect nodes between them
         println!("connect: node2_binding = {}", node2_binding);
         node_a.send(
-            ProtocolWrapper::Connect(ConnectData {
+            ProtocolMessage::Connect(ConnectData {
                 address: node2_binding.into(),
             })
             .into(),
@@ -385,7 +385,7 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
     // Send a message from node_a to node_b
     node_a
         .send(
-            ProtocolWrapper::SendMessage(MessageData {
+            ProtocolMessage::SendMessage(MessageData {
                 dna_address: example_dna_address(),
                 to_agent_id: AGENT_ID_2.to_string(),
                 from_agent_id: AGENT_ID_1.to_string(),
@@ -399,7 +399,7 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
     let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
     println!("#### got: {:?}", res);
     let msg = match res {
-        ProtocolWrapper::HandleSend(msg) => msg,
+        ProtocolMessage::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
     assert_eq!("\"hello\"".to_string(), msg.data.to_string());
@@ -407,7 +407,7 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
     // Send a message from node_b to node_a
     node_b
         .send(
-            ProtocolWrapper::HandleSendResult(MessageData {
+            ProtocolMessage::HandleSendMessageResult(MessageData {
                 dna_address: example_dna_address(),
                 to_agent_id: AGENT_ID_1.to_string(),
                 from_agent_id: AGENT_ID_2.to_string(),
@@ -421,7 +421,7 @@ fn send_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> N
     let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
     println!("#### got: {:?}", res);
     let msg = match res {
-        ProtocolWrapper::SendResult(msg) => msg,
+        ProtocolMessage::SendMessageResult(msg) => msg,
         _ => unreachable!(),
     };
     assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
@@ -448,7 +448,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
     // Again but do 'wait' at the end
     // Send 'Store DHT data' message on node 1
     node1.send(
-        ProtocolWrapper::PublishDht(DhtData {
+        ProtocolMessage::PublishDhtData(DhtData {
             msg_id: "testPublishEntry".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -459,7 +459,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
     )?;
     // Send 'Store DHT metadata' message on node 1
     node1.send(
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+        ProtocolMessage::PublishDhtMeta(DhtMetaData {
             msg_id: "testPublishMeta".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -472,7 +472,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
     )?;
     // Send 'get DHT data' message on node 2
     node2.send(
-        ProtocolWrapper::GetDht(GetDhtData {
+        ProtocolMessage::GetDhtData(GetDhtData {
             msg_id: "testGetEntry".to_string(),
             dna_address: example_dna_address(),
             from_agent_id: AGENT_ID_2.to_string(),
@@ -482,7 +482,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
     )?;
     // Send 'Get DHT data result' message on node 2
     node2.send(
-        ProtocolWrapper::GetDhtResult(DhtData {
+        ProtocolMessage::GetDhtDataResult(DhtData {
             msg_id: "testGetEntryResult".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -493,7 +493,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
     )?;
     // Send a 'Get DHT metadata' message on node 2
     node2.send(
-        ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
+        ProtocolMessage::GetDhtMeta(GetDhtMetaData {
             msg_id: "testGetMeta".to_string(),
             dna_address: example_dna_address(),
             from_agent_id: AGENT_ID_2.to_string(),
@@ -504,7 +504,7 @@ fn meta_test(node1: &mut P2pNode, node2: &mut P2pNode, can_connect: bool) -> Net
     )?;
     // Send a 'Get DHT metadata result' message on node 2
     node1.send(
-        ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
+        ProtocolMessage::GetDhtMetaResult(DhtMetaData {
             msg_id: "testGetMetaResult".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -531,7 +531,7 @@ fn dht_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> Ne
 
     // Send Publish DHT data
     node_a.send(
-        ProtocolWrapper::PublishDht(DhtData {
+        ProtocolMessage::PublishDhtData(DhtData {
             msg_id: "testPub".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),
@@ -548,7 +548,7 @@ fn dht_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> Ne
 
     // Send get DHT data
     node_b.send(
-        ProtocolWrapper::GetDht(GetDhtData {
+        ProtocolMessage::GetDhtData(GetDhtData {
             msg_id: "testGet".to_string(),
             dna_address: example_dna_address(),
             from_agent_id: AGENT_ID_2.to_string(),
@@ -558,7 +558,7 @@ fn dht_test(node_a: &mut P2pNode, node_b: &mut P2pNode, can_connect: bool) -> Ne
     )?;
     // Send get DHT data result
     node_a.send(
-        ProtocolWrapper::GetDhtResult(DhtData {
+        ProtocolMessage::GetDhtDataResult(DhtData {
             msg_id: "testGetResult".to_string(),
             dna_address: example_dna_address(),
             agent_id: AGENT_ID_1.to_string(),

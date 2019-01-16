@@ -38,7 +38,7 @@ use crate::{
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
     net_connection::NetSend,
-    protocol_wrapper::{MessageData, ProtocolWrapper},
+    protocol_wrapper::{MessageData, ProtocolMessage},
 };
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
@@ -86,7 +86,7 @@ pub fn reduce(
 /// that lives in the NetworkState.
 pub fn send(
     network_state: &mut NetworkState,
-    protocol_wrapper: ProtocolWrapper,
+    protocol_wrapper: ProtocolMessage,
 ) -> Result<(), HolochainError> {
     network_state
         .network
@@ -122,7 +122,7 @@ pub fn send_message(
         data: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
     };
 
-    let _ = send(network_state, ProtocolWrapper::SendMessage(data))?;
+    let _ = send(network_state, ProtocolMessage::SendMessage(data))?;
 
     network_state.direct_message_connections.insert(id, message);
 

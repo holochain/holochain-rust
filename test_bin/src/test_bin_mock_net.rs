@@ -11,7 +11,7 @@ pub mod p2p_node;
 
 use holochain_net_connection::{
     net_connection::NetSend,
-    protocol_wrapper::{MessageData, ProtocolWrapper, TrackAppData},
+    protocol_wrapper::{MessageData, ProtocolMessage, TrackAppData},
     NetResult,
 };
 use p2p_node::P2pNode;
@@ -45,7 +45,7 @@ fn exec_mock_test() -> NetResult<()> {
 
     node_a
         .send(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            ProtocolMessage::TrackDna(TrackAppData {
                 dna_address: "sandwich".into(),
                 agent_id: "node-1".to_string(),
             })
@@ -54,7 +54,7 @@ fn exec_mock_test() -> NetResult<()> {
         .expect("Failed sending TrackAppData on node_a");
     node_b
         .send(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            ProtocolMessage::TrackDna(TrackAppData {
                 dna_address: "sandwich".into(),
                 agent_id: "node-2".to_string(),
             })
@@ -64,7 +64,7 @@ fn exec_mock_test() -> NetResult<()> {
 
     node_a
         .send(
-            ProtocolWrapper::SendMessage(MessageData {
+            ProtocolMessage::SendMessage(MessageData {
                 dna_address: "sandwich".into(),
                 from_agent_id: "node-1".to_string(),
                 to_agent_id: "node-2".to_string(),
@@ -77,10 +77,10 @@ fn exec_mock_test() -> NetResult<()> {
     let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
     println!("got: {:?}", res);
 
-    if let ProtocolWrapper::HandleSend(msg) = res {
+    if let ProtocolMessage::HandleSendMessage(msg) = res {
         node_b
             .send(
-                ProtocolWrapper::HandleSendResult(MessageData {
+                ProtocolMessage::HandleSendMessageResult(MessageData {
                     dna_address: "sandwich".into(),
                     from_agent_id: "node-2".to_string(),
                     to_agent_id: "node-1".to_string(),
@@ -97,7 +97,7 @@ fn exec_mock_test() -> NetResult<()> {
     let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
     println!("got response: {:?}", res);
 
-    if let ProtocolWrapper::SendResult(msg) = res {
+    if let ProtocolMessage::SendMessageResult(msg) = res {
         assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
     } else {
         panic!("bad msg");

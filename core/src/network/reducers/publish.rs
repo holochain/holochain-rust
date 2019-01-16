@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData, ProtocolWrapper};
+use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData, ProtocolMessage};
 use std::sync::Arc;
 
 fn publish_entry(
@@ -26,7 +26,7 @@ fn publish_entry(
 
     send(
         network_state,
-        ProtocolWrapper::PublishDht(DhtData {
+        ProtocolMessage::PublishDhtData(DhtData {
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
@@ -46,7 +46,7 @@ fn publish_crud_meta(
     // publish crud-status
     send(
         network_state,
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+        ProtocolMessage::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
@@ -63,7 +63,7 @@ fn publish_crud_meta(
     }
     send(
         network_state,
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+        ProtocolMessage::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
@@ -100,7 +100,7 @@ fn publish_link_meta(
 
     send(
         network_state,
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+        ProtocolMessage::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
             dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),

@@ -20,17 +20,23 @@ fn inner(
 }
 
 pub fn reduce_handle_get_links_result(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let (dht_meta_data, tag) = unwrap_to!(action => crate::action::Action::HandleGetLinksResult);
 
+    context.log(format!(
+        "debug/reduce/handle_get_links_result: Got response from {}: {}",
+        dht_meta_data.from_agent_id,
+        dht_meta_data.content,
+    ));
+
     let result = inner(network_state, dht_meta_data);
 
     network_state.get_links_results.insert(
-        (Address::from(dht_meta_data.address.clone()), tag.clone()),
+        (Address::from(dht_meta_data.address.clone()), tag.clone(), dht_meta_data.msg_id.clone()),
         Some(result),
     );
 }

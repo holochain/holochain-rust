@@ -37,11 +37,11 @@ test('calling get_links before link_entries makes a difference (FAILS)', (t) => 
 
   const get1 = alice.call("blog", "main", "my_posts", {})
   t.ok(get1.Ok)
-  sleep.sleep(1)
+  sleep.sleep(10)
 
   const create1 = alice.call("blog", "main", "create_post", {content: 'hi'})
   t.ok(create1.Ok)
-  sleep.sleep(1)
+  sleep.sleep(10)
 
   const get2 = alice.call("blog", "main", "my_posts", {})
   t.ok(get2.Ok)
@@ -50,6 +50,7 @@ test('calling get_links before link_entries makes a difference (FAILS)', (t) => 
   t.end()
 })
 
+/*
 test('calling get_links twice in a row is different than calling it once (PASSES)', (t) => {
   // This test is exactly the same as the previous one, but calls my_posts twice in a row.
   // This makes the links come through the second time.
@@ -172,3 +173,4 @@ test('not calling get_links in the beginning helps (PASSES)', (t) => {
 
 //   t.equal(recommendedPosts.Ok.addresses.length, 1)
 // })
+*/

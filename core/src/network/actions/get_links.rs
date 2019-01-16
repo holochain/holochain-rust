@@ -10,6 +10,7 @@ use futures::{
 };
 use holochain_core_types::{cas::content::Address, error::HcResult};
 use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
+use snowflake::ProcessUniqueId;
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
@@ -19,19 +20,20 @@ pub async fn get_links<'a>(
     address: &'a Address,
     tag: String,
 ) -> HcResult<Vec<Address>> {
-    let action_wrapper = ActionWrapper::new(Action::GetLinks((address.clone(), tag.clone())));
+    let key = (address.clone(), tag.clone(), ProcessUniqueId::new().to_string());
+    let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let _ = async {
         sleep(Duration::from_secs(60));
         let action_wrapper =
-            ActionWrapper::new(Action::GetLinksTimeout((address.clone(), tag.clone())));
+            ActionWrapper::new(Action::GetLinksTimeout(key.clone()));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     };
 
     await!(GetLinksFuture {
         context: context.clone(),
-        key: (address.clone(), tag.clone())
+        key
     })
 }
 
@@ -39,7 +41,7 @@ pub async fn get_links<'a>(
 /// Tracks the state of the network module
 pub struct GetLinksFuture {
     context: Arc<Context>,
-    key: (Address, String),
+    key: (Address, String, String),
 }
 
 impl Future for GetLinksFuture {

@@ -131,8 +131,9 @@ pub enum Action {
     GetEntryTimeout(Address),
 
     /// get links from entry address and tag name
-    GetLinks((Address, String)),
-    GetLinksTimeout((Address, String)),
+    /// Last string is the stringified process unique id of this `hdk::get_links` call.
+    GetLinks((Address, String, String)),
+    GetLinksTimeout((Address, String, String)),
     RespondGetLinks((GetDhtMetaData, Vec<Address>)),
     HandleGetLinksResult((DhtMetaData, String)),
 

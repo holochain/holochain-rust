@@ -11,13 +11,14 @@ fn inner(
     network_state: &mut NetworkState,
     address: &Address,
     tag: &String,
+    id: &String,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
     send(
         network_state,
         ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
-            msg_id: "?".to_string(),
+            msg_id: id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             from_agent_id: network_state.agent_id.clone().unwrap(),
             address: address.to_string(),
@@ -32,16 +33,16 @@ pub fn reduce_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (address, tag) = unwrap_to!(action => crate::action::Action::GetLinks);
+    let (address, tag, id) = unwrap_to!(action => crate::action::Action::GetLinks);
 
-    let result = match inner(network_state, &address, tag) {
+    let result = match inner(network_state, &address, tag, id) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
 
     network_state
         .get_links_results
-        .insert((address.clone(), tag.clone()), result);
+        .insert((address.clone(), tag.clone(), id.clone()), result);
 }
 
 pub fn reduce_get_links_timeout(
@@ -82,7 +83,7 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (entry.address(), tag.clone());
+        let key = (entry.address(), tag.clone(), snowflake::ProcessUniqueId::new().to_string());
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
@@ -115,7 +116,7 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (entry.address(), tag.clone());
+        let key = (entry.address(), tag.clone(), snowflake::ProcessUniqueId::new().to_string());
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
@@ -148,7 +149,7 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (entry.address(), tag.clone());
+        let key = (entry.address(), tag.clone(), snowflake::ProcessUniqueId::new().to_string());
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         {

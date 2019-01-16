@@ -1,16 +1,46 @@
+use neon::{context::Context, prelude::*};
+use std::{
+    collections::HashSet,
+    sync::{
+        mpsc::{sync_channel, SyncSender},
+        Arc, Mutex,
+    },
+};
+
 use holochain_container_api::{
     config::{load_configuration, Configuration},
     container::Container as RustContainer,
 };
-use holochain_core::signal::signal_channel;
-use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
-use neon::{context::Context, prelude::*};
-use std::sync::{
-    mpsc::{sync_channel, SyncSender},
-    Arc, Mutex,
+use holochain_core::{
+    action::Action,
+    signal::{signal_channel, Signal, SignalReceiver},
 };
-
+use holochain_core_types::{
+    cas::content::Address, dna::capabilities::CapabilityCall, entry::Entry,
+};
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
+
+/// Block until Hold(agent.public_address) is seen for each agent in the container.
+/// NOTE that this consumes a bunch of signals related to initialization!
+/// The `Waiter` currently doesn't care about these, but beware.
+fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
+    let mut agent_addresses: HashSet<String> = config
+        .agents
+        .iter()
+        .map(|c| c.public_address.to_string())
+        .collect();
+    loop {
+        if let Signal::Internal(aw) = signal_rx.recv().unwrap() {
+            let action = aw.action();
+            if let Action::Hold(Entry::AgentId(id)) = action {
+                agent_addresses.remove(&id.key);
+            }
+            if agent_addresses.is_empty() {
+                break;
+            }
+        }
+    }
+}
 
 pub struct TestContainer {
     container: RustContainer,
@@ -59,9 +89,11 @@ declare_types! {
                 }
                 tc.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
                     tc.container.start_all_instances().map_err(|e| e.to_string()).map(|_| {
+                        await_held_agent_ids(tc.container.config(), &signal_rx);
                         let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone());
                         background_task.schedule(js_callback);
                         tc.is_started = true;
+
                     })
                 })
             };

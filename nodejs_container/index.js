@@ -47,7 +47,7 @@ Container.prototype._callRaw = Container.prototype.call
 
 Container.prototype.start = function () {
     this._stopPromise = new Promise((fulfill, reject) => {
-        this._start(promiser(fulfill, reject))
+        return this._start(promiser(fulfill, reject))
     })
 }
 
@@ -128,10 +128,7 @@ class Scenario {
      */
     run(fn) {
         const container = Container.withInstances(this.instances, this.opts)
-        const started = container.start()
-        if (!started) {
-            console.error("Container not started!")
-        }
+        container.start()
         const callers = {}
         this.instances.forEach(instance => {
             const id = makeInstanceId(instance.agent.name, instance.dna.name)

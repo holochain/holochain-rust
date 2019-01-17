@@ -119,7 +119,7 @@ pub mod tests {
     #[test]
     fn get_entry_from_dht_cas() {
         let entry = test_entry();
-        let context = test_context_with_state();
+        let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, entry.address());
         assert_eq!(Ok(None), result);
         let storage = &context.state().unwrap().dht().content_storage().clone();

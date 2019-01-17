@@ -1,18 +1,18 @@
-use super::NetResult;
-
 use super::{
-    net_connection::{NetConnection, NetHandler, NetShutdown, NetWorkerFactory},
+    net_connection::{NetHandler, NetSend, NetShutdown, NetWorkerFactory},
     protocol::Protocol,
+    NetResult,
+};
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc, Arc,
+    },
+    thread, time,
 };
 
-use std::{thread, time};
-
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    mpsc, Arc,
-};
-
-/// a NetConnection instance that is managed on another thread
+/// Struct for holding a network connection running on a separate thread.
+/// It is itself a NetSend, and spawns a NetWorker.
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
     send_channel: mpsc::Sender<Protocol>,
@@ -21,8 +21,8 @@ pub struct NetConnectionThread {
     pub endpoint: String,
 }
 
-impl NetConnection for NetConnectionThread {
-    /// send a message to the worker within this NetConnectionThread instance
+impl NetSend for NetConnectionThread {
+    /// send a message to the worker within NetConnectionThread's child thread.
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         self.send_channel.send(data)?;
         Ok(())
@@ -30,57 +30,48 @@ impl NetConnection for NetConnectionThread {
 }
 
 impl NetConnectionThread {
-    /// stop (join) the worker thread
-    pub fn stop(self) -> NetResult<()> {
-        self.can_keep_running.store(false, Ordering::Relaxed);
-        if self.thread.join().is_err() {
-            bail!("NetConnectionThread failed to join on stop() call");
-        }
-        if let Some(done) = self.done {
-            done();
-        }
-        Ok(())
-    }
-
-    /// Create a new NetConnectionThread instance with given handler / worker
+    /// NetSendThread Constructor.
+    /// Spawns a thread that will create and run a NetWorker with the given factory, handler and
+    /// shutdown closure.
     pub fn new(
         handler: NetHandler,
         worker_factory: NetWorkerFactory,
         done: NetShutdown,
     ) -> NetResult<Self> {
-        // Create atomic TRUE
+        // Create shared bool between self and spawned thread
         let can_keep_running = Arc::new(AtomicBool::new(true));
-        let can_keep_running_shared = can_keep_running.clone();
-        // Create channel
+        let can_keep_running_child = can_keep_running.clone();
+        // Create channels between self and spawned thread
         let (send_channel, recv_channel) = mpsc::channel();
-
         let (send_endpoint, recv_endpoint) = mpsc::channel();
 
-        // spawn worker thread
+        // Spawn worker thread
         let thread = thread::spawn(move || {
             // Create worker
             let mut worker = worker_factory(handler).unwrap_or_else(|e| panic!("{:?}", e));
-
+            // Get endpoint and send it to owner (NetConnectionThread)
             let endpoint = worker.endpoint();
             send_endpoint
                 .send(endpoint)
                 .expect("Sending endpoint address should work.");
             drop(send_endpoint);
-            // Loop as long NetConnectionThread wants to
+            // Loop as long owner wants to
             let mut sleep_duration_us = 100_u64;
-            while can_keep_running_shared.load(Ordering::Relaxed) {
-                // Check if we received something from the network
+            while can_keep_running_child.load(Ordering::Relaxed) {
+                // Check if we received something from parent (NetConnectionThread::send())
                 let mut did_something = false;
                 recv_channel
                     .try_recv()
                     .and_then(|data| {
-                        // Send it to the worker
+                        // Received data from parent
+                        // Have the worker handle it
                         did_something = true;
                         worker.receive(data).unwrap_or_else(|e| panic!("{:?}", e));
                         Ok(())
                     })
                     .unwrap_or(());
-                // Tick the worker (it might do a send)
+                // Tick the worker
+                // (it might call the handler if it received a message from the network)
                 worker
                     .tick()
                     .and_then(|b| {
@@ -107,6 +98,7 @@ impl NetConnectionThread {
             worker.stop().unwrap_or_else(|e| panic!("{:?}", e));
         });
 
+        // Retrieve endpoint from spawned thread
         let endpoint = recv_endpoint
             .recv()
             .expect("Failed to receive endpoint address from net worker");
@@ -123,13 +115,25 @@ impl NetConnectionThread {
             endpoint,
         })
     }
+
+    /// stop the worker thread (join)
+    pub fn stop(self) -> NetResult<()> {
+        // tell child thread to stop running
+        self.can_keep_running.store(false, Ordering::Relaxed);
+        if self.thread.join().is_err() {
+            bail!("NetConnectionThread failed to join on stop() call");
+        }
+        // Call shutdown closure if any
+        if let Some(done) = self.done {
+            done();
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    use super::super::net_connection::NetWorker;
+    use super::{super::net_connection::NetWorker, *};
 
     struct DefWorker;
 
@@ -148,11 +152,11 @@ mod tests {
         con.stop().unwrap();
     }
 
-    struct Worker {
+    struct SimpleWorker {
         handler: NetHandler,
     }
 
-    impl NetWorker for Worker {
+    impl NetWorker for SimpleWorker {
         fn tick(&mut self) -> NetResult<bool> {
             (self.handler)(Ok("tick".into()))?;
             Ok(true)
@@ -172,7 +176,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
         .unwrap();
@@ -205,7 +209,7 @@ mod tests {
                 sender.send(r?)?;
                 Ok(())
             }),
-            Box::new(|h| Ok(Box::new(Worker { handler: h }) as Box<NetWorker>)),
+            Box::new(|h| Ok(Box::new(SimpleWorker { handler: h }) as Box<NetWorker>)),
             None,
         )
         .unwrap();

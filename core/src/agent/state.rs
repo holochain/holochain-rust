@@ -304,9 +304,10 @@ pub mod tests {
     /// test for reducing commit entry
     fn test_reduce_commit_entry() {
         let mut agent_state = test_agent_state();
-        let context = test_context("bob");
+        let netname = Some("test_reduce_commit_entry");
+        let context = test_context("bob", netname);
         let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
-        let mut context = test_context("bob");
+        let mut context = test_context("bob", netname);
         Arc::get_mut(&mut context)
             .unwrap()
             .set_state(Arc::new(RwLock::new(state)));

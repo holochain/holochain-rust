@@ -428,10 +428,10 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
 pub mod tests {
     use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
-    use holochain_core::context::mock_network_config;
+    use holochain_core::context::unique_mock_config;
 
     pub fn example_serialized_network_config() -> String {
-        String::from(mock_network_config())
+        String::from(unique_mock_config())
     }
 
     #[test]

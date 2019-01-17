@@ -47,14 +47,15 @@ pub mod tests {
     /// Committing a LinkEntry to source chain should work
     #[test]
     fn can_commit_link() {
+        let netname = Some("can_commit_link");
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
-        let context = test_context("alex");
+        let context = test_context("alex", netname);
         let link = create_example_link();
         let link_list = LinkList::new(&[link]);
         let link_list_entry = Entry::LinkList(link_list);
         let commit_action = ActionWrapper::new(Action::Commit((link_list_entry.clone(), None)));
         // Set up instance and process the action
-        let instance = Instance::new(test_context("jason"));
+        let instance = Instance::new(test_context("jason", netname));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);
@@ -78,8 +79,9 @@ pub mod tests {
     /// Committing a LinkList to source chain should work
     #[test]
     fn can_commit_multilink() {
+        let netname = Some("can_commit_multilink");
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
-        let context = test_context("alex");
+        let context = test_context("alex", netname);
         let link_a = create_test_link_a();
         let link_b = create_test_link_b();
         let link_c = create_test_link_c();
@@ -88,7 +90,7 @@ pub mod tests {
         let commit_action = ActionWrapper::new(Action::Commit((link_list_entry.clone(), None)));
         println!("commit_multilink: {:?}", commit_action);
         // Set up instance and process the action
-        let instance = Instance::new(test_context("jason"));
+        let instance = Instance::new(test_context("jason", netname));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);

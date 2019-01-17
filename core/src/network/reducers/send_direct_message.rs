@@ -71,7 +71,7 @@ mod tests {
 
     use crate::{
         action::{Action, ActionWrapper, DirectMessageData, NetworkSettings},
-        context::unique_mock_config,
+        context::mock_network_config,
         instance::tests::test_context,
         network::direct_message::{CustomDirectMessage, DirectMessage},
         state::test_store,
@@ -88,7 +88,7 @@ mod tests {
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_mock_config(),
+            config: mock_network_config(),
             dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));

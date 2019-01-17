@@ -315,7 +315,7 @@ pub mod tests {
             chain_store::ChainStore,
             state::{ActionResponse, AgentState},
         },
-        context::{unique_mock_config, Context},
+        context::{mock_network_config, Context},
         logger::{test_logger, TestLogger},
     };
     use futures::executor::block_on;
@@ -369,7 +369,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                unique_mock_config(),
+                mock_network_config(),
                 None,
                 None,
             )),
@@ -409,7 +409,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                unique_mock_config(),
+                mock_network_config(),
             )
             .unwrap(),
         )
@@ -430,7 +430,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_mock_config(),
+            mock_network_config(),
             None,
             None,
         );
@@ -454,7 +454,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_mock_config(),
+            mock_network_config(),
             None,
             None,
         );

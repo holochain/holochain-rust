@@ -204,8 +204,8 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
 
 /// create a test network
 #[cfg_attr(tarpaulin, skip)]
-pub fn unique_mock_config() -> JsonString {
-    JsonString::from(P2pConfig::unique_mock())
+pub fn mock_network_config() -> JsonString {
+    JsonString::from(P2pConfig::named_mock("mock_network_config()"))
 }
 
 #[cfg(test)]
@@ -215,7 +215,7 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        context::unique_mock_config, logger::test_logger, persister::SimplePersister, state::State,
+        context::mock_network_config, logger::test_logger, persister::SimplePersister, state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
@@ -241,7 +241,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_mock_config(),
+            mock_network_config(),
             None,
             None,
         );
@@ -274,7 +274,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_mock_config(),
+            mock_network_config(),
             None,
             None,
         );

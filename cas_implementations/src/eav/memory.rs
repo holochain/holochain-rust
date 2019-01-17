@@ -55,7 +55,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
     ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?.clone();
         println!("map {:?}", map.clone());
-        Ok(map
+        let filtered_map = map
             .into_iter()
             //.cloned()
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
@@ -63,7 +63,9 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
                 EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-            .collect::<OrdMap<Key, EntityAttributeValue>>())
+            .collect::<OrdMap<Key, EntityAttributeValue>>();
+        println!("filtered_map {:?}", filtered_map.clone());
+        Ok(filtered_map)
     }
 }
 

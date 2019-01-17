@@ -37,7 +37,7 @@ use crate::{
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::{
-    net_connection::NetConnection,
+    net_connection::NetSend,
     protocol_wrapper::{MessageData, ProtocolWrapper},
 };
 use snowflake::ProcessUniqueId;

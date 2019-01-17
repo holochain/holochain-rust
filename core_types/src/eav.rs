@@ -11,9 +11,10 @@ use crate::{
     json::JsonString,
 };
 use chrono::{offset::Utc, DateTime};
-use im::hashmap::HashMap;
+use im::ordmap::OrdMap;
 use objekt;
 use std::{
+    cmp::Ordering,
     convert::TryInto,
     sync::{Arc, RwLock},
 };
@@ -30,8 +31,21 @@ pub type Attribute = String;
 /// Address of AddressableContent representing the EAV value
 pub type Value = Address;
 
-#[derive(PartialEq, Eq, Debug, Clone, Hash)]
+#[derive(PartialEq, Eq, Debug, Clone, Hash, PartialOrd, Ord)]
 pub struct Key(pub i64, pub Action);
+
+/*impl Ord for Key
+{
+    fn cmp(&self, other: &Key) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl PartialOrd for Key {
+    fn partial_cmp(&self, other: &Key) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}*/
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering
@@ -54,7 +68,7 @@ pub struct EntityAttributeValue {
     // source: Source,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Action {
     Insert,
     Delete,
@@ -185,7 +199,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError>;
+    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError>;
 
     //optimize this according to the trait store
     fn fetch_eav_range(
@@ -195,7 +209,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
         let eavs = self.fetch_eav(entity, attribute, value)?;
         Ok(eavs
             .iter()
@@ -218,13 +232,13 @@ clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
-    storage: HashMap<Key, EntityAttributeValue>,
+    storage: OrdMap<Key, EntityAttributeValue>,
 }
 
 impl ExampleEntityAttributeValueStorageNonSync {
     pub fn new() -> ExampleEntityAttributeValueStorageNonSync {
         ExampleEntityAttributeValueStorageNonSync {
-            storage: HashMap::new(),
+            storage: OrdMap::new(),
         }
     }
 
@@ -247,7 +261,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
         let filtered = self
             .clone()
             .storage
@@ -265,7 +279,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
                 Some(ref v) => &eav.value() == v,
                 None => true,
             })
-            .collect::<HashMap<Key, EntityAttributeValue>>();
+            .collect::<OrdMap<Key, EntityAttributeValue>>();
         Ok(filtered)
     }
 }
@@ -298,7 +312,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
         self.content
             .read()
             .unwrap()
@@ -350,7 +364,7 @@ pub fn eav_round_trip_test_runner(
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
 
     assert_eq!(
-        HashMap::new(),
+        OrdMap::new(),
         eav_storage
             .fetch_eav(
                 Some(entity_content.address()),
@@ -362,7 +376,7 @@ pub fn eav_round_trip_test_runner(
 
     eav_storage.add_eav(&eav).expect("could not add eav");
 
-    let mut expected = HashMap::new();
+    let mut expected = OrdMap::new();
     let key = create_key(Action::Insert).expect("Could not create key");
     expected.insert(key, eav.clone());
     // some examples of constraints that should all return the eav

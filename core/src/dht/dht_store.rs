@@ -5,7 +5,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-use im::hashmap::HashMap;
+use im::{hashmap::HashMap, ordmap::OrdMap};
 use std::sync::{Arc, RwLock};
 
 /// The state-slice for the DHT.
@@ -50,7 +50,7 @@ impl DhtStore {
         &self,
         address: Address,
         tag: String,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
         self.meta_storage
             .read()?
             .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)

@@ -5,14 +5,14 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use im::hashmap::HashMap;
+use im::ordmap::OrdMap;
 use std::sync::{Arc, RwLock};
 
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct EavMemoryStorage {
-    storage: Arc<RwLock<HashMap<Key, EntityAttributeValue>>>,
+    storage: Arc<RwLock<OrdMap<Key, EntityAttributeValue>>>,
     id: Uuid,
 }
 
@@ -25,7 +25,7 @@ impl PartialEq for EavMemoryStorage {
 impl EavMemoryStorage {
     pub fn new() -> EavMemoryStorage {
         EavMemoryStorage {
-            storage: Arc::new(RwLock::new(HashMap::new())),
+            storage: Arc::new(RwLock::new(OrdMap::new())),
             id: Uuid::new_v4(),
         }
     }
@@ -54,7 +54,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?.clone();
         Ok(map
             .into_iter()
@@ -64,7 +64,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
                 EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-            .collect::<HashMap<Key, EntityAttributeValue>>())
+            .collect::<OrdMap<Key, EntityAttributeValue>>())
     }
 }
 

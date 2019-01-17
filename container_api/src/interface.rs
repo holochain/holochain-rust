@@ -12,6 +12,7 @@ use std::{
 };
 
 use config::{
+    AgentConfiguration,
     DnaConfiguration, InstanceConfiguration, InterfaceConfiguration, InterfaceDriver,
     StorageConfiguration,
 };
@@ -430,6 +431,34 @@ impl ContainerApiBuilder {
                 |c| Ok(c.config().interfaces) as Result<Vec<InterfaceConfiguration>, String>
             )?;
             Ok(serde_json::to_value(interfaces)
+                .map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self.io
+            .add_method("admin/agent/add", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                let name = Self::get_as_string("name", &params_map)?;
+                let public_address = Self::get_as_string("public_address", &params_map)?;
+                let key_file = Self::get_as_string("key_file", &params_map)?;
+
+                let agent = AgentConfiguration { id, name, public_address, key_file };
+                container_call!(|c| c.add_agent(agent))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io.add_method("admin/agent/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.remove_agent(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/agent/list", move |_params| {
+            let agents = container_call!(
+                |c| Ok(c.config().agents) as Result<Vec<AgentConfiguration>, String>
+            )?;
+            Ok(serde_json::to_value(agents)
                 .map_err(|_| jsonrpc_core::Error::internal_error())?)
         });
 

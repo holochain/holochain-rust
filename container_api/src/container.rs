@@ -589,8 +589,9 @@ pub mod tests {
                                 "functions": ["test"]
                              }
                         },
-                        "functions": {
-                            "test": {
+                        "fn_declarations": [
+                            {
+                                "name": "test",
                                 "inputs": [
                                     {
                                         "name": "post",
@@ -604,7 +605,7 @@ pub mod tests {
                                     }
                                 ]
                             }
-                        },
+                        ],
                         "code": {
                             "code": "AAECAw=="
                         }

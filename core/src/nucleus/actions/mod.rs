@@ -36,7 +36,7 @@ pub mod tests {
             wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
         ));
 
-        let defs = (BTreeMap::new(), BTreeMap::new());
+        let defs = (Vec::new(), BTreeMap::new());
         let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
         dna.zomes

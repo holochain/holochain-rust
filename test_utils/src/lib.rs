@@ -134,8 +134,8 @@ pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, Zome
     let mut capabilities = BTreeMap::new();
     capabilities.insert("test_cap".to_string(), capability);
 
-    let mut functions = BTreeMap::new();
-    functions.insert(fn_decl.name.clone(), fn_decl);
+    let mut functions = Vec::new();
+    functions.push(fn_decl);
     (functions, capabilities)
 }
 

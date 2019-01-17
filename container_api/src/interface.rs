@@ -114,8 +114,8 @@ impl ContainerApiBuilder {
         match dna {
             Some(dna) => {
                 for (zome_name, zome) in dna.zomes {
-                    for (_, func) in zome.functions {
-                        let func_name = String::from(func.name);
+                    for fn_decl in zome.fn_declarations {
+                        let func_name = String::from(fn_decl.name);
                         let zome_name = zome_name.clone();
                         let cap_name = String::from("test_cap");
                         let method_name =

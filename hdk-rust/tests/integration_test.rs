@@ -97,20 +97,17 @@ pub fn create_test_defs_with_fn_names(
     fn_names: Vec<&str>,
 ) -> (ZomeFnDeclarations, ZomeCapabilities) {
     let mut capability = Capability::new(CapabilityType::Public);
-    let mut functions = BTreeMap::new();
+    let mut fn_declarations = Vec::new();
 
     for fn_name in fn_names {
-        let mut fn_decl = FnDeclaration::new();
-        fn_decl.name = String::from(fn_name);
         capability.functions.push(String::from(fn_name));
-
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);
-        functions.insert(fn_name.to_string(), fn_decl);
+        fn_declarations.push(fn_decl);
     }
     let mut capabilities = BTreeMap::new();
     capabilities.insert("test_cap".to_string(), capability);
-    (functions, capabilities)
+    (fn_declarations, capabilities)
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]

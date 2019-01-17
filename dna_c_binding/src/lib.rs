@@ -257,9 +257,9 @@ fn fn_names_as_vec(dna: &Dna, zome_name: &str) -> Option<Vec<*const c_char>> {
     let result = dna
         .zomes
         .get(zome_name)?
-        .functions
+        .fn_declarations
         .iter()
-        .map(|(_name, fn_declaration)| {
+        .map(|fn_declaration| {
             let raw = match CString::new(fn_declaration.name.clone()) {
                 Ok(s) => s.into_raw(),
                 Err(_) => std::ptr::null(),
@@ -292,10 +292,7 @@ fn fn_parameters_as_vec(
     function_name: &str,
 ) -> Option<Vec<*const c_char>> {
     let result = dna
-        .zomes
-        .get(zome_name)?
-        .functions
-        .get(function_name)?
+        .get_function_with_zome_name(zome_name,function_name).ok()?
         .inputs
         .iter()
         .map(|input| {

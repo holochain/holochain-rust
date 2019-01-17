@@ -415,8 +415,8 @@ pub mod tests {
         capability.functions = vec![fn_decl.name.clone()];
         let mut capabilities = BTreeMap::new();
         capabilities.insert(test_capability_name(), capability);
-        let mut functions = BTreeMap::new();
-        functions.insert(test_function_name(), fn_decl);
+        let mut functions = Vec::new();
+        functions.push(fn_decl);
 
         create_test_dna_with_defs(&test_zome_name(), (functions, capabilities), &wasm)
     }

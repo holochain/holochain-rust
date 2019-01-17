@@ -56,7 +56,7 @@ impl Config {
 
 pub type ZomeEntryTypes = BTreeMap<EntryType, EntryTypeDef>;
 pub type ZomeCapabilities = BTreeMap<String, capabilities::Capability>;
-pub type ZomeFnDeclarations = BTreeMap<String, capabilities::FnDeclaration>;
+pub type ZomeFnDeclarations = Vec<capabilities::FnDeclaration>;
 
 /// Represents an individual "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
@@ -83,7 +83,7 @@ pub struct Zome {
 
     /// An array of functions declared in this this zome.
     #[serde(default)]
-    pub functions: ZomeFnDeclarations,
+    pub fn_declarations: ZomeFnDeclarations,
 
     /// Validation code for this entry_type.
     #[serde(default)]
@@ -103,7 +103,7 @@ impl Default for Zome {
             description: String::new(),
             config: Config::new(),
             entry_types: BTreeMap::new(),
-            functions: BTreeMap::new(),
+            fn_declarations: Vec::new(),
             capabilities: BTreeMap::new(),
             code: DnaWasm::new(),
             bridges: Vec::new(),
@@ -117,7 +117,7 @@ impl Zome {
         description: &str,
         config: &Config,
         entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
-        functions: &BTreeMap<String, capabilities::FnDeclaration>,
+        fn_declarations: &Vec<capabilities::FnDeclaration>,
         capabilities: &BTreeMap<String, capabilities::Capability>,
         code: &DnaWasm,
     ) -> Zome {
@@ -125,7 +125,7 @@ impl Zome {
             description: description.into(),
             config: config.clone(),
             entry_types: entry_types.to_owned(),
-            functions: functions.to_owned(),
+            fn_declarations: fn_declarations.to_owned(),
             capabilities: capabilities.to_owned(),
             code: code.clone(),
             bridges: Vec::new(),
@@ -146,8 +146,7 @@ impl Zome {
         inputs: Vec<FnParameter>,
         outputs: Vec<FnParameter>,
     ) {
-        self.functions.insert(
-            name.clone(),
+        self.fn_declarations.push(
             FnDeclaration {
                 name,
                 inputs,
@@ -202,7 +201,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"functions\":{},\"code\":{\"code\":\"\"},\"bridges\":[]}";
+        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from(expected.clone()),
@@ -215,7 +214,7 @@ pub mod tests {
     #[test]
     fn test_zome_add_fndecl() {
         let mut zome = Zome::default();
-        assert_eq!(zome.functions.len(), 0);
+        assert_eq!(zome.fn_declarations.len(), 0);
         zome.add_fndeclaration(
             String::from("hello"),
             vec![],
@@ -224,9 +223,9 @@ pub mod tests {
                 parameter_type: String::from("String"),
             }],
         );
-        assert_eq!(zome.functions.len(), 1);
+        assert_eq!(zome.fn_declarations.len(), 1);
 
-        let expected = "{\"hello\": FnDeclaration { name: \"hello\", inputs: [], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }}";
-        assert_eq!(expected, format!("{:?}", zome.functions),);
+        let expected = "[FnDeclaration { name: \"hello\", inputs: [], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }]";
+        assert_eq!(expected, format!("{:?}", zome.fn_declarations),);
     }
 }

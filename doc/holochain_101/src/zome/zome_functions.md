@@ -30,9 +30,10 @@ When Holochain loads a DNA file, to start an instance from it, it expects the pr
             "capabilities": {
                 "test_capability": {
                     "type": "public"
+                    "functions": [],
                 }
             },
-            "functions": {}
+            "fn_declarations": [],
             "code": {
                 "code": "AAECAw=="
             }
@@ -80,16 +81,16 @@ Important notes for the current use of Capabilities:
 
 ## Function Declarations
 
-All of the Zome's functions are declared in the `functions` object. Here is an example of one:
+All of the Zome's functions are declared in the `fn_declarations` array. Here is an example of one:
 
 ```json
-"functions": {
-    "get_task_list": {
+"fn_declarations": [
+    {
         "name": "get_task_list",
         "inputs": [{"name": "username", "type": "string"}],
         "outputs": [{"name": "task_list", "type": "json"}]
     }
-}
+]
 ```
 
 Each function declaration is an object that includes the `name`, and the `inputs` and `outputs` expected for the function. Since WebAssembly only compiles from code languages with a type system, the generation of these inputs and outputs can expected to be automated.

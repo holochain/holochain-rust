@@ -129,13 +129,13 @@ pub mod tests {
                                 "functions": ["test"]
                             }
                         },
-                        "functions": {
-                            "test": {
-                               "name": "test",
+                        "fn_declarations": [
+                            {
+                                "name": "test",
                                 "inputs": [],
                                 "outputs": []
-                             }
-                        },
+                            }
+                        ],
                         "code": {
                             "code": "AAECAw=="
                         },
@@ -192,7 +192,7 @@ pub mod tests {
                             }
                         },
                         "capabilities": {},
-                        "functions": {},
+                        "fn_declarations": [],
                         "code": {"code": ""}
                     }
                 }
@@ -389,7 +389,7 @@ pub mod tests {
                                 "type": "public"
                             }
                         },
-                        "functions": {},
+                        "fn_declarations": [],
                         "code": {
                             "code": "AAECAw=="
                         }
@@ -425,10 +425,11 @@ pub mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "type": "public"
+                                "type": "public",
+                                "functions": []
                             }
                         },
-                        "functions": {},
+                        "fn_declarations": [],
                         "entry_types": {
                             "test type": {
                                 "description": "",
@@ -473,10 +474,11 @@ pub mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "type": "public"
+                                "type": "public",
+                                "functions": []
                             }
                         },
-                        "functions": {},
+                        "fn_declarations": [],
                         "entry_types": {
                             "test type": {
                                 "description": "",

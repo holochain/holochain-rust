@@ -137,7 +137,9 @@ impl Dna {
         zome: &'a zome::Zome,
         function_name: &str,
     ) -> Option<&'a FnDeclaration> {
-        zome.functions.get(function_name)
+        zome.fn_declarations
+            .iter()
+            .find(|ref fn_decl| fn_decl.name == function_name)
     }
 
     /// Return a Zome Function declaration from a Zome name and Function name.

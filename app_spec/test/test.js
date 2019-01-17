@@ -82,7 +82,7 @@ test('create_post with bad reply to', (t) => {
   const error = JSON.parse(result.Err.Internal)
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)
-  t.equal(error.line, "86")
+  t.equal(error.line, "94")
 })
 
 test('post max content size 280 characters', (t) => {
@@ -101,7 +101,7 @@ test('post max content size 280 characters', (t) => {
 
   t.ok(inner.file)
   t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
-  t.equals(inner.line, "86")
+  t.equals(inner.line, "94")
 })
 
 test('posts_by_agent', (t) => {

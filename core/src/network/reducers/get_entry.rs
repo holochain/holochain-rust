@@ -73,8 +73,7 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::{
-        agent::AgentId, crud_status::CrudStatus, entry::EntryWithMeta,
-        error::HolochainError,
+        agent::AgentId, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
     };
     use holochain_net_connection::protocol_wrapper::DhtData;
     use std::sync::{Arc, RwLock};

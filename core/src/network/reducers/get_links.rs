@@ -66,7 +66,7 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use holochain_core_types::{error::HolochainError};
+    use holochain_core_types::error::HolochainError;
     use std::sync::{Arc, RwLock};
 
     #[test]

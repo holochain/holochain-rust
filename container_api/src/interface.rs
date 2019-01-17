@@ -2,20 +2,52 @@ use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
-use jsonrpc_ws_server::jsonrpc_core::{self, IoHandler, Value};
+use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use serde_json;
 use std::{
     collections::HashMap,
-    sync::{Arc, RwLock},
+    path::PathBuf,
+    sync::{mpsc::Receiver, Arc, RwLock},
 };
 
-use config::InstanceConfiguration;
+use config::{DnaConfiguration, InstanceConfiguration, StorageConfiguration};
+use container::{ContainerAdmin, CONTAINER};
+use serde_json::map::Map;
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
 
 pub trait DispatchRpc {
     fn handler(self) -> IoHandler;
+}
+
+macro_rules! container_call {
+    ( |$container:ident| $call_expr:expr ) => {
+        match * CONTAINER.lock().unwrap() {
+            Some( ref mut $container) => {
+                $call_expr
+                    .map_err( | e | {
+                        let mut new = jsonrpc_core::Error::internal_error();
+                        new.message = e.to_string();
+                        new
+                    })
+            }
+            None => {
+                println!("Admin container function called without a container mounted as singleton!");
+                // If interfaces are supposed to work, the container needs to be mounted to a static place
+                // with container_api::container::mount_container_from_config(config: Configuration).
+                // There are cases in which we don't want to treat the container as a singleton such as
+                // holochain_nodejs and tests in particular. In those cases, calling admin functions via
+                // interfaces (websockt/http) won't work, but also we don't need that.
+                let mut error = jsonrpc_core::Error::internal_error();
+                error.message = String::from(
+                    "Admin container function called without a container mounted as singleton!",
+                );
+                Err(error)
+            },
+        }
+
+    }
 }
 
 /// ContainerApiBuilder creates IoHandlers that implement RPCs for exposure
@@ -58,18 +90,22 @@ impl ContainerApiBuilder {
     fn setup_info_api(&mut self) {
         let instance_configs = self.instance_configs.clone();
 
-        let configs: Vec<_> = self
+        let configs: Vec<serde_json::Value> = self
             .instances
             .iter()
             .filter(|&(name, _)| instance_configs.contains_key(name))
             .map(|(name, _)| instance_configs.get(name).unwrap())
+            .map(|instance| {
+                json!({
+                    "id": instance.id,
+                    "dna": instance.dna,
+                    "agent": instance.agent,
+                })
+            })
             .collect();
 
-        let config_string = serde_json::to_string(&configs)
-            .expect("Vector of InstanceConfigurations must be serializable");
-
         self.io.add_method("info/instances", move |_| {
-            Ok(Value::String(config_string.clone()))
+            Ok(serde_json::Value::Array(configs.clone()))
         });
     }
 
@@ -156,10 +192,149 @@ impl ContainerApiBuilder {
             .insert(instance_name.clone(), instance.clone());
         self
     }
+
+    fn unwrap_params_map(params: Params) -> Result<Map<String, Value>, jsonrpc_core::Error> {
+        match params {
+            Params::Map(map) => Ok(map),
+            _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
+        }
+    }
+
+    fn get_as_string<T: Into<String>>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<String, jsonrpc_core::Error> {
+        let key = key.into();
+        Ok(params_map
+            .get(&key)
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param not provided",
+                &key
+            )))?
+            .as_str()
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` is not a valid json string",
+                &key
+            )))?
+            .to_string())
+    }
+
+    pub fn with_admin_dna_functions(mut self) -> Self {
+        self.io
+            .add_method("admin/dna/install_from_file", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                let path = Self::get_as_string("path", &params_map)?;
+                container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string()))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io.add_method("admin/dna/uninstall", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.uninstall_dna(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/dna/list", move |_params| {
+            let dnas =
+                container_call!(|c| Ok(c.config().dnas) as Result<Vec<DnaConfiguration>, String>)?;
+            Ok(serde_json::Value::Array(
+                dnas.iter()
+                    .map(|dna| json!({"id": dna.id, "hash": dna.hash}))
+                    .collect(),
+            ))
+        });
+
+        self.io.add_method("admin/instance/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+
+            let id = Self::get_as_string("id", &params_map)?;
+            let dna_id = Self::get_as_string("dna_id", &params_map)?;
+            let agent_id = Self::get_as_string("agent_id", &params_map)?;
+            let new_instance = InstanceConfiguration {
+                id: id.to_string(),
+                dna: dna_id.to_string(),
+                agent: agent_id.to_string(),
+                storage: StorageConfiguration::Memory, // TODO: don't actually use this. Have some idea of default store
+            };
+            container_call!(|c| c.add_instance(new_instance))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/instance/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.remove_instance(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/instance/start", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.start_instance(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/instance/stop", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.stop_instance(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/instance/list", move |_params| {
+            let instances = container_call!(
+                |c| Ok(c.config().instances) as Result<Vec<InstanceConfiguration>, String>
+            )?;
+            Ok(serde_json::Value::Array(
+                instances
+                    .iter()
+                    .map(|instance| {
+                        json!({
+                            "id": instance.id,
+                            "dna": instance.dna,
+                            "agent": instance.agent,
+                        })
+                    })
+                    .collect(),
+            ))
+        });
+
+        self.io
+            .add_method("admin/instance/running", move |_params| {
+                let active_ids = container_call!(|c| Ok(c
+                    .instances()
+                    .iter()
+                    .filter(|(_, hc)| hc.read().unwrap().active())
+                    .map(|(id, _)| id)
+                    .cloned()
+                    .collect())
+                    as Result<Vec<String>, String>)?;
+                let instances = container_call!(
+                    |c| Ok(c.config().instances) as Result<Vec<InstanceConfiguration>, String>
+                )?;
+                Ok(serde_json::Value::Array(
+                    instances
+                        .iter()
+                        .filter(|instance| active_ids.contains(&instance.id))
+                        .map(|instance| {
+                            json!({
+                                "id": instance.id,
+                                "dna": instance.dna,
+                                "agent": instance.agent,
+                            })
+                        })
+                        .collect(),
+                ))
+            });
+
+        self
+    }
 }
 
 pub trait Interface {
-    fn run(&self, handler: IoHandler) -> Result<(), String>;
+    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<(), String>;
 }
 
 #[cfg(test)]
@@ -177,6 +352,18 @@ pub mod tests {
         let mut instances = InstanceMap::new();
         instances.insert("test-instance-1".into(), holochain);
         (container.config(), instances)
+    }
+
+    fn create_call_str(method: &str, params: Option<&str>) -> String {
+        json!({"jsonrpc": "2.0", "id": "0", "method": method, "params": params}).to_string()
+    }
+
+    /// checks that the response is a valid JSON string containing a `result` field which is stringified JSON
+    ///
+    fn unwrap_response_if_valid(response_str: &String) -> String {
+        let result = &serde_json::from_str::<serde_json::Value>(response_str)
+            .expect("Response not valid JSON")["result"];
+        result.to_string()
     }
 
     #[test]
@@ -211,5 +398,28 @@ pub mod tests {
         assert!(result.contains("info/instances"));
         assert!(result.contains(r#""happ-store/greeter/public/hello""#));
         assert!(!result.contains(r#""test-instance-1//test/test""#));
+    }
+
+    /// The below test cannot be extented to test the other RPC methods due to the singleton design of the container
+    /// It may be worth removing this test but I have included it as an example of testing the responses for the
+    /// other rpc methods if this becomes possible in the future
+    #[test]
+    fn test_rpc_call_responses() {
+        let (config, instances) = example_config_and_instances();
+        let handler = ContainerApiBuilder::new()
+            .with_instances(instances.clone())
+            .with_instance_configs(config.instances)
+            .with_admin_dna_functions()
+            .spawn();
+
+        let response_str = handler
+            .handle_request_sync(&create_call_str("info/instances", None))
+            .expect("Invalid call to handler");
+        println!("{}", response_str);
+        let result = unwrap_response_if_valid(&response_str);
+        assert_eq!(
+            result,
+            r#"[{"id":"test-instance-1","dna":"bridge-callee","agent":"test-agent-1"}]"#
+        );
     }
 }

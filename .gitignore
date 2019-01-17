@@ -30,3 +30,5 @@ cobertura.xml
 container/example-config/tmp-storage/*
 container/tmp-storage/*
 container_api/tmp-storage/*
+tmp-test-container-config.toml
+tmp-*-container-config.toml

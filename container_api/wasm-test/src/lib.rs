@@ -60,7 +60,10 @@ pub extern "C" fn debug_hello(encoded_allocation_of_input: RibosomeEncodingBits)
         Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
     };
 
-    let mut mem_stack = WasmStack::try_from(allocation).unwrap();
+    let mut mem_stack = match WasmStack::try_from(allocation) {
+        Ok(mem_stack) => mem_stack,
+        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+    };
 
     hdk_debug(
         &mut mem_stack,
@@ -80,7 +83,10 @@ pub extern "C" fn debug_multiple(encoded_allocation_of_input: RibosomeEncodingBi
         Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
     };
 
-    let mut mem_stack = WasmStack::try_from(allocation).unwrap();
+    let mut mem_stack = match WasmStack::try_from(allocation) {
+        Ok(mem_stack) => mem_stack,
+        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+    };
 
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("Hello")));
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("world")));
@@ -105,7 +111,10 @@ pub extern "C" fn debug_stacked_hello(encoded_allocation_of_input: RibosomeEncod
         Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
     };
 
-    let mut mem_stack = WasmStack::try_from(allocation).unwrap();
+    let mut mem_stack = match WasmStack::try_from(allocation) {
+        Ok(mem_stack) => mem_stack,
+        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+    };
 
     let fish = mem_stack.write_json(
         TestStruct {
@@ -222,7 +231,11 @@ pub extern "C" fn commit_test(encoded_allocation_of_input: RibosomeEncodingBits)
         Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
     };
 
-    let mut mem_stack = WasmStack::try_from(allocation).unwrap();
+    let mut mem_stack = match WasmStack::try_from(allocation) {
+        Ok(mem_stack) => mem_stack,
+        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+    };
+
     let result = hdk_commit(&mut mem_stack, "testEntryType", "hello");
 
     return_code_for_allocation_result(
@@ -242,7 +255,11 @@ pub extern "C" fn commit_fail_test(encoded_allocation_of_input: RibosomeEncoding
         Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
     };
 
-    let mut mem_stack = WasmStack::try_from(allocation).unwrap();
+    let mut mem_stack = match WasmStack::try_from(allocation) {
+        Ok(mem_stack) => mem_stack,
+        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+    };
+
     let result = hdk_commit_fail(&mut mem_stack);
 
     return_code_for_allocation_result(
@@ -265,7 +282,10 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
     };
 
-    let mut mem_stack = WasmStack::try_from(allocation).unwrap();
+    let mut mem_stack = match WasmStack::try_from(allocation) {
+        Ok(mem_stack) => mem_stack,
+        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+    };
 
     return_code_for_allocation_result(
         mem_stack.write_json(RawString::from("ChainFull"))
@@ -284,7 +304,10 @@ pub extern "C" fn round_trip_test(encoded_allocation_of_input: RibosomeEncodingB
         Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
     };
 
-    let mut mem_stack = WasmStack::try_from(allocation).unwrap();
+    let mut mem_stack = match WasmStack::try_from(allocation) {
+        Ok(mem_stack) => mem_stack,
+        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+    };
 
     let input = load_ribosome_encoded_json(encoded_allocation_of_input as RibosomeEncodingBits).unwrap();
     let output = test_inner(input);

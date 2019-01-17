@@ -18,7 +18,7 @@ use holochain_wasm_utils::{
         EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
-    memory::{allocation::WasmAllocation, ribosome::return_code_for_allocation_result},
+    memory::{allocation::WasmAllocation, allocation::AllocationError, ribosome::return_code_for_allocation_result},
 };
 use std::{
     collections::BTreeMap,
@@ -308,7 +308,13 @@ pub extern "C" fn __hdk_get_json_definition(
 
     let json_string = JsonString::from(partial_zome);
 
-    let mut mem_stack = unsafe { G_MEM_STACK.unwrap() };
+    let mut mem_stack = unsafe {
+        match G_MEM_STACK {
+            Some(mem_stack) => mem_stack,
+            None => return return_code_for_allocation_result(Err(AllocationError::BadStackAlignment)).into(),
+        }
+    };
+
     RibosomeEncodingBits::from(return_code_for_allocation_result(
         mem_stack.write_string(&String::from(json_string)),
     ))

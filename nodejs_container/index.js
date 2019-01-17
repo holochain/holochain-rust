@@ -1,4 +1,3 @@
-
 const binary = require('node-pre-gyp');
 const fs = require('fs');
 const path = require('path');
@@ -10,9 +9,9 @@ const { makeConfig, Container } = require(binding_path);
 
 Container.prototype.callRaw = Container.prototype.call
 
-Container.prototype.call = function (id, zome, trait, fn, params) {
+Container.prototype.call = function (id, zome, fn, params) {
     const stringInput = JSON.stringify(params);
-    const rawResult = this.callRaw(id, zome, trait, fn, stringInput);
+    const rawResult = this.callRaw(id, zome, fn, stringInput);
     let result;
     try {
         result = JSON.parse(rawResult);
@@ -28,7 +27,7 @@ Container.prototype.call = function (id, zome, trait, fn, params) {
 Container.prototype.makeCaller = function (agentId, dnaPath) {
   const instanceId = agentId + '::' + dnaPath
   return {
-    call: (zome, cap, fn, params) => this.call(instanceId, zome, cap, fn, params),
+    call: (zome, cap, fn, params) => this.call(instanceId, zome, fn, params),
     agentId: this.agent_id(instanceId)
   }
 }

@@ -130,6 +130,10 @@ mod tests {
     }
 
     #[test]
+    // This test needs to be refactored.
+    // It is non-deterministically failing with "sending on a closed channel" originating form
+    // within the mock network.
+    #[cfg(feature = "broken-tests")]
     pub fn reduce_get_links_timeout_test() {
         let mut context = test_context("alice", None);
         let store = test_store(context.clone());

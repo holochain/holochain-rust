@@ -12,7 +12,7 @@ use std::{
 };
 
 use config::{
-    AgentConfiguration, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
+    AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver, StorageConfiguration,
 };
 use container::{ContainerAdmin, CONTAINER};
@@ -462,6 +462,36 @@ impl ContainerApiBuilder {
                 |c| Ok(c.config().agents) as Result<Vec<AgentConfiguration>, String>
             )?;
             Ok(serde_json::to_value(agents).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self.io.add_method("admin/bridge/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let caller_id = Self::get_as_string("caller_id", &params_map)?;
+            let callee_id = Self::get_as_string("callee_id", &params_map)?;
+            let handle = Self::get_as_string("handle", &params_map)?;
+
+            let bridge = Bridge {
+                caller_id,
+                callee_id,
+                handle,
+            };
+            container_call!(|c| c.add_bridge(bridge))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/bridge/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let caller_id = Self::get_as_string("caller_id", &params_map)?;
+            let callee_id = Self::get_as_string("callee_id", &params_map)?;
+            container_call!(|c| c.remove_bridge(&caller_id, &callee_id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/bridge/list", move |_params| {
+            let bridges = container_call!(
+                |c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>
+            )?;
+            Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
         });
 
         self

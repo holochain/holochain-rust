@@ -33,19 +33,6 @@ pub type Value = Address;
 #[derive(PartialEq, Eq, Debug, Clone, Hash, PartialOrd, Ord)]
 pub struct Key(pub i64, pub Action);
 
-/*impl Ord for Key
-{
-    fn cmp(&self, other: &Key) -> Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
-impl PartialOrd for Key {
-    fn partial_cmp(&self, other: &Key) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}*/
-
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering
 // @see https://papers.radixdlt.com/tempo/#logical-clocks
@@ -80,7 +67,6 @@ impl ToString for Action {
         match self {
             Action::Insert => String::from("Insert"),
             Action::Delete => String::from("Delete"),
-            Action::Update => String::from("Update"),
             _ => String::from("None"),
         }
     }
@@ -92,8 +78,6 @@ impl From<String> for Action {
             Action::Insert
         } else if action == String::from("Delete") {
             Action::Delete
-        } else if action == String::from("Update") {
-            Action::Update
         } else {
             Action::None
         }

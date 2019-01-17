@@ -183,7 +183,7 @@ impl From<HolochainError> for RibosomeErrorCode {
         // the mapping between HolochainError and RibosomeErrorCode is pretty poor overall
         match error {
             HolochainError::ErrorGeneric(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::NotImplemented => RibosomeErrorCode::CallbackFailed,
+            HolochainError::NotImplemented(_) => RibosomeErrorCode::CallbackFailed,
             HolochainError::LoggingError => RibosomeErrorCode::Unspecified,
             HolochainError::DnaMissing => RibosomeErrorCode::Unspecified,
             HolochainError::Dna(_) => RibosomeErrorCode::Unspecified,

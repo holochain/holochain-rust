@@ -1,8 +1,7 @@
 use crate::{
     config::{
-        AgentConfiguration,
-        DnaConfiguration, InstanceConfiguration, InstanceReferenceConfiguration,
-        InterfaceConfiguration,
+        AgentConfiguration, DnaConfiguration, InstanceConfiguration,
+        InstanceReferenceConfiguration, InterfaceConfiguration,
     },
     container::{base::notify, Container},
     error::HolochainInstanceError,
@@ -327,12 +326,7 @@ impl ContainerAdmin for Container {
 
     fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        if new_config
-            .agents
-            .iter()
-            .find(|i| i.id == *id)
-            .is_none()
-        {
+        if new_config.agents.iter().find(|i| i.id == *id).is_none() {
             return Err(HolochainError::ErrorGeneric(format!(
                 "Agent with ID '{}' does not exist",
                 id
@@ -983,7 +977,10 @@ public_address = "new-----------------------------------------------------------
     fn test_remove_agent() {
         let mut container = create_test_container("test_remove_agent");
 
-        assert_eq!(container.remove_agent(&String::from("test-agent-2")), Ok(()),);
+        assert_eq!(
+            container.remove_agent(&String::from("test-agent-2")),
+            Ok(()),
+        );
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");

@@ -14,10 +14,10 @@ use holochain_core::{
 };
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
+    cas::content::AddressableContent,
     dna::Dna,
     error::HolochainError,
     json::JsonString,
-    cas::content::AddressableContent,
 };
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 
@@ -108,7 +108,9 @@ impl Container {
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
-            config_path: config.persistence_dir.join(PathBuf::from("container-config.toml")),
+            config_path: config
+                .persistence_dir
+                .join(PathBuf::from("container-config.toml")),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
@@ -467,21 +469,21 @@ impl Container {
     }
 
     pub fn save_dna(&self, dna: &Dna) -> Result<PathBuf, HolochainError> {
-        let dna_dir_path = self.config.persistence_dir
-            .join("dna");
-        let mut file_path = dna_dir_path
-            .join(dna.address().to_string());
+        let dna_dir_path = self.config.persistence_dir.join("dna");
+        let mut file_path = dna_dir_path.join(dna.address().to_string());
         file_path.set_extension("hcpkg");
         fs::create_dir_all(&dna_dir_path)?;
         self.save_dna_to(dna, file_path)
     }
 
     pub fn save_dna_to(&self, dna: &Dna, path: PathBuf) -> Result<PathBuf, HolochainError> {
-        let file = File::create(&path)
-            .map_err(|e| HolochainError::ConfigError(
-                format!("Error writing DNA to {}, {}", path.to_str().unwrap().to_string(), e.to_string())
-            )
-        )?;
+        let file = File::create(&path).map_err(|e| {
+            HolochainError::ConfigError(format!(
+                "Error writing DNA to {}, {}",
+                path.to_str().unwrap().to_string(),
+                e.to_string()
+            ))
+        })?;
         serde_json::to_writer_pretty(&file, dna.into())?;
         Ok(path)
     }

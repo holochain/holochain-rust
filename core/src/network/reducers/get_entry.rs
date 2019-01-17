@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::protocol_wrapper::{GetDhtData, JsonProtocol};
+use holochain_net_connection::json_protocol::{GetDhtData, JsonProtocol};
 use std::sync::Arc;
 
 fn inner(network_state: &mut NetworkState, address: &Address) -> Result<(), HolochainError> {
@@ -79,7 +79,7 @@ mod tests {
     use holochain_core_types::{
         crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
     };
-    use holochain_net_connection::protocol_wrapper::DhtData;
+    use holochain_net_connection::json_protocol::DhtData;
     use std::sync::{Arc, RwLock};
 
     #[test]

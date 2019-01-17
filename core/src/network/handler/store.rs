@@ -8,7 +8,7 @@ use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
 };
-use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData};
+use holochain_net_connection::json_protocol::{DhtData, DhtMetaData};
 use std::{sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry.

@@ -5,7 +5,7 @@ use crate::{
     nucleus,
 };
 use holochain_core_types::cas::content::Address;
-use holochain_net_connection::protocol_wrapper::{
+use holochain_net_connection::json_protocol::{
     DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
 };
 use regex::Regex;

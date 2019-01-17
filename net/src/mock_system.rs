@@ -3,7 +3,7 @@
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     protocol::Protocol,
-    protocol_wrapper::{
+    json_protocol::{
         DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, JsonProtocol,
         MessageData, PeerData,
     },

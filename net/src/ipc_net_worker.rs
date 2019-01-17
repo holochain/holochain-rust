@@ -13,7 +13,7 @@ use holochain_net_connection::{
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorker, NetWorkerFactory},
     net_relay::NetConnectionRelay,
     protocol::Protocol,
-    protocol_wrapper::{ConfigData, ConnectData, JsonProtocol, StateData},
+    json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
     NetResult,
 };
 

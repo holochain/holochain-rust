@@ -31,4 +31,4 @@ pub mod net_connection;
 pub mod net_connection_thread;
 pub mod net_relay;
 pub mod protocol;
-pub mod protocol_wrapper;
+pub mod json_protocol;

@@ -5,7 +5,7 @@ use holochain_core_types::json::JsonString;
 use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
-    protocol_wrapper::JsonProtocol,
+    json_protocol::JsonProtocol,
     NetResult,
 };
 use std::{
@@ -92,7 +92,7 @@ mod tests {
     use crate::p2p_config::P2pConfig;
 
     use holochain_core_types::cas::content::Address;
-    use holochain_net_connection::protocol_wrapper::{
+    use holochain_net_connection::json_protocol::{
         DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, JsonProtocol, MessageData,
         SuccessResultData, TrackDnaData,
     };
@@ -227,7 +227,7 @@ mod tests {
 
         let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let JsonProtocol::GetDhtData(msg) = res {
+        if let JsonProtocol::HandleGetDhtData(msg) = res {
             mock_worker_1
                 .receive(
                     JsonProtocol::GetDhtDataResult(DhtData {
@@ -325,7 +325,7 @@ mod tests {
 
         let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let JsonProtocol::GetDhtMeta(msg) = res {
+        if let JsonProtocol::HandleGetDhtMeta(msg) = res {
             mock_worker_1
                 .receive(
                     JsonProtocol::GetDhtMetaResult(DhtMetaData {

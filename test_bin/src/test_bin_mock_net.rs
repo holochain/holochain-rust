@@ -11,7 +11,7 @@ pub mod p2p_node;
 
 use holochain_net_connection::{
     net_connection::NetSend,
-    protocol_wrapper::{JsonProtocol, MessageData, TrackDnaData},
+    json_protocol::{JsonProtocol, MessageData, TrackDnaData},
     NetResult,
 };
 use p2p_node::P2pNode;

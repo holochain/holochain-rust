@@ -4,7 +4,7 @@ use crate::{
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::protocol_wrapper::{DhtMetaData, GetDhtMetaData, JsonProtocol};
+use holochain_net_connection::json_protocol::{DhtMetaData, GetDhtMetaData, JsonProtocol};
 use std::sync::Arc;
 
 fn reduce_respond_get_links_inner(

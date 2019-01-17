@@ -1,6 +1,6 @@
 use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::protocol_wrapper::DhtMetaData;
+use holochain_net_connection::json_protocol::DhtMetaData;
 use std::sync::Arc;
 
 fn inner(

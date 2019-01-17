@@ -17,7 +17,7 @@ use holochain_core_types::{
     link::Link,
     validation::ValidationPackage,
 };
-use holochain_net_connection::protocol_wrapper::{
+use holochain_net_connection::json_protocol::{
     DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
 };
 use snowflake;

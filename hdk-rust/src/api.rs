@@ -7,8 +7,10 @@ use crate::{
     globals::*,
 };
 use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityCall, entry::Entry,
-    error::ZomeApiInternalResult,
+    cas::content::Address,
+    dna::capabilities::CapabilityCall,
+    entry::Entry,
+    error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -26,14 +28,11 @@ use holochain_wasm_utils::{
         hash::HashString,
         json::{JsonString, RawString},
     },
+    memory::ribosome::load_ribosome_encoded_json,
 };
-use std::convert::TryFrom;
-use holochain_core_types::error::RibosomeEncodingBits;
 use init_globals::hc_init_globals;
 use serde_json;
-use std::convert::TryInto;
-use holochain_core_types::error::RibosomeEncodedAllocation;
-use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
+use std::convert::{TryFrom, TryInto};
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES

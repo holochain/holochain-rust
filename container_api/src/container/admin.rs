@@ -5,9 +5,10 @@ use crate::{
 };
 use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
 use std::{path::PathBuf, sync::Arc};
+use json_patch;
 
 pub trait ContainerAdmin {
-    fn install_dna_from_file(&mut self, path: PathBuf, id: String, copy: bool) -> Result<(), HolochainError>;
+    fn install_dna_from_file(&mut self, path: PathBuf, id: String, copy: bool, properties: Option<serde_json::Value>) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_instance(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
@@ -16,11 +17,16 @@ pub trait ContainerAdmin {
 }
 
 impl ContainerAdmin for Container {
-    fn install_dna_from_file(&mut self, path: PathBuf, id: String, copy: bool) -> Result<(), HolochainError> {
+    fn install_dna_from_file(
+        &mut self, 
+        path: PathBuf, 
+        id: String, copy: bool, 
+        properties: Option<serde_json::Value>)
+    -> Result<(), HolochainError> {
         let path_string = path
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
-        let dna =
+        let mut dna =
             Arc::get_mut(&mut self.dna_loader).unwrap()(&path_string.into()).map_err(|e| {
                 HolochainError::ConfigError(format!(
                     "Could not load DNA file \"{}\", Error: {}",
@@ -28,6 +34,12 @@ impl ContainerAdmin for Container {
                     e.to_string()
                 ))
             })?;
+
+        if let Some(props) = properties {
+            if !copy { return Err(HolochainError::ConfigError(
+                "Cannot install DNA with properties unless copy flag is true".into())) }
+            json_patch::merge(&mut dna.properties, &props);
+        }
 
         let config_path = match copy {
             true => self.save_dna(&dna)?,
@@ -254,7 +266,7 @@ pattern = ".*"
         new_dna_path.push("new-dna.hcpkg");
 
         assert_eq!(
-            container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false),
+            container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false, None),
             Ok(()),
         );
 
@@ -368,7 +380,7 @@ pattern = ".*"
         new_dna_path.push("new-dna.hcpkg");
 
         assert_eq!(
-            container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), true),
+            container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), true, None),
             Ok(()),
         );
 
@@ -401,7 +413,7 @@ pattern = ".*"
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
         container
-            .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false)
+            .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false, None)
             .expect("Could not install DNA");
 
         let add_result = container.add_instance(InstanceConfiguration {

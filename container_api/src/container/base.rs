@@ -473,13 +473,17 @@ impl Container {
             .join(dna.address().to_string());
         file_path.set_extension("hcpkg");
         fs::create_dir_all(&dna_dir_path)?;
-        let file = File::create(&file_path)
+        self.save_dna_to(dna, file_path)
+    }
+
+    pub fn save_dna_to(&self, dna: &Dna, path: PathBuf) -> Result<PathBuf, HolochainError> {
+        let file = File::create(&path)
             .map_err(|e| HolochainError::ConfigError(
-                format!("Error writing DNA to {}, {}", file_path.to_str().unwrap().to_string(), e.to_string())
+                format!("Error writing DNA to {}, {}", path.to_str().unwrap().to_string(), e.to_string())
             )
         )?;
         serde_json::to_writer_pretty(&file, dna.into())?;
-        Ok(file_path)
+        Ok(path)
     }
 }
 

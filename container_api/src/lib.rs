@@ -122,6 +122,7 @@ extern crate dirs;
 #[macro_use]
 extern crate lazy_static;
 extern crate directories;
+extern crate json_patch;
 
 pub mod config;
 pub mod container;

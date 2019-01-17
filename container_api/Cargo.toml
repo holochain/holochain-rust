@@ -29,6 +29,8 @@ maplit = "1.0.1"
 dirs = "1.0.4"
 lazy_static = "1.2.0"
 directories = "1.0"
+json-patch = "0.2.2"
+
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

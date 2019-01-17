@@ -18,7 +18,7 @@ define_zome! {
     }
 
     functions: {
-        main (Public) {
+        public (Public) {
             call_bridge: {
                 inputs: | |,
                 outputs: |result: JsonString|,

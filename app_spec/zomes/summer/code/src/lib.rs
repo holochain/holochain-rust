@@ -22,7 +22,7 @@ define_zome! {
     }
 
     functions: {
-        main (Public) {
+        public (Public) {
             sum: {
                 inputs: |num1: u32, num2: u32|,
                 outputs: |sum: JsonString|,

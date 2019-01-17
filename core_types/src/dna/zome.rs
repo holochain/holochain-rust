@@ -140,7 +140,7 @@ impl Zome {
             .collect()
     }
 
-    pub fn add_fndeclaration(
+    pub fn add_fn_declaration(
         &mut self,
         name: String,
         inputs: Vec<FnParameter>,
@@ -210,10 +210,10 @@ pub mod tests {
     }
 
     #[test]
-    fn test_zome_add_fndecl() {
+    fn test_zome_add_fn_declaration() {
         let mut zome = Zome::default();
         assert_eq!(zome.fn_declarations.len(), 0);
-        zome.add_fndeclaration(
+        zome.add_fn_declaration(
             String::from("hello"),
             vec![],
             vec![FnParameter {

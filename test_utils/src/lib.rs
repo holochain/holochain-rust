@@ -55,7 +55,7 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
     let default_wat = r#"
             (module
                 (memory (;0;) 17)
-                (func (export "main") (param $p0 i32) (result i32)
+                (func (export "public_test_fn") (param $p0 i32) (result i32)
                     i32.const 6
                 )
                 (data (i32.const 0)
@@ -79,7 +79,7 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let defs = create_test_defs_with_fn_name("main");
+    let defs = create_test_defs_with_fn_name("public_test_fn");
 
 //    let mut capabilities = BTreeMap::new();
 //    capabilities.insert(cap_name.to_string(), capability);

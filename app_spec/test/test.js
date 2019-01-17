@@ -1,4 +1,3 @@
-
 const path = require('path')
 const sleep = require('sleep')
 const test = require('tape')
@@ -43,7 +42,7 @@ test('call', (t) => {
   const num1 = 2
   const num2 = 2
   const params = { num1, num2 }
-  const result = alice.call("blog", "main", "check_sum", params)
+  const result = alice.call("blog", "check_sum", params)
 
   t.deepEqual(result.Ok, { "sum": "4" })
 })
@@ -52,7 +51,7 @@ test('hash_post', (t) => {
   t.plan(1)
 
   const params = { content: "Holo world" }
-  const result = alice.call("blog", "main", "post_address", params)
+  const result = alice.call("blog", "post_address", params)
 
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
@@ -63,7 +62,7 @@ test('create_post', (t) => {
   const content = "Holo world"
   const in_reply_to = null
   const params = { content, in_reply_to }
-  const result = alice.call("blog", "main", "create_post", params)
+  const result = alice.call("blog", "create_post", params)
 
   t.ok(result.Ok)
   t.notOk(result.Err)
@@ -76,7 +75,7 @@ test('create_post with bad reply to', (t) => {
   const content = "Holo world"
   const in_reply_to = "bad"
   const params = { content, in_reply_to }
-  const result = alice.call("blog", "main", "create_post", params)
+  const result = alice.call("blog", "create_post", params)
 
   // bad in_reply_to is an error condition
   t.ok(result.Err)
@@ -93,7 +92,7 @@ test('post max content size 280 characters', (t) => {
   const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
   const in_reply_to = null
   const params = { content, in_reply_to }
-  const result = alice.call("blog", "main", "create_post", params)
+  const result = alice.call("blog", "create_post", params)
 
   // result should be an error
   t.ok(result.Err);
@@ -112,7 +111,7 @@ test('posts_by_agent', (t) => {
   const agent = "Bob"
   const params = { agent }
 
-  const result = alice.call("blog", "main", "posts_by_agent", params)
+  const result = alice.call("blog", "posts_by_agent", params)
 
   t.deepEqual(result.Ok, { "addresses": [] })
 })
@@ -120,16 +119,16 @@ test('posts_by_agent', (t) => {
 test('my_posts', async (t) => {
   t.plan(1)
 
-  alice.call("blog", "main", "create_post",
+  alice.call("blog", "create_post",
     { "content": "Holo world", "in_reply_to": "" }
   )
 
-  alice.call("blog", "main", "create_post",
+  alice.call("blog", "create_post",
     { "content": "Another post", "in_reply_to": "" }
   )
 
   const result = await pollFor(
-    () => alice.call("blog", "main", "my_posts", {}),
+    () => alice.call("blog", "my_posts", {}),
     (result) => {
       return result &&
         result.Ok &&
@@ -147,11 +146,11 @@ test('create/get_post roundtrip', (t) => {
   const content = "Holo world"
   const in_reply_to = null
   const params = { content, in_reply_to }
-  const create_post_result = alice.call("blog", "main", "create_post", params)
+  const create_post_result = alice.call("blog", "create_post", params)
   const post_address = create_post_result.Ok
 
   const params_get = { post_address }
-  const result = alice.call("blog", "main", "get_post", params_get)
+  const result = alice.call("blog", "get_post", params_get)
 
   const entry_value = JSON.parse(result.Ok.App[1])
   t.comment("get_post() entry_value = " + entry_value + "")
@@ -166,7 +165,7 @@ test('get_post with non-existant address returns null', (t) => {
 
   const post_address = "RANDOM"
   const params_get = { post_address }
-  const result = alice.call("blog", "main", "get_post", params_get)
+  const result = alice.call("blog", "get_post", params_get)
 
   // should be Ok value but null
   // lookup did not error
@@ -179,12 +178,12 @@ test('scenario test create & publish post -> get from other instance', async (t)
   const content1 = "Holo world"
   const in_reply_to = null
   const params = { content: content1, in_reply_to }
-  const create_result = alice.call("blog", "main", "create_post", params)
+  const create_result = alice.call("blog", "create_post", params)
   t.comment("create_result = " + create_result.address + "")
 
   const content2 = "post 2"
   const params2 = { content: content2, in_reply_to }
-  const create_result2 = tash.call("blog", "main", "create_post", params2)
+  const create_result2 = tash.call("blog", "create_post", params2)
   t.comment("create_result2 = " + create_result2.address + "")
 
   t.equal(create_result.Ok.length, 46)
@@ -194,7 +193,7 @@ test('scenario test create & publish post -> get from other instance', async (t)
   const params_get = { post_address }
 
   const result = await pollFor(
-    () => tash.call("blog", "main", "get_post", params_get)
+    () => tash.call("blog", "get_post", params_get)
   ).catch(t.fail)
 
   const value = JSON.parse(result.Ok.App[1])

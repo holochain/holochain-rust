@@ -176,7 +176,7 @@ void TestHcDna::canGetFunctionParameters() {
                                               "        \"type\": \"public\","
                                               "        \"functions\": ["
                                               "          {"
-                                              "            \"name\": \"main\","
+                                              "            \"name\": \"public_test_fn\","
                                               "            \"inputs\": ["
                                               "                {"
                                               "                    \"name\": \"param1\","
@@ -203,7 +203,7 @@ void TestHcDna::canGetFunctionParameters() {
     QVERIFY(dna != 0);
 
     CStringVec names;
-    holochain_dna_get_function_parameters(dna, "zome1", "test_cap", "main", &names);
+    holochain_dna_get_function_parameters(dna, "zome1", "test_cap", "public_test_fn", &names);
     QCOMPARE(names.len, (size_t) 1);
 
     QString name1 = QString("%1").arg(names.ptr[0]);

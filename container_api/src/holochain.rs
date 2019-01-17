@@ -375,7 +375,7 @@ mod tests {
 (module
  (memory 1)
  (export "memory" (memory 0))
- (export "main" (func $func0))
+ (export "public_test_fn" (func $func0))
  (func $func0 (param $p0 i32) (result i32)
        i32.const 16
        )
@@ -388,7 +388,7 @@ mod tests {
         let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", example_capability_call(), "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "public_test_fn", "");
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -398,7 +398,7 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", example_capability_call(), "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "public_test_fn", "");
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),

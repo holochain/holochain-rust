@@ -59,7 +59,7 @@ define_zome! {
     genesis: || { Ok(()) }
 
     functions: {
-        main (Public) {
+        public (Public) {
             create_my_entry: {
                 inputs: |entry: MyEntry|,
                 outputs: |result: ZomeApiResult<Address>|,

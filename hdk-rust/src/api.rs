@@ -270,7 +270,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///     }
 ///
 ///     functions: {
-///         main (Public) {
+///         public (Public) {
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
 ///                 outputs: |sum: JsonString|,
@@ -345,7 +345,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///     }
 ///
 ///     functions: {
-///         main (Public) {
+///         public (Public) {
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
 ///                 outputs: |sum: ZomeApiResult<JsonString>|,
@@ -1071,7 +1071,7 @@ pub fn query(
 ///    }
 ///
 ///    functions: {
-///        main (Public) {
+///        public (Public) {
 ///            send_message: {
 ///                inputs: |to_agent: Address, message: String|,
 ///                outputs: |response: ZomeApiResult<String>|,

@@ -599,7 +599,7 @@ pub mod tests {
         let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call
-        let zome_call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "main", "");
+        let zome_call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "public_test_fn", "");
 
         let result = super::call_and_wait_for_result(zome_call, &mut instance);
 
@@ -630,7 +630,7 @@ pub mod tests {
 
         instance.start_action_loop(test_context("jane", netname));
 
-        let call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "main", "{}");
+        let call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "public_test_fn", "{}");
         let result = super::call_and_wait_for_result(call, &mut instance);
 
         match result {
@@ -665,7 +665,7 @@ pub mod tests {
         let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
 
         // Create bad zome function call
-        let call = ZomeFnCall::new("xxx", Some(test_capability_call()), "main", "{}");
+        let call = ZomeFnCall::new("xxx", Some(test_capability_call()), "public_test_fn", "{}");
 
         let result = super::call_and_wait_for_result(call, &mut instance);
 
@@ -680,7 +680,7 @@ pub mod tests {
                 cap_call.cap_name = "xxx".to_string();
 
                 // Create bad capability function call
-                let call = ZomeFnCall::new("test_zome", Some(cap_call), "main", "{}");
+        let call = ZomeFnCall::new("test_zome", Some(cap_call), "public_test_fn", "{}");
 
                 let result = super::call_and_wait_for_result(call, &mut instance);
 
@@ -696,14 +696,11 @@ pub mod tests {
 
     #[test]
     fn test_zomefncall_same_as() {
-        let cap_call2 = test_capability_call();
-
         let base = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa");
         let copy = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa");
         let same = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa1");
         let diff1 = ZomeFnCall::new("yoyo1", Some(test_capability_call()), "fufu", "papa");
-        let diff2 = ZomeFnCall::new("yoyo", Some(cap_call2), "fufu", "papa");
-        let diff3 = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu3", "papa");
+        let diff2 = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu3", "papa");
 
         assert_ne!(base, copy);
         assert!(base.same_fn_as(&copy));
@@ -711,7 +708,6 @@ pub mod tests {
         assert!(base.same_fn_as(&same));
         assert!(!base.same_fn_as(&diff1));
         assert!(!base.same_fn_as(&diff2));
-        assert!(!base.same_fn_as(&diff3));
     }
 
     #[test]
@@ -720,7 +716,7 @@ pub mod tests {
 
         let mut dna = test_utils::create_test_dna_with_wat(test_zome_name, "test_cap", None);
         let mut call = test_zome_call();
-        call.fn_name = String::from("main");
+        call.fn_name = String::from("public_test_fn");
         let result = is_fn_public(&dna, &call);
         assert!(result.unwrap());
 
@@ -734,7 +730,7 @@ pub mod tests {
         dna.zomes
             .get_mut(test_zome_name)
             .unwrap()
-            .add_fndeclaration(String::from("non_pub_fn"), vec![], vec![]);
+            .add_fn_declaration(String::from("non_pub_fn"), vec![], vec![]);
 
         let call = ZomeFnCall::new(
             test_zome_name,

@@ -128,9 +128,9 @@ macro_rules! load_string {
 ///     }
 ///
 ///     functions: {
-///         // "main" is the name of the capability
-///         // "Public" is the access setting of the capability
-///         main (Public) {
+///         // by convention "public" is the name of the capability for functions
+///         // that can be called by anyone
+///         public (Public) {
 ///             // the name of this function, "post_address" is the
 ///             // one to give while performing a `call` method to this function.
 ///             // the name of the handler function must be different than the

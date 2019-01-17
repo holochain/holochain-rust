@@ -132,7 +132,7 @@ fn call_load_string_err() {
     assert_eq!(
         Err(HolochainInstanceError::InternalFailure(
             HolochainError::RibosomeFailed(
-                RibosomeReturnCode::Failure(RibosomeErrorCode::Unspecified).into()
+                RibosomeEncodedValue::Failure(RibosomeErrorCode::Unspecified).into()
             )
         )),
         call_result,

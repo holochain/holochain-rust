@@ -45,7 +45,7 @@ use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use hdk::global_fns::init_global_memory;
-use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnCode;
+use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedValue;
 use std::convert::TryFrom;
 use hdk::globals::G_MEM_STACK;
 
@@ -87,7 +87,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodi
         Ok(entry) => entry,
         Err(hc_err) => {
             hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).ok();
-            return RibosomeReturnCode::Failure(RibosomeErrorCode::ArgumentDeserializationFailed).into();
+            return RibosomeEncodedValue::Failure(RibosomeErrorCode::ArgumentDeserializationFailed).into();
         },
     };
 
@@ -102,7 +102,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodi
 
     let mut wasm_stack = match unsafe { G_MEM_STACK } {
         Some(wasm_stack) => wasm_stack,
-        None => return RibosomeReturnCode::Failure(RibosomeErrorCode::OutOfMemory).into(),
+        None => return RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory).into(),
     };
 
     return_code_for_allocation_result(

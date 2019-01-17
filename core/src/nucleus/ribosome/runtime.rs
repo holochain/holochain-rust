@@ -11,7 +11,7 @@ use crate::{
 };
 use holochain_core_types::{
     error::{
-        HolochainError, RibosomeEncodingBits, RibosomeReturnCode, RibosomeRuntimeBits,
+        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
         ZomeApiInternalResult,
     },
     json::JsonString,
@@ -45,13 +45,13 @@ impl Runtime {
 
         // Read complex argument serialized in memory
         let encoded: RibosomeEncodingBits = args.nth(0);
-        let return_code = RibosomeReturnCode::from(encoded);
+        let return_code = RibosomeEncodedValue::from(encoded);
         let allocation = match return_code {
-            RibosomeReturnCode::Success => return JsonString::null(),
-            RibosomeReturnCode::Failure(_) => {
+            RibosomeEncodedValue::Success => return JsonString::null(),
+            RibosomeEncodedValue::Failure(_) => {
                 panic!("received error code instead of valid encoded allocation")
             }
-            RibosomeReturnCode::Allocation(ribosome_allocation) => {
+            RibosomeEncodedValue::Allocation(ribosome_allocation) => {
                 WasmAllocation::try_from(ribosome_allocation).unwrap()
             }
         };
@@ -79,7 +79,7 @@ impl Runtime {
         match self.memory_manager.write(&s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
             Ok(allocation) => Ok(Some(RuntimeValue::I32(RibosomeEncodingBits::from(
-                RibosomeReturnCode::Allocation(allocation.into()),
+                RibosomeEncodedValue::Allocation(allocation.into()),
             )
                 as RibosomeRuntimeBits))),
         }

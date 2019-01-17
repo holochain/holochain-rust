@@ -3,8 +3,8 @@
 use holochain_core_types::{
     bits_n_pieces::{u32_merge_bits, u32_split_bits},
     error::{
-        HolochainError, RibosomeEncodedAllocation, RibosomeEncodingBits, RibosomeErrorCode,
-        RibosomeReturnCode,
+        HolochainError, RibosomeEncodedAllocation, RibosomeEncodedValue, RibosomeEncodingBits,
+        RibosomeErrorCode,
     },
     json::JsonString,
 };
@@ -34,15 +34,15 @@ impl From<WasmAllocation> for RibosomeEncodedAllocation {
     }
 }
 
-impl From<WasmAllocation> for RibosomeReturnCode {
+impl From<WasmAllocation> for RibosomeEncodedValue {
     fn from(wasm_allocation: WasmAllocation) -> Self {
-        RibosomeReturnCode::Allocation(RibosomeEncodedAllocation::from(wasm_allocation))
+        RibosomeEncodedValue::Allocation(RibosomeEncodedAllocation::from(wasm_allocation))
     }
 }
 
-impl From<AllocationError> for RibosomeReturnCode {
+impl From<AllocationError> for RibosomeEncodedValue {
     fn from(allocation_error: AllocationError) -> Self {
-        RibosomeReturnCode::Failure(RibosomeErrorCode::from(allocation_error))
+        RibosomeEncodedValue::Failure(RibosomeErrorCode::from(allocation_error))
     }
 }
 
@@ -62,26 +62,26 @@ impl WasmAllocation {
     /// not implemented as a trait because RibosomeEncodingBits is a primitive and that would couple
     /// allocations to ribosome encoding
     pub fn try_from_ribosome_encoding(encoded_value: RibosomeEncodingBits) -> AllocationResult {
-        match RibosomeReturnCode::from(encoded_value) {
-            RibosomeReturnCode::Success => Err(AllocationError::ZeroLength),
-            RibosomeReturnCode::Failure(_) => Err(AllocationError::OutOfBounds),
-            RibosomeReturnCode::Allocation(ribosome_allocation) => {
+        match RibosomeEncodedValue::from(encoded_value) {
+            RibosomeEncodedValue::Success => Err(AllocationError::ZeroLength),
+            RibosomeEncodedValue::Failure(_) => Err(AllocationError::OutOfBounds),
+            RibosomeEncodedValue::Allocation(ribosome_allocation) => {
                 WasmAllocation::try_from(ribosome_allocation)
             }
         }
     }
 
     pub fn as_ribosome_encoding(&self) -> RibosomeEncodingBits {
-        RibosomeReturnCode::from(self.clone()).into()
+        RibosomeEncodedValue::from(self.clone()).into()
     }
 }
 
-/// Equivalent to From<AllocationResult> for RibosomeReturnCode
-/// not possible to implement the trait as Result and RibosomeReturnCode from different crates
-pub fn return_code_for_allocation_result(result: AllocationResult) -> RibosomeReturnCode {
+/// Equivalent to From<AllocationResult> for RibosomeEncodedValue
+/// not possible to implement the trait as Result and RibosomeEncodedValue from different crates
+pub fn return_code_for_allocation_result(result: AllocationResult) -> RibosomeEncodedValue {
     match result {
-        Ok(allocation) => RibosomeReturnCode::from(allocation),
-        Err(allocation_error) => RibosomeReturnCode::from(allocation_error),
+        Ok(allocation) => RibosomeEncodedValue::from(allocation),
+        Err(allocation_error) => RibosomeEncodedValue::from(allocation_error),
     }
 }
 
@@ -89,12 +89,12 @@ pub fn load_ribosome_encoded_string(
     encoded_value: RibosomeEncodingBits,
 ) -> Result<String, HolochainError> {
     // almost the same as WasmAllocation::try_from_ribosome_encoding but maps to HolochainError
-    match RibosomeReturnCode::from(encoded_value) {
-        RibosomeReturnCode::Success => Err(HolochainError::Ribosome(
+    match RibosomeEncodedValue::from(encoded_value) {
+        RibosomeEncodedValue::Success => Err(HolochainError::Ribosome(
             RibosomeErrorCode::ZeroSizedAllocation,
         ))?,
-        RibosomeReturnCode::Failure(err_code) => Err(HolochainError::Ribosome(err_code))?,
-        RibosomeReturnCode::Allocation(ribosome_allocation) => {
+        RibosomeEncodedValue::Failure(err_code) => Err(HolochainError::Ribosome(err_code))?,
+        RibosomeEncodedValue::Allocation(ribosome_allocation) => {
             Ok(WasmAllocation::try_from(ribosome_allocation)?.read_to_string())
         }
     }
@@ -117,16 +117,16 @@ where
 pub mod tests {
 
     use holochain_core_types::error::{
-        RibosomeEncodingBits, RibosomeErrorCode, RibosomeReturnCode,
+        RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode,
     };
 
     #[test]
     fn ribosome_return_code_round_trip() {
-        let oom = RibosomeReturnCode::from(
+        let oom = RibosomeEncodedValue::from(
             (RibosomeErrorCode::OutOfMemory as RibosomeEncodingBits) >> 16,
         );
         assert_eq!(
-            RibosomeReturnCode::Failure(RibosomeErrorCode::OutOfMemory),
+            RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory),
             oom
         );
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());

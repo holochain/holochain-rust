@@ -25,7 +25,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// ZomeApiFunction::RemoveEntry function code
 /// args: [0] encoded MemoryAllocation as u32
 /// Expected Address argument
-/// Returns only a RibosomeReturnCode as I32
+/// Returns only a RibosomeEncodedValue as I32
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);

@@ -10,7 +10,9 @@ use holochain_core_types::{
         zome::{ZomeCapabilities, ZomeEntryTypes},
     },
     entry::entry_type::{AppEntryType, EntryType},
-    error::{HolochainError, RibosomeEncodedAllocation, RibosomeEncodingBits, RibosomeReturnCode},
+    error::{
+        HolochainError, RibosomeEncodedAllocation, RibosomeEncodedValue, RibosomeEncodingBits,
+    },
     json::JsonString,
 };
 use holochain_wasm_utils::{
@@ -70,10 +72,10 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 ) -> RibosomeEncodingBits {
     match WasmAllocation::try_from(RibosomeEncodedAllocation::from(encoded_allocation_of_input)) {
         Ok(allocation) => match ::global_fns::init_global_memory(allocation) {
-            Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+            Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
             _ => {}
         },
-        Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+        Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
     };
 
     let mut zd = ZomeDefinition::new();
@@ -99,8 +101,8 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         Some(mut entry_type_definition) => {
             let package = (*entry_type_definition.package_creator)();
             RibosomeEncodingBits::from(match crate::global_fns::write_json(package) {
-                Ok(allocation) => RibosomeReturnCode::from(allocation),
-                Err(allocation_error) => RibosomeReturnCode::from(allocation_error),
+                Ok(allocation) => RibosomeEncodedValue::from(allocation),
+                Err(allocation_error) => RibosomeEncodedValue::from(allocation_error),
             })
         }
     }
@@ -112,10 +114,10 @@ pub extern "C" fn __hdk_validate_app_entry(
 ) -> RibosomeEncodingBits {
     match WasmAllocation::try_from(RibosomeEncodedAllocation::from(encoded_allocation_of_input)) {
         Ok(allocation) => match ::global_fns::init_global_memory(allocation) {
-            Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+            Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
             _ => {}
         },
-        Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+        Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
     };
 
     let mut zd = ZomeDefinition::new();
@@ -134,7 +136,7 @@ pub extern "C" fn __hdk_validate_app_entry(
         }
         Ok(allocation) => match JsonString::from(allocation.read_to_string()).try_into() {
             Ok(v) => v,
-            Err(e) => return RibosomeReturnCode::from(e).into(),
+            Err(e) => return RibosomeEncodedValue::from(e).into(),
         },
     };
 
@@ -164,10 +166,10 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
 ) -> RibosomeEncodingBits {
     match WasmAllocation::try_from(RibosomeEncodedAllocation::from(encoded_allocation_of_input)) {
         Ok(allocation) => match ::global_fns::init_global_memory(allocation) {
-            Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+            Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
             _ => {}
         },
-        Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+        Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
     };
 
     let mut zd = ZomeDefinition::new();
@@ -185,7 +187,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
         }
         Ok(allocation) => match JsonString::from(allocation.read_to_string()).try_into() {
             Ok(v) => v,
-            Err(e) => return RibosomeReturnCode::from(e).into(),
+            Err(e) => return RibosomeEncodedValue::from(e).into(),
         },
     };
 
@@ -206,7 +208,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
                     package,
                 )))
             })
-            .unwrap_or(RibosomeReturnCode::Failure(
+            .unwrap_or(RibosomeEncodedValue::Failure(
                 RibosomeErrorCode::CallbackFailed,
             )),
     )
@@ -218,10 +220,10 @@ pub extern "C" fn __hdk_validate_link(
 ) -> RibosomeEncodingBits {
     match WasmAllocation::try_from(RibosomeEncodedAllocation::from(encoded_allocation_of_input)) {
         Ok(allocation) => match ::global_fns::init_global_memory(allocation) {
-            Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+            Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
             _ => {}
         },
-        Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+        Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
     };
 
     let mut zd = ZomeDefinition::new();
@@ -239,7 +241,7 @@ pub extern "C" fn __hdk_validate_link(
         }
         Ok(allocation) => match JsonString::from(allocation.read_to_string()).try_into() {
             Ok(v) => v,
-            Err(e) => return RibosomeReturnCode::from(e).into(),
+            Err(e) => return RibosomeEncodedValue::from(e).into(),
         },
     };
 
@@ -265,13 +267,13 @@ pub extern "C" fn __hdk_validate_link(
                     input.validation_data,
                 );
                 Some(match validation_result {
-                    Ok(()) => RibosomeReturnCode::Success,
+                    Ok(()) => RibosomeEncodedValue::Success,
                     Err(fail_string) => {
                         return_code_for_allocation_result(::global_fns::write_json(fail_string))
                     }
                 })
             })
-            .unwrap_or(RibosomeReturnCode::Failure(
+            .unwrap_or(RibosomeEncodedValue::Failure(
                 RibosomeErrorCode::CallbackFailed,
             )),
     )
@@ -283,10 +285,10 @@ pub extern "C" fn __hdk_get_json_definition(
 ) -> RibosomeEncodingBits {
     match WasmAllocation::try_from(RibosomeEncodedAllocation::from(encoded_allocation_of_input)) {
         Ok(allocation) => match ::global_fns::init_global_memory(allocation) {
-            Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+            Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
             _ => {}
         },
-        Err(allocation_error) => return RibosomeReturnCode::from(allocation_error).into(),
+        Err(allocation_error) => return RibosomeEncodedValue::from(allocation_error).into(),
     };
 
     let mut zd = ZomeDefinition::new();

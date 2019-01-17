@@ -7,7 +7,7 @@ use crate::{
 };
 use holochain_core_types::{
     error::{
-        HcResult, HolochainError, RibosomeEncodingBits, RibosomeReturnCode, RibosomeRuntimeBits,
+        HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
     },
     json::JsonString,
 };
@@ -114,7 +114,7 @@ pub fn run_dna(
                 return Err(HolochainError::RibosomeFailed(String::from(err)));
             }
             // Write successful, encode allocation
-            Ok(allocation) => RibosomeEncodingBits::from(RibosomeReturnCode::from(allocation)),
+            Ok(allocation) => RibosomeEncodingBits::from(RibosomeEncodedValue::from(allocation)),
         }
     }
 
@@ -141,23 +141,23 @@ pub fn run_dna(
     }
 
     // Handle result returned by called zome function
-    let return_code = RibosomeReturnCode::from(returned_encoding);
+    let return_code = RibosomeEncodedValue::from(returned_encoding);
 
     let return_log_msg: String;
     let return_result: HcResult<JsonString>;
 
     match return_code.clone() {
-        RibosomeReturnCode::Success => {
+        RibosomeEncodedValue::Success => {
             return_log_msg = return_code.to_string();
             return_result = Ok(JsonString::null());
         }
 
-        RibosomeReturnCode::Failure(err_code) => {
+        RibosomeEncodedValue::Failure(err_code) => {
             return_log_msg = return_code.to_string();
             return_result = Err(HolochainError::RibosomeFailed(err_code.to_string()));
         }
 
-        RibosomeReturnCode::Allocation(ribosome_allocation) => {
+        RibosomeEncodedValue::Allocation(ribosome_allocation) => {
             match WasmAllocation::try_from(ribosome_allocation) {
                 Ok(allocation) => {
                     let result = runtime.memory_manager.read(allocation);

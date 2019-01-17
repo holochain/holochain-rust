@@ -203,7 +203,7 @@ macro_rules! define_zome {
             let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
             let allocation = match maybe_allocation {
                 Ok(allocation) => allocation,
-                Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
+                Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
             };
             let init = $crate::global_fns::init_global_memory(allocation);
             if init.is_err() {
@@ -217,7 +217,7 @@ macro_rules! define_zome {
             }
 
             match execute() {
-                Ok(_) => hdk::holochain_core_types::error::RibosomeReturnCode::Success.into(),
+                Ok(_) => hdk::holochain_core_types::error::RibosomeEncodedValue::Success.into(),
                 Err(e) => $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
                     $crate::global_fns::write_json(
                         $crate::holochain_wasm_utils::holochain_core_types::json::RawString::from(e)
@@ -232,7 +232,7 @@ macro_rules! define_zome {
                 let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
                 let allocation = match maybe_allocation {
                     Ok(allocation) => allocation,
-                    Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
+                    Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
                 };
                 let init = $crate::global_fns::init_global_memory(allocation);
                 if init.is_err() {
@@ -309,7 +309,7 @@ macro_rules! define_zome {
                     let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
                     let allocation = match maybe_allocation {
                         Ok(allocation) => allocation,
-                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnCode::from(allocation_error).into(),
+                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
                     };
                     let init = $crate::global_fns::init_global_memory(allocation);
                     if init.is_err() {

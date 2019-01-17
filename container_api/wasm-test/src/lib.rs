@@ -9,7 +9,7 @@ extern crate serde_json;
 
 use holochain_core_types::{
     cas::content::Address, error::HolochainError,
-    error::RibosomeReturnCode, error::ZomeApiInternalResult, json::JsonString, json::RawString,
+    error::RibosomeEncodedValue, error::ZomeApiInternalResult, json::JsonString, json::RawString,
 };
 use std::convert::TryInto;
 use holochain_core_types::entry::Entry;
@@ -69,7 +69,7 @@ pub extern "C" fn debug_hello(encoded_allocation_of_input: RibosomeEncodingBits)
         &mut mem_stack,
         &JsonString::from(RawString::from("Hello world!")),
     );
-    RibosomeReturnCode::Success.into()
+    RibosomeEncodedValue::Success.into()
 }
 
 /// Function called by Holochain Instance
@@ -92,7 +92,7 @@ pub extern "C" fn debug_multiple(encoded_allocation_of_input: RibosomeEncodingBi
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("world")));
     hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("!")));
 
-    RibosomeReturnCode::Success.into()
+    RibosomeEncodedValue::Success.into()
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -269,7 +269,7 @@ pub extern "C" fn commit_fail_test(encoded_allocation_of_input: RibosomeEncoding
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(_encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeReturnCode::Success.into()
+    RibosomeEncodedValue::Success.into()
 }
 
 #[no_mangle]

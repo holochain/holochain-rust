@@ -202,10 +202,22 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     Ok((dna.address(), agent_id))
 }
 
-/// create a test network
+/// create a unique test network
 #[cfg_attr(tarpaulin, skip)]
-pub fn mock_network_config() -> JsonString {
-    JsonString::from(P2pConfig::named_mock("mock_network_config()"))
+pub fn unique_mock_config() -> JsonString {
+    JsonString::from(P2pConfig::unique_mock())
+}
+
+/// Create a named test network if name is Some, otherwise create a unique one using snowflake
+/// This is the base function that many other `text_context*` functions use, and hence they also
+/// require an optional network name. The reasoning for this is that tests which only require a
+/// single instance may simply pass None and get a unique network name, but tests which require two
+/// instances to be on the same network need to ensure both contexts use the same network name.
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_mock_config(network_name: Option<&str>) -> JsonString {
+    network_name
+        .map(|name| JsonString::from(P2pConfig::named_mock(name)))
+        .unwrap_or(unique_mock_config())
 }
 
 #[cfg(test)]
@@ -215,7 +227,7 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        context::mock_network_config, logger::test_logger, persister::SimplePersister, state::State,
+        context::unique_mock_config, logger::test_logger, persister::SimplePersister, state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
@@ -241,7 +253,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            unique_mock_config(),
             None,
             None,
         );
@@ -274,7 +286,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            unique_mock_config(),
             None,
             None,
         );

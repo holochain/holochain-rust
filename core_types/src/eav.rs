@@ -14,7 +14,6 @@ use chrono::{offset::Utc, DateTime};
 use im::ordmap::OrdMap;
 use objekt;
 use std::{
-    cmp::Ordering,
     convert::TryInto,
     sync::{Arc, RwLock},
 };

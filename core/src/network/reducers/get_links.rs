@@ -67,7 +67,6 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::error::HolochainError;
-    use std::sync::{Arc, RwLock};
 
     #[test]
     pub fn reduce_get_links_without_network_initialized() {

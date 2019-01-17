@@ -72,11 +72,7 @@ mod tests {
         instance::tests::test_context,
         state::test_store,
     };
-    use holochain_core_types::{
-        agent::AgentId, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
-    };
-    use holochain_net_connection::protocol_wrapper::DhtData;
-    use std::sync::{Arc, RwLock};
+    use holochain_core_types::error::HolochainError;
 
     #[test]
     pub fn reduce_get_entry_without_network_initialized() {

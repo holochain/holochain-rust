@@ -24,8 +24,8 @@ pub mod tests {
     use test_utils::*;
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn instance() -> (Instance, Arc<Context>) {
-        instance_by_name("jane", test_dna())
+    pub fn instance(network_name: Option<&str>) -> (Instance, Arc<Context>) {
+        instance_by_name("jane", test_dna(), network_name)
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -64,9 +64,13 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
-        let (instance, context) =
-            test_instance_and_context_by_name(dna, name).expect("Could not create test instance");
+    pub fn instance_by_name(
+        name: &str,
+        dna: Dna,
+        network_name: Option<&str>,
+    ) -> (Instance, Arc<Context>) {
+        let (instance, context) = test_instance_and_context_by_name(dna, name, network_name)
+            .expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
         (instance, initialized_context)
     }
@@ -108,7 +112,7 @@ pub mod tests {
     // smoke test just to make sure our testing code works.
     #[test]
     pub fn can_instantiate_test_instance() {
-        let (instance, _context) = instance();
+        let (instance, _context) = instance(None);
         assert!(instance.state().nucleus().has_initialized());
     }
 

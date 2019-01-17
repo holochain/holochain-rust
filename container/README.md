@@ -68,9 +68,12 @@ bootstrap_nodes = []
 
 TBD (for now you just have infer from the example!)
 
-## Limitations
+## Testing HTTP interface using cURL
 
 Currently the container supports the `websocket` and `http` interfaces.
+Assuming the container http interface is running on port 4000 it can be tested by running:
+`curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":"0","method":"info/instances"}' http://localhost:4000`
+
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](../CONTRIBUTING.md) for our general practices and protocols on participating in the community.

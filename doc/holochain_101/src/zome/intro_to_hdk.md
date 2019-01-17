@@ -4,11 +4,11 @@ Within any Zome, there are a number of conventions that must be followed by the 
 
 So in order to get familiar with coding for Holochain, it will involve familiarity with an HDK library.
 
-An HDK should perform many important functions for developers.
-- It should aid with the memory management of the WASM code that your Zomes compile into. WASM has some strict memory limitations, like 64 KiB paged memory.
-- It should create helper functions that hide tedious semantics that seem to plague compilation of languages to WASM.
-- It should implement a complete type system that's compatible with Holochain.
-- It should address hidden functions that Holochain needs from Zome code, but that would be redundant and confusing to make Zome developers write again and again.
+An HDK performs many important functions for developers.
+- It aids with the memory management of the WASM code that your Zomes compile into. WASM has some strict memory limitations, like 64 KiB paged memory.
+- It creates helper functions that hide tedious semantics that seem to plague compilation of languages to WASM.
+- It implements a complete type system that's compatible with Holochain.
+- It addresses hidden functions that Holochain needs from Zome code, but that would be redundant and confusing to make Zome developers write again and again.
 
 The HDK for a given language, if it has deep integration into the build tools, such as the Zome generator, should include this helper library by default, which is the case of the Rust HDK.
 

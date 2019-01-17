@@ -354,7 +354,7 @@ pub mod tests {
 
     fn setup_test(dna: Dna) -> TestSetup {
         let (instance, context) =
-            test_instance_and_context(dna).expect("Could not initialize test instance");
+            test_instance_and_context(dna, None).expect("Could not initialize test instance");
         TestSetup {
             context: context,
             instance: instance,

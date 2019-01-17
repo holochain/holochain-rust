@@ -1,5 +1,5 @@
 use crate::{
-    action::{ActionWrapper, GetLinksKey},
+    action::{ActionWrapper, GetEntryKey, GetLinksKey},
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
 use boolinator::*;
@@ -49,7 +49,7 @@ pub struct NetworkState {
 
     /// Here we store the results of GET entry processes.
     /// None means that we are still waiting for a result from the network.
-    pub get_entry_with_meta_results: HashMap<Address, GetEntryWithMetaResult>,
+    pub get_entry_with_meta_results: HashMap<GetEntryKey, GetEntryWithMetaResult>,
 
     /// Here we store the results of GET links processes.
     /// The key of this map is the base address and the tag name for which the links

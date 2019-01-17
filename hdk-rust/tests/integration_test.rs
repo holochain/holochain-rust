@@ -88,6 +88,10 @@ pub fn zome_setup(_: u32) -> u32 {
 pub fn __list_capabilities(_: u32) -> u32 {
     0
 }
+#[no_mangle]
+pub fn __list_functions(_: u32) -> u32 {
+    0
+}
 
 pub fn create_test_defs_with_fn_names(
     fn_names: Vec<&str>,
@@ -98,7 +102,7 @@ pub fn create_test_defs_with_fn_names(
     for fn_name in fn_names {
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);
-        capability.functions.push(fn_decl);
+        capability.functions.push(String::from(fn_name));
 
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);

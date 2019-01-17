@@ -235,7 +235,35 @@ macro_rules! define_zome {
                         let mut capability = Capability::new(CapabilityType::$vis);
                         capability.functions = vec![
                             $(
-                                FnDeclaration {
+                                stringify!($zome_function_name).into()
+                            ),+
+                        ];
+
+                        cap_map.insert(stringify!($cap).into(), capability);
+                    }
+                ),*
+
+                cap_map
+            };
+
+            return_value
+        }
+
+        #[no_mangle]
+        #[allow(unused_imports)]
+        pub fn __list_functions() -> $crate::holochain_core_types::dna::zome::ZomeFnDeclarations {
+
+            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType, FnParameter, FnDeclaration};
+            use std::collections::BTreeMap;
+
+            let return_value: $crate::holochain_core_types::dna::zome::ZomeFnDeclarations = {
+                let mut fn_map = BTreeMap::new();
+
+                $(
+                    {
+             //           capability.functions = vec![
+                            $(
+                         let fn_decl =       FnDeclaration {
                                     name: stringify!($zome_function_name).into(),
                                     inputs: vec![
                                         $(
@@ -247,16 +275,15 @@ macro_rules! define_zome {
                                             FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
                                         ),*
                                     ]
-                                }
+                                };
+                                fn_map.insert(stringify!($zome_function_name).into(), fn_decl);
+                            )+
+            //            ];
 
-                            ),+
-                        ];
-
-                        cap_map.insert(stringify!($cap).into(), capability);
                     }
                 ),*
 
-                cap_map
+                fn_map
             };
 
             return_value

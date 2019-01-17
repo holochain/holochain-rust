@@ -40,7 +40,7 @@ pub mod tests {
         cas::content::Address,
         dna::{
             bridges::{Bridge, BridgePresence, BridgeReference},
-            capabilities::{Capability, CapabilityType, FnDeclaration, FnParameter},
+            capabilities::{Aspect, CapabilityType, FnDeclaration, FnParameter},
             entry_types::EntryTypeDef,
             zome::tests::test_zome,
         },
@@ -126,22 +126,16 @@ pub mod tests {
                         "capabilities": {
                             "test": {
                                 "type": "public",
-                                "functions": [
-                                    {
-                                        "name": "test",
-                                        "inputs": [],
-                                        "outputs": []
-                                    }
-                                ]
+                                "functions": ["test"]
                             }
                         },
-                                "functions": {
-                                    "test": {
-                                        "name": "test",
-                                        "inputs": [],
-                                        "outputs": []
-                                    }
-                                },
+                        "functions": {
+                            "test": {
+                               "name": "test",
+                                "inputs": [],
+                                "outputs": []
+                             }
+                        },
                         "code": {
                             "code": "AAECAw=="
                         },
@@ -198,6 +192,7 @@ pub mod tests {
                             }
                         },
                         "capabilities": {},
+                        "functions": {},
                         "code": {"code": ""}
                     }
                 }
@@ -391,18 +386,10 @@ pub mod tests {
                         "entry_types": {},
                         "capabilities": {
                             "test capability": {
-                                "type": "public",
-                                "fn_declarations": [
-                                    {
-                                        "name": "test",
-                                        "signature": {
-                                            "inputs": [],
-                                            "outputs": []
-                                        }
-                                    }
-                                ]
+                                "type": "public"
                             }
                         },
+                        "functions": {},
                         "code": {
                             "code": "AAECAw=="
                         }
@@ -438,10 +425,10 @@ pub mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "type": "public",
-                                "fn_declarations": []
+                                "type": "public"
                             }
                         },
+                        "functions": {},
                         "entry_types": {
                             "test type": {
                                 "description": "",
@@ -486,10 +473,10 @@ pub mod tests {
                         "config": {},
                         "capabilities": {
                             "test capability": {
-                                "type": "public",
-                                "fn_declarations": []
+                                "type": "public"
                             }
                         },
+                        "functions": {},
                         "entry_types": {
                             "test type": {
                                 "description": "",
@@ -511,7 +498,7 @@ pub mod tests {
                                 "presence": "optional",
                                 "handle": "Vault",
                                 "reference": {
-                                    "capabilities": {
+                                    "aspects": {
                                         "persona_management": {
                                             "type": "public",
                                             "functions": [
@@ -529,7 +516,7 @@ pub mod tests {
                                 "presence": "required",
                                 "handle": "HCHC",
                                 "reference": {
-                                    "capabilities": {
+                                    "aspects": {
                                         "happ_directory": {
                                             "type": "public",
                                             "functions": [
@@ -563,9 +550,9 @@ pub mod tests {
                 Bridge {
                     presence: BridgePresence::Required,
                     handle: String::from("HCHC"),
-                    reference: BridgeReference::Capability {
-                        capabilities: btreemap! {
-                            String::from("happ_directory") => Capability{
+                    reference: BridgeReference::Aspect {
+                        aspects: btreemap! {
+                            String::from("happ_directory") => Aspect{
                                 cap_type: CapabilityType::Public,
                                 functions: vec![
                                     FnDeclaration {

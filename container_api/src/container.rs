@@ -586,21 +586,21 @@ pub mod tests {
                         "capabilities": {
                             "test": {
                                 "type": "public",
-                                "functions": [
+                                "functions": ["test"]
+                             }
+                        },
+                        "functions": {
+                            "test": {
+                                "inputs": [
                                     {
-                                        "name": "test",
-                       "inputs" : [
-                            {
-                                "name": "post",
-                                "type": "string"
-                            }
-                        ],
-                        "outputs" : [
-                            {
-                                "name": "hash",
-                                "type": "string"
-                            }
-                        ]
+                                        "name": "post",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs" : [
+                                    {
+                                        "name": "hash",
+                                        "type": "string"
                                     }
                                 ]
                             }
@@ -753,6 +753,14 @@ pub mod tests {
 
     (func
         (export "__list_capabilities")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+    (func
+        (export "__list_functions")
         (param $allocation i32)
         (result i32)
 

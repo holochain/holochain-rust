@@ -141,7 +141,19 @@ pub struct Capability {
     #[serde(rename = "type")]
     pub cap_type: CapabilityType,
 
-    /// "fn_declarations" array
+    /// "functions" array
+    #[serde(default)]
+    pub functions: Vec<String>,
+}
+
+/// Represents an individual object in the "zome" "capabilities" array.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+pub struct Aspect {
+    /// capability type enum
+    #[serde(rename = "type")]
+    pub cap_type: CapabilityType,
+
+    /// "functions" array
     #[serde(default)]
     pub functions: Vec<FnDeclaration>,
 }
@@ -160,6 +172,16 @@ impl Capability {
     /// Capability Constructor
     pub fn new(cap_type: CapabilityType) -> Self {
         Capability {
+            cap_type,
+            functions: Vec::new(),
+        }
+    }
+}
+
+impl Aspect {
+    /// Aspect Constructor
+    pub fn new(cap_type: CapabilityType) -> Self {
+        Aspect {
             cap_type,
             functions: Vec::new(),
         }
@@ -211,7 +233,7 @@ mod tests {
 
     #[test]
     fn build_and_compare() {
-        let fixture: Capability = serde_json::from_str(
+        let fixture: Aspect = serde_json::from_str(
             r#"{
                 "type": "transferable",
                 "functions": [
@@ -235,7 +257,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut cap = Capability::new(CapabilityType::Transferable);
+        let mut cap = Aspect::new(CapabilityType::Transferable);
         let mut fn_dec = FnDeclaration::new();
         fn_dec.name = String::from("test");
         let input = FnParameter::new("post", "string");

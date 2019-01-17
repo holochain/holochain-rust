@@ -130,7 +130,7 @@ pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, Zome
     let mut capability = Capability::new(CapabilityType::Public);
     let mut fn_decl = FnDeclaration::new();
     fn_decl.name = String::from(fn_name);
-    capability.functions.push(fn_decl.clone());
+    capability.functions.push(String::from(fn_name));
     let mut capabilities = BTreeMap::new();
     capabilities.insert("test_cap".to_string(), capability);
 

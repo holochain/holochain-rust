@@ -158,6 +158,14 @@ pub mod tests {
 
         (i32.const 0)
     )
+
+    (func
+        (export "__list_functions")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
 )
                 "#,
             )

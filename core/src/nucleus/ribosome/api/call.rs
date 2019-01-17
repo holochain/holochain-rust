@@ -412,7 +412,7 @@ pub mod tests {
             inputs: Vec::new(),
             outputs: Vec::new(),
         };
-        capability.functions = vec![fn_decl.clone()];
+        capability.functions = vec![fn_decl.name.clone()];
         let mut capabilities = BTreeMap::new();
         capabilities.insert(test_capability_name(), capability);
         let mut functions = BTreeMap::new();

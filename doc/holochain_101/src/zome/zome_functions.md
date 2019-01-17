@@ -127,28 +127,4 @@ When a call to a Zome function is being made from the Container, it first passes
 
 ## Building in Rust: Zome Functions
 
-```rust
-use hdk...
-
-fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
-    hdk::send(to_agent, message)
-}
-
-test (Public) {
-        send_message: {
-            inputs: |to_agent: Address, message: String|,
-            outputs: |response: ZomeApiResult<String>|,
-            handler: handle_send_message
-        }
-    }
-}
-
-
-```
-
-[https://developer.holochain.org/api/0.0.3/holochain_core_types/dna/capabilities/enum.CapabilityType.html#variants](https://developer.holochain.org/api/0.0.3/holochain_core_types/dna/capabilities/enum.CapabilityType.html#variants)
-```
-Public
-Transferable
-Assigned
-```
+Coming soon...

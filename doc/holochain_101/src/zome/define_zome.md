@@ -1,6 +1,6 @@
 # Intro to Zome Definition
 
-The [adding a zome](./adding_a_zome.md) section explored the file structure of a Zome. [Intro to HDK](./intro_to_hdk.md) covered Holochain Development Kit libraries for languages that Zomes can be written in. Once a Zome has been generated, and the HDK imported, it is time to start adding definition to it.
+The [adding a zome](./adding_a_zome.md) section explored the file structure of a Zome. [Intro to HDK](./intro_to_hdk.md) covered Holochain Development Kit libraries for languages that Zomes can be written in. Once a Zome has been generated, and the HDK imported, it is time to start adding definitions to it.
 
 There are multiple aspects to defining a Zome. They will each be covered in detail in the following articles.
 

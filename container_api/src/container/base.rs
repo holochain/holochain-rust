@@ -76,7 +76,6 @@ pub fn mount_container_from_config(config: Configuration) {
 pub struct Container {
     pub(in crate::container) instances: InstanceMap,
     pub(in crate::container) config: Configuration,
-    pub(in crate::container) config_path: PathBuf,
     interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
@@ -108,9 +107,6 @@ impl Container {
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
-            config_path: config
-                .persistence_dir
-                .join(PathBuf::from("container-config.toml")),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
@@ -118,10 +114,6 @@ impl Container {
             p2p_config: None,
             network_child_process: None,
         }
-    }
-
-    pub fn set_config_path(&mut self, path: PathBuf) {
-        self.config_path = path;
     }
 
     pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
@@ -407,6 +399,7 @@ impl Container {
         Ok(())
     }
 
+
     /// Default DnaLoader that actually reads files from the filesystem
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
         notify(format!("Reading DNA from {}", file));
@@ -462,17 +455,29 @@ impl Container {
         tx
     }
 
+    pub fn dna_dir_path(&self) -> PathBuf {
+        self.config.persistence_dir.join("dna")
+    }
+
+    pub fn config_path(&self) -> PathBuf {
+        self.config.persistence_dir.join("container-config.toml")
+    }
+
+    pub fn instance_storage_dir_path(&self) -> PathBuf {
+        self.config.persistence_dir.join("storage")
+    }
+
     pub fn save_config(&self) -> Result<(), HolochainError> {
-        let mut file = File::create(&self.config_path)?;
+        fs::create_dir_all(&self.config.persistence_dir)?;
+        let mut file = File::create(&self.config_path())?;
         file.write(serialize_configuration(&self.config)?.as_bytes())?;
         Ok(())
     }
 
     pub fn save_dna(&self, dna: &Dna) -> Result<PathBuf, HolochainError> {
-        let dna_dir_path = self.config.persistence_dir.join("dna");
-        let mut file_path = dna_dir_path.join(dna.address().to_string());
+        let mut file_path = self.dna_dir_path().join(dna.address().to_string());
         file_path.set_extension("hcpkg");
-        fs::create_dir_all(&dna_dir_path)?;
+        fs::create_dir_all(&self.dna_dir_path())?;
         self.save_dna_to(dna, file_path)
     }
 
@@ -729,7 +734,7 @@ pub mod tests {
     }
 
     //#[test]
-    // Default config path ~/.holochain/container-config.toml won't work in CI
+    // Default config path ~/.holochain/container/container-config.toml won't work in CI
     fn _test_container_save_and_load_config_default_location() {
         let container = test_container();
         assert_eq!(container.save_config(), Ok(()));
@@ -738,7 +743,7 @@ pub mod tests {
 
         let mut file = OpenOptions::new()
             .read(true)
-            .open(&container.config_path)
+            .open(&container.config_path())
             .expect("Could not open config file");
         file.read_to_string(&mut toml)
             .expect("Could not read config file");

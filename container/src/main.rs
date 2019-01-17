@@ -40,7 +40,7 @@ fn main() {
     let opt = Opt::from_args();
     let config_path = opt
         .config
-        .unwrap_or(PathBuf::from(r"~/.holochain/container_config.toml"));
+        .unwrap_or(PathBuf::from(r"~/.holochain/container/container_config.toml"));
     let config_path_str = config_path.to_str().unwrap();
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
@@ -75,7 +75,6 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     mount_container_from_config(config);
     let mut container_guard = CONTAINER.lock().unwrap();
     let container = container_guard.as_mut().expect("Container must be mounted");
-    container.set_config_path(PathBuf::from(path));
     container.load_config()?;
     Ok(())
 }

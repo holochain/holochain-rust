@@ -255,15 +255,12 @@ pattern = ".*"
             .to_string()
     }
 
-    fn create_test_container<T: Into<String>>(test_name: T) -> Container {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+    fn create_test_container(test_name: &str) -> Container {
+        let mut config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        config.persistence_dir.push(test_name);
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
         container.load_config().unwrap();
-
-        let mut tmp_config_path = PathBuf::new();
-        tmp_config_path.push(format!("./tmp-{}-container-config.toml", test_name.into()));
-        container.set_config_path(tmp_config_path.clone());
         container
     }
 
@@ -305,14 +302,14 @@ pattern = ".*"
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
         assert_eq!(
             config_contents,
 r#"bridges = []
-persistence_dir = "./tmp-test/"
+persistence_dir = "./tmp-test/test_install_dna_from_file"
 
 [[agents]]
 id = "test-agent-1"
@@ -416,12 +413,12 @@ pattern = ".*"
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
-                    file: format!("./tmp-test/dna/{}.hcpkg", new_dna.address()),
+                    file: format!("./tmp-test/test_install_dna_from_file_and_copy/dna/{}.hcpkg", new_dna.address()),
                     hash: String::from(new_dna.address()),
                 },
             ]
         );
-        assert!(PathBuf::from(format!("./tmp-test/dna/{}.hcpkg", new_dna.address())).is_file())
+        assert!(PathBuf::from(format!("./tmp-test/test_install_dna_from_file_and_copy/dna/{}.hcpkg", new_dna.address())).is_file())
     }
 
     #[test]
@@ -471,12 +468,12 @@ pattern = ".*"
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
-                    file: format!("./tmp-test/dna/{}.hcpkg", new_dna.address()),
+                    file: format!("./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg", new_dna.address()),
                     hash: String::from(new_dna.address()),
                 },
             ]
         );
-        assert!(PathBuf::from(format!("./tmp-test/dna/{}.hcpkg", new_dna.address())).is_file())
+        assert!(PathBuf::from(format!("./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg", new_dna.address())).is_file())
     }
 
     use crate::config::StorageConfiguration;
@@ -499,14 +496,14 @@ pattern = ".*"
         assert_eq!(add_result, Ok(()));
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
         assert_eq!(
             config_contents,
        r#"bridges = []
-persistence_dir = "./tmp-test/"
+persistence_dir = "./tmp-test/test_add_instance"
 
 [[agents]]
 id = "test-agent-1"
@@ -599,14 +596,14 @@ pattern = ".*"
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
         assert_eq!(
             config_contents,
             r#"bridges = []
-persistence_dir = "./tmp-test/"
+persistence_dir = "./tmp-test/test_remove_instance"
 
 [[agents]]
 id = "test-agent-1"
@@ -672,7 +669,7 @@ pattern = ".*"
         assert_eq!(container.uninstall_dna(&String::from("test-dna")), Ok(()),);
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
@@ -681,7 +678,7 @@ pattern = ".*"
             r#"bridges = []
 dnas = []
 instances = []
-persistence_dir = "./tmp-test/"
+persistence_dir = "./tmp-test/test_uninstall_dna"
 
 [[agents]]
 id = "test-agent-1"

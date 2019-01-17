@@ -29,10 +29,10 @@ When Holochain loads a DNA file, to start an instance from it, it expects the pr
             "name": "test_zome",
             "capabilities": {
                 "test_capability": {
-                    "type": "public",
-                    "fn_declarations": []
+                    "type": "public"
                 }
             },
+            "functions": {}
             "code": {
                 "code": "AAECAw=="
             }
@@ -57,15 +57,15 @@ These will both be discussed below.
 
 In order to operate securely, but still be full featured, Holochain has a permissions system for function calls. This is being called "Capabilities".
 
-A Zome can have multiple Capabilities, and each Capability has one CapabilityType, from a defined set of options. The point of selecting a CapabilityType for a set of functions is that it will allow granular control of who can call which functions of a Zome.
+A Zome can have multiple Capabilities, and each Capability has one CapabilityType, from a defined set of options, as well as list of functions that are accessible using that capability. The point of selecting a CapabilityType for a set of functions is that it will allow granular control of who can call which functions of a Zome.
 
 In the example, the name of the capability was "test_capability".
 
 ```json
 "capabilities": {
     "test_capability": {
-        "type": "public",
-        "fn_declarations": []
+        "type": "public"
+        "functions": ["get_task_list"]
     }
 }
 ```
@@ -80,26 +80,21 @@ Important notes for the current use of Capabilities:
 
 ## Function Declarations
 
-It's time to illustrate what a `fn_declaration` looks like. Here is an example of one, added to "test_capability":
+All of the Zome's functions are declared in the `functions` object. Here is an example of one:
 
 ```json
-"capabilities": {
-    "test_capability": {
-        "type": "public",
-        "fn_declarations": [
-            {
-                "name": "get_task_list",
-                "inputs": [{"name": "username", "type": "string"}],
-                "outputs": [{"name": "task_list", "type": "json"}]
-            }
-        ]
+"functions": {
+    "get_task_list": {
+        "name": "get_task_list",
+        "inputs": [{"name": "username", "type": "string"}],
+        "outputs": [{"name": "task_list", "type": "json"}]
     }
 }
 ```
 
 Each function declaration is an object that includes the `name`, and the `inputs` and `outputs` expected for the function. Since WebAssembly only compiles from code languages with a type system, the generation of these inputs and outputs can expected to be automated.
 
-The `name` is the most important thing here, because when a function call to an instance is being performed, it will have to match a name which Holochain can find in the `fn_declarations` specification for the Capability. If the function isn't declared, Holochain will treat it as if it doesn't exist, even if it is an exposed function in the WASM code.
+The `name` is the most important thing here, because when a function call to an instance is being performed, it will have to match a name which Holochain can find in the `functions`. If the function isn't declared, Holochain will treat it as if it doesn't exist, even if it is an exposed function in the WASM code.
 
 ## Data Interchange - Inputs and Outputs
 

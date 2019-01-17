@@ -109,7 +109,7 @@ Put simply, this has two big implications: Holochain Container implementations m
 
 ## Introducing "Containers"
 
-To discuss the functions developers will build within Zomes, it is useful to zoom out for a moment, to the level of how Holochain runs on devices. Because there was an intention to make Holochain highly platform and system compatible, the core logic was written in such a way that it could be included into many different codebases. Think MacOSX, Linux, Windows, Android, iOS, and more. It is actually a "library" that needs to be included in another project which mounts, executes and manages it. Because filling this new need is becoming such a foundational aspect of Holochain, it has its' own name: *Container*.
+To discuss the functions developers will build within Zomes, it is useful to zoom out for a moment, to the level of how Holochain runs on devices. Because there was an intention to make Holochain highly platform and system compatible, the core logic was written in such a way that it could be included into many different codebases. Think MacOSX, Linux, Windows, Android, iOS, and more. Thus Holochain core is actually simply a library that needs to be included in another project which mounts, executes and manages it. Because filling this new need is becoming such a foundational aspect of Holochain, it has its' own name: *Container*.
 
 Containers install and uninstall, start and stop instances of DNA on devices. There is one more important function of Containers: *they create a channel to securely make function calls into the Zome functions of DNA instances*.
 

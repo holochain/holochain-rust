@@ -6,13 +6,13 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use im::ordmap::OrdMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct EavMemoryStorage {
-    storage: Arc<RwLock<OrdMap<Key, EntityAttributeValue>>>,
+    storage: Arc<Mutex<OrdMap<Key, EntityAttributeValue>>>,
     id: Uuid,
 }
 
@@ -25,7 +25,7 @@ impl PartialEq for EavMemoryStorage {
 impl EavMemoryStorage {
     pub fn new() -> EavMemoryStorage {
         EavMemoryStorage {
-            storage: Arc::new(RwLock::new(OrdMap::new())),
+            storage: Arc::new(Mutex::new(OrdMap::new())),
             id: Uuid::new_v4(),
         }
     }
@@ -38,7 +38,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .len()
             == 0
         {
-            let mut map = self.storage.write()?;
+            let mut map = self.storage.lock().unwrap();
             let key = create_key(Action::Insert)?;
             map.insert(key, eav.clone());
             Ok(())
@@ -53,9 +53,10 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
-        let map = self.storage.read()?.clone();
+        let map = self.storage.lock().unwrap();
         println!("map {:?}", map.clone());
         let filtered_map = map
+            .clone()
             .into_iter()
             //.cloned()
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))

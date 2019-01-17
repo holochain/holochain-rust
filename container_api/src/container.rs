@@ -804,7 +804,14 @@ pub mod tests {
                 parameter_type: String::from("String"),
             }],
         );
-        dna.zomes.get_mut("greeter").unwrap().capabilities.get_mut("test_cap").unwrap().functions.push("hello".into());
+        dna.zomes
+            .get_mut("greeter")
+            .unwrap()
+            .capabilities
+            .get_mut("test_cap")
+            .unwrap()
+            .functions
+            .push("hello".into());
         dna
     }
 

@@ -219,13 +219,32 @@ impl ContainerApiBuilder {
             .to_string())
     }
 
+    fn get_as_bool<T: Into<String>>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<bool, jsonrpc_core::Error> {
+        let key = key.into();
+        Ok(params_map
+            .get(&key)
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param not provided",
+                &key
+            )))?
+            .as_bool()
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` is not a valid json boolean",
+                &key
+            )))?)
+    }
+
     pub fn with_admin_dna_functions(mut self) -> Self {
         self.io
             .add_method("admin/dna/install_from_file", move |params| {
                 let params_map = Self::unwrap_params_map(params)?;
                 let id = Self::get_as_string("id", &params_map)?;
                 let path = Self::get_as_string("path", &params_map)?;
-                container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string(), false))?;
+                let copy = Self::get_as_bool("copy", &params_map).unwrap_or(false);
+                container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string(), copy))?;
                 Ok(json!({"success": true}))
             });
 

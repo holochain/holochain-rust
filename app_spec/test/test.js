@@ -1,11 +1,12 @@
 
-const sleep = require('sleep');
+const path = require('path')
+const sleep = require('sleep')
 const test = require('tape')
 const { pollFor } = require('./util')
 
 const { Config, Container } = require('../../nodejs_container')
 
-const dnaPath = "./dist/app_spec.hcpkg"
+const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")
 const aliceName = "alice"
 const tashName = "tash"
 
@@ -28,6 +29,7 @@ container.start()
 
 const alice = container.makeCaller(aliceName, dnaPath)
 const tash = container.makeCaller(tashName, dnaPath)
+
 
 test('agentId', (t) => {
   t.plan(2)

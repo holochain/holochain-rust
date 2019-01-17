@@ -325,6 +325,7 @@ pub mod tests {
         zome: &str,
         canonical_name: &str,
         result: i32,
+        network_name: Option<&str>,
     ) -> Result<Instance, String> {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
@@ -335,7 +336,7 @@ pub mod tests {
             test_callback_wasm(canonical_name, result),
         );
 
-        test_instance(dna)
+        test_instance(dna, network_name)
     }
 
     #[test]

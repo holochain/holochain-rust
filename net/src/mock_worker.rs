@@ -30,11 +30,11 @@ impl NetWorker for MockWorker {
             .expect("MockSystem should have been initialized by now")
             .lock()
             .unwrap();
-        if let Ok(wrap) = JsonProtocol::try_from(&data) {
-            if let JsonProtocol::TrackDna(app) = wrap {
+        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            if let JsonProtocol::TrackDna(track_msg) = json_msg {
                 let (tx, rx) = mpsc::channel();
                 self.mock_msgs.push(rx);
-                mock.register(&app.dna_address, &app.agent_id, tx)?;
+                mock.register(&track_msg.dna_address, &track_msg.agent_id, tx)?;
             }
         }
         mock.handle(data)?;

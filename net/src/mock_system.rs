@@ -68,8 +68,8 @@ impl MockSystem {
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not remove)
         // println!(">>>> MockSystem recv: {:?}", data);
-        if let Ok(wrap) = JsonProtocol::try_from(&data) {
-            match wrap {
+        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            match json_msg {
                 JsonProtocol::TrackDna(msg) => {
                     self.priv_send_all(
                         &msg.dna_address.clone(),

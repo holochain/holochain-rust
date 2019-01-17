@@ -143,7 +143,7 @@ Note that the top line in the snippet above is important. It switches on a Rust 
 #![feature(try_from)]
 ```
 
-Additionally, the HDK offers built-in conversion functions from JSON strings to Entry structs. This comes from the `DefaultJson` derive.
+Additionally, the HDK offers built-in conversion functions from JSON strings to Entry structs. This comes from the `DefaultJson` [derive](https://doc.rust-lang.org/rust-by-example/trait/derive.html).
 
 Every struct used as a `native_type` reference should include all 4 derives, as in the example:
 ```rust

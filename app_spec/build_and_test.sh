@@ -11,4 +11,4 @@ echo "Running test.js in node"
 echo "------------------------------------------------------------------------------------"
 cd test
 npm install
-npm run test
+npm test

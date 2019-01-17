@@ -119,8 +119,9 @@ declare_types! {
                 // This causes MainBackgroundTask to eventually terminate
                 *is_running = false;
 
-                let result = tc.container.shutdown().map_err(|e| e.to_string());
-                result
+                // TODO are we sure shutdown should not return a Result?
+                let result = tc.container.shutdown();
+                Ok(result)
             };
 
             stop_result.or_else(|e| {

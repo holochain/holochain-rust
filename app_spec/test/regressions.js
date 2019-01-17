@@ -7,15 +7,60 @@ const dna = Config.dna(dnaPath, 'app-spec')
 const agentAlice = Config.agent("alice")
 const agentTash = Config.agent("tash")
 
-const instanceAlice = Config.instance(agentAlice, dna)
-const instanceTash = Config.instance(agentTash, dna)
-
 const scenario = new Scenario([instanceAlice, instanceTash])
 
+scenario.runTape('calling get_links before link_entries makes a difference', async (t, {alice}) => {
+
+  const get1 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get1.Ok)
+  sleep.sleep(1)
+
+  const create1 = await alice.callSync("blog", "main", "create_post", {content: 'hi'})
+  t.ok(create1.Ok)
+  sleep.sleep(1)
+
+  const get2 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get2.Ok)
+
+  t.equal(get2.Ok.addresses.length, 1)
+  t.end()
+})
+
+scenario.runTape('calling get_links twice in a row is different than calling it once', async (t, {alice}) => {
+  // This test is exactly the same as the previous one, but calls my_posts twice in a row.
+  // This makes the links come through the second time.
+
+  const get1 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get1.Ok)
+  sleep.sleep(1)
+
+  const create1 = await alice.callSync("blog", "main", "create_post", {content: 'hi'})
+  t.ok(create1.Ok)
+  sleep.sleep(1)
+
+  alice.call("blog", "main", "my_posts", {})
+  const get2 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get2.Ok)
+
+  t.equal(get2.Ok.addresses.length, 1)
+  t.end()
+})
+
+scenario.runTape('not calling get_links in the beginning helps', async (t, {alice}) => {
+
+  const create1 = await alice.callSync("blog", "main", "create_post", {content: 'hi'})
+  t.ok(create1.Ok)
+  sleep.sleep(1)
+
+  const get1 = alice.call("blog", "main", "my_posts", {})
+  t.ok(get1.Ok)
+
+  t.equal(get1.Ok.addresses.length, 1)
+  t.end()
+})
+
 scenario.runTape('alice create & publish post -> recommend own post to self', async (t, {alice, tash}) => {
-  t.plan(4)
-  const content = "Holo world...1"
-  const in_reply_to = null
+
   const params = { content: content, in_reply_to }
   const postResult = await alice.callSync("blog", "main", "create_post", params)
   const postAddr = postResult.Ok
@@ -30,7 +75,7 @@ scenario.runTape('alice create & publish post -> recommend own post to self', as
   })
   console.log("linked: ", linked)
   t.equal(linked.Ok, null)
-    
+
   const recommendedPosts = alice.call('blog', 'main', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, alice.agentId)
@@ -56,7 +101,7 @@ scenario.runTape('alice create & publish post -> tash recommend to self', async 
   })
   console.log("linked: ", linked)
   t.equal(linked.Ok, null)
-  
+
   const recommendedPosts = tash.call('blog', 'main', 'my_recommended_posts', {})
   console.log("recommendedPosts", recommendedPosts)
   console.log('agent addresses: ', alice.agentId, tash.agentId)

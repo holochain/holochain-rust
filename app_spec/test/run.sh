@@ -1,7 +1,6 @@
 if [ -z $1 ] 
 then
-	node test.js | faucet
-	node regressions.js | faucet
+	faucet test.js regressions.js
 else
-	node $1 | faucet
+	faucet $1
 fi

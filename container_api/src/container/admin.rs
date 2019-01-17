@@ -13,7 +13,7 @@ pub trait ContainerAdmin {
         path: PathBuf,
         id: String,
         copy: bool,
-        properties: Option<serde_json::Value>,
+        properties: Option<&serde_json::Value>,
     ) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_instance(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
@@ -28,7 +28,7 @@ impl ContainerAdmin for Container {
         path: PathBuf,
         id: String,
         copy: bool,
-        properties: Option<serde_json::Value>,
+        properties: Option<&serde_json::Value>,
     ) -> Result<(), HolochainError> {
         let path_string = path
             .to_str()
@@ -416,6 +416,59 @@ pattern = ".*"
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
+                    file: format!("./tmp-test/dna/{}.hcpkg", new_dna.address()),
+                    hash: String::from(new_dna.address()),
+                },
+            ]
+        );
+        assert!(PathBuf::from(format!("./tmp-test/dna/{}.hcpkg", new_dna.address())).is_file())
+    }
+
+    #[test]
+    fn test_install_dna_from_file_with_properties() {
+        let mut container = create_test_container("test_install_dna_from_file_with_properties");
+
+        let mut new_dna_path = PathBuf::new();
+        new_dna_path.push("new-dna.hcpkg");
+        let new_props = json!({"propertyKey": "value"});
+
+        assert_eq!(
+            container.install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna-with-props"),
+                false,
+                Some(&new_props)
+            ),
+            Err(HolochainError::ConfigError("Cannot install DNA with properties unless copy flag is true".into())),
+        );
+
+        assert_eq!(
+            container.install_dna_from_file(
+                new_dna_path.clone(),
+                String::from("new-dna-with-props"),
+                true,
+                Some(&new_props)
+            ),
+            Ok(()),
+        );
+
+        let mut new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
+        let original_hash = new_dna.address();
+        new_dna.properties = new_props;
+        let new_hash = new_dna.address();
+        assert_ne!(original_hash, new_hash);
+        assert_eq!(container.config().dnas.len(), 2,);
+        assert_eq!(
+            container.config().dnas,
+            vec![
+                DnaConfiguration {
+                    id: String::from("test-dna"),
+                    file: String::from("app_spec.hcpkg"),
+                    hash: String::from("Qm328wyq38924y"),
+                },
+                DnaConfiguration {
+                    id: String::from("new-dna-with-props"),
                     file: format!("./tmp-test/dna/{}.hcpkg", new_dna.address()),
                     hash: String::from(new_dna.address()),
                 },

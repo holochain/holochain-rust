@@ -33,19 +33,16 @@ extern "C" {
 /// return error code
 fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
     // Write input string on stack
-    let maybe_allocation = mem_stack.write_json(json_string.to_owned());
-    if let Err(_) = maybe_allocation {
-        return;
-    }
-    let allocation_of_input = maybe_allocation.unwrap();
+    let allocation = match mem_stack.write_json(json_string.to_owned()) {
+        Ok(allocation) => allocation,
+        Err(_) => return,
+    };
 
     // Call WASMI-able DEBUG
-    unsafe { hc_debug(allocation_of_input.as_ribosome_encoding()) };
+    unsafe { hc_debug(allocation.as_ribosome_encoding()) };
 
     // Free input allocation and all allocations made inside print()
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
+    mem_stack.deallocate(allocation).expect("deallocate failed");
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_building_validation_package_entry() {
-        let (_instance, context) = instance();
+        let (_instance, context) = instance(None);
 
         // adding other entries to not have special case of empty chain
         commit(test_entry_package_chain_entries(), &context);
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_building_validation_package_chain_entries() {
-        let (_instance, context) = instance();
+        let (_instance, context) = instance(None);
 
         // adding other entries to not have special case of empty chain
         commit(test_entry_package_chain_entries(), &context);
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn test_building_validation_package_chain_headers() {
-        let (_instance, context) = instance();
+        let (_instance, context) = instance(None);
 
         // adding other entries to not have special case of empty chain
         commit(test_entry_package_chain_entries(), &context);
@@ -304,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_building_validation_package_chain_full() {
-        let (_instance, context) = instance();
+        let (_instance, context) = instance(None);
 
         // adding other entries to not have special case of empty chain
         commit(test_entry_package_chain_entries(), &context);

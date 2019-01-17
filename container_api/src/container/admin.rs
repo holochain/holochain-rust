@@ -7,7 +7,7 @@ use holochain_core_types::{cas::content::AddressableContent, error::HolochainErr
 use std::{path::PathBuf, sync::Arc};
 
 pub trait ContainerAdmin {
-    fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError>;
+    fn install_dna_from_file(&mut self, path: PathBuf, id: String, copy: bool) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_instance(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
@@ -16,7 +16,7 @@ pub trait ContainerAdmin {
 }
 
 impl ContainerAdmin for Container {
-    fn install_dna_from_file(&mut self, path: PathBuf, id: String) -> Result<(), HolochainError> {
+    fn install_dna_from_file(&mut self, path: PathBuf, id: String, copy: bool) -> Result<(), HolochainError> {
         let path_string = path
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
@@ -29,11 +29,21 @@ impl ContainerAdmin for Container {
                 ))
             })?;
 
+        let config_path = match copy {
+            true => self.save_dna(&dna)?,
+            false => PathBuf::from(path_string),
+        };
+        let config_path_str = config_path
+            .to_str()
+            .ok_or(HolochainError::ConfigError("invalid path".into()))?;
+
         let new_dna = DnaConfiguration {
             id: id.clone(),
-            file: path_string.into(),
+            file: config_path_str.into(),
             hash: dna.address().to_string(),
         };
+
+
         let mut new_config = self.config.clone();
         new_config.dnas.push(new_dna.clone());
         new_config.check_consistency()?;
@@ -244,7 +254,7 @@ pattern = ".*"
         new_dna_path.push("new-dna.hcpkg");
 
         assert_eq!(
-            container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna")),
+            container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false),
             Ok(()),
         );
 
@@ -349,6 +359,41 @@ pattern = ".*"
         );
     }
 
+
+    #[test]
+    fn test_install_dna_from_file_and_copy() {
+        let mut container = create_test_container("test_install_dna_from_file_and_copy");
+
+        let mut new_dna_path = PathBuf::new();
+        new_dna_path.push("new-dna.hcpkg");
+
+        assert_eq!(
+            container.install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), true),
+            Ok(()),
+        );
+
+        let new_dna =
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
+
+        assert_eq!(container.config().dnas.len(), 2,);
+        assert_eq!(
+            container.config().dnas,
+            vec![
+                DnaConfiguration {
+                    id: String::from("test-dna"),
+                    file: String::from("app_spec.hcpkg"),
+                    hash: String::from("Qm328wyq38924y"),
+                },
+                DnaConfiguration {
+                    id: String::from("new-dna"),
+                    file: format!("./tmp-test/dna/{}.hcpkg", new_dna.address()),
+                    hash: String::from(new_dna.address()),
+                },
+            ]
+        );
+        assert!(PathBuf::from(format!("./tmp-test/dna/{}.hcpkg", new_dna.address())).is_file())
+    }
+
     use crate::config::StorageConfiguration;
     #[test]
     fn test_add_instance() {
@@ -356,7 +401,7 @@ pattern = ".*"
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
         container
-            .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"))
+            .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false)
             .expect("Could not install DNA");
 
         let add_result = container.add_instance(InstanceConfiguration {

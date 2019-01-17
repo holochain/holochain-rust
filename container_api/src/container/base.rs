@@ -17,7 +17,7 @@ use holochain_core_types::{
     dna::Dna,
     error::HolochainError,
     json::JsonString,
-    // cas::content::AddressableContent,
+    cas::content::AddressableContent,
 };
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 
@@ -466,15 +466,19 @@ impl Container {
         Ok(())
     }
 
-    // pub fn save_dna(&self, dna: &Dna) -> Result<(), HolochainError> {
-    //     let mut file = File::create(
-    //         &self.config.persistence_dir
-    //         .join("dnas")
-    //         .join(dna.address().to_string())
-    //     )?;
-    //     file.write(dna)?;
-    //     Ok(())
-    // }
+    pub fn save_dna(&self, dna: &Dna) -> Result<PathBuf, HolochainError> {
+        let mut file_path = self.config.persistence_dir
+            .join("dna")
+            .join(dna.address().to_string());
+        file_path.set_extension("hcpkg");
+        let file = File::create(&file_path)
+            .map_err(|e| HolochainError::ConfigError(
+                format!("Error writing DNA to {}, {}", file_path.to_str().unwrap().to_string(), e.to_string())
+            )
+        )?;
+        serde_json::to_writer_pretty(&file, dna.into())?;
+        Ok(file_path)
+    }
 }
 
 impl<'a> TryFrom<&'a Configuration> for Container {

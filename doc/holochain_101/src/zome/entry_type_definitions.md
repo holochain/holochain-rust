@@ -6,7 +6,7 @@ Entries are a fundamental, primitive type within Holochain. Entries are an abstr
 
 There are types of entries which cannot be written to the chain by users of an application. These are generally called system entries. They include DNA, and initial Agent entries, which are always the first two entries written to a chain.
 
-There are a special type of entries called App Entries. These are entries which are created through the active use of an application by a user. They must have an entry type which, rather than being system defined, is defined application specific.
+There are a special type of entries called App Entries. These are entries which are created through the active use of an application by a user. They must have an entry type which, rather than being system defined, is defined by the Zome developer.
 
 ## Defining App Entry Types
 

@@ -28,16 +28,11 @@ use holochain_wasm_utils::{
     },
 };
 use std::convert::TryFrom;
-// use holochain_core_types::error::RibosomeReturnCode;
 use holochain_core_types::error::RibosomeEncodingBits;
 use init_globals::hc_init_globals;
 use serde_json;
 use std::convert::TryInto;
-// use holochain_wasm_utils::memory::allocation::WasmAllocation;
-// use holochain_core_types::error::HolochainError;
-// use holochain_core_types::error::RibosomeErrorCode;
 use holochain_core_types::error::RibosomeEncodedAllocation;
-// use holochain_core_types::error::CoreError;
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 
 //--------------------------------------------------------------------------------------------------

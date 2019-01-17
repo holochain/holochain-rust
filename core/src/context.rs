@@ -208,10 +208,15 @@ pub fn unique_mock_config() -> JsonString {
     JsonString::from(P2pConfig::unique_mock())
 }
 
-/// create a named test network
+/// Create a named test network if name is Some, otherwise create a unique one using snowflake
+/// This is the base function that many other `text_context*` functions use, and hence they also
+/// require an optional network name. The reasoning for this is that tests which only require a
+/// single instance may simply pass None and get a unique network name, but tests which require two
+/// instances to be on the same network need to ensure both contexts use the same network name.
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_mock_config(name: Option<&str>) -> JsonString {
-    name.map(|name| JsonString::from(P2pConfig::named_mock(name)))
+pub fn test_mock_config(network_name: Option<&str>) -> JsonString {
+    network_name
+        .map(|name| JsonString::from(P2pConfig::named_mock(name)))
         .unwrap_or(unique_mock_config())
 }
 

@@ -439,7 +439,9 @@ pattern = ".*"
                 false,
                 Some(&new_props)
             ),
-            Err(HolochainError::ConfigError("Cannot install DNA with properties unless copy flag is true".into())),
+            Err(HolochainError::ConfigError(
+                "Cannot install DNA with properties unless copy flag is true".into()
+            )),
         );
 
         assert_eq!(

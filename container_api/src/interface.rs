@@ -244,11 +244,12 @@ impl ContainerApiBuilder {
                 let id = Self::get_as_string("id", &params_map)?;
                 let path = Self::get_as_string("path", &params_map)?;
                 let copy = Self::get_as_bool("copy", &params_map).unwrap_or(false);
+                let properties = params_map.get("properties");
                 container_call!(|c| c.install_dna_from_file(
                     PathBuf::from(path),
                     id.to_string(),
                     copy,
-                    None
+                    properties
                 ))?;
                 Ok(json!({"success": true}))
             });

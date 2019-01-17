@@ -227,7 +227,6 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     return hc.call(
         "test_zome",
         Some(CapabilityCall::new(
-            "test_cap".to_string(),
             Address::from("test_token"),
             None,
         )),

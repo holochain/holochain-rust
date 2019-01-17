@@ -53,16 +53,14 @@ pub struct CallSignature {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct CapabilityCall {
-    pub cap_name: String,
     pub cap_token: Address,
     pub caller: Option<Address>,
     pub signature: CallSignature,
 }
 
 impl CapabilityCall {
-    pub fn new(name: String, token: Address, caller: Option<Address>) -> Self {
+    pub fn new(token: Address, caller: Option<Address>) -> Self {
         CapabilityCall {
-            cap_name: name,
             cap_token: token,
             caller,
             signature: CallSignature {}, // FIXME

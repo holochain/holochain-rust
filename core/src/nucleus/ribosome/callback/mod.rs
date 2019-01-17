@@ -211,7 +211,6 @@ pub fn call(
     let zome_call = ZomeFnCall::new(
         zome,
         Some(CapabilityCall::new(
-            function.capability().as_str().to_string(),
             Address::from(""), //FIXME!!
             None,
         )),

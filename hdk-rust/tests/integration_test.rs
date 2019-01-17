@@ -229,11 +229,7 @@ fn start_holochain_instance<T: Into<String>>(
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
     hc.call(
         "test_zome",
-        Some(CapabilityCall::new(
-            "test_cap".to_string(),
-            Address::from("test_token"),
-            None,
-        )),
+        Some(CapabilityCall::new(Address::from("test_token"), None)),
         fn_name,
         params,
     )

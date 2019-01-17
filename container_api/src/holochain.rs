@@ -42,7 +42,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome", Some(CapabilityCall::new("foo".to_string(), Address::from(""), None)), "some_fn", "{}");
+//! hc.call("test_zome", Some(CapabilityCall::new(Address::from(""), None)), "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -233,11 +233,7 @@ mod tests {
     }
 
     fn example_capability_call() -> Option<CapabilityCall> {
-        Some(CapabilityCall::new(
-            "test_cap".to_string(),
-            Address::from("test_token"),
-            None,
-        ))
+        Some(CapabilityCall::new(Address::from("test_token"), None))
     }
 
     #[test]

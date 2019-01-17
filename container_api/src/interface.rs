@@ -117,9 +117,7 @@ impl ContainerApiBuilder {
                     for fn_decl in zome.fn_declarations {
                         let func_name = String::from(fn_decl.name);
                         let zome_name = zome_name.clone();
-                        let cap_name = String::from("test_cap");
-                        let method_name =
-                            format!("{}/{}/{}/{}", instance_name, zome_name, cap_name, func_name);
+                        let method_name = format!("{}/{}/{}", instance_name, zome_name, func_name);
                         let hc_lock_inner = hc_lock.clone();
                         self.io.add_method(&method_name, move |params| {
                             let mut hc = hc_lock_inner.write().unwrap();
@@ -128,11 +126,7 @@ impl ContainerApiBuilder {
                             let response = hc
                                 .call(
                                     &zome_name,
-                                    Some(CapabilityCall::new(
-                                        cap_name.clone(),
-                                        Address::from("fake_token"),
-                                        None,
-                                    )),
+                                    Some(CapabilityCall::new(Address::from("fake_token"), None)),
                                     &func_name,
                                     &params_string,
                                 )
@@ -181,8 +175,8 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1/greeter/test_cap/hello""#));
-        assert!(!result.contains(r#""test-instance-2//test/test""#));
+        assert!(result.contains(r#""test-instance-1/greeter/hello""#));
+        assert!(!result.contains(r#""test-instance-2//test""#));
     }
 
     #[test]
@@ -201,7 +195,7 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store/greeter/test_cap/hello""#));
-        assert!(!result.contains(r#""test-instance-1//test/test""#));
+        assert!(result.contains(r#""happ-store/greeter/hello""#));
+        assert!(!result.contains(r#""test-instance-1//test""#));
     }
 }

@@ -292,7 +292,8 @@ fn fn_parameters_as_vec(
     function_name: &str,
 ) -> Option<Vec<*const c_char>> {
     let result = dna
-        .get_function_with_zome_name(zome_name,function_name).ok()?
+        .get_function_with_zome_name(zome_name, function_name)
+        .ok()?
         .inputs
         .iter()
         .map(|input| {

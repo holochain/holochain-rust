@@ -66,13 +66,6 @@ impl ZomeFnCall {
             && self.fn_name == fn_call.fn_name
     }
 
-    pub fn cap_name(&self) -> String {
-        match self.cap.clone() {
-            Some(call) => call.cap_name,
-            None => panic!("null cap call unimplemented!"),
-        }
-    }
-
     pub fn cap_token(&self) -> Address {
         match self.cap.clone() {
             Some(call) => call.cap_token,
@@ -289,6 +282,7 @@ fn reduce_execute_zome_function(
             .expect("action channel to be open in reducer");
     }
 
+    context.log(format!("debug/reduce/exec_fn: Validating call: {:?}", fn_call));
     // 1. Validate the call (a number of things could go wrong)
     let dna = match validate_call(context.clone(), state, &fn_call) {
         Err(err) => {
@@ -299,6 +293,7 @@ fn reduce_execute_zome_function(
         Ok(dna) => dna,
     };
 
+    context.log(format!("debug/reduce/exec_fn: executing call: {:?}", fn_call));
     // 2. function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
     let code =
@@ -385,12 +380,22 @@ pub fn reduce(
 
 // Helper function for finding out if a given function call is public
 fn is_fn_public(dna: &Dna, zome_call: &ZomeFnCall) -> Result<bool, HolochainError> {
-    // Get Capability from DNA
-    let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name());
+    let zome = dna
+        .get_zome(&zome_call.zome_name)
+        .map_err(|e| HolochainError::Dna(e))?;
+    match zome.capabilities.iter().find(|(_, cap)| {
+        cap.cap_type == CapabilityType::Public && cap.functions.contains(&zome_call.fn_name)
+    }) {
+        Some(_) => Ok(true),
+        None => Ok(false),
+    }
+    // Lookup for capability token or capability with function in it
+    // panic!("not implemented");
+    /*    let res = dna.get_capability_with_zome_name(&zome_call.zome_name, &zome_call.cap_name());
     match res {
         Err(e) => Err(HolochainError::Dna(e)),
         Ok(cap) => Ok(cap.cap_type == CapabilityType::Public),
-    }
+    }*/
 }
 
 #[cfg(test)]
@@ -430,7 +435,7 @@ pub mod tests {
 
     /// dummy capability call
     pub fn test_capability_call() -> CapabilityCall {
-        CapabilityCall::new(test_capability_name(), test_capability_token(), None)
+        CapabilityCall::new(test_capability_token(), None)
     }
 
     /// dummy capability name compatible with ZomeFnCall
@@ -669,27 +674,29 @@ pub mod tests {
             _ => assert!(false),
         }
 
-        let mut cap_call = test_capability_call();
-        cap_call.cap_name = "xxx".to_string();
+        /*
+        convert when we actually have capabilities on a chain
+                let mut cap_call = test_capability_call();
+                cap_call.cap_name = "xxx".to_string();
 
-        // Create bad capability function call
-        let call = ZomeFnCall::new("test_zome", Some(cap_call), "main", "{}");
+                // Create bad capability function call
+                let call = ZomeFnCall::new("test_zome", Some(cap_call), "main", "{}");
 
-        let result = super::call_and_wait_for_result(call, &mut instance);
+                let result = super::call_and_wait_for_result(call, &mut instance);
 
-        match result {
-            Err(HolochainError::Dna(err)) => assert_eq!(
-                err.to_string(),
-                "Capability 'xxx' not found in Zome 'test_zome'"
-            ),
-            _ => assert!(false),
-        }
+                match result {
+                    Err(HolochainError::Dna(err)) => assert_eq!(
+                        err.to_string(),
+                        "Capability 'xxx' not found in Zome 'test_zome'"
+                    ),
+                    _ => assert!(false),
+                }
+        */
     }
 
     #[test]
     fn test_zomefncall_same_as() {
-        let mut cap_call2 = test_capability_call();
-        cap_call2.cap_name = "xxx".to_string();
+        let cap_call2 = test_capability_call();
 
         let base = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa");
         let copy = ZomeFnCall::new("yoyo", Some(test_capability_call()), "fufu", "papa");
@@ -705,5 +712,38 @@ pub mod tests {
         assert!(!base.same_fn_as(&diff1));
         assert!(!base.same_fn_as(&diff2));
         assert!(!base.same_fn_as(&diff3));
+    }
+
+    #[test]
+    fn test_is_fn_public() {
+        let test_zome_name = &test_zome();
+
+        let mut dna = test_utils::create_test_dna_with_wat(test_zome_name, "test_cap", None);
+        let mut call = test_zome_call();
+        call.fn_name = String::from("main");
+        let result = is_fn_public(&dna, &call);
+        assert!(result.unwrap());
+
+        call.zome_name = String::from("foo zome");
+        let result = is_fn_public(&dna, &call);
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(Dna(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\")))"
+        );
+
+        dna.zomes
+            .get_mut(test_zome_name)
+            .unwrap()
+            .add_fndeclaration(String::from("non_pub_fn"), vec![], vec![]);
+
+        let call = ZomeFnCall::new(
+            test_zome_name,
+            Some(CapabilityCall::new(test_capability_token(), None)),
+            "non_pub_fn",
+            test_parameters(),
+        );
+
+        let result = is_fn_public(&dna, &call);
+        assert!(!result.unwrap());
     }
 }

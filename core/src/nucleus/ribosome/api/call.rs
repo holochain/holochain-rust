@@ -118,14 +118,9 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
                 "No container API in context".to_string(),
             ))?;
 
-    let cap_name = match input.cap {
-        Some(cap_call) => cap_call.cap_name,
-        None => String::from(""),
-    };
-
     let method = format!(
-        "{}/{}/{}/{}",
-        input.instance_handle, input.zome_name, cap_name, input.fn_name
+        "{}/{}/{}",
+        input.instance_handle, input.zome_name, input.fn_name
     );
 
     let handler = container_api.write().unwrap();
@@ -164,7 +159,6 @@ pub fn validate_call(
         return Err(HolochainError::DnaMissing);
     }
     let dna = state.dna.clone().unwrap();
-
     // make sure the zome and function exists
     let _ = dna
         .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
@@ -294,11 +288,7 @@ pub mod tests {
         let args = ZomeFnCallArgs {
             instance_handle: "instance_handle".to_string(),
             zome_name: "zome_name".to_string(),
-            cap: Some(CapabilityCall::new(
-                "cap_name".to_string(),
-                Address::from("bad cap_token"),
-                None,
-            )),
+            cap: Some(CapabilityCall::new(Address::from("bad cap_token"), None)),
             fn_name: "fn_name".to_string(),
             fn_args: "fn_args".to_string(),
         };
@@ -344,11 +334,7 @@ pub mod tests {
     ) {
         let zome_call = ZomeFnCall::new(
             "test_zome",
-            Some(CapabilityCall::new(
-                "test_cap".to_string(),
-                Address::from(token_str),
-                None,
-            )),
+            Some(CapabilityCall::new(Address::from(token_str), None)),
             "test",
             "{}",
         );
@@ -504,9 +490,9 @@ pub mod tests {
         let test_setup = setup_test(dna);
         let agent_token = Address::from(test_setup.context.agent_id.key.clone());
         let context = test_setup.context.clone();
-        let cap_call = CapabilityCall::new("foo".to_string(), agent_token, None);
+        let cap_call = CapabilityCall::new(agent_token, None);
         assert!(is_token_the_agent(context.clone(), &Some(cap_call)));
-        let cap_call = CapabilityCall::new("foo".to_string(), Address::from(""), None);
+        let cap_call = CapabilityCall::new(Address::from(""), None);
         assert!(!is_token_the_agent(context, &Some(cap_call)));
     }
 }

@@ -834,7 +834,6 @@ pub mod tests {
             .call(
                 "test_zome",
                 Some(dna::capabilities::CapabilityCall::new(
-                    String::from("test_cap"),
                     Address::from("fake_token"),
                     None,
                 )),

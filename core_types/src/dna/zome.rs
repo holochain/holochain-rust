@@ -146,13 +146,11 @@ impl Zome {
         inputs: Vec<FnParameter>,
         outputs: Vec<FnParameter>,
     ) {
-        self.fn_declarations.push(
-            FnDeclaration {
-                name,
-                inputs,
-                outputs,
-            },
-        );
+        self.fn_declarations.push(FnDeclaration {
+            name,
+            inputs,
+            outputs,
+        });
     }
 }
 

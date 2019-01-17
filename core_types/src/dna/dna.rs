@@ -118,8 +118,10 @@ impl Dna {
     }
 
     /// Return a Zome
-    pub fn get_zome(&self, zome_name: &str) -> Option<&zome::Zome> {
-        self.zomes.get(zome_name)
+    pub fn get_zome(&self, zome_name: &str) -> Result<&zome::Zome, DnaError> {
+        self.zomes
+            .get(zome_name)
+            .ok_or_else(|| DnaError::ZomeNotFound(format!("Zome '{}' not found", &zome_name,)))
     }
 
     /// Return a Zome's Capability from a Zome and a Capability name.
@@ -148,15 +150,8 @@ impl Dna {
         zome_name: &str,
         fn_name: &str,
     ) -> Result<&FnDeclaration, DnaError> {
-        // Zome must exist in DNA
-        let zome = self.get_zome(zome_name);
-        if zome.is_none() {
-            return Err(DnaError::ZomeNotFound(format!(
-                "Zome '{}' not found",
-                &zome_name,
-            )));
-        }
-        let zome = zome.unwrap();
+        let zome = self.get_zome(zome_name)?;
+
         // Function must exist in Zome
         let fn_decl = self.get_function(zome, &fn_name);
         if fn_decl.is_none() {
@@ -172,7 +167,7 @@ impl Dna {
     /// Find a Zome and return it's WASM bytecode for a specified Capability
     pub fn get_wasm_from_zome_name<T: Into<String>>(&self, zome_name: T) -> Option<&wasm::DnaWasm> {
         let zome_name = zome_name.into();
-        let zome = self.get_zome(&zome_name)?;
+        let zome = self.get_zome(&zome_name).ok()?;
         Some(&zome.code)
     }
 
@@ -182,15 +177,8 @@ impl Dna {
         zome_name: &str,
         cap_name: &str,
     ) -> Result<&Capability, DnaError> {
-        // Zome must exist in DNA
-        let zome = self.get_zome(zome_name);
-        if zome.is_none() {
-            return Err(DnaError::ZomeNotFound(format!(
-                "Zome '{}' not found",
-                &zome_name,
-            )));
-        }
-        let zome = zome.unwrap();
+        let zome = self.get_zome(zome_name)?;
+
         // Capability must exist in Zome
         let cap = self.get_capability(zome, &cap_name);
         if cap.is_none() {
@@ -343,51 +331,72 @@ pub mod tests {
     fn test_dna_get_zome() {
         let dna = test_dna();
         let result = dna.get_zome("foo zome");
-        assert!(result.is_none());
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))"
+        );
         let zome = dna.get_zome("test").unwrap();
-        assert_eq!(zome.description,"test");
+        assert_eq!(zome.description, "test");
     }
 
     #[test]
     fn test_dna_get_capability() {
         let dna = test_dna();
         let zome = dna.get_zome("test").unwrap();
-        let result = dna.get_capability(zome,"foo cap");
+        let result = dna.get_capability(zome, "foo cap");
         assert!(result.is_none());
-        let cap = dna.get_capability(zome,"test").unwrap();
-        assert_eq!(format!("{:?}",cap),"Capability { cap_type: Public, functions: [\"test\"] }");
+        let cap = dna.get_capability(zome, "test").unwrap();
+        assert_eq!(
+            format!("{:?}", cap),
+            "Capability { cap_type: Public, functions: [\"test\"] }"
+        );
     }
 
     #[test]
     fn test_dna_get_capability_with_zome_name() {
         let dna = test_dna();
-        let result = dna.get_capability_with_zome_name("foo zome","foo cap");
-        assert_eq!(format!("{:?}",result),"Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))");
-        let result = dna.get_capability_with_zome_name("test","foo cap");
+        let result = dna.get_capability_with_zome_name("foo zome", "foo cap");
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))"
+        );
+        let result = dna.get_capability_with_zome_name("test", "foo cap");
         assert_eq!(format!("{:?}",result),"Err(CapabilityNotFound(\"Capability \\\'foo cap\\\' not found in Zome \\\'test\\\'\"))");
-        let cap = dna.get_capability_with_zome_name("test","test").unwrap();
-        assert_eq!(format!("{:?}",cap),"Capability { cap_type: Public, functions: [\"test\"] }");
+        let cap = dna.get_capability_with_zome_name("test", "test").unwrap();
+        assert_eq!(
+            format!("{:?}", cap),
+            "Capability { cap_type: Public, functions: [\"test\"] }"
+        );
     }
 
     #[test]
     fn test_dna_get_function() {
         let dna = test_dna();
         let zome = dna.get_zome("test").unwrap();
-        let result = dna.get_function(zome,"foo func");
+        let result = dna.get_function(zome, "foo func");
         assert!(result.is_none());
-        let fun = dna.get_function(zome,"test").unwrap();
-        assert_eq!(format!("{:?}",fun),"FnDeclaration { name: \"test\", inputs: [], outputs: [] }");
+        let fun = dna.get_function(zome, "test").unwrap();
+        assert_eq!(
+            format!("{:?}", fun),
+            "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
+        );
     }
 
     #[test]
     fn test_dna_get_function_with_zome_name() {
         let dna = test_dna();
-        let result = dna.get_function_with_zome_name("foo zome","foo fun");
-        assert_eq!(format!("{:?}",result),"Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))");
-        let result = dna.get_function_with_zome_name("test","foo fun");
+        let result = dna.get_function_with_zome_name("foo zome", "foo fun");
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))"
+        );
+        let result = dna.get_function_with_zome_name("test", "foo fun");
         assert_eq!(format!("{:?}",result),"Err(ZomeFunctionNotFound(\"Zome function \\\'foo fun\\\' not found in Zome \\\'test\\\'\"))");
-        let fun = dna.get_function_with_zome_name("test","test").unwrap();
-        assert_eq!(format!("{:?}",fun),"FnDeclaration { name: \"test\", inputs: [], outputs: [] }");
+        let fun = dna.get_function_with_zome_name("test", "test").unwrap();
+        assert_eq!(
+            format!("{:?}", fun),
+            "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
+        );
     }
 
 }

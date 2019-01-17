@@ -7,7 +7,7 @@ use hdk::holochain_core_types::json::JsonString;
 
 
 fn handle_call_bridge() -> JsonString {
-    hdk::call("test-callee", "greeter", "test_cap", "token", "hello", JsonString::from("{}")).unwrap()
+    hdk::call("test-callee", "greeter", "token", "hello", JsonString::from("{}")).unwrap()
 }
 
 define_zome! {

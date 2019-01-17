@@ -33,10 +33,13 @@ pub mod tests {
 
     #[test]
     fn get_entry_roundtrip() {
+        let netname = Some("get_entry_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.uuid = String::from("get_entry_roundtrip");
-        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
-        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
+        let (_, context1) =
+            test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
+        let (_, context2) =
+            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
 
         // Create Entry & crud-status metadata, and store it.
         let entry = test_entry();
@@ -59,10 +62,12 @@ pub mod tests {
 
     #[test]
     fn get_non_existant_entry() {
+        let netname = Some("get_non_existant_entry");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.uuid = String::from("get_non_existant_entry");
-        let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice2").unwrap();
-        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob2").unwrap();
+        let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice2", netname).unwrap();
+        let (_, context2) =
+            test_instance_and_context_by_name(dna.clone(), "bob2", netname).unwrap();
 
         let entry = test_entry();
 
@@ -74,9 +79,11 @@ pub mod tests {
 
     #[test]
     fn get_when_alone() {
+        let netname = Some("get_when_alone");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.uuid = String::from("get_when_alone");
-        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "bob3").unwrap();
+        let (_, context1) =
+            test_instance_and_context_by_name(dna.clone(), "bob3", netname).unwrap();
 
         let entry = test_entry();
 
@@ -88,11 +95,13 @@ pub mod tests {
 
     #[test]
     fn get_validation_package_roundtrip() {
+        let netname = Some("get_validation_package_roundtrip");
         let wat = &test_wat_always_valid();
 
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
         dna.uuid = String::from("get_validation_package_roundtrip");
-        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
+        let (_, context1) =
+            test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 
         let entry = test_entry();
         block_on(author_entry(&entry, None, &context1)).expect("Could not author entry");
@@ -102,7 +111,8 @@ pub mod tests {
             .get_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
 
-        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
+        let (_, context2) =
+            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
         let result = block_on(get_validation_package(header.clone(), &context2));
 
         assert!(result.is_ok());
@@ -114,11 +124,13 @@ pub mod tests {
 
     #[test]
     fn get_links_roundtrip() {
+        let netname = Some("get_links_roundtrip");
         let wat = &test_wat_always_valid();
 
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
         dna.uuid = String::from("get_links_roundtrip");
-        let (_, context1) = test_instance_and_context_by_name(dna.clone(), "alice1").unwrap();
+        let (_, context1) =
+            test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
@@ -134,7 +146,8 @@ pub mod tests {
         assert!(block_on(add_link(&link1, &context1)).is_ok());
         assert!(block_on(add_link(&link2, &context1)).is_ok());
 
-        let (_, context2) = test_instance_and_context_by_name(dna.clone(), "bob1").unwrap();
+        let (_, context2) =
+            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
 
         let maybe_links = block_on(get_links(
             &context2,

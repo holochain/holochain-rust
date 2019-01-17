@@ -25,7 +25,7 @@ use std::{
     clone::Clone,
     collections::HashMap,
     convert::TryFrom,
-    fs::File,
+    fs::{self, File},
     io::prelude::*,
     path::PathBuf,
     sync::{
@@ -467,10 +467,12 @@ impl Container {
     }
 
     pub fn save_dna(&self, dna: &Dna) -> Result<PathBuf, HolochainError> {
-        let mut file_path = self.config.persistence_dir
-            .join("dna")
+        let dna_dir_path = self.config.persistence_dir
+            .join("dna");
+        let mut file_path = dna_dir_path
             .join(dna.address().to_string());
         file_path.set_extension("hcpkg");
+        fs::create_dir_all(&dna_dir_path)?;
         let file = File::create(&file_path)
             .map_err(|e| HolochainError::ConfigError(
                 format!("Error writing DNA to {}, {}", file_path.to_str().unwrap().to_string(), e.to_string())

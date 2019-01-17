@@ -488,9 +488,8 @@ impl ContainerApiBuilder {
         });
 
         self.io.add_method("admin/bridge/list", move |_params| {
-            let bridges = container_call!(
-                |c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>
-            )?;
+            let bridges =
+                container_call!(|c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>)?;
             Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
         });
 

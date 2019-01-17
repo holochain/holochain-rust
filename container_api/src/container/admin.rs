@@ -32,7 +32,11 @@ pub trait ContainerAdmin {
     fn add_agent(&mut self, new_agent: AgentConfiguration) -> Result<(), HolochainError>;
     fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError>;
     fn add_bridge(&mut self, new_bridge: Bridge) -> Result<(), HolochainError>;
-    fn remove_bridge(&mut self, caller_id: &String, callee_id: &String) -> Result<(), HolochainError>;
+    fn remove_bridge(
+        &mut self,
+        caller_id: &String,
+        callee_id: &String,
+    ) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -391,12 +395,19 @@ impl ContainerAdmin for Container {
         self.config = new_config;
         self.save_config()?;
 
-        notify(format!("Added bridge from '{}' to '{}' as '{}'", new_bridge.caller_id, new_bridge.callee_id, new_bridge.handle));
+        notify(format!(
+            "Added bridge from '{}' to '{}' as '{}'",
+            new_bridge.caller_id, new_bridge.callee_id, new_bridge.handle
+        ));
 
         Ok(())
     }
 
-    fn remove_bridge(&mut self, caller_id: &String, callee_id: &String) -> Result<(), HolochainError> {
+    fn remove_bridge(
+        &mut self,
+        caller_id: &String,
+        callee_id: &String,
+    ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         if new_config
             .bridges
@@ -420,7 +431,10 @@ impl ContainerAdmin for Container {
         self.config = new_config;
         self.save_config()?;
 
-        notify(format!("Bridge from '{}' to '{}' removed", caller_id, callee_id));
+        notify(format!(
+            "Bridge from '{}' to '{}' removed",
+            caller_id, callee_id
+        ));
 
         Ok(())
     }
@@ -1087,8 +1101,10 @@ type = "websocket""#,
 
         let mut toml = agent1();
         toml = add_block(toml, agent2());
-        toml = add_block(toml, String::from(
-r#"[[bridges]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[bridges]]
 callee_id = "test-instance-2"
 caller_id = "test-instance-1"
 handle = "my favourite instance!""#,
@@ -1103,7 +1119,13 @@ handle = "my favourite instance!""#,
 
         assert_eq!(config_contents, toml,);
 
-        assert_eq!(container.remove_bridge(&String::from("test-instance-1"), &String::from("test-instance-2")), Ok(()),);
+        assert_eq!(
+            container.remove_bridge(
+                &String::from("test-instance-1"),
+                &String::from("test-instance-2")
+            ),
+            Ok(()),
+        );
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");

@@ -1,27 +1,23 @@
 use crate::{
-    action::ActionWrapper,
+    action::{ActionWrapper, GetLinksKey},
     context::Context,
     network::{reducers::send, state::NetworkState},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::error::HolochainError;
 use holochain_net_connection::protocol_wrapper::{GetDhtMetaData, ProtocolWrapper};
 use std::sync::Arc;
 
-fn inner(
-    network_state: &mut NetworkState,
-    address: &Address,
-    tag: &String,
-) -> Result<(), HolochainError> {
+fn inner(network_state: &mut NetworkState, key: &GetLinksKey) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
     send(
         network_state,
         ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
-            msg_id: "?".to_string(),
+            msg_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: address.to_string(),
-            attribute: format!("link__{}", tag),
+            address: key.base_address.to_string(),
+            attribute: format!("link__{}", key.tag),
         }),
     )
 }
@@ -32,16 +28,14 @@ pub fn reduce_get_links(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let (address, tag) = unwrap_to!(action => crate::action::Action::GetLinks);
+    let key = unwrap_to!(action => crate::action::Action::GetLinks);
 
-    let result = match inner(network_state, &address, tag) {
+    let result = match inner(network_state, &key) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
 
-    network_state
-        .get_links_results
-        .insert((address.clone(), tag.clone()), result);
+    network_state.get_links_results.insert(key.clone(), result);
 }
 
 pub fn reduce_get_links_timeout(
@@ -67,7 +61,7 @@ pub fn reduce_get_links_timeout(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, NetworkSettings},
+        action::{Action, ActionWrapper, GetLinksKey, NetworkSettings},
         context::unique_mock_config,
         instance::tests::test_context,
         state::test_store,
@@ -82,7 +76,11 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (entry.address(), tag.clone());
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            tag: tag.clone(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
@@ -115,7 +113,11 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (entry.address(), tag.clone());
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            tag: tag.clone(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
@@ -148,7 +150,11 @@ mod tests {
 
         let entry = test_entry();
         let tag = String::from("test-tag");
-        let key = (entry.address(), tag.clone());
+        let key = GetLinksKey {
+            base_address: entry.address(),
+            tag: tag.clone(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        };
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         {

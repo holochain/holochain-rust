@@ -14,13 +14,11 @@ const scenario1 = new Scenario([instanceAlice])
 const scenario2 = new Scenario([instanceAlice, instanceBob])
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
-  t.plan(2)
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
 
 scenario1.runTape('call', async (t, { alice }) => {
-  t.plan(1)
 
   const num1 = 2
   const num2 = 2
@@ -31,7 +29,6 @@ scenario1.runTape('call', async (t, { alice }) => {
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {
-  t.plan(1)
 
   const params = { content: "Holo world" }
   const result = alice.call("blog", "main", "post_address", params)
@@ -40,7 +37,6 @@ scenario1.runTape('hash_post', async (t, { alice }) => {
 })
 
 scenario1.runTape('create_post', async (t, { alice }) => {
-  t.plan(3)
 
   const content = "Holo world"
   const in_reply_to = null
@@ -53,7 +49,6 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
-  t.plan(5)
 
   const content = "Holo world"
   const in_reply_to = "bad"
@@ -70,7 +65,6 @@ scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
 })
 
 scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
-  t.plan(5)
 
   const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
   const in_reply_to = null
@@ -89,7 +83,6 @@ scenario1.runTape('post max content size 280 characters', async (t, { alice }) =
 })
 
 scenario1.runTape('posts_by_agent', async (t, { alice }) => {
-  t.plan(1)
 
   const agent = "Bob"
   const params = { agent }
@@ -100,7 +93,6 @@ scenario1.runTape('posts_by_agent', async (t, { alice }) => {
 })
 
 scenario1.runTape('my_posts', async (t, { alice }) => {
-  t.plan(1)
 
   await alice.callSync("blog", "main", "create_post",
     { "content": "Holo world", "in_reply_to": "" }
@@ -116,7 +108,6 @@ scenario1.runTape('my_posts', async (t, { alice }) => {
 })
 
 scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
-  t.plan(2)
 
   const content = "Holo world"
   const in_reply_to = null
@@ -135,7 +126,6 @@ scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 })
 
 scenario1.runTape('get_post with non-existant address returns null', async (t, { alice }) => {
-  t.plan(1)
 
   const post_address = "RANDOM"
   const params_get = { post_address }

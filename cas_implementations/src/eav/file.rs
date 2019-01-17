@@ -84,7 +84,7 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<(HashString, String)>> {
         Ok(eav
             .iter()
             .cloned()
-            .map(|s| s.expect("only good results unwrapped"))
+            .map(|s| s.unwrap_or((HashString::from(""), String::from(""))))
             .collect())
     }
 }

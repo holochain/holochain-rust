@@ -90,8 +90,8 @@ mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: test_mock_config(netname),
-            dna_address: "abcd".into(),
-            agent_id: String::from("abcd"),
+            dna_address: "reduce_send_direct_message_timeout_test".into(),
+            agent_id: String::from("alice"),
         }));
 
         {

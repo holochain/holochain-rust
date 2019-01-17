@@ -107,8 +107,8 @@ mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: test_mock_config(netname),
-            dna_address: "abcd".into(),
-            agent_id: String::from("abcd"),
+            dna_address: "reduce_get_links_test".into(),
+            agent_id: String::from("alice"),
         }));
         let store = store.reduce(context.clone(), action_wrapper);
 
@@ -141,8 +141,8 @@ mod tests {
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
             config: test_mock_config(netname),
-            dna_address: "abcd".into(),
-            agent_id: String::from("abcd"),
+            dna_address: "reduce_get_links_timeout_test".into(),
+            agent_id: String::from("alice"),
         }));
 
         {

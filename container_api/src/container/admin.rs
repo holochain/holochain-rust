@@ -3,7 +3,7 @@ use crate::{
         DnaConfiguration, InstanceConfiguration,
         InstanceReferenceConfiguration, InterfaceConfiguration,
     },
-    container::{notify, Container},
+    container::{base::notify, Container},
     error::HolochainInstanceError,
 };
 use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
@@ -264,7 +264,7 @@ pub mod tests {
     use super::*;
     use crate::{
         config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
-        container::{tests::example_dna_string, DnaLoader},
+        container::base::{tests::example_dna_string, DnaLoader},
     };
     use holochain_core_types::{dna::Dna, json::JsonString};
     use std::{convert::TryFrom, fs::File, io::Read};

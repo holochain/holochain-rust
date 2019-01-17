@@ -54,7 +54,8 @@ lazy_static! {
     pub static ref CONTAINER: Arc<Mutex<Option<Container>>> = Arc::new(Mutex::new(None));
 }
 
-/// Container constructor that makes sure the instance is mounted in above static CONTAINER.
+/// Container constructor that makes sure the Container instance object is mounted
+/// in above static CONTAINER.
 /// It replaces any Container instance that was mounted before to CONTAINER with a new one
 /// create from the given configuration.
 pub fn mount_container_from_config(config: Configuration) {
@@ -72,11 +73,11 @@ pub fn mount_container_from_config(config: Configuration) {
 /// and also enable easier testing, a DnaLoader ()which is a closure that returns a
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
-    pub(crate) instances: InstanceMap,
-    pub(crate) config: Configuration,
-    pub config_path: PathBuf,
-    pub(crate) interface_threads: HashMap<String, Sender<()>>,
-    pub(crate) dna_loader: DnaLoader,
+    pub(in crate::container) instances: InstanceMap,
+    pub(in crate::container) config: Configuration,
+    pub(in crate::container) config_path: PathBuf,
+    pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
+    pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<JsonString>,
@@ -262,7 +263,7 @@ impl Container {
             // This should never happen, but we'll throw out a named mock network rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default mock network name.");
-            JsonString::from(P2pConfig::named_mock_config("container-default-mock"))
+            JsonString::from(P2pConfig::named_mock_as_string("container-default-mock"))
         });
         Ok(config)
     }
@@ -282,19 +283,19 @@ impl Container {
                     .clone()
                     .or_else(|| self.spawn_network().ok());
                 JsonString::from(json!(
-                    {
-                        "backend_kind": "IPC",
-                        "backend_config": {
-                            "socketType": "zmq",
-                            "bootstrapNodes": net_config.bootstrap_nodes,
+                {
+                    "backend_kind": "IPC",
+                    "backend_config": {
+                        "socketType": "zmq",
+                        "bootstrapNodes": net_config.bootstrap_nodes,
                             "ipcUri": uri
-                        }
                     }
+                }
                 ))
             }
             // if there's no NetworkConfig we won't spawn a network process
             // and instead configure instances to use a unique mock network
-            None => JsonString::from(P2pConfig::unique_mock_config()),
+            None => JsonString::from(P2pConfig::unique_mock_as_string()),
         }
     }
 
@@ -760,20 +761,6 @@ pub mod tests {
                 "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"bridge/callee.dna\"".to_string()
             )
         );
-    }
-
-    #[test]
-    fn test_rpc_info_instances() {
-        let container = test_container();
-        let interface_config = &container.config.interfaces[0];
-        let io = container.make_interface_handler(&interface_config);
-
-        let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = io
-            .handle_request_sync(request)
-            .expect("No response returned for info/instances");
-        assert!(response.contains("test-instance-1"));
-        assert!(response.contains("test-instance-2"));
     }
 
     #[test]

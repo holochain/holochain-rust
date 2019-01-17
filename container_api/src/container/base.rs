@@ -149,26 +149,29 @@ impl Container {
     pub fn stop_all_interfaces(&mut self) {
         for (id, kill_switch) in self.interface_threads.iter() {
             notify(format!("Stopping interface {}", id));
-            let _ = kill_switch.send(())
-                .map_err(|err| {
-                    let message = format!("Error stopping interface: {}", err);
-                    notify(message.clone());
-                    err
-                });
+            let _ = kill_switch.send(()).map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                err
+            });
         }
     }
 
     pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
         {
-            let kill_switch = self.interface_threads.get(id)
-                .ok_or(HolochainError::ErrorGeneric(format!("Interface {} not found.", id)))?;
+            let kill_switch =
+                self.interface_threads
+                    .get(id)
+                    .ok_or(HolochainError::ErrorGeneric(format!(
+                        "Interface {} not found.",
+                        id
+                    )))?;
             notify(format!("Stopping interface {}", id));
-            kill_switch.send(())
-                .map_err(|err| {
-                    let message = format!("Error stopping interface: {}", err);
-                    notify(message.clone());
-                    HolochainError::ErrorGeneric(message)
-                })?;
+            kill_switch.send(()).map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                HolochainError::ErrorGeneric(message)
+            })?;
         }
         self.interface_threads.remove(id);
         Ok(())

@@ -5,15 +5,15 @@ use Holochain;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use serde_json;
 use std::{
-    convert::TryFrom,
     collections::HashMap,
+    convert::TryFrom,
     path::PathBuf,
     sync::{mpsc::Receiver, Arc, RwLock},
 };
 
 use config::{
-    DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver, StorageConfiguration,
+    DnaConfiguration, InstanceConfiguration, InterfaceConfiguration, InterfaceDriver,
+    StorageConfiguration,
 };
 use container::{ContainerAdmin, CONTAINER};
 use serde_json::map::Map;
@@ -375,22 +375,23 @@ impl ContainerApiBuilder {
             let id = Self::get_as_string("id", &params_map)?;
             let admin = Self::get_as_bool("admin", &params_map)?;
             let driver_type = Self::get_as_string("type", &params_map)?;
-            let port = u16::try_from(Self::get_as_int("port", &params_map)?)
-                .map_err(|_|
-                    jsonrpc_core::Error::invalid_params(
-                        String::from("`port` has to be a 16bit integer")
-                    )
-                )?;
+            let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
+                jsonrpc_core::Error::invalid_params(String::from(
+                    "`port` has to be a 16bit integer",
+                ))
+            })?;
 
             let new_interface = InterfaceConfiguration {
                 id: id.to_string(),
                 admin,
                 driver: match driver_type.as_ref() {
-                    "websocket" => InterfaceDriver::Websocket{port},
-                    "http" => InterfaceDriver::Http{port},
-                    _ => return Err(jsonrpc_core::Error::invalid_params(
-                        String::from("`type` has to be either `websocket` or `http`")),
-                    )
+                    "websocket" => InterfaceDriver::Websocket { port },
+                    "http" => InterfaceDriver::Http { port },
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(String::from(
+                            "`type` has to be either `websocket` or `http`",
+                        )));
+                    }
                 },
                 instances: Vec::new(),
             };
@@ -406,29 +407,30 @@ impl ContainerApiBuilder {
             Ok(json!({"success": true}))
         });
 
-        self.io.add_method("admin/interface/add_instance", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let interface_id = Self::get_as_string("interface_id", &params_map)?;
-            let instance_id = Self::get_as_string("instance_id", &params_map)?;
-            container_call!(|c| c.add_instance_to_interface(&interface_id, &instance_id))?;
-            Ok(json!({"success": true}))
-        });
+        self.io
+            .add_method("admin/interface/add_instance", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let interface_id = Self::get_as_string("interface_id", &params_map)?;
+                let instance_id = Self::get_as_string("instance_id", &params_map)?;
+                container_call!(|c| c.add_instance_to_interface(&interface_id, &instance_id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/interface/remove_instance", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let interface_id = Self::get_as_string("interface_id", &params_map)?;
-            let instance_id = Self::get_as_string("instance_id", &params_map)?;
-            container_call!(|c| c.remove_instance_from_interface(&interface_id, &instance_id))?;
-            Ok(json!({"success": true}))
-        });
+        self.io
+            .add_method("admin/interface/remove_instance", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let interface_id = Self::get_as_string("interface_id", &params_map)?;
+                let instance_id = Self::get_as_string("instance_id", &params_map)?;
+                container_call!(|c| c.remove_instance_from_interface(&interface_id, &instance_id))?;
+                Ok(json!({"success": true}))
+            });
 
         self.io.add_method("admin/interface/list", move |_params| {
-            let interfaces =
-                container_call!(|c| Ok(c.config().interfaces)
-                    as Result<Vec<InterfaceConfiguration>, String>)?;
+            let interfaces = container_call!(
+                |c| Ok(c.config().interfaces) as Result<Vec<InterfaceConfiguration>, String>
+            )?;
             Ok(serde_json::to_value(interfaces)
-                .map_err(|_| jsonrpc_core::Error::internal_error())?
-            )
+                .map_err(|_| jsonrpc_core::Error::internal_error())?)
         });
 
         self

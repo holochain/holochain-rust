@@ -1,7 +1,7 @@
 use crate::{
     config::{
-        DnaConfiguration, InstanceConfiguration,
-        InstanceReferenceConfiguration, InterfaceConfiguration,
+        DnaConfiguration, InstanceConfiguration, InstanceReferenceConfiguration,
+        InterfaceConfiguration,
     },
     container::{base::notify, Container},
     error::HolochainInstanceError,
@@ -16,10 +16,19 @@ pub trait ContainerAdmin {
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
     fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
-    fn add_interface(&mut self, new_instance: InterfaceConfiguration) -> Result<(), HolochainError>;
+    fn add_interface(&mut self, new_instance: InterfaceConfiguration)
+        -> Result<(), HolochainError>;
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn add_instance_to_interface(&mut self, interface_id: &String, instance_id: &String) -> Result<(), HolochainError>;
-    fn remove_instance_from_interface(&mut self, interface_id: &String, instance_id: &String) -> Result<(), HolochainError>;
+    fn add_instance_to_interface(
+        &mut self,
+        interface_id: &String,
+        instance_id: &String,
+    ) -> Result<(), HolochainError>;
+    fn remove_instance_from_interface(
+        &mut self,
+        interface_id: &String,
+        instance_id: &String,
+    ) -> Result<(), HolochainError>;
 }
 
 impl ContainerAdmin for Container {
@@ -144,11 +153,16 @@ impl ContainerAdmin for Container {
 
     fn add_interface(&mut self, interface: InterfaceConfiguration) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        if new_config.interfaces
+        if new_config
+            .interfaces
             .iter()
             .find(|i| i.id == interface.id)
-            .is_some() {
-            return Err(HolochainError::ErrorGeneric(format!("Interface with ID '{}' already exists", interface.id)))
+            .is_some()
+        {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Interface with ID '{}' already exists",
+                interface.id
+            )));
         }
         new_config.interfaces.push(interface.clone());
         new_config.check_consistency()?;
@@ -161,14 +175,20 @@ impl ContainerAdmin for Container {
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        if new_config.interfaces
+        if new_config
+            .interfaces
             .iter()
             .find(|interface| interface.id == *id)
-            .is_none() {
-            return Err(HolochainError::ErrorGeneric(format!("No such interface: '{}'", id)))
+            .is_none()
+        {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "No such interface: '{}'",
+                id
+            )));
         }
 
-        new_config.interfaces = new_config.interfaces
+        new_config.interfaces = new_config
+            .interfaces
             .into_iter()
             .filter(|interface| interface.id != *id)
             .collect();
@@ -183,28 +203,38 @@ impl ContainerAdmin for Container {
         Ok(())
     }
 
-    fn add_instance_to_interface(&mut self, interface_id: &String, instance_id: &String) -> Result<(), HolochainError> {
+    fn add_instance_to_interface(
+        &mut self,
+        interface_id: &String,
+        instance_id: &String,
+    ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        if new_config.interface_by_id(interface_id)
-            .ok_or(HolochainError::ErrorGeneric(format!("Instance with ID {} not found", instance_id)))?
+        if new_config
+            .interface_by_id(interface_id)
+            .ok_or(HolochainError::ErrorGeneric(format!(
+                "Instance with ID {} not found",
+                instance_id
+            )))?
             .instances
             .iter()
             .find(|i| i.id == *instance_id)
             .is_some()
         {
-            return Err(HolochainError::ErrorGeneric(
-                format!("Instance '{}' already in interface '{}'", instance_id, interface_id))
-            )
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Instance '{}' already in interface '{}'",
+                instance_id, interface_id
+            )));
         }
 
-        new_config.interfaces = new_config.interfaces
+        new_config.interfaces = new_config
+            .interfaces
             .into_iter()
             .map(|mut interface| {
                 if interface.id == *interface_id {
-                    interface.instances.push(
-                        InstanceReferenceConfiguration{id: instance_id.clone()}
-                    );
+                    interface.instances.push(InstanceReferenceConfiguration {
+                        id: instance_id.clone(),
+                    });
                 }
                 interface
             })
@@ -220,26 +250,37 @@ impl ContainerAdmin for Container {
         Ok(())
     }
 
-    fn remove_instance_from_interface(&mut self, interface_id: &String, instance_id: &String) -> Result<(), HolochainError> {
+    fn remove_instance_from_interface(
+        &mut self,
+        interface_id: &String,
+        instance_id: &String,
+    ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
-        if new_config.interface_by_id(interface_id)
-            .ok_or(HolochainError::ErrorGeneric(format!("Instance with ID {} not found", instance_id)))?
+        if new_config
+            .interface_by_id(interface_id)
+            .ok_or(HolochainError::ErrorGeneric(format!(
+                "Instance with ID {} not found",
+                instance_id
+            )))?
             .instances
             .iter()
             .find(|i| i.id == *instance_id)
             .is_none()
         {
-            return Err(HolochainError::ErrorGeneric(
-                format!("No Instance '{}' in interface '{}'", instance_id, interface_id))
-            )
+            return Err(HolochainError::ErrorGeneric(format!(
+                "No Instance '{}' in interface '{}'",
+                instance_id, interface_id
+            )));
         }
 
-        new_config.interfaces = new_config.interfaces
+        new_config.interfaces = new_config
+            .interfaces
             .into_iter()
             .map(|mut interface| {
                 if interface.id == *interface_id {
-                    interface.instances = interface.instances
+                    interface.instances = interface
+                        .instances
                         .into_iter()
                         .filter(|instance| instance.id != *instance_id)
                         .collect();
@@ -278,7 +319,7 @@ pub mod tests {
     }
 
     pub fn agent1() -> String {
-r#"[[agents]]
+        r#"[[agents]]
 id = "test-agent-1"
 key_file = "holo_tester.key"
 name = "Holo Tester 1"
@@ -287,7 +328,7 @@ public_address = "HoloTester1---------------------------------------------------
     }
 
     pub fn agent2() -> String {
-r#"[[agents]]
+        r#"[[agents]]
 id = "test-agent-2"
 key_file = "holo_tester.key"
 name = "Holo Tester 2"
@@ -296,16 +337,15 @@ public_address = "HoloTester2---------------------------------------------------
     }
 
     pub fn dna() -> String {
-r#"[[dnas]]
+        r#"[[dnas]]
 file = "app_spec.hcpkg"
 hash = "Qm328wyq38924y"
 id = "test-dna""#
             .to_string()
     }
 
-
     pub fn instance1() -> String {
-r#"[[instances]]
+        r#"[[instances]]
 agent = "test-agent-1"
 dna = "test-dna"
 id = "test-instance-1"
@@ -316,7 +356,7 @@ type = "memory""#
     }
 
     pub fn instance2() -> String {
-r#"[[instances]]
+        r#"[[instances]]
 agent = "test-agent-2"
 dna = "test-dna"
 id = "test-instance-2"
@@ -327,7 +367,7 @@ type = "memory""#
     }
 
     pub fn interface() -> String {
-r#"[[interfaces]]
+        r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -340,11 +380,11 @@ id = "test-instance-2"
 [interfaces.driver]
 port = 3000
 type = "websocket""#
-    .to_string()
+            .to_string()
     }
 
     pub fn logger() -> String {
-r#"[logger]
+        r#"[logger]
 type = ""
 [[logger.rules.rules]]
 color = "red"
@@ -359,7 +399,7 @@ pattern = "^debug/dna"
 [[logger.rules.rules]]
 exclude = false
 pattern = ".*""#
-    .to_string()
+            .to_string()
     }
 
     fn add_block(base: String, new_block: String) -> String {
@@ -431,22 +471,22 @@ pattern = ".*""#
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
-        toml = add_block(toml, String::from(
-r#"[[dnas]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[dnas]]
 file = "new-dna.hcpkg"
 hash = "QmPB7PJUjwj6zap7jB7oyk616sCRSSnNFRNouqhit6kMTr"
-id = "new-dna""#
-        ));
+id = "new-dna""#,
+            ),
+        );
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface());
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        );
+        assert_eq!(config_contents, toml,);
     }
 
     use crate::config::StorageConfiguration;
@@ -477,31 +517,34 @@ id = "new-dna""#
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
-        toml = add_block(toml, String::from(
-            r#"[[dnas]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[dnas]]
 file = "new-dna.hcpkg"
 hash = "QmPB7PJUjwj6zap7jB7oyk616sCRSSnNFRNouqhit6kMTr"
-id = "new-dna""#
-        ));
+id = "new-dna""#,
+            ),
+        );
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, String::from(
-r#"[[instances]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[instances]]
 agent = "test-agent-1"
 dna = "new-dna"
 id = "new-instance"
 
 [instances.storage]
-type = "memory""#
-        ));
+type = "memory""#,
+            ),
+        );
         toml = add_block(toml, interface());
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        );
+        assert_eq!(config_contents, toml,);
     }
 
     #[test]
@@ -526,8 +569,10 @@ type = "memory""#
         toml = add_block(toml, dna());
         //toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, String::from(
-r#"[[interfaces]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -536,15 +581,13 @@ id = "test-instance-2"
 
 [interfaces.driver]
 port = 3000
-type = "websocket""#
-        ));
+type = "websocket""#,
+            ),
+        );
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        );
+        assert_eq!(config_contents, toml,);
     }
 
     #[test]
@@ -566,23 +609,23 @@ type = "websocket""#
         //toml = add_block(toml, dna());
         //toml = add_block(toml, instance1());
         //toml = add_block(toml, instance2());
-        toml = add_block(toml, String::from(
-r#"[[interfaces]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 instances = []
 
 [interfaces.driver]
 port = 3000
-type = "websocket""#
-        ));
+type = "websocket""#,
+            ),
+        );
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        );
+        assert_eq!(config_contents, toml,);
     }
 
     #[test]
@@ -620,7 +663,7 @@ type = "websocket""#
             instances: Vec::new(),
         };
 
-        assert_eq!(container.add_interface(interface_config), Ok(()), );
+        assert_eq!(container.add_interface(interface_config), Ok(()),);
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");
@@ -634,32 +677,38 @@ type = "websocket""#
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface());
-        toml = add_block(toml, String::from(
-            r#"[[interfaces]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[interfaces]]
 admin = false
 id = "new-interface"
 instances = []
 
 [interfaces.driver]
 port = 8080
-type = "http""#
-        ));
+type = "http""#,
+            ),
+        );
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        );
+        assert_eq!(config_contents, toml,);
     }
 
     #[test]
     fn test_remove_interface() {
         let mut container = create_test_container("test_remove_interface");
         container.start_all_interfaces();
-        assert!(container.interface_threads.get("websocket interface").is_some());
+        assert!(container
+            .interface_threads
+            .get("websocket interface")
+            .is_some());
 
-        assert_eq!(container.remove_interface(&String::from("websocket interface")), Ok(()));
+        assert_eq!(
+            container.remove_interface(&String::from("websocket interface")),
+            Ok(())
+        );
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");
@@ -675,19 +724,22 @@ type = "http""#
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        );
+        assert_eq!(config_contents, toml,);
 
-        assert!(container.interface_threads.get("websocket interface").is_none());
+        assert!(container
+            .interface_threads
+            .get("websocket interface")
+            .is_none());
     }
 
     #[test]
     fn test_add_instance_to_interface() {
         let mut container = create_test_container("test_add_instance_to_interface");
         container.start_all_interfaces();
-        assert!(container.interface_threads.get("websocket interface").is_some());
+        assert!(container
+            .interface_threads
+            .get("websocket interface")
+            .is_some());
 
         let instance_config = InstanceConfiguration {
             id: String::from("new-instance"),
@@ -699,10 +751,11 @@ type = "http""#
         assert_eq!(container.add_instance(instance_config.clone()), Ok(()));
         assert_eq!(
             container.add_instance_to_interface(
-            &String::from("websocket interface"),
-            &String::from("new-instance")
+                &String::from("websocket interface"),
+                &String::from("new-instance")
             ),
-            Ok(()));
+            Ok(())
+        );
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");
@@ -715,17 +768,22 @@ type = "http""#
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, String::from(
-r#"[[instances]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[instances]]
 agent = "test-agent-1"
 dna = "test-dna"
 id = "new-instance"
 
 [instances.storage]
-type = "memory""#
-        ));
-        toml = add_block(toml, String::from(
-r#"[[interfaces]]
+type = "memory""#,
+            ),
+        );
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -740,29 +798,31 @@ id = "new-instance"
 
 [interfaces.driver]
 port = 3000
-type = "websocket""#
-        ));
+type = "websocket""#,
+            ),
+        );
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        );
+        assert_eq!(config_contents, toml,);
     }
 
     #[test]
     fn test_remove_instance_from_interface() {
         let mut container = create_test_container("test_remove_instance_from_interface");
         container.start_all_interfaces();
-        assert!(container.interface_threads.get("websocket interface").is_some());
+        assert!(container
+            .interface_threads
+            .get("websocket interface")
+            .is_some());
 
         assert_eq!(
             container.remove_instance_from_interface(
                 &String::from("websocket interface"),
                 &String::from("test-instance-1")
             ),
-            Ok(()));
+            Ok(())
+        );
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");
@@ -775,8 +835,10 @@ type = "websocket""#
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, String::from(
-r#"[[interfaces]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -785,16 +847,17 @@ id = "test-instance-2"
 
 [interfaces.driver]
 port = 3000
-type = "websocket""#
-        ));
+type = "websocket""#,
+            ),
+        );
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        );
+        assert_eq!(config_contents, toml,);
 
-        assert!(container.interface_threads.get("websocket interface").is_some());
+        assert!(container
+            .interface_threads
+            .get("websocket interface")
+            .is_some());
     }
 }

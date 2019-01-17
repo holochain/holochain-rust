@@ -1,6 +1,6 @@
 # App Entry Type Definitions
 
-An "entry" is a data element that an agent authors to their local device, that is then propogated to peers running the same app. The entry is backed by a "chain header", which is the data element used for verification of the integrity of itself, as well as the entry.
+An "entry" is a data element that an agent authors to their source-chain (stored on their local device), which is then propagated to peers. The entry is backed by a "chain header", which is the data element used for verification of the integrity of itself, as well as the entry.
 
 Entries are a fundamental, primitive type within Holochain. Entries are an abstraction, they can technically be persisted to a device in a variety of ways, using a variety of databases, which can be as simple as files in the file system.
 

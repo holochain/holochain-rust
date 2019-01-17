@@ -8,7 +8,6 @@ use crate::{
     eav::{create_key, Action, EntityAttributeValue, EntityAttributeValueStorage},
     entry::{test_entry_unique, Entry},
     error::HolochainError,
-    hash::HashString,
     json::RawString,
 };
 use im::{hashmap::HashMap, ordmap::OrdMap};
@@ -239,10 +238,6 @@ where
     }
 }
 
-fn create_hash() -> HashString {
-    HashString::from("")
-}
-
 pub struct EavTestSuite;
 
 impl EavTestSuite {
@@ -277,7 +272,6 @@ impl EavTestSuite {
         eav_storage.add_eav(&eav).expect("could not add eav");
 
         let mut expected = OrdMap::new();
-        let hash = create_hash();
         let key = create_key(Action::Insert).expect("Could not make key");
         expected.insert(key, eav.clone());
         println!("expected");

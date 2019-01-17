@@ -269,3 +269,125 @@ impl PartialEq for Dna {
         JsonString::from(self.to_owned()) == JsonString::from(other.to_owned())
     }
 }
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    fn test_dna() -> Dna {
+        let fixture = String::from(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": {
+                    "test": {
+                        "description": "test",
+                        "config": {
+                            "error_handling": "throw-errors"
+                        },
+                        "entry_types": {
+                            "test": {
+                                "description": "test",
+                                "sharing": "public",
+                                "links_to": [
+                                    {
+                                        "target_type": "test",
+                                        "tag": "test"
+                                    }
+                                ],
+                                "linked_from": []
+                            }
+                        },
+                        "capabilities": {
+                            "test": {
+                                "type": "public",
+                                "functions": ["test"]
+                            }
+                        },
+                        "fn_declarations": [
+                            {
+                                "name": "test",
+                                "inputs": [],
+                                "outputs": []
+                            }
+                        ],
+                        "code": {
+                            "code": "AAECAw=="
+                        },
+                        "bridges": []
+                    }
+                }
+            }"#,
+        );
+        Dna::try_from(JsonString::from(fixture)).unwrap()
+    }
+
+    #[test]
+    fn test_dna_new() {
+        let dna = Dna::new();
+        assert_eq!(format!("{:?}",dna),"Dna { name: \"\", description: \"\", version: \"\", uuid: \"00000000-0000-0000-0000-000000000000\", dna_spec_version: \"2.0\", properties: Object({}), zomes: {} }")
+    }
+
+    #[test]
+    fn test_dna_to_json_pretty() {
+        let dna = Dna::new();
+        assert_eq!(format!("{:?}",dna.to_json_pretty()),"Ok(\"{\\n  \\\"name\\\": \\\"\\\",\\n  \\\"description\\\": \\\"\\\",\\n  \\\"version\\\": \\\"\\\",\\n  \\\"uuid\\\": \\\"00000000-0000-0000-0000-000000000000\\\",\\n  \\\"dna_spec_version\\\": \\\"2.0\\\",\\n  \\\"properties\\\": {},\\n  \\\"zomes\\\": {}\\n}\")")
+    }
+
+    #[test]
+    fn test_dna_get_zome() {
+        let dna = test_dna();
+        let result = dna.get_zome("foo zome");
+        assert!(result.is_none());
+        let zome = dna.get_zome("test").unwrap();
+        assert_eq!(zome.description,"test");
+    }
+
+    #[test]
+    fn test_dna_get_capability() {
+        let dna = test_dna();
+        let zome = dna.get_zome("test").unwrap();
+        let result = dna.get_capability(zome,"foo cap");
+        assert!(result.is_none());
+        let cap = dna.get_capability(zome,"test").unwrap();
+        assert_eq!(format!("{:?}",cap),"Capability { cap_type: Public, functions: [\"test\"] }");
+    }
+
+    #[test]
+    fn test_dna_get_capability_with_zome_name() {
+        let dna = test_dna();
+        let result = dna.get_capability_with_zome_name("foo zome","foo cap");
+        assert_eq!(format!("{:?}",result),"Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))");
+        let result = dna.get_capability_with_zome_name("test","foo cap");
+        assert_eq!(format!("{:?}",result),"Err(CapabilityNotFound(\"Capability \\\'foo cap\\\' not found in Zome \\\'test\\\'\"))");
+        let cap = dna.get_capability_with_zome_name("test","test").unwrap();
+        assert_eq!(format!("{:?}",cap),"Capability { cap_type: Public, functions: [\"test\"] }");
+    }
+
+    #[test]
+    fn test_dna_get_function() {
+        let dna = test_dna();
+        let zome = dna.get_zome("test").unwrap();
+        let result = dna.get_function(zome,"foo func");
+        assert!(result.is_none());
+        let fun = dna.get_function(zome,"test").unwrap();
+        assert_eq!(format!("{:?}",fun),"FnDeclaration { name: \"test\", inputs: [], outputs: [] }");
+    }
+
+    #[test]
+    fn test_dna_get_function_with_zome_name() {
+        let dna = test_dna();
+        let result = dna.get_function_with_zome_name("foo zome","foo fun");
+        assert_eq!(format!("{:?}",result),"Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))");
+        let result = dna.get_function_with_zome_name("test","foo fun");
+        assert_eq!(format!("{:?}",result),"Err(ZomeFunctionNotFound(\"Zome function \\\'foo fun\\\' not found in Zome \\\'test\\\'\"))");
+        let fun = dna.get_function_with_zome_name("test","test").unwrap();
+        assert_eq!(format!("{:?}",fun),"FnDeclaration { name: \"test\", inputs: [], outputs: [] }");
+    }
+
+}

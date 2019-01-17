@@ -93,7 +93,7 @@ pub fn create_key(action: Action) -> Result<Key, HolochainError> {
 
 pub fn from_key(key: HashString) -> Result<Key, HolochainError> {
     let string_key = key.to_string();
-    let split = string_key.split("-").collect::<Vec<&str>>();
+    let split = string_key.split("_").collect::<Vec<&str>>();
     let mut split_iter = split.iter();
     let timestamp = split_iter.next().ok_or(HolochainError::ErrorGeneric(
         "Could not get timestamp".to_string(),
@@ -303,17 +303,6 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             .read()
             .unwrap()
             .unthreadable_fetch_eav(entity, attribute, value)
-    }
-
-    fn fetch_eav_range(
-        &self,
-        _start_date: Option<DateTime<Utc>>,
-        _end_date: Option<DateTime<Utc>>,
-        _entity: Option<Entity>,
-        _attribute: Option<Attribute>,
-        _value: Option<Value>,
-    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
-        unimplemented!("Could not implment eav on range")
     }
 }
 

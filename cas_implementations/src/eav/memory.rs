@@ -54,6 +54,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         value: Option<Value>,
     ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?.clone();
+        println!("map {:?}", map.clone());
         Ok(map
             .into_iter()
             //.cloned()

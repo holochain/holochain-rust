@@ -5,9 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 ### Added
+- `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)
 ### Removed
 
-## [0.0.3] - 2019-01-13
+## [0.0.3] - 2019-01-15
+### Fixed
+- build problems because of changes to upstream futures-preview crate
 ### Added
 - Networking: beyond mock, using [n3h](https://github.com/holochain/n3h)
 - Bridging now works and is configurable in the container (no capabilities yet) [#779](https://github.com/holochain/holochain-rust/pull/779) & [#776](https://github.com/holochain/holochain-rust/pull/776)

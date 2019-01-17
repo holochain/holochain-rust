@@ -53,7 +53,11 @@ pub mod tests {
 
         let result = genesis(context, zome, &CallbackParams::Genesis);
 
-        assert_eq!(CallbackResult::NotImplemented, result);
+        if let CallbackResult::NotImplemented(_) = result {
+            ()
+        } else {
+            panic!("unexpected result");
+        }
     }
 
     #[test]

@@ -8,7 +8,19 @@ This crate implements a set of tools for building and running Holochain DNA from
 
 ## Install
 
-Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/app-spec-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
+Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install the `zmq` dependency e.g.:
+
+On MacOS:
+
+```
+brew install zmq
+```
+
+On Ubuntu:
+
+```
+apt-get install libzmq3-dev
+```
 
 ### Building From Source
 
@@ -87,7 +99,7 @@ So in every Zome there must be a `code` folder, which can be compiled into a sin
 
 Now that you have your Rust Zome, check out the two sources of documentation about writing Holochain DNA source code:
 1. https://developer.holochain.org/guide/latest
-2. https://developer.holochain.org/api/latest/hdk
+2. https://developer.holochain.org/api/0.0.3/hdk
 
 In order for Holochain to run your app, you have to build your code into a single packaged file. Those instructions follow.
 
@@ -168,7 +180,7 @@ By default, when you use `hc init` to create a new project folder, it creates a 
 Once you have a project folder initiated, you can run `hc test` to execute your tests. This combines the following steps:
   1. Packaging your files into a DNA file, located at `dist/bundle.json`. This step will fail if your packaging step fails.
   2. Installing build and testing dependencies, if they're not installed (`npm install`)
-  4. Executing (with [holochain-nodejs](https://github.com/holochain/holochain-nodejs)) the test file found at `test/index.js`
+  4. Executing (with [holochain-nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs)) the test file found at `test/index.js`
 
 `hc test` also has some configurable options.
 

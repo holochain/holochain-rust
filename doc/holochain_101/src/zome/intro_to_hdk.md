@@ -1,6 +1,6 @@
 # Intro to Language HDKs
 
-Within any Zome, there are certain things that must be implemented within the code, in order to work with Holochain. For each language that Zome code can be written in, like Rust, there should be a software library for that language to make it as easy as possible to define those standard functions and behaviours. We call this a "Holochain Development Kit", or HDK.
+Within any Zome, there are a number of conventions that must be followed by the WASM code, in order to work with Holochain core. For example parameters are passed using a specific memory allocation scheme that needs to be followed to access the parameters that a Zome function receives.  Although it would be possible for Zome authors to code directly to the Holochain core API, it makes more sense to provide a software library for each language to make it as easy as possible to use those standard functions and behaviours. We call such a library a "Holochain Development Kit", or HDK.
 
 So in order to get familiar with coding for Holochain, it will involve familiarity with an HDK library.
 

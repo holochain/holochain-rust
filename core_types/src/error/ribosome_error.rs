@@ -127,20 +127,6 @@ impl RibosomeReturnCode {
     pub fn from_error(err_code: RibosomeErrorCode) -> Self {
         Failure(err_code)
     }
-
-    pub fn allocation_or_err(&self) -> Result<RibosomeEncodedAllocation, HolochainError> {
-        match self {
-            RibosomeReturnCode::Allocation(ribosome_allocation) => {
-                Ok(ribosome_allocation.to_owned())
-            }
-            RibosomeReturnCode::Success => Err(HolochainError::Ribosome(
-                RibosomeErrorCode::ZeroSizedAllocation,
-            )),
-            RibosomeReturnCode::Failure(err_code) => {
-                Err(HolochainError::Ribosome(err_code.to_owned()))
-            }
-        }
-    }
 }
 
 /// Enum of all possible ERROR codes that a Zome API Function could return.

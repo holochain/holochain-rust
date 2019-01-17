@@ -34,9 +34,10 @@ use toml;
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
-    /// List of DNAs, for each a path to the DNA file. Required.
+    /// List of DNAs, for each a path to the DNA file. Optional.
+    #[serde(default)]
     pub dnas: Vec<DnaConfiguration>,
-    /// List of instances, includes references to an agent and a DNA. Required.
+    /// List of instances, includes references to an agent and a DNA. Optional.
     #[serde(default)]
     pub instances: Vec<InstanceConfiguration>,
     /// List of interfaces any UI can use to access zome functions. Optional.
@@ -217,6 +218,31 @@ impl Configuration {
             .cloned()
             .collect()
     }
+
+    /// Removes the instance given by id and all mentions of it in other elements so
+    /// that the config is guaranteed to be valid afterwards if it was before.
+    pub fn save_remove_instance(mut self, id: &String) -> Self {
+        self.instances = self
+            .instances
+            .into_iter()
+            .filter(|instance| instance.id != *id)
+            .collect();
+
+        self.interfaces = self
+            .interfaces
+            .into_iter()
+            .map(|mut interface| {
+                interface.instances = interface
+                    .instances
+                    .into_iter()
+                    .filter(|instance| instance.id != *id)
+                    .collect();
+                interface
+            })
+            .collect();
+
+        self
+    }
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
@@ -237,7 +263,7 @@ impl From<AgentConfiguration> for AgentId {
 
 /// A DNA is represented by a DNA file.
 /// A hash has to be provided for sanity check.
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
@@ -382,6 +408,19 @@ where
 {
     toml::from_str::<T>(toml).map_err(|e| {
         HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+    })
+}
+
+pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
+    // see https://github.com/alexcrichton/toml-rs/issues/142
+    let config_toml = toml::Value::try_from(config).map_err(|e| {
+        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+    })?;
+    toml::to_string(&config_toml).map_err(|e| {
+        HolochainError::IoError(format!(
+            "Could not convert toml to string: {}",
+            e.to_string()
+        ))
     })
 }
 

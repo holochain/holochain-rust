@@ -27,7 +27,7 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, EntryType},
         Entry, EntryWithMeta,
     },
-    error::{CoreError, HolochainError},
+    error::{CoreError, HolochainError, RibosomeEncodingBits, RibosomeReturnCode},
     hash::HashString,
     json::JsonString,
 };
@@ -47,44 +47,44 @@ use std::{
 use test_utils::*;
 
 #[no_mangle]
-pub fn hc_init_globals(_: u32) -> u32 {
-    0
+pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn hc_commit_entry(_: u32) -> u32 {
-    0
+pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn hc_get_entry(_: u32) -> u32 {
-    0
+pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn hc_entry_address(_: u32) -> u32 {
-    0
+pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn hc_query(_: u32) -> u32 {
-    0
+pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn hc_update_entry(_: u32) -> u32 {
-    0
+pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn hc_remove_entry(_: u32) -> u32 {
-    0
+pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn hc_send(_: u32) -> u32 {
-    0
+pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn zome_setup(_: u32) -> u32 {
-    0
+pub fn zome_setup(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 #[no_mangle]
-pub fn __list_capabilities(_: u32) -> u32 {
-    0
+pub fn __list_capabilities(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeReturnCode::Success.into()
 }
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {

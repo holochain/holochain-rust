@@ -76,23 +76,24 @@ macro_rules! load_string {
 ///     cas::content::Address,
 ///     dna::entry_types::Sharing,
 /// };
+/// # use holochain_core_types::error::RibosomeEncodingBits;
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: u32) -> u32 { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]

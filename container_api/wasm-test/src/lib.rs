@@ -132,7 +132,7 @@ pub extern "C" fn debug_stacked_hello(encoded_allocation_of_input: RibosomeEncod
 //-------------------------------------------------------------------------------------------------
 
 extern "C" {
-    fn hc_commit_entry(encoded_allocation_of_input: RibosomeRuntimeBits) -> RibosomeRuntimeBits;
+    fn hc_commit_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
 }
 
 /// Call HC API COMMIT function with proper input struct
@@ -150,9 +150,9 @@ fn hdk_commit(
     let allocation_of_input = mem_stack.write_json(entry)?;
 
     // Call WASMI-able commit
-    let encoded_allocation_of_result: RibosomeRuntimeBits = unsafe { hc_commit_entry(allocation_of_input.as_ribosome_encoding() as RibosomeRuntimeBits) };
+    let encoded_allocation_of_result = unsafe { hc_commit_entry(allocation_of_input.as_ribosome_encoding()) };
     // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_ribosome_encoded_json(encoded_allocation_of_result as RibosomeEncodingBits)?;
+    let result: ZomeApiInternalResult = load_ribosome_encoded_json(encoded_allocation_of_result)?;
 
     // Free result & input allocations and all allocations made inside commit()
     mem_stack
@@ -176,10 +176,10 @@ fn hdk_commit_fail(mem_stack: &mut WasmStack) -> Result<Address, String> {
     let allocation_of_input = mem_stack.write_json(input)?;
 
     // Call WASMI-able commit
-    let encoded_allocation_of_result: RibosomeRuntimeBits = unsafe { hc_commit_entry(allocation_of_input.as_ribosome_encoding() as RibosomeRuntimeBits) };
+    let encoded_allocation_of_result = unsafe { hc_commit_entry(allocation_of_input.as_ribosome_encoding()) };
 
     // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_ribosome_encoded_json(encoded_allocation_of_result as RibosomeEncodingBits)?;
+    let result: ZomeApiInternalResult = load_ribosome_encoded_json(encoded_allocation_of_result)?;
 
     // Free result & input allocations and all allocations made inside commit()
     mem_stack

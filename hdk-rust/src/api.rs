@@ -284,26 +284,27 @@ impl Dispatch {
 /// # extern crate serde_json;
 /// # use hdk::holochain_core_types::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
+/// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: u32) -> u32 { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 ///
 /// # fn main() {
 ///
@@ -351,26 +352,27 @@ impl Dispatch {
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::convert::TryInto;
+/// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: u32) -> u32 { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 ///
 /// # fn main() {
 ///
@@ -470,9 +472,10 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_core_types::cas::content::Address;
+/// # use holochain_core_types::error::RibosomeEncodingBits;
 ///
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 ///
 /// # fn main() {
 ///
@@ -903,26 +906,27 @@ pub fn query(
 /// # use holochain_core_types::cas::content::Address;
 /// # use holochain_core_types::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::error::RibosomeEncodingBits;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: u32) -> u32 { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: u32) -> u32 { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: u32) -> u32 { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: u32) -> u32 { 0 }
+/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: u32) -> u32 { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: u32) -> u32 { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 ///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {

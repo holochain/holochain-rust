@@ -361,7 +361,7 @@ impl EavTestSuite {
                 .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
                 .expect("could not fetch eav")
                 .iter()
-                .map(|(_k, v)| v)
+                .map(|(_, v)| v)
                 .collect::<Vec<_>>()
         );
 

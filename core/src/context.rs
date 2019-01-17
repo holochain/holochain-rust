@@ -202,10 +202,17 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     Ok((dna.address(), agent_id))
 }
 
-/// create a test network
+/// create a unique test network
 #[cfg_attr(tarpaulin, skip)]
 pub fn unique_mock_config() -> JsonString {
     JsonString::from(P2pConfig::unique_mock())
+}
+
+/// create a named test network
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_mock_config(name: Option<&str>) -> JsonString {
+    name.map(|name| JsonString::from(P2pConfig::named_mock(name)))
+        .unwrap_or(unique_mock_config())
 }
 
 #[cfg(test)]

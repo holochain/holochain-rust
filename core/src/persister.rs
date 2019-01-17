@@ -74,11 +74,11 @@ mod tests {
     use std::fs::File;
 
     #[test]
-    fn persistance_round_trip() {
+    fn persistence_round_trip() {
         let dir = tempdir().unwrap();
         let temp_path = dir.path().join("test");
         let _tempfile = temp_path.to_str().unwrap();
-        let context = test_context_with_agent_state();
+        let context = test_context_with_agent_state(None);
         File::create(temp_path.clone()).unwrap();
         let mut persistance = SimplePersister::new(context.dht_storage.clone());
         let state = context.state().unwrap().clone();

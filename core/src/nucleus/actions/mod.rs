@@ -72,8 +72,8 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
-        let (instance, context) =
-            test_instance_and_context_by_name(dna, name).expect("Could not create test instance");
+        let (instance, context) = test_instance_and_context_by_name(dna, name, None)
+            .expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
         (instance, initialized_context)
     }

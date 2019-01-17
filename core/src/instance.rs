@@ -315,7 +315,7 @@ pub mod tests {
             chain_store::ChainStore,
             state::{ActionResponse, AgentState},
         },
-        context::{unique_mock_config, Context},
+        context::{test_mock_config, Context},
         logger::{test_logger, TestLogger},
     };
     use futures::executor::block_on;
@@ -352,7 +352,10 @@ pub mod tests {
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_and_logger(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
+    pub fn test_context_and_logger(
+        agent_name: &str,
+        network_name: Option<&str>,
+    ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = AgentId::generate_fake(agent_name);
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
@@ -369,7 +372,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                unique_mock_config(),
+                test_mock_config(network_name),
                 None,
                 None,
             )),
@@ -379,8 +382,8 @@ pub mod tests {
 
     /// create a test context
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context(agent_name: &str) -> Arc<Context> {
-        let (context, _) = test_context_and_logger(agent_name);
+    pub fn test_context(agent_name: &str, network_name: Option<&str>) -> Arc<Context> {
+        let (context, _) = test_context_and_logger(agent_name, network_name);
         context
     }
 
@@ -390,6 +393,7 @@ pub mod tests {
         agent_name: &str,
         action_channel: &SyncSender<ActionWrapper>,
         observer_channel: &SyncSender<Observer>,
+        network_name: Option<&str>,
     ) -> Arc<Context> {
         let agent = AgentId::generate_fake(agent_name);
         let logger = test_logger();
@@ -409,14 +413,14 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                unique_mock_config(),
+                test_mock_config(network_name),
             )
             .unwrap(),
         )
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_with_state() -> Arc<Context> {
+    pub fn test_context_with_state(network_name: Option<&str>) -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
@@ -430,7 +434,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_mock_config(),
+            test_mock_config(network_name),
             None,
             None,
         );
@@ -440,7 +444,7 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_context_with_agent_state() -> Arc<Context> {
+    pub fn test_context_with_agent_state(network_name: Option<&str>) -> Arc<Context> {
         let file_system =
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
@@ -454,7 +458,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_mock_config(),
+            test_mock_config(network_name),
             None,
             None,
         );
@@ -473,14 +477,17 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_instance(dna: Dna) -> Result<Instance, String> {
-        test_instance_and_context(dna).map(|tuple| tuple.0)
+    pub fn test_instance(dna: Dna, network_name: Option<&str>) -> Result<Instance, String> {
+        test_instance_and_context(dna, network_name).map(|tuple| tuple.0)
     }
 
     /// create a canonical test instance
     #[cfg_attr(tarpaulin, skip)]
-    pub fn test_instance_and_context(dna: Dna) -> Result<(Instance, Arc<Context>), String> {
-        test_instance_and_context_by_name(dna, "jane")
+    pub fn test_instance_and_context(
+        dna: Dna,
+        network_name: Option<&str>,
+    ) -> Result<(Instance, Arc<Context>), String> {
+        test_instance_and_context_by_name(dna, "jane", network_name)
     }
 
     /// create a test instance
@@ -488,9 +495,10 @@ pub mod tests {
     pub fn test_instance_and_context_by_name(
         dna: Dna,
         name: &str,
+        network_name: Option<&str>,
     ) -> Result<(Instance, Arc<Context>), String> {
         // Create instance and plug in our DNA
-        let context = test_context(name);
+        let context = test_context(name, network_name);
         let mut instance = Instance::new(context.clone());
         instance.start_action_loop(context.clone());
         let context = instance.initialize_context(context);
@@ -568,7 +576,7 @@ pub mod tests {
         let mut dna = Dna::new();
         dna.zomes.insert("".to_string(), Zome::default());
         dna.uuid = "2297b5bc-ef75-4702-8e15-66e0545f3482".into();
-        test_instance(dna).expect("Blank instance could not be initialized!")
+        test_instance(dna, None).expect("Blank instance could not be initialized!")
     }
 
     #[test]
@@ -578,8 +586,9 @@ pub mod tests {
     /// to the state and that no observers or actions
     /// are sent on the passed channels.
     pub fn can_process_action() {
-        let mut instance = Instance::new(test_context("jason"));
-        let context = instance.initialize_context(test_context("jane"));
+        let netname = Some("can_process_action");
+        let mut instance = Instance::new(test_context("jason", netname));
+        let context = instance.initialize_context(test_context("jane", netname));
         let (rx_action, rx_observer) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
@@ -630,8 +639,9 @@ pub mod tests {
     /// run and the assert will actually run.  If we put the assert inside the closure
     /// the test thread could complete before the closure was called.
     fn can_dispatch_with_observer() {
-        let mut instance = Instance::new(test_context("jason"));
-        instance.start_action_loop(test_context("jane"));
+        let netname = Some("can_dispatch_with_observer");
+        let mut instance = Instance::new(test_context("jason", netname));
+        instance.start_action_loop(test_context("jane", netname));
 
         let dna = Dna::new();
         let (sender, receiver) = sync_channel(1);
@@ -658,7 +668,8 @@ pub mod tests {
     #[test]
     /// tests that we can dispatch an action and block until it completes
     fn can_dispatch_and_wait() {
-        let mut instance = Instance::new(test_context("jason"));
+        let netname = Some("can_dispatch_and_wait");
+        let mut instance = Instance::new(test_context("jason", netname));
         assert_eq!(instance.state().nucleus().dna(), None);
         assert_eq!(
             instance.state().nucleus().status(),
@@ -668,7 +679,7 @@ pub mod tests {
         let dna = Dna::new();
 
         let action = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        instance.start_action_loop(test_context("jane"));
+        instance.start_action_loop(test_context("jane", netname));
 
         // the initial state is not intialized
         assert_eq!(
@@ -695,7 +706,7 @@ pub mod tests {
             None,
         );
 
-        let instance = test_instance(dna);
+        let instance = test_instance(dna, None);
 
         assert!(instance.is_ok());
         let instance = instance.unwrap();
@@ -724,7 +735,7 @@ pub mod tests {
             ),
         );
 
-        let maybe_instance = test_instance(dna);
+        let maybe_instance = test_instance(dna, None);
         assert!(maybe_instance.is_ok());
 
         let instance = maybe_instance.unwrap();
@@ -753,7 +764,7 @@ pub mod tests {
             ),
         );
 
-        let instance = test_instance(dna);
+        let instance = test_instance(dna, None);
         assert!(instance.is_err());
         assert_eq!(
             instance.err().unwrap(),
@@ -764,14 +775,15 @@ pub mod tests {
     /// Committing a DnaEntry to source chain should work
     #[test]
     fn can_commit_dna() {
+        let netname = Some("can_commit_dna");
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
-        let context = test_context("alex");
+        let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let dna_entry = Entry::Dna(dna);
         let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
 
         // Set up instance and process the action
-        let instance = Instance::new(test_context("jason"));
+        let instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(context);
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
@@ -796,13 +808,14 @@ pub mod tests {
     /// Committing an AgentIdEntry to source chain should work
     #[test]
     fn can_commit_agent() {
+        let netname = Some("can_commit_agent");
         // Create Context, Agent and Commit AgentIdEntry Action
-        let context = test_context("alex");
+        let context = test_context("alex", netname);
         let agent_entry = Entry::AgentId(context.agent_id.clone());
         let commit_agent_action = ActionWrapper::new(Action::Commit((agent_entry.clone(), None)));
 
         // Set up instance and process the action
-        let instance = Instance::new(test_context("jason"));
+        let instance = Instance::new(test_context("jason", netname));
         let state_observers: Vec<Observer> = Vec::new();
         let (_, rx_observer) = channel::<Observer>();
         let context = instance.initialize_context(context);

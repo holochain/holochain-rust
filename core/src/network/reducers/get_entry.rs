@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     pub fn reduce_get_entry_without_network_initialized() {
-        let context = test_context("alice");
+        let context = test_context("alice", None);
         let store = test_store(context.clone());
 
         let entry = test_entry();
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     pub fn reduce_get_entry_test() {
-        let context = test_context("alice");
+        let context = test_context("alice", None);
         let store = test_store(context.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     pub fn reduce_get_entry_timeout_test() {
-        let mut context = test_context("alice");
+        let mut context = test_context("alice", None);
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
 

@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {
-        let mut context = test_context("alice");
+        let mut context = test_context("alice", None);
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
 

@@ -501,7 +501,7 @@ pub mod tests {
     #[test]
     /// test for returning zome function result actions
     fn test_reduce_return_zome_function_result() {
-        let context = test_context("jimmy");
+        let context = test_context("jimmy", None);
         let mut state = test_nucleus_state();
         let action_wrapper = test_action_wrapper_rzfr();
 
@@ -523,7 +523,7 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer);
+        let context = test_context_with_channels("jimmy", &sender, &tx_observer, None);
 
         // Reduce Init action
         let reduced_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
@@ -543,7 +543,7 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer).clone();
+        let context = test_context_with_channels("jimmy", &sender, &tx_observer, None).clone();
 
         // Reduce Init action
         let initializing_nucleus = reduce(context.clone(), nucleus.clone(), &action_wrapper);
@@ -591,7 +591,7 @@ pub mod tests {
     /// tests that calling a valid zome function returns a valid result
     fn call_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna).expect("Could not initialize test instance");
+        let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call
         let zome_call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "main", "");
@@ -611,7 +611,7 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = sync_channel::<ActionWrapper>(10);
         let (tx_observer, _observer) = sync_channel::<Observer>(10);
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer);
+        let context = test_context_with_channels("jimmy", &sender, &tx_observer, None);
 
         let reduced_nucleus = reduce(context, nucleus.clone(), &action_wrapper);
         assert_eq!(nucleus, reduced_nucleus);
@@ -620,9 +620,10 @@ pub mod tests {
     #[test]
     /// tests that calling an invalid DNA returns the correct error
     fn call_ribosome_wrong_dna() {
-        let mut instance = Instance::new(test_context("janet"));
+        let netname = Some("call_ribosome_wrong_dna");
+        let mut instance = Instance::new(test_context("janet", netname));
 
-        instance.start_action_loop(test_context("jane"));
+        instance.start_action_loop(test_context("jane", netname));
 
         let call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "main", "{}");
         let result = super::call_and_wait_for_result(call, &mut instance);
@@ -637,7 +638,7 @@ pub mod tests {
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna).expect("Could not initialize test instance");
+        let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call:
         let call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "xxx", "{}");
@@ -656,7 +657,7 @@ pub mod tests {
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna).expect("Could not initialize test instance");
+        let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
 
         // Create bad zome function call
         let call = ZomeFnCall::new("xxx", Some(test_capability_call()), "main", "{}");

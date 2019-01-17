@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     pub fn reduce_publish_test() {
-        let context = test_context("alice");
+        let context = test_context("alice", None);
         let store = test_store(context.clone());
 
         let entry = test_entry();

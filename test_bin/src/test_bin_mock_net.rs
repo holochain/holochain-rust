@@ -10,8 +10,8 @@ extern crate failure;
 pub mod p2p_node;
 
 use holochain_net_connection::{
-    net_connection::NetSend,
     json_protocol::{JsonProtocol, MessageData, TrackDnaData},
+    net_connection::NetSend,
     NetResult,
 };
 use p2p_node::P2pNode;

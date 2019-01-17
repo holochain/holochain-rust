@@ -12,11 +12,11 @@ pub mod p2p_node;
 
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
-    net_connection::NetSend,
     json_protocol::{
         ConnectData, DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, JsonProtocol, MessageData,
         TrackDnaData,
     },
+    net_connection::NetSend,
     NetResult,
 };
 

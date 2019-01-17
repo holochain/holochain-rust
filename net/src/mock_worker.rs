@@ -3,9 +3,9 @@
 use crate::mock_system::*;
 use holochain_core_types::json::JsonString;
 use holochain_net_connection::{
+    json_protocol::JsonProtocol,
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
-    json_protocol::JsonProtocol,
     NetResult,
 };
 use std::{

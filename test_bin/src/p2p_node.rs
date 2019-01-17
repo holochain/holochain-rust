@@ -1,6 +1,6 @@
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
-    net_connection::NetSend, protocol::Protocol, json_protocol::JsonProtocol, NetResult,
+    json_protocol::JsonProtocol, net_connection::NetSend, protocol::Protocol, NetResult,
 };
 use std::{convert::TryFrom, sync::mpsc};
 

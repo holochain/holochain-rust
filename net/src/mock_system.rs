@@ -2,11 +2,11 @@
 
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
-    protocol::Protocol,
     json_protocol::{
         DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, JsonProtocol,
         MessageData, PeerData,
     },
+    protocol::Protocol,
     NetResult,
 };
 use std::{

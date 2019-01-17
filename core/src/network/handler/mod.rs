@@ -14,7 +14,7 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
 };
-use holochain_net_connection::{net_connection::NetHandler, json_protocol::JsonProtocol};
+use holochain_net_connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking

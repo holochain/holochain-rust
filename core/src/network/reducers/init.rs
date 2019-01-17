@@ -5,8 +5,8 @@ use crate::{
 };
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_net_connection::{
-    net_connection::NetSend,
     json_protocol::{JsonProtocol, TrackDnaData},
+    net_connection::NetSend,
 };
 use std::{
     str::FromStr,

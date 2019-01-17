@@ -10,10 +10,10 @@ use holochain_net_ipc::{
 };
 
 use holochain_net_connection::{
+    json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
     net_connection::{NetHandler, NetSend, NetShutdown, NetWorker, NetWorkerFactory},
     net_relay::NetConnectionRelay,
     protocol::Protocol,
-    json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
     NetResult,
 };
 

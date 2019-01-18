@@ -13,10 +13,7 @@ use crate::{
 use chrono::{offset::Utc, DateTime};
 use im::ordmap::OrdMap;
 use objekt;
-use std::{
-    convert::TryInto,
-    sync::{Arc, RwLock},
-};
+use std::convert::TryInto;
 
 use regex::RegexBuilder;
 use std::fmt::Debug;
@@ -275,20 +272,20 @@ impl PartialEq for EntityAttributeValueStorage {
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorage {
-    content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
+    content: ExampleEntityAttributeValueStorageNonSync,
 }
 
 impl ExampleEntityAttributeValueStorage {
     pub fn new() -> HcResult<ExampleEntityAttributeValueStorage> {
         Ok(ExampleEntityAttributeValueStorage {
-            content: Arc::new(RwLock::new(ExampleEntityAttributeValueStorageNonSync::new())),
+            content: ExampleEntityAttributeValueStorageNonSync::new(),
         })
     }
 }
 
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> HcResult<()> {
-        self.content.write().unwrap().unthreadable_add_eav(eav)
+        self.content.unthreadable_add_eav(eav)
     }
     fn fetch_eav(
         &self,
@@ -297,8 +294,6 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         value: Option<Value>,
     ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
         self.content
-            .read()
-            .unwrap()
             .unthreadable_fetch_eav(entity, attribute, value)
     }
 }

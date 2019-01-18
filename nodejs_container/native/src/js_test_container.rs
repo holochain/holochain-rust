@@ -99,10 +99,8 @@ declare_types! {
             };
 
             result.or_else(|e| {
-                println!("Indeed an error: {:?}", e);
                 cx.throw_error(format!("unable to start container: {}", e))
             }).map(|_| {
-                println!("No error whatsoever");
                 cx.boolean(true).upcast()
             })
         }

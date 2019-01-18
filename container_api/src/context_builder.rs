@@ -152,7 +152,7 @@ mod tests {
         assert!(context
             .network_config
             .to_string()
-            .contains(r#""backend_kind": "MEMORY""#));
+            .contains(r#""backend_kind":"MEMORY""#));
     }
 
     #[test]

@@ -99,9 +99,10 @@ pub mod tests {
         );
 
         let dna_name = &dna.name.to_string().clone();
-        let instance = test_instance(dna).expect("Could not create test instance");
+        let netname = Some("returns_list_of_links");
+        let instance = test_instance(dna, netname).expect("Could not create test instance");
 
-        let (context, _) = test_context_and_logger("joan");
+        let (context, _) = test_context_and_logger("joan", netname);
         let initialized_context = instance.initialize_context(context);
 
         let mut entry_addresses: Vec<Address> = Vec::new();

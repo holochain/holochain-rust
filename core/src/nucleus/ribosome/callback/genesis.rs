@@ -29,9 +29,10 @@ pub mod tests {
     #[test]
     fn pass() {
         let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 0)
+        let netname = Some("genesis::pass");
+        let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 0, netname)
             .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context("test", netname));
 
         let result = genesis(context, zome, &CallbackParams::Genesis);
 
@@ -41,15 +42,17 @@ pub mod tests {
     #[test]
     fn not_implemented() {
         let zome = "test_zome";
+        let netname = Some("genesis::not_implemented");
         let instance = test_callback_instance(
             zome,
             // anything other than Genesis is fine here
             Callback::Receive.as_str(),
             0,
+            netname,
         )
         .expect("Test callback instance could not be initialized");
 
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context("test", netname));
 
         let result = genesis(context, zome, &CallbackParams::Genesis);
 
@@ -63,7 +66,8 @@ pub mod tests {
     #[test]
     fn fail() {
         let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 1);
+        let netname = Some("genesis::fail");
+        let instance = test_callback_instance(zome, Callback::Genesis.as_str(), 1, netname);
         assert!(instance.is_err());
         let error = instance.err().unwrap();
         assert_eq!("\"".to_string(), error);

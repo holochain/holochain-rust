@@ -71,14 +71,16 @@ pub mod tests {
     #[test]
     fn not_implemented() {
         let zome = "test_zome";
+        let netname = Some("not_implemented test");
         let instance = test_callback_instance(
             zome,
             // anything other than Genesis is fine here
             Callback::MissingNo.as_str(),
             0,
+            netname,
         )
         .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context("test", netname));
 
         if let CallbackResult::NotImplemented(_) =
             receive(context, zome, &CallbackParams::Receive(String::from("")))
@@ -92,9 +94,10 @@ pub mod tests {
     #[test]
     fn implemented_with_null() {
         let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0)
+        let netname = Some("implemented_with_null");
+        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0, netname)
             .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context("test", netname));
 
         let result = receive(context, zome, &CallbackParams::Receive(String::from("")));
 

@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn can_add_valid_link() {
-        let (_instance, context) = nucleus::actions::tests::instance();
+        let (_instance, context) = nucleus::actions::tests::instance(None);
 
         let base = test_entry();
         nucleus::actions::tests::commit(base.clone(), &context);
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn errors_when_link_base_not_present() {
-        let (_instance, context) = nucleus::actions::tests::instance();
+        let (_instance, context) = nucleus::actions::tests::instance(None);
 
         let base = test_entry();
         let target = base.clone();

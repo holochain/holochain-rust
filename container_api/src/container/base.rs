@@ -399,7 +399,6 @@ impl Container {
         Ok(())
     }
 
-
     /// Default DnaLoader that actually reads files from the filesystem
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
         notify(format!("Reading DNA from {}", file));

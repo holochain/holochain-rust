@@ -5,7 +5,7 @@ use crate::{
 };
 use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
 use json_patch;
-use std::{path::PathBuf, sync::Arc};
+use std::{fs, path::PathBuf, sync::Arc};
 
 pub trait ContainerAdmin {
     fn install_dna_from_file(
@@ -16,7 +16,12 @@ pub trait ContainerAdmin {
         properties: Option<&serde_json::Value>,
     ) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn add_instance(&mut self, id: &String, dna_id: &String, agent_id: &String) -> Result<(), HolochainError>;
+    fn add_instance(
+        &mut self,
+        id: &String,
+        dna_id: &String,
+        agent_id: &String,
+    ) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
     fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
@@ -118,18 +123,24 @@ impl ContainerAdmin for Container {
         Ok(())
     }
 
-    fn add_instance(&mut self, id: &String, dna_id: &String, agent_id: &String) -> Result<(), HolochainError> {
+    fn add_instance(
+        &mut self,
+        id: &String,
+        dna_id: &String,
+        agent_id: &String,
+    ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
+        let storage_path = self.instance_storage_dir_path().join(id.clone());
+        fs::create_dir_all(&storage_path)?;
         let new_instance = InstanceConfiguration {
             id: id.to_string(),
             dna: dna_id.to_string(),
             agent: agent_id.to_string(),
-            storage: StorageConfiguration::File{
-                path: self.instance_storage_dir_path()
-                    .join(id)
+            storage: StorageConfiguration::File {
+                path: storage_path
                     .to_str()
                     .ok_or(HolochainError::ConfigError("invalid path".into()))?
-                    .into()
+                    .into(),
             },
         };
         new_config.instances.push(new_instance);
@@ -168,6 +179,7 @@ impl ContainerAdmin for Container {
 
     fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
         let instance = self.instances.get(id)?;
+
         notify(format!("Starting instance \"{}\"...", id));
         instance.write().unwrap().start()
     }
@@ -314,7 +326,8 @@ pattern = ".*"
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
@@ -425,12 +438,19 @@ pattern = ".*"
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
-                    file: format!("./tmp-test/test_install_dna_from_file_and_copy/dna/{}.hcpkg", new_dna.address()),
+                    file: format!(
+                        "./tmp-test/test_install_dna_from_file_and_copy/dna/{}.hcpkg",
+                        new_dna.address()
+                    ),
                     hash: String::from(new_dna.address()),
                 },
             ]
         );
-        assert!(PathBuf::from(format!("./tmp-test/test_install_dna_from_file_and_copy/dna/{}.hcpkg", new_dna.address())).is_file())
+        assert!(PathBuf::from(format!(
+            "./tmp-test/test_install_dna_from_file_and_copy/dna/{}.hcpkg",
+            new_dna.address()
+        ))
+        .is_file())
     }
 
     #[test]
@@ -480,12 +500,19 @@ pattern = ".*"
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
-                    file: format!("./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg", new_dna.address()),
+                    file: format!(
+                        "./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg",
+                        new_dna.address()
+                    ),
                     hash: String::from(new_dna.address()),
                 },
             ]
         );
-        assert!(PathBuf::from(format!("./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg", new_dna.address())).is_file())
+        assert!(PathBuf::from(format!(
+            "./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg",
+            new_dna.address()
+        ))
+        .is_file())
     }
 
     #[test]
@@ -506,7 +533,8 @@ pattern = ".*"
         assert_eq!(add_result, Ok(()));
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
@@ -607,7 +635,8 @@ pattern = ".*"
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
@@ -680,7 +709,8 @@ pattern = ".*"
         assert_eq!(container.uninstall_dna(&String::from("test-dna")), Ok(()),);
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 

@@ -85,7 +85,7 @@ impl From<String> for Action {
 }
 
 pub fn create_key(action: Action) -> Result<Key, HolochainError> {
-    Ok(Key(Utc::now().timestamp_millis(), action))
+    Ok(Key(Utc::now().timestamp_nanos(), action))
 }
 
 pub fn from_key(key: HashString) -> Result<Key, HolochainError> {

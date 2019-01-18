@@ -6,12 +6,13 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use im::ordmap::OrdMap;
+use std::sync::{Arc, Mutex};
 
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct EavMemoryStorage {
-    storage: OrdMap<Key, EntityAttributeValue>,
+    storage: Arc<Mutex<OrdMap<Key, EntityAttributeValue>>>,
     id: Uuid,
 }
 
@@ -24,7 +25,7 @@ impl PartialEq for EavMemoryStorage {
 impl EavMemoryStorage {
     pub fn new() -> EavMemoryStorage {
         EavMemoryStorage {
-            storage: OrdMap::new(),
+            storage: Arc::new(Mutex::new(OrdMap::new())),
             id: Uuid::new_v4(),
         }
     }
@@ -37,7 +38,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .len()
             == 0
         {
-            let map = &mut self.storage;
+            let mut map = self.storage.lock().unwrap();
             let key = create_key(Action::Insert)?;
             map.insert(key, eav.clone());
             Ok(())
@@ -52,17 +53,22 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
-        let map = &self.storage;
+        let map = self.storage.lock().unwrap();
+        println!("map {:?}", map.clone());
+        println!("entity {:?}", entity.clone());
+        println!("attribute {:?}", attribute.clone());
+        println!("value {:?}", value.clone());
         let filtered_map = map
+            .clone()
             .into_iter()
-            .cloned()
+            // .cloned()
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|(_, e)| {
                 EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<OrdMap<Key, EntityAttributeValue>>();
-
+        println!("filtered_map {:?}", filtered_map.clone());
         Ok(filtered_map)
     }
 }

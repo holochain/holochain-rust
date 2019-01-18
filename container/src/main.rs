@@ -59,6 +59,9 @@ fn main() {
                 println!("Starting interfaces...");
                 container.start_all_interfaces();
                 println!("Done.");
+                println!("Starting UI servers");
+                container.start_all_static_servers()
+                    .expect("Could not start UI servers!");
             }
             loop {}
         }

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::io::Error;
 use error::HolochainResult;
 use hyper::{Body, Request,
@@ -8,7 +7,7 @@ use hyper::{Body, Request,
 	rt::Future,
 };
 use holochain_core_types::error::HolochainError;
-use config::{UiInterfaceConfiguration, UiBundle};
+use config::{UiInterfaceConfiguration, UiBundleConfiguration};
 use tokio::runtime::Runtime;
 use hyper_staticfile::{Static, StaticFuture};
 use tokio::prelude::future;
@@ -46,13 +45,13 @@ pub struct StaticServer {
 	shutdown_signal: Option<futures::channel::oneshot::Sender<()>>,
 	config: UiInterfaceConfiguration,
 	#[allow(dead_code)]
-	bundle_config: UiBundle,
+	bundle_config: UiBundleConfiguration,
 	running: bool,
 }
 
 impl StaticServer {
 
-	pub fn from_configs(bundle_config: UiBundle, config: UiInterfaceConfiguration) -> Self {
+	pub fn from_configs(bundle_config: UiBundleConfiguration, config: UiInterfaceConfiguration) -> Self {
 		StaticServer {
 			shutdown_signal: None,
 			config,
@@ -75,10 +74,11 @@ impl StaticServer {
 		
 		let mut rt = Runtime::new()
 			.map_err(|e| HolochainError::ErrorGeneric(format!("Could not start tokio runtime, {}", e)))?;
-
- 		println!("Listening on http://{}", addr);
+ 		
+ 		println!("About to serve path \"{}\" at http://{}", &self.bundle_config.root_dir, &addr);
         rt.spawn(server);
         self.running = true;
+ 		println!("Listening on http://{}", addr);
 		Ok(())
 	}
 
@@ -97,38 +97,6 @@ impl StaticServer {
 
 
 
-
-pub struct StaticServerBuilder {
-	pub servers: HashMap<String, StaticServer>
-}
-
-impl StaticServerBuilder {
-
-	pub fn new() -> Self {
-		StaticServerBuilder {
-			servers: HashMap::new()
-		}
-	}
-
-	pub fn with_interface_configs(mut self, configs: Vec<(UiBundle, UiInterfaceConfiguration)>) -> Self {
-		for (bundle_config, config) in configs {
-			let id = config.id.clone();
-			self.servers.insert(id.clone(), StaticServer::from_configs(bundle_config, config));
-		}
-		self
-	}
-
-	pub fn start_all(&mut self) -> HolochainResult<()> {
-		notify("Starting all servers".into());
-		self.servers.iter_mut().for_each(|(id, server)| {
-			server.start().expect(&format!("Couldnt start server {}", id));
-			notify(format!("Server started for \"{}\"", id))
-		});
-		Ok(())
-	}
-
-}
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -136,24 +104,18 @@ pub mod tests {
     #[test]
     pub fn test_build_server() {
 
-    	let test_bundle_config = UiBundle {
+    	let _test_bundle_config = UiBundleConfiguration {
     		id: "bundle id".to_string(),
     		root_dir: "".to_string(),
     		hash: "Qmsdasdasd".to_string(),
     	};
 
-    	let test_config = UiInterfaceConfiguration {
+    	let _test_config = UiInterfaceConfiguration {
     		id: "an id".to_string(),
     		bundle: "a bundle".to_string(),
     		port: 3000,
     		dna_interface: "interface".to_string(),
     	};
-
-    	let mut builder = StaticServerBuilder::new().with_interface_configs(vec![(test_bundle_config, test_config)]);
-    	assert_eq!(
-    		builder.start_all(),
-    		Ok(())
-    	);
 
     }
 }

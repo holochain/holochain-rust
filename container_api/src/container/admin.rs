@@ -276,7 +276,7 @@ pattern = ".*"
             config_contents,
 r#"bridges = []
 ui_bundles = []
-ui_interface = []
+ui_interfaces = []
 
 [[agents]]
 id = "test-agent-1"
@@ -377,7 +377,7 @@ pattern = ".*"
             config_contents,
        r#"bridges = []
 ui_bundles = []
-ui_interface = []
+ui_interfaces = []
 
 [[agents]]
 id = "test-agent-1"
@@ -478,7 +478,7 @@ pattern = ".*"
             config_contents,
             r#"bridges = []
 ui_bundles = []
-ui_interface = []
+ui_interfaces = []
 
 [[agents]]
 id = "test-agent-1"
@@ -554,7 +554,7 @@ pattern = ".*"
 dnas = []
 instances = []
 ui_bundles = []
-ui_interface = []
+ui_interfaces = []
 
 [[agents]]
 id = "test-agent-1"

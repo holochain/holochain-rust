@@ -48,10 +48,10 @@ pub struct Configuration {
     pub bridges: Vec<Bridge>,
     /// List of ui bundles (static web dirs) to host on a static interface. Optional.
     #[serde(default)]
-    pub ui_bundles: Vec<UiBundle>,
+    pub ui_bundles: Vec<UiBundleConfiguration>,
     /// List of ui interfaces, includes references ui bundle and dna interfaces it can call. Optional.
     #[serde(default)]
-    pub ui_interface: Vec<UiInterfaceConfiguration>,
+    pub ui_interfaces: Vec<UiInterfaceConfiguration>,
     /// Configures how logging should behave
     #[serde(default)]
     pub logger: LoggerConfiguration,
@@ -119,6 +119,8 @@ impl Configuration {
                 })?;
         }
 
+        // TODO: check consistency of ui_bundles and ui_interfaces
+
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
         Ok(())
@@ -142,6 +144,10 @@ impl Configuration {
     /// Returns the interface configuration with the given ID if present
     pub fn interface_by_id(&self, id: &str) -> Option<InterfaceConfiguration> {
         self.interfaces.iter().find(|ic| &ic.id == id).cloned()
+    }
+
+    pub fn ui_bundle_by_id(&self, id: &str) -> Option<UiBundleConfiguration> {
+        self.ui_bundles.iter().find(|ic| &ic.id == id).cloned()
     }
 
     /// Returns all defined instance IDs
@@ -364,7 +370,7 @@ pub struct Bridge {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub struct UiBundle {
+pub struct UiBundleConfiguration {
     pub id: String,
     pub root_dir: String,
     pub hash: String,

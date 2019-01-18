@@ -61,7 +61,7 @@ macro_rules! container_call {
 /// Examples for method names are:
 /// {instance_id}/{zome}/{cap}/{func} -> a zome call
 /// info/list_instances               -> Map of InstanceConfigs, keyed by ID
-/// admin/...                         -> TODO
+/// admin/...                         -> see [with_admin_dna_functions]
 ///
 /// Each interface has their own handler, and each may be configured differently.
 /// This builder makes it convenient to create handlers with different configurations.

@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `admin/bridge/remove`
   * `admin/bridge/list`
   
+  See rustdoc of `container_api::interface::ContainerApiBuilder` for a full description of these functions. 
   
 
 ### Removed

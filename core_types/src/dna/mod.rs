@@ -27,6 +27,7 @@ pub mod bridges;
 pub mod capabilities;
 pub mod dna;
 pub mod entry_types;
+pub mod fn_declarations;
 pub mod wasm;
 pub mod zome;
 
@@ -40,8 +41,9 @@ pub mod tests {
         cas::content::Address,
         dna::{
             bridges::{Bridge, BridgePresence, BridgeReference},
-            capabilities::{Aspect, CapabilityType, FnDeclaration, FnParameter},
+            capabilities::CapabilityType,
             entry_types::EntryTypeDef,
+            fn_declarations::{FnDeclaration, FnParameter, Trait},
             zome::tests::test_zome,
         },
         entry::entry_type::{AppEntryType, EntryType},
@@ -500,7 +502,7 @@ pub mod tests {
                                 "presence": "optional",
                                 "handle": "Vault",
                                 "reference": {
-                                    "aspects": {
+                                    "traits": {
                                         "persona_management": {
                                             "type": "public",
                                             "functions": [
@@ -518,7 +520,7 @@ pub mod tests {
                                 "presence": "required",
                                 "handle": "HCHC",
                                 "reference": {
-                                    "aspects": {
+                                    "traits": {
                                         "happ_directory": {
                                             "type": "public",
                                             "functions": [
@@ -552,9 +554,9 @@ pub mod tests {
                 Bridge {
                     presence: BridgePresence::Required,
                     handle: String::from("HCHC"),
-                    reference: BridgeReference::Aspect {
-                        aspects: btreemap! {
-                            String::from("happ_directory") => Aspect{
+                    reference: BridgeReference::Trait {
+                        traits: btreemap! {
+                            String::from("happ_directory") => Trait {
                                 cap_type: CapabilityType::Public,
                                 functions: vec![
                                     FnDeclaration {

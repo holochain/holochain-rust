@@ -911,7 +911,7 @@ pub mod tests {
         dna.zomes.get_mut("greeter").unwrap().add_fn_declaration(
             String::from("hello"),
             vec![],
-            vec![dna::capabilities::FnParameter {
+            vec![dna::fn_declarations::FnParameter {
                 name: String::from("greeting"),
                 parameter_type: String::from("String"),
             }],

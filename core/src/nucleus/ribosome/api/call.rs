@@ -262,7 +262,8 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
+            capabilities::{Capability, CapabilityCall, CapabilityType},
+            fn_declarations::FnDeclaration,
             Dna,
         },
         entry::Entry,

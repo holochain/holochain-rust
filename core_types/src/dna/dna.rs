@@ -1,10 +1,8 @@
 use crate::{
     cas::content::{AddressableContent, Content},
     dna::{
-        bridges::Bridge,
-        capabilities::{Capability, FnDeclaration},
-        entry_types::EntryTypeDef,
-        wasm, zome,
+        bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef,
+        fn_declarations::FnDeclaration, wasm, zome,
     },
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},

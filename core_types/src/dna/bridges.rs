@@ -1,4 +1,4 @@
-use crate::{cas::content::Address, dna::capabilities::Aspect};
+use crate::{cas::content::Address, dna::fn_declarations::Trait};
 use std::collections::BTreeMap;
 
 /// A bridge is the definition of a connection to another DNA that runs under the same agency,
@@ -47,7 +47,7 @@ pub enum BridgeReference {
     /// A bridge reference that defines another DNA loosely by expecting a DNA that implements
     /// a given set of capabilities, i.e. that has specific sets of zome functions with
     /// matching signatures.
-    Aspect { aspects: BTreeMap<String, Aspect> },
+    Trait { traits: BTreeMap<String, Trait> },
 }
 
 /// Required or optional

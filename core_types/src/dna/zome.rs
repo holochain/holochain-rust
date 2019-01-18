@@ -3,17 +3,15 @@
 use crate::{
     dna::{
         bridges::{Bridge, BridgePresence},
-        capabilities::{FnDeclaration, FnParameter},
+        capabilities::Capability,
+        fn_declarations::{FnDeclaration, FnParameter},
         wasm::DnaWasm,
     },
     entry::entry_type::EntryType,
     error::HolochainError,
     json::JsonString,
 };
-use dna::{
-    capabilities,
-    entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef},
-};
+use dna::entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef};
 use std::collections::BTreeMap;
 
 /// Enum for "zome" "config" "error_handling" property.
@@ -55,8 +53,8 @@ impl Config {
 }
 
 pub type ZomeEntryTypes = BTreeMap<EntryType, EntryTypeDef>;
-pub type ZomeCapabilities = BTreeMap<String, capabilities::Capability>;
-pub type ZomeFnDeclarations = Vec<capabilities::FnDeclaration>;
+pub type ZomeCapabilities = BTreeMap<String, Capability>;
+pub type ZomeFnDeclarations = Vec<FnDeclaration>;
 
 /// Represents an individual "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
@@ -117,8 +115,8 @@ impl Zome {
         description: &str,
         config: &Config,
         entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
-        fn_declarations: &Vec<capabilities::FnDeclaration>,
-        capabilities: &BTreeMap<String, capabilities::Capability>,
+        fn_declarations: &Vec<FnDeclaration>,
+        capabilities: &BTreeMap<String, Capability>,
         code: &DnaWasm,
     ) -> Zome {
         Zome {
@@ -158,7 +156,7 @@ impl Zome {
 pub mod tests {
     use super::*;
     use crate::dna::{
-        capabilities::FnParameter,
+        fn_declarations::FnParameter,
         zome::{entry_types::EntryTypeDef, Zome},
     };
     use serde_json;

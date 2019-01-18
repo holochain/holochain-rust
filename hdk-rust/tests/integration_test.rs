@@ -20,8 +20,9 @@ use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
+        capabilities::{Capability, CapabilityCall, CapabilityType},
         entry_types::{EntryTypeDef, LinksTo},
+        fn_declarations::FnDeclaration,
         zome::{ZomeCapabilities, ZomeFnDeclarations},
     },
     entry::{

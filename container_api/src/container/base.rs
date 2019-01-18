@@ -76,7 +76,7 @@ pub struct Container {
     pub(in crate::container) instances: InstanceMap,
     pub(in crate::container) config: Configuration,
     pub(in crate::container) config_path: PathBuf,
-    interface_threads: HashMap<String, Sender<()>>,
+    pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
@@ -149,19 +149,37 @@ impl Container {
     pub fn stop_all_interfaces(&mut self) {
         for (id, kill_switch) in self.interface_threads.iter() {
             notify(format!("Stopping interface {}", id));
-            let send_result = kill_switch.send(());
-            if send_result.is_err() {
-                notify(format!(
-                    "Error stopping interface: {}",
-                    send_result.err().unwrap()
-                ));
-            }
+            let _ = kill_switch.send(()).map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                err
+            });
         }
     }
 
-    pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
+    pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
+        {
+            let kill_switch =
+                self.interface_threads
+                    .get(id)
+                    .ok_or(HolochainError::ErrorGeneric(format!(
+                        "Interface {} not found.",
+                        id
+                    )))?;
+            notify(format!("Stopping interface {}", id));
+            kill_switch.send(()).map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                HolochainError::ErrorGeneric(message)
+            })?;
+        }
+        self.interface_threads.remove(id);
+        Ok(())
+    }
+
+    pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
         self.config
-            .interface_by_id(&id)
+            .interface_by_id(id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
     }
@@ -403,6 +421,7 @@ impl Container {
         if self.interface_threads.contains_key(&config.id) {
             return Err(format!("Interface {} already started!", config.id));
         }
+        notify(format!("Starting interface '{}'.", config.id));
         let handle = self.spawn_interface_thread(config.clone());
         self.interface_threads.insert(config.id.clone(), handle);
         Ok(())

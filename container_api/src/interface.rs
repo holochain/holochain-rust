@@ -6,11 +6,15 @@ use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Va
 use serde_json;
 use std::{
     collections::HashMap,
+    convert::TryFrom,
     path::PathBuf,
     sync::{mpsc::Receiver, Arc, RwLock},
 };
 
-use config::{DnaConfiguration, InstanceConfiguration, StorageConfiguration};
+use config::{
+    AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
+    InterfaceDriver, StorageConfiguration,
+};
 use container::{ContainerAdmin, CONTAINER};
 use serde_json::map::Map;
 
@@ -205,6 +209,42 @@ impl ContainerApiBuilder {
             .to_string())
     }
 
+    fn get_as_bool<T: Into<String>>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<bool, jsonrpc_core::Error> {
+        let key = key.into();
+        Ok(params_map
+            .get(&key)
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param not provided",
+                &key
+            )))?
+            .as_bool()
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` has to be a boolean",
+                &key
+            )))?)
+    }
+
+    fn get_as_int<T: Into<String>>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<i64, jsonrpc_core::Error> {
+        let key = key.into();
+        Ok(params_map
+            .get(&key)
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param not provided",
+                &key
+            )))?
+            .as_i64()
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` has to be an integer",
+                &key
+            )))?)
+    }
+
     pub fn with_admin_dna_functions(mut self) -> Self {
         self.io
             .add_method("admin/dna/install_from_file", move |params| {
@@ -314,6 +354,130 @@ impl ContainerApiBuilder {
                         .collect(),
                 ))
             });
+
+        self.io.add_method("admin/interface/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+
+            let id = Self::get_as_string("id", &params_map)?;
+            let admin = Self::get_as_bool("admin", &params_map)?;
+            let driver_type = Self::get_as_string("type", &params_map)?;
+            let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
+                jsonrpc_core::Error::invalid_params(String::from(
+                    "`port` has to be a 16bit integer",
+                ))
+            })?;
+
+            let new_interface = InterfaceConfiguration {
+                id: id.to_string(),
+                admin,
+                driver: match driver_type.as_ref() {
+                    "websocket" => InterfaceDriver::Websocket { port },
+                    "http" => InterfaceDriver::Http { port },
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(String::from(
+                            "`type` has to be either `websocket` or `http`",
+                        )));
+                    }
+                },
+                instances: Vec::new(),
+            };
+
+            container_call!(|c| c.add_interface(new_interface))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/interface/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.remove_interface(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io
+            .add_method("admin/interface/add_instance", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let interface_id = Self::get_as_string("interface_id", &params_map)?;
+                let instance_id = Self::get_as_string("instance_id", &params_map)?;
+                container_call!(|c| c.add_instance_to_interface(&interface_id, &instance_id))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io
+            .add_method("admin/interface/remove_instance", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let interface_id = Self::get_as_string("interface_id", &params_map)?;
+                let instance_id = Self::get_as_string("instance_id", &params_map)?;
+                container_call!(|c| c.remove_instance_from_interface(&interface_id, &instance_id))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io.add_method("admin/interface/list", move |_params| {
+            let interfaces = container_call!(
+                |c| Ok(c.config().interfaces) as Result<Vec<InterfaceConfiguration>, String>
+            )?;
+            Ok(serde_json::to_value(interfaces)
+                .map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self.io.add_method("admin/agent/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let name = Self::get_as_string("name", &params_map)?;
+            let public_address = Self::get_as_string("public_address", &params_map)?;
+            let key_file = Self::get_as_string("key_file", &params_map)?;
+
+            let agent = AgentConfiguration {
+                id,
+                name,
+                public_address,
+                key_file,
+            };
+            container_call!(|c| c.add_agent(agent))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/agent/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.remove_agent(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/agent/list", move |_params| {
+            let agents = container_call!(
+                |c| Ok(c.config().agents) as Result<Vec<AgentConfiguration>, String>
+            )?;
+            Ok(serde_json::to_value(agents).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self.io.add_method("admin/bridge/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let caller_id = Self::get_as_string("caller_id", &params_map)?;
+            let callee_id = Self::get_as_string("callee_id", &params_map)?;
+            let handle = Self::get_as_string("handle", &params_map)?;
+
+            let bridge = Bridge {
+                caller_id,
+                callee_id,
+                handle,
+            };
+            container_call!(|c| c.add_bridge(bridge))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/bridge/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let caller_id = Self::get_as_string("caller_id", &params_map)?;
+            let callee_id = Self::get_as_string("callee_id", &params_map)?;
+            container_call!(|c| c.remove_bridge(&caller_id, &callee_id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/bridge/list", move |_params| {
+            let bridges =
+                container_call!(|c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>)?;
+            Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
 
         self
     }

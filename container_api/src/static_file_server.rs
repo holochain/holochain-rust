@@ -9,7 +9,7 @@ use hyper::{Body, Request,
 };
 use holochain_core_types::error::HolochainError;
 // use futures;
-use config::UiInterfaceConfiguration;
+use config::{UiInterfaceConfiguration, UiBundle};
 use tokio::runtime::Runtime;
 use hyper_staticfile::{Static, StaticFuture};
 use futures::future;
@@ -24,7 +24,7 @@ struct StaticService {
 }
 
 impl StaticService {
-    fn new(path: &str) -> Self {
+    fn new(path: String) -> Self {
         StaticService {
             static_: Static::new(path),
         }
@@ -42,18 +42,20 @@ impl hyper::service::Service for StaticService {
     }
 }
 
-pub struct StaticServer {
+struct StaticServer {
 	// shutdown_signal: Option<futures::channel::oneshot::Sender<()>>,
 	config: UiInterfaceConfiguration,
+	bundle_config: UiBundle,
 	running: bool,
 }
 
 impl StaticServer {
 
-	pub fn from_config(config: UiInterfaceConfiguration) -> Self {
+	pub fn from_configs(bundle_config: UiBundle, config: UiInterfaceConfiguration) -> Self {
 		StaticServer {
 			// shutdown_signal: None,
-			config: config,
+			config,
+			bundle_config,
 			running: false,
 		}
 	}
@@ -66,7 +68,7 @@ impl StaticServer {
 		// self.shutdown_signal = tx;
 		
         let server = Server::bind(&addr)
-	        .serve(|| future::ok::<_, Error>(StaticService::new("")))
+	        .serve(|| future::ok::<_, Error>(StaticService::new(self.bundle_config.root_dir.clone())))
 	        // .with_graceful_shutdown(rx)
 	        .map_err(|e| eprintln!("server error: {}", e));
 		
@@ -105,10 +107,10 @@ impl StaticServerBuilder {
 		}
 	}
 
-	pub fn with_interface_configs(mut self, configs: Vec<UiInterfaceConfiguration>) -> Self {
-		for config in configs {
+	pub fn with_interface_configs(mut self, configs: Vec<(UiBundle, UiInterfaceConfiguration)>) -> Self {
+		for (bundle_config, config) in configs {
 			let id = config.id.clone();
-			self.servers.insert(id.clone(), StaticServer::from_config(config));
+			self.servers.insert(id.clone(), StaticServer::from_configs(bundle_config, config));
 		}
 		self
 	}

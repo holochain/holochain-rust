@@ -398,7 +398,7 @@ pub struct UiInterfaceConfiguration {
     /// This is used to set the CORS headers and also to
     /// provide a extra virtual file endpoint at /_dna_config/ that allows hc-web-client
     /// or another solution to redirect holochain calls to the correct ip/port/protocol
-    pub dna_interface: String
+    pub dna_interface: String,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

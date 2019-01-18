@@ -610,7 +610,8 @@ pattern = ".*""#
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -659,7 +660,8 @@ id = "new-dna""#,
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -712,7 +714,8 @@ type = "memory""#,
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -753,11 +756,12 @@ type = "websocket""#,
             .expect("Could not read temp config file");
 
         let mut toml = String::from(
-r#"bridges = []
+            r#"bridges = []
 dnas = []
 instances = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         //toml = add_block(toml, dna());
@@ -827,7 +831,8 @@ type = "websocket""#,
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -876,7 +881,8 @@ type = "http""#,
             r#"bridges = []
 interfaces = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -926,7 +932,8 @@ ui_interfaces = []"#);
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -996,7 +1003,8 @@ type = "websocket""#,
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1048,7 +1056,8 @@ type = "websocket""#,
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
@@ -1088,7 +1097,8 @@ public_address = "new-----------------------------------------------------------
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         //toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1134,7 +1144,8 @@ type = "websocket""#,
 
         let mut toml = String::from(
             r#"ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
@@ -1171,7 +1182,8 @@ handle = "my favourite instance!""#,
         let mut toml = String::from(
             r#"bridges = []
 ui_bundles = []
-ui_interfaces = []"#);
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());

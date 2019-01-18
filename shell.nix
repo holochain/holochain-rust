@@ -43,6 +43,7 @@ let
 
   hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
+  hc-test-node-container = nixpkgs.writeShellScriptBin "hc-test-node-container" "cd nodejs_container && npm test";
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
@@ -115,6 +116,7 @@ stdenv.mkDerivation rec {
 
     hc-test-cmd
     hc-test-app-spec
+    hc-test-node-container
 
     hc-fmt
     hc-fmt-check

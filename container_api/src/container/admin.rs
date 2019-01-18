@@ -711,8 +711,6 @@ type = "memory""#,
 
         let mut toml = String::from(
             r#"bridges = []
-dnas = []
-instances = []
 ui_bundles = []
 ui_interfaces = []"#);
         toml = add_block(toml, agent1());
@@ -826,7 +824,10 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []");
+        let mut toml = String::from(
+            r#"bridges = []
+ui_bundles = []
+ui_interfaces = []"#);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -871,7 +872,11 @@ type = "http""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\ninterfaces = []");
+        let mut toml = String::from(
+            r#"bridges = []
+interfaces = []
+ui_bundles = []
+ui_interfaces = []"#);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -918,7 +923,10 @@ type = "http""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []");
+        let mut toml = String::from(
+            r#"bridges = []
+ui_bundles = []
+ui_interfaces = []"#);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -985,7 +993,10 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []");
+        let mut toml = String::from(
+            r#"bridges = []
+ui_bundles = []
+ui_interfaces = []"#);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1034,7 +1045,10 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []");
+        let mut toml = String::from(
+            r#"bridges = []
+ui_bundles = []
+ui_interfaces = []"#);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
@@ -1071,7 +1085,10 @@ public_address = "new-----------------------------------------------------------
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []");
+        let mut toml = String::from(
+            r#"bridges = []
+ui_bundles = []
+ui_interfaces = []"#);
         toml = add_block(toml, agent1());
         //toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1115,7 +1132,10 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = agent1();
+        let mut toml = String::from(
+            r#"ui_bundles = []
+ui_interfaces = []"#);
+        toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
             toml,
@@ -1148,7 +1168,10 @@ handle = "my favourite instance!""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []");
+        let mut toml = String::from(
+            r#"bridges = []
+ui_bundles = []
+ui_interfaces = []"#);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());

@@ -28,6 +28,13 @@ scenario1.runTape('call', async (t, { alice }) => {
   t.deepEqual(result.Ok, { "sum": "4" })
 })
 
+scenario2.runTape('send', async (t, { alice, bob }) => {
+  const params = { to_agent: bob.agentId, message: "ping" }
+  const result = alice.call("blog", "main", "check_send", params)
+
+  t.deepEqual(result, "Received : ping")
+})
+
 scenario1.runTape('hash_post', async (t, { alice }) => {
 
   const params = { content: "Holo world" }

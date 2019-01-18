@@ -28,12 +28,24 @@ define_zome! {
         Ok(())
     }
 
+
+    receive: |message| {
+        //format!("Received: {}", message)
+        "pong".to_string()
+    }
+
     functions: {
         main (Public) {
             check_sum: {
                 inputs: |num1: u32, num2: u32|,
                 outputs: |sum: ZomeApiResult<JsonString>|,
                 handler: blog::handle_check_sum
+            }
+
+            check_send: {
+               inputs: |to_agent: Address, message: String|,
+               outputs: |response: ZomeApiResult<String>|,
+               handler: blog::handle_send
             }
 
             post_address: {

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)
 - Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Container README](nodejs_container/README.md) for details.
+- Admin RPC functions added to container interface. Any (websocket) container interface that is configured with 
+  `admin = true`  now can call the following functions to remotely change any aspect of the container config
+  (intended to be used in an upcoming container admin UI):
+  * `admin/dna/install_from_file` (install a DNA from a local file)
+  * `admin/dna/uninstall`
+  * `admin/dna/list`
+  * `admin/instance/add`
+  * `admin/instance/remove`
+  * `admin/instance/start`
+  * `admin/instance/stop`
+  * `admin/instance/list` (list of all instances in config)
+  * `admin/instance/running` (list of currently running instances)
+  * `admin/interface/add` (starts the interface)
+  * `admin/interface/remove` (stops the interface)
+  * `admin/interface/add_instance` (restarts the interface to get change in effect)
+  * `admin/interface/remove_instance` (restarts the interface to get change in effect)
+  * `admin/interface/list`
+  * `admin/agent/add`
+  * `admin/agent/remove`
+  * `admin/agent/list`
+  * `admin/bridge/add`
+  * `admin/bridge/remove`
+  * `admin/bridge/list`
+  
+  
 
 ### Removed
 

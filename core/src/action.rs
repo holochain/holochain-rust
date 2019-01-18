@@ -17,9 +17,7 @@ use holochain_core_types::{
     link::Link,
     validation::ValidationPackage,
 };
-use holochain_net_connection::protocol_wrapper::{
-    DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
-};
+use holochain_net_connection::json_protocol::{DhtData, DhtMetaData, GetDhtData, GetDhtMetaData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},

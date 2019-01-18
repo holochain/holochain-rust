@@ -12,7 +12,7 @@ use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
 use std::{sync::Arc, thread};
 
-use holochain_net_connection::protocol_wrapper::MessageData;
+use holochain_net_connection::json_protocol::MessageData;
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called

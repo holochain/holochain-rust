@@ -2,11 +2,11 @@
 
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
-    protocol::Protocol,
-    protocol_wrapper::{
-        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, MessageData, PeerData,
-        ProtocolWrapper,
+    json_protocol::{
+        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, JsonProtocol,
+        MessageData, PeerData,
     },
+    protocol::Protocol,
     NetResult,
 };
 use std::{
@@ -68,12 +68,12 @@ impl MockSystem {
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not remove)
         // println!(">>>> MockSystem recv: {:?}", data);
-        if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
-            match wrap {
-                ProtocolWrapper::TrackApp(msg) => {
+        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            match json_msg {
+                JsonProtocol::TrackDna(msg) => {
                     self.priv_send_all(
                         &msg.dna_address.clone(),
-                        ProtocolWrapper::PeerConnected(PeerData {
+                        JsonProtocol::PeerConnected(PeerData {
                             dna_address: msg.dna_address,
                             agent_id: msg.agent_id,
                         })
@@ -81,42 +81,45 @@ impl MockSystem {
                     )?;
                 }
 
-                ProtocolWrapper::SendMessage(msg) => {
-                    self.priv_handle_send(&msg)?;
+                JsonProtocol::SendMessage(msg) => {
+                    self.priv_handle_send_message(&msg)?;
                 }
-                ProtocolWrapper::HandleSendResult(msg) => {
-                    self.priv_handle_send_result(&msg)?;
+                JsonProtocol::HandleSendMessageResult(msg) => {
+                    self.priv_handle_handle_send_message_result(&msg)?;
                 }
-                ProtocolWrapper::SuccessResult(msg) => {
+                JsonProtocol::SuccessResult(msg) => {
                     self.priv_send_one(
                         &msg.dna_address,
                         &msg.to_agent_id,
-                        ProtocolWrapper::SuccessResult(msg.clone()).into(),
+                        JsonProtocol::SuccessResult(msg.clone()).into(),
                     )?;
                 }
-                ProtocolWrapper::FailureResult(msg) => {
+                JsonProtocol::FailureResult(msg) => {
                     self.priv_send_one(
                         &msg.dna_address,
                         &msg.to_agent_id,
-                        ProtocolWrapper::FailureResult(msg.clone()).into(),
+                        JsonProtocol::FailureResult(msg.clone()).into(),
                     )?;
                 }
-                ProtocolWrapper::GetDht(msg) => {
-                    self.priv_handle_get_dht(&msg)?;
+                JsonProtocol::GetDhtData(msg) => {
+                    self.priv_handle_get_dht_data(&msg)?;
                 }
-                ProtocolWrapper::GetDhtResult(msg) => {
-                    self.priv_handle_get_dht_result(&msg)?;
+                JsonProtocol::HandleGetDhtDataResult(msg) => {
+                    self.priv_handle_handle_get_dht_data_result(&msg)?;
                 }
-                ProtocolWrapper::PublishDht(msg) => {
-                    self.priv_handle_publish_dht(&msg)?;
+
+                JsonProtocol::PublishDhtData(msg) => {
+                    self.priv_handle_publish_dht_data(&msg)?;
                 }
-                ProtocolWrapper::GetDhtMeta(msg) => {
+
+                JsonProtocol::GetDhtMeta(msg) => {
                     self.priv_handle_get_dht_meta(&msg)?;
                 }
-                ProtocolWrapper::GetDhtMetaResult(msg) => {
-                    self.priv_handle_get_dht_meta_result(&msg)?;
+                JsonProtocol::HandleGetDhtMetaResult(msg) => {
+                    self.priv_handle_handle_get_dht_meta_result(&msg)?;
                 }
-                ProtocolWrapper::PublishDhtMeta(msg) => {
+
+                JsonProtocol::PublishDhtMeta(msg) => {
                     self.priv_handle_publish_dht_meta(&msg)?;
                 }
                 _ => (),
@@ -162,11 +165,11 @@ impl MockSystem {
     /// we received a SendMessage message...
     /// normally this would travel over the network, then
     /// show up as a HandleSend message, fabricate that message && deliver
-    fn priv_handle_send(&mut self, msg: &MessageData) -> NetResult<()> {
+    fn priv_handle_send_message(&mut self, msg: &MessageData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
-            ProtocolWrapper::HandleSend(msg.clone()).into(),
+            JsonProtocol::HandleSendMessage(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -174,11 +177,11 @@ impl MockSystem {
     /// we received a SendResult message...
     /// normally this would travel over the network, then
     /// show up as a SendResult message, fabricate that message && deliver
-    fn priv_handle_send_result(&mut self, msg: &MessageData) -> NetResult<()> {
+    fn priv_handle_handle_send_message_result(&mut self, msg: &MessageData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
-            ProtocolWrapper::SendResult(msg.clone()).into(),
+            JsonProtocol::SendMessageResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -186,14 +189,14 @@ impl MockSystem {
     /// when someone makes a dht data request,
     /// this mock module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
-    fn priv_handle_get_dht(&mut self, msg: &GetDhtData) -> NetResult<()> {
+    fn priv_handle_get_dht_data(&mut self, msg: &GetDhtData) -> NetResult<()> {
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
                     // Debugging code (do not remove)
                     // println!("<<<< MockSystem send: {:?}", msg.clone());
-                    r.send(ProtocolWrapper::GetDht(msg.clone()).into())?;
+                    r.send(JsonProtocol::HandleGetDhtData(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -203,7 +206,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.from_agent_id,
-            ProtocolWrapper::FailureResult(FailureResultData {
+            JsonProtocol::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
@@ -216,20 +219,20 @@ impl MockSystem {
     }
 
     /// send back a response to a request for dht data
-    fn priv_handle_get_dht_result(&mut self, msg: &DhtData) -> NetResult<()> {
+    fn priv_handle_handle_get_dht_data_result(&mut self, msg: &DhtData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.agent_id,
-            ProtocolWrapper::GetDhtResult(msg.clone()).into(),
+            JsonProtocol::GetDhtDataResult(msg.clone()).into(),
         )?;
         Ok(())
     }
 
     /// on publish meta, we send store requests to all nodes connected on this dna
-    fn priv_handle_publish_dht(&mut self, msg: &DhtData) -> NetResult<()> {
+    fn priv_handle_publish_dht_data(&mut self, msg: &DhtData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
-            ProtocolWrapper::StoreDht(msg.clone()).into(),
+            JsonProtocol::HandleStoreDhtData(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -242,7 +245,7 @@ impl MockSystem {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
-                    r.send(ProtocolWrapper::GetDhtMeta(msg.clone()).into())?;
+                    r.send(JsonProtocol::HandleGetDhtMeta(msg.clone()).into())?;
                     return Ok(());
                 }
             }
@@ -252,7 +255,7 @@ impl MockSystem {
         self.priv_send_one(
             &msg.dna_address,
             &msg.from_agent_id,
-            ProtocolWrapper::FailureResult(FailureResultData {
+            JsonProtocol::FailureResult(FailureResultData {
                 msg_id: msg.msg_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.from_agent_id.clone(),
@@ -265,11 +268,11 @@ impl MockSystem {
     }
 
     /// send back a response to a request for dht meta data
-    fn priv_handle_get_dht_meta_result(&mut self, msg: &DhtMetaData) -> NetResult<()> {
+    fn priv_handle_handle_get_dht_meta_result(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.agent_id,
-            ProtocolWrapper::GetDhtMetaResult(msg.clone()).into(),
+            JsonProtocol::GetDhtMetaResult(msg.clone()).into(),
         )?;
         Ok(())
     }
@@ -278,7 +281,7 @@ impl MockSystem {
     fn priv_handle_publish_dht_meta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
-            ProtocolWrapper::StoreDhtMeta(msg.clone()).into(),
+            JsonProtocol::HandleStoreDhtMeta(msg.clone()).into(),
         )?;
         Ok(())
     }

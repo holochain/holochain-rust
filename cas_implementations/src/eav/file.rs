@@ -259,7 +259,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .into_iter()
             .map(|(hash, content)| {
                 (
-                    from_key(hash).unwrap_or(Key(0, Action::None, Uuid::new_v4())),
+                    from_key(hash).unwrap_or(Key(0, Action::None)),
                     EntityAttributeValue::try_from_content(&JsonString::from(content)),
                 )
             })

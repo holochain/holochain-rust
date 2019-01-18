@@ -145,7 +145,10 @@ impl InMemoryServer {
         let maybe_sender = self.senders.get_mut(&name);
         if maybe_sender.is_none() {
             //println!("#### InMemoryServer '{}' error: No sender channel found", self.name.clone());
-            return Err(format_err!("No sender channel found"));
+            return Err(format_err!(
+                "No sender channel found ({})",
+                self.name.clone()
+            ));
         }
         let sender = maybe_sender.unwrap();
         // Debugging code (do not remove)

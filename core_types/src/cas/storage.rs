@@ -355,13 +355,16 @@ impl EavTestSuite {
 
         // show the many results for one
         assert_eq!(
-            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+            expected
+                .values()
+                .cloned()
+                .collect::<Vec<EntityAttributeValue>>(),
             eav_storage
                 .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
                 .expect("could not fetch eav")
-                .iter()
-                .map(|(_, v)| v)
-                .collect::<Vec<_>>()
+                .values()
+                .cloned()
+                .collect::<Vec<EntityAttributeValue>>()
         );
 
         // show one for the many results

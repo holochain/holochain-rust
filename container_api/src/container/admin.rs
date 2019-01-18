@@ -1,7 +1,7 @@
 use crate::{
     config::{
-        DnaConfiguration, InstanceConfiguration, InstanceReferenceConfiguration,
-        InterfaceConfiguration,
+        AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
+        InstanceReferenceConfiguration, InterfaceConfiguration,
     },
     container::{base::notify, Container},
     error::HolochainInstanceError,
@@ -28,6 +28,14 @@ pub trait ContainerAdmin {
         &mut self,
         interface_id: &String,
         instance_id: &String,
+    ) -> Result<(), HolochainError>;
+    fn add_agent(&mut self, new_agent: AgentConfiguration) -> Result<(), HolochainError>;
+    fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn add_bridge(&mut self, new_bridge: Bridge) -> Result<(), HolochainError>;
+    fn remove_bridge(
+        &mut self,
+        caller_id: &String,
+        callee_id: &String,
     ) -> Result<(), HolochainError>;
 }
 
@@ -298,6 +306,138 @@ impl ContainerAdmin for Container {
 
         Ok(())
     }
+
+    fn add_agent(&mut self, new_agent: AgentConfiguration) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        if new_config
+            .agents
+            .iter()
+            .find(|i| i.id == new_agent.id)
+            .is_some()
+        {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Agent with ID '{}' already exists",
+                new_agent.id
+            )));
+        }
+        new_config.agents.push(new_agent.clone());
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+
+        notify(format!("Added agent \"{}\"", new_agent.id));
+
+        Ok(())
+    }
+
+    fn remove_agent(&mut self, id: &String) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        if new_config.agents.iter().find(|i| i.id == *id).is_none() {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Agent with ID '{}' does not exist",
+                id
+            )));
+        }
+
+        new_config.agents = new_config
+            .agents
+            .into_iter()
+            .filter(|agent| agent.id != *id)
+            .collect();
+
+        let instance_ids: Vec<String> = new_config
+            .instances
+            .iter()
+            .filter(|instance| instance.agent == *id)
+            .map(|instance| instance.id.clone())
+            .collect();
+
+        for id in instance_ids.iter() {
+            new_config = new_config.save_remove_instance(id);
+        }
+
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+
+        for id in instance_ids.iter() {
+            let result = self.stop_instance(id);
+            if result.is_err() {
+                notify(format!(
+                    "Error stopping instance {}: \"{}\".",
+                    id,
+                    result.err().unwrap()
+                ));
+            }
+            notify(format!("Removed instance \"{}\".", id));
+        }
+
+        notify(format!("Removed agent \"{}\".", id));
+
+        Ok(())
+    }
+
+    fn add_bridge(&mut self, new_bridge: Bridge) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        if new_config
+            .bridges
+            .iter()
+            .find(|b| b.caller_id == new_bridge.caller_id && b.callee_id == new_bridge.callee_id)
+            .is_some()
+        {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Bridge from instance '{}' to instance '{}' already exists",
+                new_bridge.caller_id, new_bridge.callee_id,
+            )));
+        }
+        new_config.bridges.push(new_bridge.clone());
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+
+        notify(format!(
+            "Added bridge from '{}' to '{}' as '{}'",
+            new_bridge.caller_id, new_bridge.callee_id, new_bridge.handle
+        ));
+
+        Ok(())
+    }
+
+    fn remove_bridge(
+        &mut self,
+        caller_id: &String,
+        callee_id: &String,
+    ) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        if new_config
+            .bridges
+            .iter()
+            .find(|b| b.caller_id == *caller_id && b.callee_id == *callee_id)
+            .is_none()
+        {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Bridge from instance '{}' to instance '{}' does not exist",
+                caller_id, callee_id,
+            )));
+        }
+
+        new_config.bridges = new_config
+            .bridges
+            .into_iter()
+            .filter(|bridge| bridge.caller_id != *caller_id || bridge.callee_id != *callee_id)
+            .collect();
+
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+
+        notify(format!(
+            "Bridge from '{}' to '{}' removed",
+            caller_id, callee_id
+        ));
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -307,7 +447,7 @@ pub mod tests {
         config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
         container::base::{tests::example_dna_string, DnaLoader},
     };
-    use holochain_core_types::{dna::Dna, json::JsonString};
+    use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
     use std::{convert::TryFrom, fs::File, io::Read};
 
     pub fn test_dna_loader() -> DnaLoader {
@@ -859,5 +999,149 @@ type = "websocket""#,
             .interface_threads
             .get("websocket interface")
             .is_some());
+    }
+
+    #[test]
+    fn test_add_agent() {
+        let mut container = create_test_container("test_add_agent");
+        let agent_config = AgentConfiguration {
+            id: String::from("new-agent"),
+            name: String::from("Mr. New"),
+            public_address: AgentId::generate_fake("new").address().to_string(),
+            key_file: String::from("new-test-path"),
+        };
+
+        assert_eq!(container.add_agent(agent_config), Ok(()),);
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[agents]]
+id = "new-agent"
+key_file = "new-test-path"
+name = "Mr. New"
+public_address = "new-------------------------------------------------------------------------------AAAFeOAoWg""#,
+            ),
+        );
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, interface());
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
+
+        assert_eq!(config_contents, toml,);
+    }
+
+    #[test]
+    fn test_remove_agent() {
+        let mut container = create_test_container("test_remove_agent");
+
+        assert_eq!(
+            container.remove_agent(&String::from("test-agent-2")),
+            Ok(()),
+        );
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        //toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        //toml = add_block(toml, instance2());
+        //toml = add_block(toml, interface());
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[[interfaces.instances]]
+id = "test-instance-1"
+
+[interfaces.driver]
+port = 3000
+type = "websocket""#,
+            ),
+        );
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
+
+        assert_eq!(config_contents, toml,);
+    }
+
+    #[test]
+    fn test_add_and_remove_bridge() {
+        let mut container = create_test_container("test_add_agent");
+        let bridge = Bridge {
+            caller_id: String::from("test-instance-1"),
+            callee_id: String::from("test-instance-2"),
+            handle: String::from("my favourite instance!"),
+        };
+
+        assert_eq!(container.add_bridge(bridge), Ok(()),);
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = agent1();
+        toml = add_block(toml, agent2());
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[bridges]]
+callee_id = "test-instance-2"
+caller_id = "test-instance-1"
+handle = "my favourite instance!""#,
+            ),
+        );
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, interface());
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
+
+        assert_eq!(config_contents, toml,);
+
+        assert_eq!(
+            container.remove_bridge(
+                &String::from("test-instance-1"),
+                &String::from("test-instance-2")
+            ),
+            Ok(()),
+        );
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = String::from("bridges = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, interface());
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
+
+        assert_eq!(config_contents, toml,);
     }
 }

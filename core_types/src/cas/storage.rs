@@ -10,9 +10,9 @@ use crate::{
     error::HolochainError,
     json::RawString,
 };
-use im::{hashmap::HashMap, ordmap::OrdMap};
 use objekt;
 use std::{
+    collections::{BTreeMap, HashMap},
     convert::TryFrom,
     fmt::Debug,
     sync::{mpsc::channel, Arc, RwLock},
@@ -258,7 +258,7 @@ impl EavTestSuite {
 
         for store in two_stores.iter() {
             assert_eq!(
-                OrdMap::new(),
+                BTreeMap::new(),
                 store
                     .fetch_eav(
                         Some(entity_content.address()),
@@ -271,7 +271,7 @@ impl EavTestSuite {
 
         eav_storage.add_eav(&eav).expect("could not add eav");
         let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
-        let mut expected = OrdMap::new();
+        let mut expected = BTreeMap::new();
         let key = create_key(Action::Insert).expect("Could not make key");
         expected.insert(key, eav.clone());
         for eav_storage in two_stores.iter() {
@@ -332,7 +332,7 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "one_to_many".to_string();
 
-        let mut expected = OrdMap::new();
+        let mut expected = BTreeMap::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
@@ -366,7 +366,7 @@ impl EavTestSuite {
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = OrdMap::new();
+            let mut expected_one = BTreeMap::new();
             let eav =
                 EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
                     .expect("Could not create eav");
@@ -405,7 +405,7 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "many_to_one".to_string();
 
-        let mut expected = OrdMap::new();
+        let mut expected = BTreeMap::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
@@ -439,7 +439,7 @@ impl EavTestSuite {
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = OrdMap::new();
+            let mut expected_one = BTreeMap::new();
             let eav =
                 EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
                     .expect("Could not create eav");

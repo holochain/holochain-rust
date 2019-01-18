@@ -64,7 +64,7 @@ pub struct MessageData {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct TrackAppData {
+pub struct TrackDnaData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
 
@@ -165,120 +165,134 @@ pub struct DhtMetaData {
     pub content: serde_json::Value,
 }
 
-/// Enum holding all Message types in the 'hc-core <-> P2P Network Module' protocol.
+/// Enum holding all message types that serialize as json in the 'hc-core <-> P2P network module' protocol.
+/// There are 4 categories of messages:
+///  - Command: An order from the local node to the p2p module. Local node expects a reponse. Starts with a verb.
+///  - Handle-command: An order from the p2p module to the local node. The p2p module expects a response. Start withs 'Handle' followed by a verb.
+///  - Result: A response to a Command. Starts with the name of the Command it responds to and ends with 'Result'.
+///  - Notification: Notify that something happened. Not expecting any response. Ends with verb in past form, i.e. '-ed'.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(tag = "method")]
-pub enum ProtocolWrapper {
-    /// [send] request the current state from the p2p module
-    #[serde(rename = "requestState")]
-    RequestState,
-    /// [recv] p2p module is telling us its current state
-    #[serde(rename = "state")]
-    State(StateData),
-    /// [send] request the default config from the p2p module
-    #[serde(rename = "requestDefaultConfig")]
-    RequestDefaultConfig,
-    /// [recv] the default config from the p2p module
-    #[serde(rename = "defaultConfig")]
-    DefaultConfig(ConfigData),
-    /// [send] set the p2p config
-    #[serde(rename = "setConfig")]
-    SetConfig(ConfigData),
-
-    /// [send] connect to the specified multiaddr
-    #[serde(rename = "connect")]
-    Connect(ConnectData),
-    /// [recv] notification of a peer connected
-    #[serde(rename = "peerConnected")]
-    PeerConnected(PeerData),
-
-    /// [send] send a message to another node on the network
-    #[serde(rename = "send")]
-    SendMessage(MessageData),
-    /// [recv] recv the response back from a previous `GenericMessage`
-    #[serde(rename = "sendResult")]
-    SendResult(MessageData),
-    /// [recv] another node has sent us a message
-    #[serde(rename = "handleSend")]
-    HandleSend(MessageData),
-    /// [send] send our response to a previous `HandleGenericMessage`
-    #[serde(rename = "handleSendResult")]
-    HandleSendResult(MessageData),
-
-    /// [send] send out a "trackApp" request
-    #[serde(rename = "trackApp")]
-    TrackApp(TrackAppData),
-
-    /// [send / recv] report success for a messages with _id parameter
+pub enum JsonProtocol {
+    /// Success response to any message with an _id field.
     #[serde(rename = "successResult")]
     SuccessResult(SuccessResultData),
-    /// [send / recv] for any message with _id parameter to indicate failure
+    /// Failure response to any message with an _id field.
+    /// Can also be a response to a mal-formed request.
     #[serde(rename = "failureResult")]
     FailureResult(FailureResultData),
 
-    /// [send] request data from the dht
-    /// [recv] another node, or the network module itself is requesting data
-    ///        from us... send a GetDhtResult message back
-    #[serde(rename = "getDht")]
-    GetDht(GetDhtData),
-    /// [recv] response from requesting dht data from the network
-    /// [send] success response if network is requesting this data of us
-    #[serde(rename = "getDhtResult")]
-    GetDhtResult(DhtData),
-    /// [send] publish content to the dht
-    #[serde(rename = "publishDht")]
-    PublishDht(DhtData),
-    /// [recv] the network is requesting that we store this data
-    #[serde(rename = "storeDht")]
-    StoreDht(DhtData),
+    /// Order the p2p module to be part of the network of the specified DNA.
+    #[serde(rename = "trackDna")]
+    TrackDna(TrackDnaData),
 
-    /// [send] request meta data from the dht
-    /// [recv] another node, or the network module itself is requesting data
-    ///        from us... send a GetDhtResult message back
+    /// Request the current state from the p2p module
+    #[serde(rename = "requestState")]
+    GetState,
+    /// p2p module's current state response.
+    #[serde(rename = "state")]
+    GetStateResult(StateData),
+    /// Request the default config from the p2p module
+    #[serde(rename = "requestDefaultConfig")]
+    GetDefaultConfig,
+    /// the p2p module's default config response
+    #[serde(rename = "defaultConfig")]
+    GetDefaultConfigResult(ConfigData),
+    /// Set the p2p config
+    #[serde(rename = "setConfig")]
+    SetConfig(ConfigData),
+
+    /// Connect to the specified multiaddr
+    #[serde(rename = "connect")]
+    Connect(ConnectData),
+    /// Notification of a connection from another peer.
+    #[serde(rename = "peerConnected")]
+    PeerConnected(PeerData),
+
+    /// Send a message to another peer on the network
+    #[serde(rename = "sendMessage")]
+    SendMessage(MessageData),
+    /// the response from a previous `SendMessage`
+    #[serde(rename = "sendMessageResult")]
+    SendMessageResult(MessageData),
+    /// Request to handle a message another peer has sent us.
+    #[serde(rename = "handleSendMessage")]
+    HandleSendMessage(MessageData),
+    /// Our response to a message from another peer.
+    #[serde(rename = "handleSendMessageResult")]
+    HandleSendMessageResult(MessageData),
+
+    /// Request data from the dht network
+    #[serde(rename = "getDht")]
+    GetDhtData(GetDhtData),
+    /// Response from requesting dht data from the network
+    #[serde(rename = "getDhtResult")]
+    GetDhtDataResult(DhtData),
+    /// Another node, or the network module itself is requesting data from us
+    #[serde(rename = "handleGetDht")]
+    HandleGetDhtData(GetDhtData),
+    /// Successful data response for a `HandleGetDhtData` request
+    #[serde(rename = "handleGetDhtResult")]
+    HandleGetDhtDataResult(DhtData),
+
+    /// Publish data to the dht.
+    #[serde(rename = "publishDht")]
+    PublishDhtData(DhtData),
+    /// Store data on a node's dht slice.
+    #[serde(rename = "handleStoreDht")]
+    HandleStoreDhtData(DhtData),
+
+    /// Request metadata from the dht
     #[serde(rename = "getDhtMeta")]
     GetDhtMeta(GetDhtMetaData),
-    /// [recv] response from requesting meta dht data from the network
-    /// [send] success response if network is requesting this data of us
+    /// Response by the network for our metadata request
     #[serde(rename = "getDhtMetaResult")]
     GetDhtMetaResult(DhtMetaData),
-    /// [send] publish meta content to the dht
+    /// Another node, or the network module itself, is requesting data from us
+    #[serde(rename = "handleGetDhtMeta")]
+    HandleGetDhtMeta(GetDhtMetaData),
+    /// Successful metadata response for a `HandleGetDhtMeta` request
+    #[serde(rename = "handleGetDhtMetaResult")]
+    HandleGetDhtMetaResult(DhtMetaData),
+
+    /// Publish metadata to the dht.
     #[serde(rename = "publishDhtMeta")]
     PublishDhtMeta(DhtMetaData),
-    /// [recv] the network is requesting that we store this meta data
-    #[serde(rename = "storeDhtMeta")]
-    StoreDhtMeta(DhtMetaData),
+    /// Store metadata on a node's dht slice.
+    #[serde(rename = "handleStoreDhtMeta")]
+    HandleStoreDhtMeta(DhtMetaData),
 }
 
-impl<'a> TryFrom<&'a Protocol> for ProtocolWrapper {
+impl<'a> TryFrom<&'a Protocol> for JsonProtocol {
     type Error = Error;
     fn try_from(p: &Protocol) -> Result<Self, Error> {
         if let Protocol::Json(json) = p {
-            match ProtocolWrapper::try_from(json) {
+            match JsonProtocol::try_from(json) {
                 Ok(w) => {
                     return Ok(w);
                 }
                 Err(e) => bail!("{:?}", e),
             };
         }
-        bail!("could not ProtocolWrapper: {:?}", p);
+        bail!("could not convert into JsonProtocol: {:?}", p);
     }
 }
 
-impl TryFrom<Protocol> for ProtocolWrapper {
+impl TryFrom<Protocol> for JsonProtocol {
     type Error = Error;
     fn try_from(p: Protocol) -> Result<Self, Error> {
-        ProtocolWrapper::try_from(&p)
+        JsonProtocol::try_from(&p)
     }
 }
 
-impl<'a> From<&'a ProtocolWrapper> for Protocol {
-    fn from(w: &ProtocolWrapper) -> Self {
+impl<'a> From<&'a JsonProtocol> for Protocol {
+    fn from(w: &JsonProtocol) -> Self {
         Protocol::Json(JsonString::from(w))
     }
 }
 
-impl From<ProtocolWrapper> for Protocol {
-    fn from(w: ProtocolWrapper) -> Self {
+impl From<JsonProtocol> for Protocol {
+    fn from(w: JsonProtocol) -> Self {
         Protocol::from(&w)
     }
 }
@@ -291,19 +305,19 @@ mod tests {
         ($e:expr) => {
             let orig = $e;
             let p = Protocol::from(orig.clone());
-            let w = ProtocolWrapper::try_from(p).unwrap();
+            let w = JsonProtocol::try_from(p).unwrap();
             assert_eq!(orig, w);
         };
     }
 
     #[test]
     fn it_can_convert_request_state() {
-        test_convert!(ProtocolWrapper::RequestState);
+        test_convert!(JsonProtocol::GetState);
     }
 
     #[test]
     fn it_can_convert_state() {
-        test_convert!(ProtocolWrapper::State(StateData {
+        test_convert!(JsonProtocol::GetStateResult(StateData {
             state: "test_state".to_string(),
             id: "test_id".to_string(),
             bindings: vec!["test_binding".to_string()],
@@ -312,14 +326,14 @@ mod tests {
 
     #[test]
     fn it_can_convert_funky_state() {
-        let w = ProtocolWrapper::try_from(JsonString::from(
+        let w = JsonProtocol::try_from(JsonString::from(
             r#"{
             "method": "state",
             "state": "test_state"
         }"#,
         ))
         .unwrap();
-        if let ProtocolWrapper::State(s) = w {
+        if let JsonProtocol::GetStateResult(s) = w {
             assert_eq!("undefined", &s.id);
             assert_eq!(0, s.bindings.len());
         } else {
@@ -329,33 +343,33 @@ mod tests {
 
     #[test]
     fn it_can_convert_request_default_config() {
-        test_convert!(ProtocolWrapper::RequestDefaultConfig);
+        test_convert!(JsonProtocol::GetDefaultConfig);
     }
 
     #[test]
     fn it_can_convert_default_config() {
-        test_convert!(ProtocolWrapper::DefaultConfig(ConfigData {
+        test_convert!(JsonProtocol::GetDefaultConfigResult(ConfigData {
             config: "test".to_string(),
         }));
     }
 
     #[test]
     fn it_can_convert_set_config() {
-        test_convert!(ProtocolWrapper::SetConfig(ConfigData {
+        test_convert!(JsonProtocol::SetConfig(ConfigData {
             config: "test".to_string(),
         }));
     }
 
     #[test]
     fn it_can_convert_set_connect() {
-        test_convert!(ProtocolWrapper::Connect(ConnectData {
+        test_convert!(JsonProtocol::Connect(ConnectData {
             address: "test".into(),
         }));
     }
 
     #[test]
     fn it_can_convert_peer_connected() {
-        test_convert!(ProtocolWrapper::PeerConnected(PeerData {
+        test_convert!(JsonProtocol::PeerConnected(PeerData {
             dna_address: "test_dna".into(),
             agent_id: "test_id".to_string(),
         }));
@@ -363,7 +377,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_send_message() {
-        test_convert!(ProtocolWrapper::SendMessage(MessageData {
+        test_convert!(JsonProtocol::SendMessage(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -374,7 +388,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_send_result() {
-        test_convert!(ProtocolWrapper::SendResult(MessageData {
+        test_convert!(JsonProtocol::SendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -385,7 +399,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_handle_send() {
-        test_convert!(ProtocolWrapper::HandleSend(MessageData {
+        test_convert!(JsonProtocol::HandleSendMessage(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -396,7 +410,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_handle_send_result() {
-        test_convert!(ProtocolWrapper::HandleSendResult(MessageData {
+        test_convert!(JsonProtocol::HandleSendMessageResult(MessageData {
             dna_address: "test_dna".into(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
@@ -407,7 +421,7 @@ mod tests {
 
     #[test]
     fn it_can_convert_track_app() {
-        test_convert!(ProtocolWrapper::TrackApp(TrackAppData {
+        test_convert!(JsonProtocol::TrackDna(TrackDnaData {
             dna_address: "test_dna".into(),
             agent_id: "test_to".to_string(),
         }));

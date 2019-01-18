@@ -75,7 +75,8 @@ mod tests {
 
     #[test]
     pub fn reduce_get_entry_without_network_initialized() {
-        let context = test_context("alice", None);
+        let netname = Some("reduce_get_entry_without_network_initialized");
+        let context = test_context("alice", netname);
         let store = test_store(context.clone());
 
         let entry = test_entry();
@@ -107,11 +108,12 @@ mod tests {
     // within the mock network.
     #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_test() {
-        let context = test_context("alice", None);
+        let netname = Some("reduce_get_entry_test");
+        let context = test_context("alice", netname);
         let store = test_store(context.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_mock_config(),
+            config: test_mock_config(netname),
             dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));
@@ -139,14 +141,15 @@ mod tests {
     // within the mock network.
     #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_timeout_test() {
-        let mut context = test_context("alice", None);
+        let netname = Some("reduce_get_entry_timeout_test");
+        let mut context = test_context("alice", netname);
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
 
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_mock_config(),
+            config: test_mock_config(netname),
             dna_address: "reduce_get_entry_timeout_test".into(),
             agent_id: AgentId::generate_fake("timeout").address().to_string(),
         }));

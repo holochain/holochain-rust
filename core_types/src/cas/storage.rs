@@ -256,10 +256,10 @@ impl EavTestSuite {
 
         let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
 
-        for eav_storage in two_stores.iter() {
+        for store in two_stores.iter() {
             assert_eq!(
                 OrdMap::new(),
-                eav_storage
+                store
                     .fetch_eav(
                         Some(entity_content.address()),
                         Some(attribute.clone()),
@@ -270,11 +270,10 @@ impl EavTestSuite {
         }
 
         eav_storage.add_eav(&eav).expect("could not add eav");
-
+        let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
         let mut expected = OrdMap::new();
         let key = create_key(Action::Insert).expect("Could not make key");
         expected.insert(key, eav.clone());
-        println!("expected");
         for eav_storage in two_stores.iter() {
             // some examples of constraints that should all return the eav
             for (e, a, v) in vec![

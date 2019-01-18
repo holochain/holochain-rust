@@ -269,14 +269,16 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         Ok(())
 ///     }
 ///
-///     functions: {
-///         public (Public) {
+///     functions: [
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
 ///                 outputs: |sum: JsonString|,
 ///                 handler: handle_sum
 ///             }
-///         }
+///     ]
+///
+///     capabilities: {
+///         public (Public) [sum]
 ///     }
 /// }
 ///
@@ -344,14 +346,16 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 ///         Ok(())
 ///     }
 ///
-///     functions: {
-///         public (Public) {
+///     functions: [
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
 ///                 outputs: |sum: ZomeApiResult<JsonString>|,
 ///                 handler: handle_check_sum
 ///             }
-///         }
+///     ]
+///
+///     capabilities: {
+///         public (Public) [sum]
 ///     }
 /// }
 ///
@@ -1070,15 +1074,17 @@ pub fn query(
 ///        format!("Received: {}", payload)
 ///    }
 ///
-///    functions: {
-///        public (Public) {
+///    functions: [
 ///            send_message: {
 ///                inputs: |to_agent: Address, message: String|,
 ///                outputs: |response: ZomeApiResult<String>|,
 ///                handler: handle_send_message
 ///            }
-///        }
-///    }
+///    ]
+///
+///     capabilities: {
+///         public (Public) [send_message]
+///     }
 ///}
 /// # }
 /// ```

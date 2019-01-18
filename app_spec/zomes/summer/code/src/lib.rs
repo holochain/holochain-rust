@@ -21,13 +21,16 @@ define_zome! {
         Ok(())
     }
 
-    functions: {
-        public (Public) {
-            sum: {
-                inputs: |num1: u32, num2: u32|,
-                outputs: |sum: JsonString|,
-                handler: handle_sum
-            }
+    functions: [
+        sum: {
+            inputs: |num1: u32, num2: u32|,
+            outputs: |sum: JsonString|,
+            handler: handle_sum
         }
+    ]
+
+    capabilities: {
+        public (Public) [sum]
     }
+
 }

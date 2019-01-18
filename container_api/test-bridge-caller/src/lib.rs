@@ -17,13 +17,15 @@ define_zome! {
         Ok(())
     }
 
-    functions: {
-        public (Public) {
-            call_bridge: {
-                inputs: | |,
-                outputs: |result: JsonString|,
-                handler: handle_call_bridge
-            }
+    functions: [
+        call_bridge: {
+            inputs: | |,
+            outputs: |result: JsonString|,
+            handler: handle_call_bridge
         }
+    ]
+
+    capabilities: {
+        public (Public) [call_bridge]
     }
 }

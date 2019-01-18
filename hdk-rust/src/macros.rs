@@ -127,10 +127,7 @@ macro_rules! load_string {
 ///       format!("Received: {}", payload)
 ///     }
 ///
-///     functions: {
-///         // by convention "public" is the name of the capability for functions
-///         // that can be called by anyone
-///         public (Public) {
+///     functions: [
 ///             // the name of this function, "post_address" is the
 ///             // one to give while performing a `call` method to this function.
 ///             // the name of the handler function must be different than the
@@ -140,7 +137,12 @@ macro_rules! load_string {
 ///                 outputs: |post: ZomeApiResult<Address>|,
 ///                 handler: handle_post_address
 ///             }
-///         }
+///     ]
+///
+///     // by convention "public" is the name of the capability for functions
+///     // that can be called by anyone
+///     capabilities: {
+///         public (Public) [post_address]
 ///     }
 /// }
 ///
@@ -163,19 +165,24 @@ macro_rules! define_zome {
             }
         )*
 
-        functions : {
+        functions : [
             $(
-                $cap:ident ( $vis:ident ) {
-                    $(
                         $zome_function_name:ident : {
                             inputs: | $( $input_param_name:ident : $input_param_type:ty ),* |,
                             outputs: | $( $output_param_name:ident : $output_param_type:ty ),* |,
                             handler: $handler_path:path
                         }
-                    )+
-                }
-            )*
-        }
+            )+
+        ]
+
+        capabilities : {
+                $(
+                    $cap:ident ( $vis:ident ) [
+                        $($cap_fn:ident),*
+                    ]
+                )*
+            }
+
 
     ) => {
         #[no_mangle]
@@ -235,7 +242,7 @@ macro_rules! define_zome {
                         let mut capability = Capability::new(CapabilityType::$vis);
                         capability.functions = vec![
                             $(
-                                stringify!($zome_function_name).into()
+                                stringify!($cap_fn).into()
                             ),+
                         ];
 
@@ -256,13 +263,10 @@ macro_rules! define_zome {
             use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType, FnParameter, FnDeclaration};
 
             let return_value: $crate::holochain_core_types::dna::zome::ZomeFnDeclarations = {
-                let mut fn_map = Vec::new();
+                vec![
 
-                $(
-                    {
-             //           capability.functions = vec![
-                            $(
-                         let fn_decl =       FnDeclaration {
+                    $(
+                         FnDeclaration {
                                     name: stringify!($zome_function_name).into(),
                                     inputs: vec![
                                         $(
@@ -274,22 +278,16 @@ macro_rules! define_zome {
                                             FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
                                         ),*
                                     ]
-                                };
-                                fn_map.push(fn_decl);
-                            )+
-            //            ];
+                                }
+                    ),+
 
-                    }
-                ),*
-
-                fn_map
+                ]
             };
 
             return_value
         }
 
         $(
-            $(
                 #[no_mangle]
                 pub extern "C" fn $zome_function_name(encoded_allocation_of_input: u32) -> u32 {
                     $crate::global_fns::init_global_memory(encoded_allocation_of_input);
@@ -313,7 +311,6 @@ macro_rules! define_zome {
 
                     $crate::global_fns::store_and_return_output(execute(input))
                 }
-            )+
-        )*
+        )+
     };
 }

@@ -4,6 +4,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Capabilities now separated from function declarations in `define_zome!` and calling zome functions no longer uses capability name parameter [#791](https://github.com/holochain/holochain-rust/pull/779)
 ### Added
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)
 ### Removed

@@ -1,5 +1,5 @@
 use crate::{
-    config::{DnaConfiguration, InstanceConfiguration},
+    config::{DnaConfiguration, InstanceConfiguration, StorageConfiguration},
     container::{base::notify, Container},
     error::HolochainInstanceError,
 };
@@ -16,7 +16,7 @@ pub trait ContainerAdmin {
         properties: Option<&serde_json::Value>,
     ) -> Result<(), HolochainError>;
     fn uninstall_dna(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn add_instance(&mut self, new_instance: InstanceConfiguration) -> Result<(), HolochainError>;
+    fn add_instance(&mut self, id: &String, dna_id: &String, agent_id: &String) -> Result<(), HolochainError>;
     fn remove_instance(&mut self, id: &String) -> Result<(), HolochainError>;
     fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
@@ -118,9 +118,21 @@ impl ContainerAdmin for Container {
         Ok(())
     }
 
-    fn add_instance(&mut self, instance: InstanceConfiguration) -> Result<(), HolochainError> {
+    fn add_instance(&mut self, id: &String, dna_id: &String, agent_id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
-        new_config.instances.push(instance.clone());
+        let new_instance = InstanceConfiguration {
+            id: id.to_string(),
+            dna: dna_id.to_string(),
+            agent: agent_id.to_string(),
+            storage: StorageConfiguration::File{
+                path: self.instance_storage_dir_path()
+                    .join(id)
+                    .to_str()
+                    .ok_or(HolochainError::ConfigError("invalid path".into()))?
+                    .into()
+            },
+        };
+        new_config.instances.push(new_instance);
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
@@ -476,7 +488,6 @@ pattern = ".*"
         assert!(PathBuf::from(format!("./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg", new_dna.address())).is_file())
     }
 
-    use crate::config::StorageConfiguration;
     #[test]
     fn test_add_instance() {
         let mut container = create_test_container("test_add_instance");
@@ -486,12 +497,11 @@ pattern = ".*"
             .install_dna_from_file(new_dna_path.clone(), String::from("new-dna"), false, None)
             .expect("Could not install DNA");
 
-        let add_result = container.add_instance(InstanceConfiguration {
-            id: String::from("new-instance"),
-            dna: String::from("new-dna"),
-            agent: String::from("test-agent-1"),
-            storage: StorageConfiguration::Memory,
-        });
+        let add_result = container.add_instance(
+            &String::from("new-instance"),
+            &String::from("new-dna"),
+            &String::from("test-agent-1"),
+        );
 
         assert_eq!(add_result, Ok(()));
 
@@ -549,7 +559,8 @@ dna = "new-dna"
 id = "new-instance"
 
 [instances.storage]
-type = "memory"
+path = "./tmp-test/test_add_instance/storage/new-instance"
+type = "file"
 
 [[interfaces]]
 admin = true

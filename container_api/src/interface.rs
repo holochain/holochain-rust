@@ -10,7 +10,7 @@ use std::{
     sync::{mpsc::Receiver, Arc, RwLock},
 };
 
-use config::{DnaConfiguration, InstanceConfiguration, StorageConfiguration};
+use config::{DnaConfiguration, InstanceConfiguration};
 use container::{ContainerAdmin, CONTAINER};
 use serde_json::map::Map;
 
@@ -277,13 +277,7 @@ impl ContainerApiBuilder {
             let id = Self::get_as_string("id", &params_map)?;
             let dna_id = Self::get_as_string("dna_id", &params_map)?;
             let agent_id = Self::get_as_string("agent_id", &params_map)?;
-            let new_instance = InstanceConfiguration {
-                id: id.to_string(),
-                dna: dna_id.to_string(),
-                agent: agent_id.to_string(),
-                storage: StorageConfiguration::Memory, // TODO: don't actually use this. Have some idea of default store
-            };
-            container_call!(|c| c.add_instance(new_instance))?;
+            container_call!(|c| c.add_instance(&id, &dna_id, &agent_id))?;
             Ok(json!({"success": true}))
         });
 

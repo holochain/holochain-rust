@@ -129,7 +129,21 @@ impl Configuration {
                 })?;
         }
 
-        // TODO: check consistency of ui_bundles and ui_interfaces
+        for ref ui_interface in self.ui_interfaces.iter() {
+            self.ui_bundle_by_id(&ui_interface.bundle).is_some().ok_or_else(|| {
+                format!(
+                    "UI bundle configuration {} not found, mentioned in UI interface {}",
+                    ui_interface.bundle, ui_interface.id,
+                )
+            })?;
+
+            self.interface_by_id(&ui_interface.dna_interface).is_some().ok_or_else(|| {
+                format!(
+                    "Interface configuration {} not found, mentioned in UI interface {}",
+                    ui_interface.dna_interface, ui_interface.id,
+                )
+            })?;
+        }
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
@@ -668,6 +682,17 @@ pub mod tests {
     pattern = ".*"
     color = "red"
 
+    [[ui_bundles]]
+    id = "bundle1"
+    root_dir = "" # serves the current directory
+    hash = "Qm000"
+
+    [[ui_interfaces]]
+    id = "ui-interface-1"
+    bundle = "bundle1"
+    port = 3000
+    dna_interface = "app spec domainsocket interface"
+
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -982,5 +1007,77 @@ pub mod tests {
         // so we are just testing that it isn't null
         #[cfg(not(windows))]
         assert!(default_n3h_persistence_path() != String::from(""));
+    }
+
+    #[test]
+    fn test_inconsistent_ui_interface() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app_spec.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[interfaces]]
+    id = "app spec websocket interface"
+    [interfaces.driver]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec domainsocket interface"
+    [interfaces.driver]
+    type = "domainsocket"
+    file = "/tmp/holochain.sock"
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [logger]
+    type = "debug"
+    [[logger.rules.rules]]
+    pattern = ".*"
+    color = "red"
+
+    [[ui_bundles]]
+    id = "bundle1"
+    root_dir = "" # serves the current directory
+    hash = "Qm000"
+
+    [[ui_interfaces]]
+    id = "ui-interface-1"
+    bundle = "bundle1"
+    port = 3000
+    dna_interface = "<not existant>"
+
+    "#;
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("Interface configuration <not existant> not found, mentioned in UI interface ui-interface-1".to_string())
+        );
     }
 }

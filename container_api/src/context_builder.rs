@@ -131,9 +131,9 @@ impl ContextBuilder {
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config.unwrap_or(JsonString::from(String::from(
-                P2pConfig::unique_memory_backend_string(),
-            ))),
+            self.network_config.unwrap_or(JsonString::from(
+                P2pConfig::new_with_unique_memory_backend().as_str(),
+            )),
             self.container_api,
             self.signal_tx,
         )
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(String::from(P2pConfig::unique_memory_backend_string()));
+        let net = JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str());
         let context = ContextBuilder::new()
             .with_network_config(net.clone())
             .spawn();

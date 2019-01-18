@@ -36,13 +36,14 @@ pub(crate) struct InMemoryServer {
     senders_by_dna: HashMap<Address, Vec<mpsc::Sender<Protocol>>>,
     // Unique identifier
     name: String,
-    // client_count
+    // Keep track of connected clients
     client_count: usize,
 }
 
 impl InMemoryServer {
     /// create a new in-memory network server
     pub fn new(name: String) -> Self {
+        println!("NEW InMemoryServer '{}'", name.clone());
         Self {
             senders: HashMap::new(),
             senders_by_dna: HashMap::new(),
@@ -51,14 +52,22 @@ impl InMemoryServer {
         }
     }
 
+    /// A client clocks in on this server
     pub fn clock_in(&mut self) {
+        // Debugging code (do not remove)
+        println!("+++ InMemoryServer '{}' clock_in", self.name.clone());
         self.client_count += 1;
     }
 
+    /// A client clocks out of this server.
+    /// If there is no clients left. Clear all the channels.
     pub fn clock_out(&mut self) {
+        // Debugging code (do not remove)
+        println!("--- InMemoryServer '{}' clock_out", self.name.clone());
         assert!(self.client_count > 0);
         self.client_count -= 1;
         if self.client_count == 0 {
+            println!("--- InMemoryServer '{}' CLEAR CHANNELS", self.name.clone());
             self.senders.clear();
             self.senders_by_dna.clear();
         }

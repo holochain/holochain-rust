@@ -62,7 +62,7 @@ mod tests {
 
     use crate::{
         action::{Action, ActionWrapper, GetLinksKey, NetworkSettings},
-        context::unique_memory_network_config,
+        context::test_memory_network_config,
         instance::tests::test_context,
         state::test_store,
     };
@@ -106,7 +106,7 @@ mod tests {
         let store = test_store(context.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: test_mock_config(netname),
+            config: test_memory_network_config(netname),
             dna_address: "reduce_get_links_test".into(),
             agent_id: String::from("alice"),
         }));
@@ -144,7 +144,7 @@ mod tests {
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: test_mock_config(netname),
+            config: test_memory_network_config(netname),
             dna_address: "reduce_get_links_timeout_test".into(),
             agent_id: String::from("alice"),
         }));

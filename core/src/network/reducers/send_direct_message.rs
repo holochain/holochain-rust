@@ -71,7 +71,7 @@ mod tests {
 
     use crate::{
         action::{Action, ActionWrapper, DirectMessageData, NetworkSettings},
-        context::test_mock_config,
+        context::test_memory_network_config,
         instance::tests::test_context,
         network::direct_message::{CustomDirectMessage, DirectMessage},
         state::test_store,
@@ -89,7 +89,7 @@ mod tests {
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: test_mock_config(netname),
+            config: test_memory_network_config(netname),
             dna_address: "reduce_send_direct_message_timeout_test".into(),
             agent_id: String::from("alice"),
         }));

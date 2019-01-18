@@ -75,13 +75,15 @@ impl NetWorker for InMemoryWorker {
 
 impl InMemoryWorker {
     /// create a new memory worker connected to an in-memory server
-    pub fn new(handler: NetHandler, network_config: &JsonString) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, backend_config: &JsonString) -> NetResult<Self> {
         // Get server name from config
-        let config: serde_json::Value = serde_json::from_str(network_config.into())?;
-        let server_name = config["networkName"]
+        let config: serde_json::Value = serde_json::from_str(backend_config.into())?;
+        println!("InMemoryWorker::new() config = {:?}", config);
+        let server_name = config["serverName"]
             .as_str()
             .unwrap_or("(unnamed)")
             .to_string();
+        println!("InMemoryWorker::new() server_name = {}", server_name);
         // Create server with that name if it doesn't already exist
         let mut server_map = MEMORY_SERVER_MAP.write().unwrap();
         if !server_map.contains_key(&server_name) {
@@ -108,10 +110,6 @@ impl InMemoryWorker {
 // unregister on Drop
 impl Drop for InMemoryWorker {
     fn drop(&mut self) {
-        println!(
-            "#### Dropping MemoryWorker for server '{}'",
-            self.server_name
-        );
         let server_map = MEMORY_SERVER_MAP.read().unwrap();
         let mut server = server_map
             .get(&self.server_name)
@@ -142,9 +140,9 @@ mod tests {
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
-    fn it_memory_double_track() {
+    fn can_memory_double_track() {
         // setup client 1
-        let config = &JsonString::from(P2pConfig::unique_memory_backend_string());
+        let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
 
         let mut memory_worker_1 = Box::new(
@@ -153,7 +151,7 @@ mod tests {
                     handler_send_1.send(r?)?;
                     Ok(())
                 }),
-                config,
+                memory_config,
             )
             .unwrap(),
         );
@@ -189,9 +187,9 @@ mod tests {
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
-    fn it_memory_network_flow() {
+    fn can_memory_network_flow() {
         // setup client 1
-        let config = &JsonString::from(P2pConfig::unique_memory_backend_string());
+        let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
 
         let mut memory_worker_1 = Box::new(
@@ -200,7 +198,7 @@ mod tests {
                     handler_send_1.send(r?)?;
                     Ok(())
                 }),
-                config,
+                memory_config,
             )
             .unwrap(),
         );
@@ -226,7 +224,7 @@ mod tests {
                     handler_send_2.send(r?)?;
                     Ok(())
                 }),
-                config,
+                memory_config,
             )
             .unwrap(),
         );

@@ -298,7 +298,7 @@ impl Container {
             }
             // if there's no NetworkConfig we won't spawn a network process
             // and instead configure instances to use a unique in-memory network
-            None => JsonString::from(P2pConfig::unique_memory_backend_string()),
+            None => JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str()),
         }
     }
 

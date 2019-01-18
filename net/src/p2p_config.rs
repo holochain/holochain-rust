@@ -111,6 +111,13 @@ impl P2pConfig {
         }
     }
 
+    pub fn new_with_memory_backend(server_name: &str) -> Self {
+        P2pConfig::new(
+            P2pBackendKind::MEMORY,
+            &Self::memory_backend_string(server_name),
+        )
+    }
+
     pub fn new_with_unique_memory_backend() -> Self {
         Self::new_with_memory_backend(&format!(
             "memory-auto-{}",
@@ -125,19 +132,11 @@ impl P2pConfig {
         ))
     }
 
-    pub fn new_with_memory_backend(network_name: &str) -> Self {
-        P2pConfig::from_str(&Self::memory_backend_string(network_name))
-            .expect("Invalid backend_config json on P2pConfig creation.")
-    }
-
     pub fn memory_backend_string(server_name: &str) -> String {
         format!(
             r#"{{
-    "backend_kind": "MEMORY",
-    "backend_config": {{
-        "serverName": "{}"
-    }}
-}}"#,
+            "serverName": "{}"
+            }}"#,
             server_name
         )
     }

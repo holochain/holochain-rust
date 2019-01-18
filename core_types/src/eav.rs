@@ -19,7 +19,7 @@ use std::{
 };
 
 use regex::RegexBuilder;
-use std::fmt::Debug;
+use std::{cmp::Ordering, fmt::Debug};
 use uuid::Uuid;
 
 /// Address of AddressableContent representing the EAV entity
@@ -31,8 +31,20 @@ pub type Attribute = String;
 /// Address of AddressableContent representing the EAV value
 pub type Value = Address;
 
-#[derive(PartialEq, Eq, Debug, Clone, Hash, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct Key(pub i64, pub Action, pub Uuid);
+
+impl PartialOrd for Key {
+    fn partial_cmp(&self, other: &Key) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Key {
+    fn cmp(&self, other: &Key) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering

@@ -250,19 +250,11 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         let filtered = map
             .clone()
             .into_iter()
-            // .cloned()
-            .filter(|(_, eav)| match entity {
-                Some(ref e) => &eav.entity() == e,
-                None => true,
+            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
+            .filter(|(_, e)| {
+                EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
-            .filter(|(_, eav)| match attribute {
-                Some(ref a) => &eav.attribute() == a,
-                None => true,
-            })
-            .filter(|(_, eav)| match value {
-                Some(ref v) => &eav.value() == v,
-                None => true,
-            })
+            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<BTreeMap<Key, EntityAttributeValue>>();
         Ok(filtered)
     }

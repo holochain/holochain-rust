@@ -230,7 +230,7 @@ mod tests {
         if let JsonProtocol::HandleGetDhtData(msg) = res {
             mock_worker_1
                 .receive(
-                    JsonProtocol::GetDhtDataResult(DhtData {
+                    JsonProtocol::HandleGetDhtDataResult(DhtData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         agent_id: msg.from_agent_id.clone(),
@@ -328,7 +328,7 @@ mod tests {
         if let JsonProtocol::HandleGetDhtMeta(msg) = res {
             mock_worker_1
                 .receive(
-                    JsonProtocol::GetDhtMetaResult(DhtMetaData {
+                    JsonProtocol::HandleGetDhtMetaResult(DhtMetaData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         agent_id: msg.from_agent_id.clone(),

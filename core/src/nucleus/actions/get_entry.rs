@@ -42,8 +42,8 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
     // For now look for crud-status by life-cycle order: Deleted, Modified, Live
     let has_deleted = status_eavs
-        .iter()
-        .cloned()
+        .clone()
+        .into_iter()
         .filter(|(_, e)| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
         })
@@ -54,8 +54,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         crud_status = CrudStatus::Deleted;
     } else {
         let has_modified = status_eavs
-            .iter()
-            .cloned()
+            .into_iter()
             .filter(|(_, e)| {
                 CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
             })

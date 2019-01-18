@@ -27,7 +27,7 @@ Container.prototype.call = function (id, zome, fn, params) {
 Container.prototype.makeCaller = function (agentId, dnaPath) {
   const instanceId = agentId + '::' + dnaPath
   return {
-    call: (zome, cap, fn, params) => this.call(instanceId, zome, fn, params),
+    call: (zome, fn, params) => this.call(instanceId, zome, fn, params),
     agentId: this.agent_id(instanceId)
   }
 }

@@ -78,7 +78,7 @@ impl InMemoryWorker {
     pub fn new(handler: NetHandler, backend_config: &JsonString) -> NetResult<Self> {
         // Get server name from config
         let config: serde_json::Value = serde_json::from_str(backend_config.into())?;
-        println!("InMemoryWorker::new() config = {:?}", config);
+        // println!("InMemoryWorker::new() config = {:?}", config);
         let server_name = config["serverName"]
             .as_str()
             .unwrap_or("(unnamed)")

@@ -67,18 +67,17 @@ pub fn reduce_get_entry_timeout(
 mod tests {
 
     use crate::{
-        action::{
-            Action, ActionWrapper, GetEntryKey,
-                 NetworkSettings,
-        },
+        action::{Action, ActionWrapper, GetEntryKey, NetworkSettings},
+        context::unique_memory_network_config,
         instance::tests::test_context,
         state::test_store,
-        context::unique_memory_network_config,
     };
     use holochain_core_types::{
-        agent::AgentId, crud_status::CrudStatus, entry::EntryWithMeta,
+        agent::AgentId,
+        cas::content::AddressableContent,
+        crud_status::CrudStatus,
+        entry::{test_entry, EntryWithMeta},
         error::HolochainError,
-        cas::content::AddressableContent, entry::test_entry,
     };
     use holochain_net_connection::json_protocol::DhtData;
     use std::sync::{Arc, RwLock};

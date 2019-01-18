@@ -84,7 +84,11 @@ mod tests {
 
     #[test]
     fn it_should_create_memory_network() {
-        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::new_with_unique_memory_backend()).unwrap();
+        let mut res = P2pNetwork::new(
+            Box::new(|_r| Ok(())),
+            &P2pConfig::new_with_unique_memory_backend(),
+        )
+        .unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

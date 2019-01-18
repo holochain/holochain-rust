@@ -228,7 +228,8 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        context::unique_memory_network_config, logger::test_logger, persister::SimplePersister, state::State,
+        context::unique_memory_network_config, logger::test_logger, persister::SimplePersister,
+        state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;

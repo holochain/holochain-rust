@@ -1,9 +1,7 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
 use crate::memory_server::*;
-use holochain_core_types::{
-    json::JsonString, cas::content::Address,
-};
+use holochain_core_types::{cas::content::Address, json::JsonString};
 use holochain_net_connection::{
     json_protocol::JsonProtocol,
     net_connection::{NetHandler, NetWorker},
@@ -11,9 +9,9 @@ use holochain_net_connection::{
     NetResult,
 };
 use std::{
+    collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
     sync::{mpsc, Mutex},
-    collections::{HashMap, hash_map::Entry},
 };
 
 /// a p2p worker for mocking in-memory scenario tests
@@ -35,7 +33,10 @@ impl NetWorker for InMemoryWorker {
             .unwrap();
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
             if let JsonProtocol::TrackDna(track_msg) = json_msg {
-                match self.receiver_per_dna.entry(track_msg.dna_address.to_owned()) {
+                match self
+                    .receiver_per_dna
+                    .entry(track_msg.dna_address.to_owned())
+                {
                     Entry::Occupied(_) => (),
                     Entry::Vacant(e) => {
                         let (tx, rx) = mpsc::channel();
@@ -84,7 +85,10 @@ impl InMemoryWorker {
         // Create server with that name if it doesn't already exist
         let mut server_map = MEMORY_SERVER_MAP.write().unwrap();
         if !server_map.contains_key(&server_name) {
-            server_map.insert(server_name.clone(), Mutex::new(InMemoryServer::new(server_name.clone())));
+            server_map.insert(
+                server_name.clone(),
+                Mutex::new(InMemoryServer::new(server_name.clone())),
+            );
         }
 
         Ok(InMemoryWorker {
@@ -128,7 +132,7 @@ mod tests {
                 }),
                 config,
             )
-                .unwrap(),
+            .unwrap(),
         );
 
         // First Track
@@ -138,7 +142,7 @@ mod tests {
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_1.to_string(),
                 })
-                    .into(),
+                .into(),
             )
             .unwrap();
 
@@ -153,7 +157,7 @@ mod tests {
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_1.to_string(),
                 })
-                    .into(),
+                .into(),
             )
             .unwrap();
 

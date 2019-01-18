@@ -19,7 +19,8 @@ type InMemoryServerMap = HashMap<String, Mutex<InMemoryServer>>;
 
 /// this is the actual memory space for our in-memory servers
 lazy_static! {
-    pub(crate) static ref MEMORY_SERVER_MAP: RwLock<InMemoryServerMap> = RwLock::new(HashMap::new());
+    pub(crate) static ref MEMORY_SERVER_MAP: RwLock<InMemoryServerMap> =
+        RwLock::new(HashMap::new());
 }
 
 /// hash connections by dna::agent_id

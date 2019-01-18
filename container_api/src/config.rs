@@ -51,7 +51,7 @@ pub struct Configuration {
     pub ui_bundles: Vec<UiBundle>,
     /// List of ui interfaces, includes references ui bundle and dna interfaces it can call. Optional.
     #[serde(default)]
-    pub ui_interface: Vec<UiInterface>,
+    pub ui_interface: Vec<UiInterfaceConfiguration>,
     /// Configures how logging should behave
     #[serde(default)]
     pub logger: LoggerConfiguration,
@@ -371,7 +371,7 @@ pub struct UiBundle {
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub struct UiInterface {
+pub struct UiInterfaceConfiguration {
     pub id: String,
 
     /// ID of the bundle to serve on this interface

@@ -66,13 +66,14 @@ impl Keypair {
         let mut enc_pub = ek.to_vec();
         let mut sign_priv = self.sign_priv.read_lock().to_vec();
         let mut enc_priv = self.enc_priv.read_lock().to_vec();
+        let mut keys = vec![1];
+        keys.append(&mut sign_pub);
+        keys.append(&mut enc_pub);
+        keys.append(&mut sign_priv);
+        keys.append(&mut enc_priv);
 
-        sign_pub.append(&mut enc_pub);
-        sign_pub.append(&mut sign_priv);
-        sign_pub.append(&mut enc_priv);
-
-        let mut key_buf = SecBuf::with_insecure(sign_pub.len());
-        util::convert_vec_to_secbuf(&sign_pub, &mut key_buf);
+        let mut key_buf = SecBuf::with_secure(256);
+        util::convert_vec_to_secbuf(&keys, &mut key_buf);
 
         let pw_enc: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, passphrase)?;
         let bundle_data_serialized = json::encode(&pw_enc).unwrap();
@@ -104,11 +105,17 @@ impl Keypair {
         let key_buf = keys_salt.read_lock();
         let mut sign_priv = SecBuf::with_secure(64);
         let mut enc_priv = SecBuf::with_secure(32);
-        util::convert_array_to_secbuf(&key_buf[64..128], &mut sign_priv);
-        util::convert_array_to_secbuf(&key_buf[128..160], &mut enc_priv);
+        if key_buf[0] != 1 {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Invalid Bundle Version : {:?}",
+                key_buf[0]
+            )));
+        }
+        util::convert_array_to_secbuf(&key_buf[65..129], &mut sign_priv);
+        util::convert_array_to_secbuf(&key_buf[129..161], &mut enc_priv);
 
-        let sp = &key_buf[0..32];
-        let ep = &key_buf[32..64];
+        let sp = &key_buf[1..33];
+        let ep = &key_buf[33..65];
         Ok(Keypair {
             pub_keys: KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32])
                 .render(),

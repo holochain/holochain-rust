@@ -373,13 +373,16 @@ impl EavTestSuite {
             let key = create_key(Action::Insert).expect("Could not make key");
             expected_one.insert(key, eav);
             assert_eq!(
-                expected_one.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+                expected_one
+                    .values()
+                    .cloned()
+                    .collect::<Vec<EntityAttributeValue>>(),
                 eav_storage
                     .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
                     .expect("could not fetch eav")
-                    .iter()
-                    .map(|(_k, v)| v)
-                    .collect::<Vec<_>>()
+                    .values()
+                    .cloned()
+                    .collect::<Vec<EntityAttributeValue>>()
             );
         }
     }

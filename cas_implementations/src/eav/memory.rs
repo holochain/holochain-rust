@@ -56,18 +56,26 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?;
-        println!("Map {:?}", map.clone());
-        let filtered_map = map
+        println!("enityt {:?}", entity.clone());
+        println!("attribute{:?}", attribute.clone());
+        println!("value {:?}", value.clone());
+        println!("map {:?}", map.clone());
+        Ok(map
             .clone()
             .into_iter()
-            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|(_, e)| {
+                println!("ent {:?}", e.clone());
+                EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref())
+            })
+            .filter(|(_, e)| {
+                println!("attr {:?}", e.clone());
                 EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
-            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-            .collect::<BTreeMap<Key, EntityAttributeValue>>();
-        println!("filtered map {:?}", filtered_map);
-        Ok(filtered_map.clone())
+            .filter(|(_, e)| {
+                println!("val {:?}", e.clone());
+                EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref())
+            })
+            .collect::<BTreeMap<Key, EntityAttributeValue>>())
     }
 }
 

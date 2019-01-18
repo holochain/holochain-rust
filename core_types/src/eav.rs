@@ -387,8 +387,13 @@ pub fn eav_round_trip_test_runner(
         (None, None, None),
     ] {
         assert_eq!(
-            expected,
-            eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
+            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+            eav_storage
+                .fetch_eav(e, a, v)
+                .expect("could not fetch eav")
+                .iter()
+                .map(|(_k, v)| v)
+                .collect::<Vec<_>>(),
         );
     }
 }

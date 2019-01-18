@@ -65,14 +65,26 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .into_iter()
             .filter(|(_, e)| {
                 println!("ent {:?}", e.clone());
+                println!(
+                    "Entity Attribute Value {:?}",
+                    EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref())
+                );
                 EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref())
             })
             .filter(|(_, e)| {
                 println!("attr {:?}", e.clone());
+                println!(
+                    "Entity Attribute Value {:?}",
+                    EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
+                );
                 EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
             .filter(|(_, e)| {
                 println!("val {:?}", e.clone());
+                println!(
+                    "Entity Attribute Value {:?}",
+                    EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref())
+                );
                 EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref())
             })
             .collect::<BTreeMap<Key, EntityAttributeValue>>())

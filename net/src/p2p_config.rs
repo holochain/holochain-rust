@@ -178,7 +178,7 @@ mod tests {
     fn it_can_json_round_trip() {
         let server_name = "memory_test";
         let p2p_config =
-            P2pConfig::from_str(&P2pConfig::memory_backend_string(server_name)).unwrap();
+            P2pConfig::from_str(&P2pConfig::new_with_memory_backend(server_name).as_str()).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);

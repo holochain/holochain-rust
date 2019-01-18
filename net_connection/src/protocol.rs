@@ -1,6 +1,6 @@
 //! This module provides the core low-level protocol enumeration
 //! for communications between holochain core and the p2p / networking
-//! process or library. See protocol_wrapper for a higher level interface.
+//! process or library. See json_protocol for a higher level interface.
 
 use serde_bytes;
 

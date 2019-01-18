@@ -3,9 +3,9 @@
 use crate::mock_system::*;
 use holochain_core_types::json::JsonString;
 use holochain_net_connection::{
+    json_protocol::JsonProtocol,
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
-    protocol_wrapper::ProtocolWrapper,
     NetResult,
 };
 use std::{
@@ -30,11 +30,11 @@ impl NetWorker for MockWorker {
             .expect("MockSystem should have been initialized by now")
             .lock()
             .unwrap();
-        if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
-            if let ProtocolWrapper::TrackApp(app) = wrap {
+        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            if let JsonProtocol::TrackDna(track_msg) = json_msg {
                 let (tx, rx) = mpsc::channel();
                 self.mock_msgs.push(rx);
-                mock.register(&app.dna_address, &app.agent_id, tx)?;
+                mock.register(&track_msg.dna_address, &track_msg.agent_id, tx)?;
             }
         }
         mock.handle(data)?;
@@ -92,9 +92,9 @@ mod tests {
     use crate::p2p_config::P2pConfig;
 
     use holochain_core_types::cas::content::Address;
-    use holochain_net_connection::protocol_wrapper::{
-        DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, MessageData, ProtocolWrapper,
-        SuccessResultData, TrackAppData,
+    use holochain_net_connection::json_protocol::{
+        DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, JsonProtocol, MessageData,
+        SuccessResultData, TrackDnaData,
     };
 
     fn example_dna_address() -> Address {
@@ -124,7 +124,7 @@ mod tests {
 
         mock_worker_1
             .receive(
-                ProtocolWrapper::TrackApp(TrackAppData {
+                JsonProtocol::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_1.to_string(),
                 })
@@ -133,7 +133,7 @@ mod tests {
             .unwrap();
         // Should receive PeerConnected
         mock_worker_1.tick().unwrap();
-        let _res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
         // setup client 2
         let (handler_send_2, handler_recv_2) = mpsc::channel::<Protocol>();
@@ -149,7 +149,7 @@ mod tests {
         );
         mock_worker_2
             .receive(
-                ProtocolWrapper::TrackApp(TrackAppData {
+                JsonProtocol::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_2.to_string(),
                 })
@@ -158,14 +158,14 @@ mod tests {
             .unwrap();
         // Should receive PeerConnected
         mock_worker_1.tick().unwrap();
-        let _res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
         mock_worker_2.tick().unwrap();
-        let _res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let _res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         // node2node:  send & receive
         mock_worker_1
             .receive(
-                ProtocolWrapper::SendMessage(MessageData {
+                JsonProtocol::SendMessage(MessageData {
                     dna_address: example_dna_address(),
                     to_agent_id: AGENT_ID_2.to_string(),
                     from_agent_id: AGENT_ID_1.to_string(),
@@ -178,12 +178,12 @@ mod tests {
 
         mock_worker_2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::HandleSend(msg) = res {
+        if let JsonProtocol::HandleSendMessage(msg) = res {
             mock_worker_2
                 .receive(
-                    ProtocolWrapper::HandleSendResult(MessageData {
+                    JsonProtocol::HandleSendMessageResult(MessageData {
                         dna_address: msg.dna_address,
                         to_agent_id: msg.from_agent_id,
                         from_agent_id: AGENT_ID_2.to_string(),
@@ -200,9 +200,9 @@ mod tests {
 
         mock_worker_1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SendResult(msg) = res {
+        if let JsonProtocol::SendMessageResult(msg) = res {
             assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
         } else {
             println!("Did not expect to receive: {:?}", res);
@@ -213,7 +213,7 @@ mod tests {
 
         mock_worker_2
             .receive(
-                ProtocolWrapper::GetDht(GetDhtData {
+                JsonProtocol::GetDhtData(GetDhtData {
                     msg_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     from_agent_id: AGENT_ID_2.to_string(),
@@ -225,12 +225,12 @@ mod tests {
 
         mock_worker_1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDht(msg) = res {
+        if let JsonProtocol::HandleGetDhtData(msg) = res {
             mock_worker_1
                 .receive(
-                    ProtocolWrapper::GetDhtResult(DhtData {
+                    JsonProtocol::HandleGetDhtDataResult(DhtData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         agent_id: msg.from_agent_id.clone(),
@@ -247,9 +247,9 @@ mod tests {
 
         mock_worker_2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtResult(msg) = res {
+        if let JsonProtocol::GetDhtDataResult(msg) = res {
             assert_eq!("\"data-for: hello\"".to_string(), msg.content.to_string());
         } else {
             println!("Did not expect to receive: {:?}", res);
@@ -260,7 +260,7 @@ mod tests {
 
         mock_worker_2
             .receive(
-                ProtocolWrapper::PublishDht(DhtData {
+                JsonProtocol::PublishDhtData(DhtData {
                     msg_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_2.to_string(),
@@ -274,15 +274,15 @@ mod tests {
         mock_worker_1.tick().unwrap();
         mock_worker_2.tick().unwrap();
 
-        let res1 = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        let res2 = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res1 = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res2 = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         assert_eq!(res1, res2);
 
-        if let ProtocolWrapper::StoreDht(msg) = res1 {
+        if let JsonProtocol::HandleStoreDhtData(msg) = res1 {
             mock_worker_1
                 .receive(
-                    ProtocolWrapper::SuccessResult(SuccessResultData {
+                    JsonProtocol::SuccessResult(SuccessResultData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         to_agent_id: msg.agent_id.clone(),
@@ -297,9 +297,9 @@ mod tests {
         }
 
         mock_worker_2.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SuccessResult(msg) = res {
+        if let JsonProtocol::SuccessResult(msg) = res {
             assert_eq!("\"signature here\"", &msg.success_info.to_string())
         } else {
             println!("Did not expect to receive: {:?}", res);
@@ -310,7 +310,7 @@ mod tests {
 
         mock_worker_2
             .receive(
-                ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
+                JsonProtocol::GetDhtMeta(GetDhtMetaData {
                     msg_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     from_agent_id: AGENT_ID_2.to_string(),
@@ -323,12 +323,12 @@ mod tests {
 
         mock_worker_1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtMeta(msg) = res {
+        if let JsonProtocol::HandleGetDhtMeta(msg) = res {
             mock_worker_1
                 .receive(
-                    ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
+                    JsonProtocol::HandleGetDhtMetaResult(DhtMetaData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         agent_id: msg.from_agent_id.clone(),
@@ -347,9 +347,9 @@ mod tests {
 
         mock_worker_2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtMetaResult(msg) = res {
+        if let JsonProtocol::GetDhtMetaResult(msg) = res {
             assert_eq!(
                 "\"meta-data-for: hello\"".to_string(),
                 msg.content.to_string()
@@ -363,7 +363,7 @@ mod tests {
 
         mock_worker_2
             .receive(
-                ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+                JsonProtocol::PublishDhtMeta(DhtMetaData {
                     msg_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_2.to_string(),
@@ -379,15 +379,15 @@ mod tests {
         mock_worker_1.tick().unwrap();
         mock_worker_2.tick().unwrap();
 
-        let res1 = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        let res2 = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res1 = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res2 = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         assert_eq!(res1, res2);
 
-        if let ProtocolWrapper::StoreDhtMeta(msg) = res1 {
+        if let JsonProtocol::HandleStoreDhtMeta(msg) = res1 {
             mock_worker_1
                 .receive(
-                    ProtocolWrapper::SuccessResult(SuccessResultData {
+                    JsonProtocol::SuccessResult(SuccessResultData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         to_agent_id: msg.agent_id.clone(),
@@ -402,9 +402,9 @@ mod tests {
         }
 
         mock_worker_2.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SuccessResult(msg) = res {
+        if let JsonProtocol::SuccessResult(msg) = res {
             assert_eq!("\"signature here\"", &msg.success_info.to_string())
         } else {
             println!("Did not expect to receive: {:?}", res);

@@ -122,6 +122,8 @@ extern crate dirs;
 #[macro_use]
 extern crate lazy_static;
 extern crate directories;
+extern crate hyper;
+extern crate hyper_staticfile;
 
 pub mod config;
 pub mod container;

@@ -275,6 +275,8 @@ pattern = ".*"
         assert_eq!(
             config_contents,
 r#"bridges = []
+ui_bundles = []
+ui_interface = []
 
 [[agents]]
 id = "test-agent-1"
@@ -374,6 +376,8 @@ pattern = ".*"
         assert_eq!(
             config_contents,
        r#"bridges = []
+ui_bundles = []
+ui_interface = []
 
 [[agents]]
 id = "test-agent-1"
@@ -473,6 +477,8 @@ pattern = ".*"
         assert_eq!(
             config_contents,
             r#"bridges = []
+ui_bundles = []
+ui_interface = []
 
 [[agents]]
 id = "test-agent-1"
@@ -547,6 +553,8 @@ pattern = ".*"
             r#"bridges = []
 dnas = []
 instances = []
+ui_bundles = []
+ui_interface = []
 
 [[agents]]
 id = "test-agent-1"

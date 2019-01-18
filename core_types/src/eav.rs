@@ -20,6 +20,7 @@ use std::{
 
 use regex::RegexBuilder;
 use std::fmt::Debug;
+use uuid::Uuid;
 
 /// Address of AddressableContent representing the EAV entity
 pub type Entity = Address;
@@ -31,7 +32,7 @@ pub type Attribute = String;
 pub type Value = Address;
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash, PartialOrd, Ord)]
-pub struct Key(pub i64, pub Action);
+pub struct Key(pub i64, pub Action, pub Uuid);
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering
@@ -85,7 +86,7 @@ impl From<String> for Action {
 }
 
 pub fn create_key(action: Action) -> Result<Key, HolochainError> {
-    Ok(Key(Utc::now().timestamp_nanos(), action))
+    Ok(Key(Utc::now().timestamp_nanos(), action, Uuid::new_v4()))
 }
 
 pub fn from_key(key: HashString) -> Result<Key, HolochainError> {
@@ -104,6 +105,7 @@ pub fn from_key(key: HashString) -> Result<Key, HolochainError> {
     Ok(Key(
         unix_timestamp,
         Action::from(action.clone().to_string()),
+        Uuid::new_v4(),
     ))
 }
 

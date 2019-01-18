@@ -16,7 +16,7 @@ pub fn test_instance_with_spoofed_dna(
     name: &str,
 ) -> Result<(Instance, Arc<Context>), String> {
     // Create instance and plug in our DNA
-    let context = test_context(name);
+    let context = test_context(name, None);
     let mut instance = Instance::new(context.clone());
     instance.start_action_loop(context.clone());
     let context = instance.initialize_context(context);

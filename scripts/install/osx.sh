@@ -3,6 +3,7 @@
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
 brew install zmq
+brew upgrade zeromq
 
 export INSTALL_NODE_VERSION=8.4
 

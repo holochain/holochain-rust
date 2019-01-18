@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net_connection::protocol_wrapper::{MessageData, ProtocolWrapper};
+use holochain_net_connection::json_protocol::{JsonProtocol, MessageData};
 use std::sync::Arc;
 
 fn inner(
@@ -23,12 +23,12 @@ fn inner(
     };
 
     let protocol_object = if direct_message_data.is_response {
-        ProtocolWrapper::HandleSendResult(data)
+        JsonProtocol::HandleSendMessageResult(data)
     } else {
         network_state
             .direct_message_connections
             .insert(data.msg_id.clone(), direct_message_data.message.clone());
-        ProtocolWrapper::SendMessage(data)
+        JsonProtocol::SendMessage(data)
     };
 
     send(network_state, protocol_object)
@@ -71,7 +71,7 @@ mod tests {
 
     use crate::{
         action::{Action, ActionWrapper, DirectMessageData, NetworkSettings},
-        context::mock_network_config,
+        context::unique_mock_config,
         instance::tests::test_context,
         network::direct_message::{CustomDirectMessage, DirectMessage},
         state::test_store,
@@ -81,14 +81,14 @@ mod tests {
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {
-        let mut context = test_context("alice");
+        let mut context = test_context("alice", None);
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
 
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: mock_network_config(),
+            config: unique_mock_config(),
             dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));

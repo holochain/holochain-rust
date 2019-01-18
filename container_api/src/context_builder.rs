@@ -132,7 +132,7 @@ impl ContextBuilder {
             dht_storage,
             eav_storage,
             self.network_config.unwrap_or(JsonString::from(String::from(
-                P2pConfig::unique_mock_config(),
+                P2pConfig::unique_mock_as_string(),
             ))),
             self.container_api,
             self.signal_tx,
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(String::from(P2pConfig::unique_mock_config()));
+        let net = JsonString::from(String::from(P2pConfig::unique_mock_as_string()));
         let context = ContextBuilder::new()
             .with_network_config(net.clone())
             .spawn();

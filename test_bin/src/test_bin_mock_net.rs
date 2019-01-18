@@ -10,8 +10,8 @@ extern crate failure;
 pub mod p2p_node;
 
 use holochain_net_connection::{
+    json_protocol::{JsonProtocol, MessageData, TrackDnaData},
     net_connection::NetSend,
-    protocol_wrapper::{MessageData, ProtocolWrapper, TrackAppData},
     NetResult,
 };
 use p2p_node::P2pNode;
@@ -45,26 +45,26 @@ fn exec_mock_test() -> NetResult<()> {
 
     node_a
         .send(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
                 agent_id: "node-1".to_string(),
             })
             .into(),
         )
-        .expect("Failed sending TrackAppData on node_a");
+        .expect("Failed sending TrackDnaData on node_a");
     node_b
         .send(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
                 agent_id: "node-2".to_string(),
             })
             .into(),
         )
-        .expect("Failed sending TrackAppData on node_b");
+        .expect("Failed sending TrackDnaData on node_b");
 
     node_a
         .send(
-            ProtocolWrapper::SendMessage(MessageData {
+            JsonProtocol::SendMessage(MessageData {
                 dna_address: "sandwich".into(),
                 from_agent_id: "node-1".to_string(),
                 to_agent_id: "node-2".to_string(),
@@ -73,14 +73,14 @@ fn exec_mock_test() -> NetResult<()> {
             })
             .into(),
         )
-        .expect("Failed sending GenericMessage to node_b");
-    let res = node_b.wait(Box::new(one_is!(ProtocolWrapper::HandleSend(_))))?;
+        .expect("Failed sending message to node_b");
+    let res = node_b.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))?;
     println!("got: {:?}", res);
 
-    if let ProtocolWrapper::HandleSend(msg) = res {
+    if let JsonProtocol::HandleSendMessage(msg) = res {
         node_b
             .send(
-                ProtocolWrapper::HandleSendResult(MessageData {
+                JsonProtocol::HandleSendMessageResult(MessageData {
                     dna_address: "sandwich".into(),
                     from_agent_id: "node-2".to_string(),
                     to_agent_id: "node-1".to_string(),
@@ -89,15 +89,15 @@ fn exec_mock_test() -> NetResult<()> {
                 })
                 .into(),
             )
-            .expect("Failed sending HandleSendResult on node_b");;
+            .expect("Failed sending HandleSendMessageResult on node_b");;
     } else {
         panic!("bad generic msg");
     }
 
-    let res = node_a.wait(Box::new(one_is!(ProtocolWrapper::SendResult(_))))?;
+    let res = node_a.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))?;
     println!("got response: {:?}", res);
 
-    if let ProtocolWrapper::SendResult(msg) = res {
+    if let JsonProtocol::SendMessageResult(msg) = res {
         assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
     } else {
         panic!("bad msg");

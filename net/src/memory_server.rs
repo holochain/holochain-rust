@@ -96,11 +96,11 @@ impl InMemoryServer {
     /// process an incoming message
     pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not remove)
-        println!(
-            ">>>> InMemoryServer '{}' recv: {:?}",
-            self.name.clone(),
-            data
-        );
+        //        println!(
+        //            ">>>> InMemoryServer '{}' recv: {:?}",
+        //            self.name.clone(),
+        //            data
+        //        );
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
             match json_msg {
                 JsonProtocol::TrackDna(msg) => {
@@ -181,11 +181,11 @@ impl InMemoryServer {
         }
         let sender = maybe_sender.unwrap();
         // Debugging code (do not remove)
-        println!(
-            "<<<< InMemoryServer '{}' send: {:?}",
-            self.name.clone(),
-            data
-        );
+        //        println!(
+        //            "<<<< InMemoryServer '{}' send: {:?}",
+        //            self.name.clone(),
+        //            data
+        //        );
         sender.send(data)?;
         Ok(())
     }
@@ -194,12 +194,12 @@ impl InMemoryServer {
     fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
             // Debugging code (do not remove)
-            println!(
-                "<<<< InMemoryServer '{}' send all: {:?} ({})",
-                self.name.clone(),
-                data.clone(),
-                dna_address.clone()
-            );
+            //            println!(
+            //                "<<<< InMemoryServer '{}' send all: {:?} ({})",
+            //                self.name.clone(),
+            //                data.clone(),
+            //                dna_address.clone()
+            //            );
             for val in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }

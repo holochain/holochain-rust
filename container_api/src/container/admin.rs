@@ -215,8 +215,8 @@ impl ContainerAdmin for Container {
         if new_config
             .interface_by_id(interface_id)
             .ok_or(HolochainError::ErrorGeneric(format!(
-                "Instance with ID {} not found",
-                instance_id
+                "Interface with ID {} not found",
+                interface_id
             )))?
             .instances
             .iter()
@@ -262,8 +262,8 @@ impl ContainerAdmin for Container {
         if new_config
             .interface_by_id(interface_id)
             .ok_or(HolochainError::ErrorGeneric(format!(
-                "Instance with ID {} not found",
-                instance_id
+                "Interface with ID {} not found",
+                interface_id
             )))?
             .instances
             .iter()

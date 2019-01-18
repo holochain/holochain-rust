@@ -10,7 +10,7 @@ use holochain_core_types::{
     hash::HashString,
     json::JsonString,
 };
-use im::ordmap::OrdMap;
+use im::hashmap::HashMap;
 use std::{
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
@@ -159,7 +159,7 @@ impl EavFileStorage {
         _hash: HashString,
         subscript: String,
         eav_constraint: Option<T>,
-    ) -> HcResult<OrdMap<HashString, String>>
+    ) -> HcResult<HashMap<HashString, String>>
     where
         T: ToString,
     {
@@ -187,17 +187,17 @@ impl EavFileStorage {
                     "Could not read eavs from directory".to_string(),
                 ))
             } else {
-                let mut ordmap: OrdMap<HashString, String> = OrdMap::new();
+                let mut hash_map: HashMap<HashString, String> = HashMap::new();
                 eavs.iter().for_each(|s| {
                     s.clone().unwrap_or(Vec::new()).iter().for_each(|k| {
                         let (key, value) = k.clone();
-                        ordmap.insert(key, value);
+                        hash_map.insert(key, value);
                     })
                 });
-                Ok(ordmap)
+                Ok(hash_map)
             }
         } else {
-            Ok(OrdMap::new())
+            Ok(HashMap::new())
         }
     }
 }
@@ -225,7 +225,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
         let entity_set = self.read_from_dir::<Entity>(
             self.current_hash.clone(),
@@ -244,7 +244,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         let attribute_value_inter = attribute_set.intersection(value_set);
 
         let entity_attribute_value_inter = entity_set.intersection(attribute_value_inter);
-        let (eav, error): (OrdMap<_, _>, OrdMap<_, _>) = entity_attribute_value_inter
+        let (eav, error): (HashMap<_, _>, HashMap<_, _>) = entity_attribute_value_inter
             .into_iter()
             .map(|(hash, content)| {
                 (
@@ -266,7 +266,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                         key_value.1.unwrap_or(EntityAttributeValue::default()),
                     )
                 })
-                .collect::<OrdMap<Key, EntityAttributeValue>>())
+                .collect::<HashMap<Key, EntityAttributeValue>>())
         }
     }
 }

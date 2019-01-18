@@ -10,7 +10,7 @@ use crate::{
     error::HolochainError,
     json::RawString,
 };
-use im::{hashmap::HashMap, ordmap::OrdMap};
+use im::hashmap::HashMap;
 use objekt;
 use std::{
     convert::TryFrom,
@@ -258,7 +258,7 @@ impl EavTestSuite {
 
         for eav_storage in two_stores.iter() {
             assert_eq!(
-                OrdMap::new(),
+                HashMap::new(),
                 eav_storage
                     .fetch_eav(
                         Some(entity_content.address()),
@@ -271,7 +271,7 @@ impl EavTestSuite {
 
         eav_storage.add_eav(&eav).expect("could not add eav");
 
-        let mut expected = OrdMap::new();
+        let mut expected = HashMap::new();
         let key = create_key(Action::Insert).expect("Could not make key");
         expected.insert(key, eav.clone());
         println!("expected");
@@ -301,15 +301,12 @@ impl EavTestSuite {
                 // open
                 (None, None, None),
             ] {
-                assert_eq!(
-                    expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
-                    eav_storage
-                        .fetch_eav(e, a, v)
-                        .expect("could not fetch eav")
-                        .iter()
-                        .map(|(_k, v)| v)
-                        .collect::<Vec<_>>()
-                );
+                let mut expect_vec = expected.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+                expect_vec.sort();
+                let hashmap = eav_storage.fetch_eav(e, a, v).expect("could not fetch eav");
+                let mut vec_store = hashmap.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+                vec_store.sort();
+                assert_eq!(expect_vec, vec_store);
             }
         }
     }
@@ -333,7 +330,7 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "one_to_many".to_string();
 
-        let mut expected = OrdMap::new();
+        let mut expected = HashMap::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
@@ -354,34 +351,36 @@ impl EavTestSuite {
                 .expect("could not add eav");
         }
 
+        let mut expected_store = expected.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+        expected_store.sort();
+
+        let hashmap = eav_storage
+            .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
+            .expect("could not fetch eav");
+        let mut vec_store = hashmap.iter().map(|(_, v)| v).collect::<Vec<_>>();
+        vec_store.sort();
+
         // show the many results for one
-        assert_eq!(
-            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
-            eav_storage
-                .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
-                .expect("could not fetch eav")
-                .iter()
-                .map(|(_, v)| v)
-                .collect::<Vec<_>>()
-        );
+        assert_eq!(expected_store, vec_store);
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = OrdMap::new();
+            let mut expected_one = HashMap::new();
             let eav =
                 EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
                     .expect("Could not create eav");
             let key = create_key(Action::Insert).expect("Could not make key");
             expected_one.insert(key, eav);
-            assert_eq!(
-                expected_one.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
-                eav_storage
-                    .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
-                    .expect("could not fetch eav")
-                    .iter()
-                    .map(|(_k, v)| v)
-                    .collect::<Vec<_>>()
-            );
+
+            let mut expected_store = expected.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+            expected_store.sort();
+
+            let hashmap = eav_storage
+                .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
+                .expect("could not fetch eav");
+            let mut vec_store = hashmap.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+            vec_store.sort();
+            assert_eq!(expected_store, vec_store);
         }
     }
 
@@ -406,7 +405,7 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "many_to_one".to_string();
 
-        let mut expected = OrdMap::new();
+        let mut expected = HashMap::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
@@ -427,34 +426,37 @@ impl EavTestSuite {
                 .expect("could not add eav");
         }
 
+        let mut expected_store = expected.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+        expected_store.sort();
+
+        let hashmap = eav_storage
+            .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
+            .expect("could not fetch eav");
+        let mut vec_store = hashmap.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+        vec_store.sort();
+
         // show the many referencing one
-        assert_eq!(
-            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
-            eav_storage
-                .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
-                .expect("could not fetch eav")
-                .iter()
-                .map(|(_k, v)| v)
-                .collect::<Vec<_>>(),
-        );
+        assert_eq!(expected_store, vec_store,);
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = OrdMap::new();
+            let mut expected_one = HashMap::new();
             let eav =
                 EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
                     .expect("Could not create eav");
             let key = create_key(Action::Insert).expect("Could not make key");
             expected_one.insert(key, eav);
-            assert_eq!(
-                expected_one.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
-                eav_storage
-                    .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
-                    .expect("could not fetch eav")
-                    .iter()
-                    .map(|(_k, v)| v)
-                    .collect::<Vec<_>>(),
-            );
+
+            let mut expected_store = expected_one.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+            expected_store.sort();
+
+            let hashmap = eav_storage
+                .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
+                .expect("could not fetch eav");
+            let mut vec_store = hashmap.iter().map(|(_k, v)| v).collect::<Vec<_>>();
+            vec_store.sort();
+
+            assert_eq!(expected_store, vec_store,);
         }
     }
 }

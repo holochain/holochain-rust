@@ -11,7 +11,7 @@ use crate::{
     json::JsonString,
 };
 use chrono::{offset::Utc, DateTime};
-use im::ordmap::OrdMap;
+use im::hashmap::HashMap;
 use objekt;
 use std::{
     convert::TryInto,
@@ -182,7 +182,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError>;
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError>;
 
     //optimize this according to the trait store
     fn fetch_eav_range(
@@ -192,7 +192,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         let eavs = self.fetch_eav(entity, attribute, value)?;
         Ok(eavs
             .iter()
@@ -215,13 +215,13 @@ clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
-    storage: OrdMap<Key, EntityAttributeValue>,
+    storage: HashMap<Key, EntityAttributeValue>,
 }
 
 impl ExampleEntityAttributeValueStorageNonSync {
     pub fn new() -> ExampleEntityAttributeValueStorageNonSync {
         ExampleEntityAttributeValueStorageNonSync {
-            storage: OrdMap::new(),
+            storage: HashMap::new(),
         }
     }
 
@@ -244,7 +244,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         let filtered = self
             .clone()
             .storage
@@ -262,7 +262,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
                 Some(ref v) => &eav.value() == v,
                 None => true,
             })
-            .collect::<OrdMap<Key, EntityAttributeValue>>();
+            .collect::<HashMap<Key, EntityAttributeValue>>();
         Ok(filtered)
     }
 }
@@ -295,7 +295,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<HashMap<Key, EntityAttributeValue>, HolochainError> {
         self.content
             .read()
             .unwrap()
@@ -347,7 +347,7 @@ pub fn eav_round_trip_test_runner(
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
 
     assert_eq!(
-        OrdMap::new(),
+        HashMap::new(),
         eav_storage
             .fetch_eav(
                 Some(entity_content.address()),
@@ -359,7 +359,7 @@ pub fn eav_round_trip_test_runner(
 
     eav_storage.add_eav(&eav).expect("could not add eav");
 
-    let mut expected = OrdMap::new();
+    let mut expected = HashMap::new();
     let key = create_key(Action::Insert).expect("Could not create key");
     expected.insert(key, eav.clone());
     // some examples of constraints that should all return the eav

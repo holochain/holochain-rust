@@ -60,11 +60,11 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         let filtered_map = map
             .clone()
             .into_iter()
-            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|(_, e)| {
-                EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
-            })
-            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
+            //.filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
+            // .filter(|(_, e)| {
+            //   EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
+            //})
+            //.filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<BTreeMap<Key, EntityAttributeValue>>();
         println!("filtered map {:?}", filtered_map.clone());
         Ok(filtered_map)

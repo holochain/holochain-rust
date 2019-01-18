@@ -11,9 +11,12 @@ use crate::{
     json::JsonString,
 };
 use chrono::{offset::Utc, DateTime};
-use im::ordmap::OrdMap;
 use objekt;
-use std::convert::TryInto;
+use std::{
+    convert::TryInto,
+    sync::{Arc, RwLock},
+    collections::BTreeMap
+};
 
 use regex::RegexBuilder;
 use std::fmt::Debug;
@@ -179,7 +182,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError>;
+    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError>;
 
     //optimize this according to the trait store
     fn fetch_eav_range(
@@ -189,11 +192,10 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let eavs = self.fetch_eav(entity, attribute, value)?;
         Ok(eavs
-            .iter()
-            .cloned()
+            .into_iter()
             .filter(|(key, _)| {
                 key.0
                     <= start_date
@@ -212,13 +214,15 @@ clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorageNonSync {
-    storage: OrdMap<Key, EntityAttributeValue>,
+    storage: BTreeMap<Key, EntityAttributeValue>,
 }
+
+
 
 impl ExampleEntityAttributeValueStorageNonSync {
     pub fn new() -> ExampleEntityAttributeValueStorageNonSync {
         ExampleEntityAttributeValueStorageNonSync {
-            storage: OrdMap::new(),
+            storage: BTreeMap::new(),
         }
     }
 
@@ -241,7 +245,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let filtered = self
             .clone()
             .storage
@@ -259,7 +263,7 @@ impl ExampleEntityAttributeValueStorageNonSync {
                 Some(ref v) => &eav.value() == v,
                 None => true,
             })
-            .collect::<OrdMap<Key, EntityAttributeValue>>();
+            .collect::<BTreeMap<Key, EntityAttributeValue>>();
         Ok(filtered)
     }
 }
@@ -272,28 +276,30 @@ impl PartialEq for EntityAttributeValueStorage {
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorage {
-    content: ExampleEntityAttributeValueStorageNonSync,
+    content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
 }
 
 impl ExampleEntityAttributeValueStorage {
     pub fn new() -> HcResult<ExampleEntityAttributeValueStorage> {
         Ok(ExampleEntityAttributeValueStorage {
-            content: ExampleEntityAttributeValueStorageNonSync::new(),
+            content: Arc::new(RwLock::new(ExampleEntityAttributeValueStorageNonSync::new())),
         })
     }
 }
 
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> HcResult<()> {
-        self.content.unthreadable_add_eav(eav)
+        self.content.write().unwrap().unthreadable_add_eav(eav)
     }
     fn fetch_eav(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         self.content
+            .read()
+            .unwrap()
             .unthreadable_fetch_eav(entity, attribute, value)
     }
 }
@@ -342,7 +348,7 @@ pub fn eav_round_trip_test_runner(
         ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
 
     assert_eq!(
-        OrdMap::new(),
+        BTreeMap::new(),
         eav_storage
             .fetch_eav(
                 Some(entity_content.address()),
@@ -354,7 +360,7 @@ pub fn eav_round_trip_test_runner(
 
     eav_storage.add_eav(&eav).expect("could not add eav");
 
-    let mut expected = OrdMap::new();
+    let mut expected = BTreeMap::new();
     let key = create_key(Action::Insert).expect("Could not create key");
     expected.insert(key, eav.clone());
     // some examples of constraints that should all return the eav

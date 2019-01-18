@@ -10,12 +10,12 @@ use holochain_core_types::{
     hash::HashString,
     json::JsonString,
 };
-use im::ordmap::OrdMap;
 use std::{
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
     path::{Path, PathBuf, MAIN_SEPARATOR},
     sync::{Arc, RwLock},
+    collections::BTreeMap
 };
 use uuid::Uuid;
 
@@ -159,7 +159,7 @@ impl EavFileStorage {
         _hash: HashString,
         subscript: String,
         eav_constraint: Option<T>,
-    ) -> HcResult<OrdMap<HashString, String>>
+    ) -> HcResult<BTreeMap<HashString, String>>
     where
         T: ToString,
     {
@@ -187,7 +187,7 @@ impl EavFileStorage {
                     "Could not read eavs from directory".to_string(),
                 ))
             } else {
-                let mut ordmap: OrdMap<HashString, String> = OrdMap::new();
+                let mut ordmap: BTreeMap<HashString, String> = BTreeMap::new();
                 eavs.iter().for_each(|s| {
                     s.clone().unwrap_or(Vec::new()).iter().for_each(|k| {
                         let (key, value) = k.clone();
@@ -197,9 +197,17 @@ impl EavFileStorage {
                 Ok(ordmap)
             }
         } else {
-            Ok(OrdMap::new())
+            Ok(BTreeMap::new())
         }
     }
+}
+
+ fn intersect_btree(tree_1 : BTreeMap<HashString, String>, tree2 : BTreeMap<HashString, String>) -> BTreeMap<HashString, String>
+{
+    tree_1
+    .into_iter()
+    .filter(|(k,_)| tree2.get(k).is_some())
+    .collect()
 }
 
 impl EntityAttributeValueStorage for EavFileStorage {
@@ -220,12 +228,13 @@ impl EntityAttributeValueStorage for EavFileStorage {
         }
     }
 
+
     fn fetch_eav(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
         let entity_set = self.read_from_dir::<Entity>(
             self.current_hash.clone(),
@@ -241,10 +250,10 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .clone();
         let value_set =
             self.read_from_dir::<Value>(self.current_hash.clone(), VALUE_DIR.to_string(), value)?;
-        let attribute_value_inter = attribute_set.intersection(value_set);
-
-        let entity_attribute_value_inter = entity_set.intersection(attribute_value_inter);
-        let (eav, error): (OrdMap<_, _>, OrdMap<_, _>) = entity_attribute_value_inter
+        
+        let attribute_value_inter = intersect_btree(attribute_set.clone(),value_set.clone());
+        let entity_attribute_value_inter = intersect_btree(entity_set.clone(),attribute_value_inter.clone());
+        let (eav, error): (BTreeMap<_, _>, BTreeMap<_, _>) = entity_attribute_value_inter
             .into_iter()
             .map(|(hash, content)| {
                 (
@@ -266,7 +275,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                         key_value.1.unwrap_or(EntityAttributeValue::default()),
                     )
                 })
-                .collect::<OrdMap<Key, EntityAttributeValue>>())
+                .collect::<BTreeMap<Key, EntityAttributeValue>>())
         }
     }
 }

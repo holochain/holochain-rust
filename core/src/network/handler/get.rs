@@ -8,9 +8,8 @@ use holochain_core_types::cas::content::Address;
 use holochain_net_connection::protocol_wrapper::{
     DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
 };
-use im::ordmap::OrdMap;
 use regex::Regex;
-use std::sync::Arc;
+use std::{sync::Arc,collections::BTreeMap};
 
 lazy_static! {
     static ref LINK: Regex =
@@ -57,7 +56,7 @@ pub fn handle_get_dht_meta(get_dht_meta_data: GetDhtMetaData, context: Arc<Conte
                 Address::from(get_dht_meta_data.address.clone()),
                 tag.clone(),
             )
-            .unwrap_or(OrdMap::new())
+            .unwrap_or(BTreeMap::new())
             .into_iter()
             .map(|(_, eav)| eav.value())
             .collect::<Vec<_>>();

@@ -6,7 +6,7 @@ use holochain_core_types::{
 };
 
 use im::{hashmap::HashMap, ordmap::OrdMap};
-use std::sync::{Arc, RwLock};
+use std::{sync::{Arc, RwLock},collections::BTreeMap};
 
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module
@@ -50,7 +50,7 @@ impl DhtStore {
         &self,
         address: Address,
         tag: String,
-    ) -> Result<OrdMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         self.meta_storage
             .read()?
             .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)

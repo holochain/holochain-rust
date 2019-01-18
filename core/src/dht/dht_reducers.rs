@@ -249,8 +249,7 @@ fn reduce_remove_entry_inner(
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
     // For now checks if crud-status other than Live are present
     let status_eavs = status_eavs
-        .iter()
-        .cloned()
+        .into_iter()
         .filter(|(_, e)| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live)
         })

@@ -1,14 +1,14 @@
 use std::io::Error;
+use std::thread;
 use error::HolochainResult;
 use hyper::{Body, Request,
 	server::{
 		Server
 	},
-	rt::Future,
+	rt::{self, Future},
 };
-use holochain_core_types::error::HolochainError;
 use config::{UiInterfaceConfiguration, UiBundleConfiguration};
-use tokio::runtime::Runtime;
+// use tokio::runtime::Runtime;
 use hyper_staticfile::{Static, StaticFuture};
 use tokio::prelude::future;
 
@@ -67,18 +67,19 @@ impl StaticServer {
 		// let (tx, rx) = futures::channel::oneshot::channel::<()>();
 		// self.shutdown_signal = Some(tx);
 		let static_path = self.bundle_config.root_dir.to_owned();
-        let server = Server::bind(&addr)
-	        .serve(move || future::ok::<_, Error>(StaticService::new(&static_path)))
-	        // .with_graceful_shutdown(rx)
-	        .map_err(|e| eprintln!("server error: {}", e));
-		
-		let mut rt = Runtime::new()
-			.map_err(|e| HolochainError::ErrorGeneric(format!("Could not start tokio runtime, {}", e)))?;
- 		
+
  		println!("About to serve path \"{}\" at http://{}", &self.bundle_config.root_dir, &addr);
-        rt.spawn(server);
         self.running = true;
- 		println!("Listening on http://{}", addr);
+		
+        thread::spawn(move || {
+        	let server = Server::bind(&addr)
+	        	.serve(move || future::ok::<_, Error>(StaticService::new(&static_path)))
+	        	// .with_graceful_shutdown(rx)
+	        	.map_err(|e| eprintln!("server error: {}", e));
+	 		
+	 		println!("Listening on http://{}", addr);
+        	rt::run(server)
+        });
 		Ok(())
 	}
 
@@ -104,18 +105,23 @@ pub mod tests {
     #[test]
     pub fn test_build_server() {
 
-    	let _test_bundle_config = UiBundleConfiguration {
+    	let test_bundle_config = UiBundleConfiguration {
     		id: "bundle id".to_string(),
     		root_dir: "".to_string(),
     		hash: "Qmsdasdasd".to_string(),
     	};
 
-    	let _test_config = UiInterfaceConfiguration {
+    	let test_config = UiInterfaceConfiguration {
     		id: "an id".to_string(),
     		bundle: "a bundle".to_string(),
     		port: 3000,
     		dna_interface: "interface".to_string(),
     	};
 
+    	let mut static_server = StaticServer::from_configs(test_bundle_config, test_config);
+    	assert_eq!(
+    		static_server.start(),
+    		Ok(())
+    	)
     }
 }

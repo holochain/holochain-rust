@@ -42,7 +42,6 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         {
             let mut map = self.storage.write()?;
             let key = create_key(Action::Insert)?;
-            println!("key{:?}", key.0);
             map.insert(key, eav.clone());
             Ok(())
         } else {
@@ -57,37 +56,14 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?;
-        println!("enityt {:?}", entity.clone());
-        println!("attribute{:?}", attribute.clone());
-        println!("value {:?}", value.clone());
-        println!("map {:?}", map.clone());
         Ok(map
             .clone()
             .into_iter()
+            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|(_, e)| {
-                println!("ent {:?}", e.clone());
-                println!(
-                    "Entity Attribute Value {:?}",
-                    EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref())
-                );
-                EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref())
-            })
-            .filter(|(_, e)| {
-                println!("attr {:?}", e.clone());
-                println!(
-                    "Entity Attribute Value {:?}",
-                    EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
-                );
                 EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
-            .filter(|(_, e)| {
-                println!("val {:?}", e.clone());
-                println!(
-                    "Entity Attribute Value {:?}",
-                    EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref())
-                );
-                EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref())
-            })
+            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<BTreeMap<Key, EntityAttributeValue>>())
     }
 }

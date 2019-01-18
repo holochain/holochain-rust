@@ -199,10 +199,10 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
             .filter(|(key, _)| {
                 key.0
                     <= start_date
-                        .map(|s| s.timestamp_millis())
+                        .map(|s| s.timestamp_nanos())
                         .unwrap_or(i64::min_value())
                     && end_date
-                        .map(|s| s.timestamp_millis())
+                        .map(|s| s.timestamp_nanos())
                         .unwrap_or(i64::max_value())
                         >= key.0
             })

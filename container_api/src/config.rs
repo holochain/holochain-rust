@@ -46,6 +46,12 @@ pub struct Configuration {
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
+    /// List of ui bundles (static web dirs) to host on a static interface. Optional.
+    #[serde(default)]
+    pub ui_bundles: Vec<UiBundle>,
+    /// List of ui interfaces, includes references ui bundle and dna interfaces it can call. Optional.
+    #[serde(default)]
+    pub ui_interface: Vec<UiInterface>,
     /// Configures how logging should behave
     #[serde(default)]
     pub logger: LoggerConfiguration,
@@ -355,6 +361,28 @@ pub struct Bridge {
     /// by bound dynamically.
     /// Callers reference callees by this arbitrary but unique local name.
     pub handle: String,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct UiBundle {
+    pub id: String,
+    pub root_dir: String,
+    pub hash: String,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct UiInterface {
+    pub id: String,
+
+    /// ID of the bundle to serve on this interface
+    pub bundle: String,
+    pub port: u16,
+
+    /// DNA interface this UI is allowed to make calls to
+    /// This is used to set the CORS headers and also to
+    /// provide a extra virtual file endpoint at /_dna_config/ that allows hc-web-client
+    /// or another solution to redirect holochain calls to the correct ip/port/protocol
+    pub dna_interface: String
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

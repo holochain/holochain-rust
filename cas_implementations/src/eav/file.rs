@@ -11,11 +11,11 @@ use holochain_core_types::{
     json::JsonString,
 };
 use std::{
+    collections::BTreeMap,
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
     path::{Path, PathBuf, MAIN_SEPARATOR},
     sync::{Arc, RwLock},
-    collections::BTreeMap
 };
 use uuid::Uuid;
 
@@ -202,12 +202,14 @@ impl EavFileStorage {
     }
 }
 
- fn intersect_btree(tree_1 : BTreeMap<HashString, String>, tree2 : BTreeMap<HashString, String>) -> BTreeMap<HashString, String>
-{
+fn intersect_btree(
+    tree_1: BTreeMap<HashString, String>,
+    tree2: BTreeMap<HashString, String>,
+) -> BTreeMap<HashString, String> {
     tree_1
-    .into_iter()
-    .filter(|(k,_)| tree2.get(k).is_some())
-    .collect()
+        .into_iter()
+        .filter(|(k, _)| tree2.get(k).is_some())
+        .collect()
 }
 
 impl EntityAttributeValueStorage for EavFileStorage {
@@ -227,7 +229,6 @@ impl EntityAttributeValueStorage for EavFileStorage {
             Ok(())
         }
     }
-
 
     fn fetch_eav(
         &self,
@@ -250,9 +251,10 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .clone();
         let value_set =
             self.read_from_dir::<Value>(self.current_hash.clone(), VALUE_DIR.to_string(), value)?;
-        
-        let attribute_value_inter = intersect_btree(attribute_set.clone(),value_set.clone());
-        let entity_attribute_value_inter = intersect_btree(entity_set.clone(),attribute_value_inter.clone());
+
+        let attribute_value_inter = intersect_btree(attribute_set.clone(), value_set.clone());
+        let entity_attribute_value_inter =
+            intersect_btree(entity_set.clone(), attribute_value_inter.clone());
         let (eav, error): (BTreeMap<_, _>, BTreeMap<_, _>) = entity_attribute_value_inter
             .into_iter()
             .map(|(hash, content)| {

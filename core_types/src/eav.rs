@@ -13,9 +13,9 @@ use crate::{
 use chrono::{offset::Utc, DateTime};
 use objekt;
 use std::{
+    collections::BTreeMap,
     convert::TryInto,
     sync::{Arc, RwLock},
-    collections::BTreeMap
 };
 
 use regex::RegexBuilder;
@@ -216,8 +216,6 @@ clone_trait_object!(EntityAttributeValueStorage);
 pub struct ExampleEntityAttributeValueStorageNonSync {
     storage: BTreeMap<Key, EntityAttributeValue>,
 }
-
-
 
 impl ExampleEntityAttributeValueStorageNonSync {
     pub fn new() -> ExampleEntityAttributeValueStorageNonSync {

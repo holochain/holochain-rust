@@ -5,8 +5,10 @@ use holochain_core_types::{
     error::HolochainError,
 };
 
-
-use std::{sync::{Arc, RwLock},collections::{HashMap,BTreeMap}};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::{Arc, RwLock},
+};
 
 /// The state-slice for the DHT.
 /// Holds the agent's local shard and interacts with the network module

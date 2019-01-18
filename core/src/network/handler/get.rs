@@ -9,7 +9,7 @@ use holochain_net_connection::protocol_wrapper::{
     DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
 };
 use regex::Regex;
-use std::{sync::Arc,collections::BTreeMap};
+use std::{collections::BTreeMap, sync::Arc};
 
 lazy_static! {
     static ref LINK: Regex =

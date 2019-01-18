@@ -5,8 +5,10 @@ use holochain_core_types::{
     },
     error::HolochainError,
 };
-use std::{sync::{Arc, Mutex},
-          collections::BTreeMap};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+};
 
 use uuid::Uuid;
 

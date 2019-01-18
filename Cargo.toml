@@ -4,6 +4,7 @@ members = [
   "cmd",
   "container",
   "container_api",
+  "container_wasm",
   "core_api_c_binding",
   "core",
   "dna_c_binding",

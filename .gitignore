@@ -1,6 +1,7 @@
 .qmake.stash
 target
 .cargo
+node_modules
 **/*.sock
 package-lock.json
 **/*.rs.bk

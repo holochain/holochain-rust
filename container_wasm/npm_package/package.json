@@ -1,0 +1,14 @@
+{
+  "name": "holochain_container_wasm",
+  "version": "0.0.3",
+  "description": "webassembly build of holochain-rust designed to run in a browser for holo light-clients",
+  "main": "lib/index.js",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "test": "mocha lib/*.test.js"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0"
+  }
+}

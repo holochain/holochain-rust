@@ -12,6 +12,7 @@ help:
 	@echo "run 'make test_holochain' to test holochain builds"
 	@echo "run 'make test_cmd' to build and test the command line tool builds"
 	@echo "run 'make install_cmd' to build and install the command line tool builds"
+	@echo "run 'make build_container_wasm' to build the wasm light-client browser container"
 	@echo "run 'make test-something' to run cargo tests matching 'something'"
 
 SHELL = /bin/bash
@@ -177,9 +178,16 @@ wasm_build: ensure_wasm_target
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
+.PHONY: install_wasm_bindgen_cli
+install_wasm_bindgen_cli:
+	@if ! $(CARGO_TOOLS) install --list | grep -q 'wasm-bindgen-cli v0.2.32'; then \
+		echo -e "\033[0;93m## Installing wasm_bindgen_cli ##\033[0m"; \
+		$(CARGO_TOOLS) install --force wasm-bindgen-cli --vers "0.2.32"; \
+	fi
+
 .PHONY: build_holochain
 build_holochain: core_toolchain wasm_build
-	$(CARGO) build --all --exclude hc
+	$(CARGO) build --all --exclude hc --exclude container_wasm
 
 .PHONY: build_cmd
 build_cmd: core_toolchain ensure_wasm_target
@@ -188,6 +196,11 @@ build_cmd: core_toolchain ensure_wasm_target
 .PHONY: install_cmd
 install_cmd: build_cmd
 	cd cmd && $(CARGO) install -f --path .
+
+.PHONY: build_container_wasm
+build_container_wasm: ensure_wasm_target install_wasm_bindgen_cli
+	$(CARGO) build --release -p holochain_container_wasm --target wasm32-unknown-unknown
+	wasm-bindgen target/wasm32-unknown-unknown/release/holochain_container_wasm.wasm --out-dir container_wasm/npm_package/gen --nodejs
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci

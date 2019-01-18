@@ -61,5 +61,6 @@ test('can create config from TOML', t => {
         ),
         /Zome function .*? not found/
     )
+    container.stop()
     t.end()
 })

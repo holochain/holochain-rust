@@ -259,7 +259,8 @@ where
             .recv_timeout(Duration::from_millis(timeout))
             .map_err(|e| e.to_string())?
         {
-            Signal::Internal(action) => {
+            Signal::Internal(aw) => {
+                let action = aw.action().clone();
                 if f(&action) {
                     return Ok(action);
                 }

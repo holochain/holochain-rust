@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Capabilities now separated from function declarations in `define_zome!` and calling zome functions no longer uses capability name parameter [#791](https://github.com/holochain/holochain-rust/pull/779)
 ### Added
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)
+- Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Container README](nodejs_container/README.md) for details.
+
 ### Removed
 
 ## [0.0.3] - 2019-01-15

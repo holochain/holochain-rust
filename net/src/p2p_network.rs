@@ -9,7 +9,7 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, p2p_config::*};
+use super::{ipc_net_worker::IpcNetWorker, memory_worker::InMemoryWorker, p2p_config::*};
 
 /// Facade handling a p2p module responsable for the network connection
 /// Holds a NetConnectionThread and implements itself the NetSend Trait
@@ -26,15 +26,15 @@ impl P2pNetwork {
     pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
         let network_config = config.backend_config.to_string().into();
-        // Provide worker factory dependening on backend kind
+        // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match config.backend_kind {
-            // Creates an IpcNetWorker with the passed backend config
+            // Create an IpcNetWorker with the passed backend config
             P2pBackendKind::IPC => Box::new(move |h| {
                 Ok(Box::new(IpcNetWorker::new(h, &network_config)?) as Box<NetWorker>)
             }),
-            // Creates a MockWorker
-            P2pBackendKind::MOCK => Box::new(move |h| {
-                Ok(Box::new(MockWorker::new(h, &network_config)?) as Box<NetWorker>)
+            // Create an InMemoryWorker
+            P2pBackendKind::MEMORY => Box::new(move |h| {
+                Ok(Box::new(InMemoryWorker::new(h, &network_config)?) as Box<NetWorker>)
             }),
         };
         // Create NetConnectionThread with appropriate worker factory
@@ -83,8 +83,8 @@ mod tests {
     }
 
     #[test]
-    fn it_should_create_mock() {
-        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::unique_mock()).unwrap();
+    fn it_should_create_memory_network() {
+        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::new_with_unique_memory_backend()).unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

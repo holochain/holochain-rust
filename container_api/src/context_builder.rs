@@ -111,7 +111,7 @@ impl ContextBuilder {
     }
 
     /// Actually creates the context.
-    /// Defaults to memory storages, a mock network config and a fake agent called "alice".
+    /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The logger gets set to SimpleLogger.
     /// The persister gets set to SimplePersister based on the chain storage.
     pub fn spawn(self) -> Context {
@@ -132,7 +132,7 @@ impl ContextBuilder {
             dht_storage,
             eav_storage,
             self.network_config.unwrap_or(JsonString::from(String::from(
-                P2pConfig::unique_mock_as_string(),
+                P2pConfig::unique_memory_backend_string(),
             ))),
             self.container_api,
             self.signal_tx,
@@ -152,7 +152,7 @@ mod tests {
         assert!(context
             .network_config
             .to_string()
-            .contains(r#""backend_kind": "MOCK""#));
+            .contains(r#""backend_kind": "MEMORY""#));
     }
 
     #[test]
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(String::from(P2pConfig::unique_mock_as_string()));
+        let net = JsonString::from(String::from(P2pConfig::unique_memory_backend_string()));
         let context = ContextBuilder::new()
             .with_network_config(net.clone())
             .spawn();

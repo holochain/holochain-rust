@@ -19,5 +19,5 @@ name = "holochain_test_bin"
 path = "src/main.rs"
 
 [[bin]]
-name = "test_bin_mock_net"
-path = "src/test_bin_mock_net.rs"
+name = "test_memory_network"
+path = "src/test_memory_network.rs"

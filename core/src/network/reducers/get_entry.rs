@@ -67,11 +67,21 @@ pub fn reduce_get_entry_timeout(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, GetEntryKey},
+        action::{
+            Action, ActionWrapper, GetEntryKey,
+                 NetworkSettings,
+        },
         instance::tests::test_context,
         state::test_store,
+        context::unique_memory_network_config,
     };
-    use holochain_core_types::error::HolochainError;
+    use holochain_core_types::{
+        agent::AgentId, crud_status::CrudStatus, entry::EntryWithMeta,
+        error::HolochainError,
+        cas::content::AddressableContent, entry::test_entry,
+    };
+    use holochain_net_connection::json_protocol::DhtData;
+    use std::sync::{Arc, RwLock};
 
     #[test]
     pub fn reduce_get_entry_without_network_initialized() {
@@ -99,19 +109,17 @@ mod tests {
         );
     }
 
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
-
     #[test]
     // This test needs to be refactored.
     // It is non-deterministically failing with "sending on a closed channel" originating form
-    // within the mock network.
-    #[cfg(feature = "broken-tests")]
+    // within the in-memory network.
+    // #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_test() {
         let context = test_context("alice", None);
         let store = test_store(context.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_mock_config(),
+            config: unique_memory_network_config(),
             dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));
@@ -136,8 +144,8 @@ mod tests {
     #[test]
     // This test needs to be refactored.
     // It is non-deterministically failing with "sending on a closed channel" originating form
-    // within the mock network.
-    #[cfg(feature = "broken-tests")]
+    // within the in-memory network.
+    // #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_timeout_test() {
         let mut context = test_context("alice", None);
         let store = test_store(context.clone());
@@ -146,7 +154,7 @@ mod tests {
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_mock_config(),
+            config: unique_memory_network_config(),
             dna_address: "reduce_get_entry_timeout_test".into(),
             agent_id: AgentId::generate_fake("timeout").address().to_string(),
         }));

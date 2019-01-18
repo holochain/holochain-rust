@@ -31,16 +31,16 @@ macro_rules! one_is {
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn usage() {
-    println!("Usage: test_bin_mock_net");
+    println!("Usage: test_memory_network");
     std::process::exit(1);
 }
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-fn exec_mock_test() -> NetResult<()> {
-    println!("Testing: exec_mock_test()");
+fn exec_memory_network_test() -> NetResult<()> {
+    println!("Testing: exec_memory_network_test()");
 
-    let mut node_a = P2pNode::new_mock();
+    let mut node_a = P2pNode::new_with_unique_memory_network();
     let mut node_b = P2pNode::new_with_config(&node_a.config, None);
 
     node_a
@@ -121,7 +121,7 @@ fn main() {
     if args.len() != 1 {
         usage();
     }
-    let res = exec_mock_test();
+    let res = exec_memory_network_test();
     assert!(res.is_ok());
 
     // Wait a bit before closing

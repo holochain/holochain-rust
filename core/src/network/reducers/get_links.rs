@@ -62,12 +62,13 @@ mod tests {
 
     use crate::{
         action::{Action, ActionWrapper, GetLinksKey, NetworkSettings},
-        context::unique_mock_config,
+        context::unique_memory_network_config,
         instance::tests::test_context,
         state::test_store,
     };
     use holochain_core_types::error::HolochainError;
-
+    use std::sync::{Arc, RwLock};
+    
     #[test]
     pub fn reduce_get_links_without_network_initialized() {
         let context = test_context("alice", None);
@@ -104,7 +105,7 @@ mod tests {
         let store = test_store(context.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_mock_config(),
+            config: unique_memory_network_config(),
             dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));
@@ -131,8 +132,8 @@ mod tests {
     #[test]
     // This test needs to be refactored.
     // It is non-deterministically failing with "sending on a closed channel" originating form
-    // within the mock network.
-    #[cfg(feature = "broken-tests")]
+    // within the in-memory network.
+    // #[cfg(feature = "broken-tests")]
     pub fn reduce_get_links_timeout_test() {
         let mut context = test_context("alice", None);
         let store = test_store(context.clone());
@@ -141,7 +142,7 @@ mod tests {
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_mock_config(),
+            config: unique_memory_network_config(),
             dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));

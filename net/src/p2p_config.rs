@@ -8,7 +8,7 @@ use std::{fs::File, str::FromStr};
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
-    MOCK,
+    MEMORY,
     IPC,
 }
 
@@ -16,7 +16,7 @@ impl FromStr for P2pBackendKind {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "MOCK" => Ok(P2pBackendKind::MOCK),
+            "MEMORY" => Ok(P2pBackendKind::MEMORY),
             "IPC" => Ok(P2pBackendKind::IPC),
             _ => Err(()),
         }
@@ -26,7 +26,7 @@ impl FromStr for P2pBackendKind {
 impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
-            P2pBackendKind::MOCK => "MOCK",
+            P2pBackendKind::MEMORY => "MEMORY",
             P2pBackendKind::IPC => "IPC",
         })
     }
@@ -111,34 +111,34 @@ impl P2pConfig {
         }
     }
 
-    pub fn unique_mock() -> Self {
-        Self::named_mock(&format!(
-            "mock-auto-{}",
+    pub fn new_with_unique_memory_backend() -> Self {
+        Self::new_with_memory_backend(&format!(
+            "memory-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
         ))
     }
 
-    pub fn unique_mock_as_string() -> String {
-        Self::named_mock_as_string(&format!(
-            "mock-auto-{}",
+    pub fn unique_memory_backend_string() -> String {
+        Self::memory_backend_string(&format!(
+            "memory-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
         ))
     }
 
-    pub fn named_mock(network_name: &str) -> Self {
-        P2pConfig::from_str(&Self::named_mock_as_string(network_name))
+    pub fn new_with_memory_backend(network_name: &str) -> Self {
+        P2pConfig::from_str(&Self::memory_backend_string(network_name))
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
-    pub fn named_mock_as_string(network_name: &str) -> String {
+    pub fn memory_backend_string(server_name: &str) -> String {
         format!(
             r#"{{
-    "backend_kind": "MOCK",
+    "backend_kind": "MEMORY",
     "backend_config": {{
-        "networkName": "{}"
+        "serverName": "{}"
     }}
 }}"#,
-            network_name
+            server_name
         )
     }
 }
@@ -177,12 +177,12 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let mock_name = "mock";
-        let p2p_config = P2pConfig::from_str(&P2pConfig::named_mock_as_string(mock_name)).unwrap();
+        let server_name = "memory_test";
+        let p2p_config = P2pConfig::from_str(&P2pConfig::memory_backend_string(server_name)).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);
-        assert_eq!(p2p_config, P2pConfig::named_mock(mock_name));
+        assert_eq!(p2p_config, P2pConfig::new_with_memory_backend(server_name));
     }
 
     #[test]

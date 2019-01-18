@@ -266,7 +266,7 @@ impl Container {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
-            JsonString::from(P2pConfig::memory_backend_string("container-default-mock"))
+            JsonString::from(P2pConfig::new_with_memory_backend("container-default-mock").as_str())
         });
         Ok(config)
     }

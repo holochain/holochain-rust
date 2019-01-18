@@ -180,7 +180,7 @@ pub fn test_context_and_logger_with_network_name(
                 .expect("Tempdir must be accessible");
             if let Some(network_name) = network_name {
                 let config =
-                    JsonString::from(P2pConfig::memory_backend_string(network_name));
+                    JsonString::from(P2pConfig::new_with_memory_backend(network_name).as_str());
                 builder = builder.with_network_config(config);
             }
             builder.spawn()

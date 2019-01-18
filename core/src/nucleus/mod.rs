@@ -163,7 +163,7 @@ pub struct ExecuteZomeFnResponse {
 }
 
 impl ExecuteZomeFnResponse {
-    fn new(call: ZomeFnCall, result: Result<JsonString, HolochainError>) -> Self {
+    pub fn new(call: ZomeFnCall, result: Result<JsonString, HolochainError>) -> Self {
         ExecuteZomeFnResponse { call, result }
     }
 

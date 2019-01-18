@@ -408,13 +408,15 @@ pub mod tests {
         create_test_dna_with_defs(&test_zome_name(), (functions, capabilities), &wasm)
     }
 
+    // success to test_reduce_call is when the function gets called which shows up as a
+    // timeout error because the test wasm doesn't have any test functions defined.
+    static SUCCESS_EXPECTED: Result<Result<JsonString, HolochainError>,RecvTimeoutError> = Err(RecvTimeoutError::Disconnected);
+
     #[test]
     fn test_call_public() {
         let dna = setup_dna_for_cap_test(CapabilityType::Public);
         let test_setup = setup_test(dna);
-        // Expecting timeout since there is no function in wasm to call
-        let expected = Err(RecvTimeoutError::Disconnected);
-        test_reduce_call(&test_setup, "", Address::from("caller"), expected);
+        test_reduce_call(&test_setup, "", Address::from("caller"), SUCCESS_EXPECTED.clone());
     }
 
     #[test]
@@ -424,14 +426,12 @@ pub mod tests {
         let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
         test_reduce_call(&test_setup, "", Address::from("caller"), expected_failure);
 
-        // Expecting timeout since there is no function in wasm to call
-        let expected = Err(RecvTimeoutError::Disconnected);
         let agent_token_str = test_setup.context.agent_id.key.clone();
         test_reduce_call(
             &test_setup,
             &agent_token_str,
             Address::from(agent_token_str.clone()),
-            expected.clone(),
+            SUCCESS_EXPECTED.clone(),
         );
 
         let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
@@ -441,7 +441,7 @@ pub mod tests {
             &test_setup,
             &String::from(addr),
             Address::from("any caller"),
-            expected,
+            SUCCESS_EXPECTED.clone(),
         );
     }
 
@@ -457,14 +457,12 @@ pub mod tests {
             expected_failure.clone(),
         );
 
-        // Expecting timeout since there is no function in wasm to call
-        let expected = Err(RecvTimeoutError::Disconnected);
         let agent_token_str = test_setup.context.agent_id.key.clone();
         test_reduce_call(
             &test_setup,
             &agent_token_str,
             Address::from(agent_token_str.clone()),
-            expected.clone(),
+            SUCCESS_EXPECTED.clone(),
         );
 
         let someone = Address::from("somoeone");
@@ -476,7 +474,7 @@ pub mod tests {
             &test_setup,
             &String::from(addr.clone()),
             someone,
-            expected.clone(),
+            SUCCESS_EXPECTED.clone(),
         );
 
         /* function call doesn't know who the caller is yet so can't do the check in reduce

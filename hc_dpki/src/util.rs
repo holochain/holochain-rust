@@ -19,16 +19,13 @@ pub fn pw_hash(
     salt: &mut SecBuf,
     hash: &mut SecBuf,
 ) -> Result<(), HolochainError> {
-    let mut password = password;
-    let mut salt = salt;
-    let mut hash = hash;
     pwhash::hash(
-        &mut password,
+        password,
         PW_HASH_OPS_LIMIT,
         PW_HASH_MEM_LIMIT,
         PW_HASH_ALGO,
-        &mut salt,
-        &mut hash,
+        salt,
+        hash,
     )?;
     Ok(())
 }
@@ -50,10 +47,8 @@ pub fn pw_enc(
     let mut nonce = SecBuf::with_insecure(aead::NONCEBYTES);
     holochain_sodium::random::random_secbuf(&mut nonce);
     let mut cipher = SecBuf::with_insecure(data.len() + aead::ABYTES);
-    let mut passphrase = passphrase;
-    let mut data = data;
-    pw_hash(&mut passphrase, &mut salt, &mut secret)?;
-    aead::enc(&mut data, &mut secret, None, &mut nonce, &mut cipher)?;
+    pw_hash(passphrase, &mut salt, &mut secret)?;
+    aead::enc(data, &mut secret, None, &mut nonce, &mut cipher)?;
 
     let salt = salt.read_lock().to_vec();
     let nonce = nonce.read_lock().to_vec();
@@ -84,8 +79,7 @@ pub fn pw_dec(
     convert_vec_to_secbuf(&bundle.nonce, &mut nonce);
     let mut cipher = SecBuf::with_insecure(bundle.cipher.len());
     convert_vec_to_secbuf(&bundle.cipher, &mut cipher);
-    let mut passphrase = passphrase;
-    pw_hash(&mut passphrase, &mut salt, &mut secret)?;
+    pw_hash(passphrase, &mut salt, &mut secret)?;
     let mut decrypted_message = SecBuf::with_insecure(cipher.len() - aead::ABYTES);
     aead::dec(
         &mut decrypted_message,

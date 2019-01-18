@@ -7,14 +7,14 @@ use holochain_core_types::{
 };
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct EavMemoryStorage {
-    storage: Arc<Mutex<BTreeMap<Key, EntityAttributeValue>>>,
+    storage: Arc<RwLock<BTreeMap<Key, EntityAttributeValue>>>,
     id: Uuid,
 }
 
@@ -27,7 +27,7 @@ impl PartialEq for EavMemoryStorage {
 impl EavMemoryStorage {
     pub fn new() -> EavMemoryStorage {
         EavMemoryStorage {
-            storage: Arc::new(Mutex::new(BTreeMap::new())),
+            storage: Arc::new(RwLock::new(BTreeMap::new())),
             id: Uuid::new_v4(),
         }
     }
@@ -40,7 +40,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .len()
             == 0
         {
-            let mut map = self.storage.lock().unwrap();
+            let mut map = self.storage.write()?;
             let key = create_key(Action::Insert)?;
             map.insert(key, eav.clone());
             Ok(())
@@ -55,7 +55,8 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
-        let map = self.storage.lock().unwrap();
+        let map = self.storage.read()?;
+        println!("Map {:?}", map.clone());
         let filtered_map = map
             .clone()
             .into_iter()
@@ -65,6 +66,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             })
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<BTreeMap<Key, EntityAttributeValue>>();
+        println!("filtered map {:?}", filtered_map.clone());
         Ok(filtered_map)
     }
 }

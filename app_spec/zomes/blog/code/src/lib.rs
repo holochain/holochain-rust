@@ -86,7 +86,7 @@ define_zome! {
     ]
 
     capabilities: {
-        public (Public) [check_sum, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, recommed_post, my_recommended_posts]
+        public (Public) [check_sum, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, recommend_post, my_recommended_posts]
     }
 
 }

@@ -213,40 +213,42 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
 clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug)]
-pub struct ExampleEntityAttributeValueStorageNonSync {
-    storage: BTreeMap<Key, EntityAttributeValue>,
+pub struct ExampleEntityAttributeValueStorage {
+    storage: Arc<RwLock<BTreeMap<Key, EntityAttributeValue>>>,
 }
-
-impl ExampleEntityAttributeValueStorageNonSync {
-    pub fn new() -> ExampleEntityAttributeValueStorageNonSync {
-        ExampleEntityAttributeValueStorageNonSync {
-            storage: BTreeMap::new(),
+impl ExampleEntityAttributeValueStorage {
+    pub fn new() -> ExampleEntityAttributeValueStorage {
+        ExampleEntityAttributeValueStorage {
+            storage: Arc::new(RwLock::new(BTreeMap::new())),
         }
     }
+}
 
-    fn unthreadable_add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
         if self
-            .unthreadable_fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
+            .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
             == 0
         {
+            let mut map = self.storage.write()?;
             let key = create_key(Action::Insert)?;
-            self.storage.insert(key, eav.clone());
+            map.insert(key, eav.clone());
             Ok(())
         } else {
             Ok(())
         }
     }
 
-    fn unthreadable_fetch_eav(
+    fn fetch_eav(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
-        let filtered = self
+        let map = self.storage.read()?;
+        let filtered = map
             .clone()
-            .storage
             .into_iter()
             // .cloned()
             .filter(|(_, eav)| match entity {
@@ -269,36 +271,6 @@ impl ExampleEntityAttributeValueStorageNonSync {
 impl PartialEq for EntityAttributeValueStorage {
     fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
         self.fetch_eav(None, None, None) == other.fetch_eav(None, None, None)
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ExampleEntityAttributeValueStorage {
-    content: Arc<RwLock<ExampleEntityAttributeValueStorageNonSync>>,
-}
-
-impl ExampleEntityAttributeValueStorage {
-    pub fn new() -> HcResult<ExampleEntityAttributeValueStorage> {
-        Ok(ExampleEntityAttributeValueStorage {
-            content: Arc::new(RwLock::new(ExampleEntityAttributeValueStorageNonSync::new())),
-        })
-    }
-}
-
-impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> HcResult<()> {
-        self.content.write().unwrap().unthreadable_add_eav(eav)
-    }
-    fn fetch_eav(
-        &self,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>,
-    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
-        self.content
-            .read()
-            .unwrap()
-            .unthreadable_fetch_eav(entity, attribute, value)
     }
 }
 
@@ -342,8 +314,7 @@ pub fn eav_round_trip_test_runner(
         &value_content.address(),
     )
     .expect("Could not create EAV");
-    let mut eav_storage =
-        ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage");
+    let mut eav_storage = ExampleEntityAttributeValueStorage::new();
 
     assert_eq!(
         BTreeMap::new(),
@@ -413,7 +384,7 @@ pub mod tests {
     };
 
     pub fn test_eav_storage() -> ExampleEntityAttributeValueStorage {
-        ExampleEntityAttributeValueStorage::new().expect("could not create example eav storage")
+        ExampleEntityAttributeValueStorage::new()
     }
 
     #[test]

@@ -1,9 +1,4 @@
-use crate::{
-    action::{Action, ActionWrapper},
-    context::Context,
-    signal::Signal,
-    state::State,
-};
+use crate::{action::ActionWrapper, context::Context, signal::Signal, state::State};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -170,7 +165,7 @@ impl Instance {
         }
 
         // @TODO: add a big fat debug logger here
-        self.maybe_emit_action_signal(context, action_wrapper.action().clone());
+        self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
@@ -195,7 +190,7 @@ impl Instance {
 
     /// Given an `Action` that is being processed, decide whether or not it should be
     /// emitted as a `Signal::Internal`, and if so, send it
-    fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: Action) {
+    fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: ActionWrapper) {
         if let Some(ref tx) = context.signal_tx {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals

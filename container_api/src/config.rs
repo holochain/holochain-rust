@@ -30,7 +30,7 @@ use toml;
 /// References between structs (instance configs pointing to
 /// the agent and DNA to be instantiated) are implemented
 /// via string IDs.
-#[derive(Deserialize, Serialize, Clone, Default)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug)]
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
@@ -57,7 +57,7 @@ pub struct Configuration {
 /// There might be different kinds of loggers in the future.
 /// Currently there is a "debug" and "simple" logger.
 /// TODO: make this an enum
-#[derive(Deserialize, Serialize, Clone, Default)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct LoggerConfiguration {
     #[serde(rename = "type")]
     pub logger_type: String,
@@ -65,6 +65,16 @@ pub struct LoggerConfiguration {
     pub rules: LogRules,
     //    pub file: Option<String>,
 }
+
+impl Default for LoggerConfiguration {
+    fn default() -> LoggerConfiguration {
+        LoggerConfiguration {
+            logger_type: "debug".into(),
+            rules: Default::default(),
+        }
+    }
+}
+
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
@@ -246,7 +256,7 @@ impl Configuration {
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
@@ -282,7 +292,7 @@ impl TryFrom<DnaConfiguration> for Dna {
 
 /// An instance combines a DNA with an agent.
 /// Each instance has its own storage configuration.
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct InstanceConfiguration {
     pub id: String,
     pub dna: String,
@@ -297,7 +307,7 @@ pub struct InstanceConfiguration {
 /// * file
 ///
 /// Projected are various DB adapters.
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
     Memory,
@@ -315,7 +325,7 @@ pub enum StorageConfiguration {
 /// Every interface lists the instances that are made available here.
 /// An admin flag will enable container functions for programmatically changing the configuration
 /// (i.e. installing apps)
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct InterfaceConfiguration {
     pub id: String,
     pub driver: InterfaceDriver,
@@ -324,7 +334,7 @@ pub struct InterfaceConfiguration {
     pub instances: Vec<InstanceReferenceConfiguration>,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum InterfaceDriver {
     Websocket { port: u16 },
@@ -333,7 +343,7 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct InstanceReferenceConfiguration {
     pub id: String,
 }
@@ -557,7 +567,7 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(config.logger.logger_type, "");
+        assert_eq!(config.logger.logger_type, "debug");
         assert_eq!(
             config.network.unwrap(),
             NetworkConfig {

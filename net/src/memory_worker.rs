@@ -90,12 +90,35 @@ impl InMemoryWorker {
                 Mutex::new(InMemoryServer::new(server_name.clone())),
             );
         }
+        let mut server = server_map
+            .get(&server_name)
+            .expect("InMemoryServer should exist")
+            .lock()
+            .unwrap();
+        server.clock_in();
 
         Ok(InMemoryWorker {
             handler,
             receiver_per_dna: HashMap::new(),
             server_name,
         })
+    }
+}
+
+// unregister on Drop
+impl Drop for InMemoryWorker {
+    fn drop(&mut self) {
+        println!(
+            "#### Dropping MemoryWorker for server '{}'",
+            self.server_name
+        );
+        let server_map = MEMORY_SERVER_MAP.read().unwrap();
+        let mut server = server_map
+            .get(&self.server_name)
+            .expect("InMemoryServer should exist")
+            .lock()
+            .unwrap();
+        server.clock_out();
     }
 }
 

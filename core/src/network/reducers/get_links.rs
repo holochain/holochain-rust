@@ -101,13 +101,14 @@ mod tests {
 
     #[test]
     pub fn reduce_get_links_test() {
-        let context = test_context("alice", None);
+        let netname = Some("reduce_get_links_test");
+        let context = test_context("alice", netname);
         let store = test_store(context.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_memory_network_config(),
-            dna_address: "abcd".into(),
-            agent_id: String::from("abcd"),
+            config: test_mock_config(netname),
+            dna_address: "reduce_get_links_test".into(),
+            agent_id: String::from("alice"),
         }));
         let store = store.reduce(context.clone(), action_wrapper);
 
@@ -135,16 +136,17 @@ mod tests {
     // within the in-memory network.
     // #[cfg(feature = "broken-tests")]
     pub fn reduce_get_links_timeout_test() {
-        let mut context = test_context("alice", None);
+        let netname = Some("reduce_get_links_timeout_test");
+        let mut context = test_context("alice", netname);
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
 
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: unique_memory_network_config(),
-            dna_address: "abcd".into(),
-            agent_id: String::from("abcd"),
+            config: test_mock_config(netname),
+            dna_address: "reduce_get_links_timeout_test".into(),
+            agent_id: String::from("alice"),
         }));
 
         {

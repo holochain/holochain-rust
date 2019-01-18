@@ -8,7 +8,6 @@ use hyper::{Body, Request,
 	rt::Future,
 };
 use holochain_core_types::error::HolochainError;
-// use futures;
 use config::{UiInterfaceConfiguration, UiBundle};
 use tokio::runtime::Runtime;
 use hyper_staticfile::{Static, StaticFuture};
@@ -24,7 +23,7 @@ struct StaticService {
 }
 
 impl StaticService {
-    fn new(path: String) -> Self {
+    fn new(path: &String) -> Self {
         StaticService {
             static_: Static::new(path),
         }
@@ -42,7 +41,7 @@ impl hyper::service::Service for StaticService {
     }
 }
 
-struct StaticServer {
+pub struct StaticServer {
 	#[allow(dead_code)]
 	shutdown_signal: Option<futures::channel::oneshot::Sender<()>>,
 	config: UiInterfaceConfiguration,
@@ -68,9 +67,9 @@ impl StaticServer {
 
 		// let (tx, rx) = futures::channel::oneshot::channel::<()>();
 		// self.shutdown_signal = Some(tx);
-		
+		let static_path = self.bundle_config.root_dir.to_owned();
         let server = Server::bind(&addr)
-	        .serve(|| future::ok::<_, Error>(StaticService::new("".to_string())))
+	        .serve(move || future::ok::<_, Error>(StaticService::new(&static_path)))
 	        // .with_graceful_shutdown(rx)
 	        .map_err(|e| eprintln!("server error: {}", e));
 		
@@ -100,7 +99,7 @@ impl StaticServer {
 
 
 pub struct StaticServerBuilder {
-	servers: HashMap<String, StaticServer>
+	pub servers: HashMap<String, StaticServer>
 }
 
 impl StaticServerBuilder {

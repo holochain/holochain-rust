@@ -68,7 +68,7 @@ mod tests {
 
     use crate::{
         action::{Action, ActionWrapper, GetEntryKey, NetworkSettings},
-        context::unique_memory_network_config,
+        context::test_memory_network_config,
         instance::tests::test_context,
         state::test_store,
     };
@@ -113,14 +113,13 @@ mod tests {
     // This test needs to be refactored.
     // It is non-deterministically failing with "sending on a closed channel" originating form
     // within the in-memory network.
-    #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_test() {
         let netname = Some("reduce_get_entry_test");
         let context = test_context("alice", netname);
         let store = test_store(context.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: test_mock_config(netname),
+            config: test_memory_network_config(netname),
             dna_address: "abcd".into(),
             agent_id: String::from("abcd"),
         }));
@@ -146,7 +145,7 @@ mod tests {
     // This test needs to be refactored.
     // It is non-deterministically failing with "sending on a closed channel" originating form
     // within the in-memory network.
-    #[cfg(feature = "broken-tests")]
+    //#[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_timeout_test() {
         let netname = Some("reduce_get_entry_timeout_test");
         let mut context = test_context("alice", netname);
@@ -156,7 +155,7 @@ mod tests {
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: test_mock_config(netname),
+            config: test_memory_network_config(netname),
             dna_address: "reduce_get_entry_timeout_test".into(),
             agent_id: AgentId::generate_fake("timeout").address().to_string(),
         }));

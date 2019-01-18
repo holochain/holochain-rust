@@ -213,7 +213,7 @@ impl ContainerAdmin for Container {
         if new_config
             .interface_by_id(interface_id)
             .ok_or(HolochainError::ErrorGeneric(format!(
-                "Instance with ID {} not found",
+                "Interface with ID {} not found",
                 instance_id
             )))?
             .instances

@@ -61,7 +61,6 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         let filtered_map = map
             .clone()
             .into_iter()
-            // .cloned()
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|(_, e)| {
                 EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())

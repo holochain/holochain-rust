@@ -54,10 +54,6 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.lock().unwrap();
-        println!("map {:?}", map.clone());
-        println!("entity {:?}", entity.clone());
-        println!("attribute {:?}", attribute.clone());
-        println!("value {:?}", value.clone());
         let filtered_map = map
             .clone()
             .into_iter()
@@ -67,7 +63,6 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             })
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<BTreeMap<Key, EntityAttributeValue>>();
-        println!("filtered_map {:?}", filtered_map.clone());
         Ok(filtered_map)
     }
 }

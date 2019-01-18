@@ -161,7 +161,7 @@ impl EntityAttributeValue {
     where
         T: PartialOrd,
     {
-        e.map_or(true, |a| eav == a)
+        e.map(|a| a == eav).unwrap_or(true)
     }
 }
 

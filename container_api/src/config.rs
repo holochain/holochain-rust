@@ -130,19 +130,23 @@ impl Configuration {
         }
 
         for ref ui_interface in self.ui_interfaces.iter() {
-            self.ui_bundle_by_id(&ui_interface.bundle).is_some().ok_or_else(|| {
-                format!(
-                    "UI bundle configuration {} not found, mentioned in UI interface {}",
-                    ui_interface.bundle, ui_interface.id,
-                )
-            })?;
+            self.ui_bundle_by_id(&ui_interface.bundle)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "UI bundle configuration {} not found, mentioned in UI interface {}",
+                        ui_interface.bundle, ui_interface.id,
+                    )
+                })?;
 
-            self.interface_by_id(&ui_interface.dna_interface).is_some().ok_or_else(|| {
-                format!(
-                    "Interface configuration {} not found, mentioned in UI interface {}",
-                    ui_interface.dna_interface, ui_interface.id,
-                )
-            })?;
+            self.interface_by_id(&ui_interface.dna_interface)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "Interface configuration {} not found, mentioned in UI interface {}",
+                        ui_interface.dna_interface, ui_interface.id,
+                    )
+                })?;
         }
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;

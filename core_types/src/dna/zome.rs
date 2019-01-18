@@ -175,7 +175,7 @@ pub mod tests {
                     "error_handling": "throw-errors"
                 },
                 "entry_types": {},
-                "functions": {},
+                "fn_delcarations": [],
                 "capabilities": {}
             }"#,
         )

@@ -385,11 +385,28 @@ mod tests {
                         "capabilities": {
                             "test capability": {
                                 "type": "public",
-                                "fn_declarations": [],
-                                "code": {
-                                    "code": ""
-                                }
+                                "functions": []
                             }
+                        },
+                        "fn_declarations": [
+                            {
+                                "name": "test",
+                                "inputs": [
+                                    {
+                                        "name": "post",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs" : [
+                                    {
+                                        "name": "hash",
+                                        "type": "string"
+                                    }
+                                ]
+                            }
+                        ],
+                        "code": {
+                            "code": ""
                         },
                         "entry_types": {}
                     },
@@ -400,11 +417,28 @@ mod tests {
                         "capabilities": {
                             "test capability": {
                                 "type": "public",
-                                "fn_declarations": [],
-                                "code": {
-                                    "code": ""
-                                }
+                                "functions": []
                             }
+                        },
+                        "fn_declarations": [
+                            {
+                                "name": "test2",
+                                "inputs": [
+                                    {
+                                        "name": "address",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs" : [
+                                    {
+                                        "name": "hash",
+                                        "type": "string"
+                                    }
+                                ]
+                            }
+                        ],
+                        "code": {
+                            "code": ""
                         },
                         "entry_types": {}
                     }

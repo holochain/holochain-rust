@@ -1085,7 +1085,7 @@ type = "websocket""#,
 
     #[test]
     fn test_add_and_remove_bridge() {
-        let mut container = create_test_container("test_add_agent");
+        let mut container = create_test_container("test_add_and_remove_bridge");
         let bridge = Bridge {
             caller_id: String::from("test-instance-1"),
             callee_id: String::from("test-instance-2"),

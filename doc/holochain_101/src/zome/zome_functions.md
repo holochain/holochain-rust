@@ -116,11 +116,146 @@ Imagine that there are many DNA instances running within one Container, and each
 - which function?
 - what arguments?
 
-Containers can implement whatever interfaces to perform these function calls they wish to, opening a wealth of opportunity. Holochain provides two reference Containers, one for [Nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs), and the other a [Rust built binary executable](https://github.com/holochain/holochain-rust/tree/develop/container). With the Rust built binary Container, interfaces for making function calls already includes HTTP and WebSockets. More details about Containers can be found in [another chapter](../container.md), it is simply important context for proceeding.
+Containers can implement whatever interfaces to perform these function calls they wish to, opening a wealth of opportunity. Holochain provides two reference Containers, one for [Nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs), and the other a [Rust built binary executable](https://github.com/holochain/holochain-rust/tree/develop/container). With the Rust built binary Container, interfaces for making function calls already includes HTTP and WebSockets. More details about Containers can be found in [another chapter](../containers.md), it is simply important context for proceeding.
 
 When a call to a Zome function is being made from the Container, it first passes the arguments to Holochain. Before making the function call, Holochain will check the validity of the request, and fail if necessary. If the request is deemed valid, Holochain will mount the WASM code for a Zome using its' WASM interpreter, and then make a function call into it, giving it the arguments given to it in the request. When it receives the response from the WASM, it will then pass that return value as the response to the request. This may sound complex, but that's just what's going on internally, actually using it with an HDK and a Container is easy.
 
 
 ## Building in Rust: Zome Functions
 
-Coming soon...
+So far, in [entry type definitions](./entry_type_definitions.md) and [genesis](./genesis.md), the most complex example of `define_zome!` was still very simple, and didn't include any functions:
+
+```rust
+...
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct Post {
+    content: String,
+    date_created: String,
+}
+
+define_zome! {
+    entries: [
+        entry!(
+            name: "post",
+            description: "A blog post entry which has an author",
+            sharing: Sharing::Public,
+            native_type: Post,
+            validation_package: || {
+                ValidationPackageDefinition::Entry
+            },
+            validation: |_post: Post, _validation_data: ValidationData| {
+                Ok(())
+            }
+        )
+    ]
+
+    genesis: || {
+        Ok(())
+    }
+
+    functions: {}
+}
+```
+
+`functions` is where the Capabilities, and function declarations will be made.
+
+### Adding a Capability
+
+A Zome can have multiple Capabilities within it. This is what adding a Capability looks like:
+
+```rust
+...
+
+define_zome! {
+    ...
+    functions: {
+        main (Public) {
+
+        }
+    }
+}
+```
+
+In this example, of a Capability with no functions, `main` is the given name of this Capability, by which it will be referenced elsewhere. `Public` is a declaration of CapabilityType for this Capability. At the time of writing, it's recommended that you only use `Public` here, since the other options for CapabilityType are still under development. The implication of `Public` is that from your local device, any request to Holochain to make a function call to this Capability of this Zome will succeed, without needing authorization.
+
+### Adding a Zome Function
+
+In order to add a Zome function, there are two primary steps that are involved.
+1. declare your function in `define_zome!`
+2. write the Rust code for the handler of that function, calling any HDK functions you need
+
+__Step 1__
+
+Since `main (Public)` expects key-value pairs, we add new functions using the following pattern:
+
+```rust
+...
+
+define_zome! {
+    ...
+    functions: {
+        main (Public) {
+            send_message: {
+                inputs: |to_agent: Address, message: String|,
+                outputs: |response: ZomeApiResult<String>|,
+                handler: handle_send_message
+            }
+        }
+    }
+}
+```
+
+In this example, `send_message` is the given name of this function, by which it will be referenced and called elsewhere. There are three properties necessary to provide `send_message`, and any function declaration: `inputs`, `outputs`, and `handler`.
+
+`inputs` expects a list or argument names, and types, for the `send_message` function to be called with.
+
+`outputs` expects a single declaration of a return type. The name (which in the example is `response`) is arbitrary, call it anything.
+
+`handler` expects the name of a function which will handle this function call, and which matches the function signature of `inputs` and `outputs`. In this case, `handle_send_message`, which has yet to be defined.
+
+__Step 2__
+
+Here is an example of a simplistic function, for illustration purposes. It centers on the use of a function call to an HDK function.
+
+```rust
+fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
+    hdk::send(to_agent, message)
+}
+```
+
+Notice right away how the arguments match perfectly with the `inputs: |...|` section of the function declaration. Any differences will cause issues. This is also true of the return type of the output. Note the pairing of `ZomeApiResult<String>` as the return type.
+
+The name of the function, `handle_send_message` is the same as the name given as the `handler` in the `define_zome!` function declaration.
+
+Within the function, `handle_send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.3/hdk/api/fn.send.html).
+
+The available functions, their purpose, and how to use them is fully documented elsewhere, in the [API reference](https://developer.holochain.org/api/0.0.3/hdk/api/index.html#functions) and the [List of API Functions](./api_functions.md).
+
+In the example, `handle_send_message` simply forwards the result of calling `hdk::send` as its' own result.
+
+Here are the above two steps combined:
+```rust
+...
+
+fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
+    hdk::send(to_agent, message)
+}
+
+define_zome! {
+    ...
+    functions: {
+        main (Public) {
+            send_message: {
+                inputs: |to_agent: Address, message: String|,
+                outputs: |response: ZomeApiResult<String>|,
+                handler: handle_send_message
+            }
+        }
+    }
+}
+```
+
+To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/v0.0.3/hdk-rust/wasm-test/src/lib.rs).
+
+Otherwise, continue reading to learn all about the API Functions and examples of how to use them.

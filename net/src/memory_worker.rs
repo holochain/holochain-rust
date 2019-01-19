@@ -83,7 +83,6 @@ impl InMemoryWorker {
             .as_str()
             .unwrap_or("(unnamed)")
             .to_string();
-        println!("InMemoryWorker::new() server_name = {}", server_name);
         // Create server with that name if it doesn't already exist
         let mut server_map = MEMORY_SERVER_MAP.write().unwrap();
         if !server_map.contains_key(&server_name) {

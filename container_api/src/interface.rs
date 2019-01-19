@@ -291,7 +291,7 @@ impl ContainerApiBuilder {
     ///     * `dna_id`: [string] DNA to run in this instance
     ///
     ///  * `admin/instance/remove`
-    ///     Removes an instance. Does also remove its mentions in interfaces.
+    ///     Removes an instance. Also remove its any uses of it in interfaces.
     ///     * `id`: [string] Which instance to remove?
     ///
     ///  * `admin/instance/start`

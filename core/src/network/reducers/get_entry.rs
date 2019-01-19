@@ -67,8 +67,7 @@ pub fn reduce_get_entry_timeout(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, GetEntryKey, NetworkSettings},
-        context::test_memory_network_config,
+        action::{Action, ActionWrapper, GetEntryKey},
         instance::tests::test_context,
         state::test_store,
     };
@@ -107,6 +106,7 @@ mod tests {
     // This test needs to be refactored.
     // It is non-deterministically failing with "sending on a closed channel" originating form
     // within the in-memory network.
+    #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_test() {
         let netname = Some("reduce_get_entry_test");
         let context = test_context("alice", netname);

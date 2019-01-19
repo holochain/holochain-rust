@@ -73,9 +73,7 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::{
-        cas::content::AddressableContent,
-        entry::test_entry,
-        error::HolochainError,
+        cas::content::AddressableContent, entry::test_entry, error::HolochainError,
     };
 
     #[test]

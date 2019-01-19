@@ -16,7 +16,7 @@ use holochain_core::{
     signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent}, dna::capabilities::CapabilityCall, entry::Entry,
+    cas::content::{Address, AddressableContent}, dna::capabilities::{CallSignature, CapabilityCall}, entry::Entry,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -145,8 +145,9 @@ declare_types! {
                     panic!("TestContainer: cannot use call() before start()");
                 }
                 let cap = Some(CapabilityCall::new(
-                    Address::from(""), //FIXME
-                    None,
+                    Address::from("fake_token"), //FIXME
+                    Address::from("fake_sender"), //FIXME
+                    CallSignature {},
                 ));
                 let instance_arc = tc.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));

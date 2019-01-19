@@ -8,7 +8,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::capabilities::CapabilityCall,
+    dna::capabilities::{CallSignature, CapabilityCall},
     entry::Entry,
     error::{CoreError, HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
     time::Timeout,
@@ -374,13 +374,18 @@ pub fn call<S: Into<String>>(
         mem_stack = G_MEM_STACK.unwrap();
     }
 
+    let token_string = cap_token.into();
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(
         &mut mem_stack,
         ZomeFnCallArgs {
             instance_handle: instance_handle.into(),
             zome_name: zome_name.into(),
-            cap: Some(CapabilityCall::new(Address::from(cap_token.into()), None)),
+            cap: Some(CapabilityCall::new(
+                Address::from(token_string.clone()),
+                Address::from(token_string),
+                CallSignature {},
+            )),
             fn_name: fn_name.into(),
             fn_args: String::from(fn_args),
         },

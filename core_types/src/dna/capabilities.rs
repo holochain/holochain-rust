@@ -54,16 +54,16 @@ pub struct CallSignature {}
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct CapabilityCall {
     pub cap_token: Address,
-    pub caller: Option<Address>,
+    pub caller: Address,
     pub signature: CallSignature,
 }
 
 impl CapabilityCall {
-    pub fn new(token: Address, caller: Option<Address>) -> Self {
+    pub fn new(token: Address, caller: Address, signature: CallSignature) -> Self {
         CapabilityCall {
             cap_token: token,
             caller,
-            signature: CallSignature {}, // FIXME
+            signature,
         }
     }
 }
@@ -177,4 +177,20 @@ mod tests {
         assert_eq!(fixture, cap);
     }
 
+    #[test]
+    fn test_capability_call_new() {
+        let cap_call = CapabilityCall::new(
+            Address::from("123"),
+            Address::from("caller"),
+            CallSignature {},
+        );
+        assert_eq!(
+            CapabilityCall {
+                cap_token: Address::from("123"),
+                caller: Address::from("caller"),
+                signature: CallSignature {},
+            },
+            cap_call
+        );
+    }
 }

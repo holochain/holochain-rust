@@ -18,7 +18,7 @@ use holochain_core_types::{
     agent::AgentId,
     cas::content::Address,
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType},
+        capabilities::{CallSignature, Capability, CapabilityCall, CapabilityType},
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         fn_declarations::FnDeclaration,
         wasm::DnaWasm,
@@ -229,7 +229,8 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
         "test_zome",
         Some(CapabilityCall::new(
             Address::from("test_token"),
-            None,
+            Address::from("test_sender"),
+            CallSignature {},
         )),
         fn_name,
         r#"{}"#,

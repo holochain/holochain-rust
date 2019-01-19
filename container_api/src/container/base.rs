@@ -985,7 +985,8 @@ pub mod tests {
                 "test_zome",
                 Some(dna::capabilities::CapabilityCall::new(
                     Address::from("fake_token"),
-                    None,
+                    Address::from("fake_sender"),
+                    dna::capabilities::CallSignature {},
                 )),
                 "call_bridge",
                 "{}",

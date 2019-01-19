@@ -1,5 +1,8 @@
 use holochain_core::state::State;
-use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
+use holochain_core_types::{
+    cas::content::Address,
+    dna::capabilities::{CallSignature, CapabilityCall},
+};
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -163,13 +166,15 @@ impl ContainerApiBuilder {
                             let mut hc = hc_lock_inner.write().unwrap();
                             let params_string = serde_json::to_string(&params)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+
+                            // TODO: need to get the caller identity in here somehow
+                            let cap_call = Some(CapabilityCall::new(
+                                Address::from("fake_token"),
+                                Address::from("fake_caller"),
+                                CallSignature {},
+                            ));
                             let response = hc
-                                .call(
-                                    &zome_name,
-                                    Some(CapabilityCall::new(Address::from("fake_token"), None)),
-                                    &func_name,
-                                    &params_string,
-                                )
+                                .call(&zome_name, cap_call, &func_name, &params_string)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
                             Ok(Value::String(response.to_string()))
                         })

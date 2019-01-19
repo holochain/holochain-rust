@@ -1,6 +1,6 @@
 use crate::{
     cas::content::{Address, AddressableContent},
-    dna::capabilities::{CallSignature, CapabilityType},
+    dna::capabilities::{CapabilityCall, CapabilityType},
     entry::Entry,
     error::HolochainError,
     json::JsonString,
@@ -93,21 +93,17 @@ impl CapTokenGrant {
     }
 
     /// verifies that this grant is valid for a given requester and token value
-    pub fn verify(
-        &self,
-        token: CapTokenValue,
-        from: Option<Address>,
-        _message: &CallSignature,
-    ) -> bool {
+    pub fn verify(&self, maybe_cap_call: Option<&CapabilityCall>) -> bool {
         let cap_type = self.cap_type();
         if cap_type == CapabilityType::Public {
             return true;
         }
-        if !from.is_some() {
+        if maybe_cap_call.is_none() {
             return false;
         }
+        let cap_call = maybe_cap_call.unwrap();
 
-        if self.token() != token {
+        if self.token() != cap_call.cap_token {
             return false;
         }
 
@@ -119,7 +115,7 @@ impl CapTokenGrant {
             CapabilityType::Assigned => {
                 // unwraps are safe because type comes from the shape of
                 // the assignee, and the from must some by the check above.
-                if !self.assignees().unwrap().contains(&from.unwrap()) {
+                if !self.assignees().unwrap().contains(&cap_call.caller) {
                     return false;
                 }
                 true
@@ -131,6 +127,7 @@ impl CapTokenGrant {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use dna::capabilities::{CallSignature, CapabilityCall, CapabilityType};
 
     #[test]
     fn test_new_cap_token_grant_entry() {
@@ -193,56 +190,60 @@ pub mod tests {
     fn test_cap_grant_verify() {
         let test_address1 = Address::from("some identity");
         let test_address2 = Address::from("some other identity");
-        let test_call_signature = &CallSignature {};
+        let test_call_signature = CallSignature {};
 
         let grant = CapTokenGrant::create(CapabilityType::Public, None).unwrap();
         let token = grant.token();
-        assert!(grant.verify(token.clone(), None, test_call_signature));
-        assert!(grant.verify(
+        assert!(grant.verify(None));
+        assert!(grant.verify(Some(&CapabilityCall::new(
             token.clone(),
-            Some(test_address1.clone()),
-            test_call_signature
-        ));
-        assert!(grant.verify(Address::from("Bad Token"), None, test_call_signature));
+            test_address1.clone(),
+            test_call_signature.clone()
+        ))));
+        assert!(grant.verify(Some(&CapabilityCall::new(
+            Address::from("Bad Token"),
+            test_address1.clone(),
+            test_call_signature.clone()
+        ))));
 
         let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
         let token = grant.token();
-        assert!(!grant.verify(token.clone(), None, test_call_signature));
-        assert!(grant.verify(
+        assert!(!grant.verify(None));
+        assert!(grant.verify(Some(&CapabilityCall::new(
             token.clone(),
-            Some(test_address1.clone()),
-            test_call_signature
-        ));
-        assert!(grant.verify(
+            test_address1.clone(),
+            test_call_signature.clone()
+        ))));
+        assert!(grant.verify(Some(&CapabilityCall::new(
             token.clone(),
-            Some(test_address2.clone()),
-            test_call_signature
-        ));
-        assert!(!grant.verify(
+            test_address2.clone(),
+            test_call_signature.clone() // FIXME should be call signature of test_address2
+        ))));
+        assert!(!grant.verify(Some(&CapabilityCall::new(
             Address::from("Bad Token"),
-            Some(test_address1.clone()),
-            test_call_signature
-        ));
+            test_address1.clone(),
+            test_call_signature.clone()
+        ))));
 
         let grant =
             CapTokenGrant::create(CapabilityType::Assigned, Some(vec![test_address1.clone()]))
                 .unwrap();
         let token = grant.token();
-        assert!(!grant.verify(token.clone(), None, test_call_signature));
-        assert!(grant.verify(
+        assert!(!grant.verify(None));
+        assert!(grant.verify(Some(&CapabilityCall::new(
             token.clone(),
-            Some(test_address1.clone()),
-            test_call_signature
-        ));
-        assert!(!grant.verify(
+            test_address1.clone(),
+            test_call_signature.clone()
+        ))));
+        assert!(!grant.verify(Some(&CapabilityCall::new(
             token.clone(),
-            Some(test_address2.clone()),
-            test_call_signature
-        ));
-        assert!(!grant.verify(
+            test_address2.clone(),
+            test_call_signature.clone() // FIXME should be call signature of test_address2
+        ))));
+        assert!(!grant.verify(Some(&CapabilityCall::new(
             Address::from("Bad Token"),
-            Some(test_address1.clone()),
-            test_call_signature
-        ));
+            test_address1.clone(),
+            test_call_signature.clone()
+        ))));
     }
 }

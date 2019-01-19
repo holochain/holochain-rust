@@ -21,7 +21,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::Address,
     dna::{
-        capabilities::{CapabilityCall, ReservedCapabilityNames},
+        capabilities::{CallSignature, CapabilityCall, ReservedCapabilityNames},
         wasm::DnaWasm,
     },
     entry::Entry,
@@ -202,6 +202,14 @@ pub(crate) fn run_callback(
     }
 }
 
+fn make_self_capability_call(context: Arc<Context>) -> CapabilityCall {
+    CapabilityCall::new(
+        Address::from(context.agent_id.key.clone()),
+        Address::from(context.agent_id.key.clone()),
+        CallSignature {},
+    )
+}
+
 pub fn call(
     context: Arc<Context>,
     zome: &str,
@@ -210,12 +218,7 @@ pub fn call(
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,
-        Some(CapabilityCall::new(
-            Address::from(""), //FIXME!!
-            None,
-        )),
-        //&function.capability().as_str().to_string(),
-        //"", //TODO: token?
+        Some(make_self_capability_call(context.clone())),
         &function.as_str().to_string(),
         params,
     );

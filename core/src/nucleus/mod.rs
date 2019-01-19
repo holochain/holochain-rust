@@ -416,7 +416,10 @@ pub mod tests {
         },
         nucleus::state::tests::test_nucleus_state,
     };
-    use holochain_core_types::dna::{capabilities::CapabilityCall, Dna};
+    use holochain_core_types::dna::{
+        capabilities::{CallSignature, CapabilityCall},
+        Dna,
+    };
     use std::sync::Arc;
 
     use holochain_core_types::{
@@ -441,7 +444,11 @@ pub mod tests {
 
     /// dummy capability call
     pub fn test_capability_call() -> CapabilityCall {
-        CapabilityCall::new(test_capability_token(), None)
+        CapabilityCall::new(
+            test_capability_token(),
+            Address::from("test caller"),
+            CallSignature {},
+        )
     }
 
     /// dummy capability name compatible with ZomeFnCall
@@ -748,12 +755,7 @@ pub mod tests {
             .unwrap()
             .add_fn_declaration(String::from("non_pub_fn"), vec![], vec![]);
 
-        let call = ZomeFnCall::new(
-            test_zome_name,
-            Some(CapabilityCall::new(test_capability_token(), None)),
-            "non_pub_fn",
-            test_parameters(),
-        );
+        let call = ZomeFnCall::new(test_zome_name, None, "non_pub_fn", test_parameters());
 
         let result = is_fn_public(&dna, &call);
         assert!(!result.unwrap());

@@ -12,7 +12,10 @@ use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainErro
 use std::sync::Arc;
 
 use holochain_core::logger::Logger;
-use holochain_core_types::{agent::AgentId, dna::capabilities::CapabilityCall};
+use holochain_core_types::{
+    agent::AgentId,
+    dna::capabilities::{CallSignature, CapabilityCall},
+};
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
@@ -110,7 +113,11 @@ pub unsafe extern "C" fn holochain_call(
 
     match holochain.call(
         zome.as_str(),
-        Some(CapabilityCall::new(Address::from(token.as_str()), None)),
+        Some(CapabilityCall::new(
+            Address::from(token.as_str()),
+            Address::from("fake_caller"),
+            CallSignature {},
+        )), // FIXME: caller
         function.as_str(),
         parameters.as_str(),
     ) {

@@ -20,7 +20,7 @@ use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType},
+        capabilities::{Capability, CapabilityType},
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::FnDeclaration,
         zome::{ZomeCapabilities, ZomeFnDeclarations},
@@ -229,7 +229,7 @@ fn start_holochain_instance<T: Into<String>>(
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
     hc.call(
         "test_zome",
-        Some(CapabilityCall::new(Address::from("test_token"), None)),
+        None, // no call data for now, was: Some(CapabilityCall::new(Address::from("test_token"), None)),
         fn_name,
         params,
     )

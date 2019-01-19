@@ -16,7 +16,7 @@
 //! use holochain_core_types::{
 //!     cas::content::Address,
 //!     agent::AgentId,
-//!     dna::{Dna, capabilities::CapabilityCall},
+//!     dna::{Dna, capabilities::{CallSignature, CapabilityCall}},
 //!     json::JsonString};
 //! use std::sync::Arc;
 //! use tempfile::tempdir;
@@ -42,7 +42,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome", Some(CapabilityCall::new(Address::from(""), None)), "some_fn", "{}");
+//! hc.call("test_zome", Some(CapabilityCall::new(Address::from("some_token"), Address::from("caller"), CallSignature {})), "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -191,7 +191,14 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna};
+    use holochain_core_types::{
+        agent::AgentId,
+        cas::content::Address,
+        dna::{
+            capabilities::{CallSignature, CapabilityCall},
+            Dna,
+        },
+    };
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
@@ -233,7 +240,11 @@ mod tests {
     }
 
     fn example_capability_call() -> Option<CapabilityCall> {
-        Some(CapabilityCall::new(Address::from("test_token"), None))
+        Some(CapabilityCall::new(
+            Address::from("test_token"),
+            Address::from("caller"),
+            CallSignature {},
+        ))
     }
 
     #[test]

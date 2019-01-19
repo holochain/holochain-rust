@@ -30,7 +30,7 @@ define_zome! {
 
 
     receive: |message| {
-        format!("Received: {}", message)
+        format!("\"Received: {}\"", message)
     }
 
     functions: {

@@ -283,7 +283,7 @@ impl ContainerApiBuilder {
     ///
     ///  * `admin/instance/add`
     ///     Creates a new instance and adds it to the config.
-    ///     Does not start the instance nor adds it to an interface
+    ///     Does not start the instance nor add it to an interface
     ///     (see `admin/instance/start` and `admin/interface/add_instance`).
     ///     Params:
     ///     * `id`: [string] Name for the new instance

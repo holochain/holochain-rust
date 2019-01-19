@@ -263,10 +263,10 @@ impl Container {
 
     fn instance_p2p_config(&self) -> Result<JsonString, HolochainError> {
         let config = self.p2p_config.clone().unwrap_or_else(|| {
-            // This should never happen, but we'll throw out a named mock network rather than crashing,
+            // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
-            println!("warn: instance_network_config called before p2p_config initialized! Using default mock network name.");
-            JsonString::from(P2pConfig::named_mock_as_string("container-default-mock"))
+            println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
+            JsonString::from(P2pConfig::new_with_memory_backend("container-default-mock").as_str())
         });
         Ok(config)
     }
@@ -297,8 +297,8 @@ impl Container {
                 ))
             }
             // if there's no NetworkConfig we won't spawn a network process
-            // and instead configure instances to use a unique mock network
-            None => JsonString::from(P2pConfig::unique_mock_as_string()),
+            // and instead configure instances to use a unique in-memory network
+            None => JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str()),
         }
     }
 

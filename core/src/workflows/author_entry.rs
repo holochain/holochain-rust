@@ -85,7 +85,7 @@ pub mod tests {
 
     #[test]
     #[cfg(not(windows))]
-    /// test that a commit will publish and entry to the dht of a connected instance via the mock network
+    /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish".to_string();

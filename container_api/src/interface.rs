@@ -328,7 +328,7 @@ impl ContainerApiBuilder {
     ///     * `id`: [string] Which interface to stop?
     ///
     ///  * `admin/interface/add_instance`
-    ///     Make a given instance available in a given DNA interface.
+    ///     Make a given DNA instance available via a given interface.
     ///     This restarts the given interface in order to have the change take effect.
     ///     Params:
     ///     * `interface_id`: Which interface to add the instance to?

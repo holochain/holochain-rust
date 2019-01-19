@@ -118,6 +118,7 @@ void TestHcDna::canGetFunctionNames() {
                                               "    }," //capabilities
                                               "    \"fn_declarations\":"
                                               "    ["
+                                              "    {"
                                               "        \"name\": \"public_test_fn\","
                                               "        \"inputs\": ["
                                               "                {"

@@ -73,14 +73,10 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::{
-        agent::AgentId,
         cas::content::AddressableContent,
-        crud_status::CrudStatus,
-        entry::{test_entry, EntryWithMeta},
+        entry::test_entry,
         error::HolochainError,
     };
-    use holochain_net_connection::json_protocol::DhtData;
-    use std::sync::{Arc, RwLock};
 
     #[test]
     pub fn reduce_get_entry_without_network_initialized() {
@@ -145,7 +141,7 @@ mod tests {
     // This test needs to be refactored.
     // It is non-deterministically failing with "sending on a closed channel" originating form
     // within the in-memory network.
-    //#[cfg(feature = "broken-tests")]
+    #[cfg(feature = "broken-tests")]
     pub fn reduce_get_entry_timeout_test() {
         let netname = Some("reduce_get_entry_timeout_test");
         let mut context = test_context("alice", netname);

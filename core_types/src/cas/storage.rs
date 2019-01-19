@@ -434,13 +434,16 @@ impl EavTestSuite {
 
         // show the many referencing one
         assert_eq!(
-            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+            expected
+                .values()
+                .cloned()
+                .collect::<Vec<EntityAttributeValue>>(),
             eav_storage
                 .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
                 .expect("could not fetch eav")
-                .iter()
-                .map(|(_k, v)| v)
-                .collect::<Vec<_>>(),
+                .values()
+                .cloned()
+                .collect::<Vec<EntityAttributeValue>>(),
         );
 
         // show one for the many results
@@ -452,13 +455,16 @@ impl EavTestSuite {
             let key = create_key(Action::Insert).expect("Could not make key");
             expected_one.insert(key, eav);
             assert_eq!(
-                expected_one.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+                expected_one
+                    .values()
+                    .cloned()
+                    .collect::<Vec<EntityAttributeValue>>(),
                 eav_storage
                     .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
                     .expect("could not fetch eav")
-                    .iter()
-                    .map(|(_k, v)| v)
-                    .collect::<Vec<_>>(),
+                    .values()
+                    .cloned()
+                    .collect::<Vec<EntityAttributeValue>>(),
             );
         }
     }

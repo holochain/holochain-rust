@@ -34,7 +34,7 @@ scenario2.runTape('send', async (t, { alice, bob }) => {
 
   //t.deepEqual(result.Ok, "Received : ping")
   //the line above results in `undefined`, so I switched to result to get the actual error, below:
-  t.deepEqual(result, "Received : ping")
+  t.deepEqual(result, {Ok: "Received: ping"})
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {

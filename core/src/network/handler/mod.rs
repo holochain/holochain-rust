@@ -19,24 +19,21 @@ use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us:
-fn is_me(c: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
+fn is_me(context: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
     // TODO: we also need a better way to easily get the DNA hash!!
-    let state = c
+    let state = context
         .state()
-        .ok_or("is_me could not get application state".to_string())
+        .ok_or("is_me() could not get application state".to_string())
         .unwrap();
     let dna = state
         .nucleus()
         .dna()
-        .ok_or("is_me called without DNA".to_string())
+        .ok_or("is_me() called without DNA".to_string())
         .unwrap();
     let my_dna_address = dna.address();
 
-    if my_dna_address != *dna_address {
-        return false;
-    }
-    if (my_dna_address != *dna_address) || (agent_id != "" && c.agent_id.key != agent_id) {
-        c.log("debug/net/handle: ignoring, wasn't for me");
+    if (my_dna_address != *dna_address) || (agent_id != "" && context.agent_id.key != agent_id) {
+        context.log("debug/net/handle: ignoring, wasn't for me");
         false
     } else {
         true

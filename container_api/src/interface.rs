@@ -295,7 +295,7 @@ impl ContainerApiBuilder {
     ///     * `id`: [string] Which instance to remove?
     ///
     ///  * `admin/instance/start`
-    ///     Starts a not running instance or reports an error if the given instance is
+    ///     Starts a stopped instance or reports an error if the given instance is
     ///     running already
     ///     Params:
     ///     * `id`: [string] Which instance to start?

@@ -315,7 +315,7 @@ impl ContainerApiBuilder {
     ///     Adds a new DNA / zome / container interface (that provides access to zome functions
     ///     of selected instances and container functions, depending on the interfaces config).
     ///     This also automatically starts the interface. Different from instances, there are no
-    ///     *not running* interfaces - every interface that is configured is also active.
+    ///     *stopped* interfaces - every interface that is configured is also active.
     ///     Params:
     ///     * `id`: [string] ID for the new interface
     ///     * `admin`: [bool] Grant access to (these) admin functions?

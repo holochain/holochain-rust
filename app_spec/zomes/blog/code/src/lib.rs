@@ -30,8 +30,7 @@ define_zome! {
 
 
     receive: |message| {
-        //format!("Received: {}", message)
-        "pong".to_string()
+        format!("Received: {}", message)
     }
 
     functions: {

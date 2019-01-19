@@ -378,7 +378,7 @@ impl ContainerApiBuilder {
     ///
     ///  * `admin/bridge/list`
     ///     Returns an array of all bridges.
-    /// 
+    ///
     pub fn with_admin_dna_functions(mut self) -> Self {
         self.io
             .add_method("admin/dna/install_from_file", move |params| {

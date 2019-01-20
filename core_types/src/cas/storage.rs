@@ -353,6 +353,8 @@ impl EavTestSuite {
                 .expect("could not add eav");
         }
 
+        println!("expected {:?}", expected.clone());
+
         // show the many results for one
         assert_eq!(
             expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
@@ -425,6 +427,8 @@ impl EavTestSuite {
                 )
                 .expect("could not add eav");
         }
+
+        println!("expected {:?}", expected.clone());
 
         // show the many referencing one
         assert_eq!(

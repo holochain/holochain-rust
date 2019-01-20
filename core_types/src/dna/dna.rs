@@ -131,17 +131,6 @@ impl Dna {
         zome.capabilities.get(capability_name)
     }
 
-    /// Return a Function declaration from a Zome
-    pub fn get_function<'a>(
-        &'a self,
-        zome: &'a zome::Zome,
-        function_name: &str,
-    ) -> Option<&'a FnDeclaration> {
-        zome.fn_declarations
-            .iter()
-            .find(|ref fn_decl| fn_decl.name == function_name)
-    }
-
     /// Return a Zome Function declaration from a Zome name and Function name.
     pub fn get_function_with_zome_name(
         &self,
@@ -151,7 +140,7 @@ impl Dna {
         let zome = self.get_zome(zome_name)?;
 
         // Function must exist in Zome
-        let fn_decl = self.get_function(zome, &fn_name);
+        let fn_decl = zome.get_function(&fn_name);
         if fn_decl.is_none() {
             return Err(DnaError::ZomeFunctionNotFound(format!(
                 "Zome function '{}' not found in Zome '{}'",
@@ -162,7 +151,7 @@ impl Dna {
         Ok(fn_decl.unwrap())
     }
 
-    /// Find a Zome and return it's WASM bytecode for a specified Capability
+    /// Find a Zome and return it's WASM bytecode
     pub fn get_wasm_from_zome_name<T: Into<String>>(&self, zome_name: T) -> Option<&wasm::DnaWasm> {
         let zome_name = zome_name.into();
         let zome = self.get_zome(&zome_name).ok()?;
@@ -364,19 +353,6 @@ pub mod tests {
         assert_eq!(
             format!("{:?}", cap),
             "Capability { cap_type: Public, functions: [\"test\"] }"
-        );
-    }
-
-    #[test]
-    fn test_dna_get_function() {
-        let dna = test_dna();
-        let zome = dna.get_zome("test").unwrap();
-        let result = dna.get_function(zome, "foo func");
-        assert!(result.is_none());
-        let fun = dna.get_function(zome, "test").unwrap();
-        assert_eq!(
-            format!("{:?}", fun),
-            "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
         );
     }
 

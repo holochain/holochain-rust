@@ -42,6 +42,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         {
             let mut map = self.storage.write()?;
             let key = create_key(Action::Insert)?;
+            println!("key {:?}", key.0.clone());
             map.insert(key, eav.clone());
             Ok(())
         } else {
@@ -56,6 +57,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?;
+        println!("map {:?}", map.clone());
         Ok(map
             .clone()
             .into_iter()

@@ -1,10 +1,9 @@
-use chrono::offset::Utc;
 use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        from_key, Action, Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage,
-        Key, Value,
+        create_key, from_key, Action, Attribute, Entity, EntityAttributeValue,
+        EntityAttributeValueStorage, Key, Value,
     },
     error::{HcResult, HolochainError},
     hash::HashString,
@@ -128,7 +127,7 @@ impl EavFileStorage {
 
     fn write_to_file(
         &self,
-        (unix_time, action): (i64, Action),
+        key: Key,
         subscript: String,
         eav: &EntityAttributeValue,
     ) -> Result<(), HolochainError> {
@@ -142,8 +141,8 @@ impl EavFileStorage {
             self.dir_path.clone(),
             subscript,
             address,
-            unix_time.to_string(),
-            action.to_string(),
+            key.0.to_string(),
+            key.1.to_string(),
         ]
         .join(&MAIN_SEPARATOR.to_string());
         create_dir_all(path.clone())?;
@@ -213,7 +212,7 @@ fn intersect_btree(
 }
 
 impl EntityAttributeValueStorage for EavFileStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError> {
         if self
             .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
@@ -221,12 +220,13 @@ impl EntityAttributeValueStorage for EavFileStorage {
         {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
-            let key = (Utc::now().timestamp_millis(), Action::Insert);
+            let key = create_key(Action::Insert)?;
             self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
                 .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
-                .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))
+                .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))?;
+            Ok(Some(key.clone()))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 

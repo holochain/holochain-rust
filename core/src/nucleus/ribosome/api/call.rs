@@ -176,7 +176,7 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::Address,
-        dna::capabilities::{CallSignature, CapabilityCall, CapabilityType},
+        dna::capabilities::{CallSignature, CapabilityCall},
     };
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;

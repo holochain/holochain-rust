@@ -122,14 +122,14 @@ pub mod tests {
             ribosome::{
                 api::{
                     tests::{
-                        test_function_name, test_parameters, test_zome_api_function_wasm,
+                        test_function_name, test_zome_api_function_wasm,
                         test_zome_name,
                     },
                     ZomeApiFunction,
                 },
                 Defn,
             },
-            tests::{test_capability_name, *},
+            tests::{test_capability_name},
             ZomeFnCall,
         },
         workflows::author_entry::author_entry,

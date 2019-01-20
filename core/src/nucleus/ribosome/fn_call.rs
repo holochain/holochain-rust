@@ -6,10 +6,7 @@ use crate::{
     nucleus::{ribosome, state::NucleusState, ExecuteZomeFnResponse, ZomeFnCall},
 };
 use holochain_core_types::{
-    dna::{
-        capabilities::CapabilityCall,
-        wasm::DnaWasm,
-    },
+    dna::{capabilities::CapabilityCall, wasm::DnaWasm},
     entry::cap_entries::CapTokenGrant,
     error::HolochainError,
 };
@@ -66,20 +63,20 @@ pub fn validate_call(
     fn_call: &ZomeFnCall,
 ) -> Result<(String, DnaWasm), HolochainError> {
     // make sure the dna, zome and function exists and return pretty errors if they don't
-    let dna = state
-        .dna()
-        .ok_or_else(|| HolochainError::DnaMissing)?;
-    let zome = dna.get_zome(&fn_call.zome_name).map_err(|e| HolochainError::Dna(e))?;
+    let dna = state.dna().ok_or_else(|| HolochainError::DnaMissing)?;
+    let zome = dna
+        .get_zome(&fn_call.zome_name)
+        .map_err(|e| HolochainError::Dna(e))?;
     let _ = dna
         .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
         .map_err(|e| HolochainError::Dna(e))?;
 
-    if !zome.is_fn_public(&fn_call.fn_name) && !check_capability(context.clone(), &fn_call.clone()) {
+    if !zome.is_fn_public(&fn_call.fn_name) && !check_capability(context.clone(), &fn_call.clone())
+    {
         return Err(HolochainError::CapabilityCheckFailed);
     }
-    Ok((dna.name.clone(),zome.code.clone()))
+    Ok((dna.name.clone(), zome.code.clone()))
 }
-
 
 // TODO: check the signature too
 fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bool {

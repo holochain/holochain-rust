@@ -153,10 +153,7 @@ impl Zome {
     }
 
     /// Return a Function declaration from a Zome
-    pub fn get_function(
-        &self,
-        fn_name: &str,
-    ) -> Option<&FnDeclaration> {
+    pub fn get_function(&self, fn_name: &str) -> Option<&FnDeclaration> {
         self.fn_declarations
             .iter()
             .find(|ref fn_decl| fn_decl.name == fn_name)
@@ -164,9 +161,12 @@ impl Zome {
 
     // Helper function for finding out if a given function call is public
     pub fn is_fn_public(&self, fn_name: &String) -> bool {
-        self.capabilities.iter().find(|(_, cap)| {
-            cap.cap_type == CapabilityType::Public && cap.functions.contains(fn_name)
-        }).is_some()
+        self.capabilities
+            .iter()
+            .find(|(_, cap)| {
+                cap.cap_type == CapabilityType::Public && cap.functions.contains(fn_name)
+            })
+            .is_some()
     }
 }
 
@@ -246,11 +246,7 @@ pub mod tests {
     #[test]
     fn test_zome_get_function() {
         let mut zome = Zome::default();
-        zome.add_fn_declaration(
-            String::from("test"),
-            vec![],
-            vec![],
-        );
+        zome.add_fn_declaration(String::from("test"), vec![], vec![]);
         let result = zome.get_function("foo func");
         assert!(result.is_none());
         let fun = zome.get_function("test").unwrap();
@@ -267,12 +263,16 @@ pub mod tests {
         assert!(dna.get_zome("test_zome").unwrap().is_fn_public(&fn_name));
 
         let private_fn_name = String::from("non_pub_fn");
-        dna.zomes
-            .get_mut("test_zome")
-            .unwrap()
-            .add_fn_declaration(private_fn_name.clone(), vec![], vec![]);
+        dna.zomes.get_mut("test_zome").unwrap().add_fn_declaration(
+            private_fn_name.clone(),
+            vec![],
+            vec![],
+        );
 
-        assert!(!dna.get_zome("test_zome").unwrap().is_fn_public(&private_fn_name));
+        assert!(!dna
+            .get_zome("test_zome")
+            .unwrap()
+            .is_fn_public(&private_fn_name));
     }
 
 }

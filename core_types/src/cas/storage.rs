@@ -336,7 +336,10 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
-            let key = eav_storage.add_eav(&eav).expect("could not add eav");
+            let key = eav_storage
+                .add_eav(&eav)
+                .expect("could not add eav")
+                .expect("Could not get key");
             expected.insert(key, eav);
         }
 
@@ -410,7 +413,10 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
-            let key = eav_storage.add_eav(&eav).expect("could not add eav");
+            let key = eav_storage
+                .add_eav(&eav)
+                .expect("could not add eav")
+                .expect("Could not get key");
             expected.insert(key, eav);
         }
 

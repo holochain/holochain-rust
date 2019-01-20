@@ -173,7 +173,7 @@ impl EntityAttributeValue {
 pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// Adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage.
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError>;
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError>;
     /// Fetch the set of EntityAttributeValues that match constraints according to the latest hash version
     /// - None = no constraint
     /// - Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
@@ -227,7 +227,7 @@ impl ExampleEntityAttributeValueStorage {
 }
 
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError> {
         if self
             .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
@@ -235,10 +235,11 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         {
             let mut map = self.storage.write()?;
             let key = create_key(Action::Insert)?;
-            map.insert(key, eav.clone());
-            Ok(())
+            println!("key {:?}", key.0.clone());
+            map.insert(key.clone(), eav.clone());
+            Ok(Some(key.clone()))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 
@@ -249,6 +250,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?;
+        println!("map {:?}", map.clone());
         let filtered = map
             .clone()
             .into_iter()
@@ -258,6 +260,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             })
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<BTreeMap<Key, EntityAttributeValue>>();
+        println!("filtered {:?}", filtered.clone());
         Ok(filtered)
     }
 }

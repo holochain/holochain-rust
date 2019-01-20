@@ -34,7 +34,7 @@ impl EavMemoryStorage {
 }
 
 impl EntityAttributeValueStorage for EavMemoryStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError> {
         if self
             .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
@@ -43,10 +43,10 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             let mut map = self.storage.write()?;
             let key = create_key(Action::Insert)?;
             println!("key {:?}", key.0.clone());
-            map.insert(key, eav.clone());
-            Ok(())
+            map.insert(key.clone(), eav.clone());
+            Ok(Some(key.clone()))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 

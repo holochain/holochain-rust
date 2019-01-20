@@ -165,6 +165,33 @@ pub struct DhtMetaData {
     pub content: serde_json::Value,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct GetListData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct ListData {
+    #[serde(rename = "_id")]
+    pub msg_id: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+    #[serde(rename = "addressList")]
+    pub address_list: Vec<Address>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct DropData {
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+    #[serde(rename = "dataAddress")]
+    pub data_address: Address,
+}
+
+
 /// Enum holding all message types that serialize as json in the 'hc-core <-> P2P network module' protocol.
 /// There are 4 categories of messages:
 ///  - Command: An order from the local node to the p2p module. Local node expects a reponse. Starts with a verb.
@@ -261,6 +288,23 @@ pub enum JsonProtocol {
     /// Store metadata on a node's dht slice.
     #[serde(rename = "handleStoreDhtMeta")]
     HandleStoreDhtMeta(DhtMetaData),
+
+    #[serde(rename = "handleGetPublishingDataList")]
+    HandleGetPublishingDataList(GetListData),
+
+    #[serde(rename = "handleGetPublishingDataListResult")]
+    HandleGetPublishingDataListResult(ListData),
+
+    #[serde(rename = "handleGetHoldingDataList")]
+    HandleGetHoldingDataList(GetHoldingDataListData),
+    #[serde(rename = "handleGetHoldingDataListResult")]
+    HandleGetHoldingDataListResult(HoldingDataListData),
+//    #[serde(rename = "handleGetDhtData")]
+//    HandleGetDhtData(GetDhtData),
+//    #[serde(rename = "handleGetDhtDataResult")]
+//    HandleGetDhtDataResult(DhtData),
+    #[serde(rename = "handleDropDhtData")]
+    HandleDropDhtData(DropData),
 }
 
 impl<'a> TryFrom<&'a Protocol> for JsonProtocol {

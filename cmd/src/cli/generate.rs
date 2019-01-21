@@ -60,7 +60,12 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
     }
 
     // CLI feedback
-    println!("{} new {} Zome at {:?}", "Generated".green().bold(), language, zome_name);
+    println!(
+        "{} new {} Zome at {:?}",
+        "Generated".green().bold(),
+        language,
+        zome_name
+    );
 
     Ok(())
 }

@@ -4,14 +4,17 @@ use hyper::{
     rt::{self, Future},
     server::Server,
     Body, Request,
+    http::uri,
 };
 use std::{io::Error, thread};
 // use tokio::runtime::Runtime;
 use hyper_staticfile::{Static, StaticFuture};
 use tokio::prelude::future;
 
-pub fn notify(msg: String) {
-    println!("{}", msg);
+fn redirect_request_to_root<T>(req: &mut Request<T>) {
+    let mut original_parts: uri::Parts = req.uri().to_owned().into();
+    original_parts.path_and_query = Some("/".parse().unwrap());
+    *req.uri_mut() = uri::Uri::from_parts(original_parts).unwrap();
 }
 
 /// Hyper `Service` implementation that serves all requests.
@@ -33,8 +36,18 @@ impl hyper::service::Service for StaticService {
     type Error = Error;
     type Future = StaticFuture<Body>;
 
-    fn call(&mut self, req: Request<Body>) -> StaticFuture<Body> {
-        self.static_.serve(req)
+    fn call(&mut self, mut req: Request<Body>) -> StaticFuture<Body> {
+        hyper_staticfile::resolve(&self.static_.root, &req).map(|result| {
+            match result {
+                hyper_staticfile::ResolveResult::NotFound => {
+                    // redirect all not-found routes to the root
+                    // this allows virtual routes on the front end
+                    redirect_request_to_root(&mut req);
+                    self.static_.serve(req)                    
+                },
+                _ => self.static_.serve(req)
+            }
+        }).wait().unwrap()
     }
 }
 

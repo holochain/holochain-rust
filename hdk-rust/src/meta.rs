@@ -10,9 +10,7 @@ use holochain_core_types::{
         zome::{ZomeCapabilities, ZomeEntryTypes},
     },
     entry::entry_type::{AppEntryType, EntryType},
-    error::{
-        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits,
-    },
+    error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     json::JsonString,
 };
 use holochain_wasm_utils::{
@@ -21,11 +19,11 @@ use holochain_wasm_utils::{
     },
     holochain_core_types::error::RibosomeErrorCode,
     memory::{
-        allocation::{AllocationError},
+        allocation::AllocationError,
         ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     },
 };
-use std::{collections::BTreeMap};
+use std::collections::BTreeMap;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);

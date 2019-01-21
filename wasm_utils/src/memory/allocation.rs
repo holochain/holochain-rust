@@ -67,7 +67,8 @@ impl From<AllocationError> for String {
             AllocationError::ZeroLength => "Allocation is zero length",
             AllocationError::BadStackAlignment => "Allocation is not aligned with stack",
             AllocationError::Serialization => "Allocation could not serialize data",
-        }.into()
+        }
+        .into()
     }
 }
 

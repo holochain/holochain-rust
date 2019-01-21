@@ -1,9 +1,7 @@
 extern crate holochain_core_types;
 extern crate wasm_bindgen;
 
-use holochain_core_types::{
-    agent::KeyBuffer,
-};
+use holochain_core_types::agent::KeyBuffer;
 
 use wasm_bindgen::prelude::*;
 

@@ -61,13 +61,12 @@ pub fn reduce_get_links_timeout(
 mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper, GetLinksKey, NetworkSettings},
-        context::test_memory_network_config,
+        action::{Action, ActionWrapper, GetLinksKey},
         instance::tests::test_context,
         state::test_store,
     };
     use holochain_core_types::error::HolochainError;
-    use std::sync::{Arc, RwLock};
+    //use std::sync::{Arc, RwLock};
 
     #[test]
     pub fn reduce_get_links_without_network_initialized() {

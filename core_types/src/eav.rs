@@ -260,7 +260,6 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             })
             .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<BTreeMap<Key, EntityAttributeValue>>();
-        println!("filtered {:?}", filtered.clone());
         Ok(filtered)
     }
 }

@@ -6,6 +6,7 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
@@ -30,7 +31,9 @@ define_zome! {
 
 
     receive: |message| {
-        format!("\"Received: {}\"", message)
+        json!({
+            "key": "value"
+        }).to_string()
     }
 
     functions: {

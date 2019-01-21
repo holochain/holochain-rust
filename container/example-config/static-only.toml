@@ -6,11 +6,10 @@ key_file = "holo_tester.key"
 
 [[ui_bundles]]
 id = "bundle1"
-root_dir = "" # serves the current directory
+root_dir = "./example-config/example-static-site"
 hash = "Qm000"
 
 [[ui_interfaces]]
 id = "ui-interface-1"
 bundle = "bundle1"
 port = 3000
-dna_interface = "<not used>"

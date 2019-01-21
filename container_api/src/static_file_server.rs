@@ -114,7 +114,7 @@ pub mod tests {
             id: "an id".to_string(),
             bundle: "a bundle".to_string(),
             port: 3000,
-            dna_interface: "interface".to_string(),
+            dna_interface: Some("interface".to_string()),
         };
 
         let mut static_server = StaticServer::from_configs(test_bundle_config, test_config);

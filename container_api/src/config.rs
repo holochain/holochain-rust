@@ -139,14 +139,16 @@ impl Configuration {
                     )
                 })?;
 
-            self.interface_by_id(&ui_interface.dna_interface)
-                .is_some()
-                .ok_or_else(|| {
-                    format!(
-                        "Interface configuration {} not found, mentioned in UI interface {}",
-                        ui_interface.dna_interface, ui_interface.id,
-                    )
-                })?;
+            if let Some(ref dna_interface_id) = ui_interface.dna_interface {
+                self.interface_by_id(&dna_interface_id)
+                    .is_some()
+                    .ok_or_else(|| {
+                        format!(
+                            "DNA Interface configuration \"{}\" not found, mentioned in UI interface \"{}\"",
+                            dna_interface_id, ui_interface.id,
+                        )
+                    })?;
+            }
         }
 
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
@@ -416,7 +418,9 @@ pub struct UiInterfaceConfiguration {
     /// This is used to set the CORS headers and also to
     /// provide a extra virtual file endpoint at /_dna_config/ that allows hc-web-client
     /// or another solution to redirect holochain calls to the correct ip/port/protocol
-    pub dna_interface: String,
+    /// (Optional)
+    #[serde(default)]
+    pub dna_interface: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
@@ -1081,7 +1085,7 @@ pub mod tests {
             .expect("Config should be syntactically correct");
         assert_eq!(
             config.check_consistency(),
-            Err("Interface configuration <not existant> not found, mentioned in UI interface ui-interface-1".to_string())
+            Err("DNA Interface configuration \"<not existant>\" not found, mentioned in UI interface \"ui-interface-1\"".to_string())
         );
     }
 }

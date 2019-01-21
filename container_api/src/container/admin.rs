@@ -665,7 +665,9 @@ pattern = ".*""#
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_install_dna_from_file\"");
+        let mut toml = String::from(
+            "bridges = []\npersistence_dir = \"./tmp-test/test_install_dna_from_file\"",
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -709,9 +711,8 @@ id = "new-dna""#,
 
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file = PathBuf::from(
-            "./tmp-test/test_install_dna_from_file_and_copy/dna/"
-        );
+        let mut output_dna_file =
+            PathBuf::from("./tmp-test/test_install_dna_from_file_and_copy/dna/");
         output_dna_file.push(new_dna.address().to_string());
         output_dna_file.set_extension("hcpkg");
 
@@ -771,9 +772,8 @@ id = "new-dna""#,
         assert_ne!(original_hash, new_hash);
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file = PathBuf::from(
-            "./tmp-test/test_install_dna_from_file_with_properties/dna/"
-        );
+        let mut output_dna_file =
+            PathBuf::from("./tmp-test/test_install_dna_from_file_with_properties/dna/");
         output_dna_file.push(new_hash.to_string());
         output_dna_file.set_extension("hcpkg");
 
@@ -818,7 +818,8 @@ id = "new-dna""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_instance\"");
+        let mut toml =
+            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_instance\"");
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -843,7 +844,8 @@ id = "new-instance"
 
 [instances.storage]
 path = "./tmp-test/test_add_instance/storage/new-instance"
-type = "file""#),
+type = "file""#,
+            ),
         );
         toml = add_block(toml, interface());
         toml = add_block(toml, logger());
@@ -869,7 +871,8 @@ type = "file""#),
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_remove_instance\"");
+        let mut toml =
+            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_remove_instance\"");
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -973,11 +976,13 @@ type = "websocket""#,
         assert_eq!(container.add_interface(interface_config), Ok(()),);
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_interface\"");
+        let mut toml =
+            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_interface\"");
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1018,11 +1023,14 @@ type = "http""#,
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\ninterfaces = []\npersistence_dir = \"./tmp-test/test_remove_interface\"");
+        let mut toml = String::from(
+            "bridges = []\ninterfaces = []\npersistence_dir = \"./tmp-test/test_remove_interface\"",
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1049,9 +1057,13 @@ type = "http""#,
             .is_some());
 
         assert_eq!(
-            container.add_instance(&String::from("new-instance"), &String::from("test-dna"),
-            &String::from("test-agent-1")),
-                   Ok(()));
+            container.add_instance(
+                &String::from("new-instance"),
+                &String::from("test-dna"),
+                &String::from("test-agent-1")
+            ),
+            Ok(())
+        );
         assert_eq!(
             container.add_instance_to_interface(
                 &String::from("websocket interface"),
@@ -1061,11 +1073,14 @@ type = "http""#,
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_instance_to_interface\"");
+        let mut toml = String::from(
+            "bridges = []\npersistence_dir = \"./tmp-test/test_add_instance_to_interface\"",
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1129,11 +1144,14 @@ type = "websocket""#,
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_remove_instance_from_interface\"");
+        let mut toml = String::from(
+            "bridges = []\npersistence_dir = \"./tmp-test/test_remove_instance_from_interface\"",
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1178,11 +1196,13 @@ type = "websocket""#,
         assert_eq!(container.add_agent(agent_config), Ok(()),);
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_agent\"");
+        let mut toml =
+            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_agent\"");
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
@@ -1215,11 +1235,13 @@ public_address = "new-----------------------------------------------------------
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_remove_agent\"");
+        let mut toml =
+            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_remove_agent\"");
         toml = add_block(toml, agent1());
         //toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1259,7 +1281,8 @@ type = "websocket""#,
         assert_eq!(container.add_bridge(bridge), Ok(()),);
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
@@ -1293,11 +1316,14 @@ handle = "my favourite instance!""#,
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_and_remove_bridge\"");
+        let mut toml = String::from(
+            "bridges = []\npersistence_dir = \"./tmp-test/test_add_and_remove_bridge\"",
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());

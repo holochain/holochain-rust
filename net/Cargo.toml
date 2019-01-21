@@ -4,7 +4,7 @@ version = "0.0.3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-base64 = "0.9.3"
+base64 = "0.10"
 failure = "0.1.1"
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }

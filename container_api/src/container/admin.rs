@@ -999,7 +999,8 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from(r#"bridges = []
+        let mut toml = String::from(
+            r#"bridges = []
 persistence_dir = "./tmp-test/test_add_interface"
 ui_bundles = []
 ui_interfaces = []"#,

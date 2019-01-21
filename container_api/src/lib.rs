@@ -122,9 +122,9 @@ extern crate dirs;
 #[macro_use]
 extern crate lazy_static;
 extern crate directories;
-extern crate json_patch;
 extern crate hyper;
 extern crate hyper_staticfile;
+extern crate json_patch;
 extern crate tokio;
 
 pub mod config;

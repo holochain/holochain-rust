@@ -48,7 +48,7 @@ impl From<Length> for usize {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone, PartialEq)]
 pub enum AllocationError {
     /// (de)allocation is either too large or implies negative values
     OutOfBounds,
@@ -65,7 +65,7 @@ impl From<AllocationError> for String {
         match allocation_error {
             AllocationError::OutOfBounds => "Allocation out of bounds",
             AllocationError::ZeroLength => "Allocation is zero length",
-            AllocationError::BadStackAlignment => "Allocation is not aligned with stack",
+            AllocationError::BadStackAlignment => "Allocation not aligned with stack",
             AllocationError::Serialization => "Allocation could not serialize data",
         }
         .into()
@@ -78,7 +78,7 @@ impl From<AllocationError> for HolochainError {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct WasmAllocation {
     offset: Offset,
     length: Length,
@@ -115,9 +115,12 @@ pub type AllocationResult = Result<WasmAllocation, AllocationError>;
 pub mod tests {
 
     use memory::{
-        allocation::{Length, Offset},
+        allocation::{Length, Offset, AllocationError},
         MemoryBits, MemoryInt,
     };
+    use holochain_core_types::error::HolochainError;
+    use memory::MEMORY_INT_MAX;
+    use memory::allocation::WasmAllocation;
 
     pub fn fake_offset() -> Offset {
         Offset(12345)
@@ -160,6 +163,88 @@ pub mod tests {
     #[test]
     pub fn usize_from_length_test() {
         assert_eq!(usize::from(fake_length()), 12345 as usize,);
+    }
+
+    #[test]
+    pub fn string_from_allocation_test() {
+        assert_eq!(
+            String::from("Allocation out of bounds"),
+            String::from(AllocationError::OutOfBounds),
+        );
+        assert_eq!(
+            String::from("Allocation is zero length"),
+            String::from(AllocationError::ZeroLength),
+        );
+        assert_eq!(
+            String::from("Allocation not aligned with stack"),
+            String::from(AllocationError::BadStackAlignment),
+        );
+        assert_eq!(
+            String::from("Allocation could not serialize data"),
+            String::from(AllocationError::Serialization),
+        );
+    }
+
+    #[test]
+    pub fn holochain_error_from_allocation_error_test() {
+        assert_eq!(
+            HolochainError::from("Allocation out of bounds"),
+            HolochainError::from(AllocationError::OutOfBounds),
+        );
+        assert_eq!(
+            HolochainError::from("Allocation is zero length"),
+            HolochainError::from(AllocationError::ZeroLength),
+        );
+        assert_eq!(
+            HolochainError::from("Allocation not aligned with stack"),
+            HolochainError::from(AllocationError::BadStackAlignment),
+        );
+        assert_eq!(
+            HolochainError::from("Allocation could not serialize data"),
+            HolochainError::from(AllocationError::Serialization),
+        );
+    }
+
+    #[test]
+    pub fn allocation_max_test() {
+        assert_eq!(
+            MEMORY_INT_MAX,
+            WasmAllocation::max(),
+        );
+    }
+
+    #[test]
+    pub fn allocation_new_test() {
+        assert_eq!(
+            Err(AllocationError::OutOfBounds),
+            WasmAllocation::new(Offset::from(std::u16::MAX), Length::from(1)),
+        );
+
+        assert_eq!(
+            Err(AllocationError::ZeroLength),
+            WasmAllocation::new(Offset::from(1), Length::from(0)),
+        );
+
+        assert_eq!(
+            Ok(WasmAllocation { offset: Offset::from(1), length: Length::from(1) }),
+            WasmAllocation::new(Offset::from(1), Length::from(1)),
+        );
+    }
+
+    #[test]
+    pub fn allocation_offset_test() {
+        assert_eq!(
+            Offset::from(1),
+            WasmAllocation::new(Offset::from(1), Length::from(1)).unwrap().offset(),
+        );
+    }
+
+    #[test]
+    pub fn allocation_length_test() {
+        assert_eq!(
+            Length::from(1),
+            WasmAllocation::new(Offset::from(1), Length::from(1)).unwrap().length(),
+        );
     }
 
 }

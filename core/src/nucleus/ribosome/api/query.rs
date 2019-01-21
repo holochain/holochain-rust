@@ -1,14 +1,9 @@
-use crate:: {
-    nucleus::ribosome::{
-        api::ZomeApiResult, Runtime,
-    },
-    agent::chain_store::{
-        ChainStoreQueryOptions, ChainStoreQueryResult,
-    }
+use crate::{
+    agent::chain_store::{ChainStoreQueryOptions, ChainStoreQueryResult},
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
-use holochain_wasm_utils::api_serialization::{
-    QueryArgs, QueryArgsNames, QueryResult,
-};
+use holochain_core_types::query::QueryResult;
+use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -68,7 +63,8 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
-    let maybe_result = match query.entry_type_names { // Result<ChainStoreQueryResult,...>
+    let maybe_result = match query.entry_type_names {
+        // Result<ChainStoreQueryResult,...>
         QueryArgsNames::QueryList(pats) => {
             let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>
             agent.chain().query(
@@ -78,7 +74,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                     start: query.options.start,
                     limit: query.options.limit,
                     headers: query.options.headers,
-                }
+                },
             )
         }
         QueryArgsNames::QueryName(name) => {
@@ -88,9 +84,9 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 refs.as_slice(), // Vec<&str> -> &[&str]
                 ChainStoreQueryOptions {
                     start: query.options.start,
-                    limit:  query.options.limit,
+                    limit: query.options.limit,
                     headers: query.options.headers,
-                }
+                },
             )
         }
     };
@@ -98,15 +94,21 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         // TODO #793: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
         // Perhaps return chain().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
-        Ok(result) => {
-            Ok(match result {
-                ChainStoreQueryResult::Addresses(addresses) => QueryResult::Addresses(addresses),
-                ChainStoreQueryResult::Headers(headers) => QueryResult::Headers(headers),
-            })
-        }
+        Ok(result) => Ok(match (result, query.options.entries) {
+            (ChainStoreQueryResult::Addresses(addresses), false) => {
+                QueryResult::Addresses(addresses)
+            }
+            (ChainStoreQueryResult::Headers(headers), false) => QueryResult::Headers(headers),
+            (ChainStoreQueryResult::Addresses(addresses), true) => {
+                QueryResult::Entries(todo_get_entries(addresses)?)
+            }
+            (ChainStoreQueryResult::Headers(headers), true) => QueryResult::HeadersWithEntries((
+                headers,
+                todo_get_entries(headers.iter().map(|h| h.entry_address()).collect())?,
+            )),
+        }),
         Err(_code) => return ribosome_error_code!(UnknownEntryType),
     };
 
     runtime.store_result(result)
 }
-

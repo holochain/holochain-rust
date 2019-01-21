@@ -32,7 +32,7 @@ define_zome! {
 
     receive: |message| {
         json!({
-            "key": "value"
+            "message": message 
         }).to_string()
     }
 

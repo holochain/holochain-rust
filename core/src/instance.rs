@@ -310,7 +310,7 @@ pub mod tests {
             chain_store::ChainStore,
             state::{ActionResponse, AgentState},
         },
-        context::{test_mock_config, Context},
+        context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
     };
     use futures::executor::block_on;
@@ -367,7 +367,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                test_mock_config(network_name),
+                test_memory_network_config(network_name),
                 None,
                 None,
             )),
@@ -408,7 +408,7 @@ pub mod tests {
                     EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                         .unwrap(),
                 )),
-                test_mock_config(network_name),
+                test_memory_network_config(network_name),
             )
             .unwrap(),
         )
@@ -429,7 +429,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            test_mock_config(network_name),
+            test_memory_network_config(network_name),
             None,
             None,
         );
@@ -453,7 +453,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            test_mock_config(network_name),
+            test_memory_network_config(network_name),
             None,
             None,
         );

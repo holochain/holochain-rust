@@ -76,7 +76,7 @@ pub fn mount_container_from_config(config: Configuration) {
 pub struct Container {
     pub(in crate::container) instances: InstanceMap,
     pub(in crate::container) config: Configuration,
-    interface_threads: HashMap<String, Sender<()>>,
+    pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
@@ -140,19 +140,37 @@ impl Container {
     pub fn stop_all_interfaces(&mut self) {
         for (id, kill_switch) in self.interface_threads.iter() {
             notify(format!("Stopping interface {}", id));
-            let send_result = kill_switch.send(());
-            if send_result.is_err() {
-                notify(format!(
-                    "Error stopping interface: {}",
-                    send_result.err().unwrap()
-                ));
-            }
+            let _ = kill_switch.send(()).map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                err
+            });
         }
     }
 
-    pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
+    pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
+        {
+            let kill_switch =
+                self.interface_threads
+                    .get(id)
+                    .ok_or(HolochainError::ErrorGeneric(format!(
+                        "Interface {} not found.",
+                        id
+                    )))?;
+            notify(format!("Stopping interface {}", id));
+            kill_switch.send(()).map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                HolochainError::ErrorGeneric(message)
+            })?;
+        }
+        self.interface_threads.remove(id);
+        Ok(())
+    }
+
+    pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
         self.config
-            .interface_by_id(&id)
+            .interface_by_id(id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
     }
@@ -236,10 +254,10 @@ impl Container {
 
     fn instance_p2p_config(&self) -> Result<JsonString, HolochainError> {
         let config = self.p2p_config.clone().unwrap_or_else(|| {
-            // This should never happen, but we'll throw out a named mock network rather than crashing,
+            // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
-            println!("warn: instance_network_config called before p2p_config initialized! Using default mock network name.");
-            JsonString::from(P2pConfig::named_mock_as_string("container-default-mock"))
+            println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
+            JsonString::from(P2pConfig::new_with_memory_backend("container-default-mock").as_str())
         });
         Ok(config)
     }
@@ -270,8 +288,8 @@ impl Container {
                 ))
             }
             // if there's no NetworkConfig we won't spawn a network process
-            // and instead configure instances to use a unique mock network
-            None => JsonString::from(P2pConfig::unique_mock_as_string()),
+            // and instead configure instances to use a unique in-memory network
+            None => JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str()),
         }
     }
 
@@ -283,7 +301,10 @@ impl Container {
     /// @TODO: clean up the container creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config(&mut self) -> Result<(), String> {
+    pub fn load_config_with_signal(
+        &mut self,
+        signal_tx: Option<SignalSender>,
+    ) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -295,7 +316,7 @@ impl Container {
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
-                .instantiate_from_config(&id, &config)
+                .instantiate_from_config(&id, &config, signal_tx.clone())
                 .map_err(|error| {
                     format!(
                         "Error while trying to create instance \"{}\": {}",
@@ -309,12 +330,17 @@ impl Container {
         Ok(())
     }
 
+    pub fn load_config(&mut self) -> Result<(), String> {
+        self.load_config_with_signal(None)
+    }
+
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
     pub fn instantiate_from_config(
         &mut self,
         id: &String,
         config: &Configuration,
+        signal_tx: Option<SignalSender>,
     ) -> Result<Holochain, String> {
         let _ = config.check_consistency()?;
 
@@ -332,6 +358,11 @@ impl Container {
                     context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 context_builder = context_builder.with_network_config(self.instance_p2p_config()?);
+
+                // Signal config:
+                if let Some(tx) = signal_tx {
+                    context_builder = context_builder.with_signals(tx)
+                };
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
@@ -394,6 +425,7 @@ impl Container {
         if self.interface_threads.contains_key(&config.id) {
             return Err(format!("Interface {} already started!", config.id));
         }
+        notify(format!("Starting interface '{}'.", config.id));
         let handle = self.spawn_interface_thread(config.clone());
         self.interface_threads.insert(config.id.clone(), handle);
         Ok(())

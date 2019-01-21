@@ -6,11 +6,15 @@ use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Va
 use serde_json;
 use std::{
     collections::HashMap,
+    convert::TryFrom,
     path::PathBuf,
     sync::{mpsc::Receiver, Arc, RwLock},
 };
 
-use config::{DnaConfiguration, InstanceConfiguration};
+use config::{
+    AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
+    InterfaceDriver,
+};
 use container::{ContainerAdmin, CONTAINER};
 use serde_json::map::Map;
 
@@ -57,7 +61,7 @@ macro_rules! container_call {
 /// Examples for method names are:
 /// {instance_id}/{zome}/{cap}/{func} -> a zome call
 /// info/list_instances               -> Map of InstanceConfigs, keyed by ID
-/// admin/...                         -> TODO
+/// admin/...                         -> see [with_admin_dna_functions]
 ///
 /// Each interface has their own handler, and each may be configured differently.
 /// This builder makes it convenient to create handlers with different configurations.
@@ -232,11 +236,149 @@ impl ContainerApiBuilder {
             )))?
             .as_bool()
             .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` is not a valid json boolean",
+                "`{}` has to be a boolean",
                 &key
             )))?)
     }
 
+    fn get_as_int<T: Into<String>>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<i64, jsonrpc_core::Error> {
+        let key = key.into();
+        Ok(params_map
+            .get(&key)
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param not provided",
+                &key
+            )))?
+            .as_i64()
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` has to be an integer",
+                &key
+            )))?)
+    }
+
+    /// This adds functions to remotely change any aspect of the container config.
+    /// After any change the container's config file gets saved.
+    /// It is guaranteed that the config is either valid after the change or the change
+    /// does not get applied but instead an error is reported back.
+    ///
+    ///  Full list of functions:
+    ///
+    ///  * `admin/dna/install_from_file`:
+    ///     Installs a DNA from a given local file.
+    ///     Params:
+    ///     * `id`: [string] internal handle/name of the newly created DNA config
+    ///     * `path`: [string] local file path to DNA file
+    ///
+    ///  * `admin/dna/uninstall`
+    ///     Uninstalls a DNA from the container config. Recursively also removes (and stops)
+    ///     all instances this DNA is used in.
+    ///     Params:
+    ///     * `id`: [string] handle of the DNA to be deleted.
+    ///
+    ///  * `admin/dna/list`
+    ///     Returns an array of all configured DNAs.
+    ///
+    ///  * `admin/instance/add`
+    ///     Creates a new instance and adds it to the config.
+    ///     Does not start the instance nor add it to an interface
+    ///     (see `admin/instance/start` and `admin/interface/add_instance`).
+    ///     Params:
+    ///     * `id`: [string] Name for the new instance
+    ///     * `agent_id`: [string] Agent to run this instance with
+    ///     * `dna_id`: [string] DNA to run in this instance
+    ///
+    ///  * `admin/instance/remove`
+    ///     Removes an instance. Also remove its any uses of it in interfaces.
+    ///     * `id`: [string] Which instance to remove?
+    ///
+    ///  * `admin/instance/start`
+    ///     Starts a stopped instance or reports an error if the given instance is
+    ///     running already
+    ///     Params:
+    ///     * `id`: [string] Which instance to start?
+    ///
+    ///  * `admin/instance/stop`
+    ///     Stops a running instance or reports an error if the given instance is not running.
+    ///     Params:
+    ///     * `id`: [string] Which instance to stop?
+    ///
+    ///  * `admin/instance/list`
+    ///     Returns an array of all instances that are configured.
+    ///
+    ///  * `admin/instance/running`
+    ///     Returns an array of all instances that are running.
+    ///
+    ///  * `admin/interface/add`
+    ///     Adds a new DNA / zome / container interface (that provides access to zome functions
+    ///     of selected instances and container functions, depending on the interfaces config).
+    ///     This also automatically starts the interface. Different from instances, there are no
+    ///     *stopped* interfaces - every interface that is configured is also active.
+    ///     Params:
+    ///     * `id`: [string] ID for the new interface
+    ///     * `admin`: [bool] Grant access to (these) admin functions?
+    ///     * `type`: [string] Either "websocket" or "http"
+    ///     * `port`:  [number] Port to bind the server to.
+    ///
+    ///  * `admin/interface/remove`
+    ///     Remove an interface from config. This automatically stops the interface as well.
+    ///     Params:
+    ///     * `id`: [string] Which interface to stop?
+    ///
+    ///  * `admin/interface/add_instance`
+    ///     Make a given DNA instance available via a given interface.
+    ///     This restarts the given interface in order to have the change take effect.
+    ///     Params:
+    ///     * `interface_id`: Which interface to add the instance to?
+    ///     * `instance_id`: Which instance to add?
+    ///
+    ///  * `admin/interface/remove_instance`
+    ///     Remove an instance from a given interface.
+    ///     This restarts the given interface in order to have the change take effect.
+    ///     Params:
+    ///     * `interface_id`: Which interface to remove the instance from?
+    ///     * `instance_id`: Which instance to remove?
+    ///
+    ///  * `admin/interface/list`
+    ///     Returns an array of all DNA/zome interfaces.
+    ///
+    ///  * `admin/agent/add`
+    ///     Add an agent to the container configuration that can be used with instances.
+    ///     Params:
+    ///     * `id`: Handle of this agent configuration as used in the config / other function calls
+    ///     * `name`: Nickname of this agent configuration
+    ///     * `public_address`: Public part of this agents key. Has to match the private key in the
+    ///         given key file.
+    ///     * `key_file`: Local path to the file that holds this agent configuration's private key
+    ///
+    ///  * `admin/agent/remove`
+    ///     Remove an agent from the container config.
+    ///     Params:
+    ///     * `id`: Which agent to remove?
+    ///
+    ///  * `admin/agent/list`
+    ///     Returns an array of all configured agents.
+    ///
+    ///  * `admin/bridge/add`
+    ///     Add a bridge between two instances to enable the caller to call the callee's
+    ///     zome functions.
+    ///     Params:
+    ///     * `caller_id`: ID of the instance that will be able to call into the other instance
+    ///     * `callee_id`: ID of the instance which's zome functions can be called
+    ///     * `handle`: Name that the caller uses to reference this bridge and therefore the other
+    ///             instance.
+    ///
+    ///  * `admin/bridge/remove`
+    ///     Remove a bridge
+    ///     Params:
+    ///     * `caller_id`: ID of the instance that can call into the other instance
+    ///     * `callee_id`: ID of the instance which's zome functions can be called
+    ///
+    ///  * `admin/bridge/list`
+    ///     Returns an array of all bridges.
+    ///
     pub fn with_admin_dna_functions(mut self) -> Self {
         self.io
             .add_method("admin/dna/install_from_file", move |params| {
@@ -347,6 +489,130 @@ impl ContainerApiBuilder {
                         .collect(),
                 ))
             });
+
+        self.io.add_method("admin/interface/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+
+            let id = Self::get_as_string("id", &params_map)?;
+            let admin = Self::get_as_bool("admin", &params_map)?;
+            let driver_type = Self::get_as_string("type", &params_map)?;
+            let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
+                jsonrpc_core::Error::invalid_params(String::from(
+                    "`port` has to be a 16bit integer",
+                ))
+            })?;
+
+            let new_interface = InterfaceConfiguration {
+                id: id.to_string(),
+                admin,
+                driver: match driver_type.as_ref() {
+                    "websocket" => InterfaceDriver::Websocket { port },
+                    "http" => InterfaceDriver::Http { port },
+                    _ => {
+                        return Err(jsonrpc_core::Error::invalid_params(String::from(
+                            "`type` has to be either `websocket` or `http`",
+                        )));
+                    }
+                },
+                instances: Vec::new(),
+            };
+
+            container_call!(|c| c.add_interface(new_interface))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/interface/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.remove_interface(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io
+            .add_method("admin/interface/add_instance", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let interface_id = Self::get_as_string("interface_id", &params_map)?;
+                let instance_id = Self::get_as_string("instance_id", &params_map)?;
+                container_call!(|c| c.add_instance_to_interface(&interface_id, &instance_id))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io
+            .add_method("admin/interface/remove_instance", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let interface_id = Self::get_as_string("interface_id", &params_map)?;
+                let instance_id = Self::get_as_string("instance_id", &params_map)?;
+                container_call!(|c| c.remove_instance_from_interface(&interface_id, &instance_id))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io.add_method("admin/interface/list", move |_params| {
+            let interfaces = container_call!(
+                |c| Ok(c.config().interfaces) as Result<Vec<InterfaceConfiguration>, String>
+            )?;
+            Ok(serde_json::to_value(interfaces)
+                .map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self.io.add_method("admin/agent/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let name = Self::get_as_string("name", &params_map)?;
+            let public_address = Self::get_as_string("public_address", &params_map)?;
+            let key_file = Self::get_as_string("key_file", &params_map)?;
+
+            let agent = AgentConfiguration {
+                id,
+                name,
+                public_address,
+                key_file,
+            };
+            container_call!(|c| c.add_agent(agent))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/agent/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.remove_agent(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/agent/list", move |_params| {
+            let agents = container_call!(
+                |c| Ok(c.config().agents) as Result<Vec<AgentConfiguration>, String>
+            )?;
+            Ok(serde_json::to_value(agents).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self.io.add_method("admin/bridge/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let caller_id = Self::get_as_string("caller_id", &params_map)?;
+            let callee_id = Self::get_as_string("callee_id", &params_map)?;
+            let handle = Self::get_as_string("handle", &params_map)?;
+
+            let bridge = Bridge {
+                caller_id,
+                callee_id,
+                handle,
+            };
+            container_call!(|c| c.add_bridge(bridge))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/bridge/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let caller_id = Self::get_as_string("caller_id", &params_map)?;
+            let callee_id = Self::get_as_string("callee_id", &params_map)?;
+            container_call!(|c| c.remove_bridge(&caller_id, &callee_id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/bridge/list", move |_params| {
+            let bridges =
+                container_call!(|c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>)?;
+            Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
 
         self
     }

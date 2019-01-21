@@ -1,51 +1,60 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
-use crate::mock_system::*;
-use holochain_core_types::json::JsonString;
+use crate::memory_server::*;
+use holochain_core_types::{cas::content::Address, json::JsonString};
 use holochain_net_connection::{
+    json_protocol::JsonProtocol,
     net_connection::{NetHandler, NetWorker},
     protocol::Protocol,
-    protocol_wrapper::ProtocolWrapper,
     NetResult,
 };
 use std::{
+    collections::{hash_map::Entry, HashMap},
     convert::TryFrom,
     sync::{mpsc, Mutex},
 };
 
 /// a p2p worker for mocking in-memory scenario tests
-pub struct MockWorker {
+pub struct InMemoryWorker {
     handler: NetHandler,
-    mock_msgs: Vec<mpsc::Receiver<Protocol>>,
-    network_name: String,
+    receiver_per_dna: HashMap<Address, mpsc::Receiver<Protocol>>,
+    server_name: String,
 }
 
-impl NetWorker for MockWorker {
+impl NetWorker for InMemoryWorker {
     /// we got a message from holochain core
-    /// forward to our mock singleton
+    /// forward to our in-memory server
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
-        let map_lock = MOCK_MAP.read().unwrap();
-        let mut mock = map_lock
-            .get(&self.network_name)
-            .expect("MockSystem should have been initialized by now")
+        let server_map = MEMORY_SERVER_MAP.read().unwrap();
+        let mut server = server_map
+            .get(&self.server_name)
+            .expect("InMemoryServer should have been initialized by now")
             .lock()
             .unwrap();
-        if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
-            if let ProtocolWrapper::TrackApp(app) = wrap {
-                let (tx, rx) = mpsc::channel();
-                self.mock_msgs.push(rx);
-                mock.register(&app.dna_address, &app.agent_id, tx)?;
+        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            if let JsonProtocol::TrackDna(track_msg) = json_msg {
+                match self
+                    .receiver_per_dna
+                    .entry(track_msg.dna_address.to_owned())
+                {
+                    Entry::Occupied(_) => (),
+                    Entry::Vacant(e) => {
+                        let (tx, rx) = mpsc::channel();
+                        server.register(&track_msg.dna_address, &track_msg.agent_id, tx)?;
+                        e.insert(rx);
+                    }
+                };
             }
         }
-        mock.handle(data)?;
+        server.handle(data)?;
         Ok(())
     }
 
-    /// check for messages from our mock singleton
+    /// check for messages from our InMemoryServer
     fn tick(&mut self) -> NetResult<bool> {
         let mut did_something = false;
-        for msg in self.mock_msgs.iter_mut() {
-            if let Ok(data) = msg.try_recv() {
+        for (_, receiver) in self.receiver_per_dna.iter_mut() {
+            if let Ok(data) = receiver.try_recv() {
                 did_something = true;
                 (self.handler)(Ok(data))?;
             }
@@ -58,31 +67,55 @@ impl NetWorker for MockWorker {
         Ok(())
     }
 
-    /// Set network's name as worker's endpoint
+    /// Set server's name as worker's endpoint
     fn endpoint(&self) -> Option<String> {
-        Some(self.network_name.clone())
+        Some(self.server_name.clone())
     }
 }
 
-impl MockWorker {
-    /// create a new mock worker... no configuration required
-    pub fn new(handler: NetHandler, network_config: &JsonString) -> NetResult<Self> {
-        let config: serde_json::Value = serde_json::from_str(network_config.into())?;
-        let network_name = config["networkName"]
+impl InMemoryWorker {
+    /// create a new memory worker connected to an in-memory server
+    pub fn new(handler: NetHandler, backend_config: &JsonString) -> NetResult<Self> {
+        // Get server name from config
+        let config: serde_json::Value = serde_json::from_str(backend_config.into())?;
+        // println!("InMemoryWorker::new() config = {:?}", config);
+        let server_name = config["serverName"]
             .as_str()
             .unwrap_or("(unnamed)")
             .to_string();
-
-        let mut map_lock = MOCK_MAP.write().unwrap();
-        if !map_lock.contains_key(&network_name) {
-            map_lock.insert(network_name.clone(), Mutex::new(MockSystem::new()));
+        // Create server with that name if it doesn't already exist
+        let mut server_map = MEMORY_SERVER_MAP.write().unwrap();
+        if !server_map.contains_key(&server_name) {
+            server_map.insert(
+                server_name.clone(),
+                Mutex::new(InMemoryServer::new(server_name.clone())),
+            );
         }
+        let mut server = server_map
+            .get(&server_name)
+            .expect("InMemoryServer should exist")
+            .lock()
+            .unwrap();
+        server.clock_in();
 
-        Ok(MockWorker {
+        Ok(InMemoryWorker {
             handler,
-            mock_msgs: Vec::new(),
-            network_name,
+            receiver_per_dna: HashMap::new(),
+            server_name,
         })
+    }
+}
+
+// unregister on Drop
+impl Drop for InMemoryWorker {
+    fn drop(&mut self) {
+        let server_map = MEMORY_SERVER_MAP.read().unwrap();
+        let mut server = server_map
+            .get(&self.server_name)
+            .expect("InMemoryServer should exist")
+            .lock()
+            .unwrap();
+        server.clock_out();
     }
 }
 
@@ -92,9 +125,9 @@ mod tests {
     use crate::p2p_config::P2pConfig;
 
     use holochain_core_types::cas::content::Address;
-    use holochain_net_connection::protocol_wrapper::{
-        DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, MessageData, ProtocolWrapper,
-        SuccessResultData, TrackAppData,
+    use holochain_net_connection::json_protocol::{
+        DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, JsonProtocol, MessageData,
+        SuccessResultData, TrackDnaData,
     };
 
     fn example_dna_address() -> Address {
@@ -106,25 +139,72 @@ mod tests {
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
-    fn it_mock_networker_flow() {
+    fn can_memory_double_track() {
         // setup client 1
-        let config = &JsonString::from(P2pConfig::unique_mock_as_string());
+        let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
 
-        let mut mock_worker_1 = Box::new(
-            MockWorker::new(
+        let mut memory_worker_1 = Box::new(
+            InMemoryWorker::new(
                 Box::new(move |r| {
                     handler_send_1.send(r?)?;
                     Ok(())
                 }),
-                config,
+                memory_config,
             )
             .unwrap(),
         );
 
-        mock_worker_1
+        // First Track
+        memory_worker_1
             .receive(
-                ProtocolWrapper::TrackApp(TrackAppData {
+                JsonProtocol::TrackDna(TrackDnaData {
+                    dna_address: example_dna_address(),
+                    agent_id: AGENT_ID_1.to_string(),
+                })
+                .into(),
+            )
+            .unwrap();
+
+        // Should receive PeerConnected
+        memory_worker_1.tick().unwrap();
+        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+
+        // Second Track
+        memory_worker_1
+            .receive(
+                JsonProtocol::TrackDna(TrackDnaData {
+                    dna_address: example_dna_address(),
+                    agent_id: AGENT_ID_1.to_string(),
+                })
+                .into(),
+            )
+            .unwrap();
+
+        memory_worker_1.tick().unwrap();
+    }
+
+    #[test]
+    #[cfg_attr(tarpaulin, skip)]
+    fn can_memory_network_flow() {
+        // setup client 1
+        let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
+        let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
+
+        let mut memory_worker_1 = Box::new(
+            InMemoryWorker::new(
+                Box::new(move |r| {
+                    handler_send_1.send(r?)?;
+                    Ok(())
+                }),
+                memory_config,
+            )
+            .unwrap(),
+        );
+
+        memory_worker_1
+            .receive(
+                JsonProtocol::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_1.to_string(),
                 })
@@ -132,24 +212,24 @@ mod tests {
             )
             .unwrap();
         // Should receive PeerConnected
-        mock_worker_1.tick().unwrap();
-        let _res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        memory_worker_1.tick().unwrap();
+        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
         // setup client 2
         let (handler_send_2, handler_recv_2) = mpsc::channel::<Protocol>();
-        let mut mock_worker_2 = Box::new(
-            MockWorker::new(
+        let mut memory_worker_2 = Box::new(
+            InMemoryWorker::new(
                 Box::new(move |r| {
                     handler_send_2.send(r?)?;
                     Ok(())
                 }),
-                config,
+                memory_config,
             )
             .unwrap(),
         );
-        mock_worker_2
+        memory_worker_2
             .receive(
-                ProtocolWrapper::TrackApp(TrackAppData {
+                JsonProtocol::TrackDna(TrackDnaData {
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_2.to_string(),
                 })
@@ -157,15 +237,15 @@ mod tests {
             )
             .unwrap();
         // Should receive PeerConnected
-        mock_worker_1.tick().unwrap();
-        let _res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        mock_worker_2.tick().unwrap();
-        let _res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        memory_worker_1.tick().unwrap();
+        let _res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        memory_worker_2.tick().unwrap();
+        let _res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         // node2node:  send & receive
-        mock_worker_1
+        memory_worker_1
             .receive(
-                ProtocolWrapper::SendMessage(MessageData {
+                JsonProtocol::SendMessage(MessageData {
                     dna_address: example_dna_address(),
                     to_agent_id: AGENT_ID_2.to_string(),
                     from_agent_id: AGENT_ID_1.to_string(),
@@ -176,14 +256,14 @@ mod tests {
             )
             .unwrap();
 
-        mock_worker_2.tick().unwrap();
+        memory_worker_2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::HandleSend(msg) = res {
-            mock_worker_2
+        if let JsonProtocol::HandleSendMessage(msg) = res {
+            memory_worker_2
                 .receive(
-                    ProtocolWrapper::HandleSendResult(MessageData {
+                    JsonProtocol::HandleSendMessageResult(MessageData {
                         dna_address: msg.dna_address,
                         to_agent_id: msg.from_agent_id,
                         from_agent_id: AGENT_ID_2.to_string(),
@@ -198,11 +278,11 @@ mod tests {
             panic!("bad msg");
         }
 
-        mock_worker_1.tick().unwrap();
+        memory_worker_1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SendResult(msg) = res {
+        if let JsonProtocol::SendMessageResult(msg) = res {
             assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
         } else {
             println!("Did not expect to receive: {:?}", res);
@@ -211,9 +291,9 @@ mod tests {
 
         // -- dht get -- //
 
-        mock_worker_2
+        memory_worker_2
             .receive(
-                ProtocolWrapper::GetDht(GetDhtData {
+                JsonProtocol::GetDhtData(GetDhtData {
                     msg_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     from_agent_id: AGENT_ID_2.to_string(),
@@ -223,14 +303,14 @@ mod tests {
             )
             .unwrap();
 
-        mock_worker_1.tick().unwrap();
+        memory_worker_1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDht(msg) = res {
-            mock_worker_1
+        if let JsonProtocol::HandleGetDhtData(msg) = res {
+            memory_worker_1
                 .receive(
-                    ProtocolWrapper::GetDhtResult(DhtData {
+                    JsonProtocol::HandleGetDhtDataResult(DhtData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         agent_id: msg.from_agent_id.clone(),
@@ -245,11 +325,11 @@ mod tests {
             panic!("bad msg");
         }
 
-        mock_worker_2.tick().unwrap();
+        memory_worker_2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtResult(msg) = res {
+        if let JsonProtocol::GetDhtDataResult(msg) = res {
             assert_eq!("\"data-for: hello\"".to_string(), msg.content.to_string());
         } else {
             println!("Did not expect to receive: {:?}", res);
@@ -258,9 +338,9 @@ mod tests {
 
         // -- dht publish / store -- //
 
-        mock_worker_2
+        memory_worker_2
             .receive(
-                ProtocolWrapper::PublishDht(DhtData {
+                JsonProtocol::PublishDhtData(DhtData {
                     msg_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_2.to_string(),
@@ -271,18 +351,18 @@ mod tests {
             )
             .unwrap();
 
-        mock_worker_1.tick().unwrap();
-        mock_worker_2.tick().unwrap();
+        memory_worker_1.tick().unwrap();
+        memory_worker_2.tick().unwrap();
 
-        let res1 = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        let res2 = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res1 = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res2 = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         assert_eq!(res1, res2);
 
-        if let ProtocolWrapper::StoreDht(msg) = res1 {
-            mock_worker_1
+        if let JsonProtocol::HandleStoreDhtData(msg) = res1 {
+            memory_worker_1
                 .receive(
-                    ProtocolWrapper::SuccessResult(SuccessResultData {
+                    JsonProtocol::SuccessResult(SuccessResultData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         to_agent_id: msg.agent_id.clone(),
@@ -296,10 +376,10 @@ mod tests {
             panic!("bad msg");
         }
 
-        mock_worker_2.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        memory_worker_2.tick().unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SuccessResult(msg) = res {
+        if let JsonProtocol::SuccessResult(msg) = res {
             assert_eq!("\"signature here\"", &msg.success_info.to_string())
         } else {
             println!("Did not expect to receive: {:?}", res);
@@ -308,9 +388,9 @@ mod tests {
 
         // -- dht meta get -- //
 
-        mock_worker_2
+        memory_worker_2
             .receive(
-                ProtocolWrapper::GetDhtMeta(GetDhtMetaData {
+                JsonProtocol::GetDhtMeta(GetDhtMetaData {
                     msg_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     from_agent_id: AGENT_ID_2.to_string(),
@@ -321,14 +401,14 @@ mod tests {
             )
             .unwrap();
 
-        mock_worker_1.tick().unwrap();
+        memory_worker_1.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtMeta(msg) = res {
-            mock_worker_1
+        if let JsonProtocol::HandleGetDhtMeta(msg) = res {
+            memory_worker_1
                 .receive(
-                    ProtocolWrapper::GetDhtMetaResult(DhtMetaData {
+                    JsonProtocol::HandleGetDhtMetaResult(DhtMetaData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         agent_id: msg.from_agent_id.clone(),
@@ -345,11 +425,11 @@ mod tests {
             panic!("bad msg");
         }
 
-        mock_worker_2.tick().unwrap();
+        memory_worker_2.tick().unwrap();
 
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::GetDhtMetaResult(msg) = res {
+        if let JsonProtocol::GetDhtMetaResult(msg) = res {
             assert_eq!(
                 "\"meta-data-for: hello\"".to_string(),
                 msg.content.to_string()
@@ -361,9 +441,9 @@ mod tests {
 
         // -- dht meta publish / store -- //
 
-        mock_worker_2
+        memory_worker_2
             .receive(
-                ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+                JsonProtocol::PublishDhtMeta(DhtMetaData {
                     msg_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     agent_id: AGENT_ID_2.to_string(),
@@ -376,18 +456,18 @@ mod tests {
             )
             .unwrap();
 
-        mock_worker_1.tick().unwrap();
-        mock_worker_2.tick().unwrap();
+        memory_worker_1.tick().unwrap();
+        memory_worker_2.tick().unwrap();
 
-        let res1 = ProtocolWrapper::try_from(handler_recv_1.recv().unwrap()).unwrap();
-        let res2 = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        let res1 = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
+        let res2 = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
         assert_eq!(res1, res2);
 
-        if let ProtocolWrapper::StoreDhtMeta(msg) = res1 {
-            mock_worker_1
+        if let JsonProtocol::HandleStoreDhtMeta(msg) = res1 {
+            memory_worker_1
                 .receive(
-                    ProtocolWrapper::SuccessResult(SuccessResultData {
+                    JsonProtocol::SuccessResult(SuccessResultData {
                         msg_id: msg.msg_id.clone(),
                         dna_address: msg.dna_address.clone(),
                         to_agent_id: msg.agent_id.clone(),
@@ -401,10 +481,10 @@ mod tests {
             panic!("bad msg");
         }
 
-        mock_worker_2.tick().unwrap();
-        let res = ProtocolWrapper::try_from(handler_recv_2.recv().unwrap()).unwrap();
+        memory_worker_2.tick().unwrap();
+        let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let ProtocolWrapper::SuccessResult(msg) = res {
+        if let JsonProtocol::SuccessResult(msg) = res {
             assert_eq!("\"signature here\"", &msg.success_info.to_string())
         } else {
             println!("Did not expect to receive: {:?}", res);
@@ -412,7 +492,7 @@ mod tests {
         }
 
         // cleanup
-        mock_worker_1.stop().unwrap();
-        mock_worker_2.stop().unwrap();
+        memory_worker_1.stop().unwrap();
+        memory_worker_2.stop().unwrap();
     }
 }

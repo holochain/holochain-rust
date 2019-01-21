@@ -451,8 +451,8 @@ fn can_roundtrip_links() {
         serde_json::from_str(&String::from(result.unwrap())).unwrap();
     let address = maybe_address.unwrap();
 
-    // Polling loop because the links have to get pushed over the mock network and then validated
-    // which includes requesting a validation package and receiving it over the mock network.
+    // Polling loop because the links have to get pushed over the in-memory network and then validated
+    // which includes requesting a validation package and receiving it over the in-memory network.
     // All of that happens asynchronously and takes longer depending on computing resources
     // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
     let mut both_links_present = false;

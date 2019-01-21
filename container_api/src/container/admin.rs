@@ -428,6 +428,13 @@ pattern = ".*"
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
 
         assert_eq!(container.config().dnas.len(), 2,);
+
+        let mut output_dna_file = PathBuf::from(
+            "./tmp-test/test_install_dna_from_file_and_copy/dna/"
+        );
+        output_dna_file.push(new_dna.address().to_string());
+        output_dna_file.set_extension("hcpkg");
+
         assert_eq!(
             container.config().dnas,
             vec![
@@ -438,19 +445,12 @@ pattern = ".*"
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
-                    file: format!(
-                        "./tmp-test/test_install_dna_from_file_and_copy/dna/{}.hcpkg",
-                        new_dna.address()
-                    ),
+                    file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
                 },
             ]
         );
-        assert!(PathBuf::from(format!(
-            "./tmp-test/test_install_dna_from_file_and_copy/dna/{}.hcpkg",
-            new_dna.address()
-        ))
-        .is_file())
+        assert!(output_dna_file.is_file())
     }
 
     #[test]
@@ -490,6 +490,13 @@ pattern = ".*"
         let new_hash = new_dna.address();
         assert_ne!(original_hash, new_hash);
         assert_eq!(container.config().dnas.len(), 2,);
+
+        let mut output_dna_file = PathBuf::from(
+            "./tmp-test/test_install_dna_from_file_with_properties/dna/"
+        );
+        output_dna_file.push(new_hash.to_string());
+        output_dna_file.set_extension("hcpkg");
+
         assert_eq!(
             container.config().dnas,
             vec![
@@ -500,19 +507,12 @@ pattern = ".*"
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
-                    file: format!(
-                        "./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg",
-                        new_dna.address()
-                    ),
+                    file: output_dna_file.to_str().unwrap().to_string(),
                     hash: String::from(new_dna.address()),
                 },
             ]
         );
-        assert!(PathBuf::from(format!(
-            "./tmp-test/test_install_dna_from_file_with_properties/dna/{}.hcpkg",
-            new_dna.address()
-        ))
-        .is_file())
+        assert!(output_dna_file.is_file())
     }
 
     #[test]

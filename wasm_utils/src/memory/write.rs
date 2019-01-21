@@ -13,7 +13,7 @@ impl WasmStack {
         &mut self,
         bytes: &[u8],
         length: Length,
-    ) -> Result<WasmAllocation, AllocationError> {
+    ) -> AllocationResult {
         let next_allocation = self.next_allocation(length)?;
 
         let ptr = MemoryInt::from(self.allocate(next_allocation)?) as *mut c_char;
@@ -26,7 +26,7 @@ impl WasmStack {
     }
 
     /// Write a string in wasm memory according to stack state.
-    pub fn write_string(&mut self, s: &str) -> Result<WasmAllocation, AllocationError> {
+    pub fn write_string(&mut self, s: &str) -> AllocationResult {
         let bytes = s.as_bytes();
         let length = bytes.len() as MemoryInt;
         if MemoryBits::from(length) > WasmStack::max() {
@@ -40,7 +40,7 @@ impl WasmStack {
     pub fn write_json<J: TryInto<JsonString>>(
         &mut self,
         jsonable: J,
-    ) -> Result<WasmAllocation, AllocationError> {
+    ) -> AllocationResult {
         let j: JsonString = jsonable
             .try_into()
             .map_err(|_| AllocationError::Serialization)?;

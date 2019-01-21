@@ -89,7 +89,7 @@ impl WasmAllocation {
         MEMORY_INT_MAX
     }
 
-    pub fn new(offset: Offset, length: Length) -> Result<Self, AllocationError> {
+    pub fn new(offset: Offset, length: Length) -> AllocationResult {
         if (MemoryBits::from(offset) + MemoryBits::from(length)) > WasmAllocation::max() {
             Err(AllocationError::OutOfBounds)
         } else if MemoryInt::from(length) == 0 {

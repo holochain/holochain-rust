@@ -915,21 +915,13 @@ pub fn get_links_result<S: Into<String>>(
     tag: S,
     options: GetLinksOptions,
     get_entry_options: GetEntryOptions,
-) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
+) -> ZomeApiResult<Vec<GetEntryResult>> {
     let get_links_result = get_links_with_options(base, tag, options)?;
-    let result = get_links_result
-        .addresses()
-        .iter()
-        .map(|address| get_entry_result(&address, get_entry_options.clone()))
-        .collect();
-    Ok(result)
+    get_entry_results_batch(get_links_result.addresses(), get_entry_options)
 }
 
 /// Helper function for get_links. Returns a vector of the entries themselves
-pub fn get_links_and_load<S: Into<String>>(
-    base: &HashString,
-    tag: S,
-) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
+pub fn get_links_and_load<S: Into<String>>(base: &HashString, tag: S) -> ZomeApiResult<Vec<Entry>> {
     let get_links_result = get_links_result(
         base,
         tag,
@@ -937,18 +929,28 @@ pub fn get_links_and_load<S: Into<String>>(
         GetEntryOptions::default(),
     )?;
 
-    let entries = get_links_result
+    get_links_result
     .into_iter()
     .map(|get_result| {
-        let get_type = get_result?.result;
+        let get_type = get_result.result;
         match get_type {
             GetEntryResultType::Single(elem) => Ok(elem.entry.unwrap().to_owned()),
             GetEntryResultType::All(_) => Err(ZomeApiError::Internal("Invalid response. get_links_result returned all entries when latest was requested".to_string()))
         }
     })
-    .collect();
+    .collect()
+}
 
-    Ok(entries)
+/// Helper function to get all EntryResults from a Vec of addresses
+/// If any of the get_entry_result invocations returns Err, this whole function returns an Err
+pub fn get_entry_results_batch(
+    addresses: &Vec<Address>,
+    get_entry_options: GetEntryOptions,
+) -> ZomeApiResult<Vec<GetEntryResult>> {
+    addresses
+        .iter()
+        .map(|address| get_entry_result(&address, get_entry_options.clone()))
+        .collect()
 }
 
 /// Returns a list of entries from your local source chain, that match a given entry type name or names.

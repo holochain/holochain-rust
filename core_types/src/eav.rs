@@ -250,7 +250,6 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let map = self.storage.read()?;
-        println!("map {:?}", map.clone());
         let filtered = map
             .clone()
             .into_iter()

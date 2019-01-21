@@ -85,12 +85,13 @@ pub mod tests {
 
     #[test]
     #[cfg(not(windows))]
-    /// test that a commit will publish and entry to the dht of a connected instance via the mock network
+    /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish".to_string();
-        let (_instance1, context1) = instance_by_name("jill", dna.clone());
-        let (_instance2, context2) = instance_by_name("jack", dna);
+        let netname = Some("test_commit_with_dht_publish, the network");
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         let entry_address = block_on(author_entry(&test_entry(), None, &context1)).unwrap();
         thread::sleep(time::Duration::from_millis(500));

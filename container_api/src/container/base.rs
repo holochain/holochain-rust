@@ -1,5 +1,8 @@
 use crate::{
-    config::{Configuration, InterfaceConfiguration, InterfaceDriver, StorageConfiguration},
+    config::{
+        serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
+        StorageConfiguration,
+    },
     context_builder::ContextBuilder,
     error::HolochainInstanceError,
     logger::DebugLogger,
@@ -23,7 +26,11 @@ use std::{
     convert::TryFrom,
     fs::File,
     io::prelude::*,
-    sync::{mpsc::SyncSender, Arc, Mutex, RwLock},
+    path::PathBuf,
+    sync::{
+        mpsc::{channel, Sender, SyncSender},
+        Arc, Mutex, RwLock,
+    },
     thread,
 };
 
@@ -31,9 +38,33 @@ use holochain_net::p2p_config::P2pConfig;
 use holochain_net_connection::net_connection::NetShutdown;
 use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
+
+lazy_static! {
+    /// This is a global and mutable Container singleton.
+    /// (Ok, not really. I've made Container::from_config public again so holochain_nodejs
+    /// is not forced to use Container as a singleton so we don't run into problems with
+    /// tests affecting each other. The consequence is that Rustc can't help us in enforcing
+    /// the container to be singleton otherwise. The only point this is important anyway is in
+    /// the interfaces. That code needs this static variable to be set in order to be able to
+    /// call ContainerAdmin functions.)
+    /// In order to call from interface threads Container admin functions that change
+    /// the config and hence mutate the Container, we need something that owns the Container
+    /// and is accessible from everywhere (esp. those container interface method closures
+    /// in interface.rs).
+    pub static ref CONTAINER: Arc<Mutex<Option<Container>>> = Arc::new(Mutex::new(None));
+}
+
+/// Container constructor that makes sure the Container instance object is mounted
+/// in above static CONTAINER.
+/// It replaces any Container instance that was mounted before to CONTAINER with a new one
+/// create from the given configuration.
+pub fn mount_container_from_config(config: Configuration) {
+    let container = Container::from_config(config);
+    CONTAINER.lock().unwrap().replace(container);
+}
+
 /// Main representation of the container.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
-
 /// A primary point in this struct is
 /// `load_config(&mut self, config: &Configuration) -> Result<(), String>`
 /// which takes a `config::Configuration` struct and tries to instantiate all configured instances.
@@ -42,10 +73,11 @@ use interface::{ContainerApiBuilder, InstanceMap, Interface};
 /// and also enable easier testing, a DnaLoader ()which is a closure that returns a
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Container {
-    instances: InstanceMap,
-    config: Configuration,
-    interface_threads: HashMap<String, InterfaceThreadHandle>,
-    dna_loader: DnaLoader,
+    pub(in crate::container) instances: InstanceMap,
+    pub(in crate::container) config: Configuration,
+    pub(in crate::container) config_path: PathBuf,
+    pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
+    pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<JsonString>,
@@ -61,8 +93,7 @@ impl Drop for Container {
 }
 
 type SignalSender = SyncSender<Signal>;
-type InterfaceThreadHandle = thread::JoinHandle<Result<(), String>>;
-type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>>;
+pub type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>>;
 
 // preparing for having container notifiers go to one of the log streams
 pub fn notify(msg: String) {
@@ -73,16 +104,25 @@ impl Container {
     /// Creates a new instance with the default DnaLoader that actually loads files.
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
+        let config_path = dirs::home_dir()
+            .expect("No home dir defined. Don't know where to store config file")
+            .join(std::path::PathBuf::from(".holochain/container-config.toml"));
+
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
             config,
+            config_path,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             signal_tx: None,
             logger: DebugLogger::new(rules),
             p2p_config: None,
             network_child_process: None,
         }
+    }
+
+    pub fn set_config_path(&mut self, path: PathBuf) {
+        self.config_path = path;
     }
 
     pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
@@ -106,9 +146,40 @@ impl Container {
             .collect()
     }
 
-    pub fn start_interface_by_id(&mut self, id: String) -> Result<(), String> {
+    pub fn stop_all_interfaces(&mut self) {
+        for (id, kill_switch) in self.interface_threads.iter() {
+            notify(format!("Stopping interface {}", id));
+            let _ = kill_switch.send(()).map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                err
+            });
+        }
+    }
+
+    pub fn stop_interface_by_id(&mut self, id: &String) -> Result<(), HolochainError> {
+        {
+            let kill_switch =
+                self.interface_threads
+                    .get(id)
+                    .ok_or(HolochainError::ErrorGeneric(format!(
+                        "Interface {} not found.",
+                        id
+                    )))?;
+            notify(format!("Stopping interface {}", id));
+            kill_switch.send(()).map_err(|err| {
+                let message = format!("Error stopping interface: {}", err);
+                notify(message.clone());
+                HolochainError::ErrorGeneric(message)
+            })?;
+        }
+        self.interface_threads.remove(id);
+        Ok(())
+    }
+
+    pub fn start_interface_by_id(&mut self, id: &String) -> Result<(), String> {
         self.config
-            .interface_by_id(&id)
+            .interface_by_id(id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
     }
@@ -142,11 +213,12 @@ impl Container {
     }
 
     /// Stop and clear all instances
-    pub fn shutdown(&mut self) -> Result<(), HolochainInstanceError> {
-        self.stop_all_instances()?;
-        // @TODO: also stop all interfaces
+    pub fn shutdown(&mut self) {
+        let _ = self
+            .stop_all_instances()
+            .map_err(|error| notify(format!("Error during shutdown: {}", error)));
+        self.stop_all_interfaces();
         self.instances = HashMap::new();
-        Ok(())
     }
 
     pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
@@ -191,10 +263,10 @@ impl Container {
 
     fn instance_p2p_config(&self) -> Result<JsonString, HolochainError> {
         let config = self.p2p_config.clone().unwrap_or_else(|| {
-            // This should never happen, but we'll throw out a named mock network rather than crashing,
+            // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
-            println!("warn: instance_network_config called before p2p_config initialized! Using default mock network name.");
-            JsonString::from(P2pConfig::named_mock_as_string("container-default-mock"))
+            println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
+            JsonString::from(P2pConfig::new_with_memory_backend("container-default-mock").as_str())
         });
         Ok(config)
     }
@@ -225,8 +297,8 @@ impl Container {
                 ))
             }
             // if there's no NetworkConfig we won't spawn a network process
-            // and instead configure instances to use a unique mock network
-            None => JsonString::from(P2pConfig::unique_mock_as_string()),
+            // and instead configure instances to use a unique in-memory network
+            None => JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str()),
         }
     }
 
@@ -238,7 +310,10 @@ impl Container {
     /// @TODO: clean up the container creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config(&mut self) -> Result<(), String> {
+    pub fn load_config_with_signal(
+        &mut self,
+        signal_tx: Option<SignalSender>,
+    ) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -246,12 +321,11 @@ impl Container {
         }
 
         let config = self.config.clone();
-        self.shutdown().map_err(|e| e.to_string())?;
-        self.instances = HashMap::new();
+        self.shutdown();
 
         for id in config.instance_ids_sorted_by_bridge_dependencies()? {
             let instance = self
-                .instantiate_from_config(&id, &config)
+                .instantiate_from_config(&id, &config, signal_tx.clone())
                 .map_err(|error| {
                     format!(
                         "Error while trying to create instance \"{}\": {}",
@@ -265,12 +339,17 @@ impl Container {
         Ok(())
     }
 
+    pub fn load_config(&mut self) -> Result<(), String> {
+        self.load_config_with_signal(None)
+    }
+
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
     pub fn instantiate_from_config(
         &mut self,
         id: &String,
         config: &Configuration,
+        signal_tx: Option<SignalSender>,
     ) -> Result<Holochain, String> {
         let _ = config.check_consistency()?;
 
@@ -288,6 +367,11 @@ impl Container {
                     context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
                 context_builder = context_builder.with_network_config(self.instance_p2p_config()?);
+
+                // Signal config:
+                if let Some(tx) = signal_tx {
+                    context_builder = context_builder.with_signals(tx)
+                };
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
@@ -350,6 +434,7 @@ impl Container {
         if self.interface_threads.contains_key(&config.id) {
             return Err(format!("Interface {} already started!", config.id));
         }
+        notify(format!("Starting interface '{}'.", config.id));
         let handle = self.spawn_interface_thread(config.clone());
         self.interface_threads.insert(config.id.clone(), handle);
         Ok(())
@@ -357,6 +442,7 @@ impl Container {
 
     /// Default DnaLoader that actually reads files from the filesystem
     fn load_dna(file: &String) -> Result<Dna, HolochainError> {
+        notify(format!("Reading DNA from {}", file));
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
@@ -377,29 +463,42 @@ impl Container {
             .map(|(id, val)| (id.clone(), val.clone()))
             .collect();
 
-        ContainerApiBuilder::new()
+        let mut container_api_builder = ContainerApiBuilder::new()
             .with_instances(instance_subset)
-            .with_instance_configs(self.config.instances.clone())
-            .spawn()
+            .with_instance_configs(self.config.instances.clone());
+
+        if interface_config.admin {
+            container_api_builder = container_api_builder.with_admin_dna_functions();
+        }
+
+        container_api_builder.spawn()
     }
 
-    fn spawn_interface_thread(
-        &self,
-        interface_config: InterfaceConfiguration,
-    ) -> InterfaceThreadHandle {
+    fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
         let log_sender = self.logger.get_sender();
-        thread::spawn(move || {
-            let iface = make_interface(&interface_config);
-            iface.run(dispatcher).map_err(|error| {
-                let message = format!(
-                    "err/container: Error running interface '{}': {}",
-                    interface_config.id, error
-                );
-                let _ = log_sender.send((String::from("container"), message));
-                error
+        let (tx, rx) = channel();
+        thread::Builder::new()
+            .name(format!("container-interface: {}", interface_config.id))
+            .spawn(move || {
+                let iface = make_interface(&interface_config);
+                iface.run(dispatcher, rx).map_err(|error| {
+                    let message = format!(
+                        "err/container: Error running interface '{}': {}",
+                        interface_config.id, error
+                    );
+                    let _ = log_sender.send((String::from("container"), message));
+                    error
+                })
             })
-        })
+            .expect("Could not spawn thread for interface");
+        tx
+    }
+
+    pub fn save_config(&self) -> Result<(), HolochainError> {
+        let mut file = File::create(&self.config_path)?;
+        file.write(serialize_configuration(&self.config)?.as_bytes())?;
+        Ok(())
     }
 }
 
@@ -438,7 +537,10 @@ pub mod tests {
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_wasm_utils::wasm_target_dir;
-    use std::{fs::File, io::Write};
+    use std::{
+        fs::{File, OpenOptions},
+        io::Write,
+    };
     use tempfile::tempdir;
     use test_utils::*;
 
@@ -449,7 +551,7 @@ pub mod tests {
                 "bridge/caller.dna" => caller_dna(),
                 _ => Dna::try_from(JsonString::from(example_dna_string())).unwrap(),
             })
-        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send>;
+        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
@@ -511,6 +613,7 @@ pub mod tests {
 
     [[interfaces]]
     id = "test-interface"
+    admin = true
     [interfaces.driver]
     type = "websocket"
     port = 8888
@@ -638,6 +741,29 @@ pub mod tests {
         container.stop_all_instances().unwrap();
     }
 
+    //#[test]
+    // Default config path ~/.holochain/container-config.toml won't work in CI
+    fn _test_container_save_and_load_config_default_location() {
+        let container = test_container();
+        assert_eq!(container.save_config(), Ok(()));
+
+        let mut toml = String::new();
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .open(&container.config_path)
+            .expect("Could not open config file");
+        file.read_to_string(&mut toml)
+            .expect("Could not read config file");
+
+        let restored_config =
+            load_configuration::<Configuration>(&toml).expect("could not load config");
+        assert_eq!(
+            serialize_configuration(&container.config),
+            serialize_configuration(&restored_config)
+        )
+    }
+
     #[test]
     fn test_container_try_from_configuration() {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
@@ -651,20 +777,6 @@ pub mod tests {
                 "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"bridge/callee.dna\"".to_string()
             )
         );
-    }
-
-    #[test]
-    fn test_rpc_info_instances() {
-        let container = test_container();
-        let interface_config = &container.config.interfaces[0];
-        let io = container.make_interface_handler(&interface_config);
-
-        let request = r#"{"jsonrpc": "2.0", "method": "info/instances", "params": null, "id": 1}"#;
-        let response = io
-            .handle_request_sync(request)
-            .expect("No response returned for info/instances");
-        assert!(response.contains("test-instance-1"));
-        assert!(response.contains("test-instance-2"));
     }
 
     #[test]

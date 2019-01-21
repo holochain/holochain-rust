@@ -6,6 +6,7 @@ use crate::{
     error::DefaultResult,
     util,
 };
+use colored::*;
 use serde_json;
 use std::{
     fs::{self, File},
@@ -57,6 +58,9 @@ pub fn generate(zome_name: &PathBuf, language: &str) -> DefaultResult<()> {
         // TODO: supply zome name for AssemblyScriptScaffold as well
         _ => bail!("unsupported language: {}", language),
     }
+
+    // CLI feedback
+    println!("{} new {} Zome at {:?}", "Generated".green().bold(), language, zome_name);
 
     Ok(())
 }

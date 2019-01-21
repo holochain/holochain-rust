@@ -1,6 +1,6 @@
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
-    net_connection::NetSend, protocol::Protocol, protocol_wrapper::ProtocolWrapper, NetResult,
+    json_protocol::JsonProtocol, net_connection::NetSend, protocol::Protocol, NetResult,
 };
 use std::{convert::TryFrom, sync::mpsc};
 
@@ -38,23 +38,23 @@ impl P2pNode {
         }
     }
 
-    // Constructor for a mock P2P Network
+    // Constructor for an in-memory P2P Network
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_mock() -> Self {
-        let config = P2pConfig::unique_mock();
+    pub fn new_with_unique_memory_network() -> Self {
+        let config = P2pConfig::new_with_unique_memory_backend();
         return P2pNode::new_with_config(&config, None);
     }
 
     // Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_ipc_with_uri(ipc_binding: &str) -> Self {
+    pub fn new_with_uri_ipc_network(ipc_binding: &str) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
         return P2pNode::new_with_config(&p2p_config, None);
     }
 
     // Constructor for an IPC node that spawns and uses a n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_ipc_spawn(
+    pub fn new_with_spawn_ipc_network(
         n3h_path: &str,
         maybe_config_filepath: Option<&str>,
         bootstrap_nodes: Vec<String>,
@@ -66,7 +66,7 @@ impl P2pNode {
 
     // See if there is a message to receive
     #[cfg_attr(tarpaulin, skip)]
-    pub fn try_recv(&mut self) -> NetResult<ProtocolWrapper> {
+    pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
         // Print non-ping messages
         match data {
@@ -75,7 +75,7 @@ impl P2pNode {
             _ => (),
         };
 
-        match ProtocolWrapper::try_from(&data) {
+        match JsonProtocol::try_from(&data) {
             Ok(r) => Ok(r),
             Err(e) => {
                 let s = format!("{:?}", e);
@@ -91,20 +91,20 @@ impl P2pNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn wait(
         &mut self,
-        predicate: Box<dyn Fn(&ProtocolWrapper) -> bool>,
-    ) -> NetResult<ProtocolWrapper> {
+        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
+    ) -> NetResult<JsonProtocol> {
         let mut time_ms: usize = 0;
         loop {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!("P2pNode::wait() received: {:?}", p2p_msg);
+                println!("P2pNode::wait() - received: {:?}", p2p_msg);
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    println!("P2pNode::wait() found match");
+                    println!("\t P2pNode::wait() - match");
                     return Ok(p2p_msg);
                 } else {
-                    println!("P2pNode::wait() found NOT match");
+                    println!("\t P2pNode::wait() - NO match");
                 }
             }
 

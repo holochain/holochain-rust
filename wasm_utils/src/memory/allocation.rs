@@ -1,9 +1,9 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use memory::{MemoryBits, MemoryInt, MEMORY_INT_MAX};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Offset(MemoryInt);
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Length(MemoryInt);
 
 impl From<Offset> for MemoryInt {
@@ -110,3 +110,81 @@ impl WasmAllocation {
 }
 
 pub type AllocationResult = Result<WasmAllocation, AllocationError>;
+
+#[cfg(test)]
+pub mod tests {
+
+    use memory::MemoryInt;
+    use memory::MemoryBits;
+    use memory::allocation::Offset;
+    use memory::allocation::Length;
+
+    pub fn fake_offset() -> Offset {
+        Offset(12345)
+    }
+
+    pub fn fake_length() -> Length {
+        Length(12345)
+    }
+
+    #[test]
+    pub fn memory_int_from_offset_test() {
+
+        assert_eq!(
+            12345 as MemoryInt,
+            MemoryInt::from(fake_offset()),
+        );
+
+    }
+
+    #[test]
+    pub fn memory_bits_from_offset_test() {
+
+        assert_eq!(
+            12345 as MemoryBits,
+            MemoryBits::from(fake_offset()),
+        );
+
+    }
+
+    #[test]
+    pub fn offset_from_memory_int_test() {
+
+        assert_eq!(
+            fake_offset(),
+            Offset::from(12345 as MemoryInt),
+        );
+
+    }
+
+    #[test]
+    pub fn memory_int_from_length_test() {
+
+        assert_eq!(
+            12345 as MemoryInt,
+            MemoryInt::from(fake_length()),
+        );
+
+    }
+
+    #[test]
+    pub fn memory_bits_from_length_test() {
+
+        assert_eq!(
+            12345 as MemoryBits,
+            MemoryBits::from(fake_length()),
+        );
+
+    }
+
+    #[test]
+    pub fn length_from_memory_int_test() {
+
+        assert_eq!(
+            fake_length(),
+            Length::from(12345 as MemoryInt),
+        );
+
+    }
+
+}

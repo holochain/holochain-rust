@@ -53,7 +53,7 @@ Recall that in [define_zome!](./define_zome.md#building-in-rust-define_zome), th
 extern crate hdk;
 
 define_zome! {
-    entries: []
+    entry_types: []
 
     genesis: || {
         Ok(())
@@ -65,13 +65,13 @@ define_zome! {
 
 `entries` is where we will populate the Zome with entry type definitions. It expects an array of `ValidatingEntryType`. So how can one be created?
 
-Easy: the `entry!` macro. It can be used to encapsulate everything needed to define an entry type. All of the following must be defined:
+Easy: the `entry_type!` macro. It can be used to encapsulate everything needed to define an entry type. All of the following must be defined:
 
 ---
 
 __name__
 ```rust
-entry!(
+entry_type!(
     name: "post",
     ...
 )
@@ -83,7 +83,7 @@ This should be a machine-readable name for the entry type. Spaces should not be 
 
 __description__
 ```rust
-entry!(
+entry_type!(
     ...
     description: "A blog post entry which has an author",
     ...
@@ -98,7 +98,7 @@ __sharing__
 ```rust
 use hdk::holochain_core_types::dna::entry_types::Sharing;
 
-entry!(
+entry_type!(
     ...
     sharing: Sharing::Public,
     ...
@@ -125,7 +125,7 @@ struct Post {
     date_created: String,
 }
 
-entry!(
+entry_type!(
     ...
     native_type: Post,
     ...
@@ -161,7 +161,7 @@ __validation_package__
 ```rust
 use hdk::ValidationPackageDefinition;
 
-entry!(
+entry_type!(
     ...
     validation_package: || {
         ValidationPackageDefinition::Entry
@@ -182,7 +182,7 @@ __validation__
 ```rust
 use hdk::ValidationData;
 
-entry!(
+entry_type!(
     ...
     validation: |_post: Post, _validation_data: ValidationData| {
         Ok(())
@@ -190,7 +190,7 @@ entry!(
 )
 ```
 
-`validation` is the last required property of `entry!`. Because it is such an important aspect, it has [its' own in depth article](./entry_validation.md).
+`validation` is the last required property of `entry_type!`. Because it is such an important aspect, it has [its' own in depth article](./entry_validation.md).
 
 It is a callback that Holochain will call during different moments in the lifecycle of an entry, in order to confirm which action to take with the entry, depending on its' validity. It will be called with two arguments, the first representing the struct of the entry itself, and the second a struct holding extra metadata that can be used for validation, including, if it was requested, the `validation_package`.
 
@@ -208,11 +208,11 @@ Further reading can be found [here](./entry_validation.md).
 
 ### Putting It All Together
 
-Taken all together, use of the `entry!` macro may look something like the following:
+Taken all together, use of the `entry_type!` macro may look something like the following:
 
 ```rust
 ...
-entry!(
+entry_type!(
     name: "post",
     description: "A blog post entry which has an author",
     sharing: Sharing::Public,
@@ -230,8 +230,8 @@ This can be embedded directly inside of the entries array of the `define_zome!`,
 ```rust
 ...
 define_zome! {
-    entries: [
-        entry!(
+    entry_types: [
+        entry_type!(
             name: "post",
             description: "A blog post entry which has an author",
             sharing: Sharing::Public,
@@ -257,7 +257,7 @@ If there is only entry type, this can be fine, but if there are multiple, this c
 ```rust
 ...
 fn post_definition() -> ValidatingEntryType {
-    entry!(
+    entry_type!(
         name: "post",
         description: "A blog post entry which has an author",
         sharing: Sharing::Public,
@@ -274,7 +274,7 @@ fn post_definition() -> ValidatingEntryType {
 }
 
 define_zome! {
-    entries: [
+    entry_types: [
         post_definition()
     ]
 
@@ -288,7 +288,7 @@ define_zome! {
 
 Use of this technique can help you write clean, modular code.
 
-If you want to look closely at a complete example of the use of `entry!` in a Zome, check out the [API reference](https://developer.holochain.org/api/0.0.3/hdk/macro.entry.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/v0.0.3/app_spec/zomes/blog/code/src/post.rs).
+If you want to look closely at a complete example of the use of `entry_type!` in a Zome, check out the [API reference](https://developer.holochain.org/api/latest/hdk/macro.entry_type.html), or the ["app-spec" example app](https://github.com/holochain/holochain-rust/blob/v0.0.3/app_spec/zomes/blog/code/src/post.rs).
 
 #### Summary
 This is still a pretty minimal Zome, since it doesn't have any functions yet, and the most basic `genesis` behaviour, so read on to learn about how to work with those aspects of `define_zome!`.

@@ -30,7 +30,7 @@ macro_rules! load_string {
 /// Every Zome must utilize the `define_zome`
 /// macro in the main library file in their Zome.
 /// The `define_zome` macro has 4 component parts:
-/// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry.html) macro
+/// 1. entries: an array of [ValidatingEntryType](entry_definition/struct.ValidatingEntryType.html) as returned by using the [entry](macro.entry_type.html) macro
 /// 2. genesis: `genesis` is a callback called by Holochain to every Zome implemented within a DNA.
 ///     It gets called when a new agent is initializing an instance of the DNA for the first time, and
 ///     should return `Ok` or an `Err`, depending on whether the agent can join the network or not.
@@ -100,8 +100,8 @@ macro_rules! load_string {
 /// }
 ///
 /// define_zome! {
-///     entries: [
-///         entry!(
+///     entry_types: [
+///         entry_type!(
 ///             name: "post",
 ///             description: "",
 ///             sharing: Sharing::Public,
@@ -149,7 +149,7 @@ macro_rules! load_string {
 #[macro_export]
 macro_rules! define_zome {
     (
-        entries : [
+        entry_types : [
             $( $entry_expr:expr ),*
         ]
 

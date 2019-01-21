@@ -28,7 +28,7 @@ More complex capabilities will be possible during `genesis` in the future, yet f
 If `genesis` should succeed:
 ```rust
 define_zome! {
-    entries: []
+    entry_types: []
 
     genesis: || {
         Ok(())
@@ -41,7 +41,7 @@ define_zome! {
 If `genesis` should fail:
 ```rust
 define_zome! {
-    entries: []
+    entry_types: []
 
     genesis: || {
         Err("the error string".to_string())

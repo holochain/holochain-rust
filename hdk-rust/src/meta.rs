@@ -267,7 +267,7 @@ pub mod tests {
 
         let mut entry_types = BTreeMap::new();
 
-        let validating_entry_type = entry!(
+        let validating_entry_type = entry_type!(
             name: "post",
             description: "blog entry post",
             sharing: Sharing::Public,

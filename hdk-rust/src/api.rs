@@ -263,7 +263,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// }
 ///
 /// define_zome! {
-///     entries: []
+///     entry_types: []
 ///
 ///     genesis: || {
 ///         Ok(())
@@ -338,7 +338,7 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// }
 ///
 /// define_zome! {
-///     entries: []
+///     entry_types: []
 ///
 ///     genesis: || {
 ///         Ok(())
@@ -1066,7 +1066,7 @@ pub fn query(
 /// }
 ///
 /// define_zome! {
-///    entries: []
+///    entry_types: []
 ///
 ///    genesis: || { Ok(()) }
 ///

@@ -36,7 +36,7 @@ The following is technically the most minimalistic Zome that could be implemente
 extern crate hdk;
 
 define_zome! {
-    entries: []
+    entry_types: []
 
     genesis: || {
         Ok(())

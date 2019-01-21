@@ -25,7 +25,7 @@ pub type LinkValidator =
 ///
 /// Instances of this struct are expected and used in the [define_zome! macro](macro.define_zome.html).
 /// Although possible, a DNA developer does not need to create these instances directly but instead
-/// should use the [entry! macro](macro.entry.html) for a clean syntax.
+/// should use the [entry_type! macro](macro.entry_type.html) for a clean syntax.
 pub struct ValidatingEntryType {
     /// Name of the entry type
     pub name: EntryType,
@@ -42,7 +42,7 @@ pub struct ValidatingEntryType {
 
 /// Similar to ValidatingEntryType, this provides the dynamic aspects of link definitions,
 /// the validation callbacks, and thus completes the structs in the DNA crate.
-/// The [entry! macro](macro.entry.html) expects an array of links that are represented by
+/// The [entry_type! macro](macro.entry_type.html) expects an array of links that are represented by
 /// instances of this struct.
 ///
 /// DNA developers don't need to use this type directly but instead should use the
@@ -62,7 +62,7 @@ pub struct ValidatingLinkDefinition {
     pub validator: LinkValidator,
 }
 
-/// The `entry` macro is a helper for creating `ValidatingEntryType` definitions
+/// The `entry_type` macro is a helper for creating `ValidatingEntryType` definitions
 /// for use within the [define_zome](macro.define_zome.html) macro.
 /// It has 7 component parts:
 /// 1. name: `name` is simply the descriptive name of the entry type, such as "post", or "user".
@@ -115,7 +115,7 @@ pub struct ValidatingLinkDefinition {
 /// }
 ///
 /// pub fn definition() -> ValidatingEntryType {
-///     entry!(
+///     entry_type!(
 ///         name: "post",
 ///         description: "a short social media style sharing of content",
 ///         sharing: Sharing::Public,
@@ -151,7 +151,7 @@ pub struct ValidatingLinkDefinition {
 /// ```
 
 #[macro_export]
-macro_rules! entry {
+macro_rules! entry_type {
     (
         name: $name:expr,
         description: $description:expr,
@@ -231,7 +231,7 @@ macro_rules! entry {
 }
 
 /// The `link` macro is a helper for creating `ValidatingEntryType` definitions
-/// for use within the [entry](macro.entry.html) macro.
+/// for use within the [entry](macro.entry_type.html) macro.
 /// It has 5 component parts:
 /// 1. direction: `direction` defines if this entry type (in which the link is defined) points
 ///     to another entry, or if it is referenced from another entry.
@@ -289,7 +289,7 @@ macro_rules! link {
 }
 
 /// The `to` macro is a helper for creating `ValidatingEntryType` definitions
-/// for use within the [entry](macro.entry.html) macro.
+/// for use within the [entry](macro.entry_type.html) macro.
 /// It is a convenience wrapper around [link!](macro.link.html) that has all the
 /// same properties except for the direction which gets set to `LinkDirection::To`.
 #[macro_export]
@@ -313,7 +313,7 @@ macro_rules! to {
 }
 
 /// The `from` macro is a helper for creating `ValidatingEntryType` definitions
-/// for use within the [entry](macro.entry.html) macro.
+/// for use within the [entry](macro.entry_type.html) macro.
 /// It is a convenience wrapper around [link!](macro.link.html) that has all the
 /// same properties except for the direction which gets set to `LinkDirection::From`.
 #[macro_export]

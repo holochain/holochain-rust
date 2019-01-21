@@ -37,7 +37,7 @@ pub fn handle_get_my_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
 }
 
 fn definition() -> ValidatingEntryType {
-    entry!(
+    entry_type!(
         name: "my_entry",
         description: "this is a same entry defintion",
         sharing: Sharing::Public,
@@ -52,7 +52,7 @@ fn definition() -> ValidatingEntryType {
     )
 }
 define_zome! {
-    entries: [
+    entry_types: [
        definition()
     ]
 

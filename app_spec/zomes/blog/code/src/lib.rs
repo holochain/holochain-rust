@@ -20,7 +20,7 @@ use hdk::{
 };
 
 define_zome! {
-    entries: [
+    entry_types: [
         post::definition()
     ]
 

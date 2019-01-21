@@ -21,8 +21,8 @@ struct TestEntryType {
 }
 
 define_zome! {
-    entries: [
-        entry!(
+    entry_types: [
+        entry_type!(
             name: "testEntryType",
             description: "asdfdaz",
             sharing: Sharing::Public,
@@ -37,7 +37,7 @@ define_zome! {
             }
         ),
 
-        entry!(
+        entry_type!(
             name: "package_entry",
             description: "asdfda",
             sharing: Sharing::Public,
@@ -52,7 +52,7 @@ define_zome! {
             }
         ),
 
-        entry!(
+        entry_type!(
             name: "package_chain_entries",
             description: "asdfda",
             sharing: Sharing::Public,
@@ -67,7 +67,7 @@ define_zome! {
             }
         ),
 
-        entry!(
+        entry_type!(
             name: "package_chain_headers",
             description: "asdfda",
             sharing: Sharing::Public,
@@ -82,7 +82,7 @@ define_zome! {
             }
         ),
 
-        entry!(
+        entry_type!(
             name: "package_chain_full",
             description: "asdfda",
             sharing: Sharing::Public,

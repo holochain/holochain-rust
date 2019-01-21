@@ -48,7 +48,7 @@ struct Person {
 ```
 
 ```rust
-entry!(
+entry_type!(
     name: "person",
     description: "",
     sharing: Sharing::Public,

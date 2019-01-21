@@ -51,7 +51,7 @@ pub struct ValidationData {
     /// of a given entry.
     /// What specific data gets put into the validation package
     /// has to be defined throught the validation_package
-    /// callbacks in the [entry!](macro.entry.html) and
+    /// callbacks in the [entry_type!](macro.entry_type.html) and
     /// [link!](macro.link.html) macros.
     pub package: ValidationPackage,
     /// The list of authors that have signed this entry.

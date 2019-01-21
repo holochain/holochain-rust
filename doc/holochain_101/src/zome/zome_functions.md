@@ -139,8 +139,8 @@ struct Post {
 }
 
 define_zome! {
-    entries: [
-        entry!(
+    entry_types: [
+        entry_type!(
             name: "post",
             description: "A blog post entry which has an author",
             sharing: Sharing::Public,

@@ -34,7 +34,7 @@ impl Post {
 }
 
 /// This is what creates the full definition of our entry type.
-/// The entry! macro is wrapped in a function so that we can have the content
+/// The entry_type! macro is wrapped in a function so that we can have the content
 /// in this file but call it from zome_setup() in lib.rs, which is like the
 /// zome's main().
 ///
@@ -43,7 +43,7 @@ impl Post {
 /// validation_package callback.
 /// The validation_function still has to be defined with the macro below.
 pub fn definition() -> ValidatingEntryType {
-    entry!(
+    entry_type!(
         name: "post",
         description: "blog entry post",
         sharing: Sharing::Public,

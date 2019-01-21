@@ -373,8 +373,8 @@ fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<Stri
 }
 
 define_zome! {
-    entries: [
-        entry!(
+    entry_types: [
+        entry_type!(
             name: "testEntryType",
             description: "asdfda",
             sharing: Sharing::Public,
@@ -403,7 +403,7 @@ define_zome! {
             ]
         ),
 
-        entry!(
+        entry_type!(
             name: "validation_package_tester",
             description: "asdfda",
             sharing: Sharing::Public,
@@ -418,7 +418,7 @@ define_zome! {
             }
         ),
 
-        entry!(
+        entry_type!(
             name: "link_validator",
             description: "asdfda",
             sharing: Sharing::Public,

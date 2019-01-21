@@ -146,7 +146,7 @@ impl Packager {
                     // We just call into __hdk_get_json_definition() without any arguments.
                     // What we get back is a JSON string with all the entry types and zome functions
                     // defined in that WASM code, constructed through our Rust macros define_zome!
-                    // and entry!.
+                    // and entry_type!.
 
                     let call_result = ribosome::run_dna(
                         "HC",

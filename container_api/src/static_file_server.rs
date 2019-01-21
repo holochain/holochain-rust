@@ -1,10 +1,10 @@
 use config::{UiBundleConfiguration, UiInterfaceConfiguration};
 use error::HolochainResult;
 use hyper::{
+    http::uri,
     rt::{self, Future},
     server::Server,
     Body, Request,
-    http::uri,
 };
 use std::{io::Error, thread};
 // use tokio::runtime::Runtime;
@@ -37,17 +37,20 @@ impl hyper::service::Service for StaticService {
     type Future = StaticFuture<Body>;
 
     fn call(&mut self, mut req: Request<Body>) -> StaticFuture<Body> {
-        hyper_staticfile::resolve(&self.static_.root, &req).map(|result| {
-            match result {
-                hyper_staticfile::ResolveResult::NotFound => {
-                    // redirect all not-found routes to the root
-                    // this allows virtual routes on the front end
-                    redirect_request_to_root(&mut req);
-                    self.static_.serve(req)                    
-                },
-                _ => self.static_.serve(req)
-            }
-        }).wait().unwrap()
+        hyper_staticfile::resolve(&self.static_.root, &req)
+            .map(|result| {
+                match result {
+                    hyper_staticfile::ResolveResult::NotFound => {
+                        // redirect all not-found routes to the root
+                        // this allows virtual routes on the front end
+                        redirect_request_to_root(&mut req);
+                        self.static_.serve(req)
+                    }
+                    _ => self.static_.serve(req),
+                }
+            })
+            .wait()
+            .unwrap()
     }
 }
 

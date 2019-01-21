@@ -15,34 +15,14 @@ use dna::{
 };
 use std::collections::BTreeMap;
 
-/// Enum for "zome" "config" "error_handling" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub enum ErrorHandling {
-    #[serde(rename = "throw-errors")]
-    ThrowErrors,
-}
-
-impl Default for ErrorHandling {
-    /// Default zome config error_handling is "throw-errors"
-    fn default() -> Self {
-        ErrorHandling::ThrowErrors
-    }
-}
-
 /// Represents the "config" object on a "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub struct Config {
-    /// How errors should be handled within this zome.
-    #[serde(default)]
-    pub error_handling: ErrorHandling,
-}
+pub struct Config {}
 
 impl Default for Config {
     /// Provide defaults for the "zome" "config" object.
     fn default() -> Self {
-        Config {
-            error_handling: ErrorHandling::ThrowErrors,
-        }
+        Config {}
     }
 }
 
@@ -148,9 +128,7 @@ pub mod tests {
         let fixture: Zome = serde_json::from_str(
             r#"{
                 "description": "test",
-                "config": {
-                    "error_handling": "throw-errors"
-                },
+                "config": {},
                 "entry_types": {},
                 "capabilities": {}
             }"#,
@@ -159,7 +137,6 @@ pub mod tests {
 
         let mut zome = Zome::default();
         zome.description = String::from("test");
-        zome.config.error_handling = ErrorHandling::ThrowErrors;
 
         assert_eq!(fixture, zome);
     }
@@ -173,7 +150,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"},\"bridges\":[]}";
+        let expected = "{\"description\":\"\",\"config\":{},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from(expected.clone()),

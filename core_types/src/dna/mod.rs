@@ -107,9 +107,7 @@ pub mod tests {
                 "zomes": {
                     "test": {
                         "description": "test",
-                        "config": {
-                            "error_handling": "throw-errors"
-                        },
+                        "config": {},
                         "entry_types": {
                             "test": {
                                 "description": "test",
@@ -179,9 +177,7 @@ pub mod tests {
                 "zomes": {
                     "": {
                         "description": "",
-                        "config": {
-                            "error_handling": "throw-errors"
-                        },
+                        "config": {},
                         "entry_types": {
                             "": {
                                 "description": "",
@@ -210,23 +206,6 @@ pub mod tests {
         .unwrap();
 
         assert!(dna.uuid.len() > 0);
-    }
-
-    #[test]
-    fn parse_with_defaults_zome() {
-        let dna = Dna::try_from(JsonString::from(
-            r#"{
-                "zomes": {
-                    "zome1": {}
-                }
-            }"#,
-        ))
-        .unwrap();
-
-        assert_eq!(
-            dna.zomes.get("zome1").unwrap().config.error_handling,
-            zome::ErrorHandling::ThrowErrors
-        )
     }
 
     #[test]

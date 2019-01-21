@@ -61,7 +61,7 @@ macro_rules! container_call {
 /// Examples for method names are:
 /// {instance_id}/{zome}/{cap}/{func} -> a zome call
 /// info/list_instances               -> Map of InstanceConfigs, keyed by ID
-/// admin/...                         -> TODO
+/// admin/...                         -> see [with_admin_dna_functions]
 ///
 /// Each interface has their own handler, and each may be configured differently.
 /// This builder makes it convenient to create handlers with different configurations.
@@ -245,6 +245,126 @@ impl ContainerApiBuilder {
             )))?)
     }
 
+    /// This adds functions to remotely change any aspect of the container config.
+    /// After any change the container's config file gets saved.
+    /// It is guaranteed that the config is either valid after the change or the change
+    /// does not get applied but instead an error is reported back.
+    ///
+    ///  Full list of functions:
+    ///
+    ///  * `admin/dna/install_from_file`:
+    ///     Installs a DNA from a given local file.
+    ///     Params:
+    ///     * `id`: [string] internal handle/name of the newly created DNA config
+    ///     * `path`: [string] local file path to DNA file
+    ///
+    ///  * `admin/dna/uninstall`
+    ///     Uninstalls a DNA from the container config. Recursively also removes (and stops)
+    ///     all instances this DNA is used in.
+    ///     Params:
+    ///     * `id`: [string] handle of the DNA to be deleted.
+    ///
+    ///  * `admin/dna/list`
+    ///     Returns an array of all configured DNAs.
+    ///
+    ///  * `admin/instance/add`
+    ///     Creates a new instance and adds it to the config.
+    ///     Does not start the instance nor add it to an interface
+    ///     (see `admin/instance/start` and `admin/interface/add_instance`).
+    ///     Params:
+    ///     * `id`: [string] Name for the new instance
+    ///     * `agent_id`: [string] Agent to run this instance with
+    ///     * `dna_id`: [string] DNA to run in this instance
+    ///
+    ///  * `admin/instance/remove`
+    ///     Removes an instance. Also remove its any uses of it in interfaces.
+    ///     * `id`: [string] Which instance to remove?
+    ///
+    ///  * `admin/instance/start`
+    ///     Starts a stopped instance or reports an error if the given instance is
+    ///     running already
+    ///     Params:
+    ///     * `id`: [string] Which instance to start?
+    ///
+    ///  * `admin/instance/stop`
+    ///     Stops a running instance or reports an error if the given instance is not running.
+    ///     Params:
+    ///     * `id`: [string] Which instance to stop?
+    ///
+    ///  * `admin/instance/list`
+    ///     Returns an array of all instances that are configured.
+    ///
+    ///  * `admin/instance/running`
+    ///     Returns an array of all instances that are running.
+    ///
+    ///  * `admin/interface/add`
+    ///     Adds a new DNA / zome / container interface (that provides access to zome functions
+    ///     of selected instances and container functions, depending on the interfaces config).
+    ///     This also automatically starts the interface. Different from instances, there are no
+    ///     *stopped* interfaces - every interface that is configured is also active.
+    ///     Params:
+    ///     * `id`: [string] ID for the new interface
+    ///     * `admin`: [bool] Grant access to (these) admin functions?
+    ///     * `type`: [string] Either "websocket" or "http"
+    ///     * `port`:  [number] Port to bind the server to.
+    ///
+    ///  * `admin/interface/remove`
+    ///     Remove an interface from config. This automatically stops the interface as well.
+    ///     Params:
+    ///     * `id`: [string] Which interface to stop?
+    ///
+    ///  * `admin/interface/add_instance`
+    ///     Make a given DNA instance available via a given interface.
+    ///     This restarts the given interface in order to have the change take effect.
+    ///     Params:
+    ///     * `interface_id`: Which interface to add the instance to?
+    ///     * `instance_id`: Which instance to add?
+    ///
+    ///  * `admin/interface/remove_instance`
+    ///     Remove an instance from a given interface.
+    ///     This restarts the given interface in order to have the change take effect.
+    ///     Params:
+    ///     * `interface_id`: Which interface to remove the instance from?
+    ///     * `instance_id`: Which instance to remove?
+    ///
+    ///  * `admin/interface/list`
+    ///     Returns an array of all DNA/zome interfaces.
+    ///
+    ///  * `admin/agent/add`
+    ///     Add an agent to the container configuration that can be used with instances.
+    ///     Params:
+    ///     * `id`: Handle of this agent configuration as used in the config / other function calls
+    ///     * `name`: Nickname of this agent configuration
+    ///     * `public_address`: Public part of this agents key. Has to match the private key in the
+    ///         given key file.
+    ///     * `key_file`: Local path to the file that holds this agent configuration's private key
+    ///
+    ///  * `admin/agent/remove`
+    ///     Remove an agent from the container config.
+    ///     Params:
+    ///     * `id`: Which agent to remove?
+    ///
+    ///  * `admin/agent/list`
+    ///     Returns an array of all configured agents.
+    ///
+    ///  * `admin/bridge/add`
+    ///     Add a bridge between two instances to enable the caller to call the callee's
+    ///     zome functions.
+    ///     Params:
+    ///     * `caller_id`: ID of the instance that will be able to call into the other instance
+    ///     * `callee_id`: ID of the instance which's zome functions can be called
+    ///     * `handle`: Name that the caller uses to reference this bridge and therefore the other
+    ///             instance.
+    ///
+    ///  * `admin/bridge/remove`
+    ///     Remove a bridge
+    ///     Params:
+    ///     * `caller_id`: ID of the instance that can call into the other instance
+    ///     * `callee_id`: ID of the instance which's zome functions can be called
+    ///
+    ///  * `admin/bridge/list`
+    ///     Returns an array of all bridges.
+    ///
     pub fn with_admin_dna_functions(mut self) -> Self {
         self.io
             .add_method("admin/dna/install_from_file", move |params| {

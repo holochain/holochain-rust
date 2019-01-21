@@ -20,6 +20,7 @@ uuid = { version = "0.7", features = ["v4"] }
 regex = "^1.1"
 im = "^12.2"
 chrono = "0.4"
+guid-create = "^0.1.1"
 
 
 [dev-dependencies]

@@ -213,14 +213,14 @@ fn intersect_btree(
 
 impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError> {
-        if self
-            .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
-            .len()
-            == 0
+        let fetched = self.fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?;
+        
+        if fetched.len()==0
         {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
-            let key = create_key(Action::Insert)?;
+            let mut key = create_key(Action::Insert)?;
+            key.0 = if fetched.contains_key(&key){ key.0 +1} else {key.0};
             self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
                 .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
                 .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))?;
@@ -259,7 +259,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .into_iter()
             .map(|(hash, content)| {
                 (
-                    from_key(hash).unwrap_or(Key(0, Action::None, Uuid::new_v4())),
+                    from_key(hash).unwrap_or(Key(0, Action::None)),
                     EntityAttributeValue::try_from_content(&JsonString::from(content)),
                 )
             })

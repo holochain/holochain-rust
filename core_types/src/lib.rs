@@ -34,6 +34,7 @@ extern crate uuid;
 
 extern crate chrono;
 extern crate im;
+extern crate guid_create;
 
 pub mod cas;
 pub mod chain_header;

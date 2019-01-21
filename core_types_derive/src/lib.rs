@@ -57,3 +57,11 @@ pub fn default_json_derive(input: TokenStream) -> TokenStream {
     // Build the trait implementation
     impl_default_json_macro(&ast)
 }
+
+
+#[proc_macro_attribute]
+pub fn entry(attr: TokenStream,body : TokenStream) -> TokenStream {
+    let parsed_struct : syn::DeriveInput = syn::parse(body).expect("Could noot parse entry");
+   // let name = parsed_struct.name
+    unimplemented!("not yet implemented");
+}

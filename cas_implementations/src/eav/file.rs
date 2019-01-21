@@ -37,7 +37,7 @@ impl PartialEq for EavFileStorage {
 }
 
 #[warn(unused_must_use)]
-pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<(HashString, String)>> {
+pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<(String, String)>> {
     //glob all  files
     let full_path = vec![
         parent_path.to_str().unwrap_or("").to_string(),
@@ -62,7 +62,7 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<(HashString, String)>> {
                     file.read_to_string(&mut content)
                         .map(|_| {
                             Ok((
-                                get_key_from_path(&path_buf).unwrap_or(HashString::from("")),
+                                get_key_from_path(&path_buf).unwrap_or(String::from("")),
                                 content,
                             ))
                         })
@@ -83,12 +83,12 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<(HashString, String)>> {
         Ok(eav
             .iter()
             .cloned()
-            .map(|s| s.unwrap_or((HashString::from(""), String::from(""))))
+            .map(|s| s.unwrap_or((String::from(""), String::from(""))))
             .collect())
     }
 }
 
-fn get_key_from_path(abs_path: &Path) -> HcResult<HashString> {
+fn get_key_from_path(abs_path: &Path) -> HcResult<String> {
     let mut path_sections = abs_path
         .to_str()
         .ok_or(HolochainError::ErrorGeneric(
@@ -110,9 +110,7 @@ fn get_key_from_path(abs_path: &Path) -> HcResult<HashString> {
         .ok_or(HolochainError::ErrorGeneric(
             "Cold not get unix_time".to_string(),
         ))?;
-    Ok(HashString::from(
-        vec![unix_time.to_string(), action.to_string()].join("_"),
-    ))
+    Ok(vec![unix_time.to_string(), action.to_string()].join("_"))
 }
 
 impl EavFileStorage {
@@ -155,10 +153,9 @@ impl EavFileStorage {
 
     fn read_from_dir<T>(
         &self,
-        _hash: HashString,
         subscript: String,
         eav_constraint: Option<T>,
-    ) -> HcResult<BTreeMap<HashString, String>>
+    ) -> HcResult<BTreeMap<String, String>>
     where
         T: ToString,
     {
@@ -186,7 +183,7 @@ impl EavFileStorage {
                     "Could not read eavs from directory".to_string(),
                 ))
             } else {
-                let mut ordmap: BTreeMap<HashString, String> = BTreeMap::new();
+                let mut ordmap: BTreeMap<String, String> = BTreeMap::new();
                 eavs.iter().for_each(|s| {
                     s.clone().unwrap_or(Vec::new()).iter().for_each(|k| {
                         let (key, value) = k.clone();
@@ -202,9 +199,9 @@ impl EavFileStorage {
 }
 
 fn intersect_btree(
-    tree_1: BTreeMap<HashString, String>,
-    tree2: BTreeMap<HashString, String>,
-) -> BTreeMap<HashString, String> {
+    tree_1: BTreeMap<String, String>,
+    tree2: BTreeMap<String, String>,
+) -> BTreeMap<String, String> {
     tree_1
         .into_iter()
         .filter(|(k, _)| tree2.get(k).is_some())
@@ -213,14 +210,18 @@ fn intersect_btree(
 
 impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError> {
-        let fetched = self.fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?;
-        
-        if fetched.len()==0
-        {
+        let fetched =
+            self.fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?;
+
+        if fetched.len() == 0 {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
             let mut key = create_key(Action::Insert)?;
-            key.0 = if fetched.contains_key(&key){ key.0 +1} else {key.0};
+            key.0 = if fetched.contains_key(&key) {
+                key.0 + 1
+            } else {
+                key.0
+            };
             self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
                 .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
                 .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))?;
@@ -237,20 +238,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
         value: Option<Value>,
     ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
         let _guard = self.lock.read()?;
-        let entity_set = self.read_from_dir::<Entity>(
-            self.current_hash.clone(),
-            ENTITY_DIR.to_string(),
-            entity.clone(),
-        )?;
+        let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
         let attribute_set = self
-            .read_from_dir::<Attribute>(
-                self.current_hash.clone(),
-                ATTRIBUTE_DIR.to_string(),
-                attribute,
-            )?
+            .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)?
             .clone();
-        let value_set =
-            self.read_from_dir::<Value>(self.current_hash.clone(), VALUE_DIR.to_string(), value)?;
+        let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value)?;
 
         let attribute_value_inter = intersect_btree(attribute_set.clone(), value_set.clone());
         let entity_attribute_value_inter =

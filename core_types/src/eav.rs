@@ -7,7 +7,6 @@ use crate::{
     cas::content::{Address, AddressableContent, Content},
     entry::{test_entry_a, test_entry_b, Entry},
     error::{HcResult, HolochainError},
-    hash::HashString,
     json::JsonString,
 };
 use chrono::{offset::Utc, DateTime};
@@ -88,8 +87,7 @@ pub fn create_key(action: Action) -> Result<Key, HolochainError> {
     Ok(Key(Utc::now().timestamp_nanos(), action))
 }
 
-pub fn from_key(key: HashString) -> Result<Key, HolochainError> {
-    let string_key = key.to_string();
+pub fn from_key(string_key: String) -> Result<Key, HolochainError> {
     let split = string_key.split("_").collect::<Vec<&str>>();
     let mut split_iter = split.iter();
     let timestamp = split_iter.next().ok_or(HolochainError::ErrorGeneric(
@@ -224,16 +222,20 @@ impl ExampleEntityAttributeValueStorage {
     }
 }
 
-
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError> {
-        if self.fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
+        if self
+            .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
             == 0
         {
             let mut map = self.storage.write()?;
             let mut key = create_key(Action::Insert)?;
-            key.0 = if map.contains_key(&key){ key.0 +1} else {key.0};
+            key.0 = if map.contains_key(&key) {
+                key.0 + 1
+            } else {
+                key.0
+            };
             map.insert(key.clone(), eav.clone());
             Ok(Some(key.clone()))
         } else {

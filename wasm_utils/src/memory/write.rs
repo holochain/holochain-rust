@@ -5,6 +5,7 @@ use crate::memory::{
 };
 use holochain_core_types::json::JsonString;
 use memory::allocation::Length;
+use memory::allocation::AllocationResult;
 use std::{convert::TryInto, os::raw::c_char, slice};
 
 impl WasmStack {

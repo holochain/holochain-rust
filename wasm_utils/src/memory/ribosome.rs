@@ -13,6 +13,7 @@ use memory::{
     MemoryBits,
 };
 use std::convert::TryFrom;
+use memory::stack::WasmStack;
 
 impl TryFrom<RibosomeEncodedAllocation> for WasmAllocation {
     type Error = AllocationError;
@@ -74,6 +75,16 @@ impl WasmAllocation {
     pub fn as_ribosome_encoding(&self) -> RibosomeEncodingBits {
         RibosomeEncodedValue::from(self.clone()).into()
     }
+}
+
+pub fn try_allocated_stack_from_encoded_allocation(maybe_encoded_allocation: RibosomeEncodingBits) -> Result<(WasmStack, WasmAllocation), RibosomeEncodedValue> {
+    match WasmAllocation::try_from_ribosome_encoding(maybe_encoded_allocation) {
+        Err(allocation_error) => Err(allocation_error),
+        Ok(allocation) => match WasmStack::try_from(allocation) {
+            Err(allocation_error) => Err(allocation_error),
+            Ok(stack) => Ok((stack, allocation)),
+        },
+    }.map_err(|e| return_code_for_allocation_result(Err(e)))
 }
 
 /// Equivalent to From<AllocationResult> for RibosomeEncodedValue

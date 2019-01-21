@@ -187,4 +187,14 @@ pub mod tests {
 
     }
 
+    #[test]
+    pub fn usize_from_length_test() {
+
+        assert_eq!(
+            usize::from(fake_length()),
+            12345 as usize,
+        );
+
+    }
+
 }

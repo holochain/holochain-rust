@@ -2,7 +2,7 @@
 //! and serialization used throughout the HDK.
 
 use crate::globals::G_MEM_STACK;
-use holochain_core_types::json::JsonString;
+use holochain_core_types::{error::RibosomeEncodingBits, json::JsonString};
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
@@ -16,6 +16,13 @@ pub fn init_global_memory(initial_allocation: WasmAllocation) -> AllocationResul
         G_MEM_STACK = Some(WasmStack::try_from(initial_allocation)?);
     }
     Ok(initial_allocation)
+}
+
+/// sugar
+pub fn init_global_memory_from_ribosome_encoding(
+    encoded_value: RibosomeEncodingBits,
+) -> AllocationResult {
+    init_global_memory(WasmAllocation::try_from_ribosome_encoding(encoded_value)?)
 }
 
 /// Serialize output as json in WASM memory

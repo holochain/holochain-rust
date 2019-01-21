@@ -58,6 +58,12 @@ impl From<AllocationError> for RibosomeErrorCode {
     }
 }
 
+impl AllocationError {
+    pub fn as_ribosome_encoding(&self) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::from(self.clone()).into()
+    }
+}
+
 impl WasmAllocation {
     /// equivalent to TryFrom<RibosomeEncodingBits> for WasmAllocation
     /// not implemented as a trait because RibosomeEncodingBits is a primitive and that would couple

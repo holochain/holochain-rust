@@ -272,7 +272,7 @@ pub extern "C" fn round_trip_test(encoded_allocation_of_input: RibosomeEncodingB
         Err(code) => return code.into(),
     };
 
-    let input = load_ribosome_encoded_json(encoded_allocation_of_input as RibosomeEncodingBits).unwrap();
+    let input = load_ribosome_encoded_json(encoded_allocation_of_input).unwrap();
     let output = test_inner(input);
 
     return_code_for_allocation_result(mem_stack.write_json(output)).into()

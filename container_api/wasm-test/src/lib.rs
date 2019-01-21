@@ -54,7 +54,7 @@ fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
 pub extern "C" fn debug_hello(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
-        Ok(stack_allocation) => stack_allocation,
+        Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 
@@ -72,7 +72,7 @@ pub extern "C" fn debug_hello(encoded_allocation_of_input: RibosomeEncodingBits)
 pub extern "C" fn debug_multiple(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
-        Ok(stack_allocation) => stack_allocation,
+        Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 
@@ -95,7 +95,7 @@ pub extern "C" fn debug_stacked_hello(encoded_allocation_of_input: RibosomeEncod
     }
 
     let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
-        Ok(stack_allocation) => stack_allocation,
+        Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 
@@ -210,7 +210,7 @@ fn test_inner(input: InputStruct) -> OutputStruct {
 pub extern "C" fn commit_test(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
-        Ok(stack_allocation) => stack_allocation,
+        Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 
@@ -229,7 +229,7 @@ pub extern "C" fn commit_test(encoded_allocation_of_input: RibosomeEncodingBits)
 pub extern "C" fn commit_fail_test(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
-        Ok(stack_allocation) => stack_allocation,
+        Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 
@@ -251,7 +251,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 ) -> RibosomeRuntimeBits {
 
     let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
-        Ok(stack_allocation) => stack_allocation,
+        Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 
@@ -268,7 +268,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 pub extern "C" fn round_trip_test(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut mem_stack = match WasmStack::try_from_ribosome_encoding(encoded_allocation_of_input) {
-        Ok(stack_allocation) => stack_allocation,
+        Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 

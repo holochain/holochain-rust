@@ -128,7 +128,6 @@ fn call_load_string_ok() {
 #[cfg(feature = "broken-tests")]
 fn call_load_string_err() {
     let call_result = call_zome_function_with_hc("test_load_string_err");
-    println!("{:?}", call_result);
     assert_eq!(
         Err(HolochainInstanceError::InternalFailure(
             HolochainError::RibosomeFailed(

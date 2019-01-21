@@ -99,7 +99,7 @@ impl WasmStack {
                 Ok(stack) => Ok(stack),
             },
         }
-        .map_err(|e| return_code_for_allocation_result(Err(e)))
+        .map_err(|e| e.as_ribosome_encoding().into())
     }
 }
 

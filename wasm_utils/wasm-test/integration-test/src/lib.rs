@@ -105,7 +105,7 @@ pub extern "C" fn test_store_string_err(_: RibosomeEncodingBits) -> RibosomeEnco
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(allmost_full_alloc) {
         Ok(allocation) => allocation,
-        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
 
     let mut stack = WasmStack::try_from(allocation).unwrap();
@@ -123,7 +123,7 @@ pub extern "C" fn test_store_as_json_err(_: RibosomeEncodingBits) -> RibosomeEnc
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(allmost_full_alloc) {
         Ok(allocation) => allocation,
-        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
 
     let mut stack = WasmStack::try_from(allocation).unwrap();
@@ -145,7 +145,7 @@ pub extern "C" fn test_load_json_ok(_: RibosomeEncodingBits) -> RibosomeEncoding
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded) {
         Ok(allocation) => allocation,
-        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
 
     let mut stack = WasmStack::try_from(allocation).unwrap();
@@ -175,7 +175,7 @@ pub extern "C" fn test_load_string_ok(_: RibosomeEncodingBits) -> RibosomeEncodi
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded) {
         Ok(allocation) => allocation,
-        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
 
     let mut stack = WasmStack::try_from(allocation).unwrap();
@@ -192,13 +192,13 @@ pub extern "C" fn test_load_string_err(_: RibosomeEncodingBits) -> RibosomeEncod
 
     let _allocation = match WasmAllocation::try_from_ribosome_encoding(encoded) {
         Ok(allocation) => allocation,
-        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
     return RibosomeEncodedValue::Success.into()
 
     // let mut stack = match WasmStack::try_from(allocation) {
     //     Ok(stack) => stack,
-    //     Err(stack_error) => return return_code_for_allocation_result(Err(stack_error)).into(),
+    //     Err(stack_error) => return stack_error.as_ribosome_encoding(),
     // };
     //
     // let s = allocation.read_to_string();

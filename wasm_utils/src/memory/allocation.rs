@@ -63,11 +63,11 @@ pub enum AllocationError {
 impl From<AllocationError> for String {
     fn from(allocation_error: AllocationError) -> Self {
         match allocation_error {
-            AllocationError::OutOfBounds => "Allocation out of bounds".into(),
-            AllocationError::ZeroLength => "Allocation is zero length".into(),
-            AllocationError::BadStackAlignment => "Allocation is not aligned with stack".into(),
-            AllocationError::Serialization => "Allocation could not serialize data".into(),
-        }
+            AllocationError::OutOfBounds => "Allocation out of bounds",
+            AllocationError::ZeroLength => "Allocation is zero length",
+            AllocationError::BadStackAlignment => "Allocation is not aligned with stack",
+            AllocationError::Serialization => "Allocation could not serialize data",
+        }.into()
     }
 }
 

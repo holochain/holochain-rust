@@ -18,7 +18,6 @@ use handle_crud::{
 };
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
-    // globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{
     api_serialization::{
@@ -74,7 +73,7 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodi
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input) {
         Ok(allocation) => allocation,
-        Err(allocation_error) => return return_code_for_allocation_result(Err(allocation_error)).into(),
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     };
 
     let memory_init_result = init_global_memory(allocation);

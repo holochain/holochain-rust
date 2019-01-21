@@ -108,13 +108,13 @@ pub fn run_dna(
         let maybe_allocation = mut_runtime.memory_manager.write(&input_parameters);
         encoded_allocation_of_input = match maybe_allocation {
             // No allocation to write is ok
-            Err(AllocationError::ZeroLength) => 0,
+            Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
             // Any other error is memory related
             Err(err) => {
                 return Err(HolochainError::RibosomeFailed(String::from(err)));
             }
             // Write successful, encode allocation
-            Ok(allocation) => RibosomeEncodingBits::from(RibosomeEncodedValue::from(allocation)),
+            Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
         }
     }
 

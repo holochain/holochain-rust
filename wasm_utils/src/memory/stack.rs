@@ -25,12 +25,6 @@ impl From<Top> for MemoryBits {
     }
 }
 
-impl From<MemoryInt> for Top {
-    fn from(i: MemoryInt) -> Self {
-        Top(i)
-    }
-}
-
 #[derive(Copy, Clone, Default, Debug)]
 pub struct WasmStack {
     top: Top,
@@ -50,7 +44,7 @@ impl WasmStack {
     // A stack can be initialized by giving the last know allocation on this stack
     pub fn new() -> WasmStack {
         WasmStack {
-            top: WasmStack::min().into(),
+            top: Top(WasmStack::min()),
         }
     }
 

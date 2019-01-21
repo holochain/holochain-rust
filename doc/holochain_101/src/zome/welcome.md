@@ -9,3 +9,5 @@ While writing the source code for DNA, it is extremely important to verify, befo
 In the near future, this is likely to expand in diversity on both sides, Zome code and testing code.
 
 Throughout this chapter, there will be plenty of examples given as to writing Zome code in Rust, and test code in JavaScript. Before that though, one must know how to generate a Zome with the command line tools.
+
+Please note that this chapter is focused on explaining details of Holochain, not as a start to finish tutorial. If you'd like to start with a tutorial, and come back to explanations, check out [this tutorial](https://medium.com/holochain/first-steps-writing-holochain-happs-with-rust-80ae111960e) article on the Holochain medium.com publication.

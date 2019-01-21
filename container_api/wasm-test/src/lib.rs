@@ -40,7 +40,7 @@ fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
     unsafe { hc_debug(allocation.as_ribosome_encoding()) };
 
     // Free input allocation and all allocations made inside print()
-    mem_stack.deallocate(allocation).expect("deallocate failed");
+    mem_stack.deallocate(allocation).ok();
 }
 
 //-------------------------------------------------------------------------------------------------

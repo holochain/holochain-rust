@@ -38,6 +38,7 @@ use holochain_net::p2p_config::P2pConfig;
 use holochain_net_connection::net_connection::NetShutdown;
 use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
+use static_file_server::StaticServer;
 
 lazy_static! {
     /// This is a global and mutable Container singleton.
@@ -76,6 +77,7 @@ pub struct Container {
     pub(in crate::container) instances: InstanceMap,
     pub(in crate::container) config: Configuration,
     pub(in crate::container) config_path: PathBuf,
+    static_servers: HashMap<String, StaticServer>,
     pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
@@ -111,6 +113,7 @@ impl Container {
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
+            static_servers: HashMap::new(),
             config,
             config_path,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
@@ -182,6 +185,17 @@ impl Container {
             .interface_by_id(id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
+    }
+
+    pub fn start_all_static_servers(&mut self) -> Result<(), String> {
+        notify("Starting all servers".into());
+        self.static_servers.iter_mut().for_each(|(id, server)| {
+            server
+                .start()
+                .expect(&format!("Couldnt start server {}", id));
+            notify(format!("Server started for \"{}\"", id))
+        });
+        Ok(())
     }
 
     /// Starts all instances
@@ -336,6 +350,22 @@ impl Container {
             self.instances
                 .insert(id.clone(), Arc::new(RwLock::new(instance)));
         }
+
+        for ui_interface_config in config.ui_interfaces.clone() {
+            notify(format!("adding ui interface {}", &ui_interface_config.id));
+            let bundle_config =
+                config
+                    .ui_bundle_by_id(&ui_interface_config.bundle)
+                    .ok_or(format!(
+                        "UI interface {} references bundle with id {} but no such bundle found",
+                        &ui_interface_config.id, &ui_interface_config.bundle
+                    ))?;
+            self.static_servers.insert(
+                ui_interface_config.id.clone(),
+                StaticServer::from_configs(bundle_config, ui_interface_config),
+            );
+        }
+
         Ok(())
     }
 

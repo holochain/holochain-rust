@@ -80,8 +80,9 @@ impl From<AllocationError> for HolochainError {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct WasmAllocation {
-    offset: Offset,
-    length: Length,
+    // public fields to the crate for tests
+    pub(in crate::memory) offset: Offset,
+    pub(in crate::memory) length: Length,
 }
 
 impl WasmAllocation {
@@ -114,13 +115,11 @@ pub type AllocationResult = Result<WasmAllocation, AllocationError>;
 #[cfg(test)]
 pub mod tests {
 
-    use memory::{
-        allocation::{Length, Offset, AllocationError},
-        MemoryBits, MemoryInt,
-    };
     use holochain_core_types::error::HolochainError;
-    use memory::MEMORY_INT_MAX;
-    use memory::allocation::WasmAllocation;
+    use memory::{
+        allocation::{AllocationError, Length, Offset, WasmAllocation},
+        MemoryBits, MemoryInt, MEMORY_INT_MAX,
+    };
 
     pub fn fake_offset() -> Offset {
         Offset(12345)
@@ -207,10 +206,7 @@ pub mod tests {
 
     #[test]
     pub fn allocation_max_test() {
-        assert_eq!(
-            MEMORY_INT_MAX,
-            WasmAllocation::max(),
-        );
+        assert_eq!(MEMORY_INT_MAX, WasmAllocation::max(),);
     }
 
     #[test]
@@ -226,7 +222,10 @@ pub mod tests {
         );
 
         assert_eq!(
-            Ok(WasmAllocation { offset: Offset::from(1), length: Length::from(1) }),
+            Ok(WasmAllocation {
+                offset: Offset::from(1),
+                length: Length::from(1)
+            }),
             WasmAllocation::new(Offset::from(1), Length::from(1)),
         );
     }
@@ -235,7 +234,9 @@ pub mod tests {
     pub fn allocation_offset_test() {
         assert_eq!(
             Offset::from(1),
-            WasmAllocation::new(Offset::from(1), Length::from(1)).unwrap().offset(),
+            WasmAllocation::new(Offset::from(1), Length::from(1))
+                .unwrap()
+                .offset(),
         );
     }
 
@@ -243,7 +244,9 @@ pub mod tests {
     pub fn allocation_length_test() {
         assert_eq!(
             Length::from(1),
-            WasmAllocation::new(Offset::from(1), Length::from(1)).unwrap().length(),
+            WasmAllocation::new(Offset::from(1), Length::from(1))
+                .unwrap()
+                .length(),
         );
     }
 

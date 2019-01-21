@@ -18,14 +18,7 @@ impl WasmAllocation {
 #[cfg(test)]
 pub mod tests {
 
-    use memory::{
-        allocation::{
-            // Length,
-            // Offset,
-            WasmAllocation
-        },
-        // MemoryInt,
-    };
+    use memory::allocation::WasmAllocation;
     use std::{ffi::CString, os::raw::c_char};
 
     #[test]
@@ -46,11 +39,8 @@ pub mod tests {
 
         println!("{:?}", ptr);
 
-        let allocation = WasmAllocation::new(
-            Offset::from(ptr as MemoryInt),
-            Length::from(1),
-        )
-        .expect("could not build allocation");
+        let allocation = WasmAllocation::new(Offset::from(ptr as MemoryInt), Length::from(1))
+            .expect("could not build allocation");
 
         assert_eq!(s.to_string(), allocation.read_to_string(),);
     }

@@ -114,10 +114,10 @@ pub type AllocationResult = Result<WasmAllocation, AllocationError>;
 #[cfg(test)]
 pub mod tests {
 
-    use memory::MemoryInt;
-    use memory::MemoryBits;
-    use memory::allocation::Offset;
-    use memory::allocation::Length;
+    use memory::{
+        allocation::{Length, Offset},
+        MemoryBits, MemoryInt,
+    };
 
     pub fn fake_offset() -> Offset {
         Offset(12345)
@@ -129,72 +129,37 @@ pub mod tests {
 
     #[test]
     pub fn memory_int_from_offset_test() {
-
-        assert_eq!(
-            12345 as MemoryInt,
-            MemoryInt::from(fake_offset()),
-        );
-
+        assert_eq!(12345 as MemoryInt, MemoryInt::from(fake_offset()),);
     }
 
     #[test]
     pub fn memory_bits_from_offset_test() {
-
-        assert_eq!(
-            12345 as MemoryBits,
-            MemoryBits::from(fake_offset()),
-        );
-
+        assert_eq!(12345 as MemoryBits, MemoryBits::from(fake_offset()),);
     }
 
     #[test]
     pub fn offset_from_memory_int_test() {
-
-        assert_eq!(
-            fake_offset(),
-            Offset::from(12345 as MemoryInt),
-        );
-
+        assert_eq!(fake_offset(), Offset::from(12345 as MemoryInt),);
     }
 
     #[test]
     pub fn memory_int_from_length_test() {
-
-        assert_eq!(
-            12345 as MemoryInt,
-            MemoryInt::from(fake_length()),
-        );
-
+        assert_eq!(12345 as MemoryInt, MemoryInt::from(fake_length()),);
     }
 
     #[test]
     pub fn memory_bits_from_length_test() {
-
-        assert_eq!(
-            12345 as MemoryBits,
-            MemoryBits::from(fake_length()),
-        );
-
+        assert_eq!(12345 as MemoryBits, MemoryBits::from(fake_length()),);
     }
 
     #[test]
     pub fn length_from_memory_int_test() {
-
-        assert_eq!(
-            fake_length(),
-            Length::from(12345 as MemoryInt),
-        );
-
+        assert_eq!(fake_length(), Length::from(12345 as MemoryInt),);
     }
 
     #[test]
     pub fn usize_from_length_test() {
-
-        assert_eq!(
-            usize::from(fake_length()),
-            12345 as usize,
-        );
-
+        assert_eq!(usize::from(fake_length()), 12345 as usize,);
     }
 
 }

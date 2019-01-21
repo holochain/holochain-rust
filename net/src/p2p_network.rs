@@ -1,19 +1,57 @@
-//! This module provides the core abstraction for differing p2p backends
+//! This module provides the main abstraction for differing p2p backends
 //! P2pNetwork instances take a json configuration string
 //! and at load-time instantiate the configured "backend"
 
 use holochain_net_connection::{
-    net_connection::{NetConnection, NetHandler, NetWorker},
+    net_connection::{NetHandler, NetSend, NetWorker, NetWorkerFactory},
     net_connection_thread::NetConnectionThread,
     protocol::Protocol,
     NetResult,
 };
 
-use super::{ipc_net_worker::IpcNetWorker, mock_worker::MockWorker, p2p_config::*};
+use super::{ipc_net_worker::IpcNetWorker, memory_worker::InMemoryWorker, p2p_config::*};
 
-/// The p2p network instance
+/// Facade handling a p2p module responsable for the network connection
+/// Holds a NetConnectionThread and implements itself the NetSend Trait
+/// `send()` is used for sending Protocol messages to the network
+/// `handler` closure provide on construction for handling Protocol messages received from the network.
 pub struct P2pNetwork {
     connection: NetConnectionThread,
+}
+
+impl P2pNetwork {
+    /// Constructor
+    /// `config` is the configuration of the p2p module
+    /// `handler` is the closure for handling Protocol messages received from the network.
+    pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
+        // Create Config struct
+        let network_config = config.backend_config.to_string().into();
+        // Provide worker factory depending on backend kind
+        let worker_factory: NetWorkerFactory = match config.backend_kind {
+            // Create an IpcNetWorker with the passed backend config
+            P2pBackendKind::IPC => Box::new(move |h| {
+                Ok(Box::new(IpcNetWorker::new(h, &network_config)?) as Box<NetWorker>)
+            }),
+            // Create an InMemoryWorker
+            P2pBackendKind::MEMORY => Box::new(move |h| {
+                Ok(Box::new(InMemoryWorker::new(h, &network_config)?) as Box<NetWorker>)
+            }),
+        };
+        // Create NetConnectionThread with appropriate worker factory
+        let connection = NetConnectionThread::new(handler, worker_factory, None)?;
+        // Done
+        Ok(P2pNetwork { connection })
+    }
+
+    /// Stop the network connection (disconnect any sockets, join any threads, etc)
+    pub fn stop(self) -> NetResult<()> {
+        self.connection.stop()
+    }
+
+    /// Getter of the endpoint of its connection
+    pub fn endpoint(&self) -> String {
+        self.connection.endpoint.clone()
+    }
 }
 
 impl std::fmt::Debug for P2pNetwork {
@@ -22,49 +60,10 @@ impl std::fmt::Debug for P2pNetwork {
     }
 }
 
-impl NetConnection for P2pNetwork {
+impl NetSend for P2pNetwork {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         self.connection.send(data)
-    }
-}
-
-impl P2pNetwork {
-    /// create a new p2p network instance, given message handler and config json
-    pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
-        // Create Config struct
-        let network_config = config.backend_config.to_string().into();
-        // so far, we have only implemented the "ipc" backend type
-        let connection = match config.backend_kind {
-            P2pBackendKind::IPC => {
-                // create a new ipc backend with the passed sub "config" info
-                NetConnectionThread::new(
-                    handler,
-                    Box::new(move |h| {
-                        let out: Box<NetWorker> = Box::new(IpcNetWorker::new(h, &network_config)?);
-                        Ok(out)
-                    }),
-                    None,
-                )?
-            }
-            P2pBackendKind::MOCK => NetConnectionThread::new(
-                handler,
-                Box::new(move |h| {
-                    Ok(Box::new(MockWorker::new(h, &network_config)?) as Box<NetWorker>)
-                }),
-                None,
-            )?,
-        };
-        Ok(P2pNetwork { connection })
-    }
-
-    /// stop the network module (disconnect any sockets, join any threads, etc)
-    pub fn stop(self) -> NetResult<()> {
-        self.connection.stop()
-    }
-
-    pub fn endpoint(&self) -> String {
-        self.connection.endpoint.clone()
     }
 }
 
@@ -84,8 +83,12 @@ mod tests {
     }
 
     #[test]
-    fn it_should_create_mock() {
-        let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &P2pConfig::unique_mock()).unwrap();
+    fn it_should_create_memory_network() {
+        let mut res = P2pNetwork::new(
+            Box::new(|_r| Ok(())),
+            &P2pConfig::new_with_unique_memory_backend(),
+        )
+        .unwrap();
         res.send(Protocol::P2pReady).unwrap();
         res.stop().unwrap();
     }

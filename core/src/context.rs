@@ -202,10 +202,23 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     Ok((dna.address(), agent_id))
 }
 
-/// create a test network
+/// create a unique test network
 #[cfg_attr(tarpaulin, skip)]
-pub fn mock_network_config() -> JsonString {
-    JsonString::from(P2pConfig::named_mock("mock_network_config()"))
+pub fn unique_memory_network_config() -> JsonString {
+    JsonString::from(P2pConfig::new_with_unique_memory_backend())
+}
+
+/// Create an in-memory network config with the provided name,
+/// otherwise create a unique name and thus network using snowflake.
+/// This is the base function that many other `text_context*` functions use, and hence they also
+/// require an optional network name. The reasoning for this is that tests which only require a
+/// single instance may simply pass None and get a unique network name, but tests which require two
+/// instances to be on the same network need to ensure both contexts use the same network name.
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_memory_network_config(network_name: Option<&str>) -> JsonString {
+    network_name
+        .map(|name| JsonString::from(P2pConfig::new_with_memory_backend(name)))
+        .unwrap_or(unique_memory_network_config())
 }
 
 #[cfg(test)]
@@ -215,7 +228,8 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        context::mock_network_config, logger::test_logger, persister::SimplePersister, state::State,
+        context::unique_memory_network_config, logger::test_logger, persister::SimplePersister,
+        state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
@@ -241,7 +255,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            unique_memory_network_config(),
             None,
             None,
         );
@@ -274,7 +288,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            unique_memory_network_config(),
             None,
             None,
         );

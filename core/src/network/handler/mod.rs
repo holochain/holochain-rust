@@ -14,29 +14,26 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
 };
-use holochain_net_connection::{net_connection::NetHandler, protocol_wrapper::ProtocolWrapper};
+use holochain_net_connection::{json_protocol::JsonProtocol, net_connection::NetHandler};
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us:
-fn is_me(c: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
+fn is_me(context: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
     // TODO: we also need a better way to easily get the DNA hash!!
-    let state = c
+    let state = context
         .state()
-        .ok_or("is_me could not get application state".to_string())
+        .ok_or("is_me() could not get application state".to_string())
         .unwrap();
     let dna = state
         .nucleus()
         .dna()
-        .ok_or("is_me called without DNA".to_string())
+        .ok_or("is_me() called without DNA".to_string())
         .unwrap();
     let my_dna_address = dna.address();
 
-    if my_dna_address != *dna_address {
-        return false;
-    }
-    if (my_dna_address != *dna_address) || (agent_id != "" && c.agent_id.key != agent_id) {
-        c.log("debug/net/handle: ignoring, wasn't for me");
+    if (my_dna_address != *dna_address) || (agent_id != "" && context.agent_id.key != agent_id) {
+        context.log("debug/net/handle: ignoring, wasn't for me");
         false
     } else {
         true
@@ -51,9 +48,9 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     Box::new(move |message| {
         let message = message.unwrap();
         //context.log(format!("debug/net/handle: {:?}", message));
-        let protocol_wrapper = ProtocolWrapper::try_from(message);
-        match protocol_wrapper {
-            Ok(ProtocolWrapper::StoreDht(dht_data)) => {
+        let json_msg = JsonProtocol::try_from(message);
+        match json_msg {
+            Ok(JsonProtocol::HandleStoreDhtData(dht_data)) => {
                 // NOTE data in message doesn't allow us to confirm agent!
                 if !is_me(&context, &dht_data.dna_address, "") {
                     return Ok(());
@@ -61,21 +58,21 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 context.log(format!("debug/net/handle: StoreDht: {:?}", dht_data));
                 handle_store_dht(dht_data, context.clone())
             }
-            Ok(ProtocolWrapper::StoreDhtMeta(dht_meta_data)) => {
+            Ok(JsonProtocol::HandleStoreDhtMeta(dht_meta_data)) => {
                 context.log(format!(
-                    "debug/net/handle: StoreDhtMeta: {:?}",
+                    "debug/net/handle: HandleStoreDhtMeta: {:?}",
                     dht_meta_data
                 ));
                 if !is_me(&context, &dht_meta_data.dna_address, "") {
                     context.log(format!(
-                        "debug/net/handle: StoreDhtMeta: ignoring, not for me. {:?}",
+                        "debug/net/handle: HandleStoreDhtMeta: ignoring, not for me. {:?}",
                         dht_meta_data
                     ));
                     return Ok(());
                 }
                 handle_store_dht_meta(dht_meta_data, context.clone())
             }
-            Ok(ProtocolWrapper::GetDht(get_dht_data)) => {
+            Ok(JsonProtocol::HandleGetDhtData(get_dht_data)) => {
                 // NOTE data in message doesn't allow us to confirm agent!
                 if !is_me(&context, &get_dht_data.dna_address, "") {
                     return Ok(());
@@ -83,14 +80,14 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 context.log(format!("debug/net/handle: GetDht: {:?}", get_dht_data));
                 handle_get_dht(get_dht_data, context.clone())
             }
-            Ok(ProtocolWrapper::GetDhtResult(dht_data)) => {
+            Ok(JsonProtocol::GetDhtDataResult(dht_data)) => {
                 if !is_me(&context, &dht_data.dna_address, &dht_data.agent_id) {
                     return Ok(());
                 }
                 context.log(format!("debug/net/handle: GetDhtResult: {:?}", dht_data));
                 handle_get_dht_result(dht_data, context.clone())
             }
-            Ok(ProtocolWrapper::GetDhtMeta(get_dht_meta_data)) => {
+            Ok(JsonProtocol::HandleGetDhtMeta(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
                     context.log(format!(
                         "debug/net/handle: GetDhtMeta: {:?}",
@@ -99,7 +96,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     handle_get_dht_meta(get_dht_meta_data, context.clone())
                 }
             }
-            Ok(ProtocolWrapper::GetDhtMetaResult(get_dht_meta_data)) => {
+            Ok(JsonProtocol::GetDhtMetaResult(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
                     // TODO: Find a proper solution for selecting DHT meta responses.
                     // Current network implementation broadcasts messages to all nodes which means
@@ -128,7 +125,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     //}
                 }
             }
-            Ok(ProtocolWrapper::HandleSend(message_data)) => {
+            Ok(JsonProtocol::HandleSendMessage(message_data)) => {
                 if !is_me(
                     &context,
                     &message_data.dna_address,
@@ -138,7 +135,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_send(message_data, context.clone())
             }
-            Ok(ProtocolWrapper::SendResult(message_data)) => {
+            Ok(JsonProtocol::SendMessageResult(message_data)) => {
                 if !is_me(
                     &context,
                     &message_data.dna_address,
@@ -148,7 +145,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_send_result(message_data, context.clone())
             }
-            Ok(ProtocolWrapper::PeerConnected(peer_data)) => {
+            Ok(JsonProtocol::PeerConnected(peer_data)) => {
                 // if is not my DNA ignore
                 if !is_me(&context, &peer_data.dna_address, "") {
                     return Ok(());

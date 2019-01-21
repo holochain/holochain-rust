@@ -34,6 +34,10 @@ jobs:
        name: app spec tests
        command: nix-shell --run hc-test-app-spec
 
+   - run:
+       name: nodejs container tests
+       command: nix-shell --run hc-test-node-container
+
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:
   machine: true
@@ -76,7 +80,7 @@ jobs:
    - image: ubuntu
   steps:
    - checkout
-   - run: . ./scripts/install/ubuntu.sh
+   - run: . ./scripts/install/auto.sh
    - run: make test
 
 workflows:

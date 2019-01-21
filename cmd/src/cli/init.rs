@@ -100,9 +100,9 @@ pub mod tests {
     use super::*;
     use tempfile::{Builder, TempDir};
 
-    const HOLOCHAIN_TEST_PREFIX: &str = "org.holochain.test";
+    const HOLOCHAIN_TEST_PREFIX: &str = "org_holochain_test";
 
-    fn gen_dir() -> TempDir {
+    pub fn gen_dir() -> TempDir {
         Builder::new()
             .prefix(HOLOCHAIN_TEST_PREFIX)
             .tempdir()

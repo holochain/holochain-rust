@@ -113,9 +113,10 @@ pub mod tests {
             wasm.clone(),
         );
 
-        let instance = test_instance(dna).expect("Could not create test instance");
+        let netname = Some("create_test_instance");
+        let instance = test_instance(dna, netname).expect("Could not create test instance");
 
-        let (context, _) = test_context_and_logger("joan");
+        let (context, _) = test_context_and_logger("joan", netname);
         let initialized_context = instance.initialize_context(context);
         (instance, initialized_context)
     }
@@ -178,7 +179,7 @@ pub mod tests {
             .expect("valid ZomeApiInternalResult JsonString");
 
         let core_err = CoreError::try_from(result).expect("valid CoreError JsonString");
-        assert_eq!("not implemented", core_err.kind.to_string(),);
+        assert_eq!("Unknown entry type", core_err.kind.to_string(),);
     }
 
     #[test]

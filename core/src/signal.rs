@@ -1,13 +1,12 @@
+use crate::action::ActionWrapper;
 use std::{
     sync::mpsc::{channel, sync_channel, Receiver, SyncSender},
     thread,
 };
 
-use crate::action::Action;
-
 #[derive(Debug)]
 pub enum Signal {
-    Internal(Action),
+    Internal(ActionWrapper),
     User,
 }
 

@@ -33,7 +33,7 @@ pub fn handle_create_my_entry(entry: MyEntry) -> ZomeApiResult<Address> {
 }
 
 pub fn handle_get_my_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
-    hdk::get_entry(address)
+    hdk::get_entry(&address)
 }
 
 fn definition() -> ValidatingEntryType {
@@ -61,7 +61,7 @@ define_zome! {
     functions: {
         main (Public) {
             create_my_entry: {
-                inputs: |item: MyEntry|,
+                inputs: |entry: MyEntry|,
                 outputs: |result: ZomeApiResult<Address>|,
                 handler: handle_create_my_entry
             }

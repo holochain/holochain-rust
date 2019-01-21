@@ -1,7 +1,11 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
-use holochain_container_api::{config::*, container::Container, logger::LogRules};
+use holochain_container_api::{
+    config::*,
+    container::{mount_container_from_config, CONTAINER},
+    logger::LogRules,
+};
 use holochain_core_types::agent::AgentId;
 use std::{env, fs};
 
@@ -13,7 +17,13 @@ const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 /// Starts a small container with the current application running
-pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultResult<()> {
+pub fn run(
+    package: bool,
+    port: u16,
+    persist: bool,
+    networked: bool,
+    interface: String,
+) -> DefaultResult<()> {
     if package {
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
@@ -50,9 +60,18 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
         storage,
     };
 
+    let interface_type = env::var("HC_INTERFACE").ok().unwrap_or_else(|| interface);
+    let driver = if interface_type == String::from("websocket") {
+        InterfaceDriver::Websocket { port }
+    } else if interface_type == String::from("http") {
+        InterfaceDriver::Http { port }
+    } else {
+        return Err(format_err!("unknown interface type: {}", interface_type));
+    };
+
     let interface_config = InterfaceConfiguration {
         id: INTERFACE_CONFIG_ID.into(),
-        driver: InterfaceDriver::Websocket { port },
+        driver,
         admin: true,
         instances: vec![InstanceReferenceConfiguration {
             id: INSTANCE_CONFIG_ID.into(),
@@ -103,7 +122,9 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
         ..Default::default()
     };
 
-    let mut container = Container::from_config(base_config.clone());
+    mount_container_from_config(base_config);
+    let mut container_guard = CONTAINER.lock().unwrap();
+    let container = container_guard.as_mut().expect("Container must be mounted");
 
     container
         .load_config()
@@ -113,8 +134,8 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
     container.start_all_instances()?;
 
     println!(
-        "Holochain development container started. Running websocket server on port {}",
-        port
+        "Holochain development container started. Running {} server on port {}",
+        interface_type, port
     );
     println!("Type 'exit' to stop the container and exit the program");
 
@@ -134,4 +155,40 @@ pub fn run(package: bool, port: u16, persist: bool, networked: bool) -> DefaultR
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+// flagged as broken for:
+// 1. taking 60+ seconds
+#[cfg(feature = "broken-tests")]
+mod tests {
+    use crate::cli::init::{init, tests::gen_dir};
+    use assert_cmd::prelude::*;
+    use std::{env, process::Command};
+
+    #[test]
+    fn test_run() {
+        let temp_dir = gen_dir();
+        let temp_dir_path = temp_dir.path();
+        let temp_dir_path_buf = temp_dir_path.to_path_buf();
+
+        let mut run_cmd = Command::main_binary().unwrap();
+        let mut run2_cmd = Command::main_binary().unwrap();
+
+        let _ = init(&temp_dir_path_buf);
+
+        assert!(env::set_current_dir(&temp_dir_path).is_ok());
+
+        let output = run_cmd
+            .args(&["run", "--package"])
+            .output()
+            .expect("should run");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m bundle file at \\\"bundle.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development container started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the container and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+
+        let output = run2_cmd
+            .args(&["run", "--interface", "http"])
+            .output()
+            .expect("should run");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"Starting instance \\\"test-instance\\\"...\\nHolochain development container started. Running http server on port 8888\\nType \\\'exit\\\' to stop the container and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+    }
 }

@@ -68,6 +68,16 @@ pub fn definition() -> ValidatingEntryType {
                 validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
                     Ok(())
                 }
+            ),
+            from!(
+                "%agent_id",
+                tag: "recommended_posts",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
+                    Ok(())
+                }
             )
         ]
     )

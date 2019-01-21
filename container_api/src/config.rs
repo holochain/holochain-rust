@@ -46,6 +46,12 @@ pub struct Configuration {
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
+    /// List of ui bundles (static web dirs) to host on a static interface. Optional.
+    #[serde(default)]
+    pub ui_bundles: Vec<UiBundleConfiguration>,
+    /// List of ui interfaces, includes references ui bundle and dna interfaces it can call. Optional.
+    #[serde(default)]
+    pub ui_interfaces: Vec<UiInterfaceConfiguration>,
     /// Configures how logging should behave
     #[serde(default)]
     pub logger: LoggerConfiguration,
@@ -132,6 +138,28 @@ impl Configuration {
                 })?;
         }
 
+        for ref ui_interface in self.ui_interfaces.iter() {
+            self.ui_bundle_by_id(&ui_interface.bundle)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "UI bundle configuration {} not found, mentioned in UI interface {}",
+                        ui_interface.bundle, ui_interface.id,
+                    )
+                })?;
+
+            if let Some(ref dna_interface_id) = ui_interface.dna_interface {
+                self.interface_by_id(&dna_interface_id)
+                    .is_some()
+                    .ok_or_else(|| {
+                        format!(
+                            "DNA Interface configuration \"{}\" not found, mentioned in UI interface \"{}\"",
+                            dna_interface_id, ui_interface.id,
+                        )
+                    })?;
+            }
+        }
+
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
         Ok(())
@@ -155,6 +183,10 @@ impl Configuration {
     /// Returns the interface configuration with the given ID if present
     pub fn interface_by_id(&self, id: &str) -> Option<InterfaceConfiguration> {
         self.interfaces.iter().find(|ic| &ic.id == id).cloned()
+    }
+
+    pub fn ui_bundle_by_id(&self, id: &str) -> Option<UiBundleConfiguration> {
+        self.ui_bundles.iter().find(|ic| &ic.id == id).cloned()
     }
 
     /// Returns all defined instance IDs
@@ -374,6 +406,30 @@ pub struct Bridge {
     /// by bound dynamically.
     /// Callers reference callees by this arbitrary but unique local name.
     pub handle: String,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct UiBundleConfiguration {
+    pub id: String,
+    pub root_dir: String,
+    pub hash: String,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct UiInterfaceConfiguration {
+    pub id: String,
+
+    /// ID of the bundle to serve on this interface
+    pub bundle: String,
+    pub port: u16,
+
+    /// DNA interface this UI is allowed to make calls to
+    /// This is used to set the CORS headers and also to
+    /// provide a extra virtual file endpoint at /_dna_config/ that allows hc-web-client
+    /// or another solution to redirect holochain calls to the correct ip/port/protocol
+    /// (Optional)
+    #[serde(default)]
+    pub dna_interface: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
@@ -642,6 +698,17 @@ pub mod tests {
     [[logger.rules.rules]]
     pattern = ".*"
     color = "red"
+
+    [[ui_bundles]]
+    id = "bundle1"
+    root_dir = "" # serves the current directory
+    hash = "Qm000"
+
+    [[ui_interfaces]]
+    id = "ui-interface-1"
+    bundle = "bundle1"
+    port = 3000
+    dna_interface = "app spec domainsocket interface"
 
     "#;
 
@@ -957,5 +1024,77 @@ pub mod tests {
         // so we are just testing that it isn't null
         #[cfg(not(windows))]
         assert!(default_n3h_persistence_path() != String::from(""));
+    }
+
+    #[test]
+    fn test_inconsistent_ui_interface() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app_spec.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[interfaces]]
+    id = "app spec websocket interface"
+    [interfaces.driver]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec domainsocket interface"
+    [interfaces.driver]
+    type = "domainsocket"
+    file = "/tmp/holochain.sock"
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [logger]
+    type = "debug"
+    [[logger.rules.rules]]
+    pattern = ".*"
+    color = "red"
+
+    [[ui_bundles]]
+    id = "bundle1"
+    root_dir = "" # serves the current directory
+    hash = "Qm000"
+
+    [[ui_interfaces]]
+    id = "ui-interface-1"
+    bundle = "bundle1"
+    port = 3000
+    dna_interface = "<not existant>"
+
+    "#;
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("DNA Interface configuration \"<not existant>\" not found, mentioned in UI interface \"ui-interface-1\"".to_string())
+        );
     }
 }

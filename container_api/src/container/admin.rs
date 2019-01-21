@@ -666,7 +666,10 @@ pattern = ".*""#
             .expect("Could not read temp config file");
 
         let mut toml = String::from(
-            "bridges = []\npersistence_dir = \"./tmp-test/test_install_dna_from_file\"",
+            r#"bridges = []
+persistence_dir = "./tmp-test/test_install_dna_from_file"
+ui_bundles = []
+ui_interfaces = []"#,
         );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
@@ -818,8 +821,12 @@ id = "new-dna""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml =
-            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_instance\"");
+        let mut toml = String::from(
+            r#"bridges = []
+persistence_dir = "./tmp-test/test_add_instance"
+ui_bundles = []
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -871,8 +878,12 @@ type = "file""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml =
-            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_remove_instance\"");
+        let mut toml = String::from(
+            r#"bridges = []
+persistence_dir = "./tmp-test/test_remove_instance"
+ui_bundles = []
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -913,7 +924,14 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\ndnas = []\ninstances = []\npersistence_dir = \"./tmp-test/test_uninstall_dna\"");
+        let mut toml = String::from(
+            r#"bridges = []
+dnas = []
+instances = []
+persistence_dir = "./tmp-test/test_uninstall_dna"
+ui_bundles = []
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         //toml = add_block(toml, dna());
@@ -981,8 +999,11 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml =
-            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_interface\"");
+        let mut toml = String::from(r#"bridges = []
+persistence_dir = "./tmp-test/test_add_interface"
+ui_bundles = []
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1029,7 +1050,11 @@ type = "http""#,
             .expect("Could not read temp config file");
 
         let mut toml = String::from(
-            "bridges = []\ninterfaces = []\npersistence_dir = \"./tmp-test/test_remove_interface\"",
+            r#"bridges = []
+interfaces = []
+persistence_dir = "./tmp-test/test_remove_interface"
+ui_bundles = []
+ui_interfaces = []"#,
         );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
@@ -1079,7 +1104,10 @@ type = "http""#,
             .expect("Could not read temp config file");
 
         let mut toml = String::from(
-            "bridges = []\npersistence_dir = \"./tmp-test/test_add_instance_to_interface\"",
+            r#"bridges = []
+persistence_dir = "./tmp-test/test_add_instance_to_interface"
+ui_bundles = []
+ui_interfaces = []"#,
         );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
@@ -1150,7 +1178,10 @@ type = "websocket""#,
             .expect("Could not read temp config file");
 
         let mut toml = String::from(
-            "bridges = []\npersistence_dir = \"./tmp-test/test_remove_instance_from_interface\"",
+            r#"bridges = []
+persistence_dir = "./tmp-test/test_remove_instance_from_interface"
+ui_bundles = []
+ui_interfaces = []"#,
         );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
@@ -1201,8 +1232,12 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml =
-            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_add_agent\"");
+        let mut toml = String::from(
+            r#"bridges = []
+persistence_dir = "./tmp-test/test_add_agent"
+ui_bundles = []
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
@@ -1240,8 +1275,12 @@ public_address = "new-----------------------------------------------------------
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml =
-            String::from("bridges = []\npersistence_dir = \"./tmp-test/test_remove_agent\"");
+        let mut toml = String::from(
+            r#"bridges = []
+persistence_dir = "./tmp-test/test_remove_agent"
+ui_bundles = []
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         //toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1286,7 +1325,11 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("persistence_dir = \"./tmp-test/test_add_and_remove_bridge\"");
+        let mut toml = String::from(
+            r#"persistence_dir = "./tmp-test/test_add_and_remove_bridge"
+ui_bundles = []
+ui_interfaces = []"#,
+        );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
@@ -1322,7 +1365,10 @@ handle = "my favourite instance!""#,
             .expect("Could not read temp config file");
 
         let mut toml = String::from(
-            "bridges = []\npersistence_dir = \"./tmp-test/test_add_and_remove_bridge\"",
+            r#"bridges = []
+persistence_dir = "./tmp-test/test_add_and_remove_bridge"
+ui_bundles = []
+ui_interfaces = []"#,
         );
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());

@@ -4,17 +4,12 @@ use crate::memory::{
     MemoryBits, MemoryInt,
 };
 use holochain_core_types::json::JsonString;
-use memory::allocation::Length;
-use memory::allocation::AllocationResult;
+use memory::allocation::{AllocationResult, Length};
 use std::{convert::TryInto, os::raw::c_char, slice};
 
 impl WasmStack {
     /// Write in wasm memory according to stack state.
-    fn write_in_wasm_memory(
-        &mut self,
-        bytes: &[u8],
-        length: Length,
-    ) -> AllocationResult {
+    fn write_in_wasm_memory(&mut self, bytes: &[u8], length: Length) -> AllocationResult {
         let next_allocation = self.next_allocation(length)?;
 
         let ptr = MemoryInt::from(self.allocate(next_allocation)?) as *mut c_char;
@@ -38,10 +33,7 @@ impl WasmStack {
     }
 
     /// Write a data struct as a json string in wasm memory according to stack state.
-    pub fn write_json<J: TryInto<JsonString>>(
-        &mut self,
-        jsonable: J,
-    ) -> AllocationResult {
+    pub fn write_json<J: TryInto<JsonString>>(&mut self, jsonable: J) -> AllocationResult {
         let j: JsonString = jsonable
             .try_into()
             .map_err(|_| AllocationError::Serialization)?;

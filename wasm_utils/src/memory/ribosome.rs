@@ -10,10 +10,10 @@ use holochain_core_types::{
 };
 use memory::{
     allocation::{AllocationError, AllocationResult, WasmAllocation},
+    stack::WasmStack,
     MemoryBits,
 };
 use std::convert::TryFrom;
-use memory::stack::WasmStack;
 
 impl TryFrom<RibosomeEncodedAllocation> for WasmAllocation {
     type Error = AllocationError;
@@ -77,14 +77,24 @@ impl WasmAllocation {
     }
 }
 
-pub fn try_allocated_stack_from_encoded_allocation(maybe_encoded_allocation: RibosomeEncodingBits) -> Result<(WasmStack, WasmAllocation), RibosomeEncodedValue> {
-    match WasmAllocation::try_from_ribosome_encoding(maybe_encoded_allocation) {
-        Err(allocation_error) => Err(allocation_error),
-        Ok(allocation) => match WasmStack::try_from(allocation) {
+impl WasmStack {
+    /// equivalent to TryFrom<RibosomeEncodingBits> for WasmStack
+    /// not implemented as a trait because RibosomeEncodingBits is a primitive and that would couple
+    /// stacks to ribosome encoding
+    /// wraps WasmAllocation::try_from_ribosome_encoding internally but has a "higher level"
+    /// return signature intended for direct use/return in/from ribosome fns
+    pub fn try_from_ribosome_encoding(
+        maybe_encoded_allocation: RibosomeEncodingBits,
+    ) -> Result<WasmStack, RibosomeEncodedValue> {
+        match WasmAllocation::try_from_ribosome_encoding(maybe_encoded_allocation) {
             Err(allocation_error) => Err(allocation_error),
-            Ok(stack) => Ok((stack, allocation)),
-        },
-    }.map_err(|e| return_code_for_allocation_result(Err(e)))
+            Ok(allocation) => match WasmStack::try_from(allocation) {
+                Err(allocation_error) => Err(allocation_error),
+                Ok(stack) => Ok(stack),
+            },
+        }
+        .map_err(|e| return_code_for_allocation_result(Err(e)))
+    }
 }
 
 /// Equivalent to From<AllocationResult> for RibosomeEncodedValue

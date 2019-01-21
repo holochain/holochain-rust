@@ -62,12 +62,22 @@ impl PartialOrd for Iso8601 {
 pub mod tests {
     use super::*;
 
-
     #[test]
-    fn example_Iso8601_less() {
+    fn test_iso_8601_basic() {
+        // Different ways of specifying UTC "Zulu"
         assert!( Iso8601::from("2018-10-11T03:23:38+00:00") == Iso8601::from("2018-10-11T03:23:38Z"));
-        assert!( Iso8601::from("2018-10-11T03:15:38-08:00") == Iso8601::from("2018-10-11T03:23:38Z"));
-        assert!( Iso8601::from("2018-10-11T03:15:39-08:00") > Iso8601::from("2018-10-11T03:23:38Z"));
-        assert!( Iso8601::from("2018-10-11T03:15:38-08:00") < Iso8601::from("2018-10-11T03:23:38Z"));
+
+        // Fixed-offset ISO 8601 are comparable to UTC times
+        assert!( Iso8601::from("2018-10-11T03:23:38-08:00") == Iso8601::from("2018-10-11T11:23:38Z"));
+        assert!( Iso8601::from("2018-10-11T03:23:39-08:00") >  Iso8601::from("2018-10-11T11:23:38Z"));
+        assert!( Iso8601::from("2018-10-11T03:23:37-08:00") <  Iso8601::from("2018-10-11T11:23:38Z"));
+
+        // Ensure PartialOrd respects persistent inequality of invalid ISO 8601 DateTime strings
+        assert!( Iso8601::from("boo") != Iso8601::from("2018-10-11T03:23:38Z"));
+        assert!( Iso8601::from("2018-10-11T03:23:38Z") != Iso8601::from("boo"));
+        assert!( Iso8601::from("boo") != Iso8601::from("boo"));
+        assert!( ! (Iso8601::from("2018-10-11T03:23:38Z") < Iso8601::from("boo")));
+        assert!( ! (Iso8601::from("boo") < Iso8601::from("2018-10-11T03:23:38Z" )));
+        assert!( ! (Iso8601::from("boo") < Iso8601::from("boo")));
     }
 }

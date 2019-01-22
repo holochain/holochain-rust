@@ -314,6 +314,7 @@ pub mod tests {
         convert::TryFrom,
         sync::{Arc, RwLock},
     };
+    use test_utils::reduce_action_sequence;
 
     fn test_stateful_context(
         agent_name: &str,

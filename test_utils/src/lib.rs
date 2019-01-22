@@ -9,10 +9,11 @@ extern crate wabt;
 
 use holochain_container_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
-    action::Action,
+    action::{Action, ActionWrapper},
     context::Context,
     logger::{test_logger, TestLogger},
     signal::Signal,
+    state,
 };
 use holochain_core_types::{
     agent::AgentId,
@@ -271,4 +272,15 @@ where
             _ => continue,
         }
     }
+}
+
+pub fn reduce_action_sequence(
+    context: Arc<Context>,
+    state: state::State,
+    actions: Vec<Action>,
+) -> state::State {
+    actions
+        .into_iter()
+        .map(ActionWrapper::new)
+        .fold(state, |state, aw| state.reduce(context.clone(), aw))
 }

@@ -995,21 +995,21 @@ pub fn get_links_and_load<S: Into<String>>(
 /// variety of return values, such a vector of Headers as a `Vec<ChainHeader>`:
 ///
 /// ```
-/// pub fn get_post_headers() -> ZomeApiResult<QueryResult> {
-///     hdk::query_result("post".into(), QueryArgsOptions{ headers: true, ..Default::default()})
-/// }
+/// // pub fn get_post_headers() -> ZomeApiResult<QueryResult> {
+/// //    hdk::query_result("post".into(), QueryArgsOptions{ headers: true, ..Default::default()})
+/// // }
 /// ```
 ///
 /// The types of the results available depend on whether `headers` and/or `entries` is set:
 ///
 /// ```
-///                                                     // headers  entries
-/// pub enum QueryResult {                              // -------  -------
-///     Addresses(Vec<Address>),                        // false    false
-///     Headers(Vec<ChainHeader>),                      // true     false
-///     Entries(Vec<(Address, Entry)>),                 // false    true
-///     HeadersWithEntries(Vec<(ChainHeader, Entry)>),  // true     true
-/// }
+/// //                                                     // headers  entries
+/// // pub enum QueryResult {                              // -------  -------
+/// //     Addresses(Vec<Address>),                        // false    false
+/// //     Headers(Vec<ChainHeader>),                      // true     false
+/// //     Entries(Vec<(Address, Entry)>),                 // false    true
+/// //     HeadersWithEntries(Vec<(ChainHeader, Entry)>),  // true     true
+/// // }
 /// ```
 pub fn query(
     entry_type_names: QueryArgsNames,

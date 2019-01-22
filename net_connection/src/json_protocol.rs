@@ -40,9 +40,6 @@ pub struct ConnectData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct PeerData {
-    #[serde(rename = "dnaAddress")]
-    pub dna_address: Address,
-
     #[serde(rename = "agentId")]
     pub agent_id: String,
 }
@@ -147,6 +144,7 @@ pub struct DhtData {
     #[serde(rename = "address")]
     pub data_address: String,
 
+    #[serde(rename = "content")]
     pub data_content: serde_json::Value,
 }
 
@@ -164,6 +162,7 @@ pub struct HandleDhtResultData {
     pub provider_agent_id: String,
     #[serde(rename = "address")]
     pub data_address: String,
+    #[serde(rename = "content")]
     pub data_content: serde_json::Value,
 }
 
@@ -196,6 +195,7 @@ pub struct DhtMetaData {
     #[serde(rename = "fromAgentId")]
     pub provider_agent_id: String,
 
+    #[serde(rename = "address")]
     pub data_address: String,
     pub attribute: String,
     pub content: serde_json::Value,
@@ -212,6 +212,7 @@ pub struct HandleDhtMetaResultData {
     pub dna_address: Address,
     #[serde(rename = "fromAgentId")]
     pub provider_agent_id: String,
+    #[serde(rename = "address")]
     pub data_address: String,
     pub attribute: String,
     pub content: serde_json::Value,

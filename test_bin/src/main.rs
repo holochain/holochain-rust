@@ -70,13 +70,13 @@ fn main() {
 
     // Launch tests on each setup
     for test_fn in test_fns.clone() {
-        launch_two_nodes_test_with_memory_network(test_fn).unwrap();
-        launch_two_nodes_test_with_ipc_mock(
-            &n3h_path,
-            "test_bin/data/mock_ipc_network_config.json",
-            test_fn,
-        )
-        .unwrap();
+        // launch_two_nodes_test_with_memory_network(test_fn).unwrap();
+//        launch_two_nodes_test_with_ipc_mock(
+//            &n3h_path,
+//            "test_bin/data/mock_ipc_network_config.json",
+//            test_fn,
+//        )
+//        .unwrap();
         launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
     }
 
@@ -240,9 +240,8 @@ fn confirm_published_data(alex: &mut P2pNode, billy: &mut P2pNode, address: &str
         })
         .into(),
     )?;
-    // Alex should receive the data it requested from the netowrk
-    // FIXME: Should be Billy instead!
-    let result = alex.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
+    // billy should receive the data it requested from the netowrk
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
     println!("got dht data result: {:?}", result);
 
     Ok(())
@@ -288,17 +287,16 @@ fn confirm_published_metadata(
         JsonProtocol::HandleFetchDhtMetaResult(HandleDhtMetaResultData {
             request_id: "testGetMetaResult".to_string(),
             dna_address: example_dna_address(),
-            requester_agent_id: ALEX_AGENT_ID.to_string(),
-            provider_agent_id: BILLY_AGENT_ID.to_string(),
+            requester_agent_id: BILLY_AGENT_ID.to_string(),
+            provider_agent_id: ALEX_AGENT_ID.to_string(),
             data_address: address.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    // Alex should receive the metadata it requested from the netowrk
-    // FIXME: Billy should be the one asking instead!
-    let result = alex.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))))?;
+    // billy should receive the metadata it requested from the netowrk
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))))?;
     println!("got dht meta result: {:?}", result);
 
     Ok(())
@@ -511,17 +509,16 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
         JsonProtocol::HandleFetchDhtMetaResult(HandleDhtMetaResultData {
             request_id: "testGetMetaResult".to_string(),
             dna_address: example_dna_address(),
-            requester_agent_id: ALEX_AGENT_ID.to_string(),
-            provider_agent_id: BILLY_AGENT_ID.to_string(),
+            requester_agent_id: BILLY_AGENT_ID.to_string(),
+            provider_agent_id: ALEX_AGENT_ID.to_string(),
             data_address: ENTRY_ADDRESS_3.to_string(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
         .into(),
     )?;
-    // Alex should receive requested metadata
-    // FIXME: Billy should be the one asking instead!
-    let result = alex.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))))?;
+    // billy should receive requested metadata
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))))?;
     println!("got GetDhtMetaResult: {:?}", result);
     // Done
     Ok(())
@@ -572,9 +569,8 @@ fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetRe
         })
         .into(),
     )?;
-    // Alex should receive requested data
-    // FIXME: Billy should be the one asking instead!
-    let result = alex.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
+    // Billy should receive requested data
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
     println!("got GetDhtDataResult: {:?}", result);
     // Done
     Ok(())

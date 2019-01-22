@@ -55,6 +55,7 @@ impl NetWorker for InMemoryWorker {
         let mut did_something = false;
         for (_, receiver) in self.receiver_per_dna.iter_mut() {
             if let Ok(data) = receiver.try_recv() {
+                println!("InMemoryWorker::try_recv() data = {:?}", data);
                 did_something = true;
                 (self.handler)(Ok(data))?;
             }

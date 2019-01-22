@@ -115,12 +115,12 @@ impl InMemoryServer {
 
     /// process a message sent by a node to the "network"
     pub fn serve(&mut self, data: Protocol) -> NetResult<()> {
-        // Debugging code (do not remove)
-        //        println!(
-        //            ">>>> InMemoryServer '{}' recv: {:?}",
-        //            self.name.clone(),
-        //            data
-        //        );
+         //Debugging code (do not remove)
+                println!(
+                    ">>>> InMemoryServer '{}' recv: {:?}",
+                    self.name.clone(),
+                    data
+                );
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
             match json_msg {
                 JsonProtocol::TrackDna(msg) => {
@@ -128,7 +128,6 @@ impl InMemoryServer {
                     self.priv_send_all(
                         &msg.dna_address.clone(),
                         JsonProtocol::PeerConnected(PeerData {
-                            dna_address: msg.dna_address,
                             agent_id: msg.agent_id,
                         })
                         .into(),
@@ -203,12 +202,12 @@ impl InMemoryServer {
             ));
         }
         let sender = maybe_sender.unwrap();
-        // Debugging code (do not remove)
-        //        println!(
-        //            "<<<< InMemoryServer '{}' send: {:?}",
-        //            self.name.clone(),
-        //            data
-        //        );
+         //Debugging code (do not remove)
+                println!(
+                    "<<<< InMemoryServer '{}' send: {:?}",
+                    self.name.clone(),
+                    data
+                );
         sender.send(data)?;
         Ok(())
     }
@@ -216,13 +215,13 @@ impl InMemoryServer {
     /// send a message to all nodes connected with this dna address
     fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
-            // Debugging code (do not remove)
-            //            println!(
-            //                "<<<< InMemoryServer '{}' send all: {:?} ({})",
-            //                self.name.clone(),
-            //                data.clone(),
-            //                dna_address.clone()
-            //            );
+             //Debugging code (do not remove)
+                        println!(
+                            "<<<< InMemoryServer '{}' send all: {:?} ({})",
+                            self.name.clone(),
+                            data.clone(),
+                            dna_address.clone()
+                        );
             for val in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }

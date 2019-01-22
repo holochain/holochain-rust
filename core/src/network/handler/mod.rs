@@ -18,26 +18,41 @@ use holochain_net_connection::{json_protocol::JsonProtocol, net_connection::NetH
 use std::{convert::TryFrom, sync::Arc};
 
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
-// module that aren't really meant for us:
-fn is_me(context: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
+// module that aren't really meant for us
+fn is_my_dna(context: &Arc<Context>, dna_address: &Address) -> bool {
     // TODO: we also need a better way to easily get the DNA hash!!
     let state = context
         .state()
-        .ok_or("is_me() could not get application state".to_string())
+        .ok_or("is_my_dna() could not get application state".to_string())
         .unwrap();
     let dna = state
         .nucleus()
         .dna()
-        .ok_or("is_me() called without DNA".to_string())
+        .ok_or("is_my_dna() called without DNA".to_string())
         .unwrap();
     let my_dna_address = dna.address();
 
-    if (my_dna_address != *dna_address) || (agent_id != "" && context.agent_id.key != agent_id) {
+    if (my_dna_address != *dna_address) {
         context.log("debug/net/handle: ignoring, wasn't for me");
-        false
-    } else {
-        true
+        return false;
     }
+    true
+}
+
+// FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
+// module that aren't really meant for us
+fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
+    if (agent_id != "" && context.agent_id.key != agent_id) {
+        context.log("debug/net/handle: ignoring, wasn't for me");
+        return false;
+    }
+    true
+}
+
+// FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
+// module that aren't really meant for us
+fn is_for_me(context: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
+    !is_my_id(context, agent_id) && is_my_dna(context, dna_address)
 }
 
 /// Creates the network handler.
@@ -48,56 +63,64 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     Box::new(move |message| {
         let message = message.unwrap();
         //context.log(format!("debug/net/handle: {:?}", message));
-        let json_msg = JsonProtocol::try_from(message);
-        match json_msg {
-            Ok(JsonProtocol::HandleStoreDhtData(dht_data)) => {
+        let maybe_json_msg = JsonProtocol::try_from(message);
+        if let Err(_) = maybe_json_msg {
+            // context.log(format!("debug/net/handle: Received non-json message"));
+            return Ok(());
+        }
+        match maybe_json_msg.unwrap() {
+            JsonProtocol::HandleStoreDhtData(dht_data) => {
                 // NOTE data in message doesn't allow us to confirm agent!
-                if !is_me(&context, &dht_data.dna_address, "") {
+                if !is_my_dna(&context, &dht_data.dna_address) {
                     return Ok(());
                 }
-                context.log(format!("debug/net/handle: StoreDht: {:?}", dht_data));
+                context.log(format!("debug/net/handle: HandleStoreDhtData: {:?}", dht_data));
                 handle_store_dht(dht_data, context.clone())
             }
-            Ok(JsonProtocol::HandleStoreDhtMeta(dht_meta_data)) => {
+            JsonProtocol::HandleStoreDhtMeta(dht_meta_data) => {
                 context.log(format!(
                     "debug/net/handle: HandleStoreDhtMeta: {:?}",
                     dht_meta_data
                 ));
-                if !is_me(&context, &dht_meta_data.dna_address, "") {
-                    context.log(format!(
-                        "debug/net/handle: HandleStoreDhtMeta: ignoring, not for me. {:?}",
-                        dht_meta_data
-                    ));
+                if !is_my_dna(&context, &dht_meta_data.dna_address) {
                     return Ok(());
                 }
                 handle_store_dht_meta(dht_meta_data, context.clone())
             }
-            Ok(JsonProtocol::HandleFetchDhtData(fetch_dht_data)) => {
-                // NOTE data in message doesn't allow us to confirm agent!
-                if !is_me(&context, &fetch_dht_data.dna_address, "") {
+            JsonProtocol::HandleFetchDhtData(fetch_dht_data) => {
+                if !is_for_me(
+                    &context,
+                    &fetch_dht_data.dna_address,
+                    &fetch_dht_data.requester_agent_id) {
                     return Ok(());
                 }
-                context.log(format!("debug/net/handle: GetDht: {:?}", fetch_dht_data));
+                context.log(format!("debug/net/handle: HandleFetchDhtData: {:?}", fetch_dht_data));
                 handle_get_dht(fetch_dht_data, context.clone())
             }
-            Ok(JsonProtocol::FetchDhtDataResult(dht_data)) => {
-                if !is_me(&context, &dht_data.dna_address, &dht_data.provider_agent_id) {
+            JsonProtocol::FetchDhtDataResult(dht_data) => {
+                if !is_for_me(&context, &dht_data.dna_address, &dht_data.provider_agent_id) {
                     return Ok(());
                 }
-                context.log(format!("debug/net/handle: GetDhtResult: {:?}", dht_data));
+                context.log(format!("debug/net/handle: FetchDhtDataResult: {:?}", dht_data));
                 handle_get_dht_result(dht_data, context.clone())
             }
-            Ok(JsonProtocol::HandleFetchDhtMeta(get_dht_meta_data)) => {
-                if is_me(&context, &get_dht_meta_data.dna_address, "") {
+            JsonProtocol::HandleFetchDhtMeta(get_dht_meta_data) => {
+                if is_for_me(
+                    &context,
+                    &get_dht_meta_data.dna_address,
+                    &get_dht_meta_data.requester_agent_id) {
                     context.log(format!(
-                        "debug/net/handle: GetDhtMeta: {:?}",
+                        "debug/net/handle: HandleFetchDhtMeta: {:?}",
                         get_dht_meta_data
                     ));
                     handle_get_dht_meta(get_dht_meta_data, context.clone())
                 }
             }
-            Ok(JsonProtocol::FetchDhtMetaResult(get_dht_meta_data)) => {
-                if is_me(&context, &get_dht_meta_data.dna_address, "") {
+            JsonProtocol::FetchDhtMetaResult(get_dht_meta_data) => {
+                if is_for_me(
+                    &context,
+                    &get_dht_meta_data.dna_address,
+                    &get_dht_meta_data.provider_agent_id) {
                     // TODO: Find a proper solution for selecting DHT meta responses.
                     // Current network implementation broadcasts messages to all nodes which means
                     // we respond to ourselves first in most cases.
@@ -125,18 +148,17 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     //}
                 }
             }
-            Ok(JsonProtocol::HandleSendMessage(message_data)) => {
-                if !is_me(
-                    &context,
-                    &message_data.dna_address,
-                    &message_data.to_agent_id,
+            JsonProtocol::HandleSendMessage(message_data) => {
+                if !is_for_me(&context,
+                              &message_data.dna_address,
+                              &message_data.from_agent_id,
                 ) {
                     return Ok(());
                 }
                 handle_send(message_data, context.clone())
             }
-            Ok(JsonProtocol::SendMessageResult(message_data)) => {
-                if !is_me(
+            JsonProtocol::SendMessageResult(message_data) => {
+                if !is_for_me(
                     &context,
                     &message_data.dna_address,
                     &message_data.to_agent_id,
@@ -145,17 +167,13 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_send_result(message_data, context.clone())
             }
-            Ok(JsonProtocol::PeerConnected(peer_data)) => {
-                // if is not my DNA ignore
-                if !is_me(&context, &peer_data.dna_address, "") {
-                    return Ok(());
-                }
+            JsonProtocol::PeerConnected(peer_data) => {
                 // if this is the peer connection of myself, also ignore
-                if is_me(&context, &peer_data.dna_address, &peer_data.agent_id) {
+                if is_my_id(&context, &peer_data.agent_id) {
                     return Ok(());
                 }
-                // Total hack in lieu of a world-model.  Just republish everything
-                // when a new person comes on-line!!
+                // Total hack in lieu of a world-model.
+                // Just republish everything when a new person comes on-line!!
                 republish_all_public_chain_entries(&context);
             }
             _ => {}

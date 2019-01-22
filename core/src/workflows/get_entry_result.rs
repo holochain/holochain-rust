@@ -23,7 +23,9 @@ pub async fn get_entry_with_meta_workflow<'a>(
     }
     // 2. No result, so try on the network
     await!(network::actions::get_entry::get_entry(
-        context, &address, timeout
+        context.clone(),
+        address.clone(),
+        timeout.clone(),
     ))
 }
 

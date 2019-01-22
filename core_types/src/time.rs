@@ -38,6 +38,12 @@ impl Default for Timeout {
     }
 }
 
+impl From<Timeout> for Duration {
+    fn from(Timeout(millis): Timeout) -> Duration {
+        Duration::from_millis(millis as u64)
+    }
+}
+
 impl From<&Timeout> for Duration {
     fn from(Timeout(millis): &Timeout) -> Duration {
         Duration::from_millis(*millis as u64)

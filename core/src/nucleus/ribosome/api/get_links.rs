@@ -43,10 +43,10 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
 
     // Get links from DHT
     let maybe_links = block_on(get_links(
-        &runtime.context,
-        &input.entry_address,
+        runtime.context.clone(),
+        input.entry_address,
         input.tag,
-        &input.options.timeout,
+        input.options.timeout,
     ));
 
     runtime.store_result(match maybe_links {

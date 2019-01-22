@@ -3,7 +3,7 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
         create_key, from_key, Action, Attribute, Entity, EntityAttributeValue,
-        EntityAttributeValueStorage, Key, Value,
+        EntityAttributeValueStorage, Key, Value,increment_key_till_no_collision
     },
     error::{HcResult, HolochainError},
     hash::HashString,
@@ -217,11 +217,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
             let mut key = create_key(Action::Insert)?;
-            key.0 = if fetched.contains_key(&key) {
-                key.0 + 1
-            } else {
-                key.0
-            };
+            key = increment_key_till_no_collision(key,fetched)?;
             self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
                 .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
                 .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))?;

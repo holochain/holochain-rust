@@ -38,23 +38,23 @@ impl P2pNode {
         }
     }
 
-    // Constructor for a mock P2P Network
+    // Constructor for an in-memory P2P Network
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_mock() -> Self {
-        let config = P2pConfig::unique_mock();
+    pub fn new_with_unique_memory_network() -> Self {
+        let config = P2pConfig::new_with_unique_memory_backend();
         return P2pNode::new_with_config(&config, None);
     }
 
     // Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_ipc_with_uri(ipc_binding: &str) -> Self {
+    pub fn new_with_uri_ipc_network(ipc_binding: &str) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
         return P2pNode::new_with_config(&p2p_config, None);
     }
 
     // Constructor for an IPC node that spawns and uses a n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_ipc_spawn(
+    pub fn new_with_spawn_ipc_network(
         n3h_path: &str,
         maybe_config_filepath: Option<&str>,
         bootstrap_nodes: Vec<String>,

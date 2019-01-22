@@ -69,10 +69,10 @@ fn main() {
 
     // Launch tests on each setup
     for test_fn in test_fns.clone() {
-        launch_two_nodes_rust_mock_test(test_fn).unwrap();
+        launch_two_nodes_test_with_memory_network(test_fn).unwrap();
         launch_two_nodes_test_with_ipc_mock(
             &n3h_path,
-            "test_bin/data/mock_network_config.json",
+            "test_bin/data/mock_ipc_network_config.json",
             test_fn,
         )
         .unwrap();
@@ -117,12 +117,12 @@ fn launch_two_nodes_test_with_ipc_mock(
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
-    let mut node1 = P2pNode::new_ipc_spawn(
+    let mut node1 = P2pNode::new_with_spawn_ipc_network(
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
-    let mut node2 = P2pNode::new_ipc_with_uri(&node1.endpoint());
+    let mut node2 = P2pNode::new_with_uri_ipc_network(&node1.endpoint());
 
     println!("IPC-MOCK TWO NODE TEST");
     println!("======================");
@@ -138,15 +138,15 @@ fn launch_two_nodes_test_with_ipc_mock(
 
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
-fn launch_two_nodes_rust_mock_test(test_fn: TwoNodesTestFn) -> NetResult<()> {
-    let mut node_a = P2pNode::new_mock();
+fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResult<()> {
+    let mut node_a = P2pNode::new_with_unique_memory_network();
     let mut node_b = P2pNode::new_with_config(&node_a.config, None);
 
-    println!("RUST-MOCK TWO NODE TEST");
+    println!("IN-MEMORY TWO NODE TEST");
     println!("=======================");
     test_fn(&mut node_a, &mut node_b, false)?;
     println!("==================");
-    println!("RUST-MOCK TEST END\n");
+    println!("IN-MEMORY TEST END\n");
     // Kill nodes
     node_a.stop();
     node_b.stop();
@@ -162,12 +162,12 @@ fn launch_two_nodes_test(
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
-    let mut node1 = P2pNode::new_ipc_spawn(
+    let mut node1 = P2pNode::new_with_spawn_ipc_network(
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
-    let mut node2 = P2pNode::new_ipc_spawn(
+    let mut node2 = P2pNode::new_with_spawn_ipc_network(
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -349,7 +349,6 @@ fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
             _node1_id = state.id
         });
         one_let!(JsonProtocol::GetStateResult(state) = node_state_B {
-            // No bindings in mock mode
             if !state.bindings.is_empty() {
                 node2_binding = state.bindings[0].clone();
             }
@@ -387,6 +386,8 @@ fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
     println!("Testing: send_test()");
     setup_normal(alex, billy, can_connect)?;
 
+    println!("setup done");
+
     // Send a message from alex to billy
     alex.send(
         JsonProtocol::SendMessage(MessageData {
@@ -399,6 +400,9 @@ fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
         .into(),
     )
     .expect("Failed sending SendMessage to billy");
+
+    println!("SendMessage done");
+
     // Check if billy received it
     let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))?;
     println!("#### got: {:?}", res);

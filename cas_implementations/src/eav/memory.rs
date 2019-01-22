@@ -1,7 +1,7 @@
 use holochain_core_types::{
     eav::{
-        create_key, Action, Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage,
-        Key, Value,increment_key_till_no_collision
+        create_key, increment_key_till_no_collision, Action, Attribute, Entity,
+        EntityAttributeValue, EntityAttributeValueStorage, Key, Value,
     },
     error::HolochainError,
 };
@@ -42,7 +42,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         {
             let mut map = self.storage.write()?;
             let mut key = create_key(Action::Insert)?;
-            key = increment_key_till_no_collision(key,map.clone())?;
+            key = increment_key_till_no_collision(key, map.clone())?;
             map.insert(key.clone(), eav.clone());
             Ok(Some(key.clone()))
         } else {

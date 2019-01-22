@@ -2,8 +2,8 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        create_key, from_key, Action, Attribute, Entity, EntityAttributeValue,
-        EntityAttributeValueStorage, Key, Value,increment_key_till_no_collision
+        create_key, from_key, increment_key_till_no_collision, Action, Attribute, Entity,
+        EntityAttributeValue, EntityAttributeValueStorage, Key, Value,
     },
     error::{HcResult, HolochainError},
     hash::HashString,
@@ -217,7 +217,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
             let mut key = create_key(Action::Insert)?;
-            key = increment_key_till_no_collision(key,fetched)?;
+            key = increment_key_till_no_collision(key, fetched)?;
             self.write_to_file(key.clone(), ENTITY_DIR.to_string(), eav)
                 .and_then(|_| self.write_to_file(key.clone(), ATTRIBUTE_DIR.to_string(), eav))
                 .and_then(|_| self.write_to_file(key.clone(), VALUE_DIR.to_string(), eav))?;

@@ -222,15 +222,14 @@ impl ExampleEntityAttributeValueStorage {
     }
 }
 
-pub fn increment_key_till_no_collision(mut key:Key,map : BTreeMap<Key, EntityAttributeValue>) ->HcResult<Key>
-{
-    if map.contains_key(&key)
-    {
-        key.0  = key.0 +1;
-        increment_key_till_no_collision(key,map)
-    }
-    else
-    {
+pub fn increment_key_till_no_collision(
+    mut key: Key,
+    map: BTreeMap<Key, EntityAttributeValue>,
+) -> HcResult<Key> {
+    if map.contains_key(&key) {
+        key.0 = key.0 + 1;
+        increment_key_till_no_collision(key, map)
+    } else {
         Ok(key)
     }
 }
@@ -244,7 +243,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         {
             let mut map = self.storage.write()?;
             let mut key = create_key(Action::Insert)?;
-            key = increment_key_till_no_collision(key,map.clone())?;
+            key = increment_key_till_no_collision(key, map.clone())?;
             map.insert(key.clone(), eav.clone());
             Ok(Some(key.clone()))
         } else {

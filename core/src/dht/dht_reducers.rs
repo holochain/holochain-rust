@@ -296,12 +296,13 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
+        context::Context,
         dht::{
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::DhtStore,
         },
         instance::tests::test_context,
-        state::test_store,
+        state::{test_store, State},
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -313,6 +314,20 @@ pub mod tests {
         convert::TryFrom,
         sync::{Arc, RwLock},
     };
+
+    fn test_stateful_context(
+        agent_name: &str,
+        network_name: Option<&str>,
+    ) -> (Arc<Context>, Arc<RwLock<State>>) {
+        let context = test_context(agent_name, network_name);
+        let store = test_store(context.clone());
+
+        let locked_state = Arc::new(RwLock::new(store));
+
+        let mut context = (*context).clone();
+        context.set_state(locked_state.clone());
+        (Arc::new(context), locked_state)
+    }
 
     #[test]
     fn reduce_hold_entry_test() {
@@ -351,17 +366,11 @@ pub mod tests {
 
     #[test]
     fn can_add_links() {
-        let context = test_context("bob", None);
-        let store = test_store(context.clone());
-        let entry = test_entry();
+        let (context, locked_state) = test_stateful_context("bilal", None);
 
-        let locked_state = Arc::new(RwLock::new(store));
-
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
         let storage = context.dht_storage.clone();
+        let entry = test_entry();
         let _ = (storage.write().unwrap()).add(&entry);
-        let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
@@ -391,15 +400,38 @@ pub mod tests {
 
     #[test]
     fn does_not_add_link_for_missing_base() {
-        let context = test_context("bob", None);
-        let store = test_store(context.clone());
+        let (context, locked_state) = test_stateful_context("bilal", None);
+
         let entry = test_entry();
 
-        let locked_state = Arc::new(RwLock::new(store));
+        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let action = ActionWrapper::new(Action::AddLink(link.clone()));
 
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let context = Arc::new(context);
+        let new_dht_store: DhtStore;
+        {
+            let state = locked_state.read().unwrap();
+
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+        }
+        let storage = new_dht_store.meta_storage();
+        let fetched = storage
+            .read()
+            .unwrap()
+            .fetch_eav(Some(entry.address()), None, None);
+
+        assert!(fetched.is_ok());
+        let hash_set = fetched.unwrap();
+        assert_eq!(hash_set.len(), 0);
+
+        let result = new_dht_store.actions().get(&action).unwrap();
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn queues_link_for_missing_base() {
+        let (context, locked_state) = test_stateful_context("bilal", None);
+        let entry = test_entry();
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));

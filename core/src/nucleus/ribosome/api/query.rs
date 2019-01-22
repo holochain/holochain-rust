@@ -137,21 +137,17 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     runtime.store_result(result)
 }
 
-/// Get an Entry via the provided context, returning Entry or HolochainError on failure
+/// Get an local-chain Entry via the provided context, returning Entry or HolochainError on failure
 fn get_entry_from_chain(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Entry, HolochainError> {
-    // TODO:
     let entry = match get_entry_from_agent(context, address)? {
-        // -> Result<Option<Entry>, HolochainError>
         Some(entry) => entry,
-        None => {
-            return Err(HolochainError::ErrorGeneric(format!(
-                "Failed to obtain Entry for Address {}",
-                address
-            )));
-        }
+        None => return Err(HolochainError::ErrorGeneric(format!(
+            "Failed to obtain Entry for Address {}",
+            address
+        ))),
     };
     Ok(entry)
 }

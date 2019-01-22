@@ -26,6 +26,7 @@ pub extern crate holochain_core_types_derive;
 
 pub mod error;
 pub mod ipc_net_worker;
+pub mod mock_system;
 pub mod mock_worker;
 pub mod p2p_config;
 pub mod p2p_network;

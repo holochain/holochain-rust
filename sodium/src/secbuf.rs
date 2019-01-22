@@ -66,7 +66,7 @@ struct SodiumBuf {
 impl Bufferable for SodiumBuf {
     /// warning: funky sizes may result in mis-alignment
     fn new(s: usize) -> Box<Bufferable> {
-        if s != 8 && s != 16 && s != 32 && s != 64 {
+        if s % 8 != 0 {
             panic!("bad buffer size: {}, disallowing this for safety", s);
         }
         let z = unsafe {

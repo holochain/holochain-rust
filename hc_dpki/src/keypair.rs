@@ -20,14 +20,13 @@ impl Keypair {
     ///  
     /// @param {SecBuf} seed - the seed buffer
     pub fn new_from_seed(seed: &mut SecBuf) -> Result<Self, HolochainError> {
-        let mut seed = seed;
         let mut sign_public_key = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut sign_secret_key = SecBuf::with_secure(sign::SECRETKEYBYTES);
         let mut enc_public_key = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
         let mut enc_secret_key = SecBuf::with_secure(kx::SECRETKEYBYTES);
 
-        sign::seed_keypair(&mut sign_public_key, &mut sign_secret_key, &mut seed)?;
-        kx::seed_keypair(&mut seed, &mut enc_public_key, &mut enc_secret_key)?;
+        sign::seed_keypair(&mut sign_public_key, &mut sign_secret_key, seed)?;
+        kx::seed_keypair(seed, &mut enc_public_key, &mut enc_secret_key)?;
 
         Ok(Keypair {
             pub_keys: util::encode_id(&mut sign_public_key, &mut enc_public_key),
@@ -53,7 +52,6 @@ impl Keypair {
         passphrase: &mut SecBuf,
         hint: String,
     ) -> Result<bundle::KeyBundle, HolochainError> {
-        let mut passphrase = passphrase;
         let bundle_type: String = "hcKeypair".to_string();
         let kk = KeyBuffer::with_corrected(&self.pub_keys)?;
         let sk = kk.get_sig() as &[u8];
@@ -68,14 +66,16 @@ impl Keypair {
         let mut enc_pub = ek.to_vec();
         let mut sign_priv = self.sign_priv.read_lock().to_vec();
         let mut enc_priv = self.enc_priv.read_lock().to_vec();
+        let mut keys = vec![1];
+        keys.append(&mut sign_pub);
+        keys.append(&mut enc_pub);
+        keys.append(&mut sign_priv);
+        keys.append(&mut enc_priv);
 
-        sign_pub.append(&mut enc_pub);
-        sign_pub.append(&mut sign_priv);
-        sign_pub.append(&mut enc_priv);
-        let mut key_buf = SecBuf::with_insecure(sign_pub.len());
-        util::convert_vec_to_secbuf(&sign_pub, &mut key_buf);
+        let mut key_buf = SecBuf::with_secure(256);
+        util::convert_vec_to_secbuf(&keys, &mut key_buf);
 
-        let pw_enc: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, &mut passphrase)?;
+        let pw_enc: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, passphrase)?;
         let bundle_data_serialized = json::encode(&pw_enc).unwrap();
 
         // conver to base64
@@ -105,11 +105,17 @@ impl Keypair {
         let key_buf = keys_salt.read_lock();
         let mut sign_priv = SecBuf::with_secure(64);
         let mut enc_priv = SecBuf::with_secure(32);
-        util::convert_array_to_secbuf(&key_buf[64..128], &mut sign_priv);
-        util::convert_array_to_secbuf(&key_buf[128..160], &mut enc_priv);
+        if key_buf[0] != 1 {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Invalid Bundle Version : {:?}",
+                key_buf[0]
+            )));
+        }
+        util::convert_array_to_secbuf(&key_buf[65..129], &mut sign_priv);
+        util::convert_array_to_secbuf(&key_buf[129..161], &mut enc_priv);
 
-        let sp = &key_buf[0..32];
-        let ep = &key_buf[32..64];
+        let sp = &key_buf[1..33];
+        let ep = &key_buf[33..65];
         Ok(Keypair {
             pub_keys: KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32])
                 .render(),
@@ -128,10 +134,7 @@ impl Keypair {
         data: &mut SecBuf,
         signature: &mut SecBuf,
     ) -> Result<(), HolochainError> {
-        let mut data = data;
-        let mut signature = signature;
-        let mut sign_priv = &mut self.sign_priv;
-        sign::sign(&mut data, &mut sign_priv, &mut signature)?;
+        sign::sign(data, &mut self.sign_priv, signature)?;
         Ok(())
     }
 
@@ -145,14 +148,11 @@ impl Keypair {
         signature: &mut SecBuf,
         data: &mut SecBuf,
     ) -> Result<i32, HolochainError> {
-        let mut data = data;
-        let mut signature = signature;
-        let pub_keys = &mut self.pub_keys;
         let mut sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
 
-        util::decode_id(pub_keys.clone(), &mut sign_pub, &mut enc_pub)?;
-        let v: i32 = sign::verify(&mut signature, &mut data, &mut sign_pub);
+        util::decode_id(self.pub_keys.clone(), &mut sign_pub, &mut enc_pub)?;
+        let v: i32 = sign::verify(signature, data, &mut sign_pub);
         Ok(v)
     }
 
@@ -180,8 +180,6 @@ impl Keypair {
         let mut enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
         util::decode_id(pub_keys.to_string(), &mut sign_pub, &mut enc_pub)?;
 
-        let mut enc_priv = &mut self.enc_priv;
-
         for client_pk in recipient_id {
             let mut r_sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
             let mut r_enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
@@ -190,7 +188,7 @@ impl Keypair {
 
             kx::server_session(
                 &mut enc_pub,
-                &mut enc_priv,
+                &mut self.enc_priv,
                 &mut r_enc_pub,
                 &mut srv_rx,
                 &mut srv_tx,

@@ -11,7 +11,7 @@ use futures::{
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
 use snowflake::ProcessUniqueId;
-use std::{pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
 
 /// SendDirectMessage Action Creator for custom (=app) messages
 /// This triggers the network module to open a synchronous node-to-node connection
@@ -32,11 +32,11 @@ pub async fn custom_send(
     let action_wrapper = ActionWrapper::new(Action::SendDirectMessage(direct_message_data));
     dispatch_action(context.action_channel(), action_wrapper);
 
-    /* async {
+    let _ = async {
         sleep(Duration::from_secs(60));
         let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id.clone()));
         dispatch_action(context.action_channel(), action_wrapper.clone());
-    };*/
+    };
 
     await!(SendResponseFuture {
         context: context.clone(),

@@ -955,16 +955,16 @@ pub fn get_links_and_load<S: Into<String>>(
 ///
 /// Each name may be a plain entry type name, or a `"glob"` pattern.  All names and patterns are
 /// merged into a single efficient Regular Expression for scanning.
-/// 
+///
 /// You can select many names with patterns such as `"boo*"` (match all entry types starting with
 /// `"boo"`), or `"[!%]*e"` (all non-system non-name-spaced entry types ending in `"e"`).
-/// 
+///
 /// You can organize your entry types using simple name-spaces, by including `"/"` in your entry type
 /// names.  For example, if you have several entry types related to fizzing a widget, you might
 /// create entry types `"fizz/bar"`, `"fizz/baz"`, `"fizz/qux/foo"` and `"fizz/qux/boo"`.  Query for
 /// `"fizz/**"` to match them all.
 ///
-/// Use vec![], `""`, or `"**"` to match all names in all name-spaces.  Matching `"*"` will match only 
+/// Use vec![], `""`, or `"**"` to match all names in all name-spaces.  Matching `"*"` will match only
 /// non-namespaced names.
 ///
 /// entry_type_names: Specify type of entry(s) to retrieve, as a String or Vec<String> of 0 or more names, converted into the QueryArgNames type
@@ -990,26 +990,29 @@ pub fn get_links_and_load<S: Into<String>>(
 /// }
 /// # }
 /// ```
-/// 
+///
 /// With hdk::query_result, you can specify a package of QueryArgsOptions, and get a
 /// variety of return values, including a vector of Headers as a `Vec<ChainHeader>`:
-/// 
+///
 /// pub fn get_post_headers() -> ZomeApiResult<QueryResult> {
 ///     hdk::query_result("post".into(), QueryArgsOptions{ headers: true, ..Default::default()})
 /// }
-/// 
+///
 pub fn query(
     entry_type_names: QueryArgsNames,
     start: usize,
     limit: usize,
 ) -> ZomeApiResult<Vec<Address>> {
     // The hdk::query API always returns a simple Vec<Address>
-    match query_result( entry_type_names,
-                        QueryArgsOptions {
-                            start: start,
-                            limit: limit,
-                            headers: false,
-                        }) {
+    match query_result(
+        entry_type_names,
+        QueryArgsOptions {
+            start: start,
+            limit: limit,
+            headers: false,
+            entries: false,
+        },
+    ) {
         Ok(result) => match result {
             QueryResult::Addresses(addresses) => Ok(addresses),
             _ => return Err(ZomeApiError::FunctionNotImplemented), // should never occur

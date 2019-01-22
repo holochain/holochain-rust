@@ -1,8 +1,7 @@
 use holochain_core_types::{
     cas::content::Address,
     chain_header::ChainHeader,
-    //entry::Entry, 
-    entry::entry_type::EntryType,
+    entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     json::*,
 };
@@ -63,13 +62,16 @@ pub struct QueryArgs {
 pub struct QueryArgsOptions {
     pub start: usize,
     pub limit: usize,
+    // pub ordering: bool,  // forward or reverse (requires doubly-linked chain perhaps)
+    // pub filter_by: ???,
     pub headers: bool,
+    pub entries: bool,
 }
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
 pub enum QueryResult {
     Addresses(Vec<Address>),
     Headers(Vec<ChainHeader>),
-    // Entries(Vec<Entry>),
-    // Everything(Vec<(ChainHeader,Entry))
+    Entries(Vec<Entry>),
+    HeadersWithEntries(Vec<(ChainHeader, Entry)>),
 }

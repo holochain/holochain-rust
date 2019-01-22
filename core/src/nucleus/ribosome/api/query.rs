@@ -1,10 +1,16 @@
-use crate:: {
+use crate::{
     nucleus::ribosome::{
         api::ZomeApiResult, Runtime,
     },
+    nucleus::actions::get_entry::get_entry_from_dht,
     agent::chain_store::{
         ChainStoreQueryOptions, ChainStoreQueryResult,
     }
+};
+use holochain_core_types::{
+    error::HolochainError,
+    chain_header::ChainHeader,
+    entry::Entry,
 };
 use holochain_wasm_utils::api_serialization::{
     QueryArgs, QueryArgsNames, QueryResult,
@@ -33,7 +39,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Several simple names and/or "glob" patterns can be supplied, and are efficiently
 /// searched for in a single pass using a single efficient Regular Expression engine:
 ///
-/// `["name/*", "and_another", "SomethingElse"]`
+/// `["name/*", "and_another", "something_else"]`
 ///
 /// EntryType names can be excluded, eg. to return every simple (non-namespaced) EntryType except System:
 ///
@@ -88,7 +94,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 refs.as_slice(), // Vec<&str> -> &[&str]
                 ChainStoreQueryOptions {
                     start: query.options.start,
-                    limit:  query.options.limit,
+                    limit: query.options.limit,
                     headers: query.options.headers,
                 }
             )
@@ -98,15 +104,43 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         // TODO #793: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
         // Perhaps return chain().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
-        Ok(result) => {
-            Ok(match result {
-                ChainStoreQueryResult::Addresses(addresses) => QueryResult::Addresses(addresses),
-                ChainStoreQueryResult::Headers(headers) => QueryResult::Headers(headers),
-            })
-        }
+        Ok(result) => Ok(match (query.options.entries, result) {
+            (false, ChainStoreQueryResult::Addresses(addresses)) => {
+                QueryResult::Addresses(addresses)
+            }
+            (true,  ChainStoreQueryResult::Addresses(addresses)) => {
+                let maybe_entries: Result<Vec<Entry>,HolochainError> = addresses
+                    .iter()
+                    .map(|address| // -> Result<Entry, HolochainError>
+                         Ok(
+                             get_entry_from_dht(&runtime.context, address.to_owned())? // -> Result<Option<Entry>, HolochainError>
+                                 .ok_or(HolochainError::ErrorGeneric(
+                                     format!("Failed to obtain Entry for Address {}", address)))?))
+                    .collect();
+
+                match maybe_entries {
+                    Ok(entries) => QueryResult::Entries(entries),
+                    Err(_e) => return ribosome_error_code!(UnknownEntryType), // TODO: return actual error?
+                }
+            }
+            (false, ChainStoreQueryResult::Headers(headers)) => QueryResult::Headers(headers),
+            (true,  ChainStoreQueryResult::Headers(headers)) => {
+                let maybe_headers_with_entries: Result<Vec<(ChainHeader,Entry)>,HolochainError> = headers
+                    .iter()
+                    .map(|header| // -> Result<Entry, HolochainError>
+                         Ok((header.to_owned(),
+                             get_entry_from_dht(&runtime.context, header.entry_address().to_owned())? // -> Result<Option<Entry>, HolochainError>
+                             .ok_or(HolochainError::ErrorGeneric(
+                                 format!("Failed to obtain Entry for Address {}", header.entry_address())))?)))
+                    .collect();
+                match maybe_headers_with_entries {
+                    Ok(headers_with_entries) => QueryResult::HeadersWithEntries(headers_with_entries),
+                    Err(_e) => return ribosome_error_code!(UnknownEntryType), // TODO: return actual error?
+                }
+            }
+        }),
         Err(_code) => return ribosome_error_code!(UnknownEntryType),
     };
 
     runtime.store_result(result)
 }
-

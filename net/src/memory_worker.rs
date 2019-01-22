@@ -46,7 +46,7 @@ impl NetWorker for InMemoryWorker {
                 };
             }
         }
-        server.handle(data)?;
+        server.serve(data)?;
         Ok(())
     }
 
@@ -126,7 +126,7 @@ mod tests {
 
     use holochain_core_types::cas::content::Address;
     use holochain_net_connection::json_protocol::{
-        DhtData, DhtMetaData, GetDhtData, GetDhtMetaData, JsonProtocol, MessageData,
+        DhtData, DhtMetaData, FetchDhtData, FetchDhtMetaData, JsonProtocol, MessageData,
         SuccessResultData, TrackDnaData,
     };
 
@@ -293,11 +293,11 @@ mod tests {
 
         memory_worker_2
             .receive(
-                JsonProtocol::GetDhtData(GetDhtData {
-                    msg_id: "yada".to_string(),
+                JsonProtocol::FetchDhtData(FetchDhtData {
+                    request_id: "yada".to_string(),
                     dna_address: example_dna_address(),
-                    from_agent_id: AGENT_ID_2.to_string(),
-                    address: "hello".to_string(),
+                    requester_agent_id: AGENT_ID_2.to_string(),
+                    data_address: "hello".to_string(),
                 })
                 .into(),
             )
@@ -307,15 +307,15 @@ mod tests {
 
         let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let JsonProtocol::HandleGetDhtData(msg) = res {
+        if let JsonProtocol::HandleFetchDhtData(msg) = res {
             memory_worker_1
                 .receive(
-                    JsonProtocol::HandleGetDhtDataResult(DhtData {
-                        msg_id: msg.msg_id.clone(),
+                    JsonProtocol::HandleFetchDhtDataResult(DhtData {
+                        request_id: msg.request_id.clone(),
                         dna_address: msg.dna_address.clone(),
-                        agent_id: msg.from_agent_id.clone(),
-                        address: msg.address.clone(),
-                        content: json!(format!("data-for: {}", msg.address)),
+                        provider_agent_id: msg.requester_agent_id.clone(),
+                        data_address: msg.data_address.clone(),
+                        data_content: json!(format!("data-for: {}", msg.address)),
                     })
                     .into(),
                 )
@@ -329,7 +329,7 @@ mod tests {
 
         let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let JsonProtocol::GetDhtDataResult(msg) = res {
+        if let JsonProtocol::FetchDhtDataResult(msg) = res {
             assert_eq!("\"data-for: hello\"".to_string(), msg.content.to_string());
         } else {
             println!("Did not expect to receive: {:?}", res);
@@ -341,11 +341,11 @@ mod tests {
         memory_worker_2
             .receive(
                 JsonProtocol::PublishDhtData(DhtData {
-                    msg_id: "yada".to_string(),
+                    request_id: "yada".to_string(),
                     dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_2.to_string(),
-                    address: "hello".to_string(),
-                    content: json!("test-data"),
+                    provider_agent_id: AGENT_ID_2.to_string(),
+                    data_address: "hello".to_string(),
+                    data_content: json!("test-data"),
                 })
                 .into(),
             )
@@ -363,9 +363,9 @@ mod tests {
             memory_worker_1
                 .receive(
                     JsonProtocol::SuccessResult(SuccessResultData {
-                        msg_id: msg.msg_id.clone(),
+                        msg_id: msg.request_id.clone(),
                         dna_address: msg.dna_address.clone(),
-                        to_agent_id: msg.agent_id.clone(),
+                        to_agent_id: msg.provider_agent_id.clone(),
                         success_info: json!("signature here"),
                     })
                     .into(),
@@ -390,11 +390,11 @@ mod tests {
 
         memory_worker_2
             .receive(
-                JsonProtocol::GetDhtMeta(GetDhtMetaData {
-                    msg_id: "yada".to_string(),
+                JsonProtocol::FetchDhtMeta(FetchDhtMetaData {
+                    request_id: "yada".to_string(),
                     dna_address: example_dna_address(),
-                    from_agent_id: AGENT_ID_2.to_string(),
-                    address: "hello".to_string(),
+                    requester_agent_id: AGENT_ID_2.to_string(),
+                    data_address: "hello".to_string(),
                     attribute: "link:test".to_string(),
                 })
                 .into(),
@@ -405,15 +405,15 @@ mod tests {
 
         let res = JsonProtocol::try_from(handler_recv_1.recv().unwrap()).unwrap();
 
-        if let JsonProtocol::HandleGetDhtMeta(msg) = res {
+        if let JsonProtocol::HandleFetchDhtMeta(msg) = res {
             memory_worker_1
                 .receive(
-                    JsonProtocol::HandleGetDhtMetaResult(DhtMetaData {
-                        msg_id: msg.msg_id.clone(),
+                    JsonProtocol::HandleFetchDhtMetaResult(DhtMetaData {
+                        request_id: msg.request_id.clone(),
                         dna_address: msg.dna_address.clone(),
-                        agent_id: msg.from_agent_id.clone(),
-                        from_agent_id: AGENT_ID_1.to_string(),
-                        address: msg.address.clone(),
+                        requester_agent_id: msg.requester_agent_id.clone(),
+                        provider_agent_id: AGENT_ID_1.to_string(),
+                        data_address: msg.data_address.clone(),
                         attribute: msg.attribute.clone(),
                         content: json!(format!("meta-data-for: {}", msg.address)),
                     })
@@ -429,7 +429,7 @@ mod tests {
 
         let res = JsonProtocol::try_from(handler_recv_2.recv().unwrap()).unwrap();
 
-        if let JsonProtocol::GetDhtMetaResult(msg) = res {
+        if let JsonProtocol::FetchDhtMetaResult(msg) = res {
             assert_eq!(
                 "\"meta-data-for: hello\"".to_string(),
                 msg.content.to_string()
@@ -444,11 +444,11 @@ mod tests {
         memory_worker_2
             .receive(
                 JsonProtocol::PublishDhtMeta(DhtMetaData {
-                    msg_id: "yada".to_string(),
+                    request_id: "yada".to_string(),
                     dna_address: example_dna_address(),
-                    agent_id: AGENT_ID_2.to_string(),
-                    from_agent_id: AGENT_ID_1.to_string(),
-                    address: "hello".to_string(),
+                    requester_agent_id: AGENT_ID_2.to_string(),
+                    provider_agent_id: AGENT_ID_1.to_string(),
+                    data_address: "hello".to_string(),
                     attribute: "link:test".to_string(),
                     content: json!("test-data"),
                 })
@@ -468,9 +468,9 @@ mod tests {
             memory_worker_1
                 .receive(
                     JsonProtocol::SuccessResult(SuccessResultData {
-                        msg_id: msg.msg_id.clone(),
+                        msg_id: msg.request_id.clone(),
                         dna_address: msg.dna_address.clone(),
-                        to_agent_id: msg.agent_id.clone(),
+                        to_agent_id: msg.requester_agent_id.clone(),
                         success_info: json!("signature here"),
                     })
                     .into(),

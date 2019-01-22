@@ -3,8 +3,8 @@
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     json_protocol::{
-        DhtData, DhtMetaData, FailureResultData, GetDhtData, GetDhtMetaData, JsonProtocol,
-        MessageData, PeerData,
+        DhtData, DhtMetaData, FailureResultData, FetchDhtData, FetchDhtMetaData, JsonProtocol,
+        MessageData, PeerData, HandleDhtResultData, HandleDhtMetaResultData,
     },
     protocol::Protocol,
     NetResult,
@@ -73,6 +73,26 @@ impl InMemoryServer {
         }
     }
 
+    //
+    pub fn mock_send_one(
+        &mut self,
+        dna_address: &Address,
+        agent_id: &str,
+        data: Protocol,
+    ) -> NetResult<()> {
+        self.priv_send_one(dna_address, agent_id, data)
+    }
+
+    //
+    pub fn mock_send_all(
+        &mut self,
+        dna_address: &Address,
+        data: Protocol,
+    ) -> NetResult<()> {
+        self.priv_send_all(dna_address, data)
+    }
+
+
     /// register a data handler with the singleton (for message routing)
     pub fn register(
         &mut self,
@@ -93,8 +113,8 @@ impl InMemoryServer {
         Ok(())
     }
 
-    /// process an incoming message
-    pub fn handle(&mut self, data: Protocol) -> NetResult<()> {
+    /// process a message sent by a node to the "network"
+    pub fn serve(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not remove)
         //        println!(
         //            ">>>> InMemoryServer '{}' recv: {:?}",
@@ -104,6 +124,7 @@ impl InMemoryServer {
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
             match json_msg {
                 JsonProtocol::TrackDna(msg) => {
+                    // Notify all Peers connected to this DNA of a new Peer connection.
                     self.priv_send_all(
                         &msg.dna_address.clone(),
                         JsonProtocol::PeerConnected(PeerData {
@@ -115,12 +136,13 @@ impl InMemoryServer {
                 }
 
                 JsonProtocol::SendMessage(msg) => {
-                    self.priv_handle_send_message(&msg)?;
+                    self.priv_serve_SendMessage(&msg)?;
                 }
                 JsonProtocol::HandleSendMessageResult(msg) => {
-                    self.priv_handle_handle_send_message_result(&msg)?;
+                    self.priv_serve_HandleSendMessageResult(&msg)?;
                 }
                 JsonProtocol::SuccessResult(msg) => {
+                    // Relay directly the SuccessResult message
                     self.priv_send_one(
                         &msg.dna_address,
                         &msg.to_agent_id,
@@ -128,32 +150,33 @@ impl InMemoryServer {
                     )?;
                 }
                 JsonProtocol::FailureResult(msg) => {
+                    // Relay directly the FailureResult message
                     self.priv_send_one(
                         &msg.dna_address,
                         &msg.to_agent_id,
                         JsonProtocol::FailureResult(msg.clone()).into(),
                     )?;
                 }
-                JsonProtocol::GetDhtData(msg) => {
-                    self.priv_handle_get_dht_data(&msg)?;
+                JsonProtocol::FetchDhtData(msg) => {
+                    self.priv_serve_FetchDhtData(&msg)?;
                 }
-                JsonProtocol::HandleGetDhtDataResult(msg) => {
-                    self.priv_handle_handle_get_dht_data_result(&msg)?;
+                JsonProtocol::HandleFetchDhtDataResult(msg) => {
+                    self.priv_serve_HandleFetchDhtDataResult(&msg)?;
                 }
 
                 JsonProtocol::PublishDhtData(msg) => {
-                    self.priv_handle_publish_dht_data(&msg)?;
+                    self.priv_serve_PublishDhtData(&msg)?;
                 }
 
-                JsonProtocol::GetDhtMeta(msg) => {
-                    self.priv_handle_get_dht_meta(&msg)?;
+                JsonProtocol::FetchDhtMeta(msg) => {
+                    self.priv_serve_fetch_dht_meta(&msg)?;
                 }
-                JsonProtocol::HandleGetDhtMetaResult(msg) => {
-                    self.priv_handle_handle_get_dht_meta_result(&msg)?;
+                JsonProtocol::HandleFetchDhtMetaResult(msg) => {
+                    self.priv_serve_HandleFetchDhtMetaResult(&msg)?;
                 }
 
                 JsonProtocol::PublishDhtMeta(msg) => {
-                    self.priv_handle_publish_dht_meta(&msg)?;
+                    self.priv_serve_PublishDhtMeta(&msg)?;
                 }
                 _ => (),
             }
@@ -163,14 +186,14 @@ impl InMemoryServer {
 
     // -- private -- //
 
-    /// send a message to the appropriate channel based on dna_address::agent_id
+    /// send a message to the appropriate channel based on dna_address::to_agent_id
     fn priv_send_one(
         &mut self,
         dna_address: &Address,
-        agent_id: &str,
+        to_agent_id: &str,
         data: Protocol,
     ) -> NetResult<()> {
-        let name = cat_dna_agent(dna_address, agent_id);
+        let name = cat_dna_agent(dna_address, to_agent_id);
         let maybe_sender = self.senders.get_mut(&name);
         if maybe_sender.is_none() {
             //println!("#### InMemoryServer '{}' error: No sender channel found", self.name.clone());
@@ -207,10 +230,13 @@ impl InMemoryServer {
         Ok(())
     }
 
+    // -- serve Message -- //
+
     /// we received a SendMessage message...
     /// normally this would travel over the network, then
-    /// show up as a HandleSend message, fabricate that message && deliver
-    fn priv_handle_send_message(&mut self, msg: &MessageData) -> NetResult<()> {
+    /// show up as a HandleSend message on the receiving agent
+    /// Fabricate that message and deliver it to the receiving agent
+    fn priv_serve_SendMessage(&mut self, msg: &MessageData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
@@ -219,10 +245,11 @@ impl InMemoryServer {
         Ok(())
     }
 
-    /// we received a SendResult message...
+    /// we received a HandleSendMessageResult message...
     /// normally this would travel over the network, then
-    /// show up as a SendResult message, fabricate that message && deliver
-    fn priv_handle_handle_send_message_result(&mut self, msg: &MessageData) -> NetResult<()> {
+    /// show up as a SendMessageResult message to the initial sender.
+    /// Fabricate that message and deliver it to the initial sender.
+    fn priv_serve_HandleSendMessageResult(&mut self, msg: &MessageData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
@@ -231,50 +258,11 @@ impl InMemoryServer {
         Ok(())
     }
 
-    /// when someone makes a dht data request,
-    /// this in-memory module routes it to the first node connected on that dna.
-    /// this works because we also send store requests to all connected nodes.
-    fn priv_handle_get_dht_data(&mut self, msg: &GetDhtData) -> NetResult<()> {
-        match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
-            Entry::Occupied(mut e) => {
-                if !e.get().is_empty() {
-                    let r = &e.get_mut()[0];
-                    // Debugging code (do not remove)
-                    //println!("<<<< InMemoryServer '{}' send: {:?}", self.name.clone(), msg.clone());
-                    r.send(JsonProtocol::HandleGetDhtData(msg.clone()).into())?;
-                    return Ok(());
-                }
-            }
-            _ => (),
-        };
 
-        self.priv_send_one(
-            &msg.dna_address,
-            &msg.from_agent_id,
-            JsonProtocol::FailureResult(FailureResultData {
-                msg_id: msg.msg_id.clone(),
-                dna_address: msg.dna_address.clone(),
-                to_agent_id: msg.from_agent_id.clone(),
-                error_info: json!("could not find nodes handling this dnaAddress"),
-            })
-            .into(),
-        )?;
+    // -- serve DHT data -- //
 
-        Ok(())
-    }
-
-    /// send back a response to a request for dht data
-    fn priv_handle_handle_get_dht_data_result(&mut self, msg: &DhtData) -> NetResult<()> {
-        self.priv_send_one(
-            &msg.dna_address,
-            &msg.agent_id,
-            JsonProtocol::GetDhtDataResult(msg.clone()).into(),
-        )?;
-        Ok(())
-    }
-
-    /// on publish meta, we send store requests to all nodes connected on this dna
-    fn priv_handle_publish_dht_data(&mut self, msg: &DhtData) -> NetResult<()> {
+    /// on publish, we send store requests to all nodes connected on this dna
+    fn priv_serve_PublishDhtData(&mut self, msg: &DhtData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
             JsonProtocol::HandleStoreDhtData(msg.clone()).into(),
@@ -282,51 +270,97 @@ impl InMemoryServer {
         Ok(())
     }
 
-    /// when someone makes a dht meta data request,
+    /// when someone makes a dht data request,
     /// this in-memory module routes it to the first node connected on that dna.
-    /// this works because we also send store requests to all connected nodes.
-    fn priv_handle_get_dht_meta(&mut self, msg: &GetDhtMetaData) -> NetResult<()> {
+    /// this works because we send store requests to all connected nodes.
+    /// If there is no other node for this DNA, send a FailureResult.
+    fn priv_serve_FetchDhtData(&mut self, msg: &FetchDhtData) -> NetResult<()> {
+        // Find other node and forward request
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
-                    r.send(JsonProtocol::HandleGetDhtMeta(msg.clone()).into())?;
+                    // Debugging code (do not remove)
+                    //println!("<<<< InMemoryServer '{}' send: {:?}", self.name.clone(), msg.clone());
+                    r.send(JsonProtocol::HandleFetchDhtData(msg.clone()).into())?;
                     return Ok(());
                 }
             }
             _ => (),
         };
-
+        // no other node found, send a FailureResult.
         self.priv_send_one(
             &msg.dna_address,
-            &msg.from_agent_id,
+            &msg.requester_agent_id,
             JsonProtocol::FailureResult(FailureResultData {
-                msg_id: msg.msg_id.clone(),
+                msg_id: msg.request_id.clone(),
                 dna_address: msg.dna_address.clone(),
-                to_agent_id: msg.from_agent_id.clone(),
+                to_agent_id: msg.requester_agent_id.clone(),
                 error_info: json!("could not find nodes handling this dnaAddress"),
             })
             .into(),
         )?;
-
+        // Done
         Ok(())
     }
 
-    /// send back a response to a request for dht meta data
-    fn priv_handle_handle_get_dht_meta_result(&mut self, msg: &DhtMetaData) -> NetResult<()> {
+    /// send back a response to a request for dht data
+    fn priv_serve_HandleFetchDhtDataResult(&mut self, msg: &HandleDhtResultData) -> NetResult<()> {
         self.priv_send_one(
             &msg.dna_address,
-            &msg.agent_id,
-            JsonProtocol::GetDhtMetaResult(msg.clone()).into(),
+            &msg.requester_agent_id,
+            JsonProtocol::FetchDhtDataResult(msg.clone()).into(),
         )?;
         Ok(())
     }
 
+    // -- serve DHT metadata -- //
+
     /// on publish, we send store requests to all nodes connected on this dna
-    fn priv_handle_publish_dht_meta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
+    fn priv_serve_PublishDhtMeta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         self.priv_send_all(
             &msg.dna_address,
             JsonProtocol::HandleStoreDhtMeta(msg.clone()).into(),
+        )?;
+        Ok(())
+    }
+
+    /// when someone makes a dht meta data request,
+    /// this in-memory module routes it to the first node connected on that dna.
+    /// this works because we also send store requests to all connected nodes.
+    fn priv_serve_fetch_dht_meta(&mut self, msg: &FetchDhtMetaData) -> NetResult<()> {
+        match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
+            Entry::Occupied(mut e) => {
+                if !e.get().is_empty() {
+                    let r = &e.get_mut()[0];
+                    r.send(JsonProtocol::HandleFetchDhtMeta(msg.clone()).into())?;
+                    return Ok(());
+                }
+            }
+            _ => (),
+        };
+        // no other node found, send a FailureResult.
+        self.priv_send_one(
+            &msg.dna_address,
+            &msg.requester_agent_id,
+            JsonProtocol::FailureResult(FailureResultData {
+                msg_id: msg.request_id.clone(),
+                dna_address: msg.dna_address.clone(),
+                to_agent_id: msg.requester_agent_id.clone(),
+                error_info: json!("could not find nodes handling this dnaAddress"),
+            })
+            .into(),
+        )?;
+        // Done
+        Ok(())
+    }
+
+    /// send back a response to a request for dht meta data
+    fn priv_serve_HandleFetchDhtMetaResult(&mut self, msg: &HandleDhtMetaResultData) -> NetResult<()> {
+        self.priv_send_one(
+            &msg.dna_address,
+            &msg.requester_agent_id,
+            JsonProtocol::FetchDhtMetaResult(msg.clone()).into(),
         )?;
         Ok(())
     }

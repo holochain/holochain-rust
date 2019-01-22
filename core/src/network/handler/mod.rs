@@ -72,22 +72,22 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
                 handle_store_dht_meta(dht_meta_data, context.clone())
             }
-            Ok(JsonProtocol::HandleGetDhtData(get_dht_data)) => {
+            Ok(JsonProtocol::HandleFetchDhtData(fetch_dht_data)) => {
                 // NOTE data in message doesn't allow us to confirm agent!
-                if !is_me(&context, &get_dht_data.dna_address, "") {
+                if !is_me(&context, &fetch_dht_data.dna_address, "") {
                     return Ok(());
                 }
-                context.log(format!("debug/net/handle: GetDht: {:?}", get_dht_data));
-                handle_get_dht(get_dht_data, context.clone())
+                context.log(format!("debug/net/handle: GetDht: {:?}", fetch_dht_data));
+                handle_get_dht(fetch_dht_data, context.clone())
             }
-            Ok(JsonProtocol::GetDhtDataResult(dht_data)) => {
-                if !is_me(&context, &dht_data.dna_address, &dht_data.agent_id) {
+            Ok(JsonProtocol::FetchDhtDataResult(dht_data)) => {
+                if !is_me(&context, &dht_data.dna_address, &dht_data.provider_agent_id) {
                     return Ok(());
                 }
                 context.log(format!("debug/net/handle: GetDhtResult: {:?}", dht_data));
                 handle_get_dht_result(dht_data, context.clone())
             }
-            Ok(JsonProtocol::HandleGetDhtMeta(get_dht_meta_data)) => {
+            Ok(JsonProtocol::HandleFetchDhtMeta(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
                     context.log(format!(
                         "debug/net/handle: GetDhtMeta: {:?}",
@@ -96,7 +96,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     handle_get_dht_meta(get_dht_meta_data, context.clone())
                 }
             }
-            Ok(JsonProtocol::GetDhtMetaResult(get_dht_meta_data)) => {
+            Ok(JsonProtocol::FetchDhtMetaResult(get_dht_meta_data)) => {
                 if is_me(&context, &get_dht_meta_data.dna_address, "") {
                     // TODO: Find a proper solution for selecting DHT meta responses.
                     // Current network implementation broadcasts messages to all nodes which means

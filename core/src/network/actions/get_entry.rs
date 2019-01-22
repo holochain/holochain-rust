@@ -11,7 +11,7 @@ use futures::{
 use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HcResult};
 use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
 
-/// GetEntry Action Creator
+/// FetchEntry Action Creator
 /// This is the network version of get_entry that makes the network module start
 /// a look-up process.
 ///
@@ -25,7 +25,7 @@ pub async fn get_entry<'a>(
         id: snowflake::ProcessUniqueId::new().to_string(),
     };
 
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
+    let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let _ = async {

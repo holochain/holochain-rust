@@ -1,6 +1,6 @@
 use std::{error::Error, fmt};
 
-#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Hash, Eq, Serialize, Deserialize,PartialOrd,Ord)]
 pub enum DnaError {
     ZomeNotFound(String),
     CapabilityNotFound(String),

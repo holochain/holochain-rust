@@ -1,12 +1,12 @@
 use holochain_core_types::{
     eav::{
-        create_key, increment_key_till_no_collision, Action, Attribute, Entity,
-        EntityAttributeValue, EntityAttributeValueStorage, Key, Value,
+        increment_key_till_no_collision,  Attribute, Entity,
+        EntityAttributeValueIndex, EntityAttributeValueStorage,  Value,
     },
     error::HolochainError,
 };
 use std::{
-    collections::BTreeMap,
+    collections::BTreeSet,
     sync::{Arc, RwLock},
 };
 
@@ -14,7 +14,7 @@ use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct EavMemoryStorage {
-    storage: Arc<RwLock<BTreeMap<Key, EntityAttributeValue>>>,
+    storage: Arc<RwLock<BTreeSet< EntityAttributeValueIndex>>>,
     id: Uuid,
 }
 
@@ -27,26 +27,24 @@ impl PartialEq for EavMemoryStorage {
 impl EavMemoryStorage {
     pub fn new() -> EavMemoryStorage {
         EavMemoryStorage {
-            storage: Arc::new(RwLock::new(BTreeMap::new())),
+            storage: Arc::new(RwLock::new(BTreeSet::new())),
             id: Uuid::new_v4(),
         }
     }
 }
 
 impl EntityAttributeValueStorage for EavMemoryStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError> {
+    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<(), HolochainError> {
         if self
             .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
             == 0
         {
             let mut map = self.storage.write()?;
-            let mut key = create_key(Action::Insert)?;
-            key = increment_key_till_no_collision(key, map.clone())?;
-            map.insert(key.clone(), eav.clone());
-            Ok(Some(key.clone()))
+            map.insert(eav.clone());
+            Ok(())
         } else {
-            Ok(None)
+            Ok(())
         }
     }
 
@@ -55,17 +53,17 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         Ok(map
             .clone()
             .into_iter()
-            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|(_, e)| {
-                EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
+            .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
+            .filter(|(e)| {
+                EntityAttributeValueIndex::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
-            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-            .collect::<BTreeMap<Key, EntityAttributeValue>>())
+            .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
+            .collect::<BTreeSet< EntityAttributeValueIndex>>())
     }
 }
 

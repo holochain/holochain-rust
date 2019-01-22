@@ -80,7 +80,7 @@ impl RibosomeReturnCode {
 
 /// Enum of all possible ERROR codes that a Zome API Function could return.
 #[repr(u32)]
-#[derive(Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, DefaultJson,PartialOrd,Ord)]
 #[rustfmt::skip]
 pub enum RibosomeErrorCode {
     Unspecified                     = 1 << 16,

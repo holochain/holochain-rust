@@ -12,7 +12,7 @@ use crate::{
 use chrono::{offset::Utc, DateTime};
 use objekt;
 use std::{
-    collections::BTreeMap,
+    collections::BTreeSet,
     convert::TryInto,
     sync::{Arc, RwLock},
 };
@@ -29,13 +29,11 @@ pub type Attribute = String;
 /// Address of AddressableContent representing the EAV value
 pub type Value = Address;
 
-#[derive(PartialEq, Eq, Debug, Clone, Hash, PartialOrd, Ord)]
-pub struct Key(pub i64, pub Action);
 
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering
 // @see https://papers.radixdlt.com/tempo/#logical-clocks
-// type Index ...
+ pub type Index = i64;
 
 // @TODO do we need this?
 // source agent asserting the meta
@@ -45,67 +43,17 @@ pub struct Key(pub i64, pub Action);
 #[derive(
     PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default, PartialOrd, Ord,
 )]
-pub struct EntityAttributeValue {
+pub struct EntityAttributeValueIndex {
     entity: Entity,
     attribute: Attribute,
     value: Value,
-    // index: Index,
+    index: Index,
     // source: Source,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Action {
-    Insert,
-    Delete,
-    Update,
-    None,
-}
 
-impl ToString for Action {
-    fn to_string(&self) -> String {
-        match self {
-            Action::Insert => String::from("Insert"),
-            Action::Delete => String::from("Delete"),
-            _ => String::from("None"),
-        }
-    }
-}
 
-impl From<String> for Action {
-    fn from(action: String) -> Self {
-        if action == String::from("Insert") {
-            Action::Insert
-        } else if action == String::from("Delete") {
-            Action::Delete
-        } else {
-            Action::None
-        }
-    }
-}
-
-pub fn create_key(action: Action) -> Result<Key, HolochainError> {
-    Ok(Key(Utc::now().timestamp_nanos(), action))
-}
-
-pub fn from_key(string_key: String) -> Result<Key, HolochainError> {
-    let split = string_key.split("_").collect::<Vec<&str>>();
-    let mut split_iter = split.iter();
-    let timestamp = split_iter.next().ok_or(HolochainError::ErrorGeneric(
-        "Could not get timestamp".to_string(),
-    ))?;
-    let action = split_iter.next().ok_or(HolochainError::ErrorGeneric(
-        "Could not get action".to_string(),
-    ))?;
-    let unix_timestamp = timestamp
-        .parse::<i64>()
-        .map_err(|_| HolochainError::ErrorGeneric("Could not get action".to_string()))?;
-    Ok(Key(
-        unix_timestamp,
-        Action::from(action.clone().to_string()),
-    ))
-}
-
-impl AddressableContent for EntityAttributeValue {
+impl AddressableContent for EntityAttributeValueIndex {
     fn content(&self) -> Content {
         self.to_owned().into()
     }
@@ -128,17 +76,18 @@ fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
     }
 }
 
-impl EntityAttributeValue {
+impl EntityAttributeValueIndex {
     pub fn new(
         entity: &Entity,
         attribute: &Attribute,
         value: &Value,
-    ) -> HcResult<EntityAttributeValue> {
+    ) -> HcResult<EntityAttributeValueIndex> {
         validate_attribute(attribute)?;
-        Ok(EntityAttributeValue {
+        Ok(EntityAttributeValueIndex {
             entity: entity.clone(),
             attribute: attribute.clone(),
             value: value.clone(),
+            index : Utc::now().timestamp_nanos()
         })
     }
 
@@ -152,6 +101,15 @@ impl EntityAttributeValue {
 
     pub fn value(&self) -> Value {
         self.value.clone()
+    }
+
+    pub fn index(&self) -> Index{
+        self.index.clone()
+    }
+
+    pub fn set_index(&mut self, new_index :i64)
+    {
+        self.index = new_index
     }
 
     /// this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
@@ -169,7 +127,7 @@ impl EntityAttributeValue {
 pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// Adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage.
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError>;
+    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<(), HolochainError>;
     /// Fetch the set of EntityAttributeValues that match constraints according to the latest hash version
     /// - None = no constraint
     /// - Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
@@ -180,7 +138,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError>;
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError>;
 
     //optimize this according to the trait store
     fn fetch_eav_range(
@@ -190,19 +148,19 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let eavs = self.fetch_eav(entity, attribute, value)?;
         Ok(eavs
             .into_iter()
-            .filter(|(key, _)| {
-                key.0
+            .filter(|(e)| {
+                e.index
                     <= start_date
                         .map(|s| s.timestamp_nanos())
                         .unwrap_or(i64::min_value())
                     && end_date
                         .map(|s| s.timestamp_nanos())
                         .unwrap_or(i64::max_value())
-                        >= key.0
+                        >= e.index
             })
             .collect())
     }
@@ -212,42 +170,40 @@ clone_trait_object!(EntityAttributeValueStorage);
 
 #[derive(Clone, Debug)]
 pub struct ExampleEntityAttributeValueStorage {
-    storage: Arc<RwLock<BTreeMap<Key, EntityAttributeValue>>>,
+    storage: Arc<RwLock<BTreeSet<EntityAttributeValueIndex>>>,
 }
 impl ExampleEntityAttributeValueStorage {
     pub fn new() -> ExampleEntityAttributeValueStorage {
         ExampleEntityAttributeValueStorage {
-            storage: Arc::new(RwLock::new(BTreeMap::new())),
+            storage: Arc::new(RwLock::new(BTreeSet::new())),
         }
     }
 }
 
 pub fn increment_key_till_no_collision(
-    mut key: Key,
-    map: BTreeMap<Key, EntityAttributeValue>,
-) -> HcResult<Key> {
-    if map.contains_key(&key) {
-        key.0 = key.0 + 1;
-        increment_key_till_no_collision(key, map)
+    mut timestamp: i64,
+    map: BTreeSet<EntityAttributeValueIndex>,
+) -> HcResult<i64> {
+    if map.iter().filter(|e|e.index==timestamp).collect::<BTreeSet<&EntityAttributeValueIndex>>().len()==0 {
+        timestamp = timestamp + 1;
+        increment_key_till_no_collision(timestamp, map)
     } else {
-        Ok(key)
+        Ok(timestamp)
     }
 }
 
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<Option<Key>, HolochainError> {
+    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<(), HolochainError> {
         if self
             .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
             == 0
         {
             let mut map = self.storage.write()?;
-            let mut key = create_key(Action::Insert)?;
-            key = increment_key_till_no_collision(key, map.clone())?;
-            map.insert(key.clone(), eav.clone());
-            Ok(Some(key.clone()))
+            map.insert(eav.clone());
+            Ok(())
         } else {
-            Ok(None)
+            Ok(())
         }
     }
 
@@ -256,17 +212,17 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         let filtered = map
             .clone()
             .into_iter()
-            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|(_, e)| {
-                EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref())
+            .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
+            .filter(|(e)| {
+                EntityAttributeValueIndex::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
-            .filter(|(_, e)| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-            .collect::<BTreeMap<Key, EntityAttributeValue>>();
+            .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
+            .collect::<BTreeSet<EntityAttributeValueIndex>>();
         Ok(filtered)
     }
 }
@@ -289,8 +245,8 @@ pub fn test_eav_value() -> Entry {
     test_entry_b()
 }
 
-pub fn test_eav() -> EntityAttributeValue {
-    EntityAttributeValue::new(
+pub fn test_eav() -> EntityAttributeValueIndex {
+    EntityAttributeValueIndex::new(
         &test_eav_entity().address(),
         &test_eav_attribute(),
         &test_eav_value().address(),
@@ -311,7 +267,7 @@ pub fn eav_round_trip_test_runner(
     attribute: String,
     value_content: impl AddressableContent + Clone,
 ) {
-    let eav = EntityAttributeValue::new(
+    let eav = EntityAttributeValueIndex::new(
         &entity_content.address(),
         &attribute,
         &value_content.address(),
@@ -320,7 +276,7 @@ pub fn eav_round_trip_test_runner(
     let mut eav_storage = ExampleEntityAttributeValueStorage::new();
 
     assert_eq!(
-        BTreeMap::new(),
+        BTreeSet::new(),
         eav_storage
             .fetch_eav(
                 Some(entity_content.address()),
@@ -332,9 +288,8 @@ pub fn eav_round_trip_test_runner(
 
     eav_storage.add_eav(&eav).expect("could not add eav");
 
-    let mut expected = BTreeMap::new();
-    let key = create_key(Action::Insert).expect("Could not create key");
-    expected.insert(key, eav.clone());
+    let mut expected = BTreeSet::new();
+    expected.insert(eav.clone());
     // some examples of constraints that should all return the eav
     for (e, a, v) in vec![
         // constrain all
@@ -361,13 +316,10 @@ pub fn eav_round_trip_test_runner(
         (None, None, None),
     ] {
         assert_eq!(
-            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+            expected,
             eav_storage
                 .fetch_eav(e, a, v)
                 .expect("could not fetch eav")
-                .iter()
-                .map(|(_k, v)| v)
-                .collect::<Vec<_>>(),
         );
     }
 }

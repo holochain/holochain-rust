@@ -5,14 +5,14 @@
 
 use crate::{
     cas::content::{Address, AddressableContent, Content},
-    eav::{create_key, Action, EntityAttributeValue, EntityAttributeValueStorage},
+    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage},
     entry::{test_entry_unique, Entry},
     error::HolochainError,
     json::RawString,
 };
 use objekt;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeSet, HashMap},
     convert::TryFrom,
     fmt::Debug,
     sync::{mpsc::channel, Arc, RwLock},
@@ -247,7 +247,7 @@ impl EavTestSuite {
         attribute: String,
         value_content: impl AddressableContent,
     ) {
-        let eav = EntityAttributeValue::new(
+        let eav = EntityAttributeValueIndex::new(
             &entity_content.address(),
             &"favourite-color".to_string(),
             &value_content.address(),
@@ -258,7 +258,7 @@ impl EavTestSuite {
 
         for store in two_stores.iter() {
             assert_eq!(
-                BTreeMap::new(),
+                BTreeSet::new(),
                 store
                     .fetch_eav(
                         Some(entity_content.address()),
@@ -271,9 +271,8 @@ impl EavTestSuite {
 
         eav_storage.add_eav(&eav).expect("could not add eav");
         let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
-        let mut expected = BTreeMap::new();
-        let key = create_key(Action::Insert).expect("Could not make key");
-        expected.insert(key, eav.clone());
+        let mut expected = BTreeSet::new();
+        expected.insert(eav.clone());
         for eav_storage in two_stores.iter() {
             // some examples of constraints that should all return the eav
             for (e, a, v) in vec![
@@ -301,13 +300,11 @@ impl EavTestSuite {
                 (None, None, None),
             ] {
                 assert_eq!(
-                    expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+                    expected,
                     eav_storage
                         .fetch_eav(e, a, v)
                         .expect("could not fetch eav")
-                        .iter()
-                        .map(|(_k, v)| v)
-                        .collect::<Vec<_>>()
+                       
                 );
             }
         }
@@ -332,15 +329,11 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "one_to_many".to_string();
 
-        let mut expected = BTreeMap::new();
+        let mut expected = BTreeSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
+            let eav = EntityAttributeValueIndex::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
-            let key = eav_storage
-                .add_eav(&eav)
-                .expect("could not add eav")
-                .expect("Could not get key");
-            expected.insert(key, eav);
+            expected.insert(eav);
         }
 
         // throw an extra thing referencing many to show fetch ignores it
@@ -349,7 +342,7 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(
-                    &EntityAttributeValue::new(&two.address(), &attribute, &many.address())
+                    &EntityAttributeValueIndex::new(&two.address(), &attribute, &many.address())
                         .expect("Could not create eav"),
                 )
                 .expect("could not add eav");
@@ -359,31 +352,26 @@ impl EavTestSuite {
 
         // show the many results for one
         assert_eq!(
-            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+            expected,
             eav_storage
                 .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
                 .expect("could not fetch eav")
-                .iter()
-                .map(|(_k, v)| v)
-                .collect::<Vec<_>>()
+               
         );
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = BTreeMap::new();
+            let mut expected_one = BTreeSet::new();
             let eav =
-                EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
+                EntityAttributeValueIndex::new(&one.address(), &attribute.clone(), &many.address())
                     .expect("Could not create eav");
-            let key = create_key(Action::Insert).expect("Could not make key");
-            expected_one.insert(key, eav);
+            expected_one.insert(eav);
             assert_eq!(
-                expected_one.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+                expected_one,
                 eav_storage
                     .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
                     .expect("could not fetch eav")
-                    .iter()
-                    .map(|(_k, v)| v)
-                    .collect::<Vec<_>>()
+                    
             );
         }
     }
@@ -409,15 +397,14 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "many_to_one".to_string();
 
-        let mut expected = BTreeMap::new();
+        let mut expected = BTreeSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
+            let eav = EntityAttributeValueIndex::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
             let key = eav_storage
                 .add_eav(&eav)
-                .expect("could not add eav")
-                .expect("Could not get key");
-            expected.insert(key, eav);
+                .expect("could not add eav");
+            expected.insert(eav);
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
@@ -426,7 +413,7 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_three.clone()] {
             eav_storage
                 .add_eav(
-                    &EntityAttributeValue::new(&many.address(), &attribute, &two.address())
+                    &EntityAttributeValueIndex::new(&many.address(), &attribute, &two.address())
                         .expect("Could not create eav"),
                 )
                 .expect("could not add eav");
@@ -436,31 +423,24 @@ impl EavTestSuite {
 
         // show the many referencing one
         assert_eq!(
-            expected.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+            expected,
             eav_storage
                 .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
-                .expect("could not fetch eav")
-                .iter()
-                .map(|(_k, v)| v)
-                .collect::<Vec<_>>(),
+                .expect("could not fetch eav"),
         );
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = BTreeMap::new();
+            let mut expected_one = BTreeSet::new();
             let eav =
-                EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
+                EntityAttributeValueIndex::new(&many.address(), &attribute.clone(), &one.address())
                     .expect("Could not create eav");
-            let key = create_key(Action::Insert).expect("Could not make key");
-            expected_one.insert(key, eav);
+            expected_one.insert(eav);
             assert_eq!(
-                expected_one.iter().map(|(_k, v)| v).collect::<Vec<_>>(),
+                expected_one,
                 eav_storage
                     .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
-                    .expect("could not fetch eav")
-                    .iter()
-                    .map(|(_k, v)| v)
-                    .collect::<Vec<_>>(),
+                    .expect("could not fetch eav"),
             );
         }
     }

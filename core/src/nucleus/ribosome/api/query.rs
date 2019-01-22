@@ -2,7 +2,7 @@ use crate::{
     agent::chain_store::{ChainStoreQueryOptions, ChainStoreQueryResult},
     context::Context,
     nucleus::{
-        actions::get_entry::get_entry_from_dht,
+        actions::get_entry::get_entry_from_agent,
         ribosome::{api::ZomeApiResult, Runtime},
     },
 };
@@ -109,7 +109,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 let maybe_entries: Result<Vec<(Address,Entry)>,HolochainError> = addresses
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
-                         Ok((address.to_owned(), get_entry_from_context(&runtime.context, address)?)))
+                         Ok((address.to_owned(), get_entry_from_chain(&runtime.context, address)?)))
                     .collect();
 
                 match maybe_entries {
@@ -121,7 +121,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 let maybe_headers_with_entries: Result<Vec<(ChainHeader,Entry)>,HolochainError> = headers
                     .iter()
                     .map(|header| // -> Result<Entry, HolochainError>
-                         Ok((header.to_owned(), get_entry_from_context(&runtime.context,header.entry_address())?)))
+                         Ok((header.to_owned(), get_entry_from_chain(&runtime.context,header.entry_address())?)))
                     .collect();
                 match maybe_headers_with_entries {
                     Ok(headers_with_entries) => {
@@ -138,11 +138,12 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
 }
 
 /// Get an Entry via the provided context, returning Entry or HolochainError on failure
-fn get_entry_from_context(
+fn get_entry_from_chain(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Entry, HolochainError> {
-    let entry = match get_entry_from_dht(context, address.to_owned())? {
+    // TODO: 
+    let entry = match get_entry_from_agent(context, address)? {
         // -> Result<Option<Entry>, HolochainError>
         Some(entry) => entry,
         None => {

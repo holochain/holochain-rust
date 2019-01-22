@@ -41,12 +41,6 @@ impl From<WasmAllocation> for RibosomeEncodedValue {
     }
 }
 
-impl From<AllocationError> for RibosomeEncodedValue {
-    fn from(allocation_error: AllocationError) -> Self {
-        RibosomeEncodedValue::Failure(RibosomeErrorCode::from(allocation_error))
-    }
-}
-
 impl From<AllocationError> for RibosomeErrorCode {
     fn from(allocation_error: AllocationError) -> Self {
         match allocation_error {
@@ -55,6 +49,12 @@ impl From<AllocationError> for RibosomeErrorCode {
             AllocationError::BadStackAlignment => RibosomeErrorCode::NotAnAllocation,
             AllocationError::Serialization => RibosomeErrorCode::NotAnAllocation,
         }
+    }
+}
+
+impl From<AllocationError> for RibosomeEncodedValue {
+    fn from(allocation_error: AllocationError) -> Self {
+        RibosomeEncodedValue::Failure(RibosomeErrorCode::from(allocation_error))
     }
 }
 
@@ -140,23 +140,165 @@ where
 }
 
 #[cfg(test)]
-#[cfg(feature = "broken-tests")]
 pub mod tests {
 
-    use holochain_core_types::error::{
-        RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode,
-    };
+    use memory::allocation::AllocationError;
+    use memory::allocation::WasmAllocation;
+    use memory::stack::WasmStack;
+    use memory::allocation::Offset;
+    use memory::allocation::Length;
+    use memory::stack::Top;
+    use holochain_core_types::error::RibosomeEncodedAllocation;
+    use holochain_core_types::error::RibosomeEncodingBits;
+    use holochain_core_types::error::RibosomeEncodedValue;
+    use holochain_core_types::error::RibosomeErrorCode;
+    use std::convert::TryFrom;
+    use holochain_core_types::bits_n_pieces::u32_merge_bits;
+    use memory::ribosome::return_code_for_allocation_result;
 
     #[test]
-    fn ribosome_return_code_round_trip() {
-        let oom = RibosomeEncodedValue::from(
-            (RibosomeErrorCode::OutOfMemory as RibosomeEncodingBits) >> 16,
+    fn try_allocation_from_ribosome_allocation_test() {
+        assert_eq!(
+            Err(AllocationError::ZeroLength),
+            WasmAllocation::try_from(RibosomeEncodedAllocation::from(0)),
         );
+
+        assert_eq!(
+            Err(AllocationError::OutOfBounds),
+            WasmAllocation::try_from(RibosomeEncodedAllocation::from(u32_merge_bits(std::u16::MAX, std::u16::MAX))),
+        );
+
+        assert_eq!(
+            Ok(WasmAllocation{ offset: Offset::from(4), length: Length::from(8) }),
+            WasmAllocation::try_from(RibosomeEncodedAllocation::from(0b00000000000000100_0000000000001000)),
+        );
+
+    }
+
+    #[test]
+    fn ribosome_allocation_from_allocation_test() {
+        assert_eq!(
+            RibosomeEncodedAllocation::from(0b0000000000000100_0000000000001000),
+            RibosomeEncodedAllocation::from(WasmAllocation{ offset: Offset::from(4), length: Length::from(8) }),
+        );
+    }
+
+    #[test]
+    fn ribosome_encoded_value_from_allocation_test() {
+        assert_eq!(
+            RibosomeEncodedValue::Allocation(RibosomeEncodedAllocation::from(0b0000000000000100_0000000000001000)),
+            RibosomeEncodedValue::from(WasmAllocation{ offset: Offset::from(4), length: Length::from(8) }),
+        );
+    }
+
+    #[test]
+    fn ribosome_error_from_allocation_error_test() {
+        assert_eq!(
+            RibosomeErrorCode::OutOfMemory,
+            RibosomeErrorCode::from(AllocationError::OutOfBounds),
+        );
+
+        assert_eq!(
+            RibosomeErrorCode::ZeroSizedAllocation,
+            RibosomeErrorCode::from(AllocationError::ZeroLength),
+        );
+
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            RibosomeErrorCode::from(AllocationError::BadStackAlignment),
+        );
+
+        assert_eq!(
+            RibosomeErrorCode::NotAnAllocation,
+            RibosomeErrorCode::from(AllocationError::Serialization),
+        );
+    }
+
+    #[test]
+    fn ribosome_code_from_allocation_error_test() {
         assert_eq!(
             RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory),
-            oom
+            RibosomeEncodedValue::from(AllocationError::OutOfBounds),
         );
-        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
+
+        assert_eq!(
+            RibosomeEncodedValue::Failure(RibosomeErrorCode::ZeroSizedAllocation),
+            RibosomeEncodedValue::from(AllocationError::ZeroLength),
+        );
+
+        assert_eq!(
+            RibosomeEncodedValue::Failure(RibosomeErrorCode::NotAnAllocation),
+            RibosomeEncodedValue::from(AllocationError::BadStackAlignment),
+        );
+
+        assert_eq!(
+            RibosomeEncodedValue::Failure(RibosomeErrorCode::NotAnAllocation),
+            RibosomeEncodedValue::from(AllocationError::Serialization),
+        );
+    }
+
+    #[test]
+    fn ribosome_encoding_test() {
+        assert_eq!(
+            RibosomeEncodingBits::from(RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory)),
+            AllocationError::OutOfBounds.as_ribosome_encoding(),
+        );
+        assert_eq!(
+            RibosomeEncodingBits::from(RibosomeEncodedValue::Failure(RibosomeErrorCode::ZeroSizedAllocation)),
+            AllocationError::ZeroLength.as_ribosome_encoding(),
+        );
+        assert_eq!(
+            RibosomeEncodingBits::from(RibosomeEncodedValue::Failure(RibosomeErrorCode::NotAnAllocation)),
+            AllocationError::BadStackAlignment.as_ribosome_encoding(),
+        );
+        assert_eq!(
+            RibosomeEncodingBits::from(RibosomeEncodedValue::Failure(RibosomeErrorCode::NotAnAllocation)),
+            AllocationError::Serialization.as_ribosome_encoding(),
+        );
+    }
+
+    #[test]
+    fn stack_from_encoding_test() {
+        assert_eq!(
+            Err(RibosomeEncodedValue::from(AllocationError::OutOfBounds)),
+            WasmStack::try_from_ribosome_encoding(u32_merge_bits(std::u16::MAX, std::u16::MAX)),
+        );
+
+        assert_eq!(
+            Err(RibosomeEncodedValue::from(AllocationError::ZeroLength)),
+            WasmStack::try_from_ribosome_encoding(0),
+        );
+
+        assert_eq!(
+            Ok(WasmStack{ top: Top(4) }),
+            // 2 + 2 = 4
+            WasmStack::try_from_ribosome_encoding(0b0000000000000010_0000000000000010),
+        );
+    }
+
+    #[test]
+    fn return_code_for_allocation_result_test() {
+        assert_eq!(
+            RibosomeEncodedValue::from(AllocationError::OutOfBounds),
+            return_code_for_allocation_result(Err(AllocationError::OutOfBounds)),
+        );
+        assert_eq!(
+            RibosomeEncodedValue::from(AllocationError::ZeroLength),
+            return_code_for_allocation_result(Err(AllocationError::ZeroLength)),
+        );
+        assert_eq!(
+            RibosomeEncodedValue::from(AllocationError::BadStackAlignment),
+            return_code_for_allocation_result(Err(AllocationError::BadStackAlignment)),
+        );
+        assert_eq!(
+            RibosomeEncodedValue::from(AllocationError::Serialization),
+            return_code_for_allocation_result(Err(AllocationError::Serialization)),
+        );
+        let allocation = WasmAllocation{ offset: Offset::from(5), length: Length::from(5) };
+        assert_eq!(
+            RibosomeEncodedValue::from(allocation),
+            return_code_for_allocation_result(Ok(allocation)),
+        );
     }
 
 }

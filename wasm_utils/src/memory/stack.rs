@@ -5,7 +5,8 @@ use memory::{
 use std::convert::TryFrom;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
-pub struct Top(MemoryInt);
+// pub in crate for testing
+pub struct Top(pub (in crate::memory) MemoryInt);
 
 impl From<Top> for MemoryInt {
     fn from(top: Top) -> Self {
@@ -27,7 +28,8 @@ impl From<Top> for MemoryBits {
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct WasmStack {
-    top: Top,
+    // pub in crate for testing
+    pub (in crate::memory) top: Top,
 }
 
 impl WasmStack {
@@ -212,7 +214,7 @@ pub mod tests {
     }
 
     #[test]
-    fn try_stack_from_allocation() {
+    fn try_stack_from_allocation_test() {
         // can't test bad alignment as it should not be possible
 
         assert_eq!(

@@ -62,7 +62,7 @@ use futures::executor::block_on;
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{call_and_wait_for_result, ZomeFnCall},
+    nucleus::ribosome::fn_call::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
     workflows::application,

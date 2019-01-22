@@ -3,9 +3,10 @@ use crate::{
     context::Context,
     instance::RECV_DEFAULT_TIMEOUT_MS,
     nucleus::{
-        ribosome::{api::ZomeApiResult, fn_call::do_call, Runtime},
+        ribosome::{api::ZomeApiResult,
+                   fn_call::{do_call, ZomeFnCall},
+                   Runtime},
         state::NucleusState,
-        ZomeFnCall,
     },
 };
 use holochain_core_types::{error::HolochainError, json::JsonString};
@@ -29,7 +30,7 @@ impl ZomeFnCall {
 /// args: [0] encoded MemoryAllocation as u32
 /// expected complex argument: {zome_name: String, cap_token: Address, fn_name: String, args: String}
 /// args from API call are converted into a ZomeFnCall
-/// Launch an Action::Call with newly formed ZomeFnCall
+/// Launch an Action::Call with newly formed ZomeFnCall-
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I32
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
@@ -172,7 +173,7 @@ pub mod tests {
 
     use crate::nucleus::{
         ribosome::api::tests::{test_function_name, test_parameters, test_zome_name},
-        tests::test_capability_call,
+        ribosome::fn_call::tests::test_capability_call,
     };
     use holochain_core_types::{
         cas::content::Address,

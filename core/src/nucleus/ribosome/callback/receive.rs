@@ -4,9 +4,9 @@ use crate::{
         ribosome::{
             self,
             callback::{Callback, CallbackParams, CallbackResult},
+            fn_call::ZomeFnCall,
             Defn,
         },
-        ZomeFnCall,
     },
 };
 use holochain_core_types::{error::HolochainError, json::JsonString};

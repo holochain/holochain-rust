@@ -5,8 +5,8 @@ use crate::{
             api::{ZomeApiFunction, ZomeApiResult},
             memory::SinglePageManager,
             Defn,
+            fn_call::ZomeFnCall,
         },
-        ZomeFnCall,
     },
 };
 use holochain_core_types::{

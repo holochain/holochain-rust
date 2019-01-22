@@ -193,8 +193,10 @@ pub mod tests {
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{self, Defn},
-            tests::{test_capability_call, test_capability_name},
-            ZomeFnCall,
+            ribosome::fn_call::{
+                tests::{test_capability_call, test_capability_name},
+                ZomeFnCall,
+            },
         },
     };
     use std::{str::FromStr, sync::Arc};

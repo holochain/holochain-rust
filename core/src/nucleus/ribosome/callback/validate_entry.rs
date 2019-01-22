@@ -5,8 +5,8 @@ use crate::{
         ribosome::{
             self,
             callback::{links_utils, CallbackResult},
+            fn_call::ZomeFnCall,
         },
-        ZomeFnCall,
     },
 };
 use holochain_core_types::{

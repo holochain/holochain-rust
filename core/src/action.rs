@@ -4,7 +4,7 @@ use crate::{
     network::{direct_message::DirectMessage, state::NetworkState},
     nucleus::{
         state::{NucleusState, ValidationResult},
-        ExecuteZomeFnResponse, ZomeFnCall,
+        ribosome::fn_call::{ExecuteZomeFnResponse, ZomeFnCall,},
     },
 };
 use holochain_core_types::{
@@ -270,7 +270,7 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper, GetEntryKey},
-        nucleus::tests::test_call_response,
+        nucleus::ribosome::fn_call::tests::test_call_response,
     };
     use holochain_core_types::entry::{expected_entry_address, test_entry};
     use test_utils::calculate_hash;

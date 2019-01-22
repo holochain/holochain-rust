@@ -1,7 +1,8 @@
 use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
-use holochain_core::nucleus::{ribosome, ZomeFnCall};
+use holochain_core::nucleus::{
+    ribosome::{run_dna,fn_call::ZomeFnCall}};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
 use std::{
@@ -148,7 +149,7 @@ impl Packager {
                     // defined in that WASM code, constructed through our Rust macros define_zome!
                     // and entry!.
 
-                    let call_result = ribosome::run_dna(
+                    let call_result = run_dna(
                         "HC",
                         context,
                         wasm_binary,

@@ -68,8 +68,8 @@ pub mod tests {
             ribosome::{
                 api::{tests::*, ZomeApiFunction},
                 Defn,
+                fn_call::tests::*,
             },
-            tests::*,
         },
     };
     use futures::executor::block_on;

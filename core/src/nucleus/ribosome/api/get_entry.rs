@@ -46,9 +46,11 @@ pub mod tests {
                     commit::tests::test_commit_args_bytes,
                     tests::{test_parameters, test_zome_name},
                 },
+                fn_call::{
+                    ZomeFnCall,
+                    tests::{test_capability_call, test_capability_name},
+                }
             },
-            tests::{test_capability_call, test_capability_name},
-            ZomeFnCall,
         },
     };
     use holochain_core_types::{

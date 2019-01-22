@@ -14,8 +14,8 @@ use crate::{
             self,
             callback::{genesis::genesis, receive::receive},
             Defn,
+            fn_call::ZomeFnCall,
         },
-        ZomeFnCall,
     },
 };
 use holochain_core_types::{

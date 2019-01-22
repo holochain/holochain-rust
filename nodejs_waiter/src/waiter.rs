@@ -2,7 +2,7 @@ use colored::*;
 use holochain_core::{
     action::{Action, ActionWrapper},
     network::direct_message::DirectMessage,
-    nucleus::ZomeFnCall,
+    nucleus::ribosome::fn_call::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
 use holochain_core_types::entry::Entry;
@@ -318,7 +318,7 @@ mod tests {
     use super::{Action::*, *};
     use holochain_core::{
         action::DirectMessageData, network::direct_message::CustomDirectMessage,
-        nucleus::ExecuteZomeFnResponse,
+        nucleus::ribosome::fn_call::ExecuteZomeFnResponse,
     };
     use holochain_core_types::{entry::Entry, json::JsonString, link::link_add::LinkAdd};
     use std::sync::mpsc::sync_channel;

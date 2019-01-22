@@ -72,6 +72,6 @@ pub struct QueryArgsOptions {
 pub enum QueryResult {
     Addresses(Vec<Address>),
     Headers(Vec<ChainHeader>),
-    Entries(Vec<Entry>),
+    Entries(Vec<(Address,Entry)>),
     HeadersWithEntries(Vec<(ChainHeader, Entry)>),
 }

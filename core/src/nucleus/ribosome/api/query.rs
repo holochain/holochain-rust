@@ -110,14 +110,13 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         // Perhaps return chain().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
         Ok(result) => Ok(match (query.options.entries, result) {
-            (false, ChainStoreQueryResult::Addresses(addresses)) => {
-                QueryResult::Addresses(addresses)
-            }
+            (false, ChainStoreQueryResult::Addresses(addresses)) => QueryResult::Addresses(addresses),
+            (false, ChainStoreQueryResult::Headers(headers)) => QueryResult::Headers(headers),
             (true,  ChainStoreQueryResult::Addresses(addresses)) => {
-                let maybe_entries: Result<Vec<Entry>,HolochainError> = addresses
+                let maybe_entries: Result<Vec<(Address,Entry)>,HolochainError> = addresses
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
-                         Ok(get_entry_from_context(&runtime.context, address)?))
+                         Ok((address.to_owned(), get_entry_from_context(&runtime.context, address)?)))
                     .collect();
 
                 match maybe_entries {
@@ -125,7 +124,6 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                     Err(_e) => return ribosome_error_code!(UnknownEntryType), // TODO: return actual error?
                 }
             }
-            (false, ChainStoreQueryResult::Headers(headers)) => QueryResult::Headers(headers),
             (true,  ChainStoreQueryResult::Headers(headers)) => {
                 let maybe_headers_with_entries: Result<Vec<(ChainHeader,Entry)>,HolochainError> = headers
                     .iter()
@@ -144,6 +142,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     runtime.store_result(result)
 }
 
+/// Get an Entry via the provided context, returning Entry or HolochainError on failure
 fn get_entry_from_context(context: &Arc<Context>, address: &Address) -> Result<Entry, HolochainError> {
     let entry = match get_entry_from_dht(context, address.to_owned())? { // -> Result<Option<Entry>, HolochainError>
         Some(entry) => entry,

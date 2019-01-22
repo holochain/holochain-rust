@@ -4,7 +4,7 @@ let
     overlays = [ moz_overlay ];
   };
 
-  date = "2019-01-21";
+  date = "2019-01-17";
   wasmTarget = "wasm32-unknown-unknown";
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);

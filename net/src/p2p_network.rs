@@ -9,7 +9,10 @@ use holochain_net_connection::{
     NetResult,
 };
 
-use super::{ipc_net_worker::IpcNetWorker, memory_worker::InMemoryWorker, p2p_config::*};
+use super::{
+    ipc_net_worker::IpcNetWorker, memory_worker::InMemoryWorker, p2p_config::*,
+    stub_network::StubWorker,
+};
 
 /// Facade handling a p2p module responsable for the network connection
 /// Holds a NetConnectionThread and implements itself the NetSend Trait
@@ -36,6 +39,10 @@ impl P2pNetwork {
             P2pBackendKind::MEMORY => Box::new(move |h| {
                 Ok(Box::new(InMemoryWorker::new(h, &network_config)?) as Box<NetWorker>)
             }),
+            // Create a StubWorker
+            P2pBackendKind::STUB => {
+                Box::new(move |_| Ok(Box::new(StubWorker::new()) as Box<NetWorker>))
+            }
         };
         // Create NetConnectionThread with appropriate worker factory
         let connection = NetConnectionThread::new(handler, worker_factory, None)?;

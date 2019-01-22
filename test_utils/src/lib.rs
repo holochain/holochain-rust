@@ -7,10 +7,11 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
 
-use holochain_container_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
+use holochain_container_api::{error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
     context::Context,
+    context_builder::ContextBuilder,
     logger::{test_logger, TestLogger},
     signal::Signal,
 };

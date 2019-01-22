@@ -10,6 +10,7 @@ use std::{fs::File, str::FromStr};
 pub enum P2pBackendKind {
     MEMORY,
     IPC,
+    STUB,
 }
 
 impl FromStr for P2pBackendKind {
@@ -18,6 +19,7 @@ impl FromStr for P2pBackendKind {
         match s {
             "MEMORY" => Ok(P2pBackendKind::MEMORY),
             "IPC" => Ok(P2pBackendKind::IPC),
+            "STUB" => Ok(P2pBackendKind::STUB),
             _ => Err(()),
         }
     }
@@ -28,6 +30,7 @@ impl From<P2pBackendKind> for String {
         String::from(match kind {
             P2pBackendKind::MEMORY => "MEMORY",
             P2pBackendKind::IPC => "IPC",
+            P2pBackendKind::STUB => "STUB",
         })
     }
 }
@@ -40,7 +43,7 @@ impl From<String> for P2pBackendKind {
 
 impl From<&'static str> for P2pBackendKind {
     fn from(s: &str) -> P2pBackendKind {
-        P2pBackendKind::from(String::from(s))
+        P2pBackendKind::from(s.to_string())
     }
 }
 
@@ -167,6 +170,12 @@ impl P2pConfig {
         "ipcUri": "tcp://127.0.0.1:0",
         "blockConnect": false
       }
+    }"#;
+
+    pub const DEFAULT_STUB_CONFIG: &'static str = r#"
+    {
+      "backend_kind": "STUB",
+      "backend_config": {}
     }"#;
 }
 

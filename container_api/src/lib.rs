@@ -134,7 +134,6 @@ extern crate pretty_assertions;
 
 pub mod config;
 pub mod container;
-pub mod context_builder;
 pub mod error;
 pub mod holochain;
 pub mod interface;

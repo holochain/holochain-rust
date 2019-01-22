@@ -39,7 +39,7 @@ impl KeyBuffer {
 
     /// generate a key buffer from raw bytes (no correction)
     pub fn with_raw(b: &[u8; KeyBuffer::KEY_LEN]) -> KeyBuffer {
-        KeyBuffer(b.clone())
+        KeyBuffer(*b)
     }
 
     /// render a base64url encoded user identity with reed-solomon parity bytes

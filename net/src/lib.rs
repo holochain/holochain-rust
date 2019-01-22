@@ -31,3 +31,4 @@ pub mod memory_server;
 pub mod memory_worker;
 pub mod p2p_config;
 pub mod p2p_network;
+pub mod stub_network;

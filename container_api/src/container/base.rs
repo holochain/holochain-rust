@@ -3,12 +3,12 @@ use crate::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
         StorageConfiguration,
     },
-    context_builder::ContextBuilder,
     error::HolochainInstanceError,
     logger::DebugLogger,
     Holochain,
 };
 use holochain_core::{
+    context_builder::ContextBuilder,
     logger::{ChannelLogger, Logger},
     signal::Signal,
 };

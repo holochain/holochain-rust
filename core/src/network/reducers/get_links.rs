@@ -64,7 +64,13 @@ pub fn reduce_get_links_timeout(
 mod tests {
 
     use crate::{
+<<<<<<< HEAD
         action::{Action, ActionWrapper, GetLinksKey},
+=======
+        action::{Action, ActionWrapper, GetLinksKey, NetworkSettings},
+        context::test_memory_network_config,
+        context_builder::ContextBuilder,
+>>>>>>> Moved ContextBuilder to core
         instance::tests::test_context,
         state::test_store,
     };
@@ -73,7 +79,8 @@ mod tests {
 
     #[test]
     pub fn reduce_get_links_without_network_initialized() {
-        let context = test_context("alice", None);
+        let context = Arc::new(ContextBuilder::new().spawn());
+
         let store = test_store(context.clone());
 
         let entry = test_entry();
@@ -86,11 +93,8 @@ mod tests {
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
-        let maybe_get_links_result = store
-            .network()
-            .get_links_results
-            .get(&key)
-            .map(|result| result.clone());
+        let maybe_get_links_result = store.network().get_links_results.get(&key).cloned();
+
         assert_eq!(
             maybe_get_links_result,
             Some(Some(Err(HolochainError::ErrorGeneric(
@@ -128,11 +132,7 @@ mod tests {
         let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
 
         let store = store.reduce(context.clone(), action_wrapper);
-        let maybe_get_entry_result = store
-            .network()
-            .get_links_results
-            .get(&key)
-            .map(|result| result.clone());
+        let maybe_get_entry_result = store.network().get_links_results.get(&key).cloned();
         assert_eq!(maybe_get_entry_result, Some(None));
     }
 
@@ -143,7 +143,7 @@ mod tests {
     #[cfg(feature = "broken-tests")]
     pub fn reduce_get_links_timeout_test() {
         let netname = Some("reduce_get_links_timeout_test");
-        let mut context = test_context("alice", netname);
+        let mut context = Arc::new(ContextBuilder::new().spawn());
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
 
@@ -179,7 +179,8 @@ mod tests {
             .network()
             .get_links_results
             .get(&key)
-            .map(|result| result.clone());
+            .cloned();
+
         assert_eq!(maybe_get_entry_result, Some(None));
 
         let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key.clone()));
@@ -193,7 +194,8 @@ mod tests {
             .network()
             .get_links_results
             .get(&key)
-            .map(|result| result.clone());
+            .cloned();
+
         assert_eq!(
             maybe_get_entry_result,
             Some(Some(Err(HolochainError::Timeout)))

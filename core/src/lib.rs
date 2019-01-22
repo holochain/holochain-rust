@@ -33,12 +33,14 @@ extern crate holochain_core_types_derive;
 extern crate base64;
 extern crate globset;
 extern crate holochain_net_connection;
+extern crate jsonrpc_ws_server;
 #[macro_use]
 extern crate lazy_static;
 
 pub mod action;
 pub mod agent;
 pub mod context;
+pub mod context_builder;
 pub mod dht;
 pub mod instance;
 #[cfg(test)]

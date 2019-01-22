@@ -5,8 +5,8 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
 
-use holochain_container_api::{context_builder::ContextBuilder, Holochain};
-use holochain_core::context::Context;
+use holochain_container_api::Holochain;
+use holochain_core::{context::Context, context_builder::ContextBuilder};
 use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainError};
 
 use std::sync::Arc;

@@ -12,12 +12,13 @@
 //! extern crate holochain_net;
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
-//! use holochain_container_api::{*, context_builder::ContextBuilder};
+//! use holochain_container_api::*;
 //! use holochain_core_types::{
 //!     cas::content::Address,
 //!     agent::AgentId,
 //!     dna::{Dna, capabilities::CapabilityCall},
 //!     json::JsonString};
+//! use holochain_core::context_builder::ContextBuilder;
 //! use std::sync::Arc;
 //! use tempfile::tempdir;
 //!
@@ -183,10 +184,10 @@ mod tests {
     extern crate holochain_cas_implementations;
 
     use super::*;
-    use context_builder::ContextBuilder;
     use holochain_core::{
         action::Action,
         context::Context,
+        context_builder::ContextBuilder,
         logger::{test_logger, TestLogger},
         nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},

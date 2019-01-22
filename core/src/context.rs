@@ -221,6 +221,11 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> JsonString {
         .unwrap_or(unique_memory_network_config())
 }
 
+#[cfg_attr(tarpaulin, skip)]
+pub fn stub_network_config() -> JsonString {
+    JsonString::from(P2pConfig::DEFAULT_STUB_CONFIG)
+}
+
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;

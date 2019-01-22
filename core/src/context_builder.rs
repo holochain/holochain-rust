@@ -4,8 +4,8 @@ use holochain_cas_implementations::{
     path::create_path_if_not_exists,
 };
 
-use holochain_core::{
-    context::Context,
+use crate::{
+    context::{stub_network_config, Context},
     logger::{Logger, SimpleLogger},
     persister::SimplePersister,
     signal::SignalSender,
@@ -14,7 +14,6 @@ use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
     error::HolochainError, json::JsonString,
 };
-use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::sync::{Arc, Mutex, RwLock};
 
@@ -26,6 +25,7 @@ use std::sync::{Arc, Mutex, RwLock};
 ///
 /// Use any combination of `with_*` functions to configure the context and finally call
 /// `spawn()` to retrieve the context.
+#[derive(Default)]
 pub struct ContextBuilder {
     agent_id: Option<AgentId>,
     logger: Option<Arc<Mutex<Logger>>>,
@@ -42,16 +42,7 @@ pub struct ContextBuilder {
 
 impl ContextBuilder {
     pub fn new() -> Self {
-        ContextBuilder {
-            agent_id: None,
-            logger: None,
-            chain_storage: None,
-            dht_storage: None,
-            eav_storage: None,
-            network_config: None,
-            container_api: None,
-            signal_tx: None,
-        }
+        Default::default()
     }
 
     /// Sets the agent of the context that gets built.
@@ -131,9 +122,7 @@ impl ContextBuilder {
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config.unwrap_or(JsonString::from(
-                P2pConfig::new_with_unique_memory_backend().as_str(),
-            )),
+            self.network_config.unwrap_or(stub_network_config()),
             self.container_api,
             self.signal_tx,
         )
@@ -143,6 +132,7 @@ impl ContextBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use holochain_net::p2p_config::P2pConfig;
     use tempfile::tempdir;
 
     #[test]
@@ -152,7 +142,7 @@ mod tests {
         assert!(context
             .network_config
             .to_string()
-            .contains(r#""backend_kind":"MEMORY""#));
+            .contains(r#""backend_kind": "STUB""#));
     }
 
     #[test]

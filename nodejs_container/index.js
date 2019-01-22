@@ -71,10 +71,10 @@ Container.prototype.call = function (id, zome, trait, fn, params) {
 
 Container.prototype.callWithPromise = function (...args) {
     try {
-        const result = this.call(...args)
         const promise = new Promise((fulfill, reject) => {
             this.register_callback(() => fulfill())
         })
+        const result = this.call(...args)
         return [result, promise]
     } catch (e) {
         return [

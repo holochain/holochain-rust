@@ -27,18 +27,26 @@ pub trait IpcSocket {
 
     /// send data to the remote end of the socket
     fn send(&mut self, data: &[&[u8]]) -> Result<()>;
+
+    fn endpoint(&self) -> Option<String>;
 }
 
 /// this is the concrete ZMQ implementation of the IpcSocket trait
 pub struct ZmqIpcSocket {
     socket: zmq::Socket,
+    maybe_endpoint: Option<String>,
 }
 
 impl IpcSocket for ZmqIpcSocket {
     fn new() -> Result<Box<Self>> {
         Ok(Box::new(Self {
             socket: context::socket(zmq::ROUTER)?,
+            maybe_endpoint: None,
         }))
+    }
+
+    fn endpoint(&self) -> Option<String> {
+        self.maybe_endpoint.clone()
     }
 
     #[allow(unknown_lints)]
@@ -49,7 +57,15 @@ impl IpcSocket for ZmqIpcSocket {
     }
 
     fn connect(&mut self, endpoint: &str) -> Result<()> {
+        // Attempt connection
         self.socket.connect(endpoint)?;
+        // Retrieve the last endpoint this socket was bound to otherwise use the requested one
+        let maybe_last_endpoint = self.socket.get_last_endpoint()?;
+        let last_endpoint = match maybe_last_endpoint {
+            Ok(last_endpoint) => last_endpoint,
+            Err(_) => endpoint.to_string(),
+        };
+        self.maybe_endpoint = Some(last_endpoint);
         Ok(())
     }
 
@@ -115,6 +131,10 @@ impl IpcSocket for MockIpcSocket {
                 control_send: tx,
             },
         }))
+    }
+
+    fn endpoint(&self) -> Option<String> {
+        None
     }
 
     fn close(self: Box<Self>) -> Result<()> {

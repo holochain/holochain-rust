@@ -10,10 +10,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{error::HolochainError, link::Link};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// AddLink Action Creator
 /// This action creator dispatches an AddLink action which is consumed by the DHT reducer.
@@ -37,8 +34,6 @@ pub struct AddLinkFuture {
     context: Arc<Context>,
     action: ActionWrapper,
 }
-
-impl Unpin for AddLinkFuture {}
 
 impl Future for AddLinkFuture {
     type Output = Result<(), HolochainError>;
@@ -76,7 +71,7 @@ mod tests {
 
     #[test]
     fn can_add_valid_link() {
-        let (_instance, context) = nucleus::actions::tests::instance();
+        let (_instance, context) = nucleus::actions::tests::instance(None);
 
         let base = test_entry();
         nucleus::actions::tests::commit(base.clone(), &context);
@@ -91,7 +86,7 @@ mod tests {
 
     #[test]
     fn errors_when_link_base_not_present() {
-        let (_instance, context) = nucleus::actions::tests::instance();
+        let (_instance, context) = nucleus::actions::tests::instance(None);
 
         let base = test_entry();
         let target = base.clone();

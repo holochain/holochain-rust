@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::protocol_wrapper::{DhtData, DhtMetaData, ProtocolWrapper};
+use holochain_net_connection::json_protocol::{DhtData, DhtMetaData, JsonProtocol};
 use std::sync::Arc;
 
 fn publish_entry(
@@ -26,9 +26,9 @@ fn publish_entry(
 
     send(
         network_state,
-        ProtocolWrapper::PublishDht(DhtData {
+        JsonProtocol::PublishDhtData(DhtData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_with_header.entry.address().to_string(),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
@@ -46,10 +46,11 @@ fn publish_crud_meta(
     // publish crud-status
     send(
         network_state,
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+        JsonProtocol::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_address.to_string(),
             attribute: STATUS_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
@@ -62,10 +63,11 @@ fn publish_crud_meta(
     }
     send(
         network_state,
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+        JsonProtocol::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: entry_address.to_string(),
             attribute: LINK_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
@@ -76,6 +78,7 @@ fn publish_crud_meta(
 }
 
 fn publish_link_meta(
+    context: &Arc<Context>,
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
@@ -90,12 +93,18 @@ fn publish_link_meta(
     };
     let link = link_add_entry.link().clone();
 
+    context.log(format!(
+        "debug/reduce/link_meta: Publishing link meta for link: {:?}",
+        link
+    ));
+
     send(
         network_state,
-        ProtocolWrapper::PublishDhtMeta(DhtMetaData {
+        JsonProtocol::PublishDhtMeta(DhtMetaData {
             msg_id: "?".to_string(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: network_state.agent_id.clone().unwrap(),
+            from_agent_id: network_state.agent_id.clone().unwrap(),
             address: link.base().to_string(),
             attribute: String::from("link"),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
@@ -132,7 +141,7 @@ fn reduce_publish_inner(
             )
         }),
         EntryType::LinkAdd => publish_entry(network_state, &entry_with_header)
-            .and_then(|_| publish_link_meta(network_state, &entry_with_header)),
+            .and_then(|_| publish_link_meta(context, network_state, &entry_with_header)),
         EntryType::Deletion => publish_entry(network_state, &entry_with_header).and_then(|_| {
             publish_crud_meta(
                 network_state,
@@ -141,7 +150,9 @@ fn reduce_publish_inner(
                 maybe_crud_link,
             )
         }),
-        _ => Err(HolochainError::NotImplemented),
+        _ => Err(HolochainError::NotImplemented(
+            "reduce_publish_inner".into(),
+        )),
     }
 }
 
@@ -175,7 +186,7 @@ mod tests {
 
     #[test]
     pub fn reduce_publish_test() {
-        let context = test_context("alice");
+        let context = test_context("alice", None);
         let store = test_store(context.clone());
 
         let entry = test_entry();

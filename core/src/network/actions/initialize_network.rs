@@ -4,42 +4,46 @@ use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
     context::{get_dna_and_agent, Context},
     instance::dispatch_action,
+    network::actions::publish::publish,
 };
 use futures::{
     task::{LocalWaker, Poll},
     Future,
 };
+#[cfg(test)]
+use holochain_core_types::cas::content::Address;
 use holochain_core_types::error::HcResult;
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
-    let (dna_hash, agent_id) = await!(get_dna_and_agent(context))?;
+    let (dna_address, agent_id) = await!(get_dna_and_agent(context))?;
     let network_settings = NetworkSettings {
         config: context.network_config.clone(),
-        dna_hash,
-        agent_id,
+        dna_address,
+        agent_id: agent_id.clone(),
     };
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     await!(InitNetworkFuture {
         context: context.clone(),
-    })
+    })?;
+
+    await!(publish(agent_id.clone().into(), context))?;
+
+    Ok(())
 }
 
 #[cfg(test)]
 pub async fn initialize_network_with_spoofed_dna(
-    dna_hash: String,
+    dna_address: Address,
     context: &Arc<Context>,
 ) -> HcResult<()> {
     let (_, agent_id) = await!(get_dna_and_agent(context))?;
     let network_settings = NetworkSettings {
         config: context.network_config.clone(),
-        dna_hash,
+        dna_address,
         agent_id,
     };
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
@@ -54,8 +58,6 @@ pub struct InitNetworkFuture {
     context: Arc<Context>,
 }
 
-impl Unpin for InitNetworkFuture {}
-
 impl Future for InitNetworkFuture {
     type Output = HcResult<()>;
 
@@ -67,7 +69,7 @@ impl Future for InitNetworkFuture {
         lw.wake();
         if let Some(state) = self.context.state() {
             if state.network().network.is_some()
-                || state.network().dna_hash.is_some()
+                || state.network().dna_address.is_some()
                 || state.network().agent_id.is_some()
             {
                 Poll::Ready(Ok(()))

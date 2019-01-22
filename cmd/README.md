@@ -8,7 +8,19 @@ This crate implements a set of tools for building and running Holochain DNA from
 
 ## Install
 
-Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/app-spec-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
+Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install the `zmq` dependency e.g.:
+
+On MacOS:
+
+```
+brew install zmq
+```
+
+On Ubuntu:
+
+```
+apt-get install libzmq3-dev
+```
 
 ### Building From Source
 
@@ -39,6 +51,10 @@ The command line tools are now available in your command line using the `hc` com
 Run `hc --version` to confirm.
 
 Run `hc help` for help.
+
+### Networking
+
+If you want to use `hc run` with real (as opposed to mock) networking, you will also need to install [n3h](https://github.com/holochain/n3h).
 
 ## Usage
 
@@ -83,7 +99,7 @@ So in every Zome there must be a `code` folder, which can be compiled into a sin
 
 Now that you have your Rust Zome, check out the two sources of documentation about writing Holochain DNA source code:
 1. https://developer.holochain.org/guide/latest
-2. https://developer.holochain.org/api/latest/hdk
+2. https://developer.holochain.org/api/0.0.3/hdk
 
 In order for Holochain to run your app, you have to build your code into a single packaged file. Those instructions follow.
 
@@ -128,7 +144,7 @@ When using `hc generate` to scaffold a Zome, you will have a `.build` file autom
       "--target=wasm32-unknown-unknown"
     ]
   },
-  "artifact": "target/wasm32-unknown-unknown/release/code.wasm"
+  "artifact": "/tmp/holochain/target/wasm32-unknown-unknown/release/code.wasm"
 }
 ```
 
@@ -164,7 +180,7 @@ By default, when you use `hc init` to create a new project folder, it creates a 
 Once you have a project folder initiated, you can run `hc test` to execute your tests. This combines the following steps:
   1. Packaging your files into a DNA file, located at `dist/bundle.json`. This step will fail if your packaging step fails.
   2. Installing build and testing dependencies, if they're not installed (`npm install`)
-  4. Executing (with [holochain-nodejs](https://github.com/holochain/holochain-nodejs)) the test file found at `test/index.js`
+  4. Executing (with [holochain-nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs)) the test file found at `test/index.js`
 
 `hc test` also has some configurable options.
 
@@ -194,6 +210,7 @@ hc run
 ```
 This will start the application and open a WebSocket on port `8888`.
 
+### Options
 There are three option flags for `hc run`.
 
 If you wish to customize the port number that the WebSocket runs over, then run it with a `-p`/`--port` option, like:
@@ -215,8 +232,39 @@ This will store data in the same directory as your app, in a hidden folder calle
 
 Of course these options can be used in combination with one another.
 
+### Using Real Networking
+
+`hc run` uses mock networking by default and therefore can't talk to any other nodes.  If you want to test multiple nodes you will need to install the [n3h](https://github.com/holochain/n3h) networking component (following the instructions on the readme there).  Once you have installed it then you can simply fire up your first node while setting the HC_N3H_PATH environment variable to the path where you installed it.  If n3h was installed properly you should see something like this:
+
+``` shell
+$ HC_N3H_PATH=/home/eric/holochain/n3h hc run
+SPAWN ("node" "/home/eric/holochain/n3h/packages/n3h/bin/n3h")
+(@hackmode@) [t] bound to tcp://127.0.0.1:42341
+(@hackmode@) [i] p2p bound [
+  "/ip4/127.0.0.1/tcp/34199/ipfs/QmTg9qMFBosfWD8yeLbcNUwT8UgwNKoT9mGEfm9vXKEHzS",
+  "/ip4/192.168.1.5/tcp/34199/ipfs/QmTg9qMFBosfWD8yeLbcNUwT8UgwNKoT9mGEfm9vXKEHzS"
+]
+(@hackmode@) [t] running
+...
+```
+Note that there is an agent id set by default, and the default is `testAgent`.
+To fire up a second node you have to do a little more work, namely:
+1. providing the address of the first node as a bootstrap node,
+2. specifying a different agent id
+3. specifying a different port for the websocket server, for a UI to connect to.
+
+Do that something like this (where the node address is copied from the output of the first node):
+
+``` shell
+HC_AGENT=testAgent2 HC_N3H_BOOTSTRAP_NODE=/ip4/192.168.1.5/tcp/43919/ipfs/QmUhYXbBKcfL8KWx8DMpmhcHeWmmyyLHUe7jFnP5PdLdr4 HC_N3H_PATH=/home/eric/holochain/n3h hc run -p 8889
+
+```
+
+In both cases make sure to change the path to where you actually installed n3h.
+
+
 ## Contribute
-Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](https://github.com/holochain/org/blob/master/CONTRIBUTING.md) for our general practices and protocols on participating in the community.
+Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](../CONTRIBUTING.md) for our general practices and protocols on participating in the community.
 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)

@@ -14,25 +14,37 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::ChainHeader,
-        dna::{capabilities::Capability, entry_types::EntryTypeDef, Dna},
+        dna::{
+            capabilities::{Capability, CapabilityType},
+            entry_types::EntryTypeDef,
+            Dna,
+        },
         entry::Entry,
         json::RawString,
     };
+    use holochain_wasm_utils::wasm_target_dir;
     use std::sync::Arc;
     use test_utils::*;
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn instance() -> (Instance, Arc<Context>) {
-        instance_by_name("jane", test_dna())
+    pub fn instance(network_name: Option<&str>) -> (Instance, Arc<Context>) {
+        instance_by_name("jane", test_dna(), network_name)
     }
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_dna() -> Dna {
         // Setup the holochain instance
-        let wasm =
-            create_wasm_from_file("src/nucleus/actions/wasm-test/target/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm");
+        let wasm = create_wasm_from_file(&format!(
+            "{}/wasm32-unknown-unknown/release/nucleus_actions_tests.wasm",
+            wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
+        ));
 
-        let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &Capability::new(), &wasm);
+        let mut dna = create_test_dna_with_cap(
+            "test_zome",
+            "test_cap",
+            &Capability::new(CapabilityType::Public),
+            &wasm,
+        );
 
         dna.zomes
             .get_mut("test_zome")
@@ -59,9 +71,13 @@ pub mod tests {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn instance_by_name(name: &str, dna: Dna) -> (Instance, Arc<Context>) {
-        let (instance, context) =
-            test_instance_and_context_by_name(dna, name).expect("Could not create test instance");
+    pub fn instance_by_name(
+        name: &str,
+        dna: Dna,
+        network_name: Option<&str>,
+    ) -> (Instance, Arc<Context>) {
+        let (instance, context) = test_instance_and_context_by_name(dna, name, network_name)
+            .expect("Could not create test instance");
         let initialized_context = instance.initialize_context(context);
         (instance, initialized_context)
     }
@@ -103,7 +119,7 @@ pub mod tests {
     // smoke test just to make sure our testing code works.
     #[test]
     pub fn can_instantiate_test_instance() {
-        let (instance, _context) = instance();
+        let (instance, _context) = instance(None);
         assert!(instance.state().nucleus().has_initialized());
     }
 

@@ -88,7 +88,7 @@ pub(crate) fn reduce_remove_link(
 
 //
 pub(crate) fn reduce_hold_entry(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
@@ -112,7 +112,10 @@ pub(crate) fn reduce_hold_entry(
                 meta_res
                     .map(|_| Some(new_store))
                     .map_err(|err| {
-                        println!("reduce_hold_entry: meta_storage write failed!: {:?}", err);
+                        context.log(format!(
+                            "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
+                            err
+                        ));
                         None::<DhtStore>
                     })
                     .ok()
@@ -121,7 +124,10 @@ pub(crate) fn reduce_hold_entry(
             .ok()
             .unwrap_or(None)
     } else {
-        println!("dht::reduce_hold_entry() FAILED {:?}", res);
+        context.log(format!(
+            "err/dht: dht::reduce_hold_entry() FAILED {:?}",
+            res
+        ));
         None
     }
 }
@@ -340,7 +346,7 @@ pub mod tests {
 
     #[test]
     fn reduce_hold_entry_test() {
-        let context = test_context("bob");
+        let context = test_context("bob", None);
         let store = test_store(context.clone());
 
         // test_entry is not sys so should do nothing
@@ -375,7 +381,7 @@ pub mod tests {
 
     #[test]
     fn can_add_links() {
-        let context = test_context("bob");
+        let context = test_context("bob", None);
         let store = test_store(context.clone());
         let entry = test_entry();
 
@@ -467,7 +473,7 @@ pub mod tests {
 
     #[test]
     fn does_not_add_link_for_missing_base() {
-        let context = test_context("bob");
+        let context = test_context("bob", None);
         let store = test_store(context.clone());
         let entry = test_entry();
 
@@ -503,7 +509,7 @@ pub mod tests {
 
     #[test]
     pub fn reduce_hold_test() {
-        let context = test_context("bill");
+        let context = test_context("bill", None);
         let store = test_store(context.clone());
 
         let entry = test_entry();

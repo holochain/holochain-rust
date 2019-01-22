@@ -5,30 +5,189 @@ use holochain_core_types::json::JsonString;
 use holochain_net_ipc::{
     ipc_client::IpcClient,
     socket::{IpcSocket, MockIpcSocket, TestStruct, ZmqIpcSocket},
+    spawn,
     util::get_millis,
 };
 
 use holochain_net_connection::{
-    net_connection::{
-        NetConnection, NetConnectionRelay, NetHandler, NetShutdown, NetWorker, NetWorkerFactory,
-    },
+    json_protocol::{ConfigData, ConnectData, JsonProtocol, StateData},
+    net_connection::{NetHandler, NetSend, NetShutdown, NetWorker, NetWorkerFactory},
+    net_relay::NetConnectionRelay,
     protocol::Protocol,
-    protocol_wrapper::{ConfigData, ProtocolWrapper, StateData},
     NetResult,
 };
 
-use std::{collections::HashMap, convert::TryFrom, io::Read, sync::mpsc};
+use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
 
 use serde_json;
 
-/// a p2p net worker
+/// a NetWorker talking to the network via another process through an IPC connection.
 pub struct IpcNetWorker {
     handler: NetHandler,
+
     ipc_relay: NetConnectionRelay,
     ipc_relay_receiver: mpsc::Receiver<Protocol>,
+
     is_ready: bool,
-    state: String,
+
+    last_known_state: String,
     last_state_millis: f64,
+
+    bootstrap_nodes: Vec<String>,
+    endpoint: String,
+}
+
+// Constructors
+impl IpcNetWorker {
+    // Constructor with config as a json string
+    pub fn new(handler: NetHandler, config: &JsonString) -> NetResult<Self> {
+        // Load config
+        let config: serde_json::Value = serde_json::from_str(config.into())?;
+        // Only zmq protocol is handled for now
+        if config["socketType"] != "zmq" {
+            bail!("unexpected socketType: {}", config["socketType"]);
+        }
+        let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
+        let empty = vec![];
+        let bootstrap_nodes: Vec<String> = config["bootstrapNodes"]
+            .as_array()
+            .unwrap_or(&empty)
+            .iter()
+            .map(|s| s.as_str().unwrap().to_string())
+            .collect();
+        if config["ipcUri"].as_str().is_none() {
+            // No 'ipcUri' config so use 'spawn' config
+            if config["spawn"].as_object().is_none() {
+                bail!("config.spawn or ipcUri is required");
+            }
+            let spawn_config = config["spawn"].as_object().unwrap();
+            if !(spawn_config["cmd"].is_string()
+                && spawn_config["args"].is_array()
+                && spawn_config["workDir"].is_string()
+                && spawn_config["env"].is_object())
+            {
+                bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
+            }
+            let env: HashMap<String, String> = spawn_config["env"]
+                .as_object()
+                .unwrap()
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
+                .collect();
+            // create a new IpcNetWorker witch spawns the n3h process
+            return IpcNetWorker::priv_new_with_spawn(
+                handler,
+                spawn_config["cmd"].as_str().unwrap().to_string(),
+                spawn_config["args"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|i| i.as_str().unwrap_or_default().to_string())
+                    .collect(),
+                spawn_config["workDir"].as_str().unwrap().to_string(),
+                env,
+                block_connect,
+                bootstrap_nodes,
+            );
+        }
+        // create a new IpcNetWorker that connects to the given 'ipcUri'
+        let uri = config["ipcUri"].as_str().unwrap().to_string();
+        let endpoint = uri.clone();
+        IpcNetWorker::priv_new(
+            handler,
+            Box::new(move |h| {
+                let mut socket = ZmqIpcSocket::new()?;
+                socket.connect(&uri)?;
+                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
+                Ok(out)
+            }),
+            None,
+            bootstrap_nodes,
+            endpoint,
+        )
+    }
+
+    /// Constructor with MockIpcSocket on local network
+    pub fn new_test(handler: NetHandler, test_struct: TestStruct) -> NetResult<Self> {
+        let default_local_endpoint = "tcp://127.0.0.1:0";
+        IpcNetWorker::priv_new(
+            handler,
+            Box::new(move |h| {
+                let mut socket = MockIpcSocket::new_test(test_struct)?;
+                socket.connect(default_local_endpoint)?;
+                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, true)?);
+                Ok(out)
+            }),
+            None,
+            vec![],
+            default_local_endpoint.to_string(),
+        )
+    }
+}
+
+/// Private Constructors
+impl IpcNetWorker {
+    /// Constructor with IpcNetWorker instance pointing to a process that we spawn here
+    fn priv_new_with_spawn(
+        handler: NetHandler,
+        cmd: String,
+        args: Vec<String>,
+        work_dir: String,
+        env: HashMap<String, String>,
+        block_connect: bool,
+        bootstrap_nodes: Vec<String>,
+    ) -> NetResult<Self> {
+        // Spawn a process with given `cmd` that we will have an IPC connection with
+        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, env, block_connect)?;
+        // Get spawn result info
+        let ipc_binding = spawn_result.ipc_binding;
+        let kill = spawn_result.kill;
+        let endpoint = ipc_binding.clone();
+
+        // Create factory: Creates a Zmq IPC socket and an IpcClient NetWorker which uses it.
+        let factory = Box::new(move |h| {
+            let mut socket = ZmqIpcSocket::new()?;
+            socket.connect(&ipc_binding)?;
+            let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
+            Ok(out)
+        });
+
+        // Done
+        IpcNetWorker::priv_new(handler, factory, kill, bootstrap_nodes, endpoint)
+    }
+
+    /// Constructor without config
+    /// Using a NetConnectionRelay as socket
+    fn priv_new(
+        handler: NetHandler,
+        factory: NetWorkerFactory,
+        done: NetShutdown,
+        bootstrap_nodes: Vec<String>,
+        endpoint: String,
+    ) -> NetResult<Self> {
+        let (ipc_relay_sender, ipc_relay_receiver) = mpsc::channel::<Protocol>();
+
+        let ipc_relay = NetConnectionRelay::new(
+            Box::new(move |data| {
+                // Relay valid data received from its worker (the network) back to its receiver (IpcNetWorker)
+                ipc_relay_sender.send(data?)?;
+                Ok(())
+            }),
+            factory,
+            done,
+        )?;
+
+        Ok(IpcNetWorker {
+            handler,
+            ipc_relay,
+            ipc_relay_receiver,
+            is_ready: false,
+            last_known_state: "undefined".to_string(),
+            last_state_millis: 0.0_f64,
+            bootstrap_nodes,
+            endpoint,
+        })
+    }
 }
 
 impl NetWorker for IpcNetWorker {
@@ -46,259 +205,69 @@ impl NetWorker for IpcNetWorker {
     }
 
     /// do some upkeep on the internal worker
+    /// IPC server state handling / magic
     fn tick(&mut self) -> NetResult<bool> {
-        let mut did_something = false;
+        let mut has_done_something = false;
 
-        if &self.state != "ready" {
-            self.priv_check_init()?;
+        // Request p2p module's state if its not ready yet
+        if &self.last_known_state != "ready" {
+            self.priv_request_state()?;
         }
 
+        // Tick the internal worker relay
         if self.ipc_relay.tick()? {
-            did_something = true;
+            has_done_something = true;
         }
 
+        // Process back any data sent to us by the ipc_relay to the handler
         if let Ok(data) = self.ipc_relay_receiver.try_recv() {
-            did_something = true;
+            has_done_something = true;
 
-            if let Ok(wrap) = ProtocolWrapper::try_from(&data) {
-                match wrap {
-                    ProtocolWrapper::State(s) => {
-                        self.priv_handle_state(s)?;
+            // handle init/config special cases
+            if let Ok(msg) = JsonProtocol::try_from(&data) {
+                match msg {
+                    // ipc-server sent us its current state
+                    JsonProtocol::GetStateResult(state) => {
+                        self.priv_handle_state(state)?;
                     }
-                    ProtocolWrapper::DefaultConfig(c) => {
-                        self.priv_handle_default_config(c)?;
+                    // ipc-server is requesting us the default config
+                    JsonProtocol::GetDefaultConfigResult(config) => {
+                        self.priv_handle_default_config(config)?;
                     }
                     _ => (),
                 };
             }
 
+            // Send data back to handler
             (self.handler)(Ok(data))?;
 
-            if !self.is_ready && &self.state == "ready" {
+            // When p2p module is ready:
+            // - Notify handler that the p2p module is ready
+            // - Try connecting to boostrap nodes
+            if !self.is_ready && &self.last_known_state == "ready" {
                 self.is_ready = true;
                 (self.handler)(Ok(Protocol::P2pReady))?;
+                self.priv_send_connects()?;
             }
         }
 
-        Ok(did_something)
+        Ok(has_done_something)
+    }
+
+    /// Getter
+    fn endpoint(&self) -> Option<String> {
+        Some(self.endpoint.clone())
     }
 }
 
+// private
 impl IpcNetWorker {
-    pub fn new_test(handler: NetHandler, test_struct: TestStruct) -> NetResult<Self> {
-        IpcNetWorker::priv_new(
-            handler,
-            Box::new(move |h| {
-                let mut socket = MockIpcSocket::new_test(test_struct)?;
-                socket.connect("tcp://127.0.0.1:0")?;
-                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, true)?);
-                Ok(out)
-            }),
-            None,
-        )
-    }
-
-    pub fn new(handler: NetHandler, config: &JsonString) -> NetResult<Self> {
-        let config: serde_json::Value = serde_json::from_str(config.into())?;
-        if config["socketType"] != "zmq" {
-            bail!("unexpected socketType: {}", config["socketType"]);
-        }
-        let block_connect = config["blockConnect"].as_bool().unwrap_or(true);
-        if config["ipcUri"].as_str().is_none() {
-            if let Some(s) = config["spawn"].as_object() {
-                if s["cmd"].is_string()
-                    && s["args"].is_array()
-                    && s["workDir"].is_string()
-                    && s["env"].is_object()
-                {
-                    let env: HashMap<String, String> = s["env"]
-                        .as_object()
-                        .unwrap()
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string()))
-                        .collect();
-                    return IpcNetWorker::priv_spawn(
-                        handler,
-                        s["cmd"].as_str().unwrap().to_string(),
-                        s["args"]
-                            .as_array()
-                            .unwrap()
-                            .iter()
-                            .map(|i| i.as_str().unwrap_or_default().to_string())
-                            .collect(),
-                        s["workDir"].as_str().unwrap().to_string(),
-                        env,
-                        block_connect,
-                    );
-                } else {
-                    bail!("config.spawn requires 'cmd', 'args', 'workDir', and 'env'");
-                }
-            }
-            bail!("config.ipcUri is required");
-        }
-        let uri = config["ipcUri"].as_str().unwrap().to_string();
-        IpcNetWorker::priv_new(
-            handler,
-            Box::new(move |h| {
-                let mut socket = ZmqIpcSocket::new()?;
-                socket.connect(&uri)?;
-                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
-                Ok(out)
-            }),
-            None,
-        )
-    }
-
-    // -- private -- //
-
-    /// create a new IpcNetWorker instance pointing to a process that we spawn here
-    fn priv_spawn(
-        handler: NetHandler,
-        cmd: String,
-        args: Vec<String>,
-        work_dir: String,
-        env: HashMap<String, String>,
-        block_connect: bool,
-    ) -> NetResult<Self> {
-        let mut child = std::process::Command::new(cmd);
-
-        child
-            .stdout(std::process::Stdio::piped())
-            .args(&args)
-            .envs(&env)
-            .current_dir(work_dir);
-
-        println!("SPAWN ({:?})", child);
-
-        let mut child = child.spawn()?;
-
-        // transport info (zmq uri) for connecting to the ipc socket
-        let re_ipc = regex::Regex::new("(?m)^#IPC-BINDING#:(.+)$")?;
-
-        // transport info (multiaddr) for any p2p interface bindings
-        let re_p2p = regex::Regex::new("(?m)^#P2P-BINDING#:(.+)$")?;
-
-        // the child process is ready for connections
-        let re_ready = regex::Regex::new("#IPC-READY#")?;
-
-        let mut ipc_binding = String::new();
-        let mut p2p_bindings: Vec<String> = Vec::new();
-
-        // we need to know when our child process is ready for IPC connections
-        // it will run some startup algorithms, and then output some binding
-        // info on stdout and finally a `#IPC-READY#` message.
-        // collect the binding info, and proceed when `#IPC-READY#`
-        if let Some(ref mut stdout) = child.stdout {
-            let mut data: Vec<u8> = Vec::new();
-            loop {
-                let mut buf: [u8; 4096] = [0; 4096];
-                let size = stdout.read(&mut buf)?;
-                if size > 0 {
-                    data.extend_from_slice(&buf[..size]);
-
-                    let tmp = String::from_utf8_lossy(&data);
-                    if re_ready.is_match(&tmp) {
-                        for m in re_ipc.captures_iter(&tmp) {
-                            ipc_binding = m[1].to_string();
-                            break;
-                        }
-                        for m in re_p2p.captures_iter(&tmp) {
-                            p2p_bindings.push(m[1].to_string());
-                        }
-                        break;
-                    }
-                } else {
-                    std::thread::sleep(std::time::Duration::from_millis(10));
-                }
-
-                if !block_connect {
-                    break;
-                }
-            }
-        } else {
-            bail!("pipe fail");
-        }
-
-        // close the pipe since we can never read from it again...
-        child.stdout = None;
-
-        println!("READY! {} {:?}", ipc_binding, p2p_bindings);
-
-        IpcNetWorker::priv_new(
-            handler,
-            Box::new(move |h| {
-                let mut socket = ZmqIpcSocket::new()?;
-                socket.connect(&ipc_binding)?;
-                let out: Box<NetWorker> = Box::new(IpcClient::new(h, socket, block_connect)?);
-                Ok(out)
-            }),
-            Some(Box::new(move || {
-                child.kill().unwrap();
-            })),
-        )
-    }
-
-    /// create a new IpcNetWorker instance
-    fn priv_new(
-        handler: NetHandler,
-        factory: NetWorkerFactory,
-        done: NetShutdown,
-    ) -> NetResult<Self> {
-        let (ipc_sender, ipc_relay_receiver) = mpsc::channel::<Protocol>();
-
-        let ipc_relay = NetConnectionRelay::new(
-            Box::new(move |r| {
-                ipc_sender.send(r?)?;
-                Ok(())
-            }),
-            factory,
-            done,
-        )?;
-
-        Ok(IpcNetWorker {
-            handler,
-            ipc_relay,
-            ipc_relay_receiver,
-
-            is_ready: false,
-
-            state: "undefined".to_string(),
-
-            last_state_millis: 0.0_f64,
-        })
-    }
-
-    /// send a ping twice per second
-    fn priv_check_init(&mut self) -> NetResult<()> {
-        let now = get_millis();
-
-        if now - self.last_state_millis > 500.0 {
-            self.ipc_relay.send(ProtocolWrapper::RequestState.into())?;
-            self.last_state_millis = now;
-        }
-
-        Ok(())
-    }
-
-    /// if the internal worker needs configuration, fetch the default config
-    fn priv_handle_state(&mut self, state: StateData) -> NetResult<()> {
-        self.state = state.state;
-
-        if &self.state == "need_config" {
-            self.ipc_relay
-                .send(ProtocolWrapper::RequestDefaultConfig.into())?;
-        }
-
-        Ok(())
-    }
-
-    /// if the internal worker still needs configuration,
-    /// pass it back the default config
-    fn priv_handle_default_config(&mut self, config: ConfigData) -> NetResult<()> {
-        if &self.state == "need_config" {
+    // Send 'Connect to bootstrap nodes' request to Ipc server
+    fn priv_send_connects(&mut self) -> NetResult<()> {
+        for bs_node in &self.bootstrap_nodes {
             self.ipc_relay.send(
-                ProtocolWrapper::SetConfig(ConfigData {
-                    config: config.config,
+                JsonProtocol::Connect(ConnectData {
+                    address: bs_node.clone().into(),
                 })
                 .into(),
             )?;
@@ -306,6 +275,50 @@ impl IpcNetWorker {
 
         Ok(())
     }
+
+    /// send a ping and/or? StateRequest twice per second
+    fn priv_request_state(&mut self) -> NetResult<()> {
+        let now = get_millis();
+
+        if now - self.last_state_millis > 500.0 {
+            self.ipc_relay.send(JsonProtocol::GetState.into())?;
+            self.last_state_millis = now;
+        }
+
+        Ok(())
+    }
+
+    /// Handle State Message received from IPC server.
+    fn priv_handle_state(&mut self, state: StateData) -> NetResult<()> {
+        // Keep track of IPC server's state
+        self.last_known_state = state.state;
+        // if the internal worker needs configuration, fetch the default config
+        if &self.last_known_state == "need_config" {
+            self.ipc_relay.send(JsonProtocol::GetDefaultConfig.into())?;
+        }
+        Ok(())
+    }
+
+    /// Handle DefaultConfig Message received from ipc-server.
+    /// Pass it back the default config only if it needs configurating
+    fn priv_handle_default_config(&mut self, config_msg: ConfigData) -> NetResult<()> {
+        if &self.last_known_state == "need_config" {
+            self.ipc_relay.send(
+                JsonProtocol::SetConfig(ConfigData {
+                    config: config_msg.config,
+                })
+                .into(),
+            )?;
+        }
+
+        Ok(())
+    }
+
+    pub const ZMQ_URI_CONFIG: &'static str = r#"{
+                "socketType": "zmq",
+                "ipcUri": "tcp://127.0.0.1:0",
+                "blockConnect": false
+            }"#;
 }
 
 #[cfg(test)]
@@ -320,12 +333,7 @@ mod tests {
     fn it_ipc_networker_zmq_create() {
         IpcNetWorker::new(
             Box::new(|_r| Ok(())),
-            &json!({
-                "socketType": "zmq",
-                "ipcUri": "tcp://127.0.0.1:0",
-                "blockConnect": false
-            })
-            .into(),
+            &JsonString::from(IpcNetWorker::ZMQ_URI_CONFIG).into(),
         )
         .unwrap();
     }

@@ -20,6 +20,11 @@ pub async fn author_entry<'a>(
     maybe_crud_link: Option<Address>,
     context: &'a Arc<Context>,
 ) -> Result<Address, HolochainError> {
+    let address = entry.address();
+    context.log(format!(
+        "debug/workflow/authoring_entry: {} with content: {:?}",
+        address, entry
+    ));
     // 1. Build the context needed for validation of the entry
     let validation_package = await!(build_validation_package(&entry, &context))?;
     let validation_data = ValidationData {
@@ -28,12 +33,46 @@ pub async fn author_entry<'a>(
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
     };
+
     // 2. Validate the entry
+    context.log(format!(
+        "debug/workflow/authoring_entry/{}: validating...",
+        address
+    ));
     await!(validate_entry(entry.clone(), validation_data, &context))?;
+    context.log(format!("Authoring entry {}: is valid!", address));
+
     // 3. Commit the entry
-    await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
+    context.log(format!(
+        "debug/workflow/authoring_entry/{}: committing...",
+        address
+    ));
+    let addr = await!(commit_entry(entry.clone(), maybe_crud_link, &context))?;
+    context.log(format!(
+        "debug/workflow/authoring_entry/{}: committed",
+        address
+    ));
+
     // 4. Publish the valid entry to DHT. This will call Hold to itself
-    await!(publish(entry.address(), &context))
+    //TODO: missing a general public/private sharing check here, for now just
+    // using the entry_type can_publish() function which isn't enough
+    if entry.entry_type().can_publish() {
+        context.log(format!(
+            "debug/workflow/authoring_entry/{}: publishing...",
+            address
+        ));
+        await!(publish(entry.address(), &context))?;
+        context.log(format!(
+            "debug/workflow/authoring_entry/{}: published!",
+            address
+        ));
+    } else {
+        context.log(format!(
+            "debug/workflow/authoring_entry/{}: entry is private, no publishing",
+            address
+        ));
+    }
+    Ok(addr)
 }
 
 #[cfg(test)]
@@ -46,12 +85,13 @@ pub mod tests {
 
     #[test]
     #[cfg(not(windows))]
-    /// test that a commit will publish and entry to the dht of a connected instance via the mock network
+    /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish".to_string();
-        let (_instance1, context1) = instance_by_name("jill", dna.clone());
-        let (_instance2, context2) = instance_by_name("jack", dna);
+        let netname = Some("test_commit_with_dht_publish, the network");
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         let entry_address = block_on(author_entry(&test_entry(), None, &context1)).unwrap();
         thread::sleep(time::Duration::from_millis(500));

@@ -1,3 +1,4 @@
+use crate::logger::LogRules;
 /// Container Configuration
 /// This module provides structs that represent the different aspects of how
 /// a container can be configured.
@@ -10,6 +11,7 @@
 ///   the container
 /// * bridges, which are
 use boolinator::*;
+use directories;
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
@@ -18,7 +20,7 @@ use holochain_core_types::{
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, fs::File, io::prelude::*};
+use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*};
 use toml;
 
 /// Main container configuration struct
@@ -28,13 +30,14 @@ use toml;
 /// References between structs (instance configs pointing to
 /// the agent and DNA to be instantiated) are implemented
 /// via string IDs.
-#[derive(Deserialize, Serialize, Clone, Default)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug)]
 pub struct Configuration {
     /// List of Agents, this mainly means identities and their keys. Required.
     pub agents: Vec<AgentConfiguration>,
-    /// List of DNAs, for each a path to the DNA file. Required.
-    pub dnas: Vec<DNAConfiguration>,
-    /// List of instances, includes references to an agent and a DNA. Required.
+    /// List of DNAs, for each a path to the DNA file. Optional.
+    #[serde(default)]
+    pub dnas: Vec<DnaConfiguration>,
+    /// List of instances, includes references to an agent and a DNA. Optional.
     #[serde(default)]
     pub instances: Vec<InstanceConfiguration>,
     /// List of interfaces any UI can use to access zome functions. Optional.
@@ -43,6 +46,39 @@ pub struct Configuration {
     /// List of bridges between instances. Optional.
     #[serde(default)]
     pub bridges: Vec<Bridge>,
+    /// List of ui bundles (static web dirs) to host on a static interface. Optional.
+    #[serde(default)]
+    pub ui_bundles: Vec<UiBundleConfiguration>,
+    /// List of ui interfaces, includes references ui bundle and dna interfaces it can call. Optional.
+    #[serde(default)]
+    pub ui_interfaces: Vec<UiInterfaceConfiguration>,
+    /// Configures how logging should behave
+    #[serde(default)]
+    pub logger: LoggerConfiguration,
+    /// Configuration options for the network module n3h
+    #[serde(default)]
+    pub network: Option<NetworkConfig>,
+}
+
+/// There might be different kinds of loggers in the future.
+/// Currently there is a "debug" and "simple" logger.
+/// TODO: make this an enum
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct LoggerConfiguration {
+    #[serde(rename = "type")]
+    pub logger_type: String,
+    #[serde(default)]
+    pub rules: LogRules,
+    //    pub file: Option<String>,
+}
+
+impl Default for LoggerConfiguration {
+    fn default() -> LoggerConfiguration {
+        LoggerConfiguration {
+            logger_type: "debug".into(),
+            rules: Default::default(),
+        }
+    }
 }
 
 impl Configuration {
@@ -93,6 +129,28 @@ impl Configuration {
                 })?;
         }
 
+        for ref ui_interface in self.ui_interfaces.iter() {
+            self.ui_bundle_by_id(&ui_interface.bundle)
+                .is_some()
+                .ok_or_else(|| {
+                    format!(
+                        "UI bundle configuration {} not found, mentioned in UI interface {}",
+                        ui_interface.bundle, ui_interface.id,
+                    )
+                })?;
+
+            if let Some(ref dna_interface_id) = ui_interface.dna_interface {
+                self.interface_by_id(&dna_interface_id)
+                    .is_some()
+                    .ok_or_else(|| {
+                        format!(
+                            "DNA Interface configuration \"{}\" not found, mentioned in UI interface \"{}\"",
+                            dna_interface_id, ui_interface.id,
+                        )
+                    })?;
+            }
+        }
+
         let _ = self.instance_ids_sorted_by_bridge_dependencies()?;
 
         Ok(())
@@ -104,7 +162,7 @@ impl Configuration {
     }
 
     /// Returns the DNA configuration with the given ID if present
-    pub fn dna_by_id(&self, id: &str) -> Option<DNAConfiguration> {
+    pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
         self.dnas.iter().find(|dc| &dc.id == id).cloned()
     }
 
@@ -116,6 +174,10 @@ impl Configuration {
     /// Returns the interface configuration with the given ID if present
     pub fn interface_by_id(&self, id: &str) -> Option<InterfaceConfiguration> {
         self.interfaces.iter().find(|ic| &ic.id == id).cloned()
+    }
+
+    pub fn ui_bundle_by_id(&self, id: &str) -> Option<UiBundleConfiguration> {
+        self.ui_bundles.iter().find(|ic| &ic.id == id).cloned()
     }
 
     /// Returns all defined instance IDs
@@ -198,10 +260,35 @@ impl Configuration {
             .cloned()
             .collect()
     }
+
+    /// Removes the instance given by id and all mentions of it in other elements so
+    /// that the config is guaranteed to be valid afterwards if it was before.
+    pub fn save_remove_instance(mut self, id: &String) -> Self {
+        self.instances = self
+            .instances
+            .into_iter()
+            .filter(|instance| instance.id != *id)
+            .collect();
+
+        self.interfaces = self
+            .interfaces
+            .into_iter()
+            .map(|mut interface| {
+                interface.instances = interface
+                    .instances
+                    .into_iter()
+                    .filter(|instance| instance.id != *id)
+                    .collect();
+                interface
+            })
+            .collect();
+
+        self
+    }
 }
 
 /// An agent has a name/ID and is defined by a private key that resides in a file
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct AgentConfiguration {
     pub id: String,
     pub name: String,
@@ -218,16 +305,16 @@ impl From<AgentConfiguration> for AgentId {
 
 /// A DNA is represented by a DNA file.
 /// A hash has to be provided for sanity check.
-#[derive(Deserialize, Serialize, Clone)]
-pub struct DNAConfiguration {
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     pub hash: String,
 }
 
-impl TryFrom<DNAConfiguration> for Dna {
+impl TryFrom<DnaConfiguration> for Dna {
     type Error = HolochainError;
-    fn try_from(dna_config: DNAConfiguration) -> Result<Self, Self::Error> {
+    fn try_from(dna_config: DnaConfiguration) -> Result<Self, Self::Error> {
         let mut f = File::open(dna_config.file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
@@ -236,25 +323,13 @@ impl TryFrom<DNAConfiguration> for Dna {
 }
 
 /// An instance combines a DNA with an agent.
-/// Each instance has its own network, storage and logger configuration.
-#[derive(Deserialize, Serialize, Clone)]
+/// Each instance has its own storage configuration.
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct InstanceConfiguration {
     pub id: String,
     pub dna: String,
     pub agent: String,
-    pub logger: LoggerConfiguration,
     pub storage: StorageConfiguration,
-    pub network: Option<String>,
-}
-
-/// There might be different kinds of loggers in the future.
-/// Currently there is no logger at all.
-/// TODO: make this an enum when it's actually in use
-#[derive(Deserialize, Serialize, Clone, Default)]
-pub struct LoggerConfiguration {
-    #[serde(rename = "type")]
-    pub logger_type: String,
-    pub file: Option<String>,
 }
 
 /// This configures the Content Addressable Storage (CAS) that
@@ -264,12 +339,10 @@ pub struct LoggerConfiguration {
 /// * file
 ///
 /// Projected are various DB adapters.
-#[derive(Deserialize, Serialize, Clone)]
-#[serde(tag = "type")]
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(tag = "type", rename_all = "lowercase")]
 pub enum StorageConfiguration {
-    #[serde(rename = "memory")]
     Memory,
-    #[serde(rename = "file")]
     File { path: String },
 }
 
@@ -284,7 +357,7 @@ pub enum StorageConfiguration {
 /// Every interface lists the instances that are made available here.
 /// An admin flag will enable container functions for programmatically changing the configuration
 /// (i.e. installing apps)
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct InterfaceConfiguration {
     pub id: String,
     pub driver: InterfaceDriver,
@@ -293,7 +366,7 @@ pub struct InterfaceConfiguration {
     pub instances: Vec<InstanceReferenceConfiguration>,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum InterfaceDriver {
     Websocket { port: u16 },
@@ -302,7 +375,7 @@ pub enum InterfaceDriver {
     Custom(toml::value::Value),
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct InstanceReferenceConfiguration {
     pub id: String,
 }
@@ -326,6 +399,74 @@ pub struct Bridge {
     pub handle: String,
 }
 
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct UiBundleConfiguration {
+    pub id: String,
+    pub root_dir: String,
+    pub hash: String,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct UiInterfaceConfiguration {
+    pub id: String,
+
+    /// ID of the bundle to serve on this interface
+    pub bundle: String,
+    pub port: u16,
+
+    /// DNA interface this UI is allowed to make calls to
+    /// This is used to set the CORS headers and also to
+    /// provide a extra virtual file endpoint at /_dna_config/ that allows hc-web-client
+    /// or another solution to redirect holochain calls to the correct ip/port/protocol
+    /// (Optional)
+    #[serde(default)]
+    pub dna_interface: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
+pub struct NetworkConfig {
+    /// List of URIs that point to other nodes to bootstrap p2p connections.
+    #[serde(default)]
+    pub bootstrap_nodes: Vec<String>,
+    /// Absolute path to the local installation/repository of n3h
+    #[serde(default)]
+    pub n3h_path: String,
+    /// networking mode used by n3h
+    #[serde(default = "default_n3h_mode")]
+    pub n3h_mode: String,
+    /// Absolute path to the directory that n3h uses to store persisted data.
+    #[serde(default)]
+    pub n3h_persistence_path: String,
+    /// URI pointing a n3h process that is already running and not managed by this
+    /// container.
+    /// If this is set the container does not spawn n3h itself and ignores the path
+    /// configs above. Default is None.
+    #[serde(default)]
+    pub n3h_ipc_uri: Option<String>,
+}
+
+pub fn default_n3h_mode() -> String {
+    String::from("HACK")
+}
+
+pub fn default_n3h_path() -> String {
+    if let Some(user_dirs) = directories::UserDirs::new() {
+        user_dirs
+            .home_dir()
+            .join(".hc")
+            .join("net")
+            .join("n3h")
+            .to_string_lossy()
+            .to_string()
+    } else {
+        String::from("n3h")
+    }
+}
+
+pub fn default_n3h_persistence_path() -> String {
+    env::temp_dir().to_string_lossy().to_string()
+}
+
 /// Use this function to load a `Configuration` from a string.
 pub fn load_configuration<'a, T>(toml: &'a str) -> HcResult<T>
 where
@@ -336,13 +477,27 @@ where
     })
 }
 
+pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
+    // see https://github.com/alexcrichton/toml-rs/issues/142
+    let config_toml = toml::Value::try_from(config).map_err(|e| {
+        HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
+    })?;
+    toml::to_string(&config_toml).map_err(|e| {
+        HolochainError::IoError(format!(
+            "Could not convert toml to string: {}",
+            e.to_string()
+        ))
+    })
+}
+
 #[cfg(test)]
 pub mod tests {
-    use crate::config::{load_configuration, Configuration};
-    use holochain_core::context::mock_network_config;
+    use super::*;
+    use crate::config::{load_configuration, Configuration, NetworkConfig};
+    use holochain_core::context::unique_memory_network_config;
 
     pub fn example_serialized_network_config() -> String {
-        String::from(mock_network_config())
+        String::from(unique_memory_network_config())
     }
 
     #[test]
@@ -404,8 +559,7 @@ pub mod tests {
 
     #[test]
     fn test_load_complete_config() {
-        let toml = &format!(
-            r#"
+        let toml = r#"
     [[agents]]
     id = "test agent"
     name = "Holo Tester 1"
@@ -421,10 +575,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    network = "{}"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -438,15 +588,26 @@ pub mod tests {
     id = "app spec instance"
 
     [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
     id = "app spec domainsocket interface"
     [interfaces.driver]
     type = "domainsocket"
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
-    "#,
-            "{\\\"backend_kind\\\":\\\"special\\\"}"
-        );
+
+    [network]
+    bootstrap_nodes = ["/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"]
+    n3h_path = "/Users/cnorris/.holochain/n3h"
+    n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
+    "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
 
@@ -459,9 +620,21 @@ pub mod tests {
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
+        assert_eq!(instance_config.id, "app spec instance");
+        assert_eq!(instance_config.dna, "app spec rust");
+        assert_eq!(instance_config.agent, "test agent");
+        assert_eq!(config.logger.logger_type, "debug");
         assert_eq!(
-            instance_config.network,
-            Some("{\"backend_kind\":\"special\"}".to_string())
+            config.network.unwrap(),
+            NetworkConfig {
+                bootstrap_nodes: vec![String::from(
+                    "/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"
+                )],
+                n3h_path: String::from("/Users/cnorris/.holochain/n3h"),
+                n3h_mode: String::from("HACK"),
+                n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
+                n3h_ipc_uri: None,
+            }
         );
     }
 
@@ -483,9 +656,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -499,12 +669,38 @@ pub mod tests {
     id = "app spec instance"
 
     [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
     id = "app spec domainsocket interface"
     [interfaces.driver]
     type = "domainsocket"
     file = "/tmp/holochain.sock"
     [[interfaces.instances]]
     id = "app spec instance"
+
+    [logger]
+    type = "debug"
+    [[logger.rules.rules]]
+    pattern = ".*"
+    color = "red"
+
+    [[ui_bundles]]
+    id = "bundle1"
+    root_dir = "" # serves the current directory
+    hash = "Qm000"
+
+    [[ui_interfaces]]
+    id = "ui-interface-1"
+    bundle = "bundle1"
+    port = 3000
+    dna_interface = "app spec domainsocket interface"
+
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -521,7 +717,10 @@ pub mod tests {
         assert_eq!(instance_config.id, "app spec instance");
         assert_eq!(instance_config.dna, "app spec rust");
         assert_eq!(instance_config.agent, "test agent");
-        assert_eq!(instance_config.network, None);
+        assert_eq!(config.logger.logger_type, "debug");
+        assert_eq!(config.logger.rules.rules.len(), 1);
+
+        assert_eq!(config.network, None);
     }
 
     #[test]
@@ -542,9 +741,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "WRONG DNA ID"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -575,9 +771,6 @@ pub mod tests {
     id = "app spec instance"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -622,9 +815,6 @@ pub mod tests {
     dna = "app spec rust"
     agent = "test agent"
     network = "{}"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -667,9 +857,6 @@ pub mod tests {
     id = "app1"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -678,9 +865,6 @@ pub mod tests {
     id = "app2"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -689,9 +873,6 @@ pub mod tests {
     id = "app3"
     dna = "app spec rust"
     agent = "test agent"
-    [instances.logger]
-    type = "simple"
-    file = "app_spec.log"
     [instances.storage]
     type = "file"
     path = "app_spec_storage"
@@ -820,6 +1001,91 @@ pub mod tests {
         assert_eq!(
             bridged_ids,
             vec![String::from("app2"), String::from("app3"),]
+        );
+    }
+
+    #[test]
+    fn test_n3h_defaults() {
+        assert_eq!(default_n3h_mode(), String::from("HACK"));
+
+        #[cfg(not(windows))]
+        assert!(default_n3h_path().contains("/.hc/net/n3h"));
+
+        // the path can be lots of things in different environments (travis CI etc)
+        // so we are just testing that it isn't null
+        #[cfg(not(windows))]
+        assert!(default_n3h_persistence_path() != String::from(""));
+    }
+
+    #[test]
+    fn test_inconsistent_ui_interface() {
+        let toml = r#"
+    [[agents]]
+    id = "test agent"
+    name = "Holo Tester 1"
+    public_address = "HoloTester1-------------------------------------------------------------------------AHi1"
+    key_file = "holo_tester.key"
+
+    [[dnas]]
+    id = "app spec rust"
+    file = "app_spec.hcpkg"
+    hash = "Qm328wyq38924y"
+
+    [[instances]]
+    id = "app spec instance"
+    dna = "app spec rust"
+    agent = "test agent"
+    [instances.storage]
+    type = "file"
+    path = "app_spec_storage"
+
+    [[interfaces]]
+    id = "app spec websocket interface"
+    [interfaces.driver]
+    type = "websocket"
+    port = 8888
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec http interface"
+    [interfaces.driver]
+    type = "http"
+    port = 4000
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [[interfaces]]
+    id = "app spec domainsocket interface"
+    [interfaces.driver]
+    type = "domainsocket"
+    file = "/tmp/holochain.sock"
+    [[interfaces.instances]]
+    id = "app spec instance"
+
+    [logger]
+    type = "debug"
+    [[logger.rules.rules]]
+    pattern = ".*"
+    color = "red"
+
+    [[ui_bundles]]
+    id = "bundle1"
+    root_dir = "" # serves the current directory
+    hash = "Qm000"
+
+    [[ui_interfaces]]
+    id = "ui-interface-1"
+    bundle = "bundle1"
+    port = 3000
+    dna_interface = "<not existant>"
+
+    "#;
+        let config = load_configuration::<Configuration>(&toml)
+            .expect("Config should be syntactically correct");
+        assert_eq!(
+            config.check_consistency(),
+            Err("DNA Interface configuration \"<not existant>\" not found, mentioned in UI interface \"ui-interface-1\"".to_string())
         );
     }
 }

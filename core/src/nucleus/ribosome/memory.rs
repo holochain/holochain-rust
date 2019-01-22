@@ -43,13 +43,13 @@ impl SinglePageManager {
 
         return SinglePageManager {
             stack: SinglePageStack::default(),
-            wasm_memory: wasm_memory.clone(),
+            wasm_memory,
         };
     }
 
     /// Allocate on stack without writing in it
     pub fn allocate(&mut self, length: u16) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-        if self.stack.top() as u32 + length as u32 > U16_MAX {
+        if u32::from(self.stack.top()) + u32::from(length) > U16_MAX {
             return Err(RibosomeErrorCode::OutOfMemory);
         }
         let offset = self.stack.allocate(length);
@@ -58,34 +58,28 @@ impl SinglePageManager {
 
     /// Write data on top of stack
     pub fn write(&mut self, data: &[u8]) -> Result<SinglePageAllocation, RibosomeErrorCode> {
-        let data_len = data.len();
-        if data_len > <u16>::max_value() as usize {
+        if data.len() > u16::max_value() as usize {
             return Err(RibosomeErrorCode::OutOfMemory);
         }
-        if data_len == 0 {
+
+        if data.is_empty() {
             return Err(RibosomeErrorCode::ZeroSizedAllocation);
         }
+
         // scope for mutable borrow of self
-        let mem_buf: SinglePageAllocation;
-        {
-            let res = self.allocate(data_len as u16);
-            if let Err(err_code) = res {
-                return Err(err_code);
-            }
-            mem_buf = res.unwrap();
-        }
+        let mem_buf = self.allocate(data.len() as u16)?;
 
         self.wasm_memory
-            .set(mem_buf.offset() as u32, &data)
+            .set(u32::from(mem_buf.offset()), &data)
             .expect("memory should be writable");
+
         Ok(mem_buf)
     }
 
     /// Read data somewhere in stack
     pub fn read(&self, allocation: SinglePageAllocation) -> Vec<u8> {
-        return self
-            .wasm_memory
-            .get(allocation.offset() as u32, allocation.length() as usize)
-            .expect("Successfully retrieve the result");
+        self.wasm_memory
+            .get(u32::from(allocation.offset()), allocation.length() as usize)
+            .expect("Successfully retrieve the result")
     }
 }

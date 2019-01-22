@@ -14,11 +14,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{dna::Dna, entry::Entry, error::HolochainError};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-    time::*,
-};
+use std::{pin::Pin, sync::Arc, time::*};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -70,7 +66,7 @@ pub async fn initialize_application(
 
     // Commit AgentId to chain
     let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
-    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone,));
+    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone));
 
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates
@@ -87,6 +83,8 @@ pub async fn initialize_application(
         return Err(HolochainError::new("error committing Agent"));
     }
 
+    // TODO: Question: genesis is called AFTER dna and agent entries committed??
+
     // map genesis across every zome
     let results: Vec<_> = dna
         .zomes
@@ -94,15 +92,16 @@ pub async fn initialize_application(
         .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
         .collect();
 
-    let fail_result = results.iter().find(|ref r| match r {
-        CallbackResult::Fail(_) => true,
-        _ => false,
-    });
-
-    let maybe_error = fail_result.and_then(|result| match result {
-        CallbackResult::Fail(error_string) => Some(error_string.clone()),
-        _ => None,
-    });
+    let maybe_error = results
+        .iter()
+        .find(|ref r| match r {
+            CallbackResult::Fail(_) => true,
+            _ => false,
+        })
+        .and_then(|result| match result {
+            CallbackResult::Fail(error_string) => Some(error_string.clone()),
+            _ => None,
+        });
 
     context_clone
         .action_channel()
@@ -123,8 +122,6 @@ pub struct InitializationFuture {
     context: Arc<Context>,
     created_at: Instant,
 }
-
-impl Unpin for InitializationFuture {}
 
 impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;

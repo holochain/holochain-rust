@@ -1,6 +1,6 @@
 extern crate futures;
 use crate::{
-    action::{Action, ActionWrapper},
+    action::{Action, ActionWrapper, GetEntryKey},
     context::Context,
     instance::dispatch_action,
 };
@@ -9,12 +9,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HcResult};
-use std::{
-    pin::{Pin, Unpin},
-    sync::Arc,
-    thread::sleep,
-    time::Duration,
-};
+use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
 
 /// GetEntry Action Creator
 /// This is the network version of get_entry that makes the network module start
@@ -25,16 +20,23 @@ pub async fn get_entry<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
 ) -> HcResult<Option<EntryWithMeta>> {
-    let action_wrapper = ActionWrapper::new(Action::GetEntry(address.clone()));
+    let key = GetEntryKey {
+        address: address.clone(),
+        id: snowflake::ProcessUniqueId::new().to_string(),
+    };
+
+    let action_wrapper = ActionWrapper::new(Action::GetEntry(key.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    async {
+
+    let _ = async {
         sleep(Duration::from_secs(60));
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(address.clone()));
+        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key.clone()));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     };
+
     await!(GetEntryFuture {
         context: context.clone(),
-        address: address.clone(),
+        key
     })
 }
 
@@ -42,10 +44,8 @@ pub async fn get_entry<'a>(
 /// Tracks the state of the network module
 pub struct GetEntryFuture {
     context: Arc<Context>,
-    address: Address,
+    key: GetEntryKey,
 }
-
-impl Unpin for GetEntryFuture {}
 
 impl Future for GetEntryFuture {
     type Output = HcResult<Option<EntryWithMeta>>;
@@ -60,7 +60,7 @@ impl Future for GetEntryFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         lw.wake();
-        match state.get_entry_with_meta_results.get(&self.address) {
+        match state.get_entry_with_meta_results.get(&self.key) {
             Some(Some(result)) => Poll::Ready(result.clone()),
             _ => Poll::Pending,
         }

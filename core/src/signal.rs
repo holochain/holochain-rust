@@ -1,13 +1,12 @@
+use crate::action::ActionWrapper;
 use std::{
     sync::mpsc::{channel, sync_channel, Receiver, SyncSender},
     thread,
 };
 
-use crate::action::Action;
-
 #[derive(Debug)]
 pub enum Signal {
-    Internal(Action),
+    Internal(ActionWrapper),
     User,
 }
 
@@ -15,7 +14,7 @@ pub type SignalSender = SyncSender<Signal>;
 pub type SignalReceiver = Receiver<Signal>;
 
 pub fn signal_channel() -> (SignalSender, SignalReceiver) {
-    sync_channel(100)
+    sync_channel(1000)
 }
 
 /// Pass on messages from multiple receivers into a single receiver

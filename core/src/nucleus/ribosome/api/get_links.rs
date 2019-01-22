@@ -1,6 +1,11 @@
-use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use holochain_core_types::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResult};
+use crate::{
+    network::actions::get_links::get_links,
+    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+};
+use futures::executor::block_on;
+use holochain_wasm_utils::api_serialization::get_links::{
+    GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
+};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -14,28 +19,33 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         Err(_) => {
-            println!(
-                "invoke_get_links failed to deserialize GetLinksArgs: {:?}",
+            runtime.context.log(format!(
+                "err/zome: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
                 args_str
-            );
+            ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+
+    if input.options.status_request != LinksStatusRequestKind::Live {
+        runtime
+            .context
+            .log("get links status request other than Live not implemented!");
+        return ribosome_error_code!(Unspecified);
+    }
+
+    if input.options.sources {
+        runtime
+            .context
+            .log("get links retrieve sources not implemented!");
+        return ribosome_error_code!(Unspecified);
+    }
+
     // Get links from DHT
-    let maybe_links = runtime
-        .context
-        .state()
-        .unwrap()
-        .dht()
-        .get_links(input.entry_address, input.tag);
+    let maybe_links = block_on(get_links(&runtime.context, &input.entry_address, input.tag));
 
     runtime.store_result(match maybe_links {
-        Ok(links) => Ok(GetLinksResult::new(
-            links
-                .iter()
-                .map(|eav| eav.value())
-                .collect::<Vec<Address>>(),
-        )),
+        Ok(links) => Ok(GetLinksResult::new(links)),
         Err(hc_err) => Err(hc_err),
     })
 }
@@ -49,9 +59,12 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         dht::actions::add_link::add_link,
         instance::tests::{test_context_and_logger, test_instance},
-        nucleus::ribosome::{
-            api::{tests::*, ZomeApiFunction},
-            Defn,
+        nucleus::{
+            ribosome::{
+                api::{tests::*, ZomeApiFunction},
+                Defn,
+            },
+            tests::*,
         },
     };
     use futures::executor::block_on;
@@ -61,7 +74,7 @@ pub mod tests {
         json::JsonString,
         link::Link,
     };
-    use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+    use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksOptions};
     use serde_json;
 
     /// dummy link_entries args from standard test entry
@@ -69,6 +82,7 @@ pub mod tests {
         let args = GetLinksArgs {
             entry_address: base.clone(),
             tag: String::from(tag),
+            options: GetLinksOptions::default(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")
@@ -80,14 +94,15 @@ pub mod tests {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
-            &test_capability(),
+            &test_capability_name(),
             wasm.clone(),
         );
 
         let dna_name = &dna.name.to_string().clone();
-        let instance = test_instance(dna).expect("Could not create test instance");
+        let netname = Some("returns_list_of_links");
+        let instance = test_instance(dna, netname).expect("Could not create test instance");
 
-        let (context, _) = test_context_and_logger("joan");
+        let (context, _) = test_context_and_logger("joan", netname);
         let initialized_context = instance.initialize_context(context);
 
         let mut entry_addresses: Vec<Address> = Vec::new();

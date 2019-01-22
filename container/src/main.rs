@@ -21,7 +21,7 @@ extern crate structopt;
 
 use holochain_container_api::{
     config::{load_configuration, Configuration},
-    container::Container,
+    container::{mount_container_from_config, CONTAINER},
 };
 use holochain_core_types::error::HolochainError;
 use std::{fs::File, io::prelude::*, path::PathBuf};
@@ -30,7 +30,7 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "hcc")]
 struct Opt {
-    /// Output file
+    /// Path to the toml configuration file for the container
     #[structopt(short = "c", long = "config", parse(from_os_str))]
     config: Option<PathBuf>,
 }
@@ -44,11 +44,13 @@ fn main() {
     let config_path_str = config_path.to_str().unwrap();
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
-        Ok(mut container) => {
-            if container.instances.len() > 0 {
+        Ok(()) => {
+            {
+                let mut container_guard = CONTAINER.lock().unwrap();
+                let mut container = container_guard.as_mut().expect("Container must be mounted");
                 println!(
                     "Successfully loaded {} instance configurations",
-                    container.instances.len()
+                    container.instances().len()
                 );
                 println!("Starting all of them...");
                 container
@@ -57,24 +59,29 @@ fn main() {
                 println!("Starting interfaces...");
                 container.start_all_interfaces();
                 println!("Done.");
-                loop {}
-            } else {
-                println!("No instance started, bailing...");
+                println!("Starting UI servers");
+                container
+                    .start_all_static_servers()
+                    .expect("Could not start UI servers!");
             }
+            loop {}
         }
         Err(error) => println!("Error while trying to boot from config: {:?}", error),
     };
 }
 
 #[cfg_attr(tarpaulin, skip)]
-fn bootstrap_from_config(path: &str) -> Result<Container, HolochainError> {
+fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
         .check_consistency()
         .map_err(|string| HolochainError::ConfigError(string))?;
-    let mut container = Container::from_config(config);
+    mount_container_from_config(config);
+    let mut container_guard = CONTAINER.lock().unwrap();
+    let container = container_guard.as_mut().expect("Container must be mounted");
+    container.set_config_path(PathBuf::from(path));
     container.load_config()?;
-    Ok(container)
+    Ok(())
 }
 
 #[cfg_attr(tarpaulin, skip)]

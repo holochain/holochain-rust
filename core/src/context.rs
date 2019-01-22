@@ -1,10 +1,17 @@
 use crate::{
-    action::ActionWrapper, instance::Observer, logger::Logger, persister::Persister,
-    signal::Signal, state::State,
+    action::ActionWrapper,
+    instance::Observer,
+    logger::Logger,
+    persister::Persister,
+    signal::{Signal, SignalSender},
+    state::State,
 };
 use holochain_core_types::{
     agent::AgentId,
-    cas::storage::ContentAddressableStorage,
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     error::{HcResult, HolochainError},
@@ -29,13 +36,13 @@ pub struct Context {
     pub persister: Arc<Mutex<Persister>>,
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
-    pub signal_channel: Option<SyncSender<Signal>>,
     pub observer_channel: Option<SyncSender<Observer>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
     pub container_api: Option<Arc<RwLock<IoHandler>>>,
+    pub signal_tx: Option<SyncSender<Signal>>,
 }
 
 impl Context {
@@ -52,6 +59,7 @@ impl Context {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
         container_api: Option<Arc<RwLock<IoHandler>>>,
+        signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
             agent_id,
@@ -59,7 +67,7 @@ impl Context {
             persister,
             state: None,
             action_channel: None,
-            signal_channel: None,
+            signal_tx: signal_tx,
             observer_channel: None,
             chain_storage,
             dht_storage,
@@ -74,7 +82,7 @@ impl Context {
         logger: Arc<Mutex<Logger>>,
         persister: Arc<Mutex<Persister>>,
         action_channel: Option<SyncSender<ActionWrapper>>,
-        signal_channel: Option<SyncSender<Signal>>,
+        signal_tx: Option<SyncSender<Signal>>,
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -86,7 +94,7 @@ impl Context {
             persister,
             state: None,
             action_channel,
-            signal_channel,
+            signal_tx,
             observer_channel,
             chain_storage: cas.clone(),
             dht_storage: cas,
@@ -165,8 +173,8 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_channel(&self) -> &SyncSender<Signal> {
-        self.signal_channel
+    pub fn signal_tx(&self) -> &SyncSender<Signal> {
+        self.signal_tx
             .as_ref()
             .expect("Signal channel not initialized")
     }
@@ -178,7 +186,7 @@ impl Context {
     }
 }
 
-pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, String)> {
+pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()
         .ok_or("Network::start() could not get application state".to_string())?;
@@ -191,14 +199,26 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(String, Stri
         .nucleus()
         .dna()
         .ok_or("Network::start() called without DNA".to_string())?;
-    let dna_hash = base64::encode(&dna.multihash()?);
-    Ok((dna_hash, agent_id))
+    Ok((dna.address(), agent_id))
 }
 
-/// create a test network
+/// create a unique test network
 #[cfg_attr(tarpaulin, skip)]
-pub fn mock_network_config() -> JsonString {
-    JsonString::from(P2pConfig::DEFAULT_MOCK_CONFIG)
+pub fn unique_memory_network_config() -> JsonString {
+    JsonString::from(P2pConfig::new_with_unique_memory_backend())
+}
+
+/// Create an in-memory network config with the provided name,
+/// otherwise create a unique name and thus network using snowflake.
+/// This is the base function that many other `text_context*` functions use, and hence they also
+/// require an optional network name. The reasoning for this is that tests which only require a
+/// single instance may simply pass None and get a unique network name, but tests which require two
+/// instances to be on the same network need to ensure both contexts use the same network name.
+#[cfg_attr(tarpaulin, skip)]
+pub fn test_memory_network_config(network_name: Option<&str>) -> JsonString {
+    network_name
+        .map(|name| JsonString::from(P2pConfig::new_with_memory_backend(name)))
+        .unwrap_or(unique_memory_network_config())
 }
 
 #[cfg(test)]
@@ -208,7 +228,7 @@ pub mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
-        context::mock_network_config, instance::tests::test_logger, persister::SimplePersister,
+        context::unique_memory_network_config, logger::test_logger, persister::SimplePersister,
         state::State,
     };
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
@@ -235,7 +255,8 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            unique_memory_network_config(),
+            None,
             None,
         );
 
@@ -267,7 +288,8 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            mock_network_config(),
+            unique_memory_network_config(),
+            None,
             None,
         );
 

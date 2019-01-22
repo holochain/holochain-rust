@@ -4,7 +4,7 @@ use crate::{
     network::{actions::ActionResponse, reducers::send, state::NetworkState},
 };
 use holochain_core_types::{entry::EntryWithMeta, error::HolochainError};
-use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData, ProtocolWrapper};
+use holochain_net_connection::json_protocol::{DhtData, GetDhtData, JsonProtocol};
 use std::sync::Arc;
 
 fn reduce_respond_get_inner(
@@ -16,9 +16,9 @@ fn reduce_respond_get_inner(
 
     send(
         network_state,
-        ProtocolWrapper::GetDhtResult(DhtData {
+        JsonProtocol::HandleGetDhtDataResult(DhtData {
             msg_id: get_dht_data.msg_id.clone(),
-            dna_hash: network_state.dna_hash.clone().unwrap(),
+            dna_address: network_state.dna_address.clone().unwrap(),
             agent_id: get_dht_data.from_agent_id.clone(),
             address: get_dht_data.address.clone(),
             content: serde_json::from_str(&serde_json::to_string(&maybe_entry).unwrap()).unwrap(),

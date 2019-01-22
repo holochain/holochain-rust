@@ -19,7 +19,11 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    dna::{capabilities::ReservedCapabilityNames, wasm::DnaWasm},
+    cas::content::Address,
+    dna::{
+        capabilities::{CapabilityCall, ReservedCapabilityNames},
+        wasm::DnaWasm,
+    },
     entry::Entry,
     error::{HolochainError, RibosomeReturnCode},
     json::{default_to_json, JsonString},
@@ -141,7 +145,7 @@ impl ToString for CallbackParams {
 pub enum CallbackResult {
     Pass,
     Fail(String),
-    NotImplemented,
+    NotImplemented(String),
     ValidationPackageDefinition(ValidationPackageDefinition),
     ReceiveResult(String),
 }
@@ -194,7 +198,7 @@ pub(crate) fn run_callback(
                 CallbackResult::Fail(call_result.to_string())
             }
         }
-        Err(_) => CallbackResult::NotImplemented,
+        Err(_) => CallbackResult::NotImplemented("run_callback".into()),
     }
 }
 
@@ -206,7 +210,13 @@ pub fn call(
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,
-        &function.capability().as_str().to_string(),
+        Some(CapabilityCall::new(
+            function.capability().as_str().to_string(),
+            Address::from(""), //FIXME!!
+            None,
+        )),
+        //&function.capability().as_str().to_string(),
+        //"", //TODO: token?
         &function.as_str().to_string(),
         params,
     );
@@ -214,10 +224,10 @@ pub fn call(
     let dna = context.get_dna().expect("Callback called without DNA set!");
 
     match dna.get_wasm_from_zome_name(zome) {
-        None => CallbackResult::NotImplemented,
+        None => CallbackResult::NotImplemented("call/1".into()),
         Some(wasm) => {
             if wasm.code.is_empty() {
-                CallbackResult::NotImplemented
+                CallbackResult::NotImplemented("call/2".into())
             } else {
                 run_callback(context.clone(), zome_call, wasm, dna.name.clone())
             }
@@ -315,6 +325,7 @@ pub mod tests {
         zome: &str,
         canonical_name: &str,
         result: i32,
+        network_name: Option<&str>,
     ) -> Result<Instance, String> {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
@@ -325,7 +336,7 @@ pub mod tests {
             test_callback_wasm(canonical_name, result),
         );
 
-        test_instance(dna)
+        test_instance(dna, network_name)
     }
 
     #[test]

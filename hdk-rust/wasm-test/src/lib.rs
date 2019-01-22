@@ -24,6 +24,7 @@ use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryOptions, GetEntryResult},
         get_links::GetLinksResult,
+        query::QueryArgsNames,
     },
     holochain_core_types::{
         cas::content::{Address, AddressableContent},
@@ -93,11 +94,11 @@ fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
 }
 
 fn handle_check_get_entry_result(entry_address: Address) -> ZomeApiResult<GetEntryResult> {
-    hdk::get_entry_result(entry_address, GetEntryOptions::default())
+    hdk::get_entry_result(&entry_address, GetEntryOptions::default())
 }
 
 fn handle_check_get_entry(entry_address: Address) -> ZomeApiResult<Option<Entry>> {
-    hdk::get_entry(entry_address)
+    hdk::get_entry(&entry_address)
 }
 
 fn handle_commit_validation_package_tester() -> ZomeApiResult<Address> {
@@ -167,27 +168,32 @@ fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult>
     hdk::get_links(&address, "test-tag")
 }
 
+fn handle_links_roundtrip_get_and_load(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
+    hdk::get_links_and_load(&address, "test-tag")
+}
+
 fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
+    println!("handle_check_query");
     fn err(s: &str) -> ZomeApiResult<Vec<Address>> {
         Err(ZomeApiError::Internal(s.to_owned()))
     }
 
-    // Query DNA entry
-    let addresses = hdk::query(&EntryType::Dna.to_string(), 0, 0).unwrap();
+    // Query DNA entry; EntryTypes will convert into the appropriate single-name enum type
+    let addresses = hdk::query(EntryType::Dna.into(), 0, 0).unwrap();
 
     if !addresses.len() == 1 {
         return err("Dna Addresses not length 1");
     }
 
     // Query AgentId entry
-    let addresses = hdk::query(&EntryType::AgentId.to_string(), 0, 0).unwrap();
+    let addresses = hdk::query(QueryArgsNames::QueryList(vec![EntryType::AgentId.to_string()]), 0, 0).unwrap();
 
     if !addresses.len() == 1 {
         return err("AgentId Addresses not length 1");
     }
 
-    // Query unknown entry
-    let addresses = hdk::query("bad_type", 0, 0).unwrap();
+    // Query unknown entry; An &str will convert to a QueryArgsNames::QueryName
+    let addresses = hdk::query("bad_type".into(), 0, 0).unwrap();
 
     if !addresses.len() == 0 {
         return err("bad_type Addresses not length 1");
@@ -202,7 +208,7 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
         .into(),
     ))
     .unwrap();
-    let addresses = hdk::query("testEntryType", 0, 1).unwrap();
+    let addresses = hdk::query(QueryArgsNames::QueryName("testEntryType".to_string()), 0, 1).unwrap();
 
     if !addresses.len() == 1 {
         return err("testEntryType Addresses not length 1");
@@ -226,13 +232,23 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     ))
     .unwrap();
 
-    let addresses = hdk::query("testEntryType", 0, 0).unwrap();
+    let addresses = hdk::query("testEntryType".into(), 0, 0).unwrap();
 
     if !addresses.len() == 3 {
         return err("testEntryType Addresses not length 3");
     }
 
-    hdk::query("testEntryType", 0, 1)
+    // See if we can get all System EntryTypes, and then System + testEntryType
+    let addresses = hdk::query("[%]*".into(), 0, 0).unwrap();
+    if !addresses.len() == 2 {
+        return err("System Addresses not length 3");
+    }
+    let addresses = hdk::query(vec!["[%]*","testEntryType"].into(), 0, 0).unwrap();
+    if !addresses.len() == 5 {
+        return err("System Addresses not length 3");
+    }
+
+    hdk::query(QueryArgsNames::QueryName("testEntryType".to_string()), 0, 1)
 }
 
 fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
@@ -277,8 +293,10 @@ fn handle_check_call() -> ZomeApiResult<JsonString> {
     hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty))?;
 
     let maybe_hash = hdk::call(
+        hdk::THIS_INSTANCE,
         "test_zome",
         "test_cap",
+        "test_token",
         "check_app_entry_address",
         empty_dumpty,
     );
@@ -294,8 +312,10 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
     }
 
     hdk::call(
+        hdk::THIS_INSTANCE,
         "test_zome",
         "test_cap",
+        "test_token",
         "check_commit_entry_macro",
         JsonString::from(CommitEntryInput {
             entry: hdk_test_entry(),
@@ -348,11 +368,8 @@ fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
-fn handle_send_message(to_agent: Address, message: String) -> String {
-    match hdk::send(to_agent, message) {
-        Ok(response) => response,
-        Err(error) => error.to_string(),
-    }
+fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
+    hdk::send(to_agent, message)
 }
 
 define_zome! {
@@ -423,7 +440,7 @@ define_zome! {
                         hdk::ValidationPackageDefinition::Entry
                     },
                     validation: |base: Address, target: Address, ctx: hdk::ValidationData | {
-                        let base = match hdk::get_entry(base)? {
+                        let base = match hdk::get_entry(&base)? {
                             Some(entry) => match entry {
                                 Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
                                 _ => Err("System entry found")?
@@ -431,7 +448,7 @@ define_zome! {
                             None => Err("Base not found")?,
                         };
 
-                        let target = match hdk::get_entry(target)? {
+                        let target = match hdk::get_entry(&target)? {
                             Some(entry) => match entry {
                                 Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
                                 _ => Err("System entry found")?,
@@ -504,6 +521,12 @@ define_zome! {
                 handler: handle_links_roundtrip_get
             }
 
+            links_roundtrip_get_and_load: {
+                inputs: |address: Address|,
+                outputs: |result: ZomeApiResult<Vec<ZomeApiResult<Entry>>>|,
+                handler: handle_links_roundtrip_get_and_load
+            }
+
             link_validation: {
                 inputs: |stuff1: String, stuff2: String|,
                 outputs: |result: JsonString|,
@@ -563,10 +586,9 @@ define_zome! {
                 outputs: |response: TweetResponse|,
                 handler: handle_send_tweet
             }
-
             send_message: {
                 inputs: |to_agent: Address, message: String|,
-                outputs: |response: String|,
+                outputs: |response: ZomeApiResult<String>|,
                 handler: handle_send_message
             }
         }

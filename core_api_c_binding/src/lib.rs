@@ -7,12 +7,12 @@ extern crate holochain_net;
 
 use holochain_container_api::{context_builder::ContextBuilder, Holochain};
 use holochain_core::context::Context;
-use holochain_core_types::{dna::Dna, error::HolochainError};
+use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainError};
 
 use std::sync::Arc;
 
 use holochain_core::logger::Logger;
-use holochain_core_types::agent::AgentId;
+use holochain_core_types::{agent::AgentId, dna::capabilities::CapabilityCall};
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
@@ -95,6 +95,7 @@ pub unsafe extern "C" fn holochain_call(
     ptr: *mut Holochain,
     zome: CStrPtr,
     capability: CStrPtr,
+    token: CStrPtr,
     function: CStrPtr,
     parameters: CStrPtr,
 ) -> CStrPtr {
@@ -110,18 +111,23 @@ pub unsafe extern "C" fn holochain_call(
     let holochain = &mut *ptr;
     let zome = CStr::from_ptr(zome).to_string_lossy().into_owned();
     let capability = CStr::from_ptr(capability).to_string_lossy().into_owned();
+    let token = CStr::from_ptr(token).to_string_lossy().into_owned();
     let function = CStr::from_ptr(function).to_string_lossy().into_owned();
     let parameters = CStr::from_ptr(parameters).to_string_lossy().into_owned();
 
     match holochain.call(
         zome.as_str(),
-        capability.as_str(),
+        Some(CapabilityCall::new(
+            capability.to_string(),
+            Address::from(token.as_str()),
+            None,
+        )),
         function.as_str(),
         parameters.as_str(),
     ) {
         Ok(json_string_result) => {
             let string_result = String::from(json_string_result);
-            let string_trim = string_result.trim_right_matches(char::from(0));
+            let string_trim = string_result.trim_end_matches(char::from(0));
             match CString::new(string_trim) {
                 Ok(s) => s.into_raw(),
                 Err(_) => std::ptr::null_mut(),

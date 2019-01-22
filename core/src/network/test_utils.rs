@@ -5,18 +5,18 @@ use crate::{
     nucleus::actions::initialize::initialize_application,
 };
 use futures::executor::block_on;
-use holochain_core_types::dna::Dna;
+use holochain_core_types::{cas::content::Address, dna::Dna};
 use std::sync::Arc;
 
 /// create a test instance
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_instance_with_spoofed_dna(
     dna: Dna,
-    spoofed_dna_hash: String,
+    spoofed_dna_address: Address,
     name: &str,
 ) -> Result<(Instance, Arc<Context>), String> {
     // Create instance and plug in our DNA
-    let context = test_context(name);
+    let context = test_context(name, None);
     let mut instance = Instance::new(context.clone());
     instance.start_action_loop(context.clone());
     let context = instance.initialize_context(context);
@@ -24,7 +24,7 @@ pub fn test_instance_with_spoofed_dna(
         async {
             await!(initialize_application(dna.clone(), &context))?;
             await!(initialize_network_with_spoofed_dna(
-                spoofed_dna_hash,
+                spoofed_dna_address,
                 &context
             ))
         },

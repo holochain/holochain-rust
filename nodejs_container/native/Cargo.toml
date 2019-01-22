@@ -14,12 +14,21 @@ crate-type = ["dylib"]
 neon-build = "0.2.0"
 
 [dependencies]
+colored = "1"
 neon = "0.2.0"
+neon-serde = "0.1.1"
 base64 = "0.9"
-serde_json = "1.0"
+serde = "^1.0"
+serde_derive = "^1.0"
+serde_json = "^1.0"
 tempfile="3"
 holochain_container_api = { path = "../../container_api" }
 holochain_core = { path = "../../core" }
 holochain_net = { path = "../../net" }
 holochain_core_types = { path = "../../core_types" }
 holochain_cas_implementations = { path = "../../cas_implementations" }
+holochain_node_test_waiter = { path = "../../nodejs_waiter" }
+
+[patch.crates-io]
+rust_sodium-sys = { path = "../../rust_sodium-sys" }
+zmq-sys = { path = "../../zmq-sys" }

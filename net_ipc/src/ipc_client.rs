@@ -1,14 +1,13 @@
 //! implements a net_connection::NetWorker for messaging with an ipc p2p node
 
 use crate::{socket::IpcSocket, util::get_millis};
-
-use std::{thread, time};
-
 use holochain_net_connection::{
     net_connection::{NetHandler, NetWorker},
     protocol::{NamedBinaryData, PingData, PongData, Protocol},
     NetResult,
 };
+use snowflake::ProcessUniqueId;
+use std::{thread, time};
 
 // with two zmq "ROUTER" sockets, one side must have a well-known id
 // for the holochain ipc protocol, the server is always 4 0x24 bytes
@@ -20,6 +19,7 @@ pub struct IpcClient {
     socket: Box<IpcSocket>,
     last_recv_millis: f64,
     last_send_millis: f64,
+    id: ProcessUniqueId,
 }
 
 impl NetWorker for IpcClient {
@@ -29,40 +29,53 @@ impl NetWorker for IpcClient {
         Ok(())
     }
 
-    /// handle messages sent to us from holochain_net
+    /// send message sent to us from holochain_net to the ipc server handling the network
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
+        // Debugging code (do not delete)
+        // Print non-ping messages
+        //        match data {
+        //            Protocol::NamedBinary(_) =>  println!(">>>> IpcClient send: {:?}", data),
+        //            Protocol::Json(_) =>  println!(">>>> IpcClient send: {:?}", data),
+        //           _ => (),
+        //        };
         self.priv_send(&data)
     }
 
     /// perform upkeep (like ping/pong messages) on the underlying ipc socket
     fn tick(&mut self) -> NetResult<bool> {
         let mut did_something = false;
-
         if let Some(msg) = self.priv_proc_message()? {
             did_something = true;
-
             if let Protocol::Ping(ref p) = msg {
+                // received Ping from network
+                // => send back a Pong
                 self.priv_send(&Protocol::Pong(PongData {
                     orig: p.sent,
                     recv: get_millis(),
                 }))?;
             }
-
+            // Debugging code (do not delete)
+            // Print non-ping messages
+            //            match msg {
+            //                Protocol::NamedBinary(_) => println!("<<<< IpcClient recv: {:?}", msg),
+            //                Protocol::Json(_) => println!("<<<< IpcClient recv: {:?}", msg),
+            //                _ => (),
+            //            };
             (self.handler)(Ok(msg))?;
         }
-
         let now = get_millis();
-
         if now - self.last_recv_millis > 2000.0 {
-            bail!("ipc connection timeout");
+            bail!(format!("[{}] ipc connection timeout", self.id))
         }
-
         if now - self.last_send_millis > 500.0 {
             self.priv_ping()?;
             did_something = true;
         }
-
         Ok(did_something)
+    }
+
+    fn endpoint(&self) -> Option<String> {
+        self.socket.endpoint()
     }
 }
 
@@ -100,12 +113,12 @@ impl IpcClient {
                 thread::sleep(time::Duration::from_millis(backoff));
             }
         }
-
         Ok(Self {
             handler,
             socket,
             last_recv_millis: get_millis(),
             last_send_millis: 0.0,
+            id: ProcessUniqueId::new(),
         })
     }
 
@@ -133,6 +146,8 @@ impl IpcClient {
 
         let msg: Protocol = msg.into();
 
+        // TODO: use logger instead
+        // println!("[{}] priv_proc_message() msg = {:?}", self.id, msg);
         Ok(Some(msg))
     }
 
@@ -145,6 +160,8 @@ impl IpcClient {
     fn priv_send(&mut self, data: &Protocol) -> NetResult<()> {
         let data: NamedBinaryData = data.into();
 
+        // TODO: use logger instead
+        // println!("[{}] priv_send() data = {:?}", self.id, data.name);
         self.socket.send(&[SRV_ID, &[], &data.name, &data.data])?;
 
         // sent message, update our ping timer

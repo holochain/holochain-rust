@@ -27,7 +27,9 @@ pub fn get_validation_package_definition(
         EntryType::App(app_entry_type) => {
             let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
             if zome_name.is_none() {
-                return Ok(CallbackResult::NotImplemented);
+                return Ok(CallbackResult::NotImplemented(
+                    "get_validation_package_definition/1".into(),
+                ));
             }
 
             let zome_name = zome_name.unwrap();
@@ -41,7 +43,7 @@ pub fn get_validation_package_definition(
                 wasm.code.clone(),
                 &ZomeFnCall::new(
                     &zome_name,
-                    "no capability, since this is an entry validation call",
+                    None,
                     "__hdk_get_validation_package_for_entry_type",
                     app_entry_type.to_string(),
                 ),
@@ -64,8 +66,7 @@ pub fn get_validation_package_definition(
                 link_add.link().tag(),
                 &target.entry_type(),
                 &context,
-            )
-            .map_err(|_| HolochainError::NotImplemented)?;
+            )?;
 
             let wasm = context
                 .get_wasm(&link_definition_path.zome_name)
@@ -77,12 +78,7 @@ pub fn get_validation_package_definition(
                 direction: link_definition_path.direction,
             };
 
-            let call = ZomeFnCall::new(
-                "",
-                "no capability, since this is an entry validation call",
-                "__hdk_get_validation_package_for_link",
-                params,
-            );
+            let call = ZomeFnCall::new("", None, "__hdk_get_validation_package_for_link", params);
 
             ribosome::run_dna(
                 &dna.name.clone(),
@@ -93,7 +89,11 @@ pub fn get_validation_package_definition(
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),
-        _ => Err(HolochainError::NotImplemented)?,
+        EntryType::CapTokenGrant => JsonString::from(ValidationPackageDefinition::Entry),
+        EntryType::AgentId => JsonString::from(ValidationPackageDefinition::Entry),
+        _ => Err(HolochainError::NotImplemented(
+            "get_validation_package_definition/3".into(),
+        ))?,
     };
 
     if result.is_null() {

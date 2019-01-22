@@ -8,6 +8,7 @@ use holochain_core::{
     context::Context,
     logger::{Logger, SimpleLogger},
     persister::SimplePersister,
+    signal::SignalSender,
 };
 use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
@@ -36,6 +37,7 @@ pub struct ContextBuilder {
     eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
     network_config: Option<JsonString>,
     container_api: Option<Arc<RwLock<IoHandler>>>,
+    signal_tx: Option<SignalSender>,
 }
 
 impl ContextBuilder {
@@ -48,18 +50,19 @@ impl ContextBuilder {
             eav_storage: None,
             network_config: None,
             container_api: None,
+            signal_tx: None,
         }
     }
 
     /// Sets the agent of the context that gets built.
-    pub fn with_agent(&mut self, agent_id: AgentId) -> &mut Self {
+    pub fn with_agent(mut self, agent_id: AgentId) -> Self {
         self.agent_id = Some(agent_id);
         self
     }
 
     /// Sets all three storages, chain, DHT and EAV storage, to transient memory implementations.
     /// Chain and DHT storages get set to the same memory CAS.
-    pub fn with_memory_storage(&mut self) -> &mut Self {
+    pub fn with_memory_storage(mut self) -> Self {
         let cas = Arc::new(RwLock::new(MemoryStorage::new()));
         let eav = Arc::new(RwLock::new(EavMemoryStorage::new()));
         self.chain_storage = Some(cas.clone());
@@ -71,10 +74,7 @@ impl ContextBuilder {
     /// Sets all three storages, chain, DHT and EAV storage, to persistent file based implementations.
     /// Chain and DHT storages get set to the same file CAS.
     /// Returns an error if no file storage could be spawned on the given path.
-    pub fn with_file_storage<T: Into<String>>(
-        &mut self,
-        path: T,
-    ) -> Result<&mut Self, HolochainError> {
+    pub fn with_file_storage<T: Into<String>>(mut self, path: T) -> Result<Self, HolochainError> {
         let path: String = path.into();
         let cas_path = format!("{}/cas", path);
         let eav_path = format!("{}/eav", path);
@@ -90,55 +90,52 @@ impl ContextBuilder {
     }
 
     /// Sets the network config.
-    pub fn with_network_config(&mut self, network_config: JsonString) -> &mut Self {
+    pub fn with_network_config(mut self, network_config: JsonString) -> Self {
         self.network_config = Some(network_config);
         self
     }
 
-    pub fn with_container_api(&mut self, api_handler: IoHandler) -> &mut Self {
+    pub fn with_container_api(mut self, api_handler: IoHandler) -> Self {
         self.container_api = Some(Arc::new(RwLock::new(api_handler)));
         self
     }
 
-    pub fn with_logger(&mut self, logger: Arc<Mutex<Logger>>) -> &mut Self {
+    pub fn with_logger(mut self, logger: Arc<Mutex<Logger>>) -> Self {
         self.logger = Some(logger);
         self
     }
 
+    pub fn with_signals(mut self, signal_tx: SignalSender) -> Self {
+        self.signal_tx = Some(signal_tx);
+        self
+    }
+
     /// Actually creates the context.
-    /// Defaults to memory storages, a mock network config and a fake agent called "alice".
+    /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The logger gets set to SimpleLogger.
     /// The persister gets set to SimplePersister based on the chain storage.
-    pub fn spawn(&self) -> Context {
+    pub fn spawn(self) -> Context {
         let chain_storage = self
             .chain_storage
-            .clone()
             .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
         let dht_storage = self
             .dht_storage
-            .clone()
             .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
         let eav_storage = self
             .eav_storage
-            .clone()
             .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
         Context::new(
-            self.agent_id
-                .clone()
-                .unwrap_or(AgentId::generate_fake("alice")),
-            self.logger
-                .clone()
-                .unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
+            self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
+            self.logger.unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
             Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config
-                .clone()
-                .unwrap_or(JsonString::from(String::from(
-                    P2pConfig::DEFAULT_MOCK_CONFIG,
-                ))),
-            self.container_api.clone(),
+            self.network_config.unwrap_or(JsonString::from(
+                P2pConfig::new_with_unique_memory_backend().as_str(),
+            )),
+            self.container_api,
+            self.signal_tx,
         )
     }
 }
@@ -152,10 +149,10 @@ mod tests {
     fn vanilla() {
         let context = ContextBuilder::new().spawn();
         assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
-        assert_eq!(
-            context.network_config,
-            JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG))
-        );
+        assert!(context
+            .network_config
+            .to_string()
+            .contains(r#""backend_kind":"MEMORY""#));
     }
 
     #[test]
@@ -167,7 +164,7 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(String::from(P2pConfig::DEFAULT_MOCK_CONFIG));
+        let net = JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str());
         let context = ContextBuilder::new()
             .with_network_config(net.clone())
             .spawn();

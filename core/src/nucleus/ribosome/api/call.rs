@@ -3,14 +3,21 @@ use crate::{
     context::Context,
     instance::RECV_DEFAULT_TIMEOUT_MS,
     nucleus::{
-        get_capability_with_zome_call, launch_zome_fn_call,
+        is_fn_public, launch_zome_fn_call,
         ribosome::{api::ZomeApiResult, Runtime},
         state::NucleusState,
         ZomeFnCall,
     },
 };
-use holochain_core_types::{dna::capabilities::Membrane, error::HolochainError};
-use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
+use holochain_core_types::{
+    dna::{capabilities::CapabilityCall, Dna},
+    entry::cap_entries::CapTokenGrant,
+    error::{DnaError, HolochainError},
+    json::JsonString,
+};
+use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
+use jsonrpc_lite::JsonRpc;
+use snowflake::ProcessUniqueId;
 use std::{
     convert::TryFrom,
     sync::{mpsc::channel, Arc},
@@ -20,13 +27,13 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(args: ZomeFnCallArgs) -> Self {
-        ZomeFnCall::new(&args.zome_name, &args.cap_name, &args.fn_name, args.fn_args)
+        ZomeFnCall::new(&args.zome_name, args.cap, &args.fn_name, args.fn_args)
     }
 }
 
 /// HcApiFuncIndex::CALL function code
 /// args: [0] encoded MemoryAllocation as u32
-/// expected complex argument: {zome_name: String, cap_name: String, fn_name: String, args: String}
+/// expected complex argument: {zome_name: String, cap_token: Address, fn_name: String, args: String}
 /// args from API call are converted into a ZomeFnCall
 /// Launch an Action::Call with newly formed ZomeFnCall
 /// Waits for a ZomeFnResult
@@ -39,19 +46,33 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            println!("invoke_call failed to deserialize: {:?}", args_str);
+            runtime.context.log(format!(
+                "err/zome: invoke_call failed to deserialize: {:?}",
+                args_str
+            ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
 
+    let result = if input.instance_handle == String::from(THIS_INSTANCE) {
+        // ZomeFnCallArgs to ZomeFnCall
+        let zome_call = ZomeFnCall::from_args(input.clone());
+
+        // Don't allow recursive calls
+        if zome_call.same_fn_as(&runtime.zome_call) {
+            return ribosome_error_code!(RecursiveCallForbidden);
+        }
+        local_call(runtime, input)
+    } else {
+        bridge_call(runtime, input)
+    };
+
+    runtime.store_result(result)
+}
+
+fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(input);
-
-    // Don't allow recursive calls
-    if zome_call.same_fn_as(&runtime.zome_call) {
-        return ribosome_error_code!(RecursiveCallForbidden);
-    }
-
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
     // Send Action and block
@@ -82,16 +103,112 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // TODO #97 - Return error if timeout or something failed
     // return Err(_);
 
-    let result = receiver
+    receiver
         .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
-        .expect("observer dropped before done");
-    runtime.store_result(result)
+        .expect("observer dropped before done")
+}
+
+fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+    let container_api =
+        runtime
+            .context
+            .container_api
+            .clone()
+            .ok_or(HolochainError::ConfigError(
+                "No container API in context".to_string(),
+            ))?;
+
+    let cap_name = match input.cap {
+        Some(cap_call) => cap_call.cap_name,
+        None => String::from(""),
+    };
+
+    let method = format!(
+        "{}/{}/{}/{}",
+        input.instance_handle, input.zome_name, cap_name, input.fn_name
+    );
+
+    let handler = container_api.write().unwrap();
+
+    let id = ProcessUniqueId::new();
+    let request = format!(
+        r#"{{"jsonrpc": "2.0", "method": "{}", "params": {}, "id": "{}"}}"#,
+        method, input.fn_args, id
+    );
+
+    let response = handler
+        .handle_request_sync(&request)
+        .ok_or("Bridge call failed".to_string())?;
+
+    let response = JsonRpc::parse(&response)?;
+
+    match response {
+        JsonRpc::Success(_) => Ok(JsonString::from(
+            serde_json::to_string(&response.get_result().unwrap()).unwrap(),
+        )),
+        JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
+            serde_json::to_string(&response.get_error().unwrap()).unwrap(),
+        )),
+        _ => Err(HolochainError::ErrorGeneric(
+            "Bridge call failed".to_string(),
+        )),
+    }
+}
+
+pub fn validate_call(
+    context: Arc<Context>,
+    state: &NucleusState,
+    fn_call: &ZomeFnCall,
+) -> Result<Dna, HolochainError> {
+    if state.dna.is_none() {
+        return Err(HolochainError::DnaMissing);
+    }
+    let dna = state.dna.clone().unwrap();
+
+    // Get zome
+    let zome = match dna.zomes.get(&fn_call.zome_name) {
+        None => {
+            return Err(HolochainError::Dna(DnaError::ZomeNotFound(format!(
+                "Zome '{}' not found",
+                fn_call.zome_name.clone()
+            ))));
+        }
+        Some(zome) => zome,
+    };
+
+    // Get capability
+    // NOTE, this will go away soon because function won't be inside the capability.
+    let capability = match zome.capabilities.get(&fn_call.cap_name()) {
+        None => {
+            return Err(HolochainError::Dna(DnaError::CapabilityNotFound(format!(
+                "Capability '{}' not found in Zome '{}'",
+                fn_call.cap_name().clone(),
+                fn_call.zome_name.clone()
+            ))));
+        }
+        Some(capability) => capability,
+    };
+    // Get ZomeFn
+    let maybe_fn = capability
+        .functions
+        .iter()
+        .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name);
+    if maybe_fn.is_none() {
+        return Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(
+            format!("Zome function '{}' not found", fn_call.fn_name.clone()),
+        )));
+    }
+
+    let public = is_fn_public(&dna, &fn_call)?;
+    if !public && !check_capability(context.clone(), &fn_call.clone()) {
+        return Err(HolochainError::CapabilityCheckFailed);
+    }
+    Ok(dna)
 }
 
 /// Reduce Call Action
-///   1. Checks for correctness of ZomeFnCall inside the Action
-///   2. Checks for permission to access Capability
-///   3. Execute the exposed Zome function in a separate thread
+///   1. Checks for validity of ZomeFnCall
+///   2. Execute the exposed Zome function in a separate thread
 /// Send the result in a ReturnZomeFunctionResult Action on success or failure like ExecuteZomeFunction
 pub(crate) fn reduce_call(
     context: Arc<Context>,
@@ -103,52 +220,18 @@ pub(crate) fn reduce_call(
         Action::Call(call) => call,
         _ => unreachable!(),
     };
-    // Get Capability
-    if state.dna.is_none() {
-        // Notify failure
-        state
-            .zome_calls
-            .insert(fn_call.clone(), Some(Err(HolochainError::DnaMissing)));
-        return;
-    }
-    let dna = state.dna.clone().unwrap();
-    let maybe_cap = get_capability_with_zome_call(&dna, &fn_call);
-    if let Err(fn_res) = maybe_cap {
-        // Notify failure
-        state
-            .zome_calls
-            .insert(fn_call.clone(), Some(fn_res.result()));
-        return;
-    }
-    let cap = maybe_cap.unwrap().clone();
 
-    // 2. Checks for permission to access Capability
-    // TODO #301 - Do real Capability token check
-    let can_call = match cap.cap_type.membrane {
-        Membrane::Public => true,
-        Membrane::Zome => {
-            // TODO #301 - check if caller zome_name is same as called zome_name
-            false
+    // 1. Validate the call (a number of things could go wrong)
+    let dna = match validate_call(context.clone(), state, &fn_call) {
+        Err(err) => {
+            // Notify failure
+            state.zome_calls.insert(fn_call.clone(), Some(Err(err)));
+            return;
         }
-        Membrane::Agent => {
-            // TODO #301 - check if caller has Agent Capability
-            false
-        }
-        Membrane::ApiKey => {
-            // TODO #301 - check if caller has ApiKey Capability
-            false
-        }
+        Ok(dna) => dna,
     };
-    if !can_call {
-        // Notify failure
-        state.zome_calls.insert(
-            fn_call.clone(),
-            Some(Err(HolochainError::DoesNotHaveCapabilityToken)),
-        );
-        return;
-    }
 
-    // 3. Get the exposed Zome function WASM and execute it in a separate thread
+    // 2. Get the exposed Zome function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
     let code =
         maybe_code.expect("zome not found, Should have failed before when getting capability.");
@@ -156,44 +239,78 @@ pub(crate) fn reduce_call(
     launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }
 
+// TODO: check the signature too
+fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bool {
+    match cap {
+        None => false,
+        Some(call) => context.agent_id.key == call.cap_token.to_string(),
+    }
+}
+
+/// checks to see if a given function call is allowable according to the capabilities
+/// that have been registered to callers in the chain.
+fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
+    // the agent can always do everything
+    if is_token_the_agent(context.clone(), &fn_call.cap) {
+        return true;
+    }
+
+    match fn_call.cap.clone() {
+        None => false,
+        Some(call) => {
+            let chain = &context.chain_storage;
+            let maybe_json = chain.read().unwrap().fetch(&call.cap_token).unwrap();
+            let grant = match maybe_json {
+                Some(content) => CapTokenGrant::try_from(content).unwrap(),
+                None => return false,
+            };
+            grant.verify(call.cap_token.clone(), call.caller, &call.signature)
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
+    use super::*;
     extern crate test_utils;
     extern crate wabt;
 
-    use self::tempfile::tempdir;
     use crate::{
-        context::{mock_network_config, Context},
-        instance::{
-            tests::{test_instance, TestLogger},
-            Observer, RECV_DEFAULT_TIMEOUT_MS,
-        },
-        nucleus::ribosome::{
-            api::{
-                call::{Action, ActionWrapper, Membrane, ZomeFnCall},
-                tests::{
-                    test_capability, test_function_name, test_parameters,
-                    test_zome_api_function_wasm, test_zome_name,
+        context::Context,
+        instance::{tests::test_instance_and_context, Instance, Observer, RECV_DEFAULT_TIMEOUT_MS},
+        nucleus::{
+            ribosome::{
+                api::{
+                    call::{Action, ActionWrapper, ZomeFnCall},
+                    tests::{
+                        test_function_name, test_parameters, test_zome_api_function_wasm,
+                        test_zome_name,
+                    },
+                    ZomeApiFunction,
                 },
-                ZomeApiFunction,
+                Defn,
             },
-            Defn,
+            tests::test_capability_call,
         },
-        persister::SimplePersister,
+        workflows::author_entry::author_entry,
     };
-    use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
-        agent::AgentId,
-        dna::{capabilities::Capability, Dna},
+        cas::content::Address,
+        dna::{
+            capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
+            Dna,
+        },
+        entry::Entry,
         error::{DnaError, HolochainError},
         json::JsonString,
     };
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
+
+    use futures::executor::block_on;
     use serde_json;
     use std::sync::{
         mpsc::{channel, RecvTimeoutError},
-        Arc, Mutex, RwLock,
+        Arc,
     };
     use test_utils::create_test_dna_with_cap;
 
@@ -201,8 +318,13 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_bad_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
+            instance_handle: "instance_handle".to_string(),
             zome_name: "zome_name".to_string(),
-            cap_name: "cap_name".to_string(),
+            cap: Some(CapabilityCall::new(
+                "cap_name".to_string(),
+                Address::from("bad cap_token"),
+                None,
+            )),
             fn_name: "fn_name".to_string(),
             fn_args: "fn_args".to_string(),
         };
@@ -214,8 +336,9 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
+            instance_handle: THIS_INSTANCE.to_string(),
             zome_name: test_zome_name(),
-            cap_name: test_capability(),
+            cap: Some(test_capability_call()),
             fn_name: test_function_name(),
             fn_args: test_parameters(),
         };
@@ -224,39 +347,40 @@ pub mod tests {
             .into_bytes()
     }
 
-    #[cfg_attr(tarpaulin, skip)]
-    fn create_context() -> Arc<Context> {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
-        Arc::new(Context::new(
-            AgentId::generate_fake("alex"),
-            Arc::new(Mutex::new(TestLogger { log: Vec::new() })),
-            Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
-            mock_network_config(),
-            None,
-        ))
+    struct TestSetup {
+        context: Arc<Context>,
+        instance: Instance,
+    }
+
+    fn setup_test(dna: Dna) -> TestSetup {
+        let (instance, context) =
+            test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        TestSetup {
+            context: context,
+            instance: instance,
+        }
     }
 
     #[cfg_attr(tarpaulin, skip)]
     fn test_reduce_call(
-        dna: Dna,
+        test_setup: &TestSetup,
+        token_str: &str,
+        _caller: Address,
         expected: Result<Result<JsonString, HolochainError>, RecvTimeoutError>,
     ) {
-        let context = create_context();
-
-        let zome_call = ZomeFnCall::new("test_zome", "test_cap", "test", "{}");
+        let zome_call = ZomeFnCall::new(
+            "test_zome",
+            Some(CapabilityCall::new(
+                "test_cap".to_string(),
+                Address::from(token_str),
+                None,
+            )),
+            "test",
+            "{}",
+        );
         let zome_call_action = ActionWrapper::new(Action::Call(zome_call.clone()));
 
-        // Set up instance and process the action
-        // let instance = Instance::new();
-        let instance = test_instance(dna).expect("Could not initialize test instance");
+        // process the action
         let (sender, receiver) = channel();
         let closure = move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
@@ -284,7 +408,12 @@ pub mod tests {
         let mut state_observers: Vec<Observer> = Vec::new();
         state_observers.push(observer);
         let (_, rx_observer) = channel::<Observer>();
-        instance.process_action(zome_call_action, state_observers, &rx_observer, &context);
+        test_setup.instance.process_action(
+            zome_call_action,
+            state_observers,
+            &rx_observer,
+            &test_setup.context,
+        );
 
         let action_result = receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS);
 
@@ -292,30 +421,112 @@ pub mod tests {
     }
 
     #[test]
-    fn test_call_no_token() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let expected = Ok(Err(HolochainError::DoesNotHaveCapabilityToken));
-        test_reduce_call(dna, expected);
-    }
-
-    #[test]
     fn test_call_no_zome() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
+        let test_setup = setup_test(dna);
         let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
         ))));
-        test_reduce_call(dna, expected);
+        test_reduce_call(&test_setup, "foo token", Address::from("caller"), expected);
+    }
+
+    fn setup_dna_for_cap_test(cap_type: CapabilityType) -> Dna {
+        let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
+        let mut capability = Capability::new(cap_type);
+        capability.functions = vec![FnDeclaration {
+            name: "test".into(),
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+        }];
+        create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm)
     }
 
     #[test]
-    fn test_call_ok() {
-        let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let mut capability = Capability::new();
-        capability.cap_type.membrane = Membrane::Public;
-        let dna = create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm);
+    fn test_call_public() {
+        let dna = setup_dna_for_cap_test(CapabilityType::Public);
+        let test_setup = setup_test(dna);
+        // Expecting timeout since there is no function in wasm to call
+        let expected = Err(RecvTimeoutError::Disconnected);
+        test_reduce_call(&test_setup, "", Address::from("caller"), expected);
+    }
+
+    #[test]
+    fn test_call_transferable() {
+        let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
+        let test_setup = setup_test(dna);
+        let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
+        test_reduce_call(&test_setup, "", Address::from("caller"), expected_failure);
 
         // Expecting timeout since there is no function in wasm to call
         let expected = Err(RecvTimeoutError::Disconnected);
-        test_reduce_call(dna, expected);
+        let agent_token_str = test_setup.context.agent_id.key.clone();
+        test_reduce_call(
+            &test_setup,
+            &agent_token_str,
+            Address::from(agent_token_str.clone()),
+            expected.clone(),
+        );
+
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
+        let grant_entry = Entry::CapTokenGrant(grant);
+        let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        test_reduce_call(
+            &test_setup,
+            &String::from(addr),
+            Address::from("any caller"),
+            expected,
+        );
+    }
+
+    #[test]
+    fn test_call_assigned() {
+        let dna = setup_dna_for_cap_test(CapabilityType::Assigned);
+        let test_setup = setup_test(dna);
+        let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
+        test_reduce_call(
+            &test_setup,
+            "",
+            Address::from("any caller"),
+            expected_failure.clone(),
+        );
+
+        // Expecting timeout since there is no function in wasm to call
+        let expected = Err(RecvTimeoutError::Disconnected);
+        let agent_token_str = test_setup.context.agent_id.key.clone();
+        test_reduce_call(
+            &test_setup,
+            &agent_token_str,
+            Address::from(agent_token_str.clone()),
+            expected.clone(),
+        );
+
+        let someone = Address::from("somoeone");
+        let grant =
+            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()])).unwrap();
+        let grant_entry = Entry::CapTokenGrant(grant);
+        let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        test_reduce_call(
+            &test_setup,
+            &String::from(addr.clone()),
+            someone,
+            expected.clone(),
+        );
+
+        /* function call doesn't know who the caller is yet so can't do the check in reduce
+                let someone_else = Address::from("somoeone_else");
+                test_reduce_call(&test_setup,&String::from(addr),someone_else, expected_failure.clone());
+        */
+    }
+
+    #[test]
+    fn test_agent_as_token() {
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
+        let test_setup = setup_test(dna);
+        let agent_token = Address::from(test_setup.context.agent_id.key.clone());
+        let context = test_setup.context.clone();
+        let cap_call = CapabilityCall::new("foo".to_string(), agent_token, None);
+        assert!(is_token_the_agent(context.clone(), &Some(cap_call)));
+        let cap_call = CapabilityCall::new("foo".to_string(), Address::from(""), None);
+        assert!(!is_token_the_agent(context, &Some(cap_call)));
     }
 }

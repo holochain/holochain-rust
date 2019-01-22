@@ -17,7 +17,7 @@ use holochain_core_types::{
     link::Link,
     validation::ValidationPackage,
 };
-use holochain_net_connection::protocol_wrapper::{DhtData, GetDhtData};
+use holochain_net_connection::json_protocol::{DhtData, DhtMetaData, GetDhtData, GetDhtMetaData};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -112,26 +112,31 @@ pub enum Action {
     Publish(Address),
 
     /// GetEntry by address
-    GetEntry(Address),
-    ///
-    UpdateEntry((Address, Address)),
-    ///
-    RemoveEntry((Address, Address)),
-    ///
-    GetEntryTimeout(Address),
+    GetEntry(GetEntryKey),
 
     /// Lets the network module respond to a GET request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
     RespondGet((GetDhtData, Option<EntryWithMeta>)),
 
-    /// get links from entry address and attribute-name
-    //GetLinks(GetLinksArgs),
-
     /// We got a response for our GET request which needs to be
     /// added to the state.
     /// Triggered from the network handler.
     HandleGetResult(DhtData),
+
+    ///
+    UpdateEntry((Address, Address)),
+    ///
+    RemoveEntry((Address, Address)),
+    ///
+    GetEntryTimeout(GetEntryKey),
+
+    /// get links from entry address and tag name
+    /// Last string is the stringified process unique id of this `hdk::get_links` call.
+    GetLinks(GetLinksKey),
+    GetLinksTimeout(GetLinksKey),
+    RespondGetLinks((GetDhtMetaData, Vec<Address>)),
+    HandleGetLinksResult((DhtMetaData, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -203,6 +208,31 @@ pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
+/// The unique key that represents a GetLinks request, used to associate the eventual
+/// response with this GetLinks request
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct GetLinksKey {
+    /// The address of the Link base
+    pub base_address: Address,
+
+    /// The link tag
+    pub tag: String,
+
+    /// A unique ID that is used to pair the eventual result to this request
+    pub id: String,
+}
+
+/// The unique key that represents a Get request, used to associate the eventual
+/// response with this Get request
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct GetEntryKey {
+    /// The address of the entry to get
+    pub address: Address,
+
+    /// A unique ID that is used to pair the eventual result to this request
+    pub id: String,
+}
+
 /// Everything the network module needs to know in order to send a
 /// direct message.
 #[derive(Clone, PartialEq, Debug)]
@@ -229,9 +259,9 @@ pub struct NetworkSettings {
     /// determines how to connect to the network module.
     pub config: JsonString,
 
-    /// DNA hash is needed so the network module knows which network to
+    /// DNA address is needed so the network module knows which network to
     /// connect us to.
-    pub dna_hash: String,
+    pub dna_address: Address,
 
     /// The network module needs to know who we are.
     /// This is this agent's address.
@@ -242,7 +272,7 @@ pub struct NetworkSettings {
 pub mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper},
+        action::{Action, ActionWrapper, GetEntryKey},
         nucleus::tests::test_call_response,
     };
     use holochain_core_types::entry::{expected_entry_address, test_entry};
@@ -250,7 +280,10 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(expected_entry_address())
+        Action::GetEntry(GetEntryKey {
+            address: expected_entry_address(),
+            id: String::from("test-id"),
+        })
     }
 
     /// dummy action wrapper with test_action()
@@ -265,7 +298,10 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(expected_entry_address()))
+        ActionWrapper::new(Action::GetEntry(GetEntryKey {
+            address: expected_entry_address(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        }))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

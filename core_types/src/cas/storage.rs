@@ -401,7 +401,7 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValueIndex::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
-            let key = eav_storage
+            let _key = eav_storage
                 .add_eav(&eav)
                 .expect("could not add eav");
             expected.insert(eav);

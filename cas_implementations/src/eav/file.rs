@@ -41,8 +41,6 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<String>> {
     //glob all  files
     let full_path = vec![
         parent_path.to_str().unwrap_or("").to_string(),
-        "*".to_string(),
-        "*".to_string(),
         "*.txt".to_string(),
     ]
     .join(&MAIN_SEPARATOR.to_string());
@@ -111,8 +109,7 @@ impl EavFileStorage {
         let path = vec![
             self.dir_path.clone(),
             subscript,
-            address,
-            eav.index().to_string()
+            address
         ]
         .join(&MAIN_SEPARATOR.to_string());
         create_dir_all(path.clone())?;

@@ -152,7 +152,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         let eavs = self.fetch_eav(entity, attribute, value)?;
         Ok(eavs
             .into_iter()
-            .filter(|(e)| {
+            .filter(|e| {
                 e.index
                     <= start_date
                         .map(|s| s.timestamp_nanos())
@@ -217,11 +217,11 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         let filtered = map
             .clone()
             .into_iter()
-            .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|(e)| {
+            .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
+            .filter(|e| {
                 EntityAttributeValueIndex::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
-            .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
+            .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
         Ok(filtered)
     }

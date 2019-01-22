@@ -12,17 +12,22 @@ pub struct P2pNode {
     p2p_connection: P2pNetwork,
     receiver: mpsc::Receiver<Protocol>,
     pub config: P2pConfig,
+    pub name: String,
 }
 
 impl P2pNode {
     /// Private constructor
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_config(config: &P2pConfig, _maybe_temp_dir: Option<tempfile::TempDir>) -> Self {
+    pub fn new_with_config(name_arg: String, config: &P2pConfig, _maybe_temp_dir: Option<tempfile::TempDir>) -> Self {
         // use a mpsc channel for messaging between p2p connection and main thread
         let (sender, receiver) = mpsc::channel::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
+
+        let name = name_arg.clone();
+
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
+                // println!("P2pNode({}) handler: {:?}", name_arg, r);
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -35,33 +40,35 @@ impl P2pNode {
             p2p_connection,
             receiver,
             config: config.clone(),
+            name,
         }
     }
 
     // Constructor for an in-memory P2P Network
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_unique_memory_network() -> Self {
+    pub fn new_with_unique_memory_network(name: String) -> Self {
         let config = P2pConfig::new_with_unique_memory_backend();
-        return P2pNode::new_with_config(&config, None);
+        return P2pNode::new_with_config(name, &config, None);
     }
 
     // Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_uri_ipc_network(ipc_binding: &str) -> Self {
+    pub fn new_with_uri_ipc_network(name: String, ipc_binding: &str) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
-        return P2pNode::new_with_config(&p2p_config, None);
+        return P2pNode::new_with_config(name, &p2p_config, None);
     }
 
     // Constructor for an IPC node that spawns and uses a n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_spawn_ipc_network(
+        name: String,
         n3h_path: &str,
         maybe_config_filepath: Option<&str>,
         bootstrap_nodes: Vec<String>,
     ) -> Self {
         let (p2p_config, temp_dir) =
             create_ipc_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
-        return P2pNode::new_with_config(&p2p_config, Some(temp_dir));
+        return P2pNode::new_with_config(name, &p2p_config, Some(temp_dir));
     }
 
     // See if there is a message to receive
@@ -70,8 +77,8 @@ impl P2pNode {
         let data = self.receiver.try_recv()?;
         // Print non-ping messages
         match data {
-            Protocol::NamedBinary(_) => println!("<< P2pNode recv: {:?}", data),
-            Protocol::Json(_) => println!("<< P2pNode recv: {:?}", data),
+            Protocol::NamedBinary(_) => println!("<< P2pNode({}) recv: {:?}", self.name, data),
+            Protocol::Json(_) => println!("<< P2pNode({}) recv: {:?}", self.name, data),
             _ => (),
         };
 
@@ -98,13 +105,13 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!("P2pNode::wait() - received: {:?}", p2p_msg);
+                println!("P2pNode({})::wait() - received: {:?}", self.name, p2p_msg);
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    println!("\t P2pNode::wait() - match");
+                    println!("\t P2pNode({})::wait() - match", self.name);
                     return Ok(p2p_msg);
                 } else {
-                    println!("\t P2pNode::wait() - NO match");
+                    println!("\t P2pNode({})::wait() - NO match", self.name);
                 }
             }
 
@@ -112,7 +119,7 @@ impl P2pNode {
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 time_ms += 10;
                 if time_ms > TIMEOUT_MS {
-                    panic!("P2pNode::wait() has TIMEOUT");
+                    panic!("P2pNode({})::wait() has TIMEOUT", self.name);
                 }
             }
         }

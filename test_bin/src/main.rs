@@ -64,19 +64,19 @@ fn main() {
     let test_fns: Vec<TwoNodesTestFn> = vec![
         setup_normal,
         send_test,
-        dht_test,
+         dht_test,
         meta_test,
     ];
 
     // Launch tests on each setup
     for test_fn in test_fns.clone() {
-        // launch_two_nodes_test_with_memory_network(test_fn).unwrap();
-//        launch_two_nodes_test_with_ipc_mock(
-//            &n3h_path,
-//            "test_bin/data/mock_ipc_network_config.json",
-//            test_fn,
-//        )
-//        .unwrap();
+         launch_two_nodes_test_with_memory_network(test_fn).unwrap();
+        launch_two_nodes_test_with_ipc_mock(
+            &n3h_path,
+            "test_bin/data/mock_ipc_network_config.json",
+            test_fn,
+        )
+        .unwrap();
         launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
     }
 
@@ -118,21 +118,22 @@ fn launch_two_nodes_test_with_ipc_mock(
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
-    let mut node1 = P2pNode::new_with_spawn_ipc_network(
+    let mut alex = P2pNode::new_with_spawn_ipc_network(
+        "alex".to_string(),
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
-    let mut node2 = P2pNode::new_with_uri_ipc_network(&node1.endpoint());
+    let mut billy = P2pNode::new_with_uri_ipc_network("billy".to_string(),&alex.endpoint());
 
     println!("IPC-MOCK TWO NODE TEST");
     println!("======================");
-    test_fn(&mut node1, &mut node2, false)?;
+    test_fn(&mut alex, &mut billy, false)?;
     println!("===================");
     println!("IPC-MOCKED TEST END\n");
     // Kill nodes
-    node1.stop();
-    node2.stop();
+    alex.stop();
+    billy.stop();
 
     Ok(())
 }
@@ -140,17 +141,17 @@ fn launch_two_nodes_test_with_ipc_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResult<()> {
-    let mut node_a = P2pNode::new_with_unique_memory_network();
-    let mut node_b = P2pNode::new_with_config(&node_a.config, None);
+    let mut alex = P2pNode::new_with_unique_memory_network("alex".to_string(),);
+    let mut billy = P2pNode::new_with_config("billy".to_string(), &alex.config, None);
 
     println!("IN-MEMORY TWO NODE TEST");
     println!("=======================");
-    test_fn(&mut node_a, &mut node_b, false)?;
+    test_fn(&mut alex, &mut billy, false)?;
     println!("==================");
     println!("IN-MEMORY TEST END\n");
     // Kill nodes
-    node_a.stop();
-    node_b.stop();
+    alex.stop();
+    billy.stop();
 
     Ok(())
 }
@@ -163,12 +164,14 @@ fn launch_two_nodes_test(
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
-    let mut node1 = P2pNode::new_with_spawn_ipc_network(
+    let mut alex = P2pNode::new_with_spawn_ipc_network(
+        "alex".to_string(),
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
-    let mut node2 = P2pNode::new_with_spawn_ipc_network(
+    let mut billy = P2pNode::new_with_spawn_ipc_network(
+        "billy".to_string(),
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
@@ -176,12 +179,12 @@ fn launch_two_nodes_test(
 
     println!("NORMAL TWO NODE TEST");
     println!("====================");
-    test_fn(&mut node1, &mut node2, true)?;
+    test_fn(&mut alex, &mut billy, true)?;
     println!("===============");
     println!("NORMAL TEST END\n");
     // Kill nodes
-    node1.stop();
-    node2.stop();
+    alex.stop();
+    billy.stop();
 
     Ok(())
 }

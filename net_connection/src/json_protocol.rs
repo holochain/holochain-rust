@@ -153,6 +153,7 @@ pub struct DhtData {
 pub struct HandleDhtResultData {
     #[serde(rename = "_id")]
     pub request_id: String,
+    #[serde(rename = "requesterAgentId")]
     pub requester_agent_id: String,
 
     // DhtData
@@ -205,12 +206,13 @@ pub struct DhtMetaData {
 pub struct HandleDhtMetaResultData {
     #[serde(rename = "_id")]
     pub request_id: String,
+    #[serde(rename = "requesterAgentId")]
     pub requester_agent_id: String,
 
     // DhtMetaData
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
-    #[serde(rename = "fromAgentId")]
+    #[serde(rename = "agentId")]
     pub provider_agent_id: String,
     #[serde(rename = "address")]
     pub data_address: String,

@@ -1100,10 +1100,10 @@ pub fn query(
 ///}
 /// # }
 /// ```
-pub fn send(to_agent: Address, payload: String, timeout_ms: usize) -> ZomeApiResult<String> {
+pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<String> {
     let mut mem_stack: SinglePageStack = unsafe { G_MEM_STACK.unwrap() };
 
-    let options = SendOptions(Timeout::new(timeout_ms));
+    let options = SendOptions(timeout);
     // Put args in struct and serialize into memory
     let allocation_of_input = store_as_json(
         &mut mem_stack,

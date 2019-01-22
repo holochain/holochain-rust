@@ -43,3 +43,9 @@ impl From<&Timeout> for Duration {
         Duration::from_millis(*millis as u64)
     }
 }
+
+impl From<usize> for Timeout {
+    fn from(millis: usize) -> Timeout {
+        Timeout::new(millis)
+    }
+}

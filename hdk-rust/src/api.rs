@@ -638,7 +638,7 @@ pub fn get_entry_result(
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false })?;
+///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false, timeout: Default::default() })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///
@@ -1075,7 +1075,7 @@ pub fn query(
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
 ///     // because the function signature of hdk::send is the same as the
 ///     // signature of handle_send_message we can just directly return its' result
-///     hdk::send(to_agent, message)
+///     hdk::send(to_agent, message, 60000.into())
 /// }
 ///
 /// define_zome! {

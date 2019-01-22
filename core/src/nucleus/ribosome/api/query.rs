@@ -1,26 +1,16 @@
 use crate::{
-    nucleus::ribosome::{
-        api::ZomeApiResult, Runtime,
+    agent::chain_store::{ChainStoreQueryOptions, ChainStoreQueryResult},
+    context::Context,
+    nucleus::{
+        actions::get_entry::get_entry_from_dht,
+        ribosome::{api::ZomeApiResult, Runtime},
     },
-    nucleus::actions::get_entry::get_entry_from_dht,
-    agent::chain_store::{
-        ChainStoreQueryOptions, ChainStoreQueryResult,
-    },
-    context::Context
 };
 use holochain_core_types::{
-    cas::content::Address,
-    error::HolochainError,
-    chain_header::ChainHeader,
-    entry::Entry,
+    cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
 };
-use holochain_wasm_utils::api_serialization::{
-    QueryArgs, QueryArgsNames, QueryResult,
-};
-use std::{
-    convert::TryFrom,
-    sync::Arc,
-};
+use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
+use std::{convert::TryFrom, sync::Arc};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::query function code
@@ -79,7 +69,8 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let top = agent
         .top_chain_header()
         .expect("Should have genesis entries.");
-    let maybe_result = match query.entry_type_names { // Result<ChainStoreQueryResult,...>
+    let maybe_result = match query.entry_type_names {
+        // Result<ChainStoreQueryResult,...>
         QueryArgsNames::QueryList(pats) => {
             let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>
             agent.chain().query(
@@ -89,7 +80,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                     start: query.options.start,
                     limit: query.options.limit,
                     headers: query.options.headers,
-                }
+                },
             )
         }
         QueryArgsNames::QueryName(name) => {
@@ -101,7 +92,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                     start: query.options.start,
                     limit: query.options.limit,
                     headers: query.options.headers,
-                }
+                },
             )
         }
     };
@@ -110,9 +101,11 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         // Perhaps return chain().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
         Ok(result) => Ok(match (query.options.entries, result) {
-            (false, ChainStoreQueryResult::Addresses(addresses)) => QueryResult::Addresses(addresses),
+            (false, ChainStoreQueryResult::Addresses(addresses)) => {
+                QueryResult::Addresses(addresses)
+            }
             (false, ChainStoreQueryResult::Headers(headers)) => QueryResult::Headers(headers),
-            (true,  ChainStoreQueryResult::Addresses(addresses)) => {
+            (true, ChainStoreQueryResult::Addresses(addresses)) => {
                 let maybe_entries: Result<Vec<(Address,Entry)>,HolochainError> = addresses
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
@@ -124,14 +117,16 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                     Err(_e) => return ribosome_error_code!(UnknownEntryType), // TODO: return actual error?
                 }
             }
-            (true,  ChainStoreQueryResult::Headers(headers)) => {
+            (true, ChainStoreQueryResult::Headers(headers)) => {
                 let maybe_headers_with_entries: Result<Vec<(ChainHeader,Entry)>,HolochainError> = headers
                     .iter()
                     .map(|header| // -> Result<Entry, HolochainError>
                          Ok((header.to_owned(), get_entry_from_context(&runtime.context,header.entry_address())?)))
                     .collect();
                 match maybe_headers_with_entries {
-                    Ok(headers_with_entries) => QueryResult::HeadersWithEntries(headers_with_entries),
+                    Ok(headers_with_entries) => {
+                        QueryResult::HeadersWithEntries(headers_with_entries)
+                    }
                     Err(_e) => return ribosome_error_code!(UnknownEntryType), // TODO: return actual error?
                 }
             }
@@ -143,11 +138,19 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
 }
 
 /// Get an Entry via the provided context, returning Entry or HolochainError on failure
-fn get_entry_from_context(context: &Arc<Context>, address: &Address) -> Result<Entry, HolochainError> {
-    let entry = match get_entry_from_dht(context, address.to_owned())? { // -> Result<Option<Entry>, HolochainError>
+fn get_entry_from_context(
+    context: &Arc<Context>,
+    address: &Address,
+) -> Result<Entry, HolochainError> {
+    let entry = match get_entry_from_dht(context, address.to_owned())? {
+        // -> Result<Option<Entry>, HolochainError>
         Some(entry) => entry,
-        None => return Err(HolochainError::ErrorGeneric(
-            format!("Failed to obtain Entry for Address {}", address))),
+        None => {
+            return Err(HolochainError::ErrorGeneric(format!(
+                "Failed to obtain Entry for Address {}",
+                address
+            )));
+        }
     };
     Ok(entry)
 }

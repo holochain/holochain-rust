@@ -1016,7 +1016,7 @@ pub fn query(
         Ok(result) => match result {
             QueryResult::Addresses(addresses) => Ok(addresses),
             _ => return Err(ZomeApiError::FunctionNotImplemented), // should never occur
-        }
+        },
         Err(e) => Err(e),
     }
 }

@@ -5,9 +5,11 @@ use crate::{
     nucleus::actions::get_entry::get_entry_from_dht,
     agent::chain_store::{
         ChainStoreQueryOptions, ChainStoreQueryResult,
-    }
+    },
+    context::Context
 };
 use holochain_core_types::{
+    cas::content::Address,
     error::HolochainError,
     chain_header::ChainHeader,
     entry::Entry,
@@ -15,7 +17,10 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::{
     QueryArgs, QueryArgsNames, QueryResult,
 };
-use std::convert::TryFrom;
+use std::{
+    convert::TryFrom,
+    sync::Arc,
+};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::query function code
@@ -112,10 +117,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 let maybe_entries: Result<Vec<Entry>,HolochainError> = addresses
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
-                         Ok(
-                             get_entry_from_dht(&runtime.context, address.to_owned())? // -> Result<Option<Entry>, HolochainError>
-                                 .ok_or(HolochainError::ErrorGeneric(
-                                     format!("Failed to obtain Entry for Address {}", address)))?))
+                         Ok(get_entry_from_context(&runtime.context, address)?))
                     .collect();
 
                 match maybe_entries {
@@ -128,10 +130,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
                 let maybe_headers_with_entries: Result<Vec<(ChainHeader,Entry)>,HolochainError> = headers
                     .iter()
                     .map(|header| // -> Result<Entry, HolochainError>
-                         Ok((header.to_owned(),
-                             get_entry_from_dht(&runtime.context, header.entry_address().to_owned())? // -> Result<Option<Entry>, HolochainError>
-                             .ok_or(HolochainError::ErrorGeneric(
-                                 format!("Failed to obtain Entry for Address {}", header.entry_address())))?)))
+                         Ok((header.to_owned(), get_entry_from_context(&runtime.context,header.entry_address())?)))
                     .collect();
                 match maybe_headers_with_entries {
                     Ok(headers_with_entries) => QueryResult::HeadersWithEntries(headers_with_entries),
@@ -143,4 +142,13 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     };
 
     runtime.store_result(result)
+}
+
+fn get_entry_from_context(context: &Arc<Context>, address: &Address) -> Result<Entry, HolochainError> {
+    let entry = match get_entry_from_dht(context, address.to_owned())? { // -> Result<Option<Entry>, HolochainError>
+        Some(entry) => entry,
+        None => return Err(HolochainError::ErrorGeneric(
+            format!("Failed to obtain Entry for Address {}", address))),
+    };
+    Ok(entry)
 }

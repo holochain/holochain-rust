@@ -16,7 +16,7 @@ help:
 
 SHELL = /bin/bash
 CORE_RUST_VERSION ?= nightly-2019-01-21
-TOOLS_RUST_VERSION ?= nightly-2018-01-21
+TOOLS_RUST_VERSION ?= nightly-2019-01-21
 CARGO = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(CORE_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TOOLS = RUSTFLAGS="-Z external-macro-backtrace -D warnings" RUST_BACKTRACE=1 rustup run $(TOOLS_RUST_VERSION) cargo $(CARGO_ARGS)
 CARGO_TARPULIN_INSTALL = RUSTFLAGS="--cfg procmacro2_semver_exempt -D warnings" RUST_BACKTRACE=1 cargo $(CARGO_ARGS) +$(CORE_RUST_VERSION)

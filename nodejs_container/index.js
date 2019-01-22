@@ -71,21 +71,22 @@ Container.prototype.call = function (id, zome, trait, fn, params) {
 
 Container.prototype.callWithPromise = function (...args) {
     try {
-        const result = this.call(...args)
         const promise = new Promise((fulfill, reject) => {
             this.register_callback(() => fulfill())
         })
+        const result = this.call(...args)
         return [result, promise]
     } catch (e) {
-        return [undefined, Promise.reject(e)]
+        return [
+            undefined, 
+            Promise.reject(e).catch(err => console.error("Error with scenario test system: ", err))
+        ]
     }
 }
 
 Container.prototype.callSync = function (...args) {
     const [result, promise] = this.callWithPromise(...args)
-    return promise
-        .catch(err => console.error("Error with scenario test system: ", err))
-        .then(() => { return result })
+    return promise.then(() => { return result })
 }
 
 // Convenience function for making an object that can call into the container

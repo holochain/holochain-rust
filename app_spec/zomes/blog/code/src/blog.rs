@@ -11,36 +11,40 @@ use hdk::{
 };
 use post::Post;
 
-pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
-    #[derive(Serialize, Deserialize, Debug, DefaultJson)]
-    struct SumInput {
-        num1: u32,
-        num2: u32,
-    };
+#[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
+struct SumInput {
+    num1: u32,
+    num2: u32,
+}
 
-    let call_input = SumInput {
+fn check_sum_args(num1: u32, num2: u32) -> SumInput {
+    SumInput {
         num1: num1,
         num2: num2,
-    };
+    }
+}
+
+pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     hdk::call(
         hdk::THIS_INSTANCE,
         "summer",
         "main",
         "test_token",
         "sum",
-        call_input.into(),
+        check_sum_args(num1, num2).into(),
     )
 }
 
+fn post_entry(content: String) -> Entry {
+    Entry::App("post".into(), Post::new(&content, "now").into())
+}
+
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
-    let post_entry = Entry::App("post".into(), Post::new(&content, "now").into());
-    hdk::entry_address(&post_entry)
+    hdk::entry_address(&post_entry(content))
 }
 
 pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address> {
-    let post_entry = Entry::App("post".into(), Post::new(&content, "now").into());
-
-    let address = hdk::commit_entry(&post_entry)?;
+    let address = hdk::commit_entry(&post_entry(content))?;
 
     hdk::link_entries(&AGENT_ADDRESS, &address, "authored_posts")?;
 
@@ -87,4 +91,44 @@ pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> Z
 
 pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, "recommended_posts")
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use blog::check_sum_args;
+    use blog::SumInput;
+    use post::Post;
+    use blog::post_entry;
+    use hdk::holochain_core_types::entry::Entry;
+    use hdk::holochain_core_types::entry::AppEntryValue;
+    use hdk::holochain_core_types::entry::entry_type::AppEntryType;
+
+    #[test]
+    fn check_sum_args_test() {
+        assert_eq!(
+            check_sum_args(1, 1),
+            SumInput{
+                num1: 1,
+                num2: 1,
+            },
+        );
+    }
+
+    #[test]
+    fn post_entry_test() {
+        assert_eq!(
+            post_entry("foos & bars".into()),
+            Entry::App(
+                AppEntryType::from("post"),
+                AppEntryValue::from(
+                    Post::new(
+                        "foos & bars".into(),
+                        "now".into(),
+                    )
+                ),
+            ),
+        )
+    }
+
 }

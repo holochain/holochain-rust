@@ -4,8 +4,8 @@
 
 use crate::{
     error::{ZomeApiError, ZomeApiResult},
-    globals::*,
 };
+use crate::globals::*;
 use holochain_core_types::{
     cas::content::Address,
     dna::capabilities::CapabilityCall,

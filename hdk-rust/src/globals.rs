@@ -17,7 +17,7 @@ lazy_static! {
 // WARNING Names must be in sync with ZomeAPIFunction in holochain-rust
 #[allow(dead_code)]
 extern "C" {
-    pub(crate) fn hc_property(
+    pub fn hc_property(
         encoded_allocation_of_input: RibosomeEncodingBits,
     ) -> RibosomeEncodingBits;
     pub(crate) fn hc_entry_address(
@@ -26,7 +26,7 @@ extern "C" {
     pub(crate) fn hc_debug(
         encoded_allocation_of_input: RibosomeEncodingBits,
     ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_call(
+    pub fn hc_call(
         encoded_allocation_of_input: RibosomeEncodingBits,
     ) -> RibosomeEncodingBits;
     pub(crate) fn hc_sign(

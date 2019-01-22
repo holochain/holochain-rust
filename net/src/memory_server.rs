@@ -1,5 +1,7 @@
 //! provides fake in-memory p2p worker for use in scenario testing
 
+#![allow(non_snake_case)]
+
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     json_protocol::{
@@ -292,7 +294,7 @@ impl InMemoryServer {
             &msg.dna_address,
             &msg.requester_agent_id,
             JsonProtocol::FailureResult(FailureResultData {
-                msg_id: msg.request_id.clone(),
+                request_id: msg.request_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.requester_agent_id.clone(),
                 error_info: json!("could not find nodes handling this dnaAddress"),
@@ -343,7 +345,7 @@ impl InMemoryServer {
             &msg.dna_address,
             &msg.requester_agent_id,
             JsonProtocol::FailureResult(FailureResultData {
-                msg_id: msg.request_id.clone(),
+                request_id: msg.request_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.requester_agent_id.clone(),
                 error_info: json!("could not find nodes handling this dnaAddress"),

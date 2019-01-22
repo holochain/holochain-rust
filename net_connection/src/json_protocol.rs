@@ -88,7 +88,7 @@ pub struct SuccessResultData {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct FailureResultData {
     #[serde(rename = "_id")]
-    pub msg_id: String,
+    pub request_id: String,
 
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,

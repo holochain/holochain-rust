@@ -27,7 +27,7 @@ impl P2pNode {
 
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                // println!("P2pNode({}) handler: {:?}", name_arg, r);
+                println!("P2pNode({}) handler: {:?}", name_arg, r);
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -144,7 +144,7 @@ impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not delete)
-        // println!(">> P2pNode send: {:?}", data);
+        println!(">> P2pNode({}) send: {:?}", self.name, data);
         self.p2p_connection.send(data)
     }
 }

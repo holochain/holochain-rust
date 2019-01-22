@@ -6,7 +6,7 @@ use std::convert::TryFrom;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 // pub in crate for testing
-pub struct Top(pub (in crate::memory) MemoryInt);
+pub struct Top(pub(in crate::memory) MemoryInt);
 
 impl From<Top> for MemoryInt {
     fn from(top: Top) -> Self {
@@ -29,7 +29,7 @@ impl From<Top> for MemoryBits {
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct WasmStack {
     // pub in crate for testing
-    pub (in crate::memory) top: Top,
+    pub(in crate::memory) top: Top,
 }
 
 impl WasmStack {

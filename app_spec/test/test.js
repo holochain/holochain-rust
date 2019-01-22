@@ -25,7 +25,7 @@ scenario1.runTape('call', async (t, { alice }) => {
   const params = { num1, num2 }
   const result = alice.call("blog", "main", "check_sum", params)
 
-  t.deepEqual(result.Ok, { "sum": "4" })
+  t.equal(result.Ok, 4)
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {

@@ -4,8 +4,8 @@
 
 use crate::{
     error::{ZomeApiError, ZomeApiResult},
+    globals::*,
 };
-use crate::globals::*;
 use holochain_core_types::{
     cas::content::Address,
     dna::capabilities::CapabilityCall,
@@ -443,7 +443,10 @@ pub fn call<S: Into<String>>(
 /// # }
 /// ```
 pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
-    Dispatch::Debug.with_input(msg)
+    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(msg);
+    // internally returns RibosomeEncodedValue::Success which is a zero length allocation
+    // return Ok(()) unconditionally instead of the "error" from success
+    Ok(())
 }
 
 /// Attempts to commit an entry to your local source chain. The entry

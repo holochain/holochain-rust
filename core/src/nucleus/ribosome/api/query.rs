@@ -106,7 +106,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
             }
             (false, ChainStoreQueryResult::Headers(headers)) => QueryResult::Headers(headers),
             (true, ChainStoreQueryResult::Addresses(addresses)) => {
-                let maybe_entries: Result<Vec<(Address,Entry)>,HolochainError> = addresses
+                let maybe_entries: Result<Vec<(Address, Entry)>, HolochainError> = addresses
                     .iter()
                     .map(|address| // -> Result<Entry, HolochainError>
                          Ok((address.to_owned(), get_entry_from_chain(&runtime.context, address)?)))
@@ -142,7 +142,7 @@ fn get_entry_from_chain(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Entry, HolochainError> {
-    // TODO: 
+    // TODO:
     let entry = match get_entry_from_agent(context, address)? {
         // -> Result<Option<Entry>, HolochainError>
         Some(entry) => entry,

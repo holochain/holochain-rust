@@ -1,10 +1,7 @@
 extern crate serde_json;
 use crate::context::Context;
 use holochain_core_types::{
-    cas::{
-        content::Address,
-        storage::ContentAddressableStorage,
-    },
+    cas::{content::Address, storage::ContentAddressableStorage},
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
     eav::EntityAttributeValue,
     entry::{Entry, EntryWithMeta},
@@ -12,7 +9,9 @@ use holochain_core_types::{
 };
 
 use std::{
-    collections::HashSet, convert::TryInto, str::FromStr,
+    collections::HashSet,
+    convert::TryInto,
+    str::FromStr,
     sync::{Arc, RwLock},
 };
 

@@ -9,17 +9,18 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HolochainError};
+use holochain_core_types::{cas::content::Address, error::HolochainError, time::Timeout};
 use snowflake::ProcessUniqueId;
-use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
+use std::{pin::Pin, sync::Arc, thread::sleep};
 
 /// SendDirectMessage Action Creator for custom (=app) messages
 /// This triggers the network module to open a synchronous node-to-node connection
 /// by sending the given CustomDirectMessage and preparing to receive a response.
-pub async fn custom_send(
+pub async fn custom_send<'a>(
     to_agent: Address,
     custom_direct_message: CustomDirectMessage,
-    context: &Arc<Context>,
+    timeout: &'a Timeout,
+    context: &'a Arc<Context>,
 ) -> Result<String, HolochainError> {
     let id = ProcessUniqueId::new().to_string();
     let direct_message = DirectMessage::Custom(custom_direct_message);
@@ -33,7 +34,7 @@ pub async fn custom_send(
     dispatch_action(context.action_channel(), action_wrapper);
 
     let _ = async {
-        sleep(Duration::from_secs(60));
+        sleep(timeout.into());
         let action_wrapper = ActionWrapper::new(Action::SendDirectMessageTimeout(id.clone()));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     };

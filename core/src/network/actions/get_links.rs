@@ -8,9 +8,9 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HcResult};
+use holochain_core_types::{cas::content::Address, error::HcResult, time::Timeout};
 use snowflake::ProcessUniqueId;
-use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
+use std::{pin::Pin, sync::Arc, thread::sleep};
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
@@ -19,6 +19,7 @@ pub async fn get_links<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
     tag: String,
+    timeout: &'a Timeout,
 ) -> HcResult<Vec<Address>> {
     let key = GetLinksKey {
         base_address: address.clone(),
@@ -29,7 +30,7 @@ pub async fn get_links<'a>(
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     let _ = async {
-        sleep(Duration::from_secs(60));
+        sleep(timeout.into());
         let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key.clone()));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     };

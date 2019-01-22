@@ -51,7 +51,7 @@ pub mod tests {
         assert!(result.is_ok());
 
         // Get it.
-        let result = block_on(get_entry(&context2, &entry.address()));
+        let result = block_on(get_entry(&context2, &entry.address(), &Default::default()));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_some());
@@ -71,7 +71,7 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = block_on(get_entry(&context2, &entry.address()));
+        let result = block_on(get_entry(&context2, &entry.address(), &Default::default()));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
@@ -87,7 +87,7 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = block_on(get_entry(&context1, &entry.address()));
+        let result = block_on(get_entry(&context1, &entry.address(), &Default::default()));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
@@ -153,6 +153,7 @@ pub mod tests {
             &context2,
             &entry_addresses[0],
             String::from("test-tag"),
+            &Default::default(),
         ));
 
         assert!(maybe_links.is_ok());

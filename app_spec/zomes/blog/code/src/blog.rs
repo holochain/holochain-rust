@@ -8,10 +8,7 @@ use hdk::{
         get_entry::GetEntryOptions,
         get_links::{GetLinksOptions, GetLinksResult},
     },
-    AGENT_ADDRESS,
-    AGENT_ID_STR,
-    DNA_NAME,
-    DNA_ADDRESS,
+    AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME,
 };
 use post::Post;
 
@@ -27,7 +24,7 @@ pub struct Env {
 /// inside a zome.  In this case it just creates an object with their values
 /// and returns it as the result.
 pub fn handle_show_env() -> ZomeApiResult<Env> {
-    Ok(Env{
+    Ok(Env {
         dna_name: DNA_NAME.to_string(),
         dna_address: DNA_ADDRESS.to_string(),
         agent_id: AGENT_ID_STR.to_string(),
@@ -57,7 +54,7 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
 }
 
 pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<String> {
-    hdk::send(to_agent, message)
+    hdk::send(to_agent, message, 10000.into())
 }
 
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {

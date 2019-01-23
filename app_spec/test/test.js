@@ -116,6 +116,20 @@ scenario1.runTape('my_posts', async (t, { alice }) => {
   t.equal(result.Ok.addresses.length, 2)
 })
 
+
+scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
+
+  alice.call("blog", "main", "create_post",
+    { "content": "Holo world", "in_reply_to": "" }
+  )
+
+  const result = alice.call("blog", "main", "my_posts_immediate_timeout", {})
+
+  t.ok(result.Err)
+  console.log(result)
+  t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
+})
+
 scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 
   const content = "Holo world"

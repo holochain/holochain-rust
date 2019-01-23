@@ -8,7 +8,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::EntityAttributeValueIndex,
+    eav::{IndexQuery,EntityAttributeValueIndex},
     entry::Entry,
     error::HolochainError,
 };
@@ -239,6 +239,7 @@ fn reduce_remove_entry_inner(
         Some(latest_deleted_address.clone()),
         Some(STATUS_NAME.to_string()),
         None,
+        IndexQuery::default()
     );
     if let Err(err) = maybe_status_eav {
         return Err(err);
@@ -373,7 +374,7 @@ pub mod tests {
         let fetched = storage
             .read()
             .unwrap()
-            .fetch_eav(Some(entry.address()), None, None);
+            .fetch_eav(Some(entry.address()), None, None,IndexQuery::default());
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
@@ -409,7 +410,7 @@ pub mod tests {
         let fetched = storage
             .read()
             .unwrap()
-            .fetch_eav(Some(entry.address()), None, None);
+            .fetch_eav(Some(entry.address()), None, None,IndexQuery::default());
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();

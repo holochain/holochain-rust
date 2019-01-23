@@ -11,6 +11,7 @@ use holochain_core_types::{
     dna::capabilities::CapabilityCall,
     entry::Entry,
     error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
+    time::Timeout,
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -21,7 +22,7 @@ use holochain_wasm_utils::{
         },
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         link_entries::LinkEntriesArgs,
-        send::SendArgs,
+        send::{SendArgs, SendOptions},
         QueryArgs, QueryArgsNames, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
@@ -554,7 +555,13 @@ pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(StatusRequestKind::Initial, true, false, false),
+        GetEntryOptions::new(
+            StatusRequestKind::Initial,
+            true,
+            false,
+            false,
+            Default::default(),
+        ),
     )?;
     Ok(entry_result.latest())
 }
@@ -565,7 +572,13 @@ pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_history(address: &Address) -> ZomeApiResult<Option<EntryHistory>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(StatusRequestKind::All, true, false, false),
+        GetEntryOptions::new(
+            StatusRequestKind::All,
+            true,
+            false,
+            false,
+            Default::default(),
+        ),
     )?;
     if !entry_result.found() {
         return Ok(None);
@@ -636,7 +649,7 @@ pub fn get_entry_result(
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false })?;
+///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false, timeout: Default::default() })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///
@@ -950,7 +963,7 @@ pub fn query(
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
 ///     // because the function signature of hdk::send is the same as the
 ///     // signature of handle_send_message we can just directly return its' result
-///     hdk::send(to_agent, message)
+///     hdk::send(to_agent, message, 60000.into())
 /// }
 ///
 /// define_zome! {
@@ -975,8 +988,8 @@ pub fn query(
 ///}
 /// # }
 /// ```
-pub fn send(to_agent: Address, payload: String) -> ZomeApiResult<String> {
-    Dispatch::Send.with_input(SendArgs { to_agent, payload })
+pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<String> {
+    Dispatch::Send.with_input(SendArgs { to_agent, payload, options: SendOptions(timeout) })
 }
 
 /// NOT YET AVAILABLE

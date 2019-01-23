@@ -5,9 +5,13 @@ use hdk::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{
-        get_entry::GetEntryOptions, get_links::GetLinksResult,
+        get_entry::GetEntryOptions,
+        get_links::{GetLinksOptions, GetLinksResult},
     },
     AGENT_ADDRESS,
+    AGENT_ID_STR,
+    DNA_NAME,
+    DNA_ADDRESS,
 };
 use post::Post;
 
@@ -15,6 +19,26 @@ use post::Post;
 struct SumInput {
     num1: u32,
     num2: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+pub struct Env {
+    dna_name: String,
+    dna_address: String,
+    agent_id: String,
+    agent_address: String,
+}
+
+/// This handler shows how you can access the globals that are always available
+/// inside a zome.  In this case it just creates an object with their values
+/// and returns it as the result.
+pub fn handle_show_env() -> ZomeApiResult<Env> {
+    Ok(Env{
+        dna_name: DNA_NAME.to_string(),
+        dna_address: DNA_ADDRESS.to_string(),
+        agent_id: AGENT_ID_STR.to_string(),
+        agent_address: AGENT_ADDRESS.to_string(),
+    })
 }
 
 fn check_sum_args(num1: u32, num2: u32) -> SumInput {
@@ -63,6 +87,17 @@ pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
 
 pub fn handle_my_posts() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, "authored_posts")
+}
+
+pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
+    hdk::get_links_with_options(
+        &AGENT_ADDRESS,
+        "authored_posts",
+        GetLinksOptions {
+            timeout: 0.into(),
+            ..Default::default()
+        },
+    )
 }
 
 pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {

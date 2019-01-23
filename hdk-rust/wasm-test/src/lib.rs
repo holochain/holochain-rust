@@ -168,7 +168,9 @@ fn handle_links_roundtrip_get(address: Address) -> ZomeApiResult<GetLinksResult>
     hdk::get_links(&address, "test-tag")
 }
 
-fn handle_links_roundtrip_get_and_load(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
+fn handle_links_roundtrip_get_and_load(
+    address: Address,
+) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
     hdk::get_links_and_load(&address, "test-tag")
 }
 
@@ -186,7 +188,12 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     }
 
     // Query AgentId entry
-    let addresses = hdk::query(QueryArgsNames::QueryList(vec![EntryType::AgentId.to_string()]), 0, 0).unwrap();
+    let addresses = hdk::query(
+        QueryArgsNames::QueryList(vec![EntryType::AgentId.to_string()]),
+        0,
+        0,
+    )
+    .unwrap();
 
     if !addresses.len() == 1 {
         return err("AgentId Addresses not length 1");
@@ -208,7 +215,8 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
         .into(),
     ))
     .unwrap();
-    let addresses = hdk::query(QueryArgsNames::QueryName("testEntryType".to_string()), 0, 1).unwrap();
+    let addresses =
+        hdk::query(QueryArgsNames::QueryName("testEntryType".to_string()), 0, 1).unwrap();
 
     if !addresses.len() == 1 {
         return err("testEntryType Addresses not length 1");
@@ -243,7 +251,7 @@ fn handle_check_query() -> ZomeApiResult<Vec<Address>> {
     if !addresses.len() == 2 {
         return err("System Addresses not length 3");
     }
-    let addresses = hdk::query(vec!["[%]*","testEntryType"].into(), 0, 0).unwrap();
+    let addresses = hdk::query(vec!["[%]*", "testEntryType"].into(), 0, 0).unwrap();
     if !addresses.len() == 5 {
         return err("System + testEntryType Addresses not length 5");
     }
@@ -387,8 +395,8 @@ fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
-fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
-    hdk::send(to_agent, message)
+fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
+    hdk::send(to_agent, message, 60000.into())
 }
 
 define_zome! {

@@ -5,6 +5,43 @@
 //use std::cmp::Ordering;
 use chrono::{offset::Utc, DateTime};
 use std::cmp::Ordering;
+use error::error::HolochainError;
+use json::JsonString;
+use std::time::Duration;
+
+/// Represents a timeout for an HDK function
+#[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
+pub struct Timeout(usize);
+
+impl Timeout {
+    pub fn new(timeout_ms: usize) -> Self {
+        Self(timeout_ms)
+    }
+}
+
+impl Default for Timeout {
+    fn default() -> Timeout {
+        Timeout(60000)
+    }
+}
+
+impl From<Timeout> for Duration {
+    fn from(Timeout(millis): Timeout) -> Duration {
+        Duration::from_millis(millis as u64)
+    }
+}
+
+impl From<&Timeout> for Duration {
+    fn from(Timeout(millis): &Timeout) -> Duration {
+        Duration::from_millis(*millis as u64)
+    }
+}
+
+impl From<usize> for Timeout {
+    fn from(millis: usize) -> Timeout {
+        Timeout::new(millis)
+    }
+}
 
 /// This struct represents datetime data stored as a string
 /// in the ISO 8601 format.
@@ -81,3 +118,4 @@ pub mod tests {
         assert!(!(Iso8601::from("boo") < Iso8601::from("boo")));
     }
 }
+

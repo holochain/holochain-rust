@@ -29,11 +29,10 @@ pub type Attribute = String;
 /// Address of AddressableContent representing the EAV value
 pub type Value = Address;
 
-
 // @TODO do we need this?
 // unique (local to the source) monotonically increasing number that can be used for crdt/ordering
 // @see https://papers.radixdlt.com/tempo/#logical-clocks
- pub type Index = i64;
+pub type Index = i64;
 
 // @TODO do we need this?
 // source agent asserting the meta
@@ -51,34 +50,29 @@ pub struct EntityAttributeValueIndex {
     // source: Source,
 }
 
-
-
-pub struct IndexQuery{
-    start_time : Option<i64>,
-    end_time : Option<i64>
+pub struct IndexQuery {
+    start_time: Option<i64>,
+    end_time: Option<i64>,
 }
 
-impl IndexQuery
-{
-    pub fn start_time(&self) ->Option<i64>
-    {
+impl IndexQuery {
+    pub fn start_time(&self) -> Option<i64> {
         self.start_time.clone()
     }
 
-    pub fn end_time(&self) ->Option<i64>
-    {
+    pub fn end_time(&self) -> Option<i64> {
         self.end_time.clone()
     }
 }
 
-impl Default for IndexQuery
-{
-    fn default() -> IndexQuery
-    {
-        IndexQuery{start_time:None,end_time:None}
+impl Default for IndexQuery {
+    fn default() -> IndexQuery {
+        IndexQuery {
+            start_time: None,
+            end_time: None,
+        }
     }
 }
-
 
 impl AddressableContent for EntityAttributeValueIndex {
     fn content(&self) -> Content {
@@ -114,22 +108,22 @@ impl EntityAttributeValueIndex {
             entity: entity.clone(),
             attribute: attribute.clone(),
             value: value.clone(),
-            index : Utc::now().timestamp_nanos()
+            index: Utc::now().timestamp_nanos(),
         })
     }
 
-     pub fn new_with_timestamp(
+    pub fn new_with_timestamp(
         entity: &Entity,
         attribute: &Attribute,
         value: &Value,
-        timestamp : i64
+        timestamp: i64,
     ) -> HcResult<EntityAttributeValueIndex> {
         validate_attribute(attribute)?;
         Ok(EntityAttributeValueIndex {
             entity: entity.clone(),
             attribute: attribute.clone(),
             value: value.clone(),
-            index : timestamp
+            index: timestamp,
         })
     }
 
@@ -145,12 +139,11 @@ impl EntityAttributeValueIndex {
         self.value.clone()
     }
 
-    pub fn index(&self) -> Index{
+    pub fn index(&self) -> Index {
         self.index.clone()
     }
 
-    pub fn set_index(&mut self, new_index :i64)
-    {
+    pub fn set_index(&mut self, new_index: i64) {
         self.index = new_index
     }
 
@@ -169,7 +162,10 @@ impl EntityAttributeValueIndex {
 pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// Adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage.
-    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError>;
+    fn add_eav(
+        &mut self,
+        eav: &EntityAttributeValueIndex,
+    ) -> Result<Option<EntityAttributeValueIndex>, HolochainError>;
     /// Fetch the set of EntityAttributeValues that match constraints according to the latest hash version
     /// - None = no constraint
     /// - Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
@@ -180,10 +176,8 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-        index_query : IndexQuery
+        index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError>;
-
-
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -204,7 +198,13 @@ pub fn increment_key_till_no_collision(
     mut eav: EntityAttributeValueIndex,
     map: BTreeSet<EntityAttributeValueIndex>,
 ) -> HcResult<EntityAttributeValueIndex> {
-    if map.iter().filter(|e|e.index==eav.index()).collect::<BTreeSet<&EntityAttributeValueIndex>>().len()>0 {
+    if map
+        .iter()
+        .filter(|e| e.index == eav.index())
+        .collect::<BTreeSet<&EntityAttributeValueIndex>>()
+        .len()
+        > 0
+    {
         let timestamp = eav.clone().index + 1;
         eav.set_index(timestamp);
         increment_key_till_no_collision(eav, map)
@@ -214,14 +214,22 @@ pub fn increment_key_till_no_collision(
 }
 
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
+    fn add_eav(
+        &mut self,
+        eav: &EntityAttributeValueIndex,
+    ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         if self
-            .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()),IndexQuery::default())?
+            .fetch_eav(
+                Some(eav.entity()),
+                Some(eav.attribute()),
+                Some(eav.value()),
+                IndexQuery::default(),
+            )?
             .len()
             == 0
         {
             let mut map = self.storage.write()?;
-            let new_eav = increment_key_till_no_collision(eav.clone(),map.clone())?;
+            let new_eav = increment_key_till_no_collision(eav.clone(), map.clone())?;
             map.insert(new_eav.clone());
             Ok(Some(new_eav.clone()))
         } else {
@@ -234,7 +242,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-        index_query : IndexQuery
+        index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         let filtered = map
@@ -245,8 +253,8 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                 EntityAttributeValueIndex::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
-            .filter(|e|index_query.start_time.unwrap_or(i64::min_value()) <= e.index())
-            .filter(|e|e.index()<=index_query.end_time.unwrap_or(i64::max_value()))
+            .filter(|e| index_query.start_time.unwrap_or(i64::min_value()) <= e.index())
+            .filter(|e| e.index() <= index_query.end_time.unwrap_or(i64::max_value()))
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
         Ok(filtered)
     }
@@ -254,7 +262,8 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
 
 impl PartialEq for EntityAttributeValueStorage {
     fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
-        self.fetch_eav(None, None, None,IndexQuery::default()) == other.fetch_eav(None, None, None,IndexQuery::default())
+        self.fetch_eav(None, None, None, IndexQuery::default())
+            == other.fetch_eav(None, None, None, IndexQuery::default())
     }
 }
 
@@ -275,7 +284,7 @@ pub fn test_eav() -> EntityAttributeValueIndex {
         &test_eav_entity().address(),
         &test_eav_attribute(),
         &test_eav_value().address(),
-        0
+        0,
     )
     .expect("Could not create eav")
 }
@@ -345,7 +354,7 @@ pub fn eav_round_trip_test_runner(
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eav(e, a, v,IndexQuery::default())
+                .fetch_eav(e, a, v, IndexQuery::default())
                 .expect("could not fetch eav")
         );
     }

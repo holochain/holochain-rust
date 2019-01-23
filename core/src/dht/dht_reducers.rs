@@ -8,11 +8,11 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::{IndexQuery,EntityAttributeValueIndex},
+    eav::{EntityAttributeValueIndex, IndexQuery},
     entry::Entry,
     error::HolochainError,
 };
-use std::{collections::BTreeSet,convert::TryFrom, str::FromStr, sync::Arc};
+use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -118,8 +118,11 @@ pub(crate) fn reduce_add_link(
         );
         Some(new_store)
     } else {
-        let eav =
-            EntityAttributeValueIndex::new(link.base(), &format!("link__{}", link.tag()), link.target());
+        let eav = EntityAttributeValueIndex::new(
+            link.base(),
+            &format!("link__{}", link.tag()),
+            link.target(),
+        );
         eav.map(|e| {
             let storage = new_store.meta_storage();
             let result = storage.write().unwrap().add_eav(&e);
@@ -239,7 +242,7 @@ fn reduce_remove_entry_inner(
         Some(latest_deleted_address.clone()),
         Some(STATUS_NAME.to_string()),
         None,
-        IndexQuery::default()
+        IndexQuery::default(),
     );
     if let Err(err) = maybe_status_eav {
         return Err(err);
@@ -250,9 +253,7 @@ fn reduce_remove_entry_inner(
     // For now checks if crud-status other than Live are present
     let status_eavs = status_eavs
         .into_iter()
-        .filter(|e| {
-            CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live)
-        })
+        .filter(|e| CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live))
         .collect::<BTreeSet<EntityAttributeValueIndex>>();
     if !status_eavs.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(
@@ -371,10 +372,12 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
-        let fetched = storage
-            .read()
-            .unwrap()
-            .fetch_eav(Some(entry.address()), None, None,IndexQuery::default());
+        let fetched = storage.read().unwrap().fetch_eav(
+            Some(entry.address()),
+            None,
+            None,
+            IndexQuery::default(),
+        );
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
@@ -407,10 +410,12 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
-        let fetched = storage
-            .read()
-            .unwrap()
-            .fetch_eav(Some(entry.address()), None, None,IndexQuery::default());
+        let fetched = storage.read().unwrap().fetch_eav(
+            Some(entry.address()),
+            None,
+            None,
+            IndexQuery::default(),
+        );
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();

@@ -2,8 +2,8 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        increment_key_till_no_collision,  Attribute, Entity,
-        EntityAttributeValueIndex, EntityAttributeValueStorage, Value,IndexQuery
+        increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
+        EntityAttributeValueStorage, IndexQuery, Value,
     },
     error::{HcResult, HolochainError},
     hash::HashString,
@@ -49,7 +49,7 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<String>> {
         .map_err(|_| HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
 
     // let path_result = paths.last().ok_or(HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
-       let (eav,error) : (BTreeSet<_>,BTreeSet<_>)  = paths
+    let (eav, error): (BTreeSet<_>, BTreeSet<_>) = paths
         .map(|path| {
             let path_buf = path.unwrap_or(PathBuf::new());
             OpenOptions::new()
@@ -58,9 +58,7 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<String>> {
                 .map(|mut file| {
                     let mut content: String = String::new();
                     file.read_to_string(&mut content)
-                        .map(|_| {
-                            Ok(content)
-                        })
+                        .map(|_| Ok(content))
                         .unwrap_or(Err(HolochainError::ErrorGeneric(
                             "Could not read from string".to_string(),
                         )))
@@ -83,8 +81,6 @@ pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<String>> {
     }
 }
 
-
-
 impl EavFileStorage {
     pub fn new(dir_path: String) -> HcResult<EavFileStorage> {
         Ok(EavFileStorage {
@@ -106,12 +102,8 @@ impl EavFileStorage {
             VALUE_DIR => eav.value().to_string(),
             _ => String::new(),
         };
-        let path = vec![
-            self.dir_path.clone(),
-            subscript,
-            address
-        ]
-        .join(&MAIN_SEPARATOR.to_string());
+        let path =
+            vec![self.dir_path.clone(), subscript, address].join(&MAIN_SEPARATOR.to_string());
         create_dir_all(path.clone())?;
         let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
         let full_path = vec![address_path.clone(), "txt".to_string()].join(&".".to_string());
@@ -166,17 +158,22 @@ impl EavFileStorage {
     }
 }
 
-
-
 impl EntityAttributeValueStorage for EavFileStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let fetched =
-            self.fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()),IndexQuery::default())?;
+    fn add_eav(
+        &mut self,
+        eav: &EntityAttributeValueIndex,
+    ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
+        let fetched = self.fetch_eav(
+            Some(eav.entity()),
+            Some(eav.attribute()),
+            Some(eav.value()),
+            IndexQuery::default(),
+        )?;
 
         if fetched.len() == 0 {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
-            let new_eav = increment_key_till_no_collision(eav.clone(),fetched.clone())?;
+            let new_eav = increment_key_till_no_collision(eav.clone(), fetched.clone())?;
             self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
                 .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
                 .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;
@@ -191,7 +188,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-        index_query : IndexQuery
+        index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.read()?;
         let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
@@ -200,15 +197,19 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .clone();
         let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value)?;
 
-        let attribute_value_inter : BTreeSet<String> = value_set.intersection(&attribute_set.clone()).cloned().collect();
-        let entity_attribute_value_inter: BTreeSet<String>= attribute_value_inter.intersection(&entity_set).cloned().collect();
-    
+        let attribute_value_inter: BTreeSet<String> = value_set
+            .intersection(&attribute_set.clone())
+            .cloned()
+            .collect();
+        let entity_attribute_value_inter: BTreeSet<String> = attribute_value_inter
+            .intersection(&entity_set)
+            .cloned()
+            .collect();
+
         let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
             .into_iter()
             .map(|(content)| {
-                
-                    EntityAttributeValueIndex::try_from_content(&JsonString::from(content))
-                
+                EntityAttributeValueIndex::try_from_content(&JsonString::from(content))
             })
             .partition(|c| c.is_ok());
         if error.len() > 0 {
@@ -218,13 +219,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
         } else {
             Ok(eav
                 .into_iter()
-                .map(|value:HcResult<EntityAttributeValueIndex>| {
-                
+                .map(|value: HcResult<EntityAttributeValueIndex>| {
                     value.unwrap_or(EntityAttributeValueIndex::default())
-                    
                 })
-                .filter(|e|index_query.start_time().unwrap_or(i64::min_value()) <= e.index())
-                .filter(|e|e.index()<=index_query.end_time().unwrap_or(i64::max_value()))
+                .filter(|e| index_query.start_time().unwrap_or(i64::min_value()) <= e.index())
+                .filter(|e| e.index() <= index_query.end_time().unwrap_or(i64::max_value()))
                 .collect::<BTreeSet<EntityAttributeValueIndex>>())
         }
     }

@@ -11,4 +11,4 @@ If we take Zome code in Rust as an example, you will need Rust and Cargo set up 
 $ rustup target add wasm32-unknown-unknown # adds WASM as a compilation target
 ```
 
-Once that's done, you should be able to run commands like `cargo build --target=wasm32-unknown-unknown` and have it work.
+Once that's done, from the `code` folder of a Rust based Zome, you should be able to run commands like `cargo build --target=wasm32-unknown-unknown` and have it work.

@@ -42,7 +42,12 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     }
 
     // Get links from DHT
-    let maybe_links = block_on(get_links(&runtime.context, &input.entry_address, input.tag));
+    let maybe_links = block_on(get_links(
+        runtime.context.clone(),
+        input.entry_address,
+        input.tag,
+        input.options.timeout,
+    ));
 
     runtime.store_result(match maybe_links {
         Ok(links) => Ok(GetLinksResult::new(links)),
@@ -74,7 +79,7 @@ pub mod tests {
         json::JsonString,
         link::Link,
     };
-    use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksOptions};
+    use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
 
     /// dummy link_entries args from standard test entry
@@ -82,7 +87,7 @@ pub mod tests {
         let args = GetLinksArgs {
             entry_address: base.clone(),
             tag: String::from(tag),
-            options: GetLinksOptions::default(),
+            options: Default::default(),
         };
         serde_json::to_string(&args)
             .expect("args should serialize")

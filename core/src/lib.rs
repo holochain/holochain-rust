@@ -33,7 +33,6 @@ extern crate holochain_core_types_derive;
 extern crate base64;
 extern crate globset;
 extern crate holochain_net_connection;
-extern crate im;
 #[macro_use]
 extern crate lazy_static;
 

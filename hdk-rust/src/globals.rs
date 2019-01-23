@@ -15,50 +15,40 @@ lazy_static! {
 
 // Invokable functions in the Ribosome
 // WARNING Names must be in sync with ZomeAPIFunction in holochain-rust
+// WARNING All these fns need to be defined in wasms too @see the hdk integration_test.rs
 #[allow(dead_code)]
 extern "C" {
-    pub fn hc_property(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
-    pub(crate) fn hc_entry_address(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_debug(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub fn hc_call(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
-    pub(crate) fn hc_sign(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_verify_signature(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_commit_entry(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_update_entry(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_remove_entry(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_get_entry(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_link_entries(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_get_links(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_query(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_send(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_start_bundle(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
-    pub(crate) fn hc_close_bundle(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
+    pub(crate) fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
 }

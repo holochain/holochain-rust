@@ -12,6 +12,10 @@ use p2p_node::P2pNode;
 use constants::*;
 use basic_workflows::setup_normal;
 
+
+use std::{thread, time};
+
+
 /// Macro for transforming a type check into a predicate
 macro_rules! one_is {
     ($p:pat) => {
@@ -100,9 +104,6 @@ pub fn empty_publish_data_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can
     Ok(())
 }
 
-
-use std::{thread, time};
-
 // Some data case
 #[cfg_attr(tarpaulin, skip)]
 pub fn publish_data_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
@@ -138,8 +139,6 @@ pub fn publish_data_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_conne
         })
             .into(),
     )?;
-
-    // thread::sleep(time::Duration::from_secs(3));
 
     // billy asks for reported published data.
     billy.send(
@@ -178,4 +177,133 @@ pub fn publish_data_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_conne
     Ok(())
 }
 
+// TODO: Publish some meta data
+#[cfg_attr(tarpaulin, skip)]
+pub fn publish_meta_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    println!("Testing: publish_meta_list_test()");
+    setup_normal(alex, billy, can_connect)?;
+
+//    // Respond to publish_list request
+//    alex.send(
+//        JsonProtocol::HandleGetPublishingDataListResult(HandleListResultData {
+//            request_id: "req_1".to_string(), // FIXME magic string should correspond to received HandleGetPublishingDataList request
+//            dna_address: example_dna_address(),
+//            data_address_list: vec![ENTRY_ADDRESS_1.to_string().into()],
+//        })
+//            .into(),
+//    )?;
+//
+//    // Should receive HandleFetchDhtData request
+//    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))))?;
+//    println!("    got request: {:?}", request);
+//
+//    let fetch_data = if let JsonProtocol::HandleFetchDhtData(msg) = request { msg } else { unreachable!() };
+//
+//    // Respond with data
+//    alex.send(
+//        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
+//            request_id: fetch_data.request_id.clone(),
+//            requester_agent_id: fetch_data.requester_agent_id.clone(),
+//            dna_address: fetch_data.dna_address.clone(),
+//            provider_agent_id: ALEX_AGENT_ID.to_string(),
+//            data_address: fetch_data.data_address.clone(),
+//            data_content: json!("hello"),
+//        })
+//            .into(),
+//    )?;
+//
+//    // billy asks for reported published data.
+//    billy.send(
+//        JsonProtocol::FetchDhtData(FetchDhtData {
+//            request_id: FETCH_ENTRY_1_ID.into(),
+//            dna_address: example_dna_address(),
+//            requester_agent_id: BILLY_AGENT_ID.into(),
+//            data_address: ENTRY_ADDRESS_1.into(),
+//        })
+//            .into(),
+//    )?;
+//
+//    // Should receive HandleFetchDhtData request
+//    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))))?;
+//    println!("    got request 2: {:?}", request);
+//
+//    let fetch_data = if let JsonProtocol::HandleFetchDhtData(msg) = request { msg } else { unreachable!() };
+//
+//    // Respond with data
+//    alex.send(
+//        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
+//            request_id: fetch_data.request_id.clone(),
+//            requester_agent_id: fetch_data.requester_agent_id.clone(),
+//            dna_address: fetch_data.dna_address.clone(),
+//            provider_agent_id: ALEX_AGENT_ID.to_string(),
+//            data_address: fetch_data.data_address.clone(),
+//            data_content: json!("hello"),
+//        })
+//            .into(),
+//    )?;
+//
+//    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
+//    println!("got result: {:?}", result);
+
+    // Done
+    Ok(())
+}
+
+// TODO: hold list
+#[cfg_attr(tarpaulin, skip)]
+pub fn hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    println!("Testing: hold_list_test()");
+    setup_normal(alex, billy, can_connect)?;
+
+    // Respond to  hold_list request
+    alex.send(
+        JsonProtocol::HandleGetHoldingDataListResult(HandleListResultData {
+            request_id: "req_2".to_string(), // FIXME magic string should correspond to received HandleGetHoldingDataList request
+            dna_address: example_dna_address(),
+            data_address_list: vec![ENTRY_ADDRESS_3.to_string().into()],
+        })
+            .into(),
+    )?;
+
+    // billy asks for reported published data.
+    billy.send(
+        JsonProtocol::FetchDhtData(FetchDhtData {
+            request_id: FETCH_ENTRY_3_ID.into(),
+            dna_address: example_dna_address(),
+            requester_agent_id: BILLY_AGENT_ID.into(),
+            data_address: ENTRY_ADDRESS_3.into(),
+        })
+            .into(),
+    )?;
+
+    // Should receive HandleFetchDhtData request
+    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))))?;
+    println!("    got request 2: {:?}", request);
+
+    let fetch_data = if let JsonProtocol::HandleFetchDhtData(msg) = request { msg } else { unreachable!() };
+
+    // Respond with data
+    alex.send(
+        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
+            request_id: fetch_data.request_id.clone(),
+            requester_agent_id: fetch_data.requester_agent_id.clone(),
+            dna_address: fetch_data.dna_address.clone(),
+            provider_agent_id: ALEX_AGENT_ID.to_string(),
+            data_address: fetch_data.data_address.clone(),
+            data_content: json!("hello 3"),
+        })
+            .into(),
+    )?;
+
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
+    println!("got result: {:?}", result);
+
+}
+
 // TODO: double holding list
+#[cfg_attr(tarpaulin, skip)]
+pub fn double_hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // FIXME
+}

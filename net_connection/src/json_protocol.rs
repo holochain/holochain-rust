@@ -171,6 +171,20 @@ pub struct HandleDhtResultData {
 // DHT metadata
 //--------------------------------------------------------------------------------------------------
 
+/// Data Request from own p2p-module
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct DhtMetaRequestData {
+    pub attribute: String,
+
+    // DhtDataRequestData
+    #[serde(rename = "_id")]
+    pub request_id: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+    #[serde(rename = "address")]
+    pub data_address: Address,
+}
+
 /// Metadata Request from another agent
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct FetchDhtMetaData {
@@ -236,6 +250,19 @@ pub struct GetListData {
 pub struct HandleListResultData {
     #[serde(rename = "dataAddressList")]
     pub data_address_list: Vec<Address>,
+
+    // GetListData
+    #[serde(rename = "_id")]
+    pub request_id: String,
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct HandleMetaListResultData {
+    // List of meta identifiers, a pair: (entry_address, attribute)
+    #[serde(rename = "metaList")]
+    pub meta_list: Vec<(Address, String)>,
 
     // GetListData
     #[serde(rename = "_id")]
@@ -326,6 +353,8 @@ pub enum JsonProtocol {
     /// Store data on a node's dht slice.
     #[serde(rename = "handleStoreDht")]
     HandleStoreDhtData(DhtData),
+    #[serde(rename = "handleDropDhtData")]
+    HandleDropDhtData(DhtDataRequestData),
 
     /// Request metadata from the dht
     #[serde(rename = "fetchDhtMeta")]
@@ -346,8 +375,11 @@ pub enum JsonProtocol {
     /// Store metadata on a node's dht slice.
     #[serde(rename = "handleStoreDhtMeta")]
     HandleStoreDhtMeta(DhtMetaData),
+    /// Drop metadata on a node's dht slice.
+    #[serde(rename = "handleDropMetaData")]
+    HandleDropMetaData(DhtMetaRequestData),
 
-
+    // -- list publish & hold data -- //
 
     #[serde(rename = "handleGetPublishingDataList")]
     HandleGetPublishingDataList(GetListData),
@@ -362,9 +394,19 @@ pub enum JsonProtocol {
 //    HandleGetDhtData(GetDhtData),
 //    #[serde(rename = "handleGetDhtDataResult")]
 //    HandleGetDhtDataResult(DhtData),
-    #[serde(rename = "handleDropDhtData")]
-    HandleDropDhtData(DhtDataRequestData),
 
+
+    // -- list publish & hold metadata -- //
+
+    #[serde(rename = "handleGetPublishingMetaList")]
+    HandleGetPublishingMetaList(GetListData),
+    #[serde(rename = "handleGetPublishingMetaListResult")]
+    HandleGetPublishingMetaListResult(HandleListResultData),
+
+    #[serde(rename = "handleGetHoldingMetaList")]
+    HandleGetHoldingMetaList(GetListData),
+    #[serde(rename = "handleGetHoldingMetaListResult")]
+    HandleGetHoldingMetaListResult(HandleListResultData),
 }
 
 impl<'a> TryFrom<&'a Protocol> for JsonProtocol {

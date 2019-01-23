@@ -230,7 +230,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
         Some(CapabilityCall::new(
             Address::from("test_token"),
             Address::from("test_sender"),
-            CallSignature {},
+            CallSignature::default(),
         )),
         fn_name,
         r#"{}"#,

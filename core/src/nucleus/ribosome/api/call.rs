@@ -3,13 +3,15 @@ use crate::{
     context::Context,
     instance::RECV_DEFAULT_TIMEOUT_MS,
     nucleus::{
-        ribosome::{api::ZomeApiResult,
-                   fn_call::{do_call, ZomeFnCall},
-                   Runtime},
+        ribosome::{
+            api::ZomeApiResult,
+            fn_call::{do_call, make_cap_call, ZomeFnCall},
+            Runtime,
+        },
         state::NucleusState,
     },
 };
-use holochain_core_types::{error::HolochainError, json::JsonString};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
@@ -21,8 +23,18 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
-    fn from_args(args: ZomeFnCallArgs) -> Self {
-        ZomeFnCall::new(&args.zome_name, args.cap, &args.fn_name, args.fn_args)
+    fn from_args(context: Arc<Context>, args: ZomeFnCallArgs) -> Self {
+        let params = args.fn_args.clone();
+        let cap_call = args.clone().cap_token.map(|token| {
+            make_cap_call(
+                context.clone(),
+                token,
+                Address::from(context.agent_id.key.clone()),
+                &args.fn_name,
+                params.clone(),
+            )
+        });
+        ZomeFnCall::new(&args.zome_name, cap_call, &args.fn_name, params)
     }
 }
 
@@ -51,7 +63,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
     let result = if input.instance_handle == String::from(THIS_INSTANCE) {
         // ZomeFnCallArgs to ZomeFnCall
-        let zome_call = ZomeFnCall::from_args(input.clone());
+        let zome_call = ZomeFnCall::from_args(runtime.context.clone(), input.clone());
 
         // Don't allow recursive calls
         if zome_call.same_fn_as(&runtime.zome_call) {
@@ -67,7 +79,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     // ZomeFnCallArgs to ZomeFnCall
-    let zome_call = ZomeFnCall::from_args(input);
+    let zome_call = ZomeFnCall::from_args(runtime.context.clone(), input);
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
     // Send Action and block
@@ -171,14 +183,10 @@ pub mod tests {
     extern crate test_utils;
     extern crate wabt;
 
-    use crate::nucleus::{
-        ribosome::api::tests::{test_function_name, test_parameters, test_zome_name},
-        ribosome::fn_call::tests::test_capability_call,
+    use crate::nucleus::ribosome::api::tests::{
+        test_function_name, test_parameters, test_zome_name,
     };
-    use holochain_core_types::{
-        cas::content::Address,
-        dna::capabilities::{CallSignature, CapabilityCall},
-    };
+    use holochain_core_types::cas::content::Address;
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
     use serde_json;
 
@@ -188,11 +196,7 @@ pub mod tests {
         let args = ZomeFnCallArgs {
             instance_handle: "instance_handle".to_string(),
             zome_name: "zome_name".to_string(),
-            cap: Some(CapabilityCall::new(
-                Address::from("bad cap_token"),
-                Address::from("fake caller"),
-                CallSignature {},
-            )),
+            cap_token: Some(Address::from("bad cap_token")),
             fn_name: "fn_name".to_string(),
             fn_args: "fn_args".to_string(),
         };
@@ -206,7 +210,7 @@ pub mod tests {
         let args = ZomeFnCallArgs {
             instance_handle: THIS_INSTANCE.to_string(),
             zome_name: test_zome_name(),
-            cap: Some(test_capability_call()),
+            cap_token: Some(Address::from("test_token")),
             fn_name: test_function_name(),
             fn_args: test_parameters(),
         };

@@ -147,7 +147,7 @@ declare_types! {
                 let cap = Some(CapabilityCall::new(
                     Address::from("fake_token"), //FIXME
                     Address::from("fake_sender"), //FIXME
-                    CallSignature {},
+                    CallSignature::default(),
                 ));
                 let instance_arc = tc.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));

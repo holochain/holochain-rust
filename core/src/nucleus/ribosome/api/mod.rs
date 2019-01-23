@@ -191,12 +191,13 @@ pub mod tests {
     use crate::{
         context::Context,
         instance::{tests::test_instance_and_context, Instance},
-        nucleus::{
-            ribosome::{self, Defn},
-            ribosome::fn_call::{
+        nucleus::ribosome::{
+            self,
+            fn_call::{
                 tests::{test_capability_call, test_capability_name},
                 ZomeFnCall,
             },
+            Defn,
         },
     };
     use std::{str::FromStr, sync::Arc};
@@ -378,7 +379,11 @@ pub mod tests {
     ) -> JsonString {
         let zome_call = ZomeFnCall::new(
             &test_zome_name(),
-            Some(test_capability_call()),
+            Some(test_capability_call(
+                context.clone(),
+                &test_function_name(),
+                test_parameters(),
+            )),
             &test_function_name(),
             test_parameters(),
         );

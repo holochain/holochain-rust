@@ -9,19 +9,17 @@ pub mod validation_package;
 
 use crate::{
     context::Context,
-    nucleus::{
-        ribosome::{
-            self,
-            callback::{genesis::genesis, receive::receive},
-            Defn,
-            fn_call::ZomeFnCall,
-        },
+    nucleus::ribosome::{
+        self,
+        callback::{genesis::genesis, receive::receive},
+        fn_call::{make_cap_call, ZomeFnCall},
+        Defn,
     },
 };
 use holochain_core_types::{
     cas::content::Address,
     dna::{
-        capabilities::{CallSignature, CapabilityCall, ReservedCapabilityNames},
+        capabilities::{CapabilityCall, ReservedCapabilityNames},
         wasm::DnaWasm,
     },
     entry::Entry,
@@ -202,11 +200,17 @@ pub(crate) fn run_callback(
     }
 }
 
-fn make_self_capability_call(context: Arc<Context>) -> CapabilityCall {
-    CapabilityCall::new(
+fn make_callback_capability_call(
+    context: Arc<Context>,
+    function: &Callback,
+    parameters: &CallbackParams,
+) -> CapabilityCall {
+    make_cap_call(
+        context.clone(),
         Address::from(context.agent_id.key.clone()),
         Address::from(context.agent_id.key.clone()),
-        CallSignature {},
+        function.as_str(),
+        parameters.to_string(),
     )
 }
 
@@ -218,7 +222,11 @@ pub fn call(
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,
-        Some(make_self_capability_call(context.clone())),
+        Some(make_callback_capability_call(
+            context.clone(),
+            function,
+            params,
+        )),
         &function.as_str().to_string(),
         params,
     );

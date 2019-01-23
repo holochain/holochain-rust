@@ -986,7 +986,7 @@ pub mod tests {
                 Some(dna::capabilities::CapabilityCall::new(
                     Address::from("fake_token"),
                     Address::from("fake_sender"),
-                    dna::capabilities::CallSignature {},
+                    dna::capabilities::CallSignature::default(),
                 )),
                 "call_bridge",
                 "{}",

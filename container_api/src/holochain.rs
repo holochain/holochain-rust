@@ -243,7 +243,7 @@ mod tests {
         Some(CapabilityCall::new(
             Address::from("test_token"),
             Address::from("caller"),
-            CallSignature {},
+            CallSignature::default(),
         ))
     }
 

@@ -116,7 +116,7 @@ pub unsafe extern "C" fn holochain_call(
         Some(CapabilityCall::new(
             Address::from(token.as_str()),
             Address::from("fake_caller"),
-            CallSignature {},
+            CallSignature::default(),
         )), // FIXME: caller
         function.as_str(),
         parameters.as_str(),

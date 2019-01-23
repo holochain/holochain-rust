@@ -1,12 +1,10 @@
 extern crate serde_json;
 use crate::{
     context::Context,
-    nucleus::{
-        ribosome::{
-            self,
-            callback::{links_utils, CallbackResult},
-            fn_call::ZomeFnCall,
-        },
+    nucleus::ribosome::{
+        self,
+        callback::{links_utils, CallbackResult},
+        fn_call::ZomeFnCall,
     },
 };
 use holochain_core_types::{

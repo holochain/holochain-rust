@@ -5,7 +5,7 @@
 /// Signature is meant in the classic cryptographic sense,
 /// as a string which can be validated as having been signed
 /// by the private key associated with a given public key
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Hash, Eq)]
 pub struct Signature(String);
 
 impl From<&'static str> for Signature {
@@ -14,8 +14,18 @@ impl From<&'static str> for Signature {
     }
 }
 
+impl From<String> for Signature {
+    fn from(s: String) -> Signature {
+        Signature(s)
+    }
+}
+
 pub fn test_signatures() -> Vec<Signature> {
-    vec![Signature::from("fake-signature")]
+    vec![test_signature()]
+}
+
+pub fn test_signature() -> Signature {
+    Signature::from("fake-signature")
 }
 
 pub fn test_signature_b() -> Signature {

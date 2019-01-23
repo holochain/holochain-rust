@@ -216,7 +216,11 @@ pub mod tests {
 
         let commit_call = ZomeFnCall::new(
             &test_zome_name(),
-            Some(test_capability_call()),
+            Some(test_capability_call(
+                context.clone(),
+                "commit_dispatch",
+                test_parameters(),
+            )),
             "commit_dispatch",
             test_parameters(),
         );
@@ -240,7 +244,11 @@ pub mod tests {
 
         let get_call = ZomeFnCall::new(
             &test_zome_name(),
-            Some(test_capability_call()),
+            Some(test_capability_call(
+                context.clone(),
+                "get_dispatch",
+                test_parameters(),
+            )),
             "get_dispatch",
             test_parameters(),
         );

@@ -1,6 +1,9 @@
 //! File holding all the structs for handling capabilities defined in DNA.
 
-use crate::cas::content::Address;
+use crate::{
+    cas::content::Address,
+    signature::{test_signature, Signature},
+};
 use std::str::FromStr;
 
 //--------------------------------------------------------------------------------------------------
@@ -49,7 +52,25 @@ impl ReservedCapabilityNames {
 //--------------------------------------------------------------------------------------------------
 /// a struct to hold the signature of the call
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
-pub struct CallSignature {}
+pub struct CallSignature {
+    signature: Signature,
+}
+
+impl CallSignature {
+    pub fn new(signature: Signature) -> CallSignature {
+        CallSignature { signature }
+    }
+
+    pub fn signature(&self) -> Signature {
+        self.signature.clone()
+    }
+}
+
+impl Default for CallSignature {
+    fn default() -> CallSignature {
+        CallSignature::new(test_signature())
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct CapabilityCall {
@@ -182,15 +203,28 @@ mod tests {
         let cap_call = CapabilityCall::new(
             Address::from("123"),
             Address::from("caller"),
-            CallSignature {},
+            CallSignature::default(),
         );
         assert_eq!(
             CapabilityCall {
                 cap_token: Address::from("123"),
                 caller: Address::from("caller"),
-                signature: CallSignature {},
+                signature: CallSignature::default(),
             },
             cap_call
         );
     }
+
+    #[test]
+    fn test_call_signature_new() {
+        let call_sig = CallSignature::new(test_signature());
+        assert_eq!(call_sig.signature, test_signature());
+    }
+
+    #[test]
+    fn test_call_signature_default() {
+        let call_sig = CallSignature::default();
+        assert_eq!(call_sig.signature, test_signature());
+    }
+
 }

@@ -171,7 +171,7 @@ impl ContainerApiBuilder {
                             let cap_call = Some(CapabilityCall::new(
                                 Address::from("fake_token"),
                                 Address::from("fake_caller"),
-                                CallSignature {},
+                                CallSignature::default(),
                             ));
                             let response = hc
                                 .call(&zome_name, cap_call, &func_name, &params_string)

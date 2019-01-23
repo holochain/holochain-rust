@@ -732,7 +732,7 @@ id = "websocket interface"
 id = "test-instance-2"
 
 [interfaces.driver]
-port = 3000
+port = 3001
 type = "websocket""#,
             ),
         );
@@ -776,7 +776,7 @@ id = "websocket interface"
 instances = []
 
 [interfaces.driver]
-port = 3000
+port = 3002
 type = "websocket""#,
             ),
         );
@@ -848,7 +848,7 @@ id = "new-interface"
 instances = []
 
 [interfaces.driver]
-port = 8080
+port = 3004
 type = "http""#,
             ),
         );
@@ -968,7 +968,7 @@ id = "test-instance-2"
 id = "new-instance"
 
 [interfaces.driver]
-port = 3000
+port = 3005
 type = "websocket""#,
             ),
         );
@@ -1021,7 +1021,7 @@ id = "websocket interface"
 id = "test-instance-2"
 
 [interfaces.driver]
-port = 3000
+port = 3006
 type = "websocket""#,
             ),
         );
@@ -1116,7 +1116,7 @@ id = "websocket interface"
 id = "test-instance-1"
 
 [interfaces.driver]
-port = 3000
+port = 3007
 type = "websocket""#,
             ),
         );

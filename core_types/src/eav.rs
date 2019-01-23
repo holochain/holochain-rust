@@ -91,6 +91,21 @@ impl EntityAttributeValueIndex {
         })
     }
 
+     pub fn new_with_timestamp(
+        entity: &Entity,
+        attribute: &Attribute,
+        value: &Value,
+        timestamp : i64
+    ) -> HcResult<EntityAttributeValueIndex> {
+        validate_attribute(attribute)?;
+        Ok(EntityAttributeValueIndex {
+            entity: entity.clone(),
+            attribute: attribute.clone(),
+            value: value.clone(),
+            index : timestamp
+        })
+    }
+
     pub fn entity(&self) -> Entity {
         self.entity.clone()
     }
@@ -187,7 +202,6 @@ pub fn increment_key_till_no_collision(
     if map.iter().filter(|e|e.index==eav.index()).collect::<BTreeSet<&EntityAttributeValueIndex>>().len()>0 {
         let timestamp = eav.clone().index + 1;
         eav.set_index(timestamp);
-        println!("eav {:?}",eav.clone());
         increment_key_till_no_collision(eav, map)
     } else {
         Ok(eav)
@@ -249,10 +263,11 @@ pub fn test_eav_value() -> Entry {
 }
 
 pub fn test_eav() -> EntityAttributeValueIndex {
-    EntityAttributeValueIndex::new(
+    EntityAttributeValueIndex::new_with_timestamp(
         &test_eav_entity().address(),
         &test_eav_attribute(),
         &test_eav_value().address(),
+        0
     )
     .expect("Could not create eav")
 }

@@ -373,6 +373,7 @@ impl EavTestSuite {
             let fetch_set = eav_storage
                     .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
                     .expect("could not fetch eav");
+            assert_eq!(fetch_set.clone().len(),expected_one.clone().len());
              fetch_set
             .iter().zip(&expected_one).for_each(|(a,b)|{
                 assert_eq!(a.entity(),b.entity());
@@ -447,6 +448,7 @@ impl EavTestSuite {
             let fetch_set = eav_storage
                     .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
                     .expect("could not fetch eav");
+            assert_eq!(fetch_set.clone().len(),expected_one.clone().len());
              fetch_set
             .iter().zip(&expected_one).for_each(|(a,b)|{
                 assert_eq!(a.entity(),b.entity());

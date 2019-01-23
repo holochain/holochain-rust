@@ -26,7 +26,7 @@ fn redirect_request_to_root<T>(req: &mut Request<T>) {
 }
 
 fn dna_connections_response(config: &Option<InterfaceConfiguration>) -> Response<Body> {
-    let intefaces = match config {
+    let interfaces = match config {
         Some(config) => json!([config]),
         None => json!([]),
     };

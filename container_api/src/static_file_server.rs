@@ -7,12 +7,11 @@ use hyper::{
     Body, Request, Response
 };
 use std::{io::Error, thread};
-// use tokio::runtime::Runtime;
 use hyper_staticfile::{Static, StaticFuture};
 use tokio::prelude::{future, Poll, Async};
+use std::sync::mpsc::{channel, Sender};
 
 const DNA_CONFIG_ROUTE: &str = "/_dna_connections.json";
-
 
 fn redirect_request_to_root<T>(req: &mut Request<T>) {
     let mut original_parts: uri::Parts = req.uri().to_owned().into();
@@ -103,10 +102,8 @@ impl hyper::service::Service for StaticService {
 }
 
 pub struct StaticServer {
-    #[allow(dead_code)]
-    shutdown_signal: Option<futures::channel::oneshot::Sender<()>>,
+    shutdown_signal: Option<Sender<()>>,
     config: UiInterfaceConfiguration,
-    #[allow(dead_code)]
     bundle_config: UiBundleConfiguration,
     connected_dna_interface: Option<InterfaceConfiguration>,
     running: bool,
@@ -130,8 +127,8 @@ impl StaticServer {
     pub fn start(&mut self) -> HolochainResult<()> {
         let addr = ([127, 0, 0, 1], self.config.port).into();
 
-        // let (tx, rx) = futures::channel::oneshot::channel::<()>();
-        // self.shutdown_signal = Some(tx);
+        let (tx, rx) = channel::<()>();
+        self.shutdown_signal = Some(tx);
         let static_path = self.bundle_config.root_dir.to_owned();
         let dna_interfaces = self.connected_dna_interface.to_owned();
 
@@ -141,29 +138,29 @@ impl StaticServer {
         );
         self.running = true;
 
-        thread::spawn(move || {
+        let _server = thread::spawn(move || {
             let server = Server::bind(&addr)
                 .serve(move || future::ok::<_, Error>(StaticService::new(&static_path, &dna_interfaces)))
-                // .with_graceful_shutdown(rx)
                 .map_err(|e| eprintln!("server error: {}", e));
 
             println!("Listening on http://{}", addr);
             rt::run(server)
         });
+        let _ = rx.recv();
         Ok(())
     }
 
-    // pub fn stop(&mut self) -> HolochainResult<()> {
-    // 	if let Some(shutdown_signal) = self.shutdown_signal {
-    // 		shutdown_signal.send(())
-    // 		.and_then(|_| {
-    // 			self.running = false;
-    // 			self.shutdown_signal = None;
-    // 			Ok(())
-    // 		});
-    // 	}
-    // 	Err(HolochainError::ErrorGeneric("server is already stopped".into()).into())
-    // }
+    pub fn stop(&mut self) -> Result<(), String> {
+    	if let Some(ref shutdown_signal) = self.shutdown_signal {
+    		return shutdown_signal.send(()).map_err(|e| e.to_string())
+        		.and_then(|_| {
+        			Ok(())
+        		})
+    	}
+        self.running = false;
+        self.shutdown_signal = None;
+    	Err("server is already stopped".into())
+    }
 }
 
 #[cfg(test)]
@@ -194,6 +191,9 @@ pub mod tests {
         };
 
         let mut static_server = StaticServer::from_configs(test_config, test_bundle_config, Some(test_dna_interface));
-        assert_eq!(static_server.start(), Ok(()))
+        assert_eq!(static_server.start(), Ok(()));
+        assert_eq!(static_server.running, true);
+        assert_eq!(static_server.stop(), Ok(()));
+        assert_eq!(static_server.running, false);
     }
 }

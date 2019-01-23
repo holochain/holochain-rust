@@ -73,6 +73,12 @@ define_zome! {
                 handler: blog::handle_my_posts
             }
 
+            my_posts_immediate_timeout: {
+                inputs: | |,
+                outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
+                handler: blog::handle_my_posts_immediate_timeout
+            }
+
             my_posts_as_committed: {
                 inputs: | |,
                 outputs: |post_hashes: ZomeApiResult<Vec<Address>>|,

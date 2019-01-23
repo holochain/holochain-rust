@@ -8,16 +8,29 @@ This crate implements a set of tools for building and running Holochain DNA from
 
 ## Install
 
-Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/app-spec-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.
+Our recommended pattern for the installation of `hc` command line tools is to download the binary for your platform from our [releases](https://github.com/holochain/holochain-rust/releases) page. Otherwise, you can proceed with the more complex instructions for building from source, below.  Note, on Mac and Linux as well as installing the binaries you will need to install the `zmq` dependency e.g.:
+
+On MacOS:
+
+```
+brew install zmq
+```
+
+On Ubuntu:
+
+```
+apt-get install libzmq3-dev
+```
 
 ### Building From Source
 
 These dependencies need to be installed in order to compile, and use `hc`:
 
 - [Rust](https://www.rust-lang.org/en-US/install.html)
-  - needs to be the `nightly` build, so use the following commands, once you have first installed Rust
-  - `rustup toolchain install nightly`
-  - `rustup default nightly`
+  - needs to be the `nightly-2018-12-26` build, so use the following commands, once you have first installed Rust
+  - `rustup toolchain install nightly-2018-12-26`
+  - `rustup default nightly-2018-12-26`
+  - (the specific nightly build we use will change over time)
   - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
   - `rustup target add wasm32-unknown-unknown --toolchain nightly`
 - [Node.js](https://nodejs.org) version 8 or higher
@@ -153,9 +166,9 @@ The `package` command includes patterns inside `.gitignore` files automatically,
 ### Rust -> WASM compilation tools
 If we take Zome code in Rust as an example, you will need Rust and Cargo set up appropriately to build WASM from Rust code. WASM compilation is available on the `nightly` Rust toolchain. To enable it, run the following:
 ```shell
-$ rustup toolchain install nightly
-$ rustup target add wasm32-unknown-unknown --toolchain nightly # adds WASM as a compilation target
-$ rustup override set nightly # switch to the nightly rust toolchain for the current project directory
+$ rustup toolchain install nightly-2018-12-26
+$ rustup target add wasm32-unknown-unknown --toolchain nightly-2018-12-26 # adds WASM as a compilation target
+$ rustup override set nightly-2018-12-26 # switch to the nightly rust toolchain for the current project directory
 ```
 
 Once that's done, you should be able to run commands like `cargo build --target=wasm32-unknown-unknown` and have it work.
@@ -168,7 +181,7 @@ By default, when you use `hc init` to create a new project folder, it creates a 
 Once you have a project folder initiated, you can run `hc test` to execute your tests. This combines the following steps:
   1. Packaging your files into a DNA file, located at `dist/bundle.json`. This step will fail if your packaging step fails.
   2. Installing build and testing dependencies, if they're not installed (`npm install`)
-  4. Executing (with [holochain-nodejs](https://github.com/holochain/holochain-nodejs)) the test file found at `test/index.js`
+  4. Executing (with [holochain-nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs)) the test file found at `test/index.js`
 
 `hc test` also has some configurable options.
 

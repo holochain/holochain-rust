@@ -1,5 +1,5 @@
 use crate::{
-    action::ActionWrapper,
+    action::{ActionWrapper, GetEntryKey, GetLinksKey},
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
 use boolinator::*;
@@ -49,13 +49,13 @@ pub struct NetworkState {
 
     /// Here we store the results of GET entry processes.
     /// None means that we are still waiting for a result from the network.
-    pub get_entry_with_meta_results: HashMap<Address, GetEntryWithMetaResult>,
+    pub get_entry_with_meta_results: HashMap<GetEntryKey, GetEntryWithMetaResult>,
 
     /// Here we store the results of GET links processes.
     /// The key of this map is the base address and the tag name for which the links
     /// are requested.
     /// None means that we are still waiting for a result from the network.
-    pub get_links_results: HashMap<(Address, String), GetLinksResult>,
+    pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
@@ -99,7 +99,7 @@ impl NetworkState {
     }
 
     pub fn initialized(&self) -> Result<(), HolochainError> {
-        (self.network.is_some() && self.dna_address.is_some() & self.agent_id.is_some()).ok_or(
+        (self.network.is_some() && self.dna_address.is_some() && self.agent_id.is_some()).ok_or(
             HolochainError::ErrorGeneric("Network not initialized".to_string()),
         )
     }

@@ -1,5 +1,5 @@
 use holochain_core_types::error::HolochainError;
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, option::NoneError};
 
 pub type HolochainResult<T> = Result<T, HolochainInstanceError>;
 
@@ -9,19 +9,10 @@ pub enum HolochainInstanceError {
     InternalFailure(HolochainError),
     InstanceNotActiveYet,
     InstanceAlreadyActive,
+    NoSuchInstance,
 }
 
 impl Error for HolochainInstanceError {
-    fn description(&self) -> &str {
-        match self {
-            HolochainInstanceError::InternalFailure(ref err) => err.description(),
-            HolochainInstanceError::InstanceNotActiveYet => "Holochain instance is not active yet.",
-            HolochainInstanceError::InstanceAlreadyActive => {
-                "Holochain instance is already active."
-            }
-        }
-    }
-
     // not sure how to test this because dyn reference to the Error is not implementing PartialEq
     #[cfg_attr(rustfmt, rustfmt_skip)]
     fn cause(&self) -> Option<&Error> {
@@ -29,13 +20,26 @@ impl Error for HolochainInstanceError {
             HolochainInstanceError::InternalFailure(ref err)  => Some(err),
             HolochainInstanceError::InstanceNotActiveYet => None,
             HolochainInstanceError::InstanceAlreadyActive => None,
+            HolochainInstanceError::NoSuchInstance => None,
         }
     }
 }
 
 impl fmt::Display for HolochainInstanceError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Holochain Instance Error: {}", self.description())
+        let prefix = "Holochain Instance Error";
+        match self {
+            HolochainInstanceError::InternalFailure(ref err) => write!(f, "{}: {}", prefix, err),
+            HolochainInstanceError::InstanceNotActiveYet => {
+                write!(f, "{}: Holochain instance is not active yet.", prefix)
+            }
+            HolochainInstanceError::InstanceAlreadyActive => {
+                write!(f, "{}: Holochain instance is already active.", prefix)
+            }
+            HolochainInstanceError::NoSuchInstance => {
+                write!(f, "{}: Instance does not exist", prefix)
+            }
+        }
     }
 }
 
@@ -45,33 +49,17 @@ impl From<HolochainError> for HolochainInstanceError {
     }
 }
 
+impl From<NoneError> for HolochainInstanceError {
+    fn from(_: NoneError) -> Self {
+        HolochainInstanceError::NoSuchInstance
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
 
     use crate::error::HolochainInstanceError;
     use holochain_core_types::error::HolochainError;
-    use std::error::Error;
-
-    #[test]
-    /// show ToString for HolochainInstanceError
-    fn holochain_instance_error_description_test() {
-        for (i, o) in vec![
-            (
-                HolochainInstanceError::InstanceNotActiveYet,
-                "Holochain instance is not active yet.",
-            ),
-            (
-                HolochainInstanceError::InstanceAlreadyActive,
-                "Holochain instance is already active.",
-            ),
-            (
-                HolochainInstanceError::InternalFailure(HolochainError::DnaMissing),
-                "DNA is missing",
-            ),
-        ] {
-            assert_eq!(i.description(), o,);
-        }
-    }
 
     #[test]
     /// show ToString for HolochainInstanceError
@@ -88,6 +76,10 @@ pub mod tests {
             (
                 HolochainInstanceError::InternalFailure(HolochainError::DnaMissing),
                 "DNA is missing",
+            ),
+            (
+                HolochainInstanceError::NoSuchInstance,
+                "Instance does not exist",
             ),
         ] {
             assert_eq!(

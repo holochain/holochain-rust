@@ -101,3 +101,13 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     // Otherwise its a Some(T) or a None
     hdk::get_entry(&post_address)
 }
+
+pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {
+    hdk::debug(format!("my address:\n{:?}", AGENT_ADDRESS.to_string()))?;
+    hdk::debug(format!("other address:\n{:?}", agent_address.to_string()))?;
+    hdk::link_entries(&agent_address, &post_address, "recommended_posts")
+}
+
+pub fn handle_my_recommended_posts() -> ZomeApiResult<GetLinksResult> {
+    hdk::get_links(&AGENT_ADDRESS, "recommended_posts")
+}

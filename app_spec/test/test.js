@@ -1,41 +1,24 @@
-const test = require('tape')
-const { pollFor } = require('./util')
+const path = require('path')
+const { Config, Container, Scenario } = require('../../nodejs_container')
+Scenario.setTape(require('tape'))
 
-const { Config, Container } = require('../../nodejs_container')
+const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")
+const dna = Config.dna(dnaPath, 'app-spec')
+const agentAlice = Config.agent("alice")
+const agentBob = Config.agent("bob")
 
-const dnaPath = "./dist/app_spec.hcpkg"
-const aliceName = "alice"
-const tashName = "tash"
+const instanceAlice = Config.instance(agentAlice, dna)
+const instanceBob = Config.instance(agentBob, dna)
 
-// IIFE to keep config-only stuff out of test scope
-const container = (() => {
-  const agentAlice = Config.agent(aliceName)
-  const agentTash = Config.agent(tashName)
+const scenario1 = new Scenario([instanceAlice])
+const scenario2 = new Scenario([instanceAlice, instanceBob])
 
-  const dna = Config.dna(dnaPath)
-
-  const instanceAlice = Config.instance(agentAlice, dna)
-  const instanceTash = Config.instance(agentTash, dna)
-
-  const containerConfig = Config.container([instanceAlice, instanceTash])
-  return new Container(containerConfig)
-})()
-
-// Initialize the Container
-container.start()
-
-const alice = container.makeCaller(aliceName, dnaPath)
-const tash = container.makeCaller(tashName, dnaPath)
-
-test('agentId', (t) => {
-  t.plan(2)
+scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
-  t.notEqual(alice.agentId, tash.agentId)
+  t.notEqual(alice.agentId, bob.agentId)
 })
 
-test('show_env', (t) => {
-    t.plan(1)
-
+scenario1.runTape('show_env', async (t, { alice }) => {
     const result = alice.call("blog", "main", "show_env", {})
 
     t.deepEqual(result.Ok, {
@@ -46,8 +29,7 @@ test('show_env', (t) => {
     })
 })
 
-test('call', (t) => {
-  t.plan(1)
+scenario1.runTape('call', async (t, { alice }) => {
 
   const num1 = 2
   const num2 = 2
@@ -57,8 +39,7 @@ test('call', (t) => {
   t.deepEqual(result.Ok, { "sum": "4" })
 })
 
-test('hash_post', (t) => {
-  t.plan(1)
+scenario1.runTape('hash_post', async (t, { alice }) => {
 
   const params = { content: "Holo world" }
   const result = alice.call("blog", "main", "post_address", params)
@@ -66,8 +47,7 @@ test('hash_post', (t) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
-test('create_post', (t) => {
-  t.plan(3)
+scenario1.runTape('create_post', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
@@ -79,8 +59,7 @@ test('create_post', (t) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
-test('create_post with bad reply to', (t) => {
-  t.plan(5)
+scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = "bad"
@@ -96,8 +75,7 @@ test('create_post with bad reply to', (t) => {
   t.equal(error.line, "86")
 })
 
-test('post max content size 280 characters', (t) => {
-  t.plan(5)
+scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
 
   const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
   const in_reply_to = null
@@ -115,8 +93,7 @@ test('post max content size 280 characters', (t) => {
   t.equals(inner.line, "86")
 })
 
-test('posts_by_agent', (t) => {
-  t.plan(1)
+scenario1.runTape('posts_by_agent', async (t, { alice }) => {
 
   const agent = "Bob"
   const params = { agent }
@@ -126,32 +103,22 @@ test('posts_by_agent', (t) => {
   t.deepEqual(result.Ok, { "addresses": [] })
 })
 
-test('my_posts', async (t) => {
-  t.plan(1)
+scenario1.runTape('my_posts', async (t, { alice }) => {
 
-  alice.call("blog", "main", "create_post",
+  await alice.callSync("blog", "main", "create_post",
     { "content": "Holo world", "in_reply_to": "" }
   )
 
-  alice.call("blog", "main", "create_post",
+  await alice.callSync("blog", "main", "create_post",
     { "content": "Another post", "in_reply_to": "" }
   )
 
-  const result = await pollFor(
-    () => alice.call("blog", "main", "my_posts", {}),
-    (result) => {
-      return result &&
-        result.Ok &&
-        result.Ok.addresses &&
-        result.Ok.addresses.length === 2
-    }
-  ).catch(t.fail)
+  const result = alice.call("blog", "main", "my_posts", {})
 
   t.equal(result.Ok.addresses.length, 2)
 })
 
-test('create/get_post roundtrip', (t) => {
-  t.plan(2)
+scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = null
@@ -169,9 +136,7 @@ test('create/get_post roundtrip', (t) => {
 
 })
 
-
-test('get_post with non-existant address returns null', (t) => {
-  t.plan(1)
+scenario1.runTape('get_post with non-existant address returns null', async (t, { alice }) => {
 
   const post_address = "RANDOM"
   const params_get = { post_address }
@@ -184,19 +149,14 @@ test('get_post with non-existant address returns null', (t) => {
   t.same(entry, null)
 })
 
-test('scenario test create & publish post -> get from other instance', async (t) => {
-  t.plan(3)
+scenario2.runTape('scenario test create & publish post -> get from other instance', async (t, { alice, bob }) => {
 
-  const content = "Holo world"
-  const in_reply_to = null
-  const params = { content, in_reply_to }
-  const create_result = alice.call("blog", "main", "create_post", params)
-  t.comment("create_result = " + create_result.address + "")
+  const initialContent = "Holo world"
+  const params = { content: initialContent, in_reply_to: null }
+  const create_result = await alice.callSync("blog", "main", "create_post", params)
 
-  const content2 = "post 2"
-  const params2 = { content2, in_reply_to }
-  const create_result2 = tash.call("blog", "main", "create_post", params2)
-  t.comment("create_result2 = " + create_result2.address + "")
+  const params2 = { content: "post 2", in_reply_to: null }
+  const create_result2 = await bob.callSync("blog", "main", "create_post", params2)
 
   t.equal(create_result.Ok.length, 46)
   t.equal(create_result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
@@ -204,9 +164,7 @@ test('scenario test create & publish post -> get from other instance', async (t)
   const post_address = create_result.Ok
   const params_get = { post_address }
 
-  const result = await pollFor(
-    () => tash.call("blog", "main", "get_post", params_get)
-  ).catch(t.fail)
+  const result = bob.call("blog", "main", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
-  t.equal(value.content, content)
+  t.equal(value.content, initialContent)
 })

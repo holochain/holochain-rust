@@ -4,6 +4,7 @@ use crate::{
     action::{Action, ActionWrapper, NetworkSettings},
     context::{get_dna_and_agent, Context},
     instance::dispatch_action,
+    network::actions::publish::publish,
 };
 use futures::{
     task::{LocalWaker, Poll},
@@ -20,14 +21,18 @@ pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     let network_settings = NetworkSettings {
         config: context.network_config.clone(),
         dna_address,
-        agent_id,
+        agent_id: agent_id.clone(),
     };
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     await!(InitNetworkFuture {
         context: context.clone(),
-    })
+    })?;
+
+    await!(publish(agent_id.clone().into(), context))?;
+
+    Ok(())
 }
 
 #[cfg(test)]

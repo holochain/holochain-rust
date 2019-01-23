@@ -103,6 +103,8 @@ Running the `make` command will:
 2. build all the rust libraries from the source code in this repository.
 3. build and install the command-line tools.
 
+**Note**: it's very important to use the rust version specified in the Makefile! Since we are using nightly rust builds, the language is changing rapidly and sometimes introduces breaking changes that we haven't adapted to yet. Don't just use the latest nightly.
+
 ### Docker
 
 We also use [docker](https://www.docker.com/).  The `docker` folder contains scripts to build and run docker images.

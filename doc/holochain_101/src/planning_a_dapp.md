@@ -34,16 +34,17 @@ One must also re-think the dApp's business model such that it does not rely on a
 Distributed systems rely more heavily on cryptographic patterns and techniques than centralized systems. The basic concepts below explain how data integrity, ownership, and security are achieved natively with holochain's architecture. They are time-worn, relatively intuitive ideas that are critical for planning a holochain dApp. 
 
 ### Hashes
-Hashes ensure the reliability of information by representing any given piece of data with a unique, consistent string of random looking characters. This makes changes to data visible because one can see that a hash has changed hash without needing to inspect the data itself.  
+Hashes ensure the reliability of information by representing any given piece of data with a unique, consistent string of random looking characters. This makes changes to data visible because one can see that a hash has changed without needing to inspect the data itself.  
 
-However, it is impossible to get the original data from a hash -- its purpose is to prove that the data to which it corresponds has not been altered. The same data consistently gives the same hash, and different data always gives a completely different hash. 
+However, it is impossible to get the original data from a hash -- its purpose is to prove that the data to which it corresponds has not been altered. The same data consistently gives the same hash, and different data always give a completely different hash. 
 
 These features imply that one can use small, portable hashes to verify data. One could also use a database containing data and their hashes as a table of contents, indexing (though not reading) data associated with a given hash. 
 
+In the context of Holochain hashes are frequently used to look up content, both in our internal implementations as well as on the DHT.  Therefore we frequently refer to the hash of some item (i.e. an entry on the chain) as its *Address*.
 ### Signatures 
-Signatures provide an additional type of data verification, answering the question "who created this data?" Signatures looks like hashes. They are unique, reliable, and like hashes, cannot be used to retrieve the data to which they correspond. Signatures also come with a pair of keys. One is public, and the other private. 
+Signatures provide an additional type of data verification, answering the question "who created this data?" Signatures look like hashes. They are unique, reliable, and like hashes, cannot be used to retrieve the data to which they correspond. Signatures also come with a pair of keys. One is public, and the other private. 
 
-The private key designates a unique author (or device), and the public key lets anyone verify a signature made by one specific private key. This key infrastructure addresses the problem of single points of failure associated with centralized systems by making each author responsible for securing their unique private key.   
+The private key designates a unique author (or device), and the public key lets anyone verify a signature made by one specific private key. This key infrastructure addresses the problem of single points of failure associated with centralized systems by making authors responsible for securing their unique private key.   
 
 ### Encryption
 What if one needs to restrict access in addition to verifying data? Two types of encryption are possible. _Symmetric_ encryption has one key for reading and writing data. _Asymmetric_ encryption has two keys, where one creates messages and the other reads them.
@@ -52,21 +53,21 @@ Encryption is a two way process, so the right key enables one to decrypt an encr
 
 ## Data access paradigms
 The following are five data access paradigms. Note that in real-world scenarios it is common to mix these options by combining separate dApps. 
-In instances when many separate dApps are needed to share data, Holochain supports bridging between dApps
+In instances when many separate dApps are needed to share data, Holochain supports bridging between dApps.
 Bridges between two networks with different data privacy models specify who can use the bridge, what data crosses the bridge, and tasks that might run in response to the bridge (e.g. notifications)
 
-Default model for Holochain data is public data shard on a public network, and every Holochain dApp has its own network and data, and creates networks for user-participants as soon as they join a dApp. 
+The default model for Holochain data is public data shared on a public network, and every Holochain dApp has its own network and data, and creates networks for user-participants as soon as they join a dApp. 
 The dApp code sets sharing and verification rules. 
 
 ### Public, shared data on a public network
 
 Public data works like Bittorrent: 
 
-Anybody can join a network
-anybody can request any data they want from the network
-any data is available as long as at least one person is sharing it
-if some data is not shared by enough people, a new random person on the network must share it
-there is no "local only" data  
+   - anybody can join a network
+   - anybody can request any data they want from the network
+   - any data is available as long as at least one person is sharing it
+   - if some data is not shared by enough people, a new random person on the network must share it
+   - there is no "local only" data  
 
 As stated above, an additional requirement for Holochain dApps is that new data must have a digital signature. 
 
@@ -109,7 +110,7 @@ The version of Holochain in active development covers the following integrations
 ## Security - best practices
 A great way to begin offsetting the governance crises now typical of distributed systems (i.e. DAO hack) is to think in terms of protecting and enabling the community of user-participants in addition to cryptography.    
 
-In essence, one must consider how to prevent undesired access to the DHT. If membranes are not properly built in the dApps's DNA, having access to the source code also means having access to the entire network's entries via the DHT. Developers must treat the code, or at least the DNA taken as a whole, as if it's a key to the data. Note, too, that one can easily fork a Holochain dApp without disrupting its activity, making it possible to retain the benefits of open-source code without some of the risks.
+In essence, one must consider how to prevent undesired access to the DHT. If membranes are not properly built in the dApps' DNA, having access to the source code also means having access to the entire network's entries via the DHT. Developers must treat the code, or at least the DNA taken as a whole, as if it's a key to the data. Note, too, that one can easily fork a Holochain dApp without disrupting its activity, making it possible to retain the benefits of open-source code without some of the risks.
 
 ### Membranes
 

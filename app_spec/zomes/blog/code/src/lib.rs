@@ -78,6 +78,18 @@ define_zome! {
                 outputs: |post_hashes: ZomeApiResult<Vec<Address>>|,
                 handler: blog::handle_my_posts_as_commited
             }
+
+            recommend_post: {
+                inputs: |post_address: Address, agent_address: Address|,
+                outputs: |result: ZomeApiResult<()>|,
+                handler: blog::handle_recommend_post
+            }
+
+            my_recommended_posts: {
+                inputs: | |,
+                outputs: |result: ZomeApiResult<GetLinksResult>|,
+                handler: blog::handle_my_recommended_posts
+            }
         }
     }
 }

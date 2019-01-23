@@ -2,13 +2,14 @@ use config::{UiBundleConfiguration, UiInterfaceConfiguration, InterfaceConfigura
 use error::HolochainResult;
 use hyper::{
     http::{uri, response::Builder},
-    rt::{self, Future},
+    rt::{Future},
     server::Server,
     Body, Request, Response
 };
 use std::{io::Error, thread};
 use hyper_staticfile::{Static, StaticFuture};
 use tokio::prelude::{future, Poll, Async};
+use tokio::runtime::Runtime;
 use std::sync::mpsc::{channel, Sender};
 
 const DNA_CONFIG_ROUTE: &str = "/_dna_connections.json";
@@ -144,22 +145,25 @@ impl StaticServer {
                 .map_err(|e| eprintln!("server error: {}", e));
 
             println!("Listening on http://{}", addr);
-            rt::run(server)
+            let mut rt = Runtime::new().unwrap();
+            rt.spawn(server);
+            let _ = rx.recv();
         });
-        let _ = rx.recv();
         Ok(())
     }
 
     pub fn stop(&mut self) -> Result<(), String> {
-    	if let Some(ref shutdown_signal) = self.shutdown_signal {
-    		return shutdown_signal.send(()).map_err(|e| e.to_string())
-        		.and_then(|_| {
-        			Ok(())
-        		})
-    	}
-        self.running = false;
-        self.shutdown_signal = None;
-    	Err("server is already stopped".into())
+        match self.shutdown_signal.clone() {
+            Some(shutdown_signal) => {
+                shutdown_signal.send(()).map_err(|e| e.to_string())?;
+                self.running = false;
+                self.shutdown_signal = None;
+                Ok(())
+            },
+            None => {
+                Err("server is already stopped".into())
+            }
+        }
     }
 }
 

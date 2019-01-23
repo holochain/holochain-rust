@@ -989,7 +989,11 @@ pub fn query(
 /// # }
 /// ```
 pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<String> {
-    Dispatch::Send.with_input(SendArgs { to_agent, payload, options: SendOptions(timeout) })
+    Dispatch::Send.with_input(SendArgs {
+        to_agent,
+        payload,
+        options: SendOptions(timeout),
+    })
 }
 
 /// NOT YET AVAILABLE

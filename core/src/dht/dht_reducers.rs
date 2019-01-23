@@ -305,6 +305,7 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
+        eav::IndexQuery,
         entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };

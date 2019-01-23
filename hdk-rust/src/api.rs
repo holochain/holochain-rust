@@ -350,23 +350,29 @@ impl Dispatch {
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into{} }
+/// # #[no_mangle]
+/// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -907,23 +913,29 @@ pub fn query(
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
+/// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {

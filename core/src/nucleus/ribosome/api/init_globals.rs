@@ -73,7 +73,6 @@ pub mod tests {
             ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
 
         assert_eq!(globals.dna_name, "TestApp");
-        // TODO #233 - Implement agent address
         let expected_agent = AgentId::generate_fake("jane");
         assert_eq!(globals.agent_address.to_string(), expected_agent.key);
         // TODO (david.b) this should work:

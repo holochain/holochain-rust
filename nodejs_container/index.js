@@ -57,21 +57,22 @@ Container.prototype.stop = function () {
 }
 
 Container.prototype.call = function (id, zome, trait, fn, params) {
-    const stringInput = JSON.stringify(params);
-    let rawResult;
-    let result;
+    const stringInput = JSON.stringify(params)
+    let rawResult
+    let result
     try {
-        rawResult = this._callRaw(id, zome, trait, fn, stringInput);
+        rawResult = this._callRaw(id, zome, trait, fn, stringInput)
     } catch (e) {
-        console.error("")
+        console.error("Exception occurred while calling zome function: ", e)
+        throw e
     }
     try {
-        result = JSON.parse(rawResult);
+        result = JSON.parse(rawResult)
     } catch (e) {
-        console.error("JSON.parse failed to parse the result. The raw value is: ", rawResult);
-        result = { error: "JSON.parse failed to parse the result", rawResult };
+        console.warn("JSON.parse failed to parse the result. The raw value is: ", rawResult)
+        return rawResult
     }
-    return result;
+    return result
 }
 
 Container.prototype.callWithPromise = function (...args) {

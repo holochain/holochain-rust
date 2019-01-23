@@ -5,7 +5,8 @@ use hdk::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
     holochain_wasm_utils::api_serialization::{
-        get_entry::GetEntryOptions, get_links::GetLinksResult,
+        get_entry::GetEntryOptions,
+        get_links::{GetLinksOptions, GetLinksResult},
     },
     AGENT_ADDRESS,
     AGENT_ID_STR,
@@ -82,6 +83,17 @@ pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
 
 pub fn handle_my_posts() -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&AGENT_ADDRESS, "authored_posts")
+}
+
+pub fn handle_my_posts_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
+    hdk::get_links_with_options(
+        &AGENT_ADDRESS,
+        "authored_posts",
+        GetLinksOptions {
+            timeout: 0.into(),
+            ..Default::default()
+        },
+    )
 }
 
 pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {

@@ -1,4 +1,4 @@
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::*};
+use holochain_core_types::{cas::content::Address, error::HolochainError, json::*, time::Timeout};
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {
@@ -23,12 +23,14 @@ impl Default for LinksStatusRequestKind {
 pub struct GetLinksOptions {
     pub status_request: LinksStatusRequestKind,
     pub sources: bool,
+    pub timeout: Timeout,
 }
 impl Default for GetLinksOptions {
     fn default() -> Self {
         GetLinksOptions {
             status_request: LinksStatusRequestKind::default(),
             sources: false,
+            timeout: Default::default(),
         }
     }
 }

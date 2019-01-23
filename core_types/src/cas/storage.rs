@@ -5,7 +5,7 @@
 
 use crate::{
     cas::content::{Address, AddressableContent, Content},
-    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage},
+    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage,IndexQuery},
     entry::{test_entry_unique, Entry},
     error::HolochainError,
     json::RawString,
@@ -263,7 +263,8 @@ impl EavTestSuite {
                     .fetch_eav(
                         Some(entity_content.address()),
                         Some(attribute.clone()),
-                        Some(value_content.address())
+                        Some(value_content.address()),
+                        IndexQuery::default()
                     )
                     .expect("could not fetch eav"),
             );
@@ -302,7 +303,7 @@ impl EavTestSuite {
                 assert_eq!(
                     expected,
                     eav_storage
-                        .fetch_eav(e, a, v)
+                        .fetch_eav(e, a, v,IndexQuery::default())
                         .expect("could not fetch eav")
                        
                 );
@@ -358,7 +359,7 @@ impl EavTestSuite {
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
+                .fetch_eav(Some(one.address()), Some(attribute.clone()), None,IndexQuery::default())
                 .expect("could not fetch eav")
                
         );
@@ -371,7 +372,7 @@ impl EavTestSuite {
                     .expect("Could not create eav");
             expected_one.insert(eav);
             let fetch_set = eav_storage
-                    .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
+                    .fetch_eav(None, Some(attribute.clone()), Some(many.address()),IndexQuery::default())
                     .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(),expected_one.clone().len());
              fetch_set
@@ -434,7 +435,7 @@ impl EavTestSuite {
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
+                .fetch_eav(None, Some(attribute.clone()), Some(one.address()),IndexQuery::default())
                 .expect("could not fetch eav"),
         );
 
@@ -446,7 +447,7 @@ impl EavTestSuite {
                     .expect("Could not create eav");
             expected_one.insert(eav);
             let fetch_set = eav_storage
-                    .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
+                    .fetch_eav(Some(many.address()), Some(attribute.clone()), None,IndexQuery::default())
                     .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(),expected_one.clone().len());
              fetch_set

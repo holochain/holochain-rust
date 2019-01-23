@@ -9,7 +9,7 @@ use crate::{
     error::{HcResult, HolochainError},
     json::JsonString,
 };
-use chrono::{offset::Utc, DateTime};
+use chrono::offset::Utc;
 use objekt;
 use std::{
     collections::BTreeSet,
@@ -51,6 +51,20 @@ pub struct EntityAttributeValueIndex {
     // source: Source,
 }
 
+
+
+pub struct IndexQuery{
+    start_time : Option<i64>,
+    end_time : Option<i64>
+}
+
+impl Default for IndexQuery
+{
+    fn default() -> IndexQuery
+    {
+        IndexQuery{start_time:None,end_time:None}
+    }
+}
 
 
 impl AddressableContent for EntityAttributeValueIndex {
@@ -153,32 +167,10 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
+        index_query : IndexQuery
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError>;
 
-    //optimize this according to the trait store
-    fn fetch_eav_range(
-        &self,
-        start_date: Option<DateTime<Utc>>,
-        end_date: Option<DateTime<Utc>>,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>,
-    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        let eavs = self.fetch_eav(entity, attribute, value)?;
-        Ok(eavs
-            .into_iter()
-            .filter(|e| {
-                e.index
-                    <= start_date
-                        .map(|s| s.timestamp_nanos())
-                        .unwrap_or(i64::min_value())
-                    && end_date
-                        .map(|s| s.timestamp_nanos())
-                        .unwrap_or(i64::max_value())
-                        >= e.index
-            })
-            .collect())
-    }
+
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -211,7 +203,7 @@ pub fn increment_key_till_no_collision(
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         if self
-            .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
+            .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()),IndexQuery::default())?
             .len()
             == 0
         {
@@ -229,6 +221,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
+        index_query : IndexQuery
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         let filtered = map
@@ -239,6 +232,8 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                 EntityAttributeValueIndex::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
+            .filter(|e|index_query.start_time.unwrap_or(i64::min_value()) <= e.index())
+            .filter(|e|e.index()<=index_query.end_time.unwrap_or(i64::max_value()))
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
         Ok(filtered)
     }
@@ -246,7 +241,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
 
 impl PartialEq for EntityAttributeValueStorage {
     fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
-        self.fetch_eav(None, None, None) == other.fetch_eav(None, None, None)
+        self.fetch_eav(None, None, None,IndexQuery::default()) == other.fetch_eav(None, None, None,IndexQuery::default())
     }
 }
 
@@ -299,7 +294,8 @@ pub fn eav_round_trip_test_runner(
             .fetch_eav(
                 Some(entity_content.address()),
                 Some(attribute.clone()),
-                Some(value_content.address())
+                Some(value_content.address()),
+                IndexQuery::default()
             )
             .expect("could not fetch eav"),
     );
@@ -336,7 +332,7 @@ pub fn eav_round_trip_test_runner(
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eav(e, a, v)
+                .fetch_eav(e, a, v,IndexQuery::default())
                 .expect("could not fetch eav")
         );
     }

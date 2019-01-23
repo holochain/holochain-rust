@@ -3,7 +3,7 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
         increment_key_till_no_collision,  Attribute, Entity,
-        EntityAttributeValueIndex, EntityAttributeValueStorage, Value,
+        EntityAttributeValueIndex, EntityAttributeValueStorage, Value,IndexQuery
     },
     error::{HcResult, HolochainError},
     hash::HashString,
@@ -171,7 +171,7 @@ impl EavFileStorage {
 impl EntityAttributeValueStorage for EavFileStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         let fetched =
-            self.fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?;
+            self.fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()),IndexQuery::default())?;
 
         if fetched.len() == 0 {
             let _guard = self.lock.write()?;
@@ -191,6 +191,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
+        index_query : IndexQuery
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.read()?;
         let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
@@ -222,6 +223,8 @@ impl EntityAttributeValueStorage for EavFileStorage {
                     value.unwrap_or(EntityAttributeValueIndex::default())
                     
                 })
+                .filter(|e|index_query.start_time.unwrap_or(i64::min_value()) <= e.index())
+                .filter(|e|e.index()<=index_query.end_time.unwrap_or(i64::max_value()))
                 .collect::<BTreeSet<EntityAttributeValueIndex>>())
         }
     }

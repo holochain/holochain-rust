@@ -1,7 +1,7 @@
 use holochain_core_types::{
     eav::{
         increment_key_till_no_collision,  Attribute, Entity,
-        EntityAttributeValueIndex, EntityAttributeValueStorage,  Value,
+        EntityAttributeValueIndex, EntityAttributeValueStorage,  Value,IndexQuery
     },
     error::HolochainError,
 };
@@ -36,7 +36,7 @@ impl EavMemoryStorage {
 impl EntityAttributeValueStorage for EavMemoryStorage {
     fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         if self
-            .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
+            .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()),IndexQuery::default())?
             .len()
             == 0
         {
@@ -54,6 +54,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
+        index_query : IndexQuery
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         Ok(map
@@ -64,6 +65,8 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
                 EntityAttributeValueIndex::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
             .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
+            .filter(|e|index_query.start_time.unwrap_or(i64::min_value()) <= e.index())
+            .filter(|e|e.index()<=index_query.end_time.unwrap_or(i64::max_value()))
             .collect::<BTreeSet< EntityAttributeValueIndex>>())
     }
 }

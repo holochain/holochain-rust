@@ -2,7 +2,7 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
+        get_latest, increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
         EntityAttributeValueStorage, IndexQuery, Value,
     },
     error::{HcResult, HolochainError},
@@ -169,18 +169,13 @@ impl EntityAttributeValueStorage for EavFileStorage {
             Some(eav.value()),
             IndexQuery::default(),
         )?;
-
-        if fetched.len() == 0 {
-            let _guard = self.lock.write()?;
-            create_dir_all(self.dir_path.clone())?;
-            let new_eav = increment_key_till_no_collision(eav.clone(), fetched.clone())?;
-            self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
-                .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
-                .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;
-            Ok(Some(new_eav.clone()))
-        } else {
-            Ok(None)
-        }
+        let _guard = self.lock.write()?;
+        create_dir_all(self.dir_path.clone())?;
+        let new_eav = increment_key_till_no_collision(eav.clone(), fetched.clone())?;
+        self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
+            .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
+            .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;
+        Ok(Some(new_eav.clone()))
     }
 
     fn fetch_eav(
@@ -215,13 +210,36 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 "Error Converting EAVs".to_string(),
             ))
         } else {
-            Ok(eav
+            let map: BTreeSet<EntityAttributeValueIndex> = eav
+                .clone()
                 .into_iter()
                 .map(|value: HcResult<EntityAttributeValueIndex>| {
                     value.unwrap_or(EntityAttributeValueIndex::default())
                 })
-                .filter(|e| index_query.start_time().unwrap_or(i64::min_value()) <= e.index())
-                .filter(|e| e.index() <= index_query.end_time().unwrap_or(i64::max_value()))
+                .collect();
+            Ok(map
+                .clone()
+                .into_iter()
+                .filter(|e| {
+                    index_query
+                        .start_time()
+                        .map(|start| start >= e.index())
+                        .unwrap_or_else(|| {
+                            let latest = get_latest(e.clone(), map.clone())
+                                .unwrap_or(EntityAttributeValueIndex::default());
+                            latest.index() == e.index()
+                        })
+                })
+                .filter(|e| {
+                    index_query
+                        .start_time()
+                        .map(|end| end <= e.index())
+                        .unwrap_or_else(|| {
+                            let latest = get_latest(e.clone(), map.clone())
+                                .unwrap_or(EntityAttributeValueIndex::default());
+                            latest.index() == e.index()
+                        })
+                })
                 .collect::<BTreeSet<EntityAttributeValueIndex>>())
         }
     }

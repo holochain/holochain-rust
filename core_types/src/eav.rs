@@ -218,23 +218,10 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        if self
-            .fetch_eav(
-                Some(eav.entity()),
-                Some(eav.attribute()),
-                Some(eav.value()),
-                IndexQuery::default(),
-            )?
-            .len()
-            == 0
-        {
-            let mut map = self.storage.write()?;
-            let new_eav = increment_key_till_no_collision(eav.clone(), map.clone())?;
-            map.insert(new_eav.clone());
-            Ok(Some(new_eav.clone()))
-        } else {
-            Ok(None)
-        }
+        let mut map = self.storage.write()?;
+        let new_eav = increment_key_till_no_collision(eav.clone(), map.clone())?;
+        map.insert(new_eav.clone());
+        Ok(Some(new_eav.clone()))
     }
 
     fn fetch_eav(
@@ -245,19 +232,55 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
-        let filtered = map
-            .clone()
+        let new_map = map.clone();
+        let filtered = new_map
             .into_iter()
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|e| {
                 EntityAttributeValueIndex::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
-            .filter(|e| index_query.start_time.unwrap_or(i64::min_value()) <= e.index())
-            .filter(|e| e.index() <= index_query.end_time.unwrap_or(i64::max_value()))
+            .filter(|e| {
+                index_query
+                    .start_time()
+                    .map(|start| start >= e.index())
+                    .unwrap_or_else(|| {
+                        let latest = get_latest(e.clone(), map.clone())
+                            .unwrap_or(EntityAttributeValueIndex::default());
+                        latest.index() == e.index()
+                    })
+            })
+            .filter(|e| {
+                index_query
+                    .start_time()
+                    .map(|end| end <= e.index())
+                    .unwrap_or_else(|| {
+                        let latest = get_latest(e.clone(), map.clone())
+                            .unwrap_or(EntityAttributeValueIndex::default());
+                        latest.index() == e.index()
+                    })
+            })
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
+
         Ok(filtered)
     }
+}
+
+pub fn get_latest(
+    eav: EntityAttributeValueIndex,
+    map: BTreeSet<EntityAttributeValueIndex>,
+) -> HcResult<EntityAttributeValueIndex> {
+    let filter = map
+        .clone()
+        .into_iter()
+        .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), Some(&eav.entity())))
+        .filter(|e| {
+            EntityAttributeValueIndex::filter_on_eav(&e.attribute(), Some(&eav.attribute()))
+        })
+        .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), Some(&eav.value())));
+    filter.last().ok_or(HolochainError::ErrorGeneric(
+        "Could not get last value".to_string(),
+    ))
 }
 
 impl PartialEq for EntityAttributeValueStorage {

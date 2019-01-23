@@ -333,23 +333,24 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValueIndex::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
-            let eavi = eav_storage
+            eav_storage
                 .add_eav(&eav)
                 .expect("could not add eav")
                 .expect("could not add eav");
-            expected.insert(eavi);
         }
 
         // throw an extra thing referencing many to show fetch ignores it
         let two = A::try_from_content(&foo_content)
             .expect("could not create AddressableContent from Content");
-        for many in vec![many_one.clone(), many_three.clone()] {
-            eav_storage
+        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
+            let eavi = eav_storage
                 .add_eav(
                     &EntityAttributeValueIndex::new(&two.address(), &attribute, &many.address())
                         .expect("Could not create eav"),
                 )
+                .expect("could not add eav")
                 .expect("could not add eav");
+            expected.insert(eavi);
         }
 
         println!("expected {:?}", expected.clone());
@@ -416,23 +417,24 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValueIndex::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
-            let eavi = eav_storage
+            eav_storage
                 .add_eav(&eav)
                 .expect("could not add eav")
                 .expect("Could not get eavi option");
-            expected.insert(eavi);
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
         let two = A::try_from_content(&foo_content)
             .expect("could not create AddressableContent from Content");
-        for many in vec![many_one.clone(), many_three.clone()] {
-            eav_storage
+        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
+            let eavi = eav_storage
                 .add_eav(
                     &EntityAttributeValueIndex::new(&many.address(), &attribute, &two.address())
                         .expect("Could not create eav"),
                 )
+                .expect("could not add eav")
                 .expect("could not add eav");
+            expected.insert(eavi);
         }
 
         println!("expected {:?}", expected.clone());

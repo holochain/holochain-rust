@@ -246,7 +246,7 @@ declare_types! {
             };
 
             let dna = maybe_dna.or_else(|e: String| {
-                let error_string = cx.string(format!("unable to call zome function: {:?}", &e));
+                let error_string = cx.string(format!("unable to get DNA: {:?}", &e));
                 cx.throw(error_string)
             })?;
             let address = dna.address();

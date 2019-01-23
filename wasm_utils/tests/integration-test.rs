@@ -149,7 +149,7 @@ fn stacked_json_test() {
 fn call_store_as_json_err() {
     assert_eq!(
         Err(HolochainInstanceError::from(
-            HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.intohc())
+            HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.into())
         )),
         call_zome_function_with_hc("store_json_err"),
     );

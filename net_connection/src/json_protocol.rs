@@ -198,7 +198,7 @@ pub struct FetchDhtMetaData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
     #[serde(rename = "address")]
-    pub data_address: String,
+    pub data_address: Address,
 }
 
 /// Generic DHT metadata message
@@ -401,12 +401,12 @@ pub enum JsonProtocol {
     #[serde(rename = "handleGetPublishingMetaList")]
     HandleGetPublishingMetaList(GetListData),
     #[serde(rename = "handleGetPublishingMetaListResult")]
-    HandleGetPublishingMetaListResult(HandleListResultData),
+    HandleGetPublishingMetaListResult(HandleMetaListResultData),
 
     #[serde(rename = "handleGetHoldingMetaList")]
     HandleGetHoldingMetaList(GetListData),
     #[serde(rename = "handleGetHoldingMetaListResult")]
-    HandleGetHoldingMetaListResult(HandleListResultData),
+    HandleGetHoldingMetaListResult(HandleMetaListResultData),
 }
 
 impl<'a> TryFrom<&'a Protocol> for JsonProtocol {

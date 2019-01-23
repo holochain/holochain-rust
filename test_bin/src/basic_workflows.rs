@@ -52,43 +52,32 @@ macro_rules! one_is {
 #[cfg_attr(tarpaulin, skip)]
 fn confirm_published_data(alex: &mut P2pNode, billy: &mut P2pNode, address: &Address) -> NetResult<()> {
     // Alex publishs data on the network
-    alex.send(
-        JsonProtocol::PublishDhtData(DhtData {
-            dna_address: example_dna_address(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: address.clone(),
-            data_content: json!("hello"),
-        })
-            .into(),
+    alex.author_data(
+        &example_dna_address(),
+        address.into(),
+        json!("hello"),
+        true,
     )?;
+
     // Check if both nodes received a HandleStore command.
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))))?;
     println!(" got store result A: {:?}\n", result_a);
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))))?;
     println!("got store result B: {:?}\n", result_b);
+    assert!(billy.data_store.contains(address));
 
     // Billy asks for that data on the network.
-    billy.send(
-        JsonProtocol::FetchDhtData(FetchDhtData {
-            request_id: "testGetEntry".to_string(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: address.clone(),
-        })
-            .into(),
-    )?;
+    let fetch_data = FetchDhtData {
+        request_id: "testGetEntry".to_string(),
+        dna_address: example_dna_address(),
+        requester_agent_id: BILLY_AGENT_ID.to_string(),
+        data_address: address.clone(),
+    };
+    billy.send(JsonProtocol::FetchDhtData(fetch_data).into())?;
+
     // Alex having that data, sends it to the network.
-    alex.send(
-        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
-            request_id: "testGetEntryResult".to_string(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            dna_address: example_dna_address(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: address.clone(),
-            data_content: json!("hello"),
-        })
-            .into(),
-    )?;
+    alex.reply_fetch_data(&fetch_data);
+
     // billy should receive the data it requested from the netowrk
     let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
     println!("got dht data result: {:?}", result);
@@ -104,46 +93,33 @@ fn confirm_published_metadata(
     address: &Address,
 ) -> NetResult<()> {
     // Alex publishs metadata on the network
-    alex.send(
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
-            dna_address: example_dna_address(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: address.clone(),
-            attribute: META_ATTRIBUTE.to_string(),
-            content: json!("hello-meta"),
-        })
-            .into(),
+    alex.author_meta(
+        &example_dna_address(),
+             address,
+            &META_ATTRIBUTE.to_string(),
+            json!("hello-meta"),
+        true,
     )?;
     // Check if both nodes received a HandleStore command.
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtMeta(_))))?;
     println!("got store meta result 1: {:?}", result_a);
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtMeta(_))))?;
     println!("got store meta result 2: {:?}", result_b);
+    assert!(billy.meta_store.contains((address, META_ATTRIBUTE)));
 
     // Billy asks for that metadata on the network.
-    billy.send(
-        JsonProtocol::FetchDhtMeta(FetchDhtMetaData {
-            request_id: "testGetMeta".to_string(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: address.to_string(),
-            attribute: META_ATTRIBUTE.to_string(),
-        })
-            .into(),
-    )?;
+    let fetch_meta = FetchDhtMetaData {
+        request_id: "testGetMeta".to_string(),
+        dna_address: example_dna_address(),
+        requester_agent_id: BILLY_AGENT_ID.to_string(),
+        data_address: address.clone(),
+        attribute: META_ATTRIBUTE.to_string(),
+    };
+    billy.send(JsonProtocol::FetchDhtMeta(fetch_meta).into())?;
+
     // Alex having that metadata, sends it to the network.
-    alex.send(
-        JsonProtocol::HandleFetchDhtMetaResult(HandleDhtMetaResultData {
-            request_id: "testGetMetaResult".to_string(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: address.clone(),
-            attribute: META_ATTRIBUTE.to_string(),
-            content: json!("hello"),
-        })
-            .into(),
-    )?;
+    alex.reply_fetch_meta(&fetch_meta)?;
+
     // billy should receive the metadata it requested from the netowrk
     let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))))?;
     println!("got dht meta result: {:?}", result);
@@ -301,71 +277,43 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
 
     // Again but 'wait' at the end
     // Alex publishs data & meta on the network
-    alex.send(
-        JsonProtocol::PublishDhtData(DhtData {
-            dna_address: example_dna_address(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.into(),
-            data_content: json!("hello"),
-        })
-            .into(),
+    alex.author_data(
+        &example_dna_address(),
+        ENTRY_ADDRESS_3.into(),
+        json!("hello-3"),
+        true,
     )?;
-    alex.send(
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
-            dna_address: example_dna_address(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.into(),
-            attribute: META_ATTRIBUTE.to_string(),
-            content: json!("hello-meta"),
-        })
-            .into(),
+    alex.author_meta(
+        &example_dna_address(),
+        ENTRY_ADDRESS_3.into(),
+        &META_ATTRIBUTE.to_string(),
+        json!("hello-3-meta"),
+        true,
     )?;
+
     // Billy sends GetDhtData message
-    billy.send(
-        JsonProtocol::FetchDhtData(FetchDhtData {
-            request_id: "testGetEntry".to_string(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.into(),
-        })
-            .into(),
-    )?;
+    let fetch_data = FetchDhtData {
+        request_id: "testGetEntry".to_string(),
+        dna_address: example_dna_address(),
+        requester_agent_id: BILLY_AGENT_ID.to_string(),
+        data_address: ENTRY_ADDRESS_3.into(),
+    };
+    billy.send(JsonProtocol::FetchDhtData(fetch_data).into())?;
+
     // Billy sends HandleGetDhtDataResult message
-    billy.send(
-        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
-            request_id: "testGetEntryResult".to_string(),
-            requester_agent_id: ALEX_AGENT_ID.to_string(),
-            dna_address: example_dna_address(),
-            provider_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.into(),
-            data_content: json!("hello"),
-        })
-            .into(),
-    )?;
+    billy.reply_fetch_data(&fetch_data)?;
+
     // Billy sends GetDhtMeta message
-    billy.send(
-        JsonProtocol::FetchDhtMeta(FetchDhtMetaData {
-            request_id: "testGetMeta".to_string(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.into(),
-            attribute: META_ATTRIBUTE.to_string(),
-        })
-            .into(),
-    )?;
+    let fetch_meta = FetchDhtMetaData {
+        request_id: "testGetMeta".to_string(),
+        dna_address: example_dna_address(),
+        requester_agent_id: BILLY_AGENT_ID.to_string(),
+        data_address: ENTRY_ADDRESS_3.into(),
+        attribute: META_ATTRIBUTE.to_string(),
+    };
+    billy.send(JsonProtocol::FetchDhtMeta(fetch_meta).into())?;
     // Alex sends HandleGetDhtMetaResult message
-    alex.send(
-        JsonProtocol::HandleFetchDhtMetaResult(HandleDhtMetaResultData {
-            request_id: "testGetMetaResult".to_string(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.into(),
-            attribute: META_ATTRIBUTE.to_string(),
-            content: json!("hello"),
-        })
-            .into(),
-    )?;
+    alex.reply_fetch_meta(&fetch_meta)?;
     // billy should receive requested metadata
     let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))))?;
     println!("got GetDhtMetaResult: {:?}", result);
@@ -381,43 +329,32 @@ fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetRe
     setup_normal(alex, billy, can_connect)?;
 
     // Alex publish data on the network
-    alex.send(
-        JsonProtocol::PublishDhtData(DhtData {
-            dna_address: example_dna_address(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_1.into(),
-            data_content: json!("hello"),
-        })
-            .into(),
+    alex.author_data(
+        &example_dna_address(),
+             ENTRY_ADDRESS_1.into(),
+            json!("hello"),
+true,
     )?;
+
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))))?;
     println!("got HandleStoreDhtData on node A: {:?}", result_a);
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))))?;
     println!("got HandleStoreDhtData on node B: {:?}", result_b);
+    assert!(billy.data_store.contains(address));
 
     // Billy asks for that data
-    billy.send(
-        JsonProtocol::FetchDhtData(FetchDhtData {
-            request_id: "testGet".to_string(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_1.into(),
-        })
-            .into(),
-    )?;
+    let fetch_data = FetchDhtData {
+        request_id: "testGet".to_string(),
+        dna_address: example_dna_address(),
+        requester_agent_id: BILLY_AGENT_ID.to_string(),
+        data_address: ENTRY_ADDRESS_1.into(),
+    };
+    billy.send(JsonProtocol::FetchDhtData(fetch_data).into())?;
+
     // Alex sends that data back to the network
-    alex.send(
-        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
-            request_id: "testGetResult".to_string(),
-            requester_agent_id: BILLY_AGENT_ID.to_string(),
-            dna_address: example_dna_address(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_1.into(),
-            data_content: json!("hello"),
-        })
-            .into(),
-    )?;
+    alex.reply_fetch_data(&fetch_data);
+
     // Billy should receive requested data
     let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
     println!("got GetDhtDataResult: {:?}", result);

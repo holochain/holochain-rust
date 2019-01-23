@@ -72,6 +72,9 @@ declare_types! {
         }
 
         // Start the backing Container and spawn a MainBackgroundTask
+        // Accepts a callback which will be passed on to MainBackgroundTask
+        // and called when that exits. This callback is used to fuel a Promise
+        // when calling .start()
         method start(mut cx) {
             let js_callback: Handle<JsFunction> = cx.argument(0)?;
             let mut this = cx.this();

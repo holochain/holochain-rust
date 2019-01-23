@@ -45,9 +45,24 @@ Container.prototype._start = Container.prototype.start
 Container.prototype._stop = Container.prototype.stop
 Container.prototype._callRaw = Container.prototype.call
 
+Container.prototype.run = function (fn) {
+    return new Promise((fulfill, reject) => {
+        try {
+            this._start(promiser(fulfill, reject))
+            fn(() => this._stop())
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
+
 Container.prototype.start = function () {
     this._stopPromise = new Promise((fulfill, reject) => {
-        return this._start(promiser(fulfill, reject))
+        try {
+            this._start(promiser(fulfill, reject))
+        } catch (e) {
+            reject(e)
+        }
     })
 }
 
@@ -141,25 +156,23 @@ class Scenario {
      */
     run(fn) {
         const container = Container.withInstances(this.instances, this.opts)
-        container.start()
-        const callers = {}
-        this.instances.forEach(instance => {
-            const id = makeInstanceId(instance.agent.name, instance.dna.name)
-            const name = instance.name
-            if (name in callers) {
-                throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
-            }
-            callers[name] = {
-                call: (...args) => container.call(id, ...args),
-                callSync: (...args) => container.callSync(id, ...args),
-                callWithPromise: (...args) => container.callWithPromise(id, ...args),
-                agentId: container.agent_id(id)
-            }
-        })
-        fn(
-            () => container.stop().catch(err => console.error("Scenario failed! ", err)), 
-            callers
-        )
+        return container.run(stop => {
+            const callers = {}
+            this.instances.forEach(instance => {
+                const id = makeInstanceId(instance.agent.name, instance.dna.name)
+                const name = instance.name
+                if (name in callers) {
+                    throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
+                }
+                callers[name] = {
+                    call: (...args) => container.call(id, ...args),
+                    callSync: (...args) => container.callSync(id, ...args),
+                    callWithPromise: (...args) => container.callWithPromise(id, ...args),
+                    agentId: container.agent_id(id)
+                }
+            })
+            fn(stop, callers)
+        }).catch(err => console.error("Scenario failed! ", err))
     }
 
     runTape(description, fn) {
@@ -167,15 +180,16 @@ class Scenario {
             throw new Error("must call `scenario.setTape(require('tape'))` before running tape-based tests!")
         }
         Scenario._tape(description, t => {
-            try {
-                this.run(async (stop, instances) => {
+            this.run(async (stop, instances) => {
+                try {
                     await fn(t, instances)
-                    t.end()
-                    await stop()
-                })
-            } catch (e) {
-                t.fail(e)
-            }
+                    stop()
+                } catch (ew) {
+                    console.log("EW", ew)
+                }
+            })
+            .catch(e => {console.log("whaaa", e); t.fail(e)})
+            .then(t.end)
         })
     }
 }

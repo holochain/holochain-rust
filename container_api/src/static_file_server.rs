@@ -26,12 +26,12 @@ fn redirect_request_to_root<T>(req: &mut Request<T>) {
 }
 
 fn dna_connections_response(config: &Option<InterfaceConfiguration>) -> Response<Body> {
-    let intefaces = match config {
-        Some(config) => json!([config]),
-        None => json!([]),
+    let interface = match config {
+        Some(config) => json!(config),
+        None => serde_json::Value::Null,
     };
     Builder::new()
-        .body(json!({ "dna_interfaces": intefaces }).to_string().into())
+        .body(json!({ "dna_interface": interface }).to_string().into())
         .expect("unable to build response")
 }
 

@@ -223,8 +223,8 @@ impl EntityAttributeValueStorage for EavFileStorage {
                     value.unwrap_or(EntityAttributeValueIndex::default())
                     
                 })
-                .filter(|e|index_query.start_time.unwrap_or(i64::min_value()) <= e.index())
-                .filter(|e|e.index()<=index_query.end_time.unwrap_or(i64::max_value()))
+                .filter(|e|index_query.start_time().unwrap_or(i64::min_value()) <= e.index())
+                .filter(|e|e.index()<=index_query.end_time().unwrap_or(i64::max_value()))
                 .collect::<BTreeSet<EntityAttributeValueIndex>>())
         }
     }

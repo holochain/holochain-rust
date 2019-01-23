@@ -58,6 +58,19 @@ pub struct IndexQuery{
     end_time : Option<i64>
 }
 
+impl IndexQuery
+{
+    pub fn start_time(&self) ->Option<i64>
+    {
+        self.start_time.clone()
+    }
+
+    pub fn end_time(&self) ->Option<i64>
+    {
+        self.end_time.clone()
+    }
+}
+
 impl Default for IndexQuery
 {
     fn default() -> IndexQuery

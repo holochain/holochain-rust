@@ -208,7 +208,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
 
         let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
             .into_iter()
-            .map(|(content)| {
+            .map(|content| {
                 EntityAttributeValueIndex::try_from_content(&JsonString::from(content))
             })
             .partition(|c| c.is_ok());

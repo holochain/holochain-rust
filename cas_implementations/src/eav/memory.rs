@@ -68,11 +68,11 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         Ok(map
             .clone()
             .into_iter()
-            .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|(e)| {
+            .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
+            .filter(|e| {
                 EntityAttributeValueIndex::filter_on_eav(&e.attribute(), attribute.as_ref())
             })
-            .filter(|(e)| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
+            .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
             .filter(|e| index_query.start_time().unwrap_or(i64::min_value()) <= e.index())
             .filter(|e| e.index() <= index_query.end_time().unwrap_or(i64::max_value()))
             .collect::<BTreeSet<EntityAttributeValueIndex>>())

@@ -18,9 +18,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         dna_name: runtime.dna_name.to_string(),
         dna_address: Address::from(""),
         agent_id_str: JsonString::from(runtime.context.agent_id.clone()).to_string(),
-        // TODO #233 - Implement agent pub key hash
-        agent_address: Address::from(""),
-        //agent_address: Address::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
+        agent_address: Address::from(runtime.context.agent_id.address()),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
     };
@@ -45,7 +43,6 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             if found_entries.len() > 0 {
                 globals.agent_latest_hash = found_entries[0].clone();
                 globals.agent_initial_hash = found_entries.pop().unwrap();
-                // TODO #233 - Implement agent pub key hash
                 globals.agent_address = globals.agent_latest_hash.clone();
             }
         }

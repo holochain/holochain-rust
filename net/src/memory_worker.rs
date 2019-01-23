@@ -128,7 +128,7 @@ mod tests {
     use holochain_core_types::cas::content::Address;
     use holochain_net_connection::json_protocol::{
         DhtData, DhtMetaData, FetchDhtData, FetchDhtMetaData, JsonProtocol, MessageData,
-        SuccessResultData, TrackDnaData,
+        SuccessResultData, TrackDnaData, HandleDhtResultData, HandleDhtMetaResultData,
     };
 
     fn example_dna_address() -> Address {
@@ -311,10 +311,11 @@ mod tests {
         if let JsonProtocol::HandleFetchDhtData(msg) = res {
             memory_worker_1
                 .receive(
-                    JsonProtocol::HandleFetchDhtDataResult(DhtData {
+                    JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
                         request_id: msg.request_id.clone(),
+                        requester_agent_id: msg.requester_agent_id.clone(),
                         dna_address: msg.dna_address.clone(),
-                        provider_agent_id: msg.requester_agent_id.clone(),
+                        provider_agent_id: AGENT_ID_1.to_string(),
                         data_address: msg.data_address.clone(),
                         data_content: json!(format!("data-for: {}", msg.address)),
                     })
@@ -342,7 +343,6 @@ mod tests {
         memory_worker_2
             .receive(
                 JsonProtocol::PublishDhtData(DhtData {
-                    request_id: "yada".to_string(),
                     dna_address: example_dna_address(),
                     provider_agent_id: AGENT_ID_2.to_string(),
                     data_address: "hello".to_string(),
@@ -409,10 +409,10 @@ mod tests {
         if let JsonProtocol::HandleFetchDhtMeta(msg) = res {
             memory_worker_1
                 .receive(
-                    JsonProtocol::HandleFetchDhtMetaResult(DhtMetaData {
+                    JsonProtocol::HandleFetchDhtMetaResult(HandleDhtMetaResultData {
                         request_id: msg.request_id.clone(),
-                        dna_address: msg.dna_address.clone(),
                         requester_agent_id: msg.requester_agent_id.clone(),
+                        dna_address: msg.dna_address.clone(),
                         provider_agent_id: AGENT_ID_1.to_string(),
                         data_address: msg.data_address.clone(),
                         attribute: msg.attribute.clone(),
@@ -445,9 +445,7 @@ mod tests {
         memory_worker_2
             .receive(
                 JsonProtocol::PublishDhtMeta(DhtMetaData {
-                    request_id: "yada".to_string(),
                     dna_address: example_dna_address(),
-                    requester_agent_id: AGENT_ID_2.to_string(),
                     provider_agent_id: AGENT_ID_1.to_string(),
                     data_address: "hello".to_string(),
                     attribute: "link:test".to_string(),

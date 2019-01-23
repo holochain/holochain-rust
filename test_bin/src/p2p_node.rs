@@ -27,7 +27,7 @@ impl P2pNode {
 
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                println!("P2pNode({}) handler: {:?}", name_arg, r);
+                println!("<<< P2pNode({}) handler: {:?}", name_arg, r);
                 sender.send(r?)?;
                 Ok(())
             }),

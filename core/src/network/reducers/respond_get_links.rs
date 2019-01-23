@@ -23,7 +23,7 @@ fn reduce_respond_get_links_inner(
             requester_agent_id: get_dht_meta_data.requester_agent_id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
-            data_address: get_dht_meta_data.data_address.clone(),
+            data_address: get_dht_meta_data.data_address.clone().into(),
             attribute: get_dht_meta_data.attribute.clone(),
             content: serde_json::from_str(&serde_json::to_string(&links).unwrap()).unwrap(),
         }),

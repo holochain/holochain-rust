@@ -35,7 +35,7 @@ pub struct ConfigData {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct ConnectData {
     #[serde(rename = "address")]
-    pub peer_address: Address,
+    pub peer_address: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
@@ -114,7 +114,7 @@ pub struct DhtDataRequestData {
     pub dna_address: Address,
 
     #[serde(rename = "address")]
-    pub data_address: String,
+    pub data_address: Address,
 }
 
 /// Data Request from some other agent
@@ -129,7 +129,7 @@ pub struct FetchDhtData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
     #[serde(rename = "address")]
-    pub data_address: String,
+    pub data_address: Address,
 }
 
 /// Generic DHT data message
@@ -142,7 +142,7 @@ pub struct DhtData {
     pub provider_agent_id: String,
 
     #[serde(rename = "address")]
-    pub data_address: String,
+    pub data_address: Address,
 
     #[serde(rename = "content")]
     pub data_content: serde_json::Value,
@@ -162,7 +162,7 @@ pub struct HandleDhtResultData {
     #[serde(rename = "agentId")]
     pub provider_agent_id: String,
     #[serde(rename = "address")]
-    pub data_address: String,
+    pub data_address: Address,
     #[serde(rename = "content")]
     pub data_content: serde_json::Value,
 }
@@ -197,7 +197,7 @@ pub struct DhtMetaData {
     pub provider_agent_id: String,
 
     #[serde(rename = "address")]
-    pub data_address: String,
+    pub data_address: Address,
     pub attribute: String,
     pub content: serde_json::Value,
 }
@@ -215,7 +215,7 @@ pub struct HandleDhtMetaResultData {
     #[serde(rename = "agentId")]
     pub provider_agent_id: String,
     #[serde(rename = "address")]
-    pub data_address: String,
+    pub data_address: Address,
     pub attribute: String,
     pub content: serde_json::Value,
 }

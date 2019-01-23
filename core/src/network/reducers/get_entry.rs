@@ -16,7 +16,7 @@ fn reduce_fetch_entry_inner(network_state: &mut NetworkState, key: &GetEntryKey)
             requester_agent_id: network_state.agent_id.clone().unwrap(),
             request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
-            data_address: key.address.to_string(),
+            data_address: key.address.clone(),
         }),
     )
 }

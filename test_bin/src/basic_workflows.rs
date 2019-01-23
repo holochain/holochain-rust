@@ -50,13 +50,13 @@ macro_rules! one_is {
 
 /// Tests if we can get back data published on the network
 #[cfg_attr(tarpaulin, skip)]
-fn confirm_published_data(alex: &mut P2pNode, billy: &mut P2pNode, address: &str) -> NetResult<()> {
+fn confirm_published_data(alex: &mut P2pNode, billy: &mut P2pNode, address: &Address) -> NetResult<()> {
     // Alex publishs data on the network
     alex.send(
         JsonProtocol::PublishDhtData(DhtData {
             dna_address: example_dna_address(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: address.to_string(),
+            data_address: address.clone(),
             data_content: json!("hello"),
         })
             .into(),
@@ -73,7 +73,7 @@ fn confirm_published_data(alex: &mut P2pNode, billy: &mut P2pNode, address: &str
             request_id: "testGetEntry".to_string(),
             dna_address: example_dna_address(),
             requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: address.to_string(),
+            data_address: address.clone(),
         })
             .into(),
     )?;
@@ -84,7 +84,7 @@ fn confirm_published_data(alex: &mut P2pNode, billy: &mut P2pNode, address: &str
             requester_agent_id: BILLY_AGENT_ID.to_string(),
             dna_address: example_dna_address(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: address.to_string(),
+            data_address: address.clone(),
             data_content: json!("hello"),
         })
             .into(),
@@ -101,14 +101,14 @@ fn confirm_published_data(alex: &mut P2pNode, billy: &mut P2pNode, address: &str
 fn confirm_published_metadata(
     alex: &mut P2pNode,
     billy: &mut P2pNode,
-    address: &str,
+    address: &Address,
 ) -> NetResult<()> {
     // Alex publishs metadata on the network
     alex.send(
         JsonProtocol::PublishDhtMeta(DhtMetaData {
             dna_address: example_dna_address(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: address.to_string(),
+            data_address: address.clone(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello-meta"),
         })
@@ -138,7 +138,7 @@ fn confirm_published_metadata(
             dna_address: example_dna_address(),
             requester_agent_id: BILLY_AGENT_ID.to_string(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: address.to_string(),
+            data_address: address.clone(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
@@ -292,12 +292,12 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
     setup_normal(alex, billy, can_connect)?;
 
     // Send data & metadata on same address
-    confirm_published_data(alex, billy, ENTRY_ADDRESS_1)?;
-    confirm_published_metadata(alex, billy, ENTRY_ADDRESS_1)?;
+    confirm_published_data(alex, billy, &ENTRY_ADDRESS_1.into())?;
+    confirm_published_metadata(alex, billy, &ENTRY_ADDRESS_1.into())?;
 
     // Again but now send metadata first
-    confirm_published_metadata(alex, billy, ENTRY_ADDRESS_2)?;
-    confirm_published_data(alex, billy, ENTRY_ADDRESS_2)?;
+    confirm_published_metadata(alex, billy, &ENTRY_ADDRESS_2.into())?;
+    confirm_published_data(alex, billy, &ENTRY_ADDRESS_2.into())?;
 
     // Again but 'wait' at the end
     // Alex publishs data & meta on the network
@@ -305,7 +305,7 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
         JsonProtocol::PublishDhtData(DhtData {
             dna_address: example_dna_address(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.to_string(),
+            data_address: ENTRY_ADDRESS_3.into(),
             data_content: json!("hello"),
         })
             .into(),
@@ -314,7 +314,7 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
         JsonProtocol::PublishDhtMeta(DhtMetaData {
             dna_address: example_dna_address(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.to_string(),
+            data_address: ENTRY_ADDRESS_3.into(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello-meta"),
         })
@@ -326,7 +326,7 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
             request_id: "testGetEntry".to_string(),
             dna_address: example_dna_address(),
             requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.to_string(),
+            data_address: ENTRY_ADDRESS_3.into(),
         })
             .into(),
     )?;
@@ -337,7 +337,7 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
             requester_agent_id: ALEX_AGENT_ID.to_string(),
             dna_address: example_dna_address(),
             provider_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.to_string(),
+            data_address: ENTRY_ADDRESS_3.into(),
             data_content: json!("hello"),
         })
             .into(),
@@ -348,7 +348,7 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
             request_id: "testGetMeta".to_string(),
             dna_address: example_dna_address(),
             requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.to_string(),
+            data_address: ENTRY_ADDRESS_3.into(),
             attribute: META_ATTRIBUTE.to_string(),
         })
             .into(),
@@ -360,7 +360,7 @@ fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetR
             dna_address: example_dna_address(),
             requester_agent_id: BILLY_AGENT_ID.to_string(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_3.to_string(),
+            data_address: ENTRY_ADDRESS_3.into(),
             attribute: META_ATTRIBUTE.to_string(),
             content: json!("hello"),
         })
@@ -385,7 +385,7 @@ fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetRe
         JsonProtocol::PublishDhtData(DhtData {
             dna_address: example_dna_address(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_1.to_string(),
+            data_address: ENTRY_ADDRESS_1.into(),
             data_content: json!("hello"),
         })
             .into(),
@@ -402,7 +402,7 @@ fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetRe
             request_id: "testGet".to_string(),
             dna_address: example_dna_address(),
             requester_agent_id: BILLY_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_1.to_string(),
+            data_address: ENTRY_ADDRESS_1.into(),
         })
             .into(),
     )?;
@@ -413,7 +413,7 @@ fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetRe
             requester_agent_id: BILLY_AGENT_ID.to_string(),
             dna_address: example_dna_address(),
             provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: ENTRY_ADDRESS_1.to_string(),
+            data_address: ENTRY_ADDRESS_1.into(),
             data_content: json!("hello"),
         })
             .into(),

@@ -279,6 +279,7 @@ impl Dispatch {
 /// # use hdk::holochain_core_types::json::JsonString;
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
+/// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]

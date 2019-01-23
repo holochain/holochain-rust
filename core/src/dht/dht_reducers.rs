@@ -379,9 +379,9 @@ pub mod tests {
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 1);
         let eav = hash_set.iter().nth(0).unwrap();
-        assert_eq!(eav.1.entity(), *link.base());
-        assert_eq!(eav.1.value(), *link.target());
-        assert_eq!(eav.1.attribute(), format!("link__{}", link.tag()));
+        assert_eq!(eav.entity(), *link.base());
+        assert_eq!(eav.value(), *link.target());
+        assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
     }
 
     #[test]

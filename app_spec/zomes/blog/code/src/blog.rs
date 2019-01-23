@@ -34,7 +34,7 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
 }
 
 pub fn handle_check_send(to_agent: Address, message: String) -> ZomeApiResult<String> {
-    hdk::send(to_agent, message)
+    hdk::send(to_agent, message, 10000.into())
 }
 
 pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {

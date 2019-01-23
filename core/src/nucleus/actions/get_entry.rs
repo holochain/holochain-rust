@@ -3,12 +3,12 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::content::Address,
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::{EntityAttributeValue, Key},
+    eav::EntityAttributeValueIndex,
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
-use im::hashmap::HashMap;
-use std::{convert::TryInto, str::FromStr, sync::Arc};
+
+use std::{collections::BTreeSet,convert::TryInto, str::FromStr, sync::Arc};
 
 pub(crate) fn get_entry_from_dht(
     context: &Arc<Context>,
@@ -44,10 +44,10 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let has_deleted = status_eavs
         .clone()
         .into_iter()
-        .filter(|(_, e)| {
+        .filter(|e| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
         })
-        .collect::<HashMap<Key, EntityAttributeValue>>()
+        .collect::<BTreeSet<EntityAttributeValueIndex>>()
         .len()
         > 0;
     if has_deleted {
@@ -55,10 +55,10 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     } else {
         let has_modified = status_eavs
             .into_iter()
-            .filter(|(_, e)| {
+            .filter(|e| {
                 CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
             })
-            .collect::<HashMap<Key, EntityAttributeValue>>()
+            .collect::<BTreeSet<EntityAttributeValueIndex>>()
             .len()
             > 0;
         if has_modified {
@@ -75,7 +75,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         link_eavs.len()
     );
     if link_eavs.len() == 1 {
-        maybe_crud_link = Some(link_eavs.iter().next().unwrap().1.value());
+        maybe_crud_link = Some(link_eavs.iter().next().unwrap().value());
     }
     // Done
     Ok(Some((crud_status, maybe_crud_link)))

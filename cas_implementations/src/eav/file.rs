@@ -169,19 +169,20 @@ impl EavFileStorage {
 
 
 impl EntityAttributeValueStorage for EavFileStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<(), HolochainError> {
+    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         let fetched =
             self.fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?;
 
         if fetched.len() == 0 {
             let _guard = self.lock.write()?;
             create_dir_all(self.dir_path.clone())?;
-            self.write_to_file(ENTITY_DIR.to_string(), eav)
-                .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), eav))
-                .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), eav))?;
-            Ok(())
+            let new_eav = increment_key_till_no_collision(eav.clone(),fetched.clone())?;
+            self.write_to_file(ENTITY_DIR.to_string(), &new_eav)
+                .and_then(|_| self.write_to_file(ATTRIBUTE_DIR.to_string(), &new_eav))
+                .and_then(|_| self.write_to_file(VALUE_DIR.to_string(), &new_eav))?;
+            Ok(Some(new_eav.clone()))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 

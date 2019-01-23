@@ -8,12 +8,11 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::{EntityAttributeValue, Key},
+    eav::EntityAttributeValueIndex,
     entry::Entry,
     error::HolochainError,
 };
-use im::hashmap::HashMap;
-use std::{convert::TryFrom, str::FromStr, sync::Arc};
+use std::{collections::BTreeSet,convert::TryFrom, str::FromStr, sync::Arc};
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -120,7 +119,7 @@ pub(crate) fn reduce_add_link(
         Some(new_store)
     } else {
         let eav =
-            EntityAttributeValue::new(link.base(), &format!("link__{}", link.tag()), link.target());
+            EntityAttributeValueIndex::new(link.base(), &format!("link__{}", link.tag()), link.target());
         eav.map(|e| {
             let storage = new_store.meta_storage();
             let result = storage.write().unwrap().add_eav(&e);
@@ -250,10 +249,10 @@ fn reduce_remove_entry_inner(
     // For now checks if crud-status other than Live are present
     let status_eavs = status_eavs
         .into_iter()
-        .filter(|(_, e)| {
+        .filter(|e| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) != Ok(CrudStatus::Live)
         })
-        .collect::<HashMap<Key, EntityAttributeValue>>();
+        .collect::<BTreeSet<EntityAttributeValueIndex>>();
     if !status_eavs.is_empty() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "entry_status != CrudStatus::Live",

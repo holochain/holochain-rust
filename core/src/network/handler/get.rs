@@ -7,7 +7,7 @@ use crate::{
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::json_protocol::{DhtData, DhtMetaData, GetDhtData, GetDhtMetaData};
 use regex::Regex;
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeSet, sync::Arc};
 
 lazy_static! {
     static ref LINK: Regex =
@@ -54,9 +54,9 @@ pub fn handle_get_dht_meta(get_dht_meta_data: GetDhtMetaData, context: Arc<Conte
                 Address::from(get_dht_meta_data.address.clone()),
                 tag.clone(),
             )
-            .unwrap_or(BTreeMap::new())
+            .unwrap_or(BTreeSet::new())
             .into_iter()
-            .map(|(_, eav)| eav.value())
+            .map(|eav| eav.value())
             .collect::<Vec<_>>();
         let action_wrapper =
             ActionWrapper::new(Action::RespondGetLinks((get_dht_meta_data, links)));

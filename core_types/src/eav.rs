@@ -127,7 +127,7 @@ impl EntityAttributeValueIndex {
 pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// Adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage.
-    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<(), HolochainError>;
+    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError>;
     /// Fetch the set of EntityAttributeValues that match constraints according to the latest hash version
     /// - None = no constraint
     /// - Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
@@ -181,29 +181,32 @@ impl ExampleEntityAttributeValueStorage {
 }
 
 pub fn increment_key_till_no_collision(
-    mut timestamp: i64,
+    mut eav: EntityAttributeValueIndex,
     map: BTreeSet<EntityAttributeValueIndex>,
-) -> HcResult<i64> {
-    if map.iter().filter(|e|e.index==timestamp).collect::<BTreeSet<&EntityAttributeValueIndex>>().len()==0 {
-        timestamp = timestamp + 1;
-        increment_key_till_no_collision(timestamp, map)
+) -> HcResult<EntityAttributeValueIndex> {
+    if map.iter().filter(|e|e.index==eav.index()).collect::<BTreeSet<&EntityAttributeValueIndex>>().len()>0 {
+        let timestamp = eav.clone().index + 1;
+        eav.set_index(timestamp);
+        println!("eav {:?}",eav.clone());
+        increment_key_till_no_collision(eav, map)
     } else {
-        Ok(timestamp)
+        Ok(eav)
     }
 }
 
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<(), HolochainError> {
+    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         if self
             .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
             == 0
         {
             let mut map = self.storage.write()?;
-            map.insert(eav.clone());
-            Ok(())
+            let new_eav = increment_key_till_no_collision(eav.clone(),map.clone())?;
+            map.insert(new_eav.clone());
+            Ok(Some(new_eav.clone()))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 
@@ -334,7 +337,7 @@ pub mod tests {
                 test_content_addressable_storage, EavTestSuite, ExampleContentAddressableStorage,
             },
         },
-        eav::EntityAttributeValue,
+        eav::EntityAttributeValueIndex,
         json::RawString,
     };
 
@@ -376,7 +379,7 @@ pub mod tests {
     /// show AddressableContent implementation
     fn addressable_content_test() {
         // from_content()
-        AddressableContentTestSuite::addressable_content_trait_test::<EntityAttributeValue>(
+        AddressableContentTestSuite::addressable_content_trait_test::<EntityAttributeValueIndex>(
             test_eav_content(),
             test_eav(),
             test_eav_address(),
@@ -388,56 +391,56 @@ pub mod tests {
     fn cas_round_trip_test() {
         let addressable_contents = vec![test_eav()];
         AddressableContentTestSuite::addressable_content_round_trip::<
-            EntityAttributeValue,
+            EntityAttributeValueIndex,
             ExampleContentAddressableStorage,
         >(addressable_contents, test_content_addressable_storage());
     }
 
     #[test]
     fn validate_attribute_paths() {
-        assert!(EntityAttributeValue::new(
+        assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
             &"abc".to_string(),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValue::new(
+        assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
             &"abc123".to_string(),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValue::new(
+        assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
             &"123".to_string(),
             &test_eav_entity().address()
         )
         .is_ok());
-        assert!(EntityAttributeValue::new(
+        assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
             &"link_:{}".to_string(),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValue::new(
+        assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
             &"link_\"".to_string(),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValue::new(
+        assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
             &"link_/".to_string(),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValue::new(
+        assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
             &"link_\\".to_string(),
             &test_eav_entity().address()
         )
         .is_err());
-        assert!(EntityAttributeValue::new(
+        assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
             &"link_?".to_string(),
             &test_eav_entity().address()

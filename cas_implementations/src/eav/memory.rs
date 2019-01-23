@@ -34,17 +34,18 @@ impl EavMemoryStorage {
 }
 
 impl EntityAttributeValueStorage for EavMemoryStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<(), HolochainError> {
+    fn add_eav(&mut self, eav: &EntityAttributeValueIndex) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         if self
             .fetch_eav(Some(eav.entity()), Some(eav.attribute()), Some(eav.value()))?
             .len()
             == 0
         {
             let mut map = self.storage.write()?;
-            map.insert(eav.clone());
-            Ok(())
+            let new_eav = increment_key_till_no_collision(eav.clone(),map.clone())?;
+            map.insert(new_eav.clone());
+            Ok(Some(new_eav.clone()))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 

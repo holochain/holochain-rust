@@ -1,12 +1,12 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
-    eav::{EntityAttributeValue, EntityAttributeValueStorage, Key},
+    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage},
     error::HolochainError,
 };
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeSet, HashMap},
     sync::{Arc, RwLock},
 };
 
@@ -52,7 +52,7 @@ impl DhtStore {
         &self,
         address: Address,
         tag: String,
-    ) -> Result<BTreeMap<Key, EntityAttributeValue>, HolochainError> {
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         self.meta_storage
             .read()?
             .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)

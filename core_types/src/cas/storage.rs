@@ -333,7 +333,11 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValueIndex::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
-            expected.insert(eav);
+            let eavi =  eav_storage
+                .add_eav(&eav)
+                .expect("could not add eav")
+                .expect("could not add eav");
+            expected.insert(eavi);
         }
 
         // throw an extra thing referencing many to show fetch ignores it
@@ -366,14 +370,17 @@ impl EavTestSuite {
                 EntityAttributeValueIndex::new(&one.address(), &attribute.clone(), &many.address())
                     .expect("Could not create eav");
             expected_one.insert(eav);
-            assert_eq!(
-                expected_one,
-                eav_storage
+            let fetch_set = eav_storage
                     .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
-                    .expect("could not fetch eav")
-                    
-            );
-        }
+                    .expect("could not fetch eav");
+             fetch_set
+            .iter().zip(&expected_one).for_each(|(a,b)|{
+                assert_eq!(a.entity(),b.entity());
+                assert_eq!(a.attribute(),b.attribute());
+                assert_eq!(a.value(),a.value());
+            });
+        } 
+        
     }
 
     pub fn test_many_to_one<A, S>(mut eav_storage: S)
@@ -401,10 +408,11 @@ impl EavTestSuite {
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
             let eav = EntityAttributeValueIndex::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
-            let _key = eav_storage
+            let eavi = eav_storage
                 .add_eav(&eav)
-                .expect("could not add eav");
-            expected.insert(eav);
+                .expect("could not add eav")
+                .expect("Could not get eavi option");
+            expected.insert(eavi);
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
@@ -436,12 +444,15 @@ impl EavTestSuite {
                 EntityAttributeValueIndex::new(&many.address(), &attribute.clone(), &one.address())
                     .expect("Could not create eav");
             expected_one.insert(eav);
-            assert_eq!(
-                expected_one,
-                eav_storage
+            let fetch_set = eav_storage
                     .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
-                    .expect("could not fetch eav"),
-            );
+                    .expect("could not fetch eav");
+             fetch_set
+            .iter().zip(&expected_one).for_each(|(a,b)|{
+                assert_eq!(a.entity(),b.entity());
+                assert_eq!(a.attribute(),b.attribute());
+                assert_eq!(a.value(),a.value());
+            });
         }
     }
 }

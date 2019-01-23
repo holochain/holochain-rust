@@ -21,12 +21,10 @@ scenario2.runTape('agentId', async (t, { alice, bob }) => {
 scenario1.runTape('show_env', async (t, { alice }) => {
     const result = alice.call("blog", "main", "show_env", {})
 
-    t.deepEqual(result.Ok, {
-        "dna_address": "QmSijAk3N2AdamJbfmiRkdCsWW75FfBwVZcxsY71a825Hy",
-        "dna_name": "HDK-spec-rust",
-        "agent_address": "alice-----------------------------------------------------------------------------AAAIuDJb4M",
-        "agent_id": '{"nick":"alice","key":"alice-----------------------------------------------------------------------------AAAIuDJb4M"}'
-    })
+    t.equal(result.Ok.dna_address, alice.dnaAddress)
+    t.equal(result.Ok.dna_name, "HDK-spec-rust")
+    t.equal(result.Ok.agent_address, alice.agentId)
+    t.equal(result.Ok.agent_id, '{"nick":"alice","key":"'+alice.agentId+'"}')
 })
 
 scenario1.runTape('call', async (t, { alice }) => {

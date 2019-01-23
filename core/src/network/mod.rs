@@ -51,7 +51,7 @@ pub mod tests {
         assert!(result.is_ok());
 
         // Get it.
-        let result = block_on(get_entry(&context2, &entry.address()));
+        let result = block_on(get_entry(context2, entry.address(), Default::default()));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_some());
@@ -71,7 +71,7 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = block_on(get_entry(&context2, &entry.address()));
+        let result = block_on(get_entry(context2, entry.address(), Default::default()));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
@@ -87,7 +87,7 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = block_on(get_entry(&context1, &entry.address()));
+        let result = block_on(get_entry(context1, entry.address(), Default::default()));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
@@ -150,9 +150,10 @@ pub mod tests {
             test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
 
         let maybe_links = block_on(get_links(
-            &context2,
-            &entry_addresses[0],
+            context2,
+            entry_addresses[0].clone(),
             String::from("test-tag"),
+            Default::default(),
         ));
 
         assert!(maybe_links.is_ok());

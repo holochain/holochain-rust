@@ -77,7 +77,7 @@ impl AgentState {
         let agent_entry_address = self.get_agent_address()?;
         let entry_args = GetEntryArgs {
             address: agent_entry_address,
-            options: GetEntryOptions::default(),
+            options: Default::default(),
         };
         let agent_entry_result = await!(get_entry_result_workflow(context, &entry_args))?;
         let agent_entry = agent_entry_result.latest();

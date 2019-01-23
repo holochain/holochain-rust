@@ -1,16 +1,21 @@
-use config::{UiBundleConfiguration, UiInterfaceConfiguration, InterfaceConfiguration};
+use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use error::HolochainResult;
 use hyper::{
-    http::{uri, response::Builder},
-    rt::{Future},
+    http::{response::Builder, uri},
+    rt::Future,
     server::Server,
-    Body, Request, Response
+    Body, Request, Response,
 };
-use std::{io::Error, thread};
 use hyper_staticfile::{Static, StaticFuture};
-use tokio::prelude::{future, Poll, Async};
-use tokio::runtime::Runtime;
-use std::sync::mpsc::{channel, Sender};
+use std::{
+    io::Error,
+    sync::mpsc::{channel, Sender},
+    thread,
+};
+use tokio::{
+    prelude::{future, Async, Poll},
+    runtime::Runtime,
+};
 
 const DNA_CONFIG_ROUTE: &str = "/_dna_connections.json";
 
@@ -22,18 +27,13 @@ fn redirect_request_to_root<T>(req: &mut Request<T>) {
 
 fn dna_connections_response(config: &Option<InterfaceConfiguration>) -> Response<Body> {
     let intefaces = match config {
-        Some(config) => {
-            json!([config])
-        },
-        None => {
-            json!([])
-        }
+        Some(config) => json!([config]),
+        None => json!([]),
     };
     Builder::new()
-        .body(json!({"dna_interfaces": intefaces}).to_string().into())
+        .body(json!({ "dna_interfaces": intefaces }).to_string().into())
         .expect("unable to build response")
 }
-
 
 enum MainFuture {
     Static(StaticFuture<Body>),
@@ -46,12 +46,8 @@ impl Future for MainFuture {
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         match *self {
-            MainFuture::Config(ref config) => {
-                Ok(Async::Ready(dna_connections_response(config)))
-            },
-            MainFuture::Static(ref mut future) => {
-                future.poll()
-            }
+            MainFuture::Config(ref config) => Ok(Async::Ready(dna_connections_response(config))),
+            MainFuture::Static(ref mut future) => future.poll(),
         }
     }
 }
@@ -83,19 +79,19 @@ impl hyper::service::Service for StaticService {
             _ => {
                 MainFuture::Static(
                     hyper_staticfile::resolve(&self.static_.root, &req)
-                    .map(|result| {
-                        match result {
-                            hyper_staticfile::ResolveResult::NotFound => {
-                                // redirect all not-found routes to the root
-                                // this allows virtual routes on the front end
-                                redirect_request_to_root(&mut req);
-                                self.static_.serve(req)
+                        .map(|result| {
+                            match result {
+                                hyper_staticfile::ResolveResult::NotFound => {
+                                    // redirect all not-found routes to the root
+                                    // this allows virtual routes on the front end
+                                    redirect_request_to_root(&mut req);
+                                    self.static_.serve(req)
+                                }
+                                _ => self.static_.serve(req),
                             }
-                            _ => self.static_.serve(req),
-                        }
-                    })
-                    .wait()
-                    .unwrap()
+                        })
+                        .wait()
+                        .unwrap(),
                 )
             }
         }
@@ -141,7 +137,9 @@ impl StaticServer {
 
         let _server = thread::spawn(move || {
             let server = Server::bind(&addr)
-                .serve(move || future::ok::<_, Error>(StaticService::new(&static_path, &dna_interfaces)))
+                .serve(move || {
+                    future::ok::<_, Error>(StaticService::new(&static_path, &dna_interfaces))
+                })
                 .map_err(|e| eprintln!("server error: {}", e));
 
             println!("Listening on http://{}", addr);
@@ -159,10 +157,8 @@ impl StaticServer {
                 self.running = false;
                 self.shutdown_signal = None;
                 Ok(())
-            },
-            None => {
-                Err("server is already stopped".into())
             }
+            None => Err("server is already stopped".into()),
         }
     }
 }
@@ -190,11 +186,12 @@ pub mod tests {
         let test_dna_interface = InterfaceConfiguration {
             id: "interface".to_string(),
             admin: true,
-            driver: InterfaceDriver::Http{port: 3000},
+            driver: InterfaceDriver::Http { port: 3000 },
             instances: Vec::new(),
         };
 
-        let mut static_server = StaticServer::from_configs(test_config, test_bundle_config, Some(test_dna_interface));
+        let mut static_server =
+            StaticServer::from_configs(test_config, test_bundle_config, Some(test_dna_interface));
         assert_eq!(static_server.start(), Ok(()));
         assert_eq!(static_server.running, true);
         assert_eq!(static_server.stop(), Ok(()));

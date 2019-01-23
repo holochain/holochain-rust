@@ -58,12 +58,17 @@ Container.prototype.stop = function () {
 
 Container.prototype.call = function (id, zome, trait, fn, params) {
     const stringInput = JSON.stringify(params);
-    const rawResult = this._callRaw(id, zome, trait, fn, stringInput);
+    let rawResult;
     let result;
+    try {
+        rawResult = this._callRaw(id, zome, trait, fn, stringInput);
+    } catch (e) {
+        console.error("")
+    }
     try {
         result = JSON.parse(rawResult);
     } catch (e) {
-        console.log("JSON.parse failed to parse the result. The raw value is: ", rawResult);
+        console.error("JSON.parse failed to parse the result. The raw value is: ", rawResult);
         result = { error: "JSON.parse failed to parse the result", rawResult };
     }
     return result;
@@ -148,7 +153,10 @@ class Scenario {
                 agentId: container.agent_id(id)
             }
         })
-        fn(() => container.stop(), callers)
+        fn(
+            () => container.stop().catch(err => console.error("Scenario failed! ", err)), 
+            callers
+        )
     }
 
     runTape(description, fn) {
@@ -156,11 +164,15 @@ class Scenario {
             throw new Error("must call `scenario.setTape(require('tape'))` before running tape-based tests!")
         }
         Scenario._tape(description, t => {
-            this.run(async (stop, instances) => {
-                await fn(t, instances)
-                t.end()
-                await stop()
-            })
+            try {
+                this.run(async (stop, instances) => {
+                    await fn(t, instances)
+                    t.end()
+                    await stop()
+                })
+            } catch (e) {
+                t.fail(e)
+            }
         })
     }
 }

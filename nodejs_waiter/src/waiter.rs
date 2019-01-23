@@ -189,21 +189,23 @@ impl Waiter {
                         _ => (),
                     },
 
-                    (Some(checker), Action::SendDirectMessage(data)) => {
-                        let msg_id = data.msg_id;
-                        match data.message {
-                            DirectMessage::Custom(_) => {
-                                checker.add(move |aw| {
-                                    [
-                                        Action::ResolveDirectConnection(msg_id.clone()),
-                                        Action::SendDirectMessageTimeout(msg_id.clone()),
-                                    ]
-                                    .contains(aw.action())
-                                });
-                            }
-                            _ => (),
-                        }
-                    }
+                    // Don't need to check for message stuff since hdk::send is blocking
+
+                    // (Some(checker), Action::SendDirectMessage(data)) => {
+                    //     let msg_id = data.msg_id;
+                    //     match data.message {
+                    //         DirectMessage::Custom(_) => {
+                    //             checker.add(move |aw| {
+                    //                 [
+                    //                     Action::ResolveDirectConnection(msg_id.clone()),
+                    //                     Action::SendDirectMessageTimeout(msg_id.clone()),
+                    //                 ]
+                    //                 .contains(aw.action())
+                    //             });
+                    //         }
+                    //         _ => (),
+                    //     }
+                    // }
 
                     // Note that we ignore anything coming in if there's no active checker,
                     (None, _) => (),

@@ -49,12 +49,10 @@ pub mod tests {
             tests::{test_context_and_logger, test_instance},
             Instance,
         },
-        nucleus::{
-            ribosome::{
-                api::{tests::*, ZomeApiFunction},
-                fn_call::tests::*,
-                Defn,
-            },
+        nucleus::ribosome::{
+            api::{tests::*, ZomeApiFunction},
+            fn_call::tests::*,
+            Defn,
         },
     };
     use futures::executor::block_on;

@@ -1,12 +1,10 @@
 use crate::{
     context::Context,
-    nucleus::{
-        ribosome::{
-            api::{ZomeApiFunction, ZomeApiResult},
-            memory::SinglePageManager,
-            Defn,
-            fn_call::ZomeFnCall,
-        },
+    nucleus::ribosome::{
+        api::{ZomeApiFunction, ZomeApiResult},
+        fn_call::ZomeFnCall,
+        memory::SinglePageManager,
+        Defn,
     },
 };
 use holochain_core_types::{

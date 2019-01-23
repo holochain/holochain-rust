@@ -8,9 +8,10 @@ use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},
     context::Context,
     nucleus::{
-        ribosome::{api::call::reduce_call,
-                   fn_call::{reduce_execute_zome_function,reduce_return_zome_function_result,}
-                   },
+        ribosome::{
+            api::call::reduce_call,
+            fn_call::{reduce_execute_zome_function, reduce_return_zome_function_result},
+        },
         state::{NucleusState, NucleusStatus},
     },
 };
@@ -132,18 +133,10 @@ pub mod tests {
     use super::*;
     use crate::{
         action::ActionWrapper,
-        instance::{
-            tests::{test_context_with_channels},
-            Observer,
-        },
+        instance::{tests::test_context_with_channels, Observer},
     };
-    use holochain_core_types::{
-        dna::{
-            Dna,
-        },
-    };
-    use std::sync::Arc;
-    use std::sync::mpsc::sync_channel;
+    use holochain_core_types::dna::Dna;
+    use std::sync::{mpsc::sync_channel, Arc};
 
     #[test]
     /// smoke test the init of a nucleus

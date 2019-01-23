@@ -39,17 +39,15 @@ pub mod tests {
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::tests::{test_context_and_logger, test_instance},
-        nucleus::{
-            ribosome::{
-                self,
-                api::{
-                    commit::tests::test_commit_args_bytes,
-                    tests::{test_parameters, test_zome_name},
-                },
-                fn_call::{
-                    ZomeFnCall,
-                    tests::{test_capability_call, test_capability_name},
-                }
+        nucleus::ribosome::{
+            self,
+            api::{
+                commit::tests::test_commit_args_bytes,
+                tests::{test_parameters, test_zome_name},
+            },
+            fn_call::{
+                tests::{test_capability_call, test_capability_name},
+                ZomeFnCall,
             },
         },
     };

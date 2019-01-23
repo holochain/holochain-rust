@@ -1,12 +1,10 @@
 use crate::{
     context::Context,
-    nucleus::{
-        ribosome::{
-            self,
-            callback::{Callback, CallbackParams, CallbackResult},
-            fn_call::ZomeFnCall,
-            Defn,
-        },
+    nucleus::ribosome::{
+        self,
+        callback::{Callback, CallbackParams, CallbackResult},
+        fn_call::ZomeFnCall,
+        Defn,
     },
 };
 use holochain_core_types::{error::HolochainError, json::JsonString};

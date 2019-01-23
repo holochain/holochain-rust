@@ -64,12 +64,10 @@ pub mod tests {
         agent::actions::commit::commit_entry,
         dht::actions::add_link::add_link,
         instance::tests::{test_context_and_logger, test_instance},
-        nucleus::{
-            ribosome::{
-                api::{tests::*, ZomeApiFunction},
-                Defn,
-                fn_call::tests::*,
-            },
+        nucleus::ribosome::{
+            api::{tests::*, ZomeApiFunction},
+            fn_call::tests::*,
+            Defn,
         },
     };
     use futures::executor::block_on;

@@ -1,8 +1,7 @@
 use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
-use holochain_core::nucleus::{
-    ribosome::{run_dna,fn_call::ZomeFnCall}};
+use holochain_core::nucleus::ribosome::{fn_call::ZomeFnCall, run_dna};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
 use std::{

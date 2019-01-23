@@ -13,13 +13,13 @@ hash = "Qm000"
 id = "ui-interface-1"
 bundle = "bundle1"
 port = 3000
-dna_interface = "http interface"
+dna_interface = "websocket interface"
 
 
 [[interfaces]]
 admin = true
-id = "http interface"
+id = "websocket interface"
 
 [interfaces.driver]
 port = 4000
-type = "http"
+type = "websocket"

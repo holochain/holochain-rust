@@ -501,8 +501,8 @@ fn can_roundtrip_links() {
             address_1.clone(),
             address_2.clone(),
         ]));
-        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-            Ok(vec![Ok(entry_1.clone()), Ok(entry_2.clone())]);
+        let expected_entries: ZomeApiResult<Vec<Entry>> =
+            Ok(vec![entry_1.clone(), entry_2.clone()]);
 
         println!(
             "can_roundtrip_links result_string - try {}:\n {:?}\n expecting:\n {:?}",

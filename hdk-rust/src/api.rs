@@ -905,7 +905,7 @@ pub fn get_links<S: Into<String>>(base: &Address, tag: S) -> ZomeApiResult<GetLi
 /// #    get_links::GetLinksOptions};
 ///
 /// # fn main() {
-/// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
+/// fn handle_get_links_result(address: Address) -> ZomeApiResult<Vec<GetEntryResult>> {
 ///    hdk::get_links_result(&address, "test-tag", GetLinksOptions::default(), GetEntryOptions::default())
 /// }
 /// # }

@@ -301,12 +301,14 @@ pub mod tests {
         action::{Action, ActionWrapper},
         context::Context,
         dht::{
+            actions::hold::hold_entry,
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::DhtStore,
         },
         instance::tests::test_context,
         state::{test_store, State},
     };
+    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
         eav::IndexQuery,
@@ -417,10 +419,12 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
-        let fetched = storage
-            .read()
-            .unwrap()
-            .fetch_eav(Some(entry.address()), None, None);
+        let fetched = storage.read().unwrap().fetch_eavi(
+            Some(entry.address()),
+            None,
+            None,
+            IndexQuery::default(),
+        );
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
@@ -444,9 +448,63 @@ pub mod tests {
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);
 
+        // TODO: should this change?
         let result = new_dht_store.actions().get(&action).unwrap();
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn does_add_link_if_base_comes_later() {
+        let (context, locked_state) = test_stateful_context("bilal", None);
+
+        let entry = test_entry();
+
+        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let action = ActionWrapper::new(Action::AddLink(link.clone()));
+
+        let new_dht_store: DhtStore;
+        {
+            let state = locked_state.read().unwrap();
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+        }
+        let storage = new_dht_store.meta_storage();
+        let fetched = storage.read().unwrap().fetch_eavi(
+            Some(entry.address()),
+            None,
+            None,
+            IndexQuery::default(),
+        );
+
+        assert!(fetched.is_ok());
+        let hash_set = fetched.unwrap();
+        assert_eq!(hash_set.len(), 0);
+
+        {
+            // the base should be kept track of in case it comes in later
+            let state = locked_state.read().unwrap().dht();
+            assert_eq!(state.pending_link_bases.get(&entry.address()), Some(&link));
+        }
+
+        // TODO: should this change?
+        let result = new_dht_store.actions().get(&action).unwrap();
+        assert!(result.is_err());
+
+        block_on(hold_entry(&entry, &context)).unwrap();
+        {
+            // the base should be kept track of in case it comes in later
+            let state = locked_state.read().unwrap().dht();
+            assert_eq!(state.pending_link_bases.get(&entry.address()), None);
+        }
+        assert_eq!(
+            storage
+                .read()
+                .unwrap()
+                .fetch_eavi(Some(entry.address()), None, None, IndexQuery::default())
+                .unwrap()
+                .len(),
+            1
+        );
     }
 
     #[test]

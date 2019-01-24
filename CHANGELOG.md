@@ -4,11 +4,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Capabilities now separated from function declarations in `define_zome!` and calling zome functions no longer uses capability name parameter [#791](https://github.com/holochain/holochain-rust/pull/779)
 ### Added
+- All structs/values to all HDK functions must implement `Into<JsonString>` and `TryFrom<JsonString>` (derive `DefaultJson` to do this automatically)
 - HDK globals `AGENT_ADDRESS`, `AGENT_ID_STR`, `DNA_NAME` and `DNA_ADDRESS` are now set to real, correct values.
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)
 - Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Container README](nodejs_container/README.md) for details.
-- Admin RPC functions added to container interface. Any (websocket) container interface that is configured with 
+- `hdk::query_result` API supports return of ChainHeader and/or Entry data for the matched EntryType(s)
+- Admin RPC functions added to container interface. Any (websocket) container interface that is configured with
   `admin = true`  now can call the following functions to remotely change any aspect of the container config
   (intended to be used in an upcoming container admin UI):
   * `admin/dna/install_from_file` (install a DNA from a local file)
@@ -31,9 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `admin/bridge/add`
   * `admin/bridge/remove`
   * `admin/bridge/list`
-  
-  See rustdoc of `container_api::interface::ContainerApiBuilder` for a full description of these functions. 
-  
+
+  See rustdoc of `container_api::interface::ContainerApiBuilder` for a full description of these functions.
+- Container can serve static directories called ui_bundles over HTTP that can be configured in the container config toml file. This HTTP server also implements a virtual json file at "/_dna_connections.json" that returns the DNA interface (if any) the UI is configured to connect to. Hc-web-client will use this to automatically connect to the correct DNA interface on page load.
 
 ### Removed
 

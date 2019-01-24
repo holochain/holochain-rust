@@ -6,11 +6,19 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 [dependencies]
 arrayref = "0.3.5"
 base64 = "0.10.0"
+chrono = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 multihash = "0.8.0"
-futures-preview = { git = "https://github.com/holochain/futures-rs", branch = "pinned-to-alpha-11" }
+futures-preview = "=0.3.0-alpha.11"
+futures-core-preview = "=0.3.0-alpha.11"
+futures-channel-preview = "=0.3.0-alpha.11"
+futures-executor-preview = "=0.3.0-alpha.11"
+futures-io-preview = "=0.3.0-alpha.11"
+futures-sink-preview = "=0.3.0-alpha.11"
+futures-util-preview = "=0.3.0-alpha.11"
+
 reed-solomon = "0.2.1"
 rust-base58 = "0.0.4"
 snowflake = "1.2"

@@ -306,7 +306,6 @@ pub mod tests {
     };
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 
-    use futures::executor::block_on;
     use serde_json;
     use std::sync::{
         mpsc::{channel, RecvTimeoutError},
@@ -469,7 +468,7 @@ pub mod tests {
 
         let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let addr = test_setup.context.block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         test_reduce_call(
             &test_setup,
             &String::from(addr),
@@ -504,7 +503,7 @@ pub mod tests {
         let grant =
             CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()])).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let addr = test_setup.context.block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         test_reduce_call(
             &test_setup,
             &String::from(addr.clone()),

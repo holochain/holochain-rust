@@ -2,7 +2,6 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::get_entry_result::get_entry_result_workflow,
 };
-use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -26,7 +25,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    let result = block_on(get_entry_result_workflow(&runtime.context, &input));
+    let result = runtime.context.block_on(get_entry_result_workflow(&runtime.context, &input));
     // Store result in wasm memory
     runtime.store_result(result)
 }

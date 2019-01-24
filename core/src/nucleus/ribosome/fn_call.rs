@@ -4,7 +4,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::{dispatch_action_with_observer, Observer},
-    nucleus::{ribosome, state::NucleusState},
+    nucleus::{ribosome, state::NucleusState, actions::get_entry::get_entry_from_agent_chain},
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -12,14 +12,16 @@ use holochain_core_types::{
         capabilities::{CallSignature, CapabilityCall, CapabilityType},
         wasm::DnaWasm,
     },
-    entry::cap_entries::CapTokenGrant,
+    entry::{
+        cap_entries::CapTokenGrant,
+        Entry,
+    },
     error::{HcResult, HolochainError},
     json::JsonString,
     signature::Signature,
 };
 use snowflake;
 use std::{
-    convert::TryFrom,
     sync::{
         mpsc::{sync_channel, SyncSender},
         Arc,
@@ -260,14 +262,14 @@ pub fn validate_call(
     if zome.is_fn_public(&fn_call.fn_name)
         || match fn_call.cap.clone() {
             Some(cap) => {
+                verify_call_sig(
+                    context.clone(),
+                    &cap.signature,
+                    &fn_call.fn_name,
+                    fn_call.parameters.clone(),
+                ) &&
                 (is_token_the_agent(context.clone(), &cap)
-                    && verify_call_sig(
-                        context.clone(),
-                        &cap.signature,
-                        &fn_call.fn_name,
-                        fn_call.parameters.clone(),
-                    ))
-                    || check_capability(context.clone(), fn_call)
+                 || check_capability(context.clone(), fn_call))
             }
             None => false,
         }
@@ -281,6 +283,13 @@ fn is_token_the_agent(context: Arc<Context>, cap_call: &CapabilityCall) -> bool 
     context.agent_id.key == cap_call.cap_token.to_string()
 }
 
+fn get_grant(context: Arc<Context>, address: &Address) -> Option<CapTokenGrant> {
+    match get_entry_from_agent_chain(&context, address).ok()?? {
+        Entry::CapTokenGrant(grant) => Some(grant),
+        _ => None
+    }
+}
+
 /// checks to see if a given function call is allowable according to the capabilities
 /// that have been registered to callers by looking for grants in the chain.
 fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
@@ -288,13 +297,11 @@ fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
         return false;
     }
     let cap_call = fn_call.cap.clone().unwrap();
-    let chain = &context.chain_storage;
-    let maybe_json = chain.read().unwrap().fetch(&cap_call.cap_token).unwrap();
-    let grant = match maybe_json {
-        Some(content) => CapTokenGrant::try_from(content).unwrap(),
-        None => return false,
-    };
-    verify_grant(context.clone(), &grant, fn_call)
+    let maybe_grant = get_grant(context.clone(),&cap_call.cap_token);
+    match maybe_grant {
+        None => false,
+        Some(grant) => verify_grant(context.clone(), &grant, fn_call)
+    }
 }
 
 fn make_call_sig<J: Into<JsonString>>(
@@ -347,7 +354,6 @@ pub fn make_cap_call<J: Into<JsonString>>(
 
 /// verifies that this grant is valid for a given requester and token value
 pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &ZomeFnCall) -> bool {
-    println!("in verify grant {:?}",grant);
     let cap_type = grant.cap_type();
     if cap_type == CapabilityType::Public {
         return true;
@@ -369,7 +375,6 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     ) {
         return false;
     }
-    println!("cecking grant {:?}",grant);
 
     match grant.cap_type() {
         CapabilityType::Public => true,
@@ -946,7 +951,7 @@ pub mod tests {
                 context.clone(),
                 Address::from(context.agent_id.key.clone()),
                 Address::from(context.agent_id.key.clone()),
-                "test", //<- not the function in the zome_call!
+                "test",
                 "{}",
             )),
             "test",
@@ -1001,6 +1006,26 @@ pub mod tests {
         );
         assert!(!check_capability(context.clone(), &zome_call));
 
+     // make the call with an valid capability call from a random source should succeed
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
+        let grant_entry = Entry::CapTokenGrant(grant);
+        let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
+
+        // agent cap call should succeed
+        let zome_call = ZomeFnCall::new(
+            "test_zome",
+            Some(make_cap_call(
+                context.clone(),
+                grant_addr,
+                Address::from("some_random_agent"),
+                "test",
+                "{}",
+            )),
+            "test",
+            "{}",
+        );
+        assert!(check_capability(context.clone(), &zome_call));
+
         // agent cap call should succeed
         let zome_call = ZomeFnCall::new(
             "test_zome",
@@ -1008,13 +1033,14 @@ pub mod tests {
                 context.clone(),
                 Address::from(context.agent_id.key.clone()),
                 Address::from(context.agent_id.key.clone()),
-                "foo_function", //<- not the function in the zome_call!
+                "test",
                 "{}",
             )),
             "test",
             "{}",
         );
         assert!(check_capability(context.clone(), &zome_call));
+
     }
 
     #[test]

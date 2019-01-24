@@ -26,6 +26,18 @@ pub(crate) fn get_entry_from_cas(
     Ok(entry)
 }
 
+pub fn get_entry_from_agent_chain(
+    context: &Arc<Context>,
+    address: &Address,
+) -> Result<Option<Entry>, HolochainError> {
+    let maybe_header = &context.state().unwrap().agent().chain().iter(&None).filter(|header| header.entry_address() == address).next();
+    if maybe_header.is_none() {
+        return Ok(None);
+    }
+    let cas = context.state().unwrap().agent().chain().content_storage();
+    get_entry_from_cas(&cas.clone(), address)
+}
+
 pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,

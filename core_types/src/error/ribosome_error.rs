@@ -32,14 +32,23 @@ impl ToString for RibosomeEncodedAllocation {
     }
 }
 
-/// Enum of all possible RETURN codes that a Zome API Function could return.
-/// Represents an encoded allocation of zero length with the return code as offset.
-/// @see SinglePageAllocation
+/// Represents all possible values passed to/from wasmi functions
+/// All wasmi functions are I32 values
 #[repr(u32)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum RibosomeEncodedValue {
+    /// @TODO make this unambiguous or remove
+    /// Contextually represents:
+    /// - Function succeeded without any allocation
+    /// - Empty/nil argument to a function
+    /// - Zero length allocation (error)
     Success,
+    /// A value that can be safely converted to a wasm allocation
+    /// High bits represent offset, low bits represent length
+    /// @see WasmAllocation
     Allocation(RibosomeEncodedAllocation),
+    /// A value that should be interpreted as an error
+    /// Low bits are zero, high bits map to an enum variant
     Failure(RibosomeErrorCode),
 }
 

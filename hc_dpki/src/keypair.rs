@@ -15,6 +15,14 @@ pub struct Keypair {
 
 pub const SEEDSIZE: usize = 32 as usize;
 
+const BUNDLE_DATA_LEN_MISALIGN: usize = 1 // version byte
+    + sign::PUBLICKEYBYTES
+    + kx::PUBLICKEYBYTES
+    + sign::SECRETKEYBYTES
+    + kx::SECRETKEYBYTES;
+
+pub const BUNDLE_DATA_LEN: usize = ((BUNDLE_DATA_LEN_MISALIGN + 8 - 1) / 8) * 8;
+
 impl Keypair {
     /// derive the pairs from a 32 byte seed buffer
     ///  
@@ -54,26 +62,24 @@ impl Keypair {
     ) -> Result<bundle::KeyBundle, HolochainError> {
         let bundle_type: String = "hcKeypair".to_string();
         let kk = KeyBuffer::with_corrected(&self.pub_keys)?;
-        let sk = kk.get_sig() as &[u8];
-        let ek = kk.get_enc() as &[u8];
-        let mut sk_buf = SecBuf::with_insecure(32);
-        let mut ek_buf = SecBuf::with_insecure(32);
-        util::convert_array_to_secbuf(&sk, &mut sk_buf);
-        util::convert_array_to_secbuf(&ek, &mut ek_buf);
 
-        // Merge all the secbuf together before encoding
-        let mut sign_pub = sk.to_vec();
-        let mut enc_pub = ek.to_vec();
-        let mut sign_priv = self.sign_priv.read_lock().to_vec();
-        let mut enc_priv = self.enc_priv.read_lock().to_vec();
-        let mut keys = vec![1];
-        keys.append(&mut sign_pub);
-        keys.append(&mut enc_pub);
-        keys.append(&mut sign_priv);
-        keys.append(&mut enc_priv);
+        let mut key_buf = SecBuf::with_secure(BUNDLE_DATA_LEN);
 
-        let mut key_buf = SecBuf::with_secure(256);
-        util::convert_vec_to_secbuf(&keys, &mut key_buf);
+        let mut offset: usize = 0;
+
+        key_buf.write(offset, &[1])?;
+        offset += 1;
+
+        key_buf.write(1, kk.get_sig())?;
+        offset += sign::PUBLICKEYBYTES;
+
+        key_buf.write(offset, kk.get_enc())?;
+        offset += kx::PUBLICKEYBYTES;
+
+        key_buf.write(offset, &**self.sign_priv.read_lock())?;
+        offset += sign::SECRETKEYBYTES;
+
+        key_buf.write(offset, &**self.enc_priv.read_lock())?;
 
         let pw_enc: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, passphrase)?;
         let bundle_data_serialized = json::encode(&pw_enc).unwrap();
@@ -101,24 +107,31 @@ impl Keypair {
         let bundle_decoded = base64::decode(&bundle.data)?;
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
         let data: bundle::ReturnBundleData = json::decode(&bundle_string).unwrap();
-        let mut keys_salt = util::pw_dec(&data, passphrase)?;
-        let key_buf = keys_salt.read_lock();
+        let mut decrypted_data = SecBuf::with_secure(BUNDLE_DATA_LEN);
+        util::pw_dec(&data, passphrase, &mut decrypted_data)?;
         let mut sign_priv = SecBuf::with_secure(64);
         let mut enc_priv = SecBuf::with_secure(32);
-        if key_buf[0] != 1 {
-            return Err(HolochainError::ErrorGeneric(format!(
-                "Invalid Bundle Version : {:?}",
-                key_buf[0]
-            )));
-        }
-        util::convert_array_to_secbuf(&key_buf[65..129], &mut sign_priv);
-        util::convert_array_to_secbuf(&key_buf[129..161], &mut enc_priv);
 
-        let sp = &key_buf[1..33];
-        let ep = &key_buf[33..65];
+        let pub_keys = {
+            let decrypted_data = decrypted_data.read_lock();
+            if decrypted_data[0] != 1 {
+                return Err(HolochainError::ErrorGeneric(format!(
+                    "Invalid Bundle Version : {:?}",
+                    decrypted_data[0]
+                )));
+            }
+            sign_priv.write(0, &decrypted_data[65..129]);
+            enc_priv.write(0, &decrypted_data[129..161]);
+
+            KeyBuffer::with_raw_parts(
+                array_ref![&decrypted_data, 1, 32],
+                array_ref![&decrypted_data, 33, 32],
+            )
+            .render()
+        };
+
         Ok(Keypair {
-            pub_keys: KeyBuffer::with_raw_parts(array_ref![sp, 0, 32], array_ref![ep, 0, 32])
-                .render(),
+            pub_keys,
             enc_priv,
             sign_priv,
         })

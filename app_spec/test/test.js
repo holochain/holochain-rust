@@ -18,6 +18,15 @@ scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.notEqual(alice.agentId, bob.agentId)
 })
 
+scenario1.runTape('show_env', async (t, { alice }) => {
+    const result = alice.call("blog", "main", "show_env", {})
+
+    t.equal(result.Ok.dna_address, alice.dnaAddress)
+    t.equal(result.Ok.dna_name, "HDK-spec-rust")
+    t.equal(result.Ok.agent_address, alice.agentId)
+    t.equal(result.Ok.agent_id, '{"nick":"alice","key":"'+alice.agentId+'"}')
+})
+
 scenario1.runTape('call', async (t, { alice }) => {
 
   const num1 = 2
@@ -105,6 +114,20 @@ scenario1.runTape('my_posts', async (t, { alice }) => {
   const result = alice.call("blog", "main", "my_posts", {})
 
   t.equal(result.Ok.addresses.length, 2)
+})
+
+
+scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
+
+  alice.call("blog", "main", "create_post",
+    { "content": "Holo world", "in_reply_to": "" }
+  )
+
+  const result = alice.call("blog", "main", "my_posts_immediate_timeout", {})
+
+  t.ok(result.Err)
+  console.log(result)
+  t.equal(JSON.parse(result.Err.Internal).kind, "Timeout")
 })
 
 scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {

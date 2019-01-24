@@ -133,6 +133,7 @@ impl fmt::Display for HolochainError {
 impl From<SodiumError> for HolochainError {
     fn from(error: SodiumError) -> Self {
         match error {
+            SodiumError::Generic(s) => HolochainError::new(&s),
             SodiumError::OutputLength(s) => HolochainError::new(&s),
         }
     }

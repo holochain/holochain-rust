@@ -52,6 +52,14 @@ pub trait ContainerAdmin {
 }
 
 impl ContainerAdmin for Container {
+    /// Installs a DNA package from the file system to the container
+    /// If copy=true it will also copy the DNA package to the containers default
+    /// location for managing data.
+    /// 
+    /// This function may also take an optional `properties` parameter. This can be any valid JSON
+    /// and will be injected in the dna package prior to installation. Existing properties will also be kept and 
+    /// overriden by the passed properties in the case of collisions. This will change the dna hash!
+    /// (Note injecting properties requires that copy=true)
     fn install_dna_from_file(
         &mut self,
         path: PathBuf,

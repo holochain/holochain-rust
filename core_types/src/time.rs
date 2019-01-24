@@ -109,16 +109,21 @@ impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
                  | 1[0-9]
                  | 2[0-3]
                 )
-                :?              # No need to support leap-seconds
-                (?P<m>[0-5][0-9])
-                :?              # The whole seconds group is optional, implies 00
+                :?
+                (?P<m>
+                   [0-5][0-9]
+                )
+                :?
                 (?P<s>
-                  (?:
-                    \d{2}
-                    (?:[.]\d+)?
+                  (?:           # The whole seconds group is optional, implies 00
+                     [0-5][0-9]
+                   | 60         # Support leap-seconds for standards compliance
                   )?
                 )
-                \s*              # Optional whitespace, no timezone specifier implies Z
+                (?P<ss>         # Optional subseconds
+                  (?:[.]\d+)?
+                )
+                \s*             # Optional whitespace, no timezone specifier implies Z
                 (?P<Z>
                    (?:[+-]\d{2}
                      (?:[:]?\d{2})?
@@ -137,13 +142,14 @@ impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
                         || Err(HolochainError::ErrorGeneric(
                             format!("Failed to find ISO 3339 or RFC 8601 timestamp in {:?}", lhs.0))),
                         |cap| {
-                            let timestamp = &format!("{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}",
+                            let timestamp = &format!("{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}{}",
                                                      &cap["Y"],
                                                      &cap["M"],
                                                      &cap["D"],
                                                      &cap["h"],
                                                      &cap["m"],
                                                      &match &cap["s"] { "" => "0", other => other },
+                                                     &cap["ss"],
                                                      &match &cap["Z"] { "" => "Z", other => other });
                             DateTime::parse_from_rfc3339(timestamp)
                                 .map_err(|_| HolochainError::ErrorGeneric(
@@ -196,35 +202,35 @@ pub mod tests {
     fn test_iso_8601_basic() {
         // Different ways of specifying UTC "Zulu".  A bare timestamp will be defaulted to "Zulu".
         match DateTime::<FixedOffset>::try_from(&Iso8601::from("2018-10-11T03:23:38 +00:00")) {
-            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
+            Ok(ts) => assert_eq!(format!("{}", ts.to_rfc3339()), "2018-10-11T03:23:38+00:00"),
             Err(e) => panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
                 e
             ),
         }
         match DateTime::<FixedOffset>::try_from(&Iso8601::from("2018-10-11T03:23:38Z")) {
-            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
+            Ok(ts) => assert_eq!(format!("{}", ts.to_rfc3339()), "2018-10-11T03:23:38+00:00"),
             Err(e) => panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
                 e
             ),
         }
         match DateTime::<FixedOffset>::try_from(&Iso8601::from("2018-10-11T03:23:38")) {
-            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
+            Ok(ts) => assert_eq!(format!("{}", ts.to_rfc3339()), "2018-10-11T03:23:38+00:00"),
             Err(e) => panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
                 e
             ),
         }
         match DateTime::<FixedOffset>::try_from(&Iso8601::from("2018-10-11 03:23:38")) {
-            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
+            Ok(ts) => assert_eq!(format!("{}", ts.to_rfc3339()), "2018-10-11T03:23:38+00:00"),
             Err(e) => panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
                 e
             ),
         }
         match DateTime::<FixedOffset>::try_from(&Iso8601::from("20181011 0323")) {
-            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:00 +00:00"),
+            Ok(ts) => assert_eq!(format!("{}", ts.to_rfc3339()), "2018-10-11T03:23:00+00:00"),
             Err(e) => panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
                 e
@@ -232,12 +238,38 @@ pub mod tests {
         }
         // Degenerate timestamp with unambiguous single digit month, day and hour
         match DateTime::<FixedOffset>::try_from(&Iso8601::from("  201894  323  ")) {
-            Ok(ts) => assert_eq!(format!("{}", ts), "2018-09-04 03:23:00 +00:00"),
+            Ok(ts) => assert_eq!(format!("{}", ts.to_rfc3339()), "2018-09-04T03:23:00+00:00"),
             Err(e) => panic!(
                 "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
                 e
             ),
         }
+
+        // Leap-seconds and sub-second times, in both native RFC 3339 and (Regex-based) ISO 8601
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("2015-02-18T23:59:60.234567+05:00"))
+        {
+            Ok(ts) => assert_eq!(
+                format!("{}", ts.to_rfc3339()),
+                "2015-02-18T23:59:60.234567+05:00"
+            ),
+            Err(e) => panic!(
+                "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
+                e
+            ),
+        }
+
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("2015-02-18 23:59:60.234567")) {
+            Ok(ts) => assert_eq!(
+                format!("{}", ts.to_rfc3339()),
+                "2015-02-18T23:59:60.234567+00:00"
+            ),
+            Err(e) => panic!(
+                "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
+                e
+            ),
+        }
+
+        // PartialEq and PartialOrd Comparison operators
         assert!(
             Iso8601::from("2018-10-11T03:23:38+00:00") == Iso8601::from("2018-10-11T03:23:38Z")
         );

@@ -120,6 +120,7 @@ pub mod tests {
         allocation::{AllocationError, Length, Offset, WasmAllocation},
         MemoryBits, MemoryInt, MEMORY_INT_MAX,
     };
+    use holochain_core_types::bits_n_pieces::U16_MAX;
 
     pub fn fake_offset() -> Offset {
         Offset(12345)
@@ -227,6 +228,16 @@ pub mod tests {
                 length: Length::from(1)
             }),
             WasmAllocation::new(Offset::from(1), Length::from(1)),
+        );
+
+        // allocation larger than 1 wasm page
+        let big = U16_MAX * 2;
+        assert_eq!(
+            Ok(WasmAllocation {
+                offset: Offset::from(big),
+                length: Length::from(big),
+            }),
+            WasmAllocation::new(Offset::from(big), Length::from(big)),
         );
     }
 

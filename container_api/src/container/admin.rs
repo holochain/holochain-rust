@@ -507,7 +507,8 @@ type = "memory""#
     }
 
     pub fn interface(port: u32) -> String {
-        format!(r#"[[interfaces]]
+        format!(
+            r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -519,7 +520,9 @@ id = "test-instance-2"
 
 [interfaces.driver]
 port = {}
-type = "websocket""#, port)
+type = "websocket""#,
+            port
+        )
     }
 
     pub fn logger() -> String {

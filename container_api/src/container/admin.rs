@@ -828,14 +828,7 @@ id = "new-dna""#,
         assert_ne!(original_hash, new_hash);
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file: PathBuf = [
-            ".",
-            "tmp-test",
-            test_name,
-            "dna",
-        ]
-        .iter()
-        .collect();
+        let mut output_dna_file: PathBuf = [".", "tmp-test", test_name, "dna"].iter().collect();
 
         output_dna_file.push(new_hash.to_string());
         output_dna_file.set_extension("hcpkg");

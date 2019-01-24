@@ -28,12 +28,10 @@ impl ContainerUiAdmin for Container {
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
 
-        // TODO: actually make a usable bundle
-
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
             root_dir: path_string.into(),
-            hash: "1234".to_string(),
+            hash: "<not-used>".to_string(),
         };
 
         let mut new_config = self.config.clone();
@@ -147,7 +145,6 @@ pub mod tests {
             container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
             Ok(())
         );
-
     }
 
     #[test]
@@ -231,7 +228,7 @@ pub mod tests {
         toml = add_block(toml, interface());
         toml = add_block(toml, 
             String::from(r#"[[ui_bundles]]
-hash = "1234"
+hash = "<not-used>"
 id = "test-bundle-id"
 root_dir = "."
 
@@ -290,7 +287,7 @@ port = 3000"#)
         toml = add_block(toml, interface());
         toml = add_block(toml, 
             String::from(r#"[[ui_bundles]]
-hash = "1234"
+hash = "<not-used>"
 id = "test-bundle-id"
 root_dir = ".""#)
         );

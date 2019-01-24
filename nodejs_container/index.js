@@ -70,18 +70,23 @@ Container.prototype.call = function (id, zome, trait, fn, params) {
 }
 
 Container.prototype.callWithPromise = function (...args) {
-    const promise = new Promise((fulfill, reject) => {
-        this.register_callback(() => fulfill(result))
-    })
-    const result = this.call(...args)
-    return [result, promise]
+    try {
+        const promise = new Promise((fulfill, reject) => {
+            this.register_callback(() => fulfill())
+        })
+        const result = this.call(...args)
+        return [result, promise]
+    } catch (e) {
+        return [
+            undefined, 
+            Promise.reject(e).catch(err => console.error("Error with scenario test system: ", err))
+        ]
+    }
 }
 
 Container.prototype.callSync = function (...args) {
     const [result, promise] = this.callWithPromise(...args)
-    return promise
-        .catch(err => console.error("Error with scenario test system: ", err))
-        .then(() => { return result })
+    return promise.then(() => { return result })
 }
 
 // Convenience function for making an object that can call into the container
@@ -140,7 +145,8 @@ class Scenario {
                 call: (...args) => container.call(id, ...args),
                 callSync: (...args) => container.callSync(id, ...args),
                 callWithPromise: (...args) => container.callWithPromise(id, ...args),
-                agentId: container.agent_id(id)
+                agentId: container.agent_id(id),
+                dnaAddress: container.dna_address(id)
             }
         })
         fn(() => container.stop(), callers)

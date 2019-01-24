@@ -6,7 +6,6 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
-use multihash::Hash as Multihash;
 use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code
@@ -19,8 +18,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         dna_name: runtime.dna_name.to_string(),
         dna_address: Address::from(""),
         agent_id_str: JsonString::from(runtime.context.agent_id.clone()).to_string(),
-        // TODO #233 - Implement agent pub key hash
-        agent_address: Address::encode_from_str("FIXME-agent_address", Multihash::SHA2256),
+        agent_address: Address::from(runtime.context.agent_id.address()),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
     };
@@ -60,7 +58,7 @@ pub mod tests {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
+    use holochain_core_types::{agent::AgentId, error::ZomeApiInternalResult, json::JsonString};
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
 
@@ -75,8 +73,8 @@ pub mod tests {
             ZomeApiGlobals::try_from(JsonString::from(zome_api_internal_result.value)).unwrap();
 
         assert_eq!(globals.dna_name, "TestApp");
-        // TODO #233 - Implement agent address
-        // assert_eq!(obj.agent_address, "QmScgMGDzP3d9kmePsXP7ZQ2MXis38BNRpCZBJEBveqLjD");
+        let expected_agent = AgentId::generate_fake("jane");
+        assert_eq!(globals.agent_address.to_string(), expected_agent.key);
         // TODO (david.b) this should work:
         //assert_eq!(globals.agent_id_str, String::from(AgentId::generate_fake("jane")));
         // assert_eq!(

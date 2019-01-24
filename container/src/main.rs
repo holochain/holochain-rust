@@ -20,7 +20,7 @@ extern crate holochain_core_types;
 extern crate structopt;
 
 use holochain_container_api::{
-    config::{load_configuration, Configuration},
+    config::{self, load_configuration, Configuration},
     container::{mount_container_from_config, CONTAINER},
 };
 use holochain_core_types::error::HolochainError;
@@ -38,9 +38,9 @@ struct Opt {
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
     let opt = Opt::from_args();
-    let config_path = opt.config.unwrap_or(PathBuf::from(
-        r"~/.holochain/container/container_config.toml",
-    ));
+    let config_path = opt.config.unwrap_or(
+        config::default_persistence_dir().join("container-config.toml")
+    );
     let config_path_str = config_path.to_str().unwrap();
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {

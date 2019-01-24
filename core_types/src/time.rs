@@ -65,7 +65,7 @@ pub struct Iso8601(String);
 /// want to create a validated Iso8601 that we know will work in comparisons, etc.  For that, we use
 /// the TryFrom method.
 ///
-/// TODO: In the future, any invalid static-&str errors could (should?) produce a `panic!`.  This is
+/// In the future, any invalid static-&str errors could (should?) produce a `panic!`.  This is
 /// reasonable, as it would indicate an error in the code of the application, not in the logic.
 impl From<&'static str> for Iso8601 {
     fn from(s: &str) -> Iso8601 {
@@ -167,12 +167,8 @@ impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
 /// time specified in two different timezones.  Therefore, a String-based Partial{Cmp,Eq} are not
 /// correct.  If conversion of any Iso8601 String fails, returns false for every test; similarly to
 /// how float NaN != NaN.
-///
-/// Note that the timezone offset *is* *required*; to default to UTC, append a "Z" to the
-/// `<YYYY>-<MM>-<DD>T<hh>:<mm>:<ss>` string, if no timezone is specified.
 impl PartialEq for Iso8601 {
     fn eq(&self, rhs: &Iso8601) -> bool {
-        //let maybe_dt_lhs: Result<DateTime<FixedOffset>,HolochainError> = self.try_into();
         match DateTime::<FixedOffset>::try_from(self) {
             Ok(dt_lhs) => match DateTime::<FixedOffset>::try_from(rhs) {
                 Ok(dt_rhs) => (&dt_lhs).eq(&dt_rhs),
@@ -188,9 +184,9 @@ impl PartialOrd for Iso8601 {
         match DateTime::<FixedOffset>::try_from(self) {
             Ok(ts_lhs) => match DateTime::<FixedOffset>::try_from(rhs) {
                 Ok(ts_rhs) => (&ts_lhs).partial_cmp(&ts_rhs),
-                Err(_e) => None, // No Ordering available
+                Err(_e) => None,
             },
-            Err(_e) => None, // No Ordering available
+            Err(_e) => None,
         }
     }
 }

@@ -50,7 +50,7 @@ impl Seed {
             json::decode(&seed_data_string).unwrap();
         let mut seed_data = SecBuf::with_secure(32);
 
-        util::pw_dec(&seed_data_deserialized, &mut passphrase,&mut seed_data)?;
+        util::pw_dec(&seed_data_deserialized, &mut passphrase, &mut seed_data)?;
 
         match bundle.bundle_type.as_ref() {
             "hcRootSeed" => Ok(FromBundle::Rs(RootSeed::new(seed_data))),
@@ -73,7 +73,8 @@ impl Seed {
         hint: String,
     ) -> Result<bundle::KeyBundle, HolochainError> {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let seed_data: bundle::ReturnBundleData = util::pw_enc(&mut self.seed_buf, &mut passphrase)?;
+        let seed_data: bundle::ReturnBundleData =
+            util::pw_enc(&mut self.seed_buf, &mut passphrase)?;
 
         // convert -> to string -> to base64
         let seed_data_serialized = json::encode(&seed_data).unwrap();
@@ -305,8 +306,11 @@ mod tests {
 
         let mut rs = RootSeed::new_random();
 
-        let seed : HolochainError = rs.get_device_seed(0).unwrap_err();
-        assert_eq!(HolochainError::ErrorGeneric("Invalid index".to_string()), seed);
+        let seed: HolochainError = rs.get_device_seed(0).unwrap_err();
+        assert_eq!(
+            HolochainError::ErrorGeneric("Invalid index".to_string()),
+            seed
+        );
     }
 
     #[test]
@@ -327,8 +331,11 @@ mod tests {
         let mut rs = RootSeed::new_random();
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
-        let seed:HolochainError = ds.get_device_pin_seed("802".to_string()).unwrap_err();
-        assert_eq!(HolochainError::ErrorGeneric("Invalid PIN Size".to_string()), seed);
+        let seed: HolochainError = ds.get_device_pin_seed("802".to_string()).unwrap_err();
+        assert_eq!(
+            HolochainError::ErrorGeneric("Invalid PIN Size".to_string()),
+            seed
+        );
     }
 
     #[test]

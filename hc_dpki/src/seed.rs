@@ -48,8 +48,9 @@ impl Seed {
 
         let seed_data_deserialized: bundle::ReturnBundleData =
             json::decode(&seed_data_string).unwrap();
+        let mut seed_data = SecBuf::with_secure(32);
 
-        let seed_data: SecBuf = util::pw_dec(&seed_data_deserialized, &mut passphrase)?;
+        util::pw_dec(&seed_data_deserialized, &mut passphrase,&mut seed_data)?;
 
         match bundle.bundle_type.as_ref() {
             "hcRootSeed" => Ok(FromBundle::Rs(RootSeed::new(seed_data))),
@@ -117,7 +118,7 @@ impl Seed {
         Ok(mnemonic.phrase().to_string())
     }
 }
-
+#[derive(Debug)]
 pub struct DevicePinSeed {
     s: Seed,
 }
@@ -157,7 +158,7 @@ impl DevicePinSeed {
         Ok(Keypair::new_from_seed(&mut out_seed)?)
     }
 }
-
+#[derive(Debug)]
 pub struct DeviceSeed {
     s: Seed,
 }
@@ -304,10 +305,8 @@ mod tests {
 
         let mut rs = RootSeed::new_random();
 
-        match rs.get_device_seed(0) {
-            Ok(_) => assert!(false),
-            Err(_) => assert!(true),
-        };
+        let seed : HolochainError = rs.get_device_seed(0).unwrap_err();
+        assert_eq!(HolochainError::ErrorGeneric("Invalid index".to_string()), seed);
     }
 
     #[test]
@@ -328,10 +327,8 @@ mod tests {
         let mut rs = RootSeed::new_random();
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
-        match ds.get_device_pin_seed("802".to_string()) {
-            Ok(_) => assert!(false),
-            Err(_) => assert!(true),
-        }
+        let seed:HolochainError = ds.get_device_pin_seed("802".to_string()).unwrap_err();
+        assert_eq!(HolochainError::ErrorGeneric("Invalid PIN Size".to_string()), seed);
     }
 
     #[test]

@@ -31,7 +31,6 @@ const Config = {
         return { path, name }
     },
     instance: (agent, dna, name) => {
-        console.log(agent, dna)
         if (!name) {
             name = makeInstanceId(agent.name, dna.name)
         }
@@ -46,6 +45,7 @@ Container.prototype._start = Container.prototype.start
 Container.prototype._stop = Container.prototype.stop
 Container.prototype._callRaw = Container.prototype.call
 
+// DEPRECATED: use Container.run()
 Container.prototype.start = function () {
     this._stopPromise = new Promise((fulfill, reject) => {
         try {
@@ -56,6 +56,7 @@ Container.prototype.start = function () {
     })
 }
 
+// DEPRECATED: use Container.run()
 Container.prototype.stop = function () {
     this._stop()
     return this._stopPromise
@@ -112,11 +113,32 @@ Container.prototype.makeCaller = function (agentId, dnaPath) {
   }
 }
 
+// DEPRECATED: use Container.run()
 Container.withInstances = function (instances, opts=defaultOpts) {
     const config = Config.container(instances, opts)
     return new Container(config)
 }
 
+/**
+ * Run a new Container, specified by a closure:
+ * (stop, callers, container) => { (code to run) }
+ * where `stop` is a function that shuts down the Container and must be called in the closure body
+ * `opts` is an optional object of configuration
+ * and the `callers` is an Object of instances specified in the config, keyed by "name"
+ * (name is the optional third parameter of `Config.instance`)
+ *
+ * e.g.:
+ *      Container.run([
+ *          instanceAlice,
+ *          instanceBob,
+ *          instanceCarol,
+ *      ], (stop, {alice, bob, carol}) => {
+ *          const resultAlice = alice.call(...)
+ *          const resultBob = bob.call(...)
+ *          assert(resultAlice === resultBob)
+ *          stop()
+ *      })
+ */
 Container.run = function (instances, opts, fn) {
     if (typeof opts === 'function') {
         fn = opts
@@ -190,12 +212,10 @@ class Scenario {
         }
         Scenario._tape(description, t => {
             this.run((stop, instances) => {
-                console.log('......', 1)
                 fn(t, instances)
                 stop()
             })
             .catch(e => {
-                console.log("whaaa", e); 
                 t.fail(e)
             })
             .then(t.end)

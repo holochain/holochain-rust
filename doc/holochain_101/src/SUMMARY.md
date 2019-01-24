@@ -47,6 +47,7 @@
   - [(E) QML based UIs](./qml_uis.md)
 - [(E) Going Live with Holochain Apps](./live_hc_apps.md)
   - [Containers](./containers.md)
+    - [TOML Configuration Files](./container_toml.md)
   - [(E) Creating Versioned Releases](./creating_versioned_releases.md)
 - [(E) Building Holochain Apps: Advanced Topics](./apps_advanced_topics.md)
   - [Building For Android](./building_for_android.md)

@@ -34,7 +34,7 @@ scenario1.runTape('call', async (t, { alice }) => {
   const params = { num1, num2 }
   const result = alice.call("blog", "main", "check_sum", params)
 
-  t.deepEqual(result.Ok, { "sum": "4" })
+  t.equal(result.Ok, 4)
 })
 
 scenario1.runTape('hash_post', async (t, { alice }) => {
@@ -70,7 +70,7 @@ scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   const error = JSON.parse(result.Err.Internal)
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)
-  t.equal(error.line, "86")
+  t.equal(error.line, "94")
 })
 
 scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
@@ -88,7 +88,7 @@ scenario1.runTape('post max content size 280 characters', async (t, { alice }) =
 
   t.ok(inner.file)
   t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
-  t.equals(inner.line, "86")
+  t.equals(inner.line, "94")
 })
 
 scenario1.runTape('posts_by_agent', async (t, { alice }) => {

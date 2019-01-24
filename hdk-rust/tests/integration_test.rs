@@ -27,7 +27,7 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, EntryType},
         Entry, EntryWithMeta,
     },
-    error::{CoreError, HolochainError},
+    error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
 };
@@ -46,44 +46,98 @@ use std::{
 use test_utils::*;
 
 #[no_mangle]
-pub fn hc_init_globals(_: u32) -> u32 {
-    0
+pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn hc_commit_entry(_: u32) -> u32 {
-    0
+pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn hc_get_entry(_: u32) -> u32 {
-    0
+pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn hc_entry_address(_: u32) -> u32 {
-    0
+pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn hc_query(_: u32) -> u32 {
-    0
+pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn hc_update_entry(_: u32) -> u32 {
-    0
+pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn hc_remove_entry(_: u32) -> u32 {
-    0
+pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn hc_send(_: u32) -> u32 {
-    0
+pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn zome_setup(_: u32) -> u32 {
-    0
+pub fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn __list_capabilities(_: u32) -> u32 {
-    0
+pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn zome_setup(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn __list_capabilities(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
 
 pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
@@ -381,7 +435,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}"),
+        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"94\\\"}\"}}"),
     );
 }
 
@@ -443,7 +497,6 @@ fn can_link_entries() {
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
-
     // Create links
     let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
     let maybe_address: Result<Address, String> =

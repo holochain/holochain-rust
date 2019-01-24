@@ -4,6 +4,7 @@ use crate::{
         UiInterfaceConfiguration,
         UiBundleConfiguration,
     },
+    static_file_server::StaticServer,
     container::{Container, base::notify},
 };
 use holochain_core_types::{error::HolochainError};
@@ -78,6 +79,14 @@ impl ContainerUiAdmin for Container {
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
+        self.static_servers.insert(
+            new_interface.id.clone(),
+            StaticServer::from_configs(
+                new_interface.clone(),
+                self.config.ui_bundle_by_id(&new_interface.bundle).unwrap(),
+                None,
+            ),
+        );
         Ok(())
     }
 
@@ -100,6 +109,11 @@ impl ContainerUiAdmin for Container {
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
+
+        self.static_servers.remove(id).ok_or(
+            HolochainError::ErrorGeneric("Could not remove server".into())
+        )?;
+
         Ok(())    
     }
 
@@ -239,17 +253,71 @@ port = 3000"#)
     //         .unwrap()
     // }
 
-    // #[test]
-    // fn test_start_ui_interface() {
-    //     let mut container = create_test_container("test_install_dna_from_file");
-    //     container.start_ui_interface(&"test-ui-interface-id".to_string())
-    //         .unwrap()
-    // }
+    #[test]
+    fn test_start_ui_interface() {
+        let mut container = create_test_container("test_install_dna_from_file");
 
-    // #[test]
-    // fn test_stop_ui_interface() {
-    //     let mut container = create_test_container("test_install_dna_from_file");
-    //     container.stop_ui_interface(&"test-ui-interface-id".to_string())
-    //         .unwrap()
-    // }
+        let bundle_path = PathBuf::from(".");
+        assert_eq!(
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            Ok(())
+        );
+
+        assert_eq!(
+            container.add_ui_interface(UiInterfaceConfiguration {
+                id: "test-ui-interface-id".into(),
+                port: 3000,
+                bundle: "test-bundle-id".into(),
+                dna_interface: None,
+            }),
+            Ok(())
+        );
+
+        assert_eq!(
+            container.start_ui_interface(&"test-ui-interface-id".to_string()),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn test_stop_ui_interface() {
+        let mut container = create_test_container("test_install_dna_from_file");
+
+        let bundle_path = PathBuf::from(".");
+        assert_eq!(
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            Ok(())
+        );
+
+        assert_eq!(
+            container.add_ui_interface(UiInterfaceConfiguration {
+                id: "test-ui-interface-id".into(),
+                port: 3000,
+                bundle: "test-bundle-id".into(),
+                dna_interface: None,
+            }),
+            Ok(())
+        );
+
+        assert_eq!(
+            container.stop_ui_interface(&"test-ui-interface-id".to_string()),
+            Err(
+                HolochainInstanceError::InternalFailure(
+                    HolochainError::ErrorGeneric(
+                        "server is already stopped".into()
+                    )
+                )
+            )
+        );
+
+        assert_eq!(
+            container.start_ui_interface(&"test-ui-interface-id".to_string()),
+            Ok(())
+        );
+
+        assert_eq!(
+            container.stop_ui_interface(&"test-ui-interface-id".to_string()),
+            Ok(())
+        );
+    }
 }

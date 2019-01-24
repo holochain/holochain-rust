@@ -1,4 +1,5 @@
 use crate::{context::Context, network, nucleus};
+use holochain_core_types::time::Timeout;
 
 use holochain_core_types::{
     cas::content::Address, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
@@ -12,6 +13,7 @@ use std::sync::Arc;
 pub async fn get_entry_with_meta_workflow<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
+    timeout: &'a Timeout,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
     let maybe_entry_with_meta =
@@ -20,7 +22,11 @@ pub async fn get_entry_with_meta_workflow<'a>(
         return Ok(maybe_entry_with_meta);
     }
     // 2. No result, so try on the network
-    await!(network::actions::get_entry::get_entry(context, &address))
+    await!(network::actions::get_entry::get_entry(
+        context.clone(),
+        address.clone(),
+        timeout.clone(),
+    ))
 }
 
 /// Get GetEntryResult workflow
@@ -42,7 +48,11 @@ pub async fn get_entry_result_workflow<'a>(
         let address = maybe_address.unwrap();
         maybe_address = None;
         // Try to get entry
-        let maybe_entry_with_meta = await!(get_entry_with_meta_workflow(context, &address))?;
+        let maybe_entry_with_meta = await!(get_entry_with_meta_workflow(
+            context,
+            &address,
+            &args.options.timeout
+        ))?;
         // Entry found
         if let Some(entry_with_meta) = maybe_entry_with_meta {
             // Erase history if request is for latest

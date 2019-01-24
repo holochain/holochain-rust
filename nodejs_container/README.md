@@ -230,10 +230,10 @@ container.start()
 const aliceInstanceId = aliceName + '::' + dnaPath
 
 // zome functions can be called using the following, assuming the vars are defined with valid values
-const callResult = container.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
+const callResult = container.call(aliceInstanceId, zome, fnName, paramsAsObject)
 // the same could be accomplished using the following, makeCaller is for convenience
 const alice = container.makeCaller(aliceName, dnaPath)
-const altCallResult = alice.call(zome, capability, fnName, paramsAsObject)
+const altCallResult = alice.call(zome, fnName, paramsAsObject)
 
 // get the actual agent_id for an instance, by passing an instance id
 const aliceAgentId = container.agent_id(aliceInstanceId)

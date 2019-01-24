@@ -16,7 +16,7 @@ use holochain_core::{
     signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityCall, entry::Entry,
+    cas::content::{Address, AddressableContent}, dna::capabilities::CapabilityCall, entry::Entry,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -133,9 +133,8 @@ declare_types! {
         method call(mut cx) {
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let zome = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
-            let cap_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
-            let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
-            let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
+            let fn_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
+            let params = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
 
             let mut this = cx.this();
 
@@ -146,7 +145,6 @@ declare_types! {
                     panic!("TestContainer: cannot use call() before start()");
                 }
                 let cap = Some(CapabilityCall::new(
-                    cap_name.to_string(),
                     Address::from(""), //FIXME
                     None,
                 ));
@@ -219,6 +217,38 @@ declare_types! {
                 cx.throw(error_string)
             })?;
             Ok(cx.string(hash.to_string()).upcast())
+        }
+
+        // Fetch the DNA address from within the instance
+        method dna_address(mut cx) {
+            let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+            let this = cx.this();
+            let maybe_dna = {
+                let guard = cx.lock();
+                let tc = this.borrow(&guard);
+
+                if !tc.is_started {
+                    panic!("TestContainer: cannot use dna_address() before start()");
+                }
+                let instance = tc.container.instances().get(&instance_id)
+                    .expect(&format!("No instance with id: {}", instance_id))
+                    .read().unwrap();
+                let out = instance.context().state().ok_or("No state?".to_string())
+                    .and_then(|state| state
+                        .nucleus()
+                        .dna
+                        .clone()
+                        .ok_or(String::from("No DNA set in instance state"))
+                    );
+                out
+            };
+
+            let dna = maybe_dna.or_else(|e: String| {
+                let error_string = cx.string(format!("unable to get DNA: {:?}", &e));
+                cx.throw(error_string)
+            })?;
+            let address = dna.address();
+            Ok(cx.string(address.to_string()).upcast())
         }
     }
 }

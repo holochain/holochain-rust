@@ -29,10 +29,11 @@ When Holochain loads a DNA file, to start an instance from it, it expects the pr
             "name": "test_zome",
             "capabilities": {
                 "test_capability": {
-                    "type": "public",
-                    "fn_declarations": []
+                    "type": "public"
+                    "functions": [],
                 }
             },
+            "fn_declarations": [],
             "code": {
                 "code": "AAECAw=="
             }
@@ -57,15 +58,15 @@ These will both be discussed below.
 
 In order to operate securely, but still be full featured, Holochain has a permissions system for function calls. This is being called "Capabilities".
 
-A Zome can have multiple Capabilities, and each Capability has one CapabilityType, from a defined set of options. The point of selecting a CapabilityType for a set of functions is that it will allow granular control of who can call which functions of a Zome.
+A Zome can have multiple Capabilities, and each Capability has one CapabilityType, from a defined set of options, as well as list of functions that are accessible using that capability. The point of selecting a CapabilityType for a set of functions is that it will allow granular control of who can call which functions of a Zome.
 
 In the example, the name of the capability was "test_capability".
 
 ```json
 "capabilities": {
     "test_capability": {
-        "type": "public",
-        "fn_declarations": []
+        "type": "public"
+        "functions": ["get_task_list"]
     }
 }
 ```
@@ -80,26 +81,21 @@ Important notes for the current use of Capabilities:
 
 ## Function Declarations
 
-It's time to illustrate what a `fn_declaration` looks like. Here is an example of one, added to "test_capability":
+All of the Zome's functions are declared in the `fn_declarations` array. Here is an example of one:
 
 ```json
-"capabilities": {
-    "test_capability": {
-        "type": "public",
-        "fn_declarations": [
-            {
-                "name": "get_task_list",
-                "inputs": [{"name": "username", "type": "string"}],
-                "outputs": [{"name": "task_list", "type": "json"}]
-            }
-        ]
+"fn_declarations": [
+    {
+        "name": "get_task_list",
+        "inputs": [{"name": "username", "type": "string"}],
+        "outputs": [{"name": "task_list", "type": "json"}]
     }
-}
+]
 ```
 
 Each function declaration is an object that includes the `name`, and the `inputs` and `outputs` expected for the function. Since WebAssembly only compiles from code languages with a type system, the generation of these inputs and outputs can expected to be automated.
 
-The `name` is the most important thing here, because when a function call to an instance is being performed, it will have to match a name which Holochain can find in the `fn_declarations` specification for the Capability. If the function isn't declared, Holochain will treat it as if it doesn't exist, even if it is an exposed function in the WASM code.
+The `name` is the most important thing here, because when a function call to an instance is being performed, it will have to match a name which Holochain can find in the `functions`. If the function isn't declared, Holochain will treat it as if it doesn't exist, even if it is an exposed function in the WASM code.
 
 ## Data Interchange - Inputs and Outputs
 
@@ -116,7 +112,7 @@ Containers install and uninstall, start and stop instances of DNA on devices. Th
 Imagine that there are many DNA instances running within one Container, and each DNA can have multiple Zomes. Clearly, function calls will need to include a complete enough set of arguments to know the following:
 - which instance?
 - which Zome?
-- which Capability?
+- which Capability token?
 - which function?
 - what arguments?
 
@@ -158,7 +154,7 @@ define_zome! {
         Ok(())
     }
 
-    functions: {}
+    functions: []
 }
 ```
 
@@ -166,22 +162,22 @@ define_zome! {
 
 ### Adding a Capability
 
-A Zome can have multiple Capabilities within it. This is what adding a Capability looks like:
+A Zome can have multiple Capabilities within it. This is what adding some Capabilities might look like:
 
 ```rust
 ...
 
 define_zome! {
     ...
-    functions: {
-        main (Public) {
-
+    capabilities: {
+        public (Public) [read_post]
+        authoring (Assigned) [create_post, update_post]
         }
     }
 }
 ```
 
-In this example, of a Capability with no functions, `main` is the given name of this Capability, by which it will be referenced elsewhere. `Public` is a declaration of CapabilityType for this Capability. At the time of writing, it's recommended that you only use `Public` here, since the other options for CapabilityType are still under development. The implication of `Public` is that from your local device, any request to Holochain to make a function call to this Capability of this Zome will succeed, without needing authorization.
+In this example, `public` is the name of a capability which grants `Public` Capbility-type access to the `read_post` function, and `authoring` is the name of a capability which for which token grants can be assigned to specific agents for access to the `create_post` and `update_post` functions.  The implication of `Public` is that from your local device, any request to Holochain to make a function call to this Capability of this Zome will succeed, without needing authorization.
 
 ### Adding a Zome Function
 
@@ -191,22 +187,20 @@ In order to add a Zome function, there are two primary steps that are involved.
 
 __Step 1__
 
-Since `main (Public)` expects key-value pairs, we add new functions using the following pattern:
+The `functions` section looks a bit like an array of key-value pairs:
 
 ```rust
 ...
 
 define_zome! {
     ...
-    functions: {
-        main (Public) {
-            send_message: {
-                inputs: |to_agent: Address, message: String|,
-                outputs: |response: ZomeApiResult<String>|,
-                handler: handle_send_message
-            }
+    functions: [
+        send_message: {
+            inputs: |to_agent: Address, message: String|,
+            outputs: |response: ZomeApiResult<String>|,
+            handler: handle_send_message
         }
-    }
+    ]
 }
 ```
 
@@ -224,7 +218,7 @@ Here is an example of a simplistic function, for illustration purposes. It cente
 
 ```rust
 fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
-    hdk::send(to_agent, message)
+    hdk::send(to_agent, message, 60000.into())
 }
 ```
 
@@ -243,20 +237,18 @@ Here are the above two steps combined:
 ...
 
 fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
-    hdk::send(to_agent, message)
+    hdk::send(to_agent, message, 60000.into())
 }
 
 define_zome! {
     ...
-    functions: {
-        main (Public) {
-            send_message: {
-                inputs: |to_agent: Address, message: String|,
-                outputs: |response: ZomeApiResult<String>|,
-                handler: handle_send_message
-            }
+    functions: [
+        send_message: {
+            inputs: |to_agent: Address, message: String|,
+            outputs: |response: ZomeApiResult<String>|,
+            handler: handle_send_message
         }
-    }
+    ]
 }
 ```
 

@@ -55,16 +55,18 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
     let default_wat = r#"
             (module
                 (memory (;0;) 17)
-                (func (export "main") (param $p0 i32) (result i32)
-                    i32.const 6
+                (func (export "main") (param $p0 i64) (result i64)
+                    i64.const 6
                 )
-                (data (i32.const 0)
+                (data (i64.const 0)
                     "1337.0"
                 )
                 (export "memory" (memory 0))
             )
         "#;
     let wat_str = wat.unwrap_or_else(|| &default_wat);
+
+    println!("xxx {:?}", wat_str);
 
     // Test WASM code that returns 1337 as integer
     let wasm_binary = Wat2Wasm::new()

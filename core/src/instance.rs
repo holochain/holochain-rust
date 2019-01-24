@@ -718,10 +718,10 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 0
+                (func (export "genesis") (param $p0 i64) (result i64)
+                    i64.const 0
                 )
-                (data (i32.const 0)
+                (data (i64.const 0)
                     ""
                 )
                 (export "memory" (memory 0))
@@ -747,8 +747,8 @@ pub mod tests {
                 r#"
             (module
                 (memory (;0;) 17)
-                (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 9
+                (func (export "genesis") (param $p0 i64) (result i64)
+                    i64.const 9
                 )
                 (data (i32.const 0)
                     "1337.0"

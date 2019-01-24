@@ -17,8 +17,8 @@ Not because it needs to be understood, but so that you can get a glimpse of what
 ```
 (module
     (memory (;0;) 17)
-    (func (export "main") (param $p0 i32) (result i32)
-        i32.const 6
+    (func (export "main") (param $p0 i64) (result i64)
+        i64.const 6
     )
     (data (i32.const 0)
         "1337.0"
@@ -32,5 +32,3 @@ Once the above code is converted from WAT to binary WASM it is in the format tha
 Often times, for a language that compiles to WASM, you will have a configuration option to generate the (more) human readable WAT version of the code as well, while compiling it to WASM.
 
 While the compilation to WASM mostly happens in the background for you as an app developer, having a basic understanding of the role of WebAssembly in this technology stack will no doubt help you along the way.
-
-

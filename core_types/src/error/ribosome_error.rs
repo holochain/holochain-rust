@@ -1,15 +1,15 @@
 use self::{RibosomeEncodedValue::*, RibosomeErrorCode::*};
 use crate::{error::HolochainError, json::JsonString};
-use bits_n_pieces::u32_split_bits;
+use bits_n_pieces::u64_split_bits;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
 
 /// size of the integer that encodes ribosome codes
-pub type RibosomeEncodingBits = u32;
+pub type RibosomeEncodingBits = u64;
 /// size of the integer that wasm sees
-pub type RibosomeRuntimeBits = i32;
+pub type RibosomeRuntimeBits = i64;
 /// size of the integer that represents a ribosome code
-pub type RibosomeCodeBits = u16;
+pub type RibosomeCodeBits = u32;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct RibosomeEncodedAllocation(RibosomeEncodingBits);
@@ -34,7 +34,7 @@ impl ToString for RibosomeEncodedAllocation {
 
 /// Represents all possible values passed to/from wasmi functions
 /// All wasmi functions are I32 values
-#[repr(u32)]
+#[repr(u64)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum RibosomeEncodedValue {
     /// @TODO make this unambiguous or remove
@@ -75,7 +75,7 @@ impl From<RibosomeEncodingBits> for RibosomeEncodedValue {
         if i == 0 {
             RibosomeEncodedValue::Success
         } else {
-            let (code_int, maybe_allocation_length) = u32_split_bits(i);
+            let (code_int, maybe_allocation_length) = u64_split_bits(i);
             if maybe_allocation_length == 0 {
                 RibosomeEncodedValue::Failure(RibosomeErrorCode::from_code_int(code_int))
             } else {
@@ -139,7 +139,7 @@ impl RibosomeEncodedValue {
 }
 
 /// Enum of all possible ERROR codes that a Zome API Function could return.
-#[repr(u32)]
+#[repr(u64)]
 #[derive(Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
 #[rustfmt::skip]
 pub enum RibosomeErrorCode {
@@ -286,7 +286,7 @@ pub mod tests {
     #[test]
     fn ribosome_error_code_round_trip() {
         let oom = RibosomeErrorCode::from_code_int(
-            ((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16,
+            ((RibosomeErrorCode::OutOfMemory as u64) >> 32) as u32,
         );
         assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
@@ -303,8 +303,8 @@ pub mod tests {
 
             let inner_code = RibosomeEncodedValue::from_error(err);
 
-            let _one_int: i32 = inner_code.clone().into();
-            let _another_int: u32 = inner_code.clone().into();
+            let _one_int: i64 = inner_code.clone().into();
+            let _another_int: u64 = inner_code.clone().into();
         }
     }
 

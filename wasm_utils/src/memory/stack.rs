@@ -16,7 +16,7 @@ impl From<Top> for MemoryInt {
 
 impl From<Top> for usize {
     fn from(top: Top) -> Self {
-        Self::from(MemoryInt::from(top))
+        MemoryInt::from(top) as usize
     }
 }
 
@@ -182,7 +182,7 @@ pub mod tests {
 
         let out_of_bounds_allocation = WasmAllocation {
             offset: Offset::from(13),
-            length: Length::from(std::u16::MAX),
+            length: Length::from(std::u32::MAX),
         };
         assert_eq!(
             Err(AllocationError::OutOfBounds),
@@ -220,7 +220,7 @@ pub mod tests {
         assert_eq!(
             Err(AllocationError::OutOfBounds),
             WasmStack::try_from(WasmAllocation {
-                offset: Offset::from(std::u16::MAX),
+                offset: Offset::from(std::u32::MAX),
                 length: Length::from(1)
             }),
         );

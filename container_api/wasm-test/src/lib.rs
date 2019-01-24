@@ -169,7 +169,8 @@ fn hdk_commit_fail(mem_stack: &mut WasmStack) -> Result<Address, String> {
         .deallocate(allocation_of_input)
         .expect("deallocate failed");
 
-    let address = JsonString::from(result.value).try_into()?;
+    // let address = JsonString::from(result.value).try_into()?;
+    let address = JsonString::from(result).try_into()?;
 
     Ok(address)
 }

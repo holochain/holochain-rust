@@ -70,7 +70,7 @@ impl SinglePageManager {
         let mem_buf = self.allocate((data.len() as MemoryInt).into())?;
 
         self.wasm_memory
-            .set(u32::from(mem_buf.offset()), &data)
+            .set(MemoryInt::from(mem_buf.offset()), &data)
             .expect("memory should be writable");
 
         Ok(mem_buf)
@@ -80,7 +80,7 @@ impl SinglePageManager {
     pub fn read(&self, allocation: WasmAllocation) -> Vec<u8> {
         self.wasm_memory
             .get(
-                MemoryBits::from(allocation.offset()),
+                MemoryInt::from(allocation.offset()),
                 MemoryInt::from(allocation.length()) as usize,
             )
             .expect("Successfully retrieve the result")

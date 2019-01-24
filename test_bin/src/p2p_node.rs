@@ -25,12 +25,12 @@ pub struct P2pNode {
 
     pub agent_id: String,
 
+    // logging
     recv_msg_log: Vec<Protocol>,
-
     recv_dm_log: Vec<MessageData>,
 
     // datastores
-    // TODO: Have a datastore per dna ; perhaps in a struct CoreMock
+    // TODO: Have a datastore per dna ; perhaps in a CoreMock struct
     pub data_store: HashMap<Address, serde_json::Value>,
     pub meta_store: HashMap<(Address, String), serde_json::Value>,
     pub authored_data_store: HashMap<Address, serde_json::Value>,
@@ -302,29 +302,29 @@ impl P2pNode {
 
     // Constructor for an in-memory P2P Network
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_unique_memory_network(name: String) -> Self {
+    pub fn new_with_unique_memory_network(agent_id: String) -> Self {
         let config = P2pConfig::new_with_unique_memory_backend();
-        return P2pNode::new_with_config(name, &config, None);
+        return P2pNode::new_with_config(agent_id, &config, None);
     }
 
     // Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_uri_ipc_network(name: String, ipc_binding: &str) -> Self {
+    pub fn new_with_uri_ipc_network(agent_id: String, ipc_binding: &str) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
-        return P2pNode::new_with_config(name, &p2p_config, None);
+        return P2pNode::new_with_config(agent_id, &p2p_config, None);
     }
 
     // Constructor for an IPC node that spawns and uses a n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_spawn_ipc_network(
-        name: String,
+        agent_id: String,
         n3h_path: &str,
         maybe_config_filepath: Option<&str>,
         bootstrap_nodes: Vec<String>,
     ) -> Self {
         let (p2p_config, temp_dir) =
             create_ipc_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
-        return P2pNode::new_with_config(name, &p2p_config, Some(temp_dir));
+        return P2pNode::new_with_config(agent_id, &p2p_config, Some(temp_dir));
     }
 
     // See if there is a message to receive
@@ -356,6 +356,8 @@ impl P2pNode {
     }
 
     /// recv messages until timeout is reached
+    /// returns the number of messages it received during listening period
+    /// timeout is reset after a message is received
     #[cfg_attr(tarpaulin, skip)]
     pub fn listen(&mut self, timeout_ms: usize) -> usize {
         let mut count: usize = 0;

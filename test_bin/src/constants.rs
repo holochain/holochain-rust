@@ -28,8 +28,3 @@ lazy_static! {
 }
 
 // static PUBLISH_LIST_ID: &'static str = "publish_list_id_1";
-
-//#[cfg_attr(tarpaulin, skip)]
-//pub fn example_dna_address() -> Address {
-//    DNA_ADDRESS.into()
-//}

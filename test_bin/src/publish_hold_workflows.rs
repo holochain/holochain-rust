@@ -28,12 +28,14 @@ macro_rules! one_is {
 
 /// Test the following workflow after normal setup:
 /// sequenceDiagram
-/// participant a as Peer A
+/// participant a as Alex
 /// participant net as P2P Network
-/// net->>a: HandleFetchPublishedDataList
-/// a->>net: HandleFetchPublishedDataListResult(list:['xyz_addr'])
+/// participant b as Billy
+/// a->>net: HandleFetchPublishedDataListResult(list:[])
+/// b->>net: FetchDhtData(xyz_addr)
 /// net->>a: HandleFetchData(xyz_addr)
-/// a->>net: HandleFetchDataResult(xyz)
+/// a-->>net: FailureResult
+/// net->>b: FailureResult
 #[cfg_attr(tarpaulin, skip)]
 pub fn empty_publish_data_list_test(
     alex: &mut P2pNode,

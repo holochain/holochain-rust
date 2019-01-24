@@ -76,4 +76,40 @@ pub mod tests {
         );
     }
 
+    #[test]
+    /// tests that we can extract the high bits from a u64 into the correct u32
+    fn u64_high_bits_test() {
+        assert_eq!(
+            0b10101010_10101010_10101010_10101010,
+            super::u64_high_bits(0b10101010_10101010_10101010_10101010_01010101_01010101_01010101_01010101),
+        );
+    }
+
+    #[test]
+    /// tests that we can extract the high bits from a u64 into the correct u32
+    fn u64_low_bits_test() {
+        assert_eq!(
+            0b01010101_01010101_01010101_01010101,
+            super::u64_low_bits(0b10101010_10101010_10101010_10101010_01010101_01010101_01010101_01010101),
+        );
+    }
+
+    #[test]
+    /// tests that we can split a u64 into a tuple of high/low bits
+    fn u64_split_bits_test() {
+        assert_eq!(
+            (0b10101010_10101010_10101010_10101010, 0b01010101_01010101_01010101_01010101),
+            super::u64_split_bits(0b10101010_10101010_10101010_10101010_01010101_01010101_01010101_01010101),
+        );
+    }
+
+    #[test]
+    /// tests that we can merge a u32 tuple into a u64
+    fn u64_merge_bits_test() {
+        assert_eq!(
+            0b10101010_10101010_10101010_10101010_01010101_01010101_01010101_01010101,
+            super::u64_merge_bits(0b10101010_10101010_10101010_10101010, 0b01010101_01010101_01010101_01010101),
+        );
+    }
+
 }

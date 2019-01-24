@@ -18,6 +18,7 @@ use hdk::{
     holochain_core_types::{cas::content::Address, entry::Entry, json::JsonString},
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
 };
+use blog::Env;
 
 define_zome! {
     entries: [
@@ -64,6 +65,12 @@ define_zome! {
             inputs: | |,
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
             handler: blog::handle_my_posts
+        }
+
+        my_posts_immediate_timeout: {
+            inputs: | |,
+            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
+            handler: blog::handle_my_posts_immediate_timeout
         }
 
         my_posts_as_committed: {

@@ -16,7 +16,7 @@ use holochain_core::{
     signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
-    cas::content::Address, dna::capabilities::CapabilityCall, entry::Entry,
+    cas::content::{Address, AddressableContent}, dna::capabilities::CapabilityCall, entry::Entry,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -217,6 +217,38 @@ declare_types! {
                 cx.throw(error_string)
             })?;
             Ok(cx.string(hash.to_string()).upcast())
+        }
+
+        // Fetch the DNA address from within the instance
+        method dna_address(mut cx) {
+            let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+            let this = cx.this();
+            let maybe_dna = {
+                let guard = cx.lock();
+                let tc = this.borrow(&guard);
+
+                if !tc.is_started {
+                    panic!("TestContainer: cannot use dna_address() before start()");
+                }
+                let instance = tc.container.instances().get(&instance_id)
+                    .expect(&format!("No instance with id: {}", instance_id))
+                    .read().unwrap();
+                let out = instance.context().state().ok_or("No state?".to_string())
+                    .and_then(|state| state
+                        .nucleus()
+                        .dna
+                        .clone()
+                        .ok_or(String::from("No DNA set in instance state"))
+                    );
+                out
+            };
+
+            let dna = maybe_dna.or_else(|e: String| {
+                let error_string = cx.string(format!("unable to get DNA: {:?}", &e));
+                cx.throw(error_string)
+            })?;
+            let address = dna.address();
+            Ok(cx.string(address.to_string()).upcast())
         }
     }
 }

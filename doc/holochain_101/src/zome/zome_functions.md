@@ -220,7 +220,7 @@ Here is an example of a simplistic function, for illustration purposes. It cente
 
 ```rust
 fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
-    hdk::send(to_agent, message)
+    hdk::send(to_agent, message, 60000.into())
 }
 ```
 
@@ -239,7 +239,7 @@ Here are the above two steps combined:
 ...
 
 fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String>  {
-    hdk::send(to_agent, message)
+    hdk::send(to_agent, message, 60000.into())
 }
 
 define_zome! {

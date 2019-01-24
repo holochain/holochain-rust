@@ -12,10 +12,10 @@ const dnaInvalid = Config.dna(
     'dna-invalid'
 )
 
-const agent = Config.agent("ben")
+const agent = Config.agent("an-agent")
 
-const instanceValid = Config.instance(agent, dnaValid)
-const instanceInvalid = Config.instance(agent, dnaInvalid)
+const instanceValid = Config.instance(agent, dnaValid, 'valorie')
+const instanceInvalid = Config.instance(agent, dnaInvalid, 'ingrid')
 
 test('can create a container two ways', t => {
     const container1 = Container.withInstances([instanceValid])
@@ -34,8 +34,8 @@ test('can start and stop a container', t => {
 })
 
 test('can start and stop a container via `run`', t => {
-    const container = Container.withInstances([instanceValid])
-    container.run(stop => {
+    const container = Container.runInstances([instanceValid], (stop, {valorie}) => {
+        t.equal(valorie.agentId, 'an-agent')
         stop()
         t.end()
     }).catch(t.fail)

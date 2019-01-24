@@ -45,17 +45,6 @@ Container.prototype._start = Container.prototype.start
 Container.prototype._stop = Container.prototype.stop
 Container.prototype._callRaw = Container.prototype.call
 
-Container.prototype.run = function (fn) {
-    return new Promise((fulfill, reject) => {
-        try {
-            this._start(promiser(fulfill, reject))
-            fn(() => this._stop())
-        } catch (e) {
-            reject(e)
-        }
-    })
-}
-
 Container.prototype.start = function () {
     this._stopPromise = new Promise((fulfill, reject) => {
         try {
@@ -115,7 +104,7 @@ Container.prototype.callSync = function (...args) {
 // Convenience function for making an object that can call into the container
 // in the context of a particular instance. This may be temporary.
 Container.prototype.makeCaller = function (agentId, dnaPath) {
-  const instanceId = makeInstanceId(agentId, dnaPath)
+  const instanceId = dnaPath ? makeInstanceId(agentId, dnaPath) : agentId
   return {
     call: (zome, cap, fn, params) => this.call(instanceId, zome, cap, fn, params),
     agentId: this.agent_id(instanceId)
@@ -123,6 +112,22 @@ Container.prototype.makeCaller = function (agentId, dnaPath) {
 }
 
 Container.withInstances = function (instances, opts=defaultOpts) {
+    const config = Config.container(instances, opts)
+    return new Container(config)
+}
+
+Container.runInstances = function (instances, opts=defaultOpts, fn) {
+    return new Promise((fulfill, reject) => {
+        try {
+            this._start(promiser(fulfill, reject))
+            const callers = instances.map(inst => {
+                this.makeCaller(inst.name)
+            })
+            fn(() => this._stop(), callers)
+        } catch (e) {
+            reject(e)
+        }
+    })
     const config = Config.container(instances, opts)
     return new Container(config)
 }

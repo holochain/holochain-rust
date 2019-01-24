@@ -23,7 +23,7 @@ use holochain_wasm_utils::{
         get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult},
         link_entries::LinkEntriesArgs,
         send::{SendArgs, SendOptions},
-        QueryArgs, QueryArgsNames, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
+        QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult, UpdateEntryArgs, ZomeFnCallArgs,
     },
     holochain_core_types::{
         hash::HashString,
@@ -863,15 +863,21 @@ pub fn get_links_and_load<S: Into<String>>(
     Ok(entries)
 }
 
-/// Returns a list of entries from your local source chain, that match a given entry type name or names.
+/// Returns a list of entries from your local source chain that match a given entry type name or names.
 ///
-/// Each name may be a plain entry type name, or a "glob" pattern such as "prefix/*" (matches all
-/// entry types starting with "prefix/"), or "[!%]*e" (matches all non-system non-name-spaced entry
-/// types ending in "e").  All names and patterns are merged into a single efficient Regular
-/// Expression for scanning.
+/// Each name may be a plain entry type name, or a `"glob"` pattern.  All names and patterns are
+/// merged into a single efficient Regular Expression for scanning.
 ///
-/// Entry type name-spaces are supported by including "/" in your entry type names; use vec![], "",
-/// or "**" to match all names in all name-spaces, "*" to match all non-namespaced names.
+/// You can select many names with patterns such as `"boo*"` (match all entry types starting with
+/// `"boo"`), or `"[!%]*e"` (all non-system non-name-spaced entry types ending in `"e"`).
+///
+/// You can organize your entry types using simple name-spaces, by including `"/"` in your entry type
+/// names.  For example, if you have several entry types related to fizzing a widget, you might
+/// create entry types `"fizz/bar"`, `"fizz/baz"`, `"fizz/qux/foo"` and `"fizz/qux/boo"`.  Query for
+/// `"fizz/**"` to match them all.
+///
+/// Use vec![], `""`, or `"**"` to match all names in all name-spaces.  Matching `"*"` will match only
+/// non-namespaced names.
 ///
 /// entry_type_names: Specify type of entry(s) to retrieve, as a String or Vec<String> of 0 or more names, converted into the QueryArgNames type
 /// start: First entry in result list to retrieve
@@ -896,18 +902,59 @@ pub fn get_links_and_load<S: Into<String>>(
 /// }
 /// # }
 /// ```
+///
+/// With hdk::query_result, you can specify a package of QueryArgsOptions, and get a
+/// variety of return values, such a vector of Headers as a `Vec<ChainHeader>`:
+///
+/// ```
+/// // pub fn get_post_headers() -> ZomeApiResult<QueryResult> {
+/// //    hdk::query_result("post".into(), QueryArgsOptions{ headers: true, ..Default::default()})
+/// // }
+/// ```
+///
+/// The types of the results available depend on whether `headers` and/or `entries` is set:
+///
+/// ```
+/// //                                                     // headers  entries
+/// // pub enum QueryResult {                              // -------  -------
+/// //     Addresses(Vec<Address>),                        // false    false
+/// //     Headers(Vec<ChainHeader>),                      // true     false
+/// //     Entries(Vec<(Address, Entry)>),                 // false    true
+/// //     HeadersWithEntries(Vec<(ChainHeader, Entry)>),  // true     true
+/// // }
+/// ```
 pub fn query(
     entry_type_names: QueryArgsNames,
-    start: u32,
-    limit: u32,
+    start: usize,
+    limit: usize,
+) -> ZomeApiResult<Vec<Address>> {
+    // The hdk::query API always returns a simple Vec<Address>
+    match query_result(
+        entry_type_names,
+        QueryArgsOptions {
+            start: start,
+            limit: limit,
+            headers: false,
+            entries: false,
+        },
+    ) {
+        Ok(result) => match result {
+            QueryResult::Addresses(addresses) => Ok(addresses),
+            _ => return Err(ZomeApiError::FunctionNotImplemented), // should never occur
+        },
+        Err(e) => Err(e),
+    }
+}
+
+pub fn query_result(
+    entry_type_names: QueryArgsNames,
+    options: QueryArgsOptions,
 ) -> ZomeApiResult<QueryResult> {
     Dispatch::Query.with_input(QueryArgs {
         entry_type_names,
-        start,
-        limit,
+        options,
     })
 }
-
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
 /// This works in conjunction with the `receive` callback that has to be defined in the

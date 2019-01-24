@@ -35,7 +35,6 @@ use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
         get_links::GetLinksResult,
-        QueryResult,
     },
     wasm_target_dir,
 };
@@ -623,7 +622,7 @@ fn can_check_query() {
     );
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected: ZomeApiResult<QueryResult> = Ok(vec![Address::from(
+    let expected: ZomeApiResult<Vec<Address>> = Ok(vec![Address::from(
         "QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ",
     )]);
 

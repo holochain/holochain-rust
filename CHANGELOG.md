@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HDK globals `AGENT_ADDRESS`, `AGENT_ID_STR`, `DNA_NAME` and `DNA_ADDRESS` are now set to real, correct values.
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)
 - Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Container README](nodejs_container/README.md) for details.
+- `hdk::query_result` API supports return of ChainHeader and/or Entry data for the matched EntryType(s)
 - Admin RPC functions added to container interface. Any (websocket) container interface that is configured with 
   `admin = true`  now can call the following functions to remotely change any aspect of the container config
   (intended to be used in an upcoming container admin UI):

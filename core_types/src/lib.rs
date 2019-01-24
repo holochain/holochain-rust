@@ -13,6 +13,7 @@
 #[macro_use]
 extern crate arrayref;
 extern crate base64;
+extern crate chrono;
 extern crate futures;
 extern crate multihash;
 extern crate reed_solomon;

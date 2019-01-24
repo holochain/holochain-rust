@@ -18,6 +18,15 @@ scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.notEqual(alice.agentId, bob.agentId)
 })
 
+scenario1.runTape('show_env', async (t, { alice }) => {
+    const result = alice.call("blog", "main", "show_env", {})
+
+    t.equal(result.Ok.dna_address, alice.dnaAddress)
+    t.equal(result.Ok.dna_name, "HDK-spec-rust")
+    t.equal(result.Ok.agent_address, alice.agentId)
+    t.equal(result.Ok.agent_id, '{"nick":"alice","key":"'+alice.agentId+'"}')
+})
+
 scenario1.runTape('call', async (t, { alice }) => {
 
   const num1 = 2

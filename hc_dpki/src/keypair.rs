@@ -15,15 +15,13 @@ pub struct Keypair {
 
 pub const SEEDSIZE: usize = 32 as usize;
 
-const BUNDLE_DATA_LEN_MISALIGN: usize =
-    1 // version byte
+const BUNDLE_DATA_LEN_MISALIGN: usize = 1 // version byte
     + sign::PUBLICKEYBYTES
     + kx::PUBLICKEYBYTES
     + sign::SECRETKEYBYTES
     + kx::SECRETKEYBYTES;
 
-pub const BUNDLE_DATA_LEN: usize =
-    ((BUNDLE_DATA_LEN_MISALIGN + 8 - 1) / 8) * 8;
+pub const BUNDLE_DATA_LEN: usize = ((BUNDLE_DATA_LEN_MISALIGN + 8 - 1) / 8) * 8;
 
 impl Keypair {
     /// derive the pairs from a 32 byte seed buffer
@@ -128,7 +126,8 @@ impl Keypair {
             KeyBuffer::with_raw_parts(
                 array_ref![&decrypted_data, 1, 32],
                 array_ref![&decrypted_data, 33, 32],
-            ).render()
+            )
+            .render()
         };
 
         Ok(Keypair {

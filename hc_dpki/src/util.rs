@@ -81,13 +81,7 @@ pub fn pw_dec(
     let mut cipher = SecBuf::with_insecure(bundle.cipher.len());
     convert_vec_to_secbuf(&bundle.cipher, &mut cipher);
     pw_hash(passphrase, &mut salt, &mut secret)?;
-    aead::dec(
-        decrypted_data,
-        &mut secret,
-        None,
-        &mut nonce,
-        &mut cipher,
-    )?;
+    aead::dec(decrypted_data, &mut secret, None, &mut nonce, &mut cipher)?;
     Ok(())
 }
 

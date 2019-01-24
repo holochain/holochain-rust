@@ -235,9 +235,7 @@ impl SecBuf {
 
         unsafe {
             let mut b = self.write_lock();
-            std::ptr::copy(
-                data.as_ptr(), (**b).as_mut_ptr().add(offset), data.len()
-            );
+            std::ptr::copy(data.as_ptr(), (**b).as_mut_ptr().add(offset), data.len());
         }
 
         Ok(())

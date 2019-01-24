@@ -192,20 +192,21 @@ pub mod tests {
             instances: Vec::new(),
         };
 
-        let mut static_server =
-            StaticServer::from_configs(test_config, test_bundle_config, Some(test_dna_interface.clone()));
+        let mut static_server = StaticServer::from_configs(
+            test_config,
+            test_bundle_config,
+            Some(test_dna_interface.clone()),
+        );
         assert_eq!(static_server.start(), Ok(()));
         assert_eq!(static_server.running, true);
 
-        let get_result: serde_json::Value = reqwest::get("http://localhost:3000/_dna_connections.json")
-            .expect("Could not make request")
-            .json()
-            .expect("response body is not valid json");
-        
-        assert_eq!(
-            get_result,
-            json!({"dna_interface": test_dna_interface})
-        );
+        let get_result: serde_json::Value =
+            reqwest::get("http://localhost:3000/_dna_connections.json")
+                .expect("Could not make request")
+                .json()
+                .expect("response body is not valid json");
+
+        assert_eq!(get_result, json!({ "dna_interface": test_dna_interface }));
 
         assert_eq!(static_server.stop(), Ok(()));
         assert_eq!(static_server.running, false);

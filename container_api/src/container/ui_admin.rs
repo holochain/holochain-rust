@@ -246,12 +246,59 @@ port = 3000"#)
         assert_eq!(config_contents, toml);
     }
 
-    // #[test]
-    // fn test_remove_ui_interface() {
-    //     let mut container = create_test_container("test_install_dna_from_file");
-    //     container.remove_ui_interface(&"test-ui-interface-id".to_string())
-    //         .unwrap()
-    // }
+    #[test]
+    fn test_remove_ui_interface() {
+        let mut container = create_test_container("test_install_dna_from_file");
+
+        assert_eq!(
+            container.remove_ui_interface(&"test-ui-interface-id".to_string()),
+            Err(HolochainError::ErrorGeneric("Could not remove server".into()))
+        );
+
+        let bundle_path = PathBuf::from(".");
+        assert_eq!(
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            Ok(())
+        );
+
+        assert_eq!(
+            container.add_ui_interface(UiInterfaceConfiguration {
+                id: "test-ui-interface-id".into(),
+                port: 3000,
+                bundle: "test-bundle-id".into(),
+                dna_interface: None,
+            }),
+            Ok(())
+        );
+
+        assert_eq!(
+            container.remove_ui_interface(&"test-ui-interface-id".to_string()),
+            Ok(())
+        ); 
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = String::from("bridges = []\nui_interfaces = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, interface());
+        toml = add_block(toml, 
+            String::from(r#"[[ui_bundles]]
+hash = "1234"
+id = "test-bundle-id"
+root_dir = ".""#)
+        );
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);     
+
+        assert_eq!(config_contents, toml);
+    }
 
     #[test]
     fn test_start_ui_interface() {

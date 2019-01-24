@@ -13,7 +13,7 @@ use std::{
 
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver, StorageConfiguration, UiInterfaceConfiguration, UiBundleConfiguration,
+    InterfaceDriver, StorageConfiguration, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use container::{ContainerAdmin, ContainerUiAdmin, CONTAINER};
 use serde_json::map::Map;
@@ -633,12 +633,11 @@ impl ContainerApiBuilder {
         });
 
         self.io.add_method("admin/ui/list", move |_| {
-            let ui_bundles =
-                container_call!(|c| Ok(c.config().ui_bundles) as Result<Vec<UiBundleConfiguration>, String>)?;
+            let ui_bundles = container_call!(
+                |c| Ok(c.config().ui_bundles) as Result<Vec<UiBundleConfiguration>, String>
+            )?;
             Ok(serde_json::Value::Array(
-                ui_bundles.iter()
-                    .map(|bundle| json!(bundle))
-                    .collect(),
+                ui_bundles.iter().map(|bundle| json!(bundle)).collect(),
             ))
         });
 
@@ -649,11 +648,11 @@ impl ContainerApiBuilder {
                 jsonrpc_core::Error::invalid_params(String::from(
                     "`port` has to be a 16bit integer",
                 ))
-            })?;            
+            })?;
             let bundle = Self::get_as_string("bundle", &params_map)?;
             let dna_interface = Self::get_as_string("dna_interface", &params_map).ok();
 
-            container_call!(|c| c.add_ui_interface(UiInterfaceConfiguration{
+            container_call!(|c| c.add_ui_interface(UiInterfaceConfiguration {
                 id,
                 port,
                 bundle,
@@ -662,32 +661,37 @@ impl ContainerApiBuilder {
             Ok(json!({"success": true}))
         });
 
-        self.io.add_method("admin/ui_interface/remove", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            container_call!(|c| c.remove_ui_interface(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.io
+            .add_method("admin/ui_interface/remove", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                container_call!(|c| c.remove_ui_interface(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/ui_interface/start", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            container_call!(|c| c.start_ui_interface(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.io
+            .add_method("admin/ui_interface/start", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                container_call!(|c| c.start_ui_interface(&id))?;
+                Ok(json!({"success": true}))
+            });
 
-        self.io.add_method("admin/ui_interface/stop", move |params| {
-            let params_map = Self::unwrap_params_map(params)?;
-            let id = Self::get_as_string("id", &params_map)?;
-            container_call!(|c| c.stop_ui_interface(&id))?;
-            Ok(json!({"success": true}))
-        });
+        self.io
+            .add_method("admin/ui_interface/stop", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                container_call!(|c| c.stop_ui_interface(&id))?;
+                Ok(json!({"success": true}))
+            });
 
         self.io.add_method("admin/ui_interface/list", move |_| {
             let ui_interfaces =
-                container_call!(|c| Ok(c.config().ui_interfaces) as Result<Vec<UiInterfaceConfiguration>, String>)?;
+                container_call!(|c| Ok(c.config().ui_interfaces)
+                    as Result<Vec<UiInterfaceConfiguration>, String>)?;
             Ok(serde_json::Value::Array(
-                ui_interfaces.iter()
+                ui_interfaces
+                    .iter()
                     .map(|ui_interface| json!(ui_interface))
                     .collect(),
             ))

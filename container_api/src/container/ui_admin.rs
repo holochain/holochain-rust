@@ -1,29 +1,36 @@
-use error::HolochainInstanceError;
 use crate::{
-    config::{
-        UiInterfaceConfiguration,
-        UiBundleConfiguration,
-    },
+    config::{UiBundleConfiguration, UiInterfaceConfiguration},
+    container::{base::notify, Container},
     static_file_server::StaticServer,
-    container::{Container, base::notify},
 };
-use holochain_core_types::{error::HolochainError};
-use std::{path::PathBuf};
+use error::HolochainInstanceError;
+use holochain_core_types::error::HolochainError;
+use std::path::PathBuf;
 
 pub trait ContainerUiAdmin {
-    fn install_ui_bundle_from_file(&mut self, path: PathBuf, id: &String) -> Result<(), HolochainError>;
+    fn install_ui_bundle_from_file(
+        &mut self,
+        path: PathBuf,
+        id: &String,
+    ) -> Result<(), HolochainError>;
     fn uninstall_ui_bundle(&mut self, id: &String) -> Result<(), HolochainError>;
 
-    fn add_ui_interface(&mut self, new_instance: UiInterfaceConfiguration)
-        -> Result<(), HolochainError>;
+    fn add_ui_interface(
+        &mut self,
+        new_instance: UiInterfaceConfiguration,
+    ) -> Result<(), HolochainError>;
     fn remove_ui_interface(&mut self, id: &String) -> Result<(), HolochainError>;
-    
+
     fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
 }
 
 impl ContainerUiAdmin for Container {
-    fn install_ui_bundle_from_file(&mut self, path: PathBuf, id: &String) -> Result<(), HolochainError> {
+    fn install_ui_bundle_from_file(
+        &mut self,
+        path: PathBuf,
+        id: &String,
+    ) -> Result<(), HolochainError> {
         let path_string = path
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
@@ -39,11 +46,14 @@ impl ContainerUiAdmin for Container {
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
-        notify(format!("Installed UI bundle from {} as \"{}\"", path_string, id));
+        notify(format!(
+            "Installed UI bundle from {} as \"{}\"",
+            path_string, id
+        ));
         Ok(())
     }
 
-    /// Removes the UI bundle in the config. 
+    /// Removes the UI bundle in the config.
     /// Also stops then removes its UI interface if any exist
     fn uninstall_ui_bundle(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
@@ -54,10 +64,15 @@ impl ContainerUiAdmin for Container {
             .collect();
 
         if new_config.ui_bundles.len() == self.config.ui_bundles.len() {
-            return Err(HolochainError::ConfigError(format!("No UI bundles match the given ID \"{}\"", id)))
+            return Err(HolochainError::ConfigError(format!(
+                "No UI bundles match the given ID \"{}\"",
+                id
+            )));
         }
 
-        let to_remove = new_config.ui_interfaces.clone()
+        let to_remove = new_config
+            .ui_interfaces
+            .clone()
             .into_iter()
             .filter(|ui_interface| ui_interface.bundle == id.to_string());
 
@@ -70,8 +85,11 @@ impl ContainerUiAdmin for Container {
         self.save_config()?;
         Ok(())
     }
- 
-    fn add_ui_interface(&mut self, new_interface: UiInterfaceConfiguration) -> Result<(), HolochainError> {
+
+    fn add_ui_interface(
+        &mut self,
+        new_interface: UiInterfaceConfiguration,
+    ) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.ui_interfaces.push(new_interface.clone());
         new_config.check_consistency()?;
@@ -89,12 +107,14 @@ impl ContainerUiAdmin for Container {
     }
 
     fn remove_ui_interface(&mut self, id: &String) -> Result<(), HolochainError> {
-
-        let to_stop = self.config.clone().ui_interfaces
+        let to_stop = self
+            .config
+            .clone()
+            .ui_interfaces
             .into_iter()
             .filter(|ui_interface| ui_interface.id == *id);
 
-        for ui_interface in to_stop { 
+        for ui_interface in to_stop {
             let _ = self.stop_ui_interface(&ui_interface.id);
         }
 
@@ -108,11 +128,13 @@ impl ContainerUiAdmin for Container {
         self.config = new_config;
         self.save_config()?;
 
-        self.static_servers.remove(id).ok_or(
-            HolochainError::ErrorGeneric("Could not remove server".into())
-        )?;
+        self.static_servers
+            .remove(id)
+            .ok_or(HolochainError::ErrorGeneric(
+                "Could not remove server".into(),
+            ))?;
 
-        Ok(())    
+        Ok(())
     }
 
     fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
@@ -132,10 +154,7 @@ impl ContainerUiAdmin for Container {
 pub mod tests {
     use super::*;
     use container::admin::tests::*;
-    use std::{
-        fs::File,
-        io::Read,
-    };
+    use std::{fs::File, io::Read};
 
     #[test]
     fn test_install_ui_bundle_from_file() {
@@ -152,7 +171,9 @@ pub mod tests {
         let mut container = create_test_container("test_uninstall_ui_bundle");
         assert_eq!(
             container.uninstall_ui_bundle(&"test-bundle-id".to_string()),
-            Err(HolochainError::ConfigError("No UI bundles match the given ID \"test-bundle-id\"".into()))
+            Err(HolochainError::ConfigError(
+                "No UI bundles match the given ID \"test-bundle-id\"".into()
+            ))
         );
         let bundle_path = PathBuf::from(".");
         assert_eq!(
@@ -178,10 +199,7 @@ pub mod tests {
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
-        assert_eq!(
-            config_contents,
-            toml,
-        )
+        assert_eq!(config_contents, toml,)
     }
 
     #[test]
@@ -226,8 +244,10 @@ pub mod tests {
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface());
-        toml = add_block(toml, 
-            String::from(r#"[[ui_bundles]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[ui_bundles]]
 hash = "<not-used>"
 id = "test-bundle-id"
 root_dir = "."
@@ -235,7 +255,8 @@ root_dir = "."
 [[ui_interfaces]]
 bundle = "test-bundle-id"
 id = "test-ui-interface-id"
-port = 3000"#)
+port = 3000"#,
+            ),
         );
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
@@ -249,7 +270,9 @@ port = 3000"#)
 
         assert_eq!(
             container.remove_ui_interface(&"test-ui-interface-id".to_string()),
-            Err(HolochainError::ErrorGeneric("Could not remove server".into()))
+            Err(HolochainError::ErrorGeneric(
+                "Could not remove server".into()
+            ))
         );
 
         let bundle_path = PathBuf::from(".");
@@ -271,7 +294,7 @@ port = 3000"#)
         assert_eq!(
             container.remove_ui_interface(&"test-ui-interface-id".to_string()),
             Ok(())
-        ); 
+        );
 
         let mut config_contents = String::new();
         let mut file = File::open(&container.config_path).expect("Could not open temp config file");
@@ -285,14 +308,17 @@ port = 3000"#)
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
         toml = add_block(toml, interface());
-        toml = add_block(toml, 
-            String::from(r#"[[ui_bundles]]
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[ui_bundles]]
 hash = "<not-used>"
 id = "test-bundle-id"
-root_dir = ".""#)
+root_dir = ".""#,
+            ),
         );
         toml = add_block(toml, logger());
-        toml = format!("{}\n", toml);     
+        toml = format!("{}\n", toml);
 
         assert_eq!(config_contents, toml);
     }
@@ -345,13 +371,9 @@ root_dir = ".""#)
 
         assert_eq!(
             container.stop_ui_interface(&"test-ui-interface-id".to_string()),
-            Err(
-                HolochainInstanceError::InternalFailure(
-                    HolochainError::ErrorGeneric(
-                        "server is already stopped".into()
-                    )
-                )
-            )
+            Err(HolochainInstanceError::InternalFailure(
+                HolochainError::ErrorGeneric("server is already stopped".into())
+            ))
         );
 
         assert_eq!(

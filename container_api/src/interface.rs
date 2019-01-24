@@ -616,6 +616,54 @@ impl ContainerApiBuilder {
         self
     }
 
+    /// Adds a further set of functions to the container RPC for managing 
+    /// static UI bundles and HTTP interfaces to these.
+    /// This adds the following RPC endpoints:
+    /// 
+    /// - `admin/ui/install`
+    ///     Install a UI bundle that can later be hosted by an interface
+    ///     Params:
+    ///     - `id` ID used to refer to this bundle
+    ///     - `root_dir` Directory to host on the HTTP server
+    ///     
+    /// - `admin/ui/uninstall`
+    ///     Uninstall and remove from the config a UI bundle by ID. This will also stop and remove
+    ///     any ui interfaces that are serving this bundle
+    ///     Params:
+    ///     - `id` ID of the UI bundle to remove
+    ///     
+    /// - `admin/ui/list`
+    ///     List all the currently installed UI bundles
+    /// 
+    /// - `admin/ui_interface/add`
+    ///     Add a new UI interface to serve a given bundle on a particular port.
+    ///     This can also optionally specify a dna_interface which this UI should connect to.
+    ///     If a dna_interface is included then the route /_dna_connections.json will be available and
+    ///     to instruct the UI as to where it should connect
+    ///     Params:
+    ///     - `id` ID used to refer to this ui interface
+    ///     - `port` Port to host the HTTP server on
+    ///     - `bundle` UI bundle to serve on this port
+    ///     - `dna_interface` DNA interface this UI can connect to (Optional)
+    ///     
+    /// - `admin/ui_interface/remove`
+    ///     Remove an interface by ID
+    ///     Params:
+    ///     - `id` ID of the UI interface to remove
+    ///     
+    /// - `admin/ui_interface/list`
+    ///     List all the UI interfaces
+    ///     
+    /// - `admin/ui_interface/start`
+    ///     Start a UI interface given an ID
+    ///     Params:
+    ///     - `id` ID of the UI interface to start
+    ///     
+    /// - `admin/ui_interface/stop`
+    ///     Start a UI interface given an ID
+    ///     Params:
+    ///     - `id` ID of the UI interface to stop    
+    ///     
     pub fn with_admin_ui_functions(mut self) -> Self {
         self.io.add_method("admin/ui/install", move |params| {
             let params_map = Self::unwrap_params_map(params)?;

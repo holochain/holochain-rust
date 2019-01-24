@@ -513,6 +513,33 @@ pub mod tests {
         Arc::new(loader)
     }
 
+    pub fn empty_briges() -> String {
+        "bridges = []".to_string()
+    }
+
+    pub fn empty_ui_bundles() -> String {
+        "ui_bundles = []".to_string()
+    }
+
+    pub fn empty_ui_interfaces() -> String {
+        "ui_interfaces = []".to_string()
+    }
+
+    pub fn persistence_dir(dir: PathBuf) -> String {
+        format!("persistence_dir = \"{}\"", dir.to_str()
+            .expect("Could not convert dir to string")).to_string()
+    }
+
+    pub fn header_block(test_name: String) -> String {
+        let mut toml = empty_briges();
+        let mut persist_dir: PathBuf = [".", "tmp-test"].iter().collect();
+        persist_dir.push(test_name);
+        toml = add_line(toml, persistence_dir(persist_dir));
+        toml = add_line(toml, empty_ui_bundles());
+        toml = add_line(toml, empty_ui_interfaces());   
+        toml
+    }
+
     pub fn agent1() -> String {
         r#"[[agents]]
 id = "test-agent-1"
@@ -601,6 +628,10 @@ pattern = ".*""#
         format!("{}\n\n{}", base, new_block)
     }
 
+    pub fn add_line(base: String, new_line: String) -> String {
+        format!("{}\n{}", base, new_line)
+    }
+
     pub fn test_toml() -> String {
         let mut toml = String::from("bridges = []\npersistence_dir = \".\"");
         toml = add_block(toml, agent1());
@@ -666,12 +697,7 @@ pattern = ".*""#
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from(
-            r#"bridges = []
-persistence_dir = "./tmp-test/test_install_dna_from_file"
-ui_bundles = []
-ui_interfaces = []"#,
-        );
+        let mut toml = header_block("test_install_dna_from_file".to_string());
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());

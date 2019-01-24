@@ -145,7 +145,8 @@ class Scenario {
                 call: (...args) => container.call(id, ...args),
                 callSync: (...args) => container.callSync(id, ...args),
                 callWithPromise: (...args) => container.callWithPromise(id, ...args),
-                agentId: container.agent_id(id)
+                agentId: container.agent_id(id),
+                dnaAddress: container.dna_address(id)
             }
         })
         fn(() => container.stop(), callers)

@@ -39,13 +39,13 @@ impl Instance {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+    fn action_channel(&self) -> &SyncSender<ActionWrapper> {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
     }
 
-    pub fn observer_channel(&self) -> &SyncSender<Observer> {
+    fn observer_channel(&self) -> &SyncSender<Observer> {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")

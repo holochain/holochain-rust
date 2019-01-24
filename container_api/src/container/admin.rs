@@ -163,7 +163,7 @@ impl ContainerAdmin for Container {
             storage: StorageConfiguration::File {
                 path: storage_path
                     .to_str()
-                    .ok_or(HolochainError::ConfigError("invalid path".into()))?
+                    .ok_or(HolochainError::ConfigError(format!("invalid path {:?}", storage_path).into()))?
                     .into(),
             },
         };

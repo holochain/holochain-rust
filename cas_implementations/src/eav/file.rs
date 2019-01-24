@@ -103,8 +103,13 @@ impl EavFileStorage {
             VALUE_DIR => eav.value().to_string(),
             _ => String::new(),
         };
-        let path =
-            vec![self.dir_path.clone(), subscript, address,eav.index().clone().to_string()].join(&MAIN_SEPARATOR.to_string());
+        let path = vec![
+            self.dir_path.clone(),
+            subscript,
+            address,
+            eav.index().clone().to_string(),
+        ]
+        .join(&MAIN_SEPARATOR.to_string());
         create_dir_all(path.clone())?;
         let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
         let full_path = vec![address_path.clone(), "txt".to_string()].join(&".".to_string());

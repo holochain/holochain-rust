@@ -226,7 +226,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 .into_iter()
                 .filter(|e| {
                     index_query
-                        .start_time()
+                        .start()
                         .map(|start| start <= e.index())
                         .unwrap_or_else(|| {
                             let latest = get_latest(e.clone(), map.clone())
@@ -236,7 +236,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 })
                 .filter(|e| {
                     index_query
-                        .end_time()
+                        .end()
                         .map(|end| end >= e.index())
                         .unwrap_or_else(|| {
                             let latest = get_latest(e.clone(), map.clone())

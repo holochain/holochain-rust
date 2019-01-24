@@ -62,7 +62,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
             .filter(|e| {
                 index_query
-                    .start_time()
+                    .start()
                     .map(|start| start <= e.index())
                     .unwrap_or_else(|| {
                         let latest = get_latest(e.clone(), map.clone())
@@ -72,7 +72,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             })
             .filter(|e| {
                 index_query
-                    .end_time()
+                    .end()
                     .map(|end| end >= e.index())
                     .unwrap_or_else(|| {
                         let latest = get_latest(e.clone(), map.clone())

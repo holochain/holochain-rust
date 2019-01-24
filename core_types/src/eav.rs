@@ -63,23 +63,23 @@ impl Ord for EntityAttributeValueIndex {
 
 #[derive(Clone, Debug)]
 pub struct IndexQuery {
-    start_time: Option<i64>,
-    end_time: Option<i64>,
+    start: Option<i64>,
+    end: Option<i64>,
 }
 
 impl IndexQuery {
-    pub fn start_time(&self) -> Option<i64> {
-        self.start_time.clone()
+    pub fn start(&self) -> Option<i64> {
+        self.start.clone()
     }
 
-    pub fn end_time(&self) -> Option<i64> {
-        self.end_time.clone()
+    pub fn end(&self) -> Option<i64> {
+        self.end.clone()
     }
 
     pub fn new(start: i64, end: i64) -> IndexQuery {
         IndexQuery {
-            start_time: Some(start),
-            end_time: Some(end),
+            start: Some(start),
+            end: Some(end),
         }
     }
 }
@@ -87,8 +87,8 @@ impl IndexQuery {
 impl Default for IndexQuery {
     fn default() -> IndexQuery {
         IndexQuery {
-            start_time: None,
-            end_time: None,
+            start: None,
+            end: None,
         }
     }
 }
@@ -261,7 +261,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
             .filter(|e| {
                 index_query
-                    .start_time()
+                    .start()
                     .map(|start| {
                         println!("start {:?}", e.index().clone());
                         println!("start condition {:?}", start.clone() <= e.index());
@@ -275,7 +275,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             })
             .filter(|e| {
                 index_query
-                    .end_time()
+                    .end()
                     .map(|end| {
                         println!("end {:?}", e.index().clone());
                         println!("start condition {:?}", end.clone() >= e.index());

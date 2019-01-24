@@ -31,8 +31,9 @@ const Config = {
         return { path, name }
     },
     instance: (agent, dna, name) => {
+        console.log(agent, dna)
         if (!name) {
-            name = agent.name
+            name = makeInstanceId(agent.name, dna.name)
         }
         return { agent, dna, name }
     },
@@ -116,20 +117,24 @@ Container.withInstances = function (instances, opts=defaultOpts) {
     return new Container(config)
 }
 
-Container.runInstances = function (instances, opts=defaultOpts, fn) {
+Container.run = function (instances, opts, fn) {
+    if (typeof opts === 'function') {
+        fn = opts
+        opts = {}
+    }
+    const container = Container.withInstances(instances, opts)
     return new Promise((fulfill, reject) => {
         try {
-            this._start(promiser(fulfill, reject))
-            const callers = instances.map(inst => {
-                this.makeCaller(inst.name)
+            container._start(promiser(fulfill, reject))
+            const callers = {}
+            instances.map(inst => {
+                callers[inst.name] = container.makeCaller(inst.name)
             })
-            fn(() => this._stop(), callers)
+            fn(() => container._stop(), callers, container)
         } catch (e) {
             reject(e)
         }
     })
-    const config = Config.container(instances, opts)
-    return new Container(config)
 }
 
 /////////////////////////////////////////////////////////////
@@ -160,8 +165,7 @@ class Scenario {
      *      })
      */
     run(fn) {
-        const container = Container.withInstances(this.instances, this.opts)
-        return container.run(stop => {
+        return Container.run(this.instances, this.opts, (stop, _, container) => {
             const callers = {}
             this.instances.forEach(instance => {
                 const id = makeInstanceId(instance.agent.name, instance.dna.name)
@@ -176,8 +180,8 @@ class Scenario {
                     agentId: container.agent_id(id)
                 }
             })
-            fn(stop, callers)
-        }).catch(err => console.error("Scenario failed! ", err))
+            return fn(stop, callers)
+        })
     }
 
     runTape(description, fn) {
@@ -185,15 +189,15 @@ class Scenario {
             throw new Error("must call `scenario.setTape(require('tape'))` before running tape-based tests!")
         }
         Scenario._tape(description, t => {
-            this.run(async (stop, instances) => {
-                try {
-                    await fn(t, instances)
-                    stop()
-                } catch (ew) {
-                    console.log("EW", ew)
-                }
+            this.run((stop, instances) => {
+                console.log('......', 1)
+                fn(t, instances)
+                stop()
             })
-            .catch(e => {console.log("whaaa", e); t.fail(e)})
+            .catch(e => {
+                console.log("whaaa", e); 
+                t.fail(e)
+            })
             .then(t.end)
         })
     }

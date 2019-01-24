@@ -74,7 +74,7 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
         let agent_id = agent_config.id.clone();
         let dna_id = dna_config.id.clone();
         let instance = InstanceConfiguration {
-            id: instance_id(&agent_id, &dna_id),
+            id: instance.name,
             agent: agent_id,
             dna: dna_id,
             storage: StorageConfiguration::Memory,

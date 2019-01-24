@@ -1,4 +1,5 @@
 use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
+use container::base::notify;
 use error::HolochainResult;
 use holochain_core_types::error::HolochainError;
 use hyper::{
@@ -130,10 +131,10 @@ impl StaticServer {
         let static_path = self.bundle_config.root_dir.to_owned();
         let dna_interfaces = self.connected_dna_interface.to_owned();
 
-        println!(
+        notify(format!(
             "About to serve path \"{}\" at http://{}",
             &self.bundle_config.root_dir, &addr
-        );
+        ));
         self.running = true;
 
         let _server = thread::spawn(move || {
@@ -141,9 +142,9 @@ impl StaticServer {
                 .serve(move || {
                     future::ok::<_, Error>(StaticService::new(&static_path, &dna_interfaces))
                 })
-                .map_err(|e| eprintln!("server error: {}", e));
+                .map_err(|e| notify(format!("server error: {}", e)));
 
-            println!("Listening on http://{}", addr);
+            notify(format!("Listening on http://{}", addr));
             let mut rt = Runtime::new().unwrap();
             rt.spawn(server);
             let _ = rx.recv();
@@ -170,6 +171,7 @@ impl StaticServer {
 pub mod tests {
     use super::*;
     use crate::config::InterfaceDriver;
+    use reqwest;
 
     #[test]
     pub fn test_build_server() {
@@ -193,10 +195,22 @@ pub mod tests {
             instances: Vec::new(),
         };
 
-        let mut static_server =
-            StaticServer::from_configs(test_config, test_bundle_config, Some(test_dna_interface));
+        let mut static_server = StaticServer::from_configs(
+            test_config,
+            test_bundle_config,
+            Some(test_dna_interface.clone()),
+        );
         assert_eq!(static_server.start(), Ok(()));
         assert_eq!(static_server.running, true);
+
+        let get_result: serde_json::Value =
+            reqwest::get("http://localhost:3000/_dna_connections.json")
+                .expect("Could not make request")
+                .json()
+                .expect("response body is not valid json");
+
+        assert_eq!(get_result, json!({ "dna_interface": test_dna_interface }));
+
         assert_eq!(static_server.stop(), Ok(()));
         assert_eq!(static_server.running, false);
     }

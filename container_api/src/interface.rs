@@ -616,10 +616,10 @@ impl ContainerApiBuilder {
         self
     }
 
-    /// Adds a further set of functions to the container RPC for managing 
+    /// Adds a further set of functions to the container RPC for managing
     /// static UI bundles and HTTP interfaces to these.
     /// This adds the following RPC endpoints:
-    /// 
+    ///
     /// - `admin/ui/install`
     ///     Install a UI bundle that can later be hosted by an interface
     ///     Params:
@@ -634,7 +634,7 @@ impl ContainerApiBuilder {
     ///     
     /// - `admin/ui/list`
     ///     List all the currently installed UI bundles
-    /// 
+    ///
     /// - `admin/ui_interface/add`
     ///     Add a new UI interface to serve a given bundle on a particular port.
     ///     This can also optionally specify a dna_interface which this UI should connect to.

@@ -1,4 +1,13 @@
-use crate::{action::ActionWrapper, context::Context, signal::Signal, state::State};
+use crate::{action::ActionWrapper, context::Context, signal::Signal, state::State, workflows::application};
+#[cfg(test)]
+use crate::{
+    network::actions::initialize_network::initialize_network_with_spoofed_dna,
+    nucleus::actions::initialize::initialize_application,
+};
+use holochain_core_types::{dna::Dna, error::HcResult};
+#[cfg(test)]
+use holochain_core_types::{cas::content::Address};
+use futures::executor::ThreadPool;
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver, SyncSender},
@@ -33,6 +42,38 @@ pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels o
 impl Instance {
     pub fn default_channel_buffer_size() -> usize {
         100
+    }
+
+    pub (in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
+        let (rx_action, rx_observer) = self.initialize_channels();
+        let context = self.initialize_context(context);
+        self.start_action_loop(context.clone(), rx_action, rx_observer);
+        context
+    }
+
+    pub fn initialize(&mut self, dna: Option<Dna>, context: Arc<Context>) -> HcResult<Arc<Context>> {
+        let context = self.inner_setup(context);
+        context.block_on(application::initialize(self, dna, context.clone()))
+    }
+
+    #[cfg(test)]
+    pub fn initialize_with_spoofed_dna(&mut self, dna: Dna, spoofed_dna_address: Address, context: Arc<Context>) -> HcResult<Arc<Context>> {
+        let context = self.inner_setup(context);
+        context.block_on(
+            async {
+                await!(initialize_application(dna.clone(), &context))?;
+                await!(initialize_network_with_spoofed_dna(
+                    spoofed_dna_address,
+                    &context
+                ))
+            },
+        )?;
+        Ok(context)
+    }
+
+    #[cfg(test)]
+    pub fn initialize_without_dna(&mut self, context: Arc<Context>) -> Arc<Context> {
+        self.inner_setup(context)
     }
 
     // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
@@ -113,9 +154,7 @@ impl Instance {
     }
 
     /// Start the Event Loop on a separate thread
-    pub fn start_action_loop(&mut self, context: Arc<Context>) {
-        let (rx_action, rx_observer) = self.initialize_channels();
-
+    pub fn start_action_loop(&mut self, context: Arc<Context>, rx_action: Receiver<ActionWrapper>, rx_observer: Receiver<Observer>) {
         let sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
@@ -317,7 +356,6 @@ pub mod tests {
         context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
     };
-    use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
@@ -329,11 +367,7 @@ pub mod tests {
     };
 
     use crate::{
-        network::actions::initialize_network::initialize_network,
-        nucleus::{
-            actions::initialize::initialize_application,
-            ribosome::{callback::Callback, Defn},
-        },
+        nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
         state::State,
     };
@@ -499,14 +533,7 @@ pub mod tests {
         // Create instance and plug in our DNA
         let context = test_context(name, network_name);
         let mut instance = Instance::new(context.clone());
-        instance.start_action_loop(context.clone());
-        let context = instance.initialize_context(context);
-        block_on(
-            async {
-                await!(initialize_application(dna.clone(), &context))?;
-                await!(initialize_network(&context))
-            },
-        )?;
+        let context = instance.initialize(Some(dna.clone()), context.clone())?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
@@ -640,7 +667,7 @@ pub mod tests {
     fn can_dispatch_with_observer() {
         let netname = Some("can_dispatch_with_observer");
         let mut instance = Instance::new(test_context("jason", netname));
-        instance.start_action_loop(test_context("jane", netname));
+        let _ = instance.inner_setup(test_context("jane", netname));
 
         let dna = Dna::new();
         let (sender, receiver) = sync_channel(1);
@@ -678,7 +705,7 @@ pub mod tests {
         let dna = Dna::new();
 
         let action = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        instance.start_action_loop(test_context("jane", netname));
+        instance.inner_setup(test_context("jane", netname));
 
         // the initial state is not intialized
         assert_eq!(

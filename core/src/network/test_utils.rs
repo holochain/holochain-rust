@@ -1,10 +1,7 @@
 use crate::{
     context::Context,
     instance::{tests::test_context, Instance},
-    network::actions::initialize_network::initialize_network_with_spoofed_dna,
-    nucleus::actions::initialize::initialize_application,
 };
-use futures::executor::block_on;
 use holochain_core_types::{cas::content::Address, dna::Dna};
 use std::sync::Arc;
 
@@ -18,17 +15,7 @@ pub fn test_instance_with_spoofed_dna(
     // Create instance and plug in our DNA
     let context = test_context(name, None);
     let mut instance = Instance::new(context.clone());
-    instance.start_action_loop(context.clone());
-    let context = instance.initialize_context(context);
-    block_on(
-        async {
-            await!(initialize_application(dna.clone(), &context))?;
-            await!(initialize_network_with_spoofed_dna(
-                spoofed_dna_address,
-                &context
-            ))
-        },
-    )?;
+    let context = instance.initialize_with_spoofed_dna(dna.clone(), spoofed_dna_address, context)?;
 
     assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
     assert!(instance.state().nucleus().has_initialized());

@@ -77,7 +77,7 @@ pub struct Container {
     pub(in crate::container) instances: InstanceMap,
     pub(in crate::container) config: Configuration,
     pub(in crate::container) config_path: PathBuf,
-    static_servers: HashMap<String, StaticServer>,
+    pub(in crate::container) static_servers: HashMap<String, StaticServer>,
     pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,

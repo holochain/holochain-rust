@@ -1,3 +1,4 @@
+use error::HolochainInstanceError;
 use crate::{
     config::{
         UiInterfaceConfiguration,
@@ -16,8 +17,8 @@ pub trait ContainerUiAdmin {
         -> Result<(), HolochainError>;
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
     
-    fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainError>;
-    fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
+    fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
 }
 
 impl ContainerUiAdmin for Container {
@@ -42,23 +43,57 @@ impl ContainerUiAdmin for Container {
         Ok(())
     }
 
+    /// Removes the UI bundle in the config. 
+    /// Also stops then removes its UI interface
     fn uninstall_ui_bundle(&mut self, id: &String) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        new_config.ui_bundles = new_config
+            .ui_bundles
+            .into_iter()
+            .filter(|bundle| bundle.id != *id)
+            .collect();
+
+        // TODO: add logic to stop and remove the UI interface if it has one
+
         Ok(())
     }
  
-    fn add_ui_interface(&mut self, new_instance: UiInterfaceConfiguration) -> Result<(), HolochainError> {
+    fn add_ui_interface(&mut self, new_interface: UiInterfaceConfiguration) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        new_config.ui_interfaces.push(new_interface.clone());
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
         Ok(())
     }
 
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
+        let mut new_config = self.config.clone();
+        new_config.ui_interfaces = new_config
+            .ui_interfaces
+            .into_iter()
+            .filter(|ui_interface| ui_interface.id != *id)
+            .collect();
+
+        // TODO: Also remove any references in UI bundles
+
+        new_config.check_consistency()?;
+        self.config = new_config;
+        self.save_config()?;
+        Ok(())    
+    }
+
+    fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+        let _server = self.static_servers.get(id)?;
+        notify(format!("Starting UI interface \"{}\"...", id));
+        // server.start()
         Ok(())
     }
 
-    fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainError> {
-        Ok(())
-    }
-
-    fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
+        let _server = self.static_servers.get(id)?;
+        notify(format!("Stopping UI interface \"{}\"...", id));
+        // server.stop()
         Ok(())
     }
 }

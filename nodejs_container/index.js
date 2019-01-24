@@ -191,10 +191,10 @@ class Scenario {
                     throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
                 }
                 callers[name] = {
-                    call: (...args) => container.call(id, ...args),
-                    callSync: (...args) => container.callSync(id, ...args),
-                    callWithPromise: (...args) => container.callWithPromise(id, ...args),
-                    agentId: container.agent_id(id)
+                    call: (...args) => container.call(name, ...args),
+                    callSync: (...args) => container.callSync(name, ...args),
+                    callWithPromise: (...args) => container.callWithPromise(name, ...args),
+                    agentId: container.agent_id(name)
                 }
             })
             return fn(stop, callers)

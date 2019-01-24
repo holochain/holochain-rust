@@ -14,17 +14,13 @@ const dnaInvalid = Config.dna(
 
 const agent = Config.agent("007")
 
-const nameValid = '007::dna-valid'
-const nameInvalid = '007::dna-invalid'
-// const instanceValid = Config.instance(agent, dnaValid, 'valorie')
-// const instanceInvalid = Config.instance(agent, dnaInvalid, 'ingrid')
-const instanceValid = Config.instance(agent, dnaValid, nameValid)
-const instanceInvalid = Config.instance(agent, dnaInvalid, nameInvalid)
+const instanceValid = Config.instance(agent, dnaValid, 'valorie')
+const instanceInvalid = Config.instance(agent, dnaInvalid, 'ingrid')
 
 test('can run a scenario', t => {
     const scenario = new Scenario([instanceValid])
-    scenario.run((stop, peeps) => {
-        t.equal(peeps[nameValid].agentId[2], '7')
+    scenario.run((stop, {valorie}) => {
+        t.equal(valorie.agentId.indexOf('007'), 0)
         t.end()
         stop()
     }).catch(t.fail)
@@ -32,7 +28,7 @@ test('can run a scenario', t => {
 
 test('scenario throws if container cannot start', t => {
     const scenario = new Scenario([instanceInvalid])
-    scenario.run((stop, peeps) => {
+    scenario.run((stop, {ingrid}) => {
         t.fail('should have thrown exception')
     }).catch(err => {
         t.equal(String(err).indexOf('Error: unable to start container'), 0)

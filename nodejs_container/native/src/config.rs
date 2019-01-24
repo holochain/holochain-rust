@@ -24,6 +24,7 @@ pub struct DnaData {
 pub struct InstanceData {
     pub agent: AgentData,
     pub dna: DnaData,
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

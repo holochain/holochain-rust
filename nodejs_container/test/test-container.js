@@ -14,13 +14,9 @@ const dnaInvalid = Config.dna(
 
 const agent = Config.agent("007")
 
-const nameValid = '007::dna-valid'
-const nameInvalid = '007::dna-invalid'
-// const instanceValid = Config.instance(agent, dnaValid, 'valorie')
-// const instanceInvalid = Config.instance(agent, dnaInvalid, 'ingrid')
-const instanceValid = Config.instance(agent, dnaValid, nameValid)
-const instanceInvalid = Config.instance(agent, dnaInvalid, nameInvalid)
-console.log(instanceValid)
+const instanceValid = Config.instance(agent, dnaValid, 'valorie')
+const instanceInvalid = Config.instance(agent, dnaInvalid, 'ingrid')
+
 test('can create a container two ways', t => {
     const container1 = Container.withInstances([instanceValid])
     const container2 = new Container(Config.container([instanceValid]))
@@ -40,8 +36,8 @@ test('can start and stop a container', t => {
 test('can start and stop a container via `run`', t => {
     const result = Container.run(
         [instanceValid], 
-        (stop, peeps) => {
-            t.equal(peeps[nameValid].agentId[2], '7')
+        (stop, {valorie}) => {
+            t.equal(valorie.agentId.indexOf('007'), 0)
             stop()
             t.end()
         }
@@ -52,8 +48,8 @@ test('can pass options to `run`', t => {
     const result = Container.run(
         [instanceValid], 
         {debugLog: false},
-        (stop, peeps) => {
-            t.equal(peeps[nameValid].agentId[2], '7')
+        (stop, {valorie}) => {
+            t.equal(valorie.agentId.indexOf('007'), 0)
             stop()
             t.end()
         }
@@ -61,7 +57,7 @@ test('can pass options to `run`', t => {
 })
 
 test('container throws if it cannot start', t => {
-    const result = Container.run([instanceInvalid], (stop, peeps) => {
+    const result = Container.run([instanceInvalid], (stop, {ingrid}) => {
         t.fail("should have thrown exception!")
     }).catch(err => {
         t.equal(String(err).indexOf('Error: unable to start container'), 0)

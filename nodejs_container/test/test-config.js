@@ -27,9 +27,9 @@ test('DNA construction with explicit name', t => {
 test('instance construction with implicit name', t => {
     const path = 'path/to/dna'
     const agent = C.agent('allison')
-    const dna = C.dna(path)
+    const dna = C.dna(path, 'dnaName')
     const instance = C.instance(agent, dna)
-    t.deepEqual(instance, { agent, dna, name: agent.name })
+    t.deepEqual(instance, { agent, dna, name: 'allison::dnaName' })
     t.end()
 })
 

@@ -18,7 +18,6 @@ use hdk::{
     holochain_core_types::{cas::content::Address, entry::Entry, json::JsonString, error::HolochainError},
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
 };
-use blog::Env;
 
 define_zome! {
     entries: [

@@ -46,7 +46,7 @@
   - [(E) Web UIs with Websockets](./web_ui_with_websockets.md)
   - [(E) QML based UIs](./qml_uis.md)
 - [(E) Going Live with Holochain Apps](./live_hc_apps.md)
-  - [(E) Containers](./containers.md)
+  - [Containers](./containers.md)
   - [(E) Creating Versioned Releases](./creating_versioned_releases.md)
 - [(E) Building Holochain Apps: Advanced Topics](./apps_advanced_topics.md)
   - [Building For Android](./building_for_android.md)

@@ -2,10 +2,6 @@
 
 The purpose of the `holochain-nodejs` module is to make integration tests and scenario tests able to be written as simply and with as little boilerplate as possible. However, the module also provides even more basic functionality, making it possible to build tests with whatever tradeoff between convenience and customization is right for your project.
 
-If you are using this module for something other than standard test suites, you may want more control over how containers get built.
-
-Simply use the same configuration as you would for `holochain_container`, and pass it to the constructor for `Container`. The configuration may be a string of valid TOML, or a Javascript object with the same structure
-
 ```javascript
 const { Config, Container } = require('@holochain/holochain-nodejs')
 
@@ -55,6 +51,8 @@ container.stop()
 ```
 
 ### Configuration Alternatives
+
+Simply use the same configuration as you would for `holochain_container`, and pass it to the constructor for `Container`. The configuration may be a string of valid TOML, or a Javascript object with the same structure
 
 #### Using a Javascript Object
 

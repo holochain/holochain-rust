@@ -19,6 +19,10 @@ use holochain_core_types::{
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use futures::{
+    executor::ThreadPool,
+    Future,
+};
 use std::{
     sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
@@ -37,6 +41,7 @@ pub struct Context {
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub observer_channel: Option<SyncSender<Observer>>,
+    pub future_executor: Option<Arc<RwLock<ThreadPool>>>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -69,6 +74,7 @@ impl Context {
             action_channel: None,
             signal_tx: signal_tx,
             observer_channel: None,
+            future_executor: None,
             chain_storage,
             dht_storage,
             eav_storage: eav,
@@ -96,6 +102,7 @@ impl Context {
             action_channel,
             signal_tx,
             observer_channel,
+            future_executor: None,
             chain_storage: cas.clone(),
             dht_storage: cas,
             eav_storage: eav,
@@ -183,6 +190,13 @@ impl Context {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
+    }
+
+    pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output  {
+        match self.future_executor {
+            None => panic!("Context needs to be initialized with an instance"),
+            Some(ref executor) => executor.write().unwrap().run(future),
+        }
     }
 }
 

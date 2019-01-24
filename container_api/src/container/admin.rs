@@ -542,7 +542,7 @@ pattern = ".*""#
             .to_string()
     }
 
-    fn add_block(base: String, new_block: String) -> String {
+    pub fn add_block(base: String, new_block: String) -> String {
         format!("{}\n\n{}", base, new_block)
     }
 
@@ -558,7 +558,7 @@ pattern = ".*""#
         toml
     }
 
-    fn create_test_container<T: Into<String>>(test_name: T) -> Container {
+    pub fn create_test_container<T: Into<String>>(test_name: T) -> Container {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();

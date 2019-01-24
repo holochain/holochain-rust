@@ -15,7 +15,7 @@ pub trait ContainerUiAdmin {
 
     fn add_ui_interface(&mut self, new_instance: UiInterfaceConfiguration)
         -> Result<(), HolochainError>;
-    fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError>;
+    fn remove_ui_interface(&mut self, id: &String) -> Result<(), HolochainError>;
     
     fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
     fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
@@ -57,7 +57,7 @@ impl ContainerUiAdmin for Container {
             .filter(|ui_interface| ui_interface.bundle == id.to_string());
 
         for bundle_interface in to_remove {
-            self.remove_interface(&bundle_interface.id)?;
+            self.remove_ui_interface(&bundle_interface.id)?;
         }
 
         Ok(())
@@ -72,7 +72,7 @@ impl ContainerUiAdmin for Container {
         Ok(())
     }
 
-    fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
+    fn remove_ui_interface(&mut self, id: &String) -> Result<(), HolochainError> {
 
         let to_stop = self.config.clone().ui_interfaces
             .into_iter()
@@ -104,5 +104,58 @@ impl ContainerUiAdmin for Container {
         let server = self.static_servers.get_mut(id)?;
         notify(format!("Stopping UI interface \"{}\"...", id));
         server.stop()
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use container::admin::tests::*;
+
+    #[test]
+    fn test_install_ui_bundle_from_file() {
+        let mut container = create_test_container("test_install_dna_from_file");
+        let bundle_path = PathBuf::from(".");
+        container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string())
+            .unwrap()
+    }
+
+    #[test]
+    fn test_uninstall_ui_bundle() {
+        let mut container = create_test_container("test_install_dna_from_file");
+        container.uninstall_ui_bundle(&"test-bundle-id".to_string())
+            .unwrap()
+    }
+
+    #[test]
+    fn test_add_ui_interface() {
+        let mut container = create_test_container("test_install_dna_from_file");
+        container.add_ui_interface(UiInterfaceConfiguration {
+            id: "test-ui-interface-id".into(),
+            port: 3000,
+            bundle: "test-bundle_id".into(),
+            dna_interface: None,
+        }).unwrap()
+    }
+
+    #[test]
+    fn test_remove_ui_interface() {
+        let mut container = create_test_container("test_install_dna_from_file");
+        container.remove_ui_interface(&"test-ui-interface-id".to_string())
+            .unwrap()
+    }
+
+    #[test]
+    fn test_start_ui_interface() {
+        let mut container = create_test_container("test_install_dna_from_file");
+        container.start_ui_interface(&"test-ui-interface-id".to_string())
+            .unwrap()
+    }
+
+    #[test]
+    fn test_stop_ui_interface() {
+        let mut container = create_test_container("test_install_dna_from_file");
+        container.stop_ui_interface(&"test-ui-interface-id".to_string())
+            .unwrap()
     }
 }

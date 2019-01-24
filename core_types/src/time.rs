@@ -293,7 +293,6 @@ pub mod tests {
         assert!(!(Iso8601::from("boo") < Iso8601::from("2018-10-11T03:23:38Z")));
         assert!(!(Iso8601::from("boo") < Iso8601::from("boo")));
 
-        //let maybe_dt: Result<DateTime<FixedOffset>,HolochainError> = Iso8601::from("boo").try_into();
         match DateTime::<FixedOffset>::try_from(&Iso8601::from("boo")) {
             Ok(ts) => panic!(
                 "Unexpected success of checked DateTime<FixedOffset> try_from: {:?}",

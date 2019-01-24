@@ -25,7 +25,7 @@ pub const BUNDLE_DATA_LEN: usize = ((BUNDLE_DATA_LEN_MISALIGN + 8 - 1) / 8) * 8;
 
 impl Keypair {
     /// derive the pairs from a 32 byte seed buffer
-    ///  
+    ///
     /// @param {SecBuf} seed - the seed buffer
     pub fn new_from_seed(seed: &mut SecBuf) -> Result<Self, HolochainError> {
         let mut sign_public_key = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
@@ -120,8 +120,8 @@ impl Keypair {
                     decrypted_data[0]
                 )));
             }
-            sign_priv.write(0, &decrypted_data[65..129]);
-            enc_priv.write(0, &decrypted_data[129..161]);
+            sign_priv.write(0, &decrypted_data[65..129])?;
+            enc_priv.write(0, &decrypted_data[129..161])?;
 
             KeyBuffer::with_raw_parts(
                 array_ref![&decrypted_data, 1, 32],

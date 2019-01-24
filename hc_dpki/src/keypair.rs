@@ -164,7 +164,7 @@ impl Keypair {
         let mut sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
 
-         util::decode_id(pub_keys, &mut sign_pub, &mut enc_pub)?;
+        util::decode_id(pub_keys, &mut sign_pub, &mut enc_pub)?;
         let v: i32 = sign::verify(signature, data, &mut sign_pub);
         Ok(v)
     }
@@ -349,7 +349,8 @@ mod tests {
 
         keypair.sign(&mut message, &mut message_signed).unwrap();
 
-        let check: i32 = Keypair::verify(keypair.pub_keys, &mut message_signed, &mut message).unwrap();
+        let check: i32 =
+            Keypair::verify(keypair.pub_keys, &mut message_signed, &mut message).unwrap();
         assert_eq!(0, check);
     }
 

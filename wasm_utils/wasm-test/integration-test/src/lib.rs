@@ -73,7 +73,7 @@ pub extern "C" fn store_string(_: RibosomeEncodingBits) -> RibosomeEncodingBits 
 
 #[no_mangle]
 pub extern "C" fn store_string_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    let allmost_full_alloc = 0b1111111111111101_0000000000000010;
+    let allmost_full_alloc = 0b11111111111111111111111111111101_00000000000000000000000000000010;
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(allmost_full_alloc) {
         Ok(allocation) => allocation,
@@ -337,7 +337,7 @@ pub extern "C" fn stacked_json_struct(_: RibosomeEncodingBits) -> RibosomeEncodi
 
 #[no_mangle]
 pub extern "C" fn store_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    let allmost_full_alloc = 0b1111111111111101_0000000000000010;
+    let allmost_full_alloc = 0b11111111111111111111111111111101_00000000000000000000000000000010;
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(allmost_full_alloc) {
         Ok(allocation) => allocation,

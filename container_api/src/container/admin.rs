@@ -603,8 +603,9 @@ type = "memory""#
             .to_string()
     }
 
-    pub fn interface() -> String {
-        r#"[[interfaces]]
+    pub fn interface(port: u32) -> String {
+        format!(
+            r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -615,9 +616,10 @@ id = "test-instance-1"
 id = "test-instance-2"
 
 [interfaces.driver]
-port = 3000
-type = "websocket""#
-            .to_string()
+port = {}
+type = "websocket""#,
+            port
+        )
     }
 
     pub fn logger() -> String {
@@ -647,20 +649,20 @@ pattern = ".*""#
         format!("{}\n{}", base, new_line)
     }
 
-    pub fn test_toml() -> String {
+    pub fn test_toml(port: u32) -> String {
         let mut toml = String::from("bridges = []\npersistence_dir = \".\"");
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(port));
         toml = add_block(toml, logger());
         toml
     }
 
-    fn create_test_container<T: Into<String>>(test_name: T) -> Container {
-        let mut config = load_configuration::<Configuration>(&test_toml()).unwrap();
+    fn create_test_container<T: Into<String>>(test_name: T, port: u32) -> Container {
+        let mut config = load_configuration::<Configuration>(&test_toml(port)).unwrap();
         config.persistence_dir.push("tmp-test");
         config.persistence_dir.push(test_name.into());
         let mut container = Container::from_config(config.clone());
@@ -672,7 +674,7 @@ pattern = ".*""#
     #[test]
     fn test_install_dna_from_file() {
         let test_name = "test_install_dna_from_file";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3000);
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
@@ -728,7 +730,7 @@ id = "new-dna""#,
         );
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3000));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -737,7 +739,8 @@ id = "new-dna""#,
 
     #[test]
     fn test_install_dna_from_file_and_copy() {
-        let mut container = create_test_container("test_install_dna_from_file_and_copy");
+        let test_name = "test_install_dna_from_file_and_copy";
+        let mut container = create_test_container(test_name, 3000);
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
@@ -788,7 +791,8 @@ id = "new-dna""#,
 
     #[test]
     fn test_install_dna_from_file_with_properties() {
-        let mut container = create_test_container("test_install_dna_from_file_with_properties");
+        let test_name = "test_install_dna_from_file_with_properties";
+        let mut container = create_test_container(test_name, 3000);
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
@@ -827,7 +831,7 @@ id = "new-dna""#,
         let mut output_dna_file: PathBuf = [
             ".",
             "tmp-test",
-            "test_install_dna_from_file_with_properties",
+            test_name,
             "dna",
         ]
         .iter()
@@ -857,7 +861,8 @@ id = "new-dna""#,
     #[test]
     fn test_add_instance() {
         let test_name = "test_add_instance";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3001);
+
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
         container
@@ -914,7 +919,7 @@ id = "new-instance""#,
                 storage_path_string
             ),
         );
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -927,7 +932,8 @@ id = "new-instance""#,
     /// (to not render the config invalid).
     fn test_remove_instance() {
         let test_name = "test_remove_instance";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3002);
+
         assert_eq!(
             container.remove_instance(&String::from("test-instance-1")),
             Ok(()),
@@ -957,7 +963,7 @@ id = "websocket interface"
 id = "test-instance-2"
 
 [interfaces.driver]
-port = 3000
+port = 3002
 type = "websocket""#,
             ),
         );
@@ -973,7 +979,8 @@ type = "websocket""#,
     /// (to not render the config invalid).
     fn test_uninstall_dna() {
         let test_name = "test_uninstall_dna";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3003);
+
         assert_eq!(container.uninstall_dna(&String::from("test-dna")), Ok(()),);
 
         let mut config_contents = String::new();
@@ -1003,7 +1010,7 @@ id = "websocket interface"
 instances = []
 
 [interfaces.driver]
-port = 3000
+port = 3003
 type = "websocket""#,
             ),
         );
@@ -1015,7 +1022,7 @@ type = "websocket""#,
 
     #[test]
     fn test_start_stop_instance() {
-        let mut container = create_test_container("test_start_stop_instance");
+        let mut container = create_test_container("test_start_stop_instance", 3004);
         assert_eq!(
             container.start_instance(&String::from("test-instance-1")),
             Ok(()),
@@ -1041,7 +1048,8 @@ type = "websocket""#,
     #[test]
     fn test_add_interface() {
         let test_name = "test_add_interface";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3005);
+
         let interface_config = InterfaceConfiguration {
             id: String::from("new-interface"),
             driver: InterfaceDriver::Http { port: 8080 },
@@ -1063,7 +1071,7 @@ type = "websocket""#,
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3005));
         toml = add_block(
             toml,
             String::from(
@@ -1086,7 +1094,8 @@ type = "http""#,
     #[test]
     fn test_remove_interface() {
         let test_name = "test_remove_interface";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3006);
+
         container.start_all_interfaces();
         assert!(container
             .interface_threads
@@ -1129,7 +1138,8 @@ type = "http""#,
     #[test]
     fn test_add_instance_to_interface() {
         let test_name = "test_add_instance_to_interface";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3007);
+
         container.start_all_interfaces();
         assert!(container
             .interface_threads
@@ -1202,7 +1212,7 @@ id = "test-instance-2"
 id = "new-instance"
 
 [interfaces.driver]
-port = 3000
+port = 3007
 type = "websocket""#,
             ),
         );
@@ -1215,7 +1225,8 @@ type = "websocket""#,
     #[test]
     fn test_remove_instance_from_interface() {
         let test_name = "test_remove_instance_from_interface";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3008);
+
         container.start_all_interfaces();
         assert!(container
             .interface_threads
@@ -1253,7 +1264,7 @@ id = "websocket interface"
 id = "test-instance-2"
 
 [interfaces.driver]
-port = 3000
+port = 3008
 type = "websocket""#,
             ),
         );
@@ -1271,7 +1282,8 @@ type = "websocket""#,
     #[test]
     fn test_add_agent() {
         let test_name = "test_add_agent";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3009);
+
         let agent_config = AgentConfiguration {
             id: String::from("new-agent"),
             name: String::from("Mr. New"),
@@ -1303,7 +1315,7 @@ public_address = "new-----------------------------------------------------------
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3009));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -1313,7 +1325,7 @@ public_address = "new-----------------------------------------------------------
     #[test]
     fn test_remove_agent() {
         let test_name = "test_remove_agent";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3010);
 
         assert_eq!(
             container.remove_agent(&String::from("test-agent-2")),
@@ -1344,7 +1356,7 @@ id = "websocket interface"
 id = "test-instance-1"
 
 [interfaces.driver]
-port = 3000
+port = 3010
 type = "websocket""#,
             ),
         );
@@ -1357,7 +1369,8 @@ type = "websocket""#,
     #[test]
     fn test_add_and_remove_bridge() {
         let test_name = "test_add_and_remove_bridge";
-        let mut container = create_test_container(test_name);
+        let mut container = create_test_container(test_name, 3011);
+
         let bridge = Bridge {
             caller_id: String::from("test-instance-1"),
             callee_id: String::from("test-instance-2"),
@@ -1390,7 +1403,7 @@ handle = "my favourite instance!""#,
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -1416,7 +1429,7 @@ handle = "my favourite instance!""#,
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 

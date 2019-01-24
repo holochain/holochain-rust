@@ -40,3 +40,4 @@ holochain_wasm_utils = { path = "../wasm_utils" }
 clap = "2"
 structopt = "0.2"
 tempfile = "3"
+reqwest = "0.9"

@@ -8,11 +8,14 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    error::{HolochainError, RibosomeReturnCode, ZomeApiInternalResult},
+    error::{
+        HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+        ZomeApiInternalResult,
+    },
     json::JsonString,
 };
-use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
-use std::sync::Arc;
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use std::{convert::TryFrom, sync::Arc};
 use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 
 /// Object holding data to pass around to invoked Zome API functions
@@ -39,16 +42,18 @@ impl Runtime {
         assert_eq!(1, args.len());
 
         // Read complex argument serialized in memory
-        let encoded_allocation: u32 = args.nth(0);
-        let maybe_allocation = decode_encoded_allocation(encoded_allocation);
-        let allocation = match maybe_allocation {
-            // Handle empty allocation edge case
-            Err(RibosomeReturnCode::Success) => return JsonString::null(),
-            // Handle error code
-            Err(_) => panic!("received error code instead of valid encoded allocation"),
-            // Handle normal allocation
-            Ok(allocation) => allocation,
+        let encoded: RibosomeEncodingBits = args.nth(0);
+        let return_code = RibosomeEncodedValue::from(encoded);
+        let allocation = match return_code {
+            RibosomeEncodedValue::Success => return JsonString::null(),
+            RibosomeEncodedValue::Failure(_) => {
+                panic!("received error code instead of valid encoded allocation")
+            }
+            RibosomeEncodedValue::Allocation(ribosome_allocation) => {
+                WasmAllocation::try_from(ribosome_allocation).unwrap()
+            }
         };
+
         let bin_arg = self.memory_manager.read(allocation);
 
         // convert complex argument
@@ -71,7 +76,10 @@ impl Runtime {
 
         match self.memory_manager.write(&s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
-            Ok(allocation) => Ok(Some(RuntimeValue::I32(allocation.encode() as i32))),
+            Ok(allocation) => Ok(Some(RuntimeValue::I32(RibosomeEncodingBits::from(
+                RibosomeEncodedValue::Allocation(allocation.into()),
+            )
+                as RibosomeRuntimeBits))),
         }
     }
 

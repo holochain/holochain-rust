@@ -1,63 +1,130 @@
-use self::{RibosomeErrorCode::*, RibosomeReturnCode::*};
+use self::{RibosomeEncodedValue::*, RibosomeErrorCode::*};
 use crate::{error::HolochainError, json::JsonString};
+use bits_n_pieces::u32_split_bits;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
 
-/// Enum of all possible RETURN codes that a Zome API Function could return.
-/// Represents an encoded allocation of zero length with the return code as offset.
-/// @see SinglePageAllocation
+/// size of the integer that encodes ribosome codes
+pub type RibosomeEncodingBits = u32;
+/// size of the integer that wasm sees
+pub type RibosomeRuntimeBits = i32;
+/// size of the integer that represents a ribosome code
+pub type RibosomeCodeBits = u16;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct RibosomeEncodedAllocation(RibosomeEncodingBits);
+
+impl From<RibosomeEncodedAllocation> for RibosomeEncodingBits {
+    fn from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> RibosomeEncodingBits {
+        ribosome_memory_allocation.0
+    }
+}
+
+impl From<RibosomeEncodingBits> for RibosomeEncodedAllocation {
+    fn from(i: RibosomeEncodingBits) -> Self {
+        Self(i)
+    }
+}
+
+impl ToString for RibosomeEncodedAllocation {
+    fn to_string(&self) -> String {
+        RibosomeEncodingBits::from(self.to_owned()).to_string()
+    }
+}
+
+/// Represents all possible values passed to/from wasmi functions
+/// All wasmi functions are I32 values
 #[repr(u32)]
 #[derive(Clone, Debug, PartialEq)]
-pub enum RibosomeReturnCode {
+pub enum RibosomeEncodedValue {
+    /// @TODO make this unambiguous or remove
+    /// Contextually represents:
+    /// - Function succeeded without any allocation
+    /// - Empty/nil argument to a function
+    /// - Zero length allocation (error)
     Success,
+    /// A value that can be safely converted to a wasm allocation
+    /// High bits represent offset, low bits represent length
+    /// @see WasmAllocation
+    Allocation(RibosomeEncodedAllocation),
+    /// A value that should be interpreted as an error
+    /// Low bits are zero, high bits map to an enum variant
     Failure(RibosomeErrorCode),
 }
 
-impl From<RibosomeReturnCode> for i32 {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> i32 {
+impl From<RibosomeEncodedValue> for RibosomeEncodingBits {
+    fn from(ribosome_return_code: RibosomeEncodedValue) -> RibosomeEncodingBits {
         match ribosome_return_code {
-            RibosomeReturnCode::Success => 0,
-            RibosomeReturnCode::Failure(code) => code as i32,
+            RibosomeEncodedValue::Success => 0,
+            RibosomeEncodedValue::Allocation(allocation) => RibosomeEncodingBits::from(allocation),
+            RibosomeEncodedValue::Failure(code) => {
+                code as RibosomeRuntimeBits as RibosomeEncodingBits
+            }
         }
     }
 }
 
-impl From<RibosomeReturnCode> for u32 {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> u32 {
-        match ribosome_return_code {
-            RibosomeReturnCode::Success => 0,
-            RibosomeReturnCode::Failure(code) => code as i32 as u32,
+impl From<RibosomeEncodedValue> for RibosomeRuntimeBits {
+    fn from(ribosome_return_code: RibosomeEncodedValue) -> RibosomeRuntimeBits {
+        RibosomeEncodingBits::from(ribosome_return_code) as RibosomeRuntimeBits
+    }
+}
+
+impl From<RibosomeEncodingBits> for RibosomeEncodedValue {
+    fn from(i: RibosomeEncodingBits) -> Self {
+        if i == 0 {
+            RibosomeEncodedValue::Success
+        } else {
+            let (code_int, maybe_allocation_length) = u32_split_bits(i);
+            if maybe_allocation_length == 0 {
+                RibosomeEncodedValue::Failure(RibosomeErrorCode::from_code_int(code_int))
+            } else {
+                RibosomeEncodedValue::Allocation(RibosomeEncodedAllocation(i))
+            }
         }
     }
 }
 
-impl ToString for RibosomeReturnCode {
+impl ToString for RibosomeEncodedValue {
     fn to_string(&self) -> String {
         match self {
             Success => "Success".to_string(),
+            Allocation(allocation) => allocation.to_string(),
             Failure(code) => code.to_string(),
         }
     }
 }
 
-impl FromStr for RibosomeReturnCode {
+impl From<RibosomeEncodedValue> for String {
+    fn from(return_code: RibosomeEncodedValue) -> String {
+        return_code.to_string()
+    }
+}
+
+impl FromStr for RibosomeEncodedValue {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s.as_ref() {
-            "Success" => RibosomeReturnCode::Success,
-            _ => RibosomeReturnCode::Failure(s.parse()?),
+            "Success" => RibosomeEncodedValue::Success,
+            _ => RibosomeEncodedValue::Failure(s.parse()?),
         })
     }
 }
 
-impl From<RibosomeReturnCode> for JsonString {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> JsonString {
+impl From<RibosomeEncodedValue> for JsonString {
+    fn from(ribosome_return_code: RibosomeEncodedValue) -> JsonString {
         JsonString::from(ribosome_return_code.to_string())
     }
 }
 
-impl TryFrom<JsonString> for RibosomeReturnCode {
+impl From<HolochainError> for RibosomeEncodedValue {
+    fn from(error: HolochainError) -> Self {
+        RibosomeEncodedValue::Failure(RibosomeErrorCode::from(error))
+    }
+}
+
+impl TryFrom<JsonString> for RibosomeEncodedValue {
     type Error = HolochainError;
 
     fn try_from(json_string: JsonString) -> Result<Self, Self::Error> {
@@ -65,16 +132,9 @@ impl TryFrom<JsonString> for RibosomeReturnCode {
     }
 }
 
-impl RibosomeReturnCode {
+impl RibosomeEncodedValue {
     pub fn from_error(err_code: RibosomeErrorCode) -> Self {
         Failure(err_code)
-    }
-
-    pub fn from_offset(offset: u16) -> Self {
-        match offset {
-            0 => Success,
-            _ => Failure(RibosomeErrorCode::from_offset(offset)),
-        }
     }
 }
 
@@ -113,6 +173,30 @@ impl RibosomeErrorCode {
     }
 }
 
+impl From<HolochainError> for RibosomeErrorCode {
+    fn from(error: HolochainError) -> RibosomeErrorCode {
+        // the mapping between HolochainError and RibosomeErrorCode is pretty poor overall
+        match error {
+            HolochainError::ErrorGeneric(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::NotImplemented(_) => RibosomeErrorCode::CallbackFailed,
+            HolochainError::LoggingError => RibosomeErrorCode::Unspecified,
+            HolochainError::DnaMissing => RibosomeErrorCode::Unspecified,
+            HolochainError::Dna(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::IoError(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::SerializationError(_) => {
+                RibosomeErrorCode::ArgumentDeserializationFailed
+            }
+            HolochainError::InvalidOperationOnSysEntry => RibosomeErrorCode::UnknownEntryType,
+            HolochainError::CapabilityCheckFailed => RibosomeErrorCode::Unspecified,
+            HolochainError::ValidationFailed(_) => RibosomeErrorCode::CallbackFailed,
+            HolochainError::Ribosome(e) => e,
+            HolochainError::RibosomeFailed(_) => RibosomeErrorCode::CallbackFailed,
+            HolochainError::ConfigError(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::Timeout => RibosomeErrorCode::Unspecified,
+        }
+    }
+}
+
 impl ToString for RibosomeErrorCode {
     fn to_string(&self) -> String {
         self.as_str().to_string()
@@ -126,8 +210,8 @@ impl From<RibosomeErrorCode> for String {
 }
 
 impl RibosomeErrorCode {
-    pub fn from_offset(offset: u16) -> Self {
-        match offset {
+    pub fn from_code_int(code: RibosomeCodeBits) -> Self {
+        match code {
             0 => unreachable!(),
             2 => ArgumentDeserializationFailed,
             3 => OutOfMemory,
@@ -142,10 +226,10 @@ impl RibosomeErrorCode {
         }
     }
 
-    pub fn from_return_code(ret_code: RibosomeReturnCode) -> Self {
+    pub fn from_return_code(ret_code: RibosomeEncodedValue) -> Self {
         match ret_code {
-            Success => unreachable!(),
             Failure(rib_err) => rib_err,
+            _ => unreachable!(),
         }
     }
 }
@@ -200,17 +284,10 @@ pub mod tests {
     use super::*;
 
     #[test]
-    fn ribosome_return_code_round_trip() {
-        let oom =
-            RibosomeReturnCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
-        assert_eq!(Failure(RibosomeErrorCode::OutOfMemory), oom);
-        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
-    }
-
-    #[test]
     fn ribosome_error_code_round_trip() {
-        let oom =
-            RibosomeErrorCode::from_offset(((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16);
+        let oom = RibosomeErrorCode::from_code_int(
+            ((RibosomeErrorCode::OutOfMemory as u32) >> 16) as u16,
+        );
         assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
     }
@@ -218,13 +295,13 @@ pub mod tests {
     #[test]
     fn error_conversion() {
         for code in 1..=10 {
-            let mut err = RibosomeErrorCode::from_offset(code);
+            let mut err = RibosomeErrorCode::from_code_int(code);
 
             let err_str = err.as_str().to_owned();
 
             err = err_str.parse().expect("unable to parse error");
 
-            let inner_code = RibosomeReturnCode::from_error(err);
+            let inner_code = RibosomeEncodedValue::from_error(err);
 
             let _one_int: i32 = inner_code.clone().into();
             let _another_int: u32 = inner_code.clone().into();
@@ -234,6 +311,6 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn code_zero() {
-        RibosomeErrorCode::from_offset(0);
+        RibosomeErrorCode::from_code_int(0);
     }
 }

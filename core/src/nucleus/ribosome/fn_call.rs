@@ -347,6 +347,7 @@ pub fn make_cap_call<J: Into<JsonString>>(
 
 /// verifies that this grant is valid for a given requester and token value
 pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &ZomeFnCall) -> bool {
+    println!("in verify grant {:?}",grant);
     let cap_type = grant.cap_type();
     if cap_type == CapabilityType::Public {
         return true;
@@ -368,6 +369,8 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     ) {
         return false;
     }
+    println!("cecking grant {:?}",grant);
+
     match grant.cap_type() {
         CapabilityType::Public => true,
         CapabilityType::Transferable => true,
@@ -943,7 +946,7 @@ pub mod tests {
                 context.clone(),
                 Address::from(context.agent_id.key.clone()),
                 Address::from(context.agent_id.key.clone()),
-                "foo_function", //<- not the function in the zome_call!
+                "test", //<- not the function in the zome_call!
                 "{}",
             )),
             "test",

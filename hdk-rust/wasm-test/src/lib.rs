@@ -18,7 +18,6 @@ use handle_crud::{
 };
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
-    globals::G_MEM_STACK,
 };
 use holochain_wasm_utils::{
     api_serialization::{
@@ -33,13 +32,21 @@ use holochain_wasm_utils::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        error::{HolochainError, RibosomeErrorCode},
+        error::{
+            HolochainError,
+            RibosomeErrorCode,
+        },
         json::{JsonString, RawString},
     },
-    memory_allocation::*,
-    memory_serialization::*,
 };
+use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodingBits;
+use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
+use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
+use hdk::global_fns::init_global_memory;
+use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedValue;
 use std::convert::TryFrom;
+use hdk::globals::G_MEM_STACK;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct TestEntryType {
@@ -62,21 +69,29 @@ pub extern "C" fn handle_check_global() -> Address {
 }
 
 #[no_mangle]
-pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
-    unsafe {
-        G_MEM_STACK =
-            Some(SinglePageStack::from_encoded_allocation(encoded_allocation_of_input).unwrap());
+pub extern "C" fn check_commit_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits {
+
+    let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    };
+
+    let memory_init_result = init_global_memory(allocation);
+    if memory_init_result.is_err() {
+        return return_code_for_allocation_result(memory_init_result).into();
     }
 
     // Deserialize and check for an encoded error
-    let result = load_json(encoded_allocation_of_input as u32);
-    if let Err(hc_err) = result {
-        hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).expect("debug() must work");
-        return RibosomeErrorCode::ArgumentDeserializationFailed as u32;
-    }
+    let entry: Entry = match load_ribosome_encoded_json(encoded_allocation_of_input) {
+        Ok(entry) => entry,
+        Err(hc_err) => {
+            hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).ok();
+            return RibosomeEncodedValue::Failure(RibosomeErrorCode::ArgumentDeserializationFailed).into();
+        },
+    };
 
-    let entry: Entry = result.unwrap();
-    hdk::debug(format!("Entry: {:?}", entry)).expect("debug() must work");
+    hdk::debug(format!("Entry: {:?}", entry)).ok();
+
     let res = hdk::commit_entry(&entry.into());
 
     let res_obj: JsonString = match res {
@@ -84,9 +99,15 @@ pub extern "C" fn check_commit_entry(encoded_allocation_of_input: u32) -> u32 {
         Err(e) => e.into(),
     };
 
-    unsafe {
-        return store_as_json_into_encoded_allocation(&mut G_MEM_STACK.unwrap(), res_obj) as u32;
-    }
+    let mut wasm_stack = match unsafe { G_MEM_STACK } {
+        Some(wasm_stack) => wasm_stack,
+        None => return RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory).into(),
+    };
+
+    return_code_for_allocation_result(
+        wasm_stack.write_json(res_obj)
+    ).into()
+
 }
 
 fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {

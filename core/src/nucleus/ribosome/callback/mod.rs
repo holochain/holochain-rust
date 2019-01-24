@@ -23,13 +23,14 @@ use holochain_core_types::{
         wasm::DnaWasm,
     },
     entry::Entry,
-    error::{HolochainError, RibosomeReturnCode},
+    error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
 };
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use num_traits::FromPrimitive;
 use serde_json;
-use std::{str::FromStr, sync::Arc};
+use std::{convert::TryFrom, str::FromStr, sync::Arc};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -165,13 +166,19 @@ impl From<JsonString> for CallbackResult {
     }
 }
 
-impl From<RibosomeReturnCode> for CallbackResult {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> CallbackResult {
+impl From<RibosomeEncodedValue> for CallbackResult {
+    fn from(ribosome_return_code: RibosomeEncodedValue) -> CallbackResult {
         match ribosome_return_code {
-            RibosomeReturnCode::Failure(ribosome_error_code) => {
+            RibosomeEncodedValue::Failure(ribosome_error_code) => {
                 CallbackResult::Fail(ribosome_error_code.to_string())
             }
-            RibosomeReturnCode::Success => CallbackResult::Pass,
+            RibosomeEncodedValue::Allocation(ribosome_allocation) => {
+                match WasmAllocation::try_from(ribosome_allocation) {
+                    Ok(allocation) => CallbackResult::Fail(allocation.read_to_string()),
+                    Err(allocation_error) => CallbackResult::Fail(String::from(allocation_error)),
+                }
+            }
+            RibosomeEncodedValue::Success => CallbackResult::Pass,
         }
     }
 }

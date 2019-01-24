@@ -22,7 +22,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 ///
 /// The empty String or an empty Vec matches all.  The '*' glob pattern matches all simple EntryType
 /// names (with no '/'), while the ** pattern matches everything (use "" or [] for efficiency).
-///  
+///
 /// `[]`
 /// `[""]`
 /// `["**"]`

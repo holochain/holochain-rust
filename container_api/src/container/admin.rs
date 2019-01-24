@@ -525,16 +525,16 @@ pub mod tests {
         "ui_interfaces = []".to_string()
     }
 
-    pub fn persistence_dir(dir: PathBuf) -> String {
-        format!("persistence_dir = \"{}\"", dir.to_str()
+    pub fn persistence_dir(test_name: &str) -> String {
+        let mut persist_dir: PathBuf = [".", "tmp-test"].iter().collect();
+        persist_dir.push(test_name);
+        format!("persistence_dir = \"{}\"", persist_dir.to_str()
             .expect("Could not convert dir to string")).to_string()
     }
 
     pub fn header_block(test_name: &str) -> String {
         let mut toml = empty_briges();
-        let mut persist_dir: PathBuf = [".", "tmp-test"].iter().collect();
-        persist_dir.push(test_name);
-        toml = add_line(toml, persistence_dir(persist_dir));
+        toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
         toml = add_line(toml, empty_ui_interfaces());   
         toml
@@ -947,14 +947,14 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from(
-            r#"bridges = []
-dnas = []
-instances = []
-persistence_dir = "./tmp-test/test_uninstall_dna"
-ui_bundles = []
-ui_interfaces = []"#,
-        );
+
+        let mut toml = empty_briges();
+        toml = add_line(toml, "dnas = []".to_string());
+        toml = add_line(toml, "instances = []".to_string());
+        toml = add_line(toml, persistence_dir(test_name));
+        toml = add_line(toml, empty_ui_bundles());
+        toml = add_line(toml, empty_ui_interfaces());
+
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         //toml = add_block(toml, dna());
@@ -1051,7 +1051,8 @@ type = "http""#,
 
     #[test]
     fn test_remove_interface() {
-        let mut container = create_test_container("test_remove_interface");
+        let test_name = "test_remove_interface";
+        let mut container = create_test_container(test_name);
         container.start_all_interfaces();
         assert!(container
             .interface_threads
@@ -1069,13 +1070,12 @@ type = "http""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from(
-            r#"bridges = []
-interfaces = []
-persistence_dir = "./tmp-test/test_remove_interface"
-ui_bundles = []
-ui_interfaces = []"#,
-        );
+        let mut toml = empty_briges();
+        toml = add_line(toml, "interfaces = []".to_string());
+        toml = add_line(toml, persistence_dir(test_name));
+        toml = add_line(toml, empty_ui_bundles());
+        toml = add_line(toml, empty_ui_interfaces());
+
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1270,7 +1270,8 @@ public_address = "new-----------------------------------------------------------
 
     #[test]
     fn test_remove_agent() {
-        let mut container = create_test_container("test_remove_agent");
+        let test_name = "test_remove_agent";
+        let mut container = create_test_container(test_name);
 
         assert_eq!(
             container.remove_agent(&String::from("test-agent-2")),
@@ -1283,12 +1284,7 @@ public_address = "new-----------------------------------------------------------
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from(
-            r#"bridges = []
-persistence_dir = "./tmp-test/test_remove_agent"
-ui_bundles = []
-ui_interfaces = []"#,
-        );
+        let mut toml = header_block(test_name);
         toml = add_block(toml, agent1());
         //toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -1318,7 +1314,8 @@ type = "websocket""#,
 
     #[test]
     fn test_add_and_remove_bridge() {
-        let mut container = create_test_container("test_add_and_remove_bridge");
+        let test_name = "test_add_and_remove_bridge";
+        let mut container = create_test_container(test_name);
         let bridge = Bridge {
             caller_id: String::from("test-instance-1"),
             callee_id: String::from("test-instance-2"),
@@ -1333,11 +1330,10 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from(
-            r#"persistence_dir = "./tmp-test/test_add_and_remove_bridge"
-ui_bundles = []
-ui_interfaces = []"#,
-        );
+        let mut toml = persistence_dir(test_name);
+        toml = add_block(toml, empty_ui_bundles());
+        toml = add_block(toml, empty_ui_interfaces());
+
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(
@@ -1372,12 +1368,7 @@ handle = "my favourite instance!""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from(
-            r#"bridges = []
-persistence_dir = "./tmp-test/test_add_and_remove_bridge"
-ui_bundles = []
-ui_interfaces = []"#,
-        );
+        let mut toml = header_block(test_name);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());

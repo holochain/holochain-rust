@@ -4,6 +4,7 @@ use libc::c_void;
 use std::ops::{Deref, DerefMut};
 
 use super::check_init;
+use crate::error::SodiumError;
 
 /// a trait for structures that can be used as a backing store for SecBuf
 pub trait Bufferable {
@@ -225,6 +226,22 @@ impl SecBuf {
     pub fn write_lock(&mut self) -> Locker {
         Locker::new(self, true)
     }
+
+    /// helper for writing data to our internal buffer
+    pub fn write(&mut self, offset: usize, data: &[u8]) -> Result<(), SodiumError> {
+        if offset + data.len() > self.len() {
+            return Err(SodiumError::new("bad write offset / length"));
+        }
+
+        unsafe {
+            let mut b = self.write_lock();
+            std::ptr::copy(
+                data.as_ptr(), (**b).as_mut_ptr().add(offset), data.len()
+            );
+        }
+
+        Ok(())
+    }
 }
 
 impl Deref for SecBuf {
@@ -365,5 +382,22 @@ mod tests {
     fn it_should_panic_on_not_writeable() {
         let mut b = SecBuf::with_insecure(1);
         b[0] = 22;
+    }
+
+    #[test]
+    fn it_should_write() {
+        let mut b = SecBuf::with_insecure(4);
+        b.write(1, &[42, 42]).unwrap();
+        {
+            let b = b.read_lock();
+            assert_eq!("[0, 42, 42, 0]", format!("{:?}", *b));
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_should_fail_write_on_bad_offset() {
+        let mut b = SecBuf::with_insecure(4);
+        b.write(3, &[42, 42]).unwrap();
     }
 }

@@ -67,11 +67,12 @@ pub fn pw_enc(
 ///
 /// @param {string} passphrase
 ///
-/// @return {SecBuf} - the decrypted data
+/// @param {SecBuf} - the decrypted data
 pub fn pw_dec(
     bundle: &bundle::ReturnBundleData,
     passphrase: &mut SecBuf,
-) -> Result<SecBuf, HolochainError> {
+    decrypted_data: &mut SecBuf,
+) -> Result<(), HolochainError> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
     convert_vec_to_secbuf(&bundle.salt, &mut salt);
@@ -80,15 +81,14 @@ pub fn pw_dec(
     let mut cipher = SecBuf::with_insecure(bundle.cipher.len());
     convert_vec_to_secbuf(&bundle.cipher, &mut cipher);
     pw_hash(passphrase, &mut salt, &mut secret)?;
-    let mut decrypted_message = SecBuf::with_insecure(cipher.len() - aead::ABYTES);
     aead::dec(
-        &mut decrypted_message,
+        decrypted_data,
         &mut secret,
         None,
         &mut nonce,
         &mut cipher,
     )?;
-    Ok(decrypted_message)
+    Ok(())
 }
 
 /// Load the Vec<u8> into the SecBuf
@@ -184,7 +184,8 @@ mod tests {
         }
         let mut bundle: bundle::ReturnBundleData = pw_enc(&mut data, &mut password).unwrap();
 
-        let mut dec_mess = pw_dec(&mut bundle, &mut password).unwrap();
+        let mut dec_mess = SecBuf::with_insecure(32);
+        pw_dec(&mut bundle, &mut password, &mut dec_mess).unwrap();
 
         let data = data.read_lock();
         let dec_mess = dec_mess.read_lock();

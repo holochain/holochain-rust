@@ -116,6 +116,9 @@ pub(crate) fn reduce_add_link(
                 "Base for link not found",
             ))),
         );
+        new_store
+            .pending_link_bases
+            .insert(link.base().clone(), link.clone());
         Some(new_store)
     } else {
         let eav = EntityAttributeValueIndex::new(
@@ -411,7 +414,6 @@ pub mod tests {
         let new_dht_store: DhtStore;
         {
             let state = locked_state.read().unwrap();
-
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
@@ -424,25 +426,12 @@ pub mod tests {
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);
 
-        let result = new_dht_store.actions().get(&action).unwrap();
-
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn queues_link_for_missing_base() {
-        let (context, locked_state) = test_stateful_context("bilal", None);
-        let entry = test_entry();
-
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let action = ActionWrapper::new(Action::AddLink(link.clone()));
-
-        let new_dht_store: DhtStore;
         {
-            let state = locked_state.read().unwrap();
-
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+            // the base should be kept track of in case it comes in later
+            let state = locked_state.read().unwrap().dht();
+            assert_eq!(state.pending_link_bases.get(&entry.address()), Some(&link));
         }
+
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(
             Some(entry.address()),

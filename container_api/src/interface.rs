@@ -13,7 +13,7 @@ use std::{
 
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver, StorageConfiguration, UiInterfaceConfiguration,
+    InterfaceDriver, StorageConfiguration, UiInterfaceConfiguration, UiBundleConfiguration,
 };
 use container::{ContainerAdmin, ContainerUiAdmin, CONTAINER};
 use serde_json::map::Map;
@@ -624,15 +624,24 @@ impl ContainerApiBuilder {
             container_call!(|c| c.install_ui_bundle_from_file(PathBuf::from(root_dir), &id))?;
             Ok(json!({"success": true}))
         });
+
         self.io.add_method("admin/ui/uninstall", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.uninstall_ui_bundle(&id))?;
             Ok(json!({"success": true}))
         });
+
         self.io.add_method("admin/ui/list", move |_| {
-            Ok(json!({"success": true}))
+            let ui_bundles =
+                container_call!(|c| Ok(c.config().ui_bundles) as Result<Vec<UiBundleConfiguration>, String>)?;
+            Ok(serde_json::Value::Array(
+                ui_bundles.iter()
+                    .map(|bundle| json!(bundle))
+                    .collect(),
+            ))
         });
+
         self.io.add_method("admin/ui_interface/add", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
@@ -652,27 +661,38 @@ impl ContainerApiBuilder {
             }))?;
             Ok(json!({"success": true}))
         });
+
         self.io.add_method("admin/ui_interface/remove", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.remove_ui_interface(&id))?;
             Ok(json!({"success": true}))
         });
+
         self.io.add_method("admin/ui_interface/start", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.start_ui_interface(&id))?;
             Ok(json!({"success": true}))
         });
+
         self.io.add_method("admin/ui_interface/stop", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let id = Self::get_as_string("id", &params_map)?;
             container_call!(|c| c.stop_ui_interface(&id))?;
             Ok(json!({"success": true}))
         });
-        self.io.add_method("admin/ui_interface/list", move |_params| {
-            Ok(json!({"success": true}))
+
+        self.io.add_method("admin/ui_interface/list", move |_| {
+            let ui_interfaces =
+                container_call!(|c| Ok(c.config().ui_interfaces) as Result<Vec<UiInterfaceConfiguration>, String>)?;
+            Ok(serde_json::Value::Array(
+                ui_interfaces.iter()
+                    .map(|ui_interface| json!(ui_interface))
+                    .collect(),
+            ))
         });
+
         self
     }
 }

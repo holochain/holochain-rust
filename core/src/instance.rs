@@ -27,7 +27,7 @@ pub struct Instance {
     state: Arc<RwLock<State>>,
     action_channel: Option<SyncSender<ActionWrapper>>,
     observer_channel: Option<SyncSender<Observer>>,
-    executor: Arc<RwLock<ThreadPool>>,
+    futures_thread_pool: ThreadPool,
 }
 
 type ClosureType = Box<FnMut(&State) -> bool + Send>;
@@ -149,7 +149,7 @@ impl Instance {
         sub_context.set_state(self.state.clone());
         sub_context.action_channel = self.action_channel.clone();
         sub_context.observer_channel = self.observer_channel.clone();
-        sub_context.future_executor = Some(self.executor.clone());
+        sub_context.future_executor = Some(self.futures_thread_pool.clone());
         Arc::new(sub_context)
     }
 
@@ -247,7 +247,7 @@ impl Instance {
             state: Arc::new(RwLock::new(State::new(context))),
             action_channel: None,
             observer_channel: None,
-            executor: Arc::new(RwLock::new(ThreadPool::new().expect("Default ThreadPool has to be spawnable"))),
+            futures_thread_pool: ThreadPool::new().expect("Default ThreadPool has to be spawnable"),
         }
     }
 
@@ -256,7 +256,7 @@ impl Instance {
             state: Arc::new(RwLock::new(state)),
             action_channel: None,
             observer_channel: None,
-            executor: Arc::new(RwLock::new(ThreadPool::new().expect("Default ThreadPool has to be spawnable"))),
+            futures_thread_pool: ThreadPool::new().expect("Default ThreadPool has to be spawnable"),
         }
     }
 

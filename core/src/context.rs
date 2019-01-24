@@ -41,7 +41,7 @@ pub struct Context {
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub observer_channel: Option<SyncSender<Observer>>,
-    pub future_executor: Option<Arc<RwLock<ThreadPool>>>,
+    pub future_executor: Option<ThreadPool>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -194,9 +194,9 @@ impl Context {
 
     pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output  {
         match self.future_executor {
-            None => panic!("Context needs to be initialized with an instance"),
-            Some(ref executor) => executor.write().unwrap().run(future),
-        }
+            None => ThreadPool::new().expect("Default ThreadPool has to be spawnable"),
+            Some(ref executor) => executor.clone(),
+        }.run(future)
     }
 }
 

@@ -506,8 +506,9 @@ type = "memory""#
             .to_string()
     }
 
-    pub fn interface() -> String {
-        r#"[[interfaces]]
+    pub fn interface(port: u32) -> String {
+        format!(
+            r#"[[interfaces]]
 admin = true
 id = "websocket interface"
 
@@ -518,9 +519,10 @@ id = "test-instance-1"
 id = "test-instance-2"
 
 [interfaces.driver]
-port = 3000
-type = "websocket""#
-            .to_string()
+port = {}
+type = "websocket""#,
+            port
+        )
     }
 
     pub fn logger() -> String {
@@ -546,20 +548,20 @@ pattern = ".*""#
         format!("{}\n\n{}", base, new_block)
     }
 
-    pub fn test_toml() -> String {
+    pub fn test_toml(port: u32) -> String {
         let mut toml = String::from("bridges = []");
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(port));
         toml = add_block(toml, logger());
         toml
     }
 
-    fn create_test_container<T: Into<String>>(test_name: T) -> Container {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
+    fn create_test_container<T: Into<String>>(test_name: T, port: u32) -> Container {
+        let config = load_configuration::<Configuration>(&test_toml(port)).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
         container.load_config().unwrap();
@@ -572,7 +574,7 @@ pattern = ".*""#
 
     #[test]
     fn test_install_dna_from_file() {
-        let mut container = create_test_container("test_install_dna_from_file");
+        let mut container = create_test_container("test_install_dna_from_file", 3000);
 
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
@@ -626,7 +628,7 @@ id = "new-dna""#,
         );
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3000));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -636,7 +638,7 @@ id = "new-dna""#,
     use crate::config::StorageConfiguration;
     #[test]
     fn test_add_instance() {
-        let mut container = create_test_container("test_add_instance");
+        let mut container = create_test_container("test_add_instance", 3001);
         let mut new_dna_path = PathBuf::new();
         new_dna_path.push("new-dna.hcpkg");
         container
@@ -688,7 +690,7 @@ id = "new-instance"
 type = "memory""#,
             ),
         );
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -700,7 +702,7 @@ type = "memory""#,
     /// as well as the mentions of the removed instance are gone from the interfaces
     /// (to not render the config invalid).
     fn test_remove_instance() {
-        let mut container = create_test_container("test_remove_instance");
+        let mut container = create_test_container("test_remove_instance", 3002);
         assert_eq!(
             container.remove_instance(&String::from("test-instance-1")),
             Ok(()),
@@ -732,7 +734,7 @@ id = "websocket interface"
 id = "test-instance-2"
 
 [interfaces.driver]
-port = 3000
+port = 3002
 type = "websocket""#,
             ),
         );
@@ -747,7 +749,7 @@ type = "websocket""#,
     /// as well as the instances that use the DNA and their mentions are gone from the interfaces
     /// (to not render the config invalid).
     fn test_uninstall_dna() {
-        let mut container = create_test_container("test_uninstall_dna");
+        let mut container = create_test_container("test_uninstall_dna", 3003);
         assert_eq!(container.uninstall_dna(&String::from("test-dna")), Ok(()),);
 
         let mut config_contents = String::new();
@@ -776,7 +778,7 @@ id = "websocket interface"
 instances = []
 
 [interfaces.driver]
-port = 3000
+port = 3003
 type = "websocket""#,
             ),
         );
@@ -788,7 +790,7 @@ type = "websocket""#,
 
     #[test]
     fn test_start_stop_instance() {
-        let mut container = create_test_container("test_start_stop_instance");
+        let mut container = create_test_container("test_start_stop_instance", 3004);
         assert_eq!(
             container.start_instance(&String::from("test-instance-1")),
             Ok(()),
@@ -813,7 +815,7 @@ type = "websocket""#,
 
     #[test]
     fn test_add_interface() {
-        let mut container = create_test_container("test_add_interface");
+        let mut container = create_test_container("test_add_interface", 3005);
         let interface_config = InterfaceConfiguration {
             id: String::from("new-interface"),
             driver: InterfaceDriver::Http { port: 8080 },
@@ -838,7 +840,7 @@ ui_interfaces = []"#,
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3005));
         toml = add_block(
             toml,
             String::from(
@@ -860,7 +862,7 @@ type = "http""#,
 
     #[test]
     fn test_remove_interface() {
-        let mut container = create_test_container("test_remove_interface");
+        let mut container = create_test_container("test_remove_interface", 3006);
         container.start_all_interfaces();
         assert!(container
             .interface_threads
@@ -901,7 +903,7 @@ ui_interfaces = []"#,
 
     #[test]
     fn test_add_instance_to_interface() {
-        let mut container = create_test_container("test_add_instance_to_interface");
+        let mut container = create_test_container("test_add_instance_to_interface", 3007);
         container.start_all_interfaces();
         assert!(container
             .interface_threads
@@ -968,7 +970,7 @@ id = "test-instance-2"
 id = "new-instance"
 
 [interfaces.driver]
-port = 3000
+port = 3007
 type = "websocket""#,
             ),
         );
@@ -980,7 +982,7 @@ type = "websocket""#,
 
     #[test]
     fn test_remove_instance_from_interface() {
-        let mut container = create_test_container("test_remove_instance_from_interface");
+        let mut container = create_test_container("test_remove_instance_from_interface", 3008);
         container.start_all_interfaces();
         assert!(container
             .interface_threads
@@ -1021,7 +1023,7 @@ id = "websocket interface"
 id = "test-instance-2"
 
 [interfaces.driver]
-port = 3000
+port = 3008
 type = "websocket""#,
             ),
         );
@@ -1038,7 +1040,7 @@ type = "websocket""#,
 
     #[test]
     fn test_add_agent() {
-        let mut container = create_test_container("test_add_agent");
+        let mut container = create_test_container("test_add_agent", 3009);
         let agent_config = AgentConfiguration {
             id: String::from("new-agent"),
             name: String::from("Mr. New"),
@@ -1073,7 +1075,7 @@ public_address = "new-----------------------------------------------------------
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3009));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -1082,7 +1084,7 @@ public_address = "new-----------------------------------------------------------
 
     #[test]
     fn test_remove_agent() {
-        let mut container = create_test_container("test_remove_agent");
+        let mut container = create_test_container("test_remove_agent", 3010);
 
         assert_eq!(
             container.remove_agent(&String::from("test-agent-2")),
@@ -1116,7 +1118,7 @@ id = "websocket interface"
 id = "test-instance-1"
 
 [interfaces.driver]
-port = 3000
+port = 3010
 type = "websocket""#,
             ),
         );
@@ -1128,7 +1130,7 @@ type = "websocket""#,
 
     #[test]
     fn test_add_and_remove_bridge() {
-        let mut container = create_test_container("test_add_and_remove_bridge");
+        let mut container = create_test_container("test_add_and_remove_bridge", 3011);
         let bridge = Bridge {
             caller_id: String::from("test-instance-1"),
             callee_id: String::from("test-instance-2"),
@@ -1160,7 +1162,7 @@ handle = "my favourite instance!""#,
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -1189,7 +1191,7 @@ ui_interfaces = []"#,
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface());
+        toml = add_block(toml, interface(3011));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 

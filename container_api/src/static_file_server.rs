@@ -1,4 +1,5 @@
 use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
+use container::base::notify;
 use error::HolochainResult;
 use hyper::{
     http::{response::Builder, uri},
@@ -129,10 +130,10 @@ impl StaticServer {
         let static_path = self.bundle_config.root_dir.to_owned();
         let dna_interfaces = self.connected_dna_interface.to_owned();
 
-        println!(
+        notify(format!(
             "About to serve path \"{}\" at http://{}",
             &self.bundle_config.root_dir, &addr
-        );
+        ));
         self.running = true;
 
         let _server = thread::spawn(move || {
@@ -140,9 +141,9 @@ impl StaticServer {
                 .serve(move || {
                     future::ok::<_, Error>(StaticService::new(&static_path, &dna_interfaces))
                 })
-                .map_err(|e| eprintln!("server error: {}", e));
+                .map_err(|e| notify(format!("server error: {}", e)));
 
-            println!("Listening on http://{}", addr);
+            notify(format!("Listening on http://{}", addr));
             let mut rt = Runtime::new().unwrap();
             rt.spawn(server);
             let _ = rx.recv();

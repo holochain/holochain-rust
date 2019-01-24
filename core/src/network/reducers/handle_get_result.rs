@@ -16,7 +16,8 @@ fn reduce_handle_get_result_inner(
     let res = serde_json::from_str(&serde_json::to_string(&dht_data.data_content).unwrap());
     if let Err(_) = res {
         return Err(HolochainError::ErrorGeneric(
-            "Failed to deserialize EntryWithMeta from HandleFetchResult action argument".to_string(),
+            "Failed to deserialize EntryWithMeta from HandleFetchResult action argument"
+                .to_string(),
         ));
     }
     Ok(res.unwrap())

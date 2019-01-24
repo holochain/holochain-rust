@@ -3,13 +3,14 @@ use crate::{
     context::Context,
     network::{reducers::send, state::NetworkState},
 };
-use holochain_core_types::{
-    error::HolochainError, hash::HashString,
-};
+use holochain_core_types::{error::HolochainError, hash::HashString};
 use holochain_net_connection::json_protocol::{FetchDhtMetaData, JsonProtocol};
 use std::sync::Arc;
 
-fn reduce_get_links_inner(network_state: &mut NetworkState, key: &GetLinksKey) -> Result<(), HolochainError> {
+fn reduce_get_links_inner(
+    network_state: &mut NetworkState,
+    key: &GetLinksKey,
+) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
     send(

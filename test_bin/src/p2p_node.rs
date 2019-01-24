@@ -1,13 +1,15 @@
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
     json_protocol::{
-        JsonProtocol, MessageData, HandleListResultData, GetListData,
-        FetchDhtData, HandleDhtResultData, FailureResultData, HandleMetaListResultData,
-        HandleDhtMetaResultData, FetchDhtMetaData, DhtData, DhtMetaData,
+        DhtData, DhtMetaData, FailureResultData, FetchDhtData, FetchDhtMetaData, GetListData,
+        HandleDhtMetaResultData, HandleDhtResultData, HandleListResultData,
+        HandleMetaListResultData, JsonProtocol, MessageData,
     },
-    net_connection::NetSend, protocol::Protocol, NetResult,
+    net_connection::NetSend,
+    protocol::Protocol,
+    NetResult,
 };
-use std::{convert::TryFrom, sync::mpsc, collections::HashMap};
+use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
 
 use holochain_core_types::cas::content::Address;
 
@@ -71,7 +73,8 @@ impl P2pNode {
     ) -> NetResult<()> {
         assert!(!self.authored_data_store.get(&data_address).is_some());
         assert!(!self.data_store.get(&data_address).is_some());
-        self.authored_data_store.insert(data_address.clone(), data_content.clone());
+        self.authored_data_store
+            .insert(data_address.clone(), data_content.clone());
         if can_publish {
             let msg_data = DhtData {
                 dna_address: dna_address.clone(),
@@ -96,7 +99,10 @@ impl P2pNode {
         let meta_address = (data_address.clone(), attribute.to_string());
         assert!(!self.authored_meta_store.get(&meta_address).is_some());
         assert!(!self.meta_store.get(&meta_address).is_some());
-        self.authored_meta_store.insert((data_address.clone(), attribute.to_string()), content.clone());
+        self.authored_meta_store.insert(
+            (data_address.clone(), attribute.to_string()),
+            content.clone(),
+        );
         if can_publish {
             let msg_data = DhtMetaData {
                 dna_address: dna_address.clone(),
@@ -111,14 +117,11 @@ impl P2pNode {
         Ok(())
     }
 
-    pub fn hold_data(
-        &mut self,
-        data_address: &Address,
-        data_content: &serde_json::Value,
-    ) {
+    pub fn hold_data(&mut self, data_address: &Address, data_content: &serde_json::Value) {
         assert!(!self.authored_data_store.get(&data_address).is_some());
         assert!(!self.data_store.get(&data_address).is_some());
-        self.data_store.insert(data_address.clone(), data_content.clone());
+        self.data_store
+            .insert(data_address.clone(), data_content.clone());
     }
 
     pub fn hold_meta(
@@ -130,14 +133,15 @@ impl P2pNode {
         let meta_address = (data_address.clone(), attribute.to_string());
         assert!(!self.authored_meta_store.get(&meta_address).is_some());
         assert!(!self.meta_store.get(&meta_address).is_some());
-        self.meta_store.insert((data_address.clone(), attribute.to_string()), content.clone());
+        self.meta_store.insert(
+            (data_address.clone(), attribute.to_string()),
+            content.clone(),
+        );
     }
 }
 
-
 // Replies
 impl P2pNode {
-
     // -- FETCH -- //
 
     /// Send a reponse to a FetchDhtData request
@@ -159,7 +163,7 @@ impl P2pNode {
                         error_info: json!("Does not have the requested data"),
                     };
                     JsonProtocol::FailureResult(msg_data).into()
-                },
+                }
                 Some(data) => {
                     let msg_data = HandleDhtResultData {
                         request_id: request.request_id.clone(),
@@ -170,7 +174,7 @@ impl P2pNode {
                         data_content: data.clone(),
                     };
                     JsonProtocol::HandleFetchDhtDataResult(msg_data).into()
-                },
+                }
             };
         }
         println!("({}) reply_fetch_data: {:?}", self.agent_id, msg);
@@ -209,7 +213,11 @@ impl P2pNode {
     // -- LISTS -- //
 
     pub fn reply_get_publish_data_list(&mut self, request: &GetListData) -> NetResult<()> {
-        let data_address_list = self.authored_data_store.iter().map(|(k, _)| k.clone()).collect();
+        let data_address_list = self
+            .authored_data_store
+            .iter()
+            .map(|(k, _)| k.clone())
+            .collect();
         let msg = HandleListResultData {
             data_address_list,
             request_id: request.request_id.clone(),
@@ -219,7 +227,11 @@ impl P2pNode {
     }
 
     pub fn reply_get_publish_meta_list(&mut self, request: &GetListData) -> NetResult<()> {
-        let meta_list = self.authored_meta_store.iter().map(|(k, _)| k.clone()).collect();
+        let meta_list = self
+            .authored_meta_store
+            .iter()
+            .map(|(k, _)| k.clone())
+            .collect();
         let msg = HandleMetaListResultData {
             meta_list,
             request_id: request.request_id.clone(),
@@ -249,11 +261,14 @@ impl P2pNode {
     }
 }
 
-
 impl P2pNode {
     /// Private constructor
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_config(agent_id_arg: String, config: &P2pConfig, _maybe_temp_dir: Option<tempfile::TempDir>) -> Self {
+    pub fn new_with_config(
+        agent_id_arg: String,
+        config: &P2pConfig,
+        _maybe_temp_dir: Option<tempfile::TempDir>,
+    ) -> Self {
         // use a mpsc channel for messaging between p2p connection and main thread
         let (sender, receiver) = mpsc::channel::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
@@ -329,7 +344,7 @@ impl P2pNode {
             Ok(r) => {
                 self.handle(r.clone());
                 Ok(r)
-            },
+            }
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
@@ -342,17 +357,17 @@ impl P2pNode {
 
     /// recv messages until timeout is reached
     #[cfg_attr(tarpaulin, skip)]
-    pub fn listen(
-        &mut self,
-        timeout_ms: usize,
-    ) -> usize {
+    pub fn listen(&mut self, timeout_ms: usize) -> usize {
         let mut count: usize = 0;
         let mut time_ms: usize = 0;
         loop {
             let mut has_recved = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!("P2pNode({})::listen() - received: {:?}", self.agent_id, p2p_msg);
+                println!(
+                    "P2pNode({})::listen() - received: {:?}",
+                    self.agent_id, p2p_msg
+                );
                 has_recved = true;
                 time_ms = 0;
                 count += 1;
@@ -367,20 +382,20 @@ impl P2pNode {
         }
     }
 
-//    // look for a msg in log or wait for it
-//    #[cfg_attr(tarpaulin, skip)]
-//    pub fn has_or_wait(
-//        &mut self,
-//        ith: usize,
-//        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
-//        timeout_ms: usize,
-//    ) -> JsonProtocol {
-//        let maybe_msg = self.find_recv_msg(ith, predicate.clone());
-//        if maybe_msg.is_some() {
-//            return maybe_msg.unwrap();
-//        }
-//        self.wait_with_timeout(predicate, timeout_ms)
-//    }
+    //    // look for a msg in log or wait for it
+    //    #[cfg_attr(tarpaulin, skip)]
+    //    pub fn has_or_wait(
+    //        &mut self,
+    //        ith: usize,
+    //        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
+    //        timeout_ms: usize,
+    //    ) -> JsonProtocol {
+    //        let maybe_msg = self.find_recv_msg(ith, predicate.clone());
+    //        if maybe_msg.is_some() {
+    //            return maybe_msg.unwrap();
+    //        }
+    //        self.wait_with_timeout(predicate, timeout_ms)
+    //    }
 
     /// Wait for receiving a message corresponding to predicate until timeout is reached
     pub fn wait_with_timeout(
@@ -393,7 +408,10 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!("P2pNode({})::wait() - received: {:?}", self.agent_id, p2p_msg);
+                println!(
+                    "P2pNode({})::wait() - received: {:?}",
+                    self.agent_id, p2p_msg
+                );
                 did_something = true;
                 if predicate(&p2p_msg) {
                     println!("\t P2pNode({})::wait() - match", self.agent_id);
@@ -416,10 +434,7 @@ impl P2pNode {
     /// Wait for receiving a message corresponding to predicate
     /// hard coded timeout
     #[cfg_attr(tarpaulin, skip)]
-    pub fn wait(
-        &mut self,
-        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
-    ) -> JsonProtocol {
+    pub fn wait(&mut self, predicate: Box<dyn Fn(&JsonProtocol) -> bool>) -> JsonProtocol {
         self.wait_with_timeout(predicate, TIMEOUT_MS)
     }
 
@@ -513,7 +528,8 @@ impl P2pNode {
             }
             JsonProtocol::HandleStoreDhtMeta(msg) => {
                 // Store data in local datastore
-                self.meta_store.insert((msg.data_address, msg.attribute), msg.content);
+                self.meta_store
+                    .insert((msg.data_address, msg.attribute), msg.content);
             }
             JsonProtocol::HandleDropMetaData(msg) => {
                 // Remove data in local datastore
@@ -521,7 +537,6 @@ impl P2pNode {
             }
 
             // -- Publish & Hold data -- //
-
             JsonProtocol::HandleGetPublishingDataList(_msg) => {
                 // n/a
             }
@@ -537,7 +552,6 @@ impl P2pNode {
             }
 
             // -- Publish & Hold meta -- //
-
             JsonProtocol::HandleGetPublishingMetaList(_msg) => {
                 // n/a
             }

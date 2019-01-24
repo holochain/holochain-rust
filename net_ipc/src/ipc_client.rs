@@ -32,7 +32,7 @@ impl NetWorker for IpcClient {
     /// send message sent to us from holochain_net to the ipc server handling the network
     fn receive(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not delete)
-         // Print non-ping messages
+        // Print non-ping messages
         //        match data {
         //            Protocol::NamedBinary(_) =>  println!(">>>> IpcClient send: {:?}", data),
         //            Protocol::Json(_) =>  println!(">>>> IpcClient send: {:?}", data),
@@ -55,7 +55,7 @@ impl NetWorker for IpcClient {
                 }))?;
             }
             // Debugging code (do not delete)
-             // Print non-ping messages
+            // Print non-ping messages
             //            match msg {
             //                Protocol::NamedBinary(_) => println!("<<<< IpcClient recv: {:?}", msg),
             //                Protocol::Json(_) => println!("<<<< IpcClient recv: {:?}", msg),

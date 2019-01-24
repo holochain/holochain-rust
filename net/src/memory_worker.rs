@@ -127,8 +127,8 @@ mod tests {
 
     use holochain_core_types::cas::content::Address;
     use holochain_net_connection::json_protocol::{
-        DhtData, DhtMetaData, FetchDhtData, FetchDhtMetaData, JsonProtocol, MessageData,
-        SuccessResultData, TrackDnaData, HandleDhtResultData, HandleDhtMetaResultData,
+        DhtData, DhtMetaData, FetchDhtData, FetchDhtMetaData, HandleDhtMetaResultData,
+        HandleDhtResultData, JsonProtocol, MessageData, SuccessResultData, TrackDnaData,
     };
 
     fn example_dna_address() -> Address {

@@ -74,7 +74,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_my_dna(&context, &dht_data.dna_address) {
                     return Ok(());
                 }
-                context.log(format!("debug/net/handle: HandleStoreDhtData: {:?}", dht_data));
+                context.log(format!(
+                    "debug/net/handle: HandleStoreDhtData: {:?}",
+                    dht_data
+                ));
                 handle_store_dht(dht_data, context.clone())
             }
             JsonProtocol::HandleStoreDhtMeta(dht_meta_data) => {
@@ -91,24 +94,32 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_for_me(
                     &context,
                     &fetch_dht_data.dna_address,
-                    &fetch_dht_data.requester_agent_id) {
+                    &fetch_dht_data.requester_agent_id,
+                ) {
                     return Ok(());
                 }
-                context.log(format!("debug/net/handle: HandleFetchDhtData: {:?}", fetch_dht_data));
+                context.log(format!(
+                    "debug/net/handle: HandleFetchDhtData: {:?}",
+                    fetch_dht_data
+                ));
                 handle_get_dht(fetch_dht_data, context.clone())
             }
             JsonProtocol::FetchDhtDataResult(dht_data) => {
                 if !is_for_me(&context, &dht_data.dna_address, &dht_data.provider_agent_id) {
                     return Ok(());
                 }
-                context.log(format!("debug/net/handle: FetchDhtDataResult: {:?}", dht_data));
+                context.log(format!(
+                    "debug/net/handle: FetchDhtDataResult: {:?}",
+                    dht_data
+                ));
                 handle_get_dht_result(dht_data, context.clone())
             }
             JsonProtocol::HandleFetchDhtMeta(get_dht_meta_data) => {
                 if is_for_me(
                     &context,
                     &get_dht_meta_data.dna_address,
-                    &get_dht_meta_data.requester_agent_id) {
+                    &get_dht_meta_data.requester_agent_id,
+                ) {
                     context.log(format!(
                         "debug/net/handle: HandleFetchDhtMeta: {:?}",
                         get_dht_meta_data
@@ -120,7 +131,8 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if is_for_me(
                     &context,
                     &get_dht_meta_data.dna_address,
-                    &get_dht_meta_data.provider_agent_id) {
+                    &get_dht_meta_data.provider_agent_id,
+                ) {
                     // TODO: Find a proper solution for selecting DHT meta responses.
                     // Current network implementation broadcasts messages to all nodes which means
                     // we respond to ourselves first in most cases.
@@ -149,9 +161,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 }
             }
             JsonProtocol::HandleSendMessage(message_data) => {
-                if !is_for_me(&context,
-                              &message_data.dna_address,
-                              &message_data.from_agent_id,
+                if !is_for_me(
+                    &context,
+                    &message_data.dna_address,
+                    &message_data.from_agent_id,
                 ) {
                     return Ok(());
                 }

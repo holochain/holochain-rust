@@ -1,3 +1,4 @@
+use constants::*;
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     json_protocol::{
@@ -7,7 +8,6 @@ use holochain_net_connection::{
     NetResult,
 };
 use p2p_node::P2pNode;
-use constants::*;
 
 // MACROS
 macro_rules! one_let {
@@ -32,7 +32,6 @@ macro_rules! one_is {
     };
 }
 
-
 // TODO make test: Sending a Message before doing a 'TrackApp' should fail
 //fn no_track_test(
 //    node1: &mut P2pNode,
@@ -46,7 +45,6 @@ macro_rules! one_is {
 // TODO make test: Sending a Message before doing a 'Connect' should fail.
 // fn no_connect_test()
 
-
 /// Tests if we can get back data published on the network
 #[cfg_attr(tarpaulin, skip)]
 fn confirm_published_data(
@@ -56,12 +54,7 @@ fn confirm_published_data(
     content: &serde_json::Value,
 ) -> NetResult<()> {
     // Alex publishs data on the network
-    alex.author_data(
-        &DNA_ADDRESS,
-        address.into(),
-        content,
-        true,
-    )?;
+    alex.author_data(&DNA_ADDRESS, address.into(), content, true)?;
 
     // Check if both nodes received a HandleStore command.
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))));
@@ -99,19 +92,15 @@ fn confirm_published_metadata(
     content: &serde_json::Value,
 ) -> NetResult<()> {
     // Alex publishs metadata on the network
-    alex.author_meta(
-        &DNA_ADDRESS,
-             address,
-        attribute,
-        content,
-        true,
-    )?;
+    alex.author_meta(&DNA_ADDRESS, address, attribute, content, true)?;
     // Check if both nodes received a HandleStore command.
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtMeta(_))));
     println!("got store meta result 1: {:?}", result_a);
     let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtMeta(_))));
     println!("got store meta result 2: {:?}", result_b);
-    assert!(billy.meta_store.contains_key(&(address.clone(), META_ATTRIBUTE.to_string())));
+    assert!(billy
+        .meta_store
+        .contains_key(&(address.clone(), META_ATTRIBUTE.to_string())));
 
     // Billy asks for that metadata on the network.
     let fetch_meta = FetchDhtMetaData {
@@ -143,9 +132,9 @@ pub fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
             dna_address: DNA_ADDRESS.clone(),
             agent_id: ALEX_AGENT_ID.to_string(),
         })
-            .into(),
+        .into(),
     )
-        .expect("Failed sending TrackDnaData on alex");
+    .expect("Failed sending TrackDnaData on alex");
     let connect_result_1 = alex.wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))));
     println!("self connected result 1: {:?}", connect_result_1);
     billy
@@ -154,7 +143,7 @@ pub fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
                 dna_address: DNA_ADDRESS.clone(),
                 agent_id: BILLY_AGENT_ID.to_string(),
             })
-                .into(),
+            .into(),
         )
         .expect("Failed sending TrackDnaData on billy");
     let connect_result_2 = billy.wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))));
@@ -188,7 +177,7 @@ pub fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
             JsonProtocol::Connect(ConnectData {
                 peer_address: node2_binding.into(),
             })
-                .into(),
+            .into(),
         )?;
 
         // Make sure Peers are connected
@@ -252,7 +241,8 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         data: json!(format!("echo: {}", msg.data.to_string())),
     };
 
-    billy.send(JsonProtocol::HandleSendMessageResult(msg_data).into())
+    billy
+        .send(JsonProtocol::HandleSendMessageResult(msg_data).into())
         .expect("Failed sending HandleSendResult on billy");
     // Check if alex received it
     let res = alex.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))));
@@ -276,20 +266,27 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
 
     // Send data & metadata on same address
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1)?;
-    confirm_published_metadata(alex, billy, &ENTRY_ADDRESS_1, META_ATTRIBUTE, &META_CONTENT_1)?;
+    confirm_published_metadata(
+        alex,
+        billy,
+        &ENTRY_ADDRESS_1,
+        META_ATTRIBUTE,
+        &META_CONTENT_1,
+    )?;
 
     // Again but now send metadata first
-    confirm_published_metadata(alex, billy, &ENTRY_ADDRESS_2, META_ATTRIBUTE, &META_CONTENT_2)?;
+    confirm_published_metadata(
+        alex,
+        billy,
+        &ENTRY_ADDRESS_2,
+        META_ATTRIBUTE,
+        &META_CONTENT_2,
+    )?;
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_2, &ENTRY_CONTENT_2)?;
 
     // Again but 'wait' at the end
     // Alex publishs data & meta on the network
-    alex.author_data(
-        &DNA_ADDRESS,
-        &ENTRY_ADDRESS_3,
-        &ENTRY_CONTENT_3,
-        true,
-    )?;
+    alex.author_data(&DNA_ADDRESS, &ENTRY_ADDRESS_3, &ENTRY_CONTENT_3, true)?;
     alex.author_meta(
         &DNA_ADDRESS,
         &ENTRY_ADDRESS_3,
@@ -336,12 +333,7 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     setup_normal(alex, billy, can_connect)?;
 
     // Alex publish data on the network
-    alex.author_data(
-        &DNA_ADDRESS,
-             &ENTRY_ADDRESS_1,
-        &ENTRY_CONTENT_1,
-true,
-    )?;
+    alex.author_data(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))));

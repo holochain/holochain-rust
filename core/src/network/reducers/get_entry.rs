@@ -7,7 +7,10 @@ use holochain_core_types::error::HolochainError;
 use holochain_net_connection::json_protocol::{FetchDhtData, JsonProtocol};
 use std::sync::Arc;
 
-fn reduce_fetch_entry_inner(network_state: &mut NetworkState, key: &GetEntryKey) -> Result<(), HolochainError> {
+fn reduce_fetch_entry_inner(
+    network_state: &mut NetworkState,
+    key: &GetEntryKey,
+) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
     send(

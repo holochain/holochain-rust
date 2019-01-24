@@ -10,9 +10,9 @@ extern crate tempfile;
 #[macro_use]
 extern crate lazy_static;
 
-pub mod p2p_node;
-pub mod constants;
 pub mod basic_workflows;
+pub mod constants;
+pub mod p2p_node;
 pub mod publish_hold_workflows;
 
 use holochain_net_connection::NetResult;
@@ -57,14 +57,14 @@ fn main() {
 
     // Launch tests on each setup
     for test_fn in test_fns.clone() {
-         launch_two_nodes_test_with_memory_network(test_fn).unwrap();
-//        launch_two_nodes_test_with_ipc_mock(
-//            &n3h_path,
-//            "test_bin/data/mock_ipc_network_config.json",
-//            test_fn,
-//        )
-//        .unwrap();
-       // launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+        launch_two_nodes_test_with_memory_network(test_fn).unwrap();
+        //        launch_two_nodes_test_with_ipc_mock(
+        //            &n3h_path,
+        //            "test_bin/data/mock_ipc_network_config.json",
+        //            test_fn,
+        //        )
+        //        .unwrap();
+        // launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
     }
 
     // Wait a bit before closing
@@ -88,7 +88,7 @@ fn launch_two_nodes_test_with_ipc_mock(
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
-    let mut billy = P2pNode::new_with_uri_ipc_network("billy".to_string(),&alex.endpoint());
+    let mut billy = P2pNode::new_with_uri_ipc_network("billy".to_string(), &alex.endpoint());
 
     println!("IPC-MOCK TWO NODE TEST");
     println!("======================");
@@ -105,7 +105,7 @@ fn launch_two_nodes_test_with_ipc_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResult<()> {
-    let mut alex = P2pNode::new_with_unique_memory_network("alex".to_string(),);
+    let mut alex = P2pNode::new_with_unique_memory_network("alex".to_string());
     let mut billy = P2pNode::new_with_config("billy".to_string(), &alex.config, None);
 
     println!("IN-MEMORY TWO NODE TEST");

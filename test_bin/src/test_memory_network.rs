@@ -43,15 +43,14 @@ fn exec_memory_network_test() -> NetResult<()> {
     let mut alex = P2pNode::new_with_unique_memory_network("alex".to_string());
     let mut billy = P2pNode::new_with_config("billy".to_string(), &alex.config, None);
 
-    alex
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: "sandwich".into(),
-                agent_id: "node-1".to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackDnaData on node_a");
+    alex.send(
+        JsonProtocol::TrackDna(TrackDnaData {
+            dna_address: "sandwich".into(),
+            agent_id: "node-1".to_string(),
+        })
+        .into(),
+    )
+    .expect("Failed sending TrackDnaData on node_a");
     billy
         .send(
             JsonProtocol::TrackDna(TrackDnaData {
@@ -62,18 +61,17 @@ fn exec_memory_network_test() -> NetResult<()> {
         )
         .expect("Failed sending TrackDnaData on node_b");
 
-    alex
-        .send(
-            JsonProtocol::SendMessage(MessageData {
-                dna_address: "sandwich".into(),
-                from_agent_id: "node-1".to_string(),
-                to_agent_id: "node-2".to_string(),
-                msg_id: "yada".to_string(),
-                data: json!("hello"),
-            })
-            .into(),
-        )
-        .expect("Failed sending message to node_b");
+    alex.send(
+        JsonProtocol::SendMessage(MessageData {
+            dna_address: "sandwich".into(),
+            from_agent_id: "node-1".to_string(),
+            to_agent_id: "node-2".to_string(),
+            msg_id: "yada".to_string(),
+            data: json!("hello"),
+        })
+        .into(),
+    )
+    .expect("Failed sending message to node_b");
     let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
     println!("got: {:?}", res);
 

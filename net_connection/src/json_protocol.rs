@@ -380,7 +380,6 @@ pub enum JsonProtocol {
     HandleDropMetaData(DhtMetaRequestData),
 
     // -- list publish & hold data -- //
-
     #[serde(rename = "handleGetPublishingDataList")]
     HandleGetPublishingDataList(GetListData),
     #[serde(rename = "handleGetPublishingDataListResult")]
@@ -390,14 +389,12 @@ pub enum JsonProtocol {
     HandleGetHoldingDataList(GetListData),
     #[serde(rename = "handleGetHoldingDataListResult")]
     HandleGetHoldingDataListResult(HandleListResultData),
-//    #[serde(rename = "handleGetDhtData")]
-//    HandleGetDhtData(GetDhtData),
-//    #[serde(rename = "handleGetDhtDataResult")]
-//    HandleGetDhtDataResult(DhtData),
-
+    //    #[serde(rename = "handleGetDhtData")]
+    //    HandleGetDhtData(GetDhtData),
+    //    #[serde(rename = "handleGetDhtDataResult")]
+    //    HandleGetDhtDataResult(DhtData),
 
     // -- list publish & hold metadata -- //
-
     #[serde(rename = "handleGetPublishingMetaList")]
     HandleGetPublishingMetaList(GetListData),
     #[serde(rename = "handleGetPublishingMetaListResult")]

@@ -32,7 +32,7 @@ fn is_my_dna(context: &Arc<Context>, dna_address: &Address) -> bool {
         .unwrap();
     let my_dna_address = dna.address();
 
-    if (my_dna_address != *dna_address) {
+    if my_dna_address != *dna_address {
         context.log("debug/net/handle: ignoring, wasn't for me");
         return false;
     }
@@ -42,7 +42,7 @@ fn is_my_dna(context: &Arc<Context>, dna_address: &Address) -> bool {
 // FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
 // module that aren't really meant for us
 fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
-    if (agent_id != "" && context.agent_id.key != agent_id) {
+    if agent_id != "" && context.agent_id.key != agent_id {
         context.log("debug/net/handle: ignoring, wasn't for me");
         return false;
     }

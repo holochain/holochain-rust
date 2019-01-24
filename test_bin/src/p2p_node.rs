@@ -13,13 +13,6 @@ use holochain_core_types::cas::content::Address;
 
 static TIMEOUT_MS: usize = 5000;
 
-pub struct CoreMock {
-    p2p_node: P2pNode,
-    // datastores
-    data_store: HashMap<Address, serde_json::Value>,
-    meta_store: HashMap<Address, serde_json::Value>,
-}
-
 /// Core Mock
 pub struct P2pNode {
     // Need to hold the tempdir to keep it alive, otherwise we will get a dir error.
@@ -35,14 +28,39 @@ pub struct P2pNode {
     recv_dm_log: Vec<MessageData>,
 
     // datastores
-    // TODO: Have a datastore per dna
+    // TODO: Have a datastore per dna ; perhaps in a struct CoreMock
     pub data_store: HashMap<Address, serde_json::Value>,
     pub meta_store: HashMap<(Address, String), serde_json::Value>,
     pub authored_data_store: HashMap<Address, serde_json::Value>,
     pub authored_meta_store: HashMap<(Address, String), serde_json::Value>,
 }
 
-// Publish
+// Search logs
+// return the ith message that fullfills the predicate
+impl P2pNode {
+    pub fn find_recv_msg(
+        &self,
+        ith: usize,
+        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
+    ) -> Option<JsonProtocol> {
+        let mut count = 0;
+        for msg in self.recv_msg_log.clone() {
+            let json_msg = match JsonProtocol::try_from(&msg) {
+                Ok(r) => r,
+                Err(_) => continue,
+            };
+            if predicate(&json_msg) {
+                if count == ith {
+                    return Some(json_msg);
+                }
+                count += 1;
+            }
+        }
+        None
+    }
+}
+
+// Publish & Hold
 impl P2pNode {
     pub fn author_data(
         &mut self,
@@ -51,8 +69,8 @@ impl P2pNode {
         data_content: &serde_json::Value,
         can_publish: bool,
     ) -> NetResult<()> {
-        assert!(!self.authored_data_store.contains(data_address.clone()));
-        assert!(!self.data_store.contains(data_address.clone()));
+        assert!(!self.authored_data_store.get(&data_address).is_some());
+        assert!(!self.data_store.get(&data_address).is_some());
         self.authored_data_store.insert(data_address.clone(), data_content.clone());
         if can_publish {
             let msg_data = DhtData {
@@ -61,7 +79,7 @@ impl P2pNode {
                 data_address: data_address.clone(),
                 data_content: data_content.clone(),
             };
-            return self.send(JsonProtocol::PublishDhtData(msg).into());
+            return self.send(JsonProtocol::PublishDhtData(msg_data).into());
         }
         // Done
         Ok(())
@@ -71,25 +89,48 @@ impl P2pNode {
         &mut self,
         dna_address: &Address,
         data_address: &Address,
-        attribute: &String,
+        attribute: &str,
         content: &serde_json::Value,
         can_publish: bool,
     ) -> NetResult<()> {
-        assert!(!self.authored_meta_store.contains(data_address.clone()));
-        assert!(!self.meta_store.contains(data_address.clone()));
-        self.authored_meta_store.insert((data_address.clone(), attribute.clone()), data_content.clone());
+        let meta_address = (data_address.clone(), attribute.to_string());
+        assert!(!self.authored_meta_store.get(&meta_address).is_some());
+        assert!(!self.meta_store.get(&meta_address).is_some());
+        self.authored_meta_store.insert((data_address.clone(), attribute.to_string()), content.clone());
         if can_publish {
             let msg_data = DhtMetaData {
                 dna_address: dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
                 data_address: data_address.clone(),
-                attribute: attribute.clone(),
-                content: data_content.clone(),
+                attribute: attribute.to_string(),
+                content: content.clone(),
             };
-            return self.send(JsonProtocol::PublishDhtMeta(msg).into());
+            return self.send(JsonProtocol::PublishDhtMeta(msg_data).into());
         }
         // Done
         Ok(())
+    }
+
+    pub fn hold_data(
+        &mut self,
+        data_address: &Address,
+        data_content: &serde_json::Value,
+    ) {
+        assert!(!self.authored_data_store.get(&data_address).is_some());
+        assert!(!self.data_store.get(&data_address).is_some());
+        self.data_store.insert(data_address.clone(), data_content.clone());
+    }
+
+    pub fn hold_meta(
+        &mut self,
+        data_address: &Address,
+        attribute: &str,
+        content: &serde_json::Value,
+    ) {
+        let meta_address = (data_address.clone(), attribute.to_string());
+        assert!(!self.authored_meta_store.get(&meta_address).is_some());
+        assert!(!self.meta_store.get(&meta_address).is_some());
+        self.meta_store.insert((data_address.clone(), attribute.to_string()), content.clone());
     }
 }
 
@@ -101,67 +142,76 @@ impl P2pNode {
 
     /// Send a reponse to a FetchDhtData request
     pub fn reply_fetch_data(&mut self, request: &FetchDhtData) -> NetResult<()> {
-        // Get data from local datastores
-        let mut maybe_data = self.authored_data_store.get(&request.data_address);
-        if maybe_data.is_none() {
-            maybe_data = self.data_store.get(&request.data_address);
+        let msg;
+        {
+            // Get data from local datastores
+            let mut maybe_data = self.authored_data_store.get(&request.data_address);
+            if maybe_data.is_none() {
+                maybe_data = self.data_store.get(&request.data_address);
+            }
+            // Send failure or success response
+            msg = match maybe_data.clone() {
+                None => {
+                    let msg_data = FailureResultData {
+                        request_id: request.request_id.clone(),
+                        dna_address: request.dna_address.clone(),
+                        to_agent_id: request.requester_agent_id.clone(),
+                        error_info: json!("Does not have the requested data"),
+                    };
+                    JsonProtocol::FailureResult(msg_data).into()
+                },
+                Some(data) => {
+                    let msg_data = HandleDhtResultData {
+                        request_id: request.request_id.clone(),
+                        requester_agent_id: request.requester_agent_id.clone(),
+                        dna_address: request.dna_address.clone(),
+                        provider_agent_id: self.agent_id.clone(),
+                        data_address: request.data_address.clone(),
+                        data_content: data.clone(),
+                    };
+                    JsonProtocol::HandleFetchDhtDataResult(msg_data).into()
+                },
+            };
         }
-        // Send failure or success response
-        let msg = match maybe_data {
-            None => {
-                let msg_data = FailureResultData {
-                    request_id: request.request_id.clone(),
-                    dna_address: request.dna_address.clone(),
-                    to_agent_id: request.requester_agent_id.clone(),
-                    error_info: json!("Does not have the requested data"),
-                };
-                JsonProtocol::FailureResult(msg_data).into()
-            },
-            Some(data) => {
-                let msg_data = HandleDhtResultData {
-                    request_id: request.request_id.clone(),
-                    requester_agent_id: request.requester_agent_id.clone(),
-                    dna_address: request.dna_address.clone(),
-                    provider_agent_id: self.agent_id.clone(),
-                    data_address: request.data_address.clone(),
-                    data_content: data.clone(),
-                };
-            JsonProtocol::FetchDhtDataResult(msg).into()
-            },
-        };
+        println!("({}) reply_fetch_data: {:?}", self.agent_id, msg);
         self.send(msg)
     }
 
     /// Send a reponse to a FetchDhtMetaData request
     pub fn reply_fetch_meta(&mut self, request: &FetchDhtMetaData) -> NetResult<()> {
-        // Get meta from local datastores
-        let meta_pair = &(request.data_address, request.attribute);
-        let mut maybe_data = self.authored_meta_store.get(meta_pair);
-        if maybe_data.is_none() {
-            maybe_data = self.meta_store.get(meta_pair);
+        let msg;
+        {
+            // Get meta from local datastores
+            let meta_pair = &(request.data_address.clone(), request.attribute.clone());
+            let mut maybe_data = self.authored_meta_store.get(meta_pair);
+            if maybe_data.is_none() {
+                maybe_data = self.meta_store.get(meta_pair);
+            }
+            // if meta not found send empty content (will make the aggregation easier)
+            let data = match maybe_data.clone() {
+                Some(data) => data.clone(),
+                None => json!(""),
+            };
+            msg = HandleDhtMetaResultData {
+                request_id: request.request_id.clone(),
+                requester_agent_id: request.requester_agent_id.clone(),
+                dna_address: request.dna_address.clone(),
+                provider_agent_id: self.agent_id.clone(),
+                data_address: request.data_address.clone(),
+                attribute: request.attribute.clone(),
+                content: data.clone(),
+            };
         }
-        // if meta not found send empty content (will make the aggregation easier)
-        let data = match maybe_data {
-            Some(data) => data,
-            None => json!(""),
-        };
-        let msg = HandleDhtMetaResultData {
-            request_id: request.request_id.clone(),
-            requester_agent_id: request.requester_agent_id.clone(),
-            dna_address: request.dna_address.clone(),
-            provider_agent_id: self.agent_id.clone(),
-            data_address: request.data_address.clone(),
-            attribute: request.attribute.clone(),
-            content: data.clone(),
-        };
+        println!("({}) reply_fetch_meta: {:?}", self.agent_id, msg);
         self.send(JsonProtocol::HandleFetchDhtMetaResult(msg).into())
     }
 
     // -- LISTS -- //
 
     pub fn reply_get_publish_data_list(&mut self, request: &GetListData) -> NetResult<()> {
+        let data_address_list = self.authored_data_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = HandleListResultData {
-            data_address_list: self.authored_data_store.keys().collect(),
+            data_address_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
         };
@@ -169,8 +219,9 @@ impl P2pNode {
     }
 
     pub fn reply_get_publish_meta_list(&mut self, request: &GetListData) -> NetResult<()> {
+        let meta_list = self.authored_meta_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = HandleMetaListResultData {
-            meta_list: self.authored_meta_store.keys().collect(),
+            meta_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
         };
@@ -178,8 +229,9 @@ impl P2pNode {
     }
 
     pub fn reply_get_holding_data_list(&mut self, request: &GetListData) -> NetResult<()> {
+        let data_address_list = self.data_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = HandleListResultData {
-            data_address_list: self.data_store.keys().collect(),
+            data_address_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
         };
@@ -187,8 +239,9 @@ impl P2pNode {
     }
 
     pub fn reply_get_holding_meta_list(&mut self, request: &GetListData) -> NetResult<()> {
+        let meta_list = self.meta_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = HandleMetaListResultData {
-            meta_list: self.meta_store.keys().collect(),
+            meta_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
         };
@@ -270,7 +323,7 @@ impl P2pNode {
             _ => (),
         };
 
-        self.recv_msg_log.push(data);
+        self.recv_msg_log.push(data.clone());
 
         match JsonProtocol::try_from(&data) {
             Ok(r) => {
@@ -287,12 +340,54 @@ impl P2pNode {
         }
     }
 
-    /// Wait for receiving a message corresponding to predicate
+    /// recv messages until timeout is reached
     #[cfg_attr(tarpaulin, skip)]
-    pub fn wait(
+    pub fn listen(
+        &mut self,
+        timeout_ms: usize,
+    ) -> usize {
+        let mut count: usize = 0;
+        let mut time_ms: usize = 0;
+        loop {
+            let mut has_recved = false;
+
+            if let Ok(p2p_msg) = self.try_recv() {
+                println!("P2pNode({})::listen() - received: {:?}", self.agent_id, p2p_msg);
+                has_recved = true;
+                time_ms = 0;
+                count += 1;
+            }
+            if !has_recved {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+                time_ms += 10;
+                if time_ms > timeout_ms {
+                    return count;
+                }
+            }
+        }
+    }
+
+//    // look for a msg in log or wait for it
+//    #[cfg_attr(tarpaulin, skip)]
+//    pub fn has_or_wait(
+//        &mut self,
+//        ith: usize,
+//        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
+//        timeout_ms: usize,
+//    ) -> JsonProtocol {
+//        let maybe_msg = self.find_recv_msg(ith, predicate.clone());
+//        if maybe_msg.is_some() {
+//            return maybe_msg.unwrap();
+//        }
+//        self.wait_with_timeout(predicate, timeout_ms)
+//    }
+
+    /// Wait for receiving a message corresponding to predicate until timeout is reached
+    pub fn wait_with_timeout(
         &mut self,
         predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
-    ) -> NetResult<JsonProtocol> {
+        timeout_ms: usize,
+    ) -> JsonProtocol {
         let mut time_ms: usize = 0;
         loop {
             let mut did_something = false;
@@ -302,7 +397,7 @@ impl P2pNode {
                 did_something = true;
                 if predicate(&p2p_msg) {
                     println!("\t P2pNode({})::wait() - match", self.agent_id);
-                    return Ok(p2p_msg);
+                    return p2p_msg;
                 } else {
                     println!("\t P2pNode({})::wait() - NO match", self.agent_id);
                 }
@@ -311,11 +406,21 @@ impl P2pNode {
             if !did_something {
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 time_ms += 10;
-                if time_ms > TIMEOUT_MS {
+                if time_ms > timeout_ms {
                     panic!("P2pNode({})::wait() has TIMEOUT", self.agent_id);
                 }
             }
         }
+    }
+
+    /// Wait for receiving a message corresponding to predicate
+    /// hard coded timeout
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn wait(
+        &mut self,
+        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
+    ) -> JsonProtocol {
+        self.wait_with_timeout(predicate, TIMEOUT_MS)
     }
 
     // Stop node
@@ -378,7 +483,7 @@ impl P2pNode {
                 // n/a
             }
 
-            JsonProtocol::PublishDhtData(msg) => {
+            JsonProtocol::PublishDhtData(_msg) => {
                 panic!("Core should not receive PublishDhtData message");
             }
             JsonProtocol::HandleStoreDhtData(msg) => {
@@ -390,7 +495,7 @@ impl P2pNode {
                 self.data_store.remove(&msg.data_address);
             }
 
-            JsonProtocol::FetchDhtMeta(msg) => {
+            JsonProtocol::FetchDhtMeta(_msg) => {
                 panic!("Core should not receive FetchDhtMeta message");
             }
             JsonProtocol::FetchDhtMetaResult(_msg) => {
@@ -399,20 +504,20 @@ impl P2pNode {
             JsonProtocol::HandleFetchDhtMeta(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchDhtMetaResult(msg) => {
+            JsonProtocol::HandleFetchDhtMetaResult(_msg) => {
                 // n/a
             }
 
-            JsonProtocol::PublishDhtMeta(msg) => {
+            JsonProtocol::PublishDhtMeta(_msg) => {
                 panic!("Core should not receive PublishDhtMeta message");
             }
             JsonProtocol::HandleStoreDhtMeta(msg) => {
                 // Store data in local datastore
-                self.meta_store.insert(msg.data_address, msg.data_content);
+                self.meta_store.insert((msg.data_address, msg.attribute), msg.content);
             }
             JsonProtocol::HandleDropMetaData(msg) => {
                 // Remove data in local datastore
-                self.meta_store.remove(&msg.data_address);
+                self.meta_store.remove(&(msg.data_address, msg.attribute));
             }
 
             // -- Publish & Hold data -- //
@@ -446,6 +551,8 @@ impl P2pNode {
             JsonProtocol::HandleGetHoldingMetaListResult(_) => {
                 panic!("Core should not receive HandleGetHoldingMetaListResult message");
             }
+            // ignore GetState, etc.
+            _ => (),
         }
     }
 }

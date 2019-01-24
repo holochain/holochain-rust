@@ -3,7 +3,9 @@ use crate::{
     context::Context,
     network::{reducers::send, state::NetworkState},
 };
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{
+    error::HolochainError, hash::HashString,
+};
 use holochain_net_connection::json_protocol::{FetchDhtMetaData, JsonProtocol};
 use std::sync::Arc;
 
@@ -16,7 +18,7 @@ fn reduce_get_links_inner(network_state: &mut NetworkState, key: &GetLinksKey) -
             requester_agent_id: network_state.agent_id.clone().unwrap(),
             request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
-            data_address: key.base_address.to_string(),
+            data_address: HashString::from(key.base_address.clone()),
             attribute: format!("link__{}", key.tag),
         }),
     )

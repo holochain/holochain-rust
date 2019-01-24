@@ -7,22 +7,15 @@ extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
 extern crate tempfile;
+#[macro_use]
+extern crate lazy_static;
 
 pub mod p2p_node;
 pub mod constants;
 pub mod basic_workflows;
 pub mod publish_hold_workflows;
 
-use holochain_core_types::cas::content::Address;
-use holochain_net_connection::{
-    json_protocol::{
-        ConnectData, DhtData, DhtMetaData, FetchDhtData, FetchDhtMetaData, JsonProtocol, MessageData,
-        TrackDnaData, HandleDhtResultData, HandleDhtMetaResultData,
-    },
-    net_connection::NetSend,
-    NetResult,
-};
-
+use holochain_net_connection::NetResult;
 use p2p_node::P2pNode;
 
 type TwoNodesTestFn =
@@ -51,12 +44,15 @@ fn main() {
     // List of tests
     #[cfg_attr(rustfmt, rustfmt_skip)]
     let test_fns: Vec<TwoNodesTestFn> = vec![
-//        setup_normal,
-//        send_test,
-//         dht_test,
-//        meta_test,
-    // publish_hold_workflows::empty_publish_data_list_test,
-publish_hold_workflows::publish_data_list_test,
+        basic_workflows::setup_normal,
+        basic_workflows::send_test,
+        basic_workflows::dht_test,
+        basic_workflows::meta_test,
+        publish_hold_workflows::empty_publish_data_list_test,
+        publish_hold_workflows::publish_data_list_test,
+        publish_hold_workflows::publish_meta_list_test,
+        publish_hold_workflows::hold_list_test,
+        publish_hold_workflows::hold_meta_list_test,
     ];
 
     // Launch tests on each setup

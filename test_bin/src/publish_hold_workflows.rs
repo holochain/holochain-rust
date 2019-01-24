@@ -28,9 +28,6 @@ macro_rules! one_is {
     };
 }
 
-// CONSTS
-static PUBLISH_LIST_ID: &'static str = "publish_list_id_1";
-
 
 /// Test the following workflow after normal setup:
 /// sequenceDiagram
@@ -46,264 +43,244 @@ pub fn empty_publish_data_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can
     println!("Testing: empty_publish_data_list_test()");
     setup_normal(alex, billy, can_connect)?;
 
-    // No data edge case
-    alex.send(
-        JsonProtocol::HandleGetPublishingDataListResult(HandleListResultData {
-            request_id: PUBLISH_LIST_ID.to_string(),
-            dna_address: example_dna_address(),
-            data_address_list: Vec::new(),
-        })
-            .into(),
-    )?;
-
-//    // Mock a HandleFetchDhtData
-//    {
-//        let server_msg = JsonProtocol::HandleFetchDhtData(FetchDhtData {
-//            request_id: "get_dht_data_1".to_string(),
-//            dna_address: example_dna_address(),
-//            pub requester_agent_id: String,
-//        })
-//            .into();
-//
-//        let server = get_server(alex);
-//        server.mock_send_one(
-//            example_dna_address(),
-//            ALEX_AGENT_ID,
-//        data: Protocol,
-//        ).expect("mock_send_one");
-//
-//    }
+    // Look for the publish_list request received from network module and reply
+    let request = alex.find_recv_msg(0, Box::new(one_is!(JsonProtocol::HandleGetPublishingDataList(_))))
+                      .expect("Did not receive a HandleGetPublishingDataList request");
+    let get_list_data = if let JsonProtocol::HandleGetPublishingDataList(msg) = request { msg } else { unreachable!() };
+    alex.reply_get_publish_data_list(&get_list_data)?;
 
     // billy asks for unpublished data.
-    // Shoud get a failure response
-    billy.send(
-        JsonProtocol::FetchDhtData(FetchDhtData {
-            request_id: FETCH_ENTRY_1_ID.into(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.into(),
-            data_address: ENTRY_ADDRESS_1.into(),
-        })
-            .into(),
-    )?;
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    let fetch_data = FetchDhtData {
+        request_id         : FETCH_ENTRY_1_ID.into(),
+        dna_address        : DNA_ADDRESS.clone(),
+        requester_agent_id : BILLY_AGENT_ID.into(),
+        data_address       : ENTRY_ADDRESS_1.clone(),
+    };
+    billy.send(JsonProtocol::FetchDhtData(fetch_data.clone()).into())?;
 
-    // Alex sends that data back to the network
-    alex.send(
-        JsonProtocol::FailureResult(FailureResultData {
-            request_id: FETCH_ENTRY_1_ID.into(),
-            dna_address: example_dna_address(),
-            to_agent_id: BILLY_AGENT_ID.into(),
-            error_info: json!("does not have data"),
-        })
-            .into(),
-    )?;
+    // Alex sends a failureResult back to the network
+    alex.reply_fetch_data(&fetch_data)?;
 
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))?;
+    // Billy should receive the failureResult back
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FailureResult(_))));
     println!("got result: {:?}", result);
 
     // Done
     Ok(())
 }
 
-// Some data case
+/// Reply some data in publish_list
 #[cfg_attr(tarpaulin, skip)]
 pub fn publish_data_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: publish_data_list_test()");
     setup_normal(alex, billy, can_connect)?;
 
-    // Respond to publish_list request
-    alex.send(
-        JsonProtocol::HandleGetPublishingDataListResult(HandleListResultData {
-            request_id: "req_1".to_string(), // FIXME magic string should correspond to received HandleGetPublishingDataList request
-            dna_address: example_dna_address(),
-            data_address_list: vec![ENTRY_ADDRESS_1.to_string().into()],
-        })
-            .into(),
+    // author an entry without publishing it
+    alex.author_data(
+        &DNA_ADDRESS,
+        &ENTRY_ADDRESS_1,
+        &ENTRY_CONTENT_1,
+        false,
     )?;
 
-    // Should receive HandleFetchDhtData request
-    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))))?;
-    println!("    got request: {:?}", request);
+    // Look for the publish_list request received from network module and reply
+    let request = alex.find_recv_msg(0, Box::new(one_is!(JsonProtocol::HandleGetPublishingDataList(_))))
+                      .expect("Did not receive a HandleGetPublishingDataList request");
+    let get_list_data = if let JsonProtocol::HandleGetPublishingDataList(msg) = request { msg } else { unreachable!() };
+    alex.reply_get_publish_data_list(&get_list_data)?;
 
+    // Should receive a HandleFetchDhtData request from network module
+    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))));
+    println!("    got request: {:?}", request);
+    // extract msg data
     let fetch_data = if let JsonProtocol::HandleFetchDhtData(msg) = request { msg } else { unreachable!() };
 
-    // Respond with data
-    alex.send(
-        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
-            request_id: fetch_data.request_id.clone(),
-            requester_agent_id: fetch_data.requester_agent_id.clone(),
-            dna_address: fetch_data.dna_address.clone(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: fetch_data.data_address.clone(),
-            data_content: json!("hello"),
-        })
-            .into(),
-    )?;
+    // Respond with entry data
+    alex.reply_fetch_data(&fetch_data)?;
 
     // billy asks for reported published data.
-    billy.send(
-        JsonProtocol::FetchDhtData(FetchDhtData {
-            request_id: FETCH_ENTRY_1_ID.into(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.into(),
-            data_address: ENTRY_ADDRESS_1.into(),
-        })
-            .into(),
-    )?;
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    let fetch_data = FetchDhtData {
+        request_id         : FETCH_ENTRY_1_ID.into(),
+        dna_address        : DNA_ADDRESS.clone(),
+        requester_agent_id : BILLY_AGENT_ID.into(),
+        data_address       : ENTRY_ADDRESS_1.clone(),
+    };
+    billy.send(JsonProtocol::FetchDhtData(fetch_data).into())?;
 
-    // Should receive HandleFetchDhtData request
-    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))))?;
+    // Alex should receive HandleFetchDhtData request
+    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))));
     println!("    got request 2: {:?}", request);
-
+    // extract msg data
     let fetch_data = if let JsonProtocol::HandleFetchDhtData(msg) = request { msg } else { unreachable!() };
 
-    // Respond with data
-    alex.send(
-        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
-            request_id: fetch_data.request_id.clone(),
-            requester_agent_id: fetch_data.requester_agent_id.clone(),
-            dna_address: fetch_data.dna_address.clone(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: fetch_data.data_address.clone(),
-            data_content: json!("hello"),
-        })
-            .into(),
-    )?;
+    // Alex responds: should send entry data back
+    alex.reply_fetch_data(&fetch_data)?;
 
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
+    // Billy should receive the entry data
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))));
     println!("got result: {:?}", result);
 
     // Done
     Ok(())
 }
 
-// TODO: Publish some meta data
+/// Reply some data in publish_meta_list
 #[cfg_attr(tarpaulin, skip)]
 pub fn publish_meta_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: publish_meta_list_test()");
     setup_normal(alex, billy, can_connect)?;
 
-//    // Respond to publish_list request
-//    alex.send(
-//        JsonProtocol::HandleGetPublishingDataListResult(HandleListResultData {
-//            request_id: "req_1".to_string(), // FIXME magic string should correspond to received HandleGetPublishingDataList request
-//            dna_address: example_dna_address(),
-//            data_address_list: vec![ENTRY_ADDRESS_1.to_string().into()],
-//        })
-//            .into(),
-//    )?;
-//
-//    // Should receive HandleFetchDhtData request
-//    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))))?;
-//    println!("    got request: {:?}", request);
-//
-//    let fetch_data = if let JsonProtocol::HandleFetchDhtData(msg) = request { msg } else { unreachable!() };
-//
-//    // Respond with data
-//    alex.send(
-//        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
-//            request_id: fetch_data.request_id.clone(),
-//            requester_agent_id: fetch_data.requester_agent_id.clone(),
-//            dna_address: fetch_data.dna_address.clone(),
-//            provider_agent_id: ALEX_AGENT_ID.to_string(),
-//            data_address: fetch_data.data_address.clone(),
-//            data_content: json!("hello"),
-//        })
-//            .into(),
-//    )?;
-//
-//    // billy asks for reported published data.
-//    billy.send(
-//        JsonProtocol::FetchDhtData(FetchDhtData {
-//            request_id: FETCH_ENTRY_1_ID.into(),
-//            dna_address: example_dna_address(),
-//            requester_agent_id: BILLY_AGENT_ID.into(),
-//            data_address: ENTRY_ADDRESS_1.into(),
-//        })
-//            .into(),
-//    )?;
-//
-//    // Should receive HandleFetchDhtData request
-//    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))))?;
-//    println!("    got request 2: {:?}", request);
-//
-//    let fetch_data = if let JsonProtocol::HandleFetchDhtData(msg) = request { msg } else { unreachable!() };
-//
-//    // Respond with data
-//    alex.send(
-//        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
-//            request_id: fetch_data.request_id.clone(),
-//            requester_agent_id: fetch_data.requester_agent_id.clone(),
-//            dna_address: fetch_data.dna_address.clone(),
-//            provider_agent_id: ALEX_AGENT_ID.to_string(),
-//            data_address: fetch_data.data_address.clone(),
-//            data_content: json!("hello"),
-//        })
-//            .into(),
-//    )?;
-//
-//    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
-//    println!("got result: {:?}", result);
+    // author an entry
+    alex.author_data(
+        &DNA_ADDRESS,
+        &ENTRY_ADDRESS_1,
+        &ENTRY_CONTENT_1,
+        true,
+    )?;
+    // author a meta without publishing it
+    alex.author_meta(
+        &DNA_ADDRESS,
+        &ENTRY_ADDRESS_1,
+        META_ATTRIBUTE.into(),
+        &META_CONTENT_1,
+        false,
+    )?;
+
+    // Look for the publish_meta_list request received from network module
+    let request = alex.find_recv_msg(0, Box::new(one_is!(JsonProtocol::HandleGetPublishingMetaList(_))))
+        .expect("Did not receive a HandleGetPublishingMetaList request");
+    let get_list_data = if let JsonProtocol::HandleGetPublishingMetaList(msg) = request { msg } else { unreachable!() };
+    // reply with publish_meta_list
+    alex.reply_get_publish_meta_list(&get_list_data)?;
+
+    // Alex should receive a HandleFetchDhtMeta request
+    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtMeta(_))));
+    println!("    got request 1: {:?}", request);
+    // extract data
+    let fetch_metadata = if let JsonProtocol::HandleFetchDhtMeta(msg) = request { msg } else { unreachable!() };
+
+    // Respond with data
+    alex.reply_fetch_meta(&fetch_metadata)?;
+
+    // billy asks for reported published data.
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    let fetch_metadata = FetchDhtMetaData {
+        request_id         : FETCH_ENTRY_1_ID.into(),
+        dna_address        : DNA_ADDRESS.clone(),
+        requester_agent_id : BILLY_AGENT_ID.into(),
+        data_address       : ENTRY_ADDRESS_1.clone(),
+        attribute          : META_ATTRIBUTE.into(),
+    };
+    billy.send(JsonProtocol::FetchDhtMeta(fetch_metadata).into())?;
+
+    // Alex should receive HandleFetchDhtData request
+    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtMeta(_))));
+    println!("    got request 2: {:?}", request);
+    // extract msg data
+    let fetch_metadata = if let JsonProtocol::HandleFetchDhtMeta(msg) = request { msg } else { unreachable!() };
+
+    // Alex responds: should send data back
+    alex.reply_fetch_meta(&fetch_metadata)?;
+
+    // Billy should receive the data
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))));
+    println!("got result: {:?}", result);
 
     // Done
     Ok(())
 }
 
-// TODO: hold list
+/// Reply with some data in hold_list
 #[cfg_attr(tarpaulin, skip)]
 pub fn hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: hold_list_test()");
     setup_normal(alex, billy, can_connect)?;
 
-    // Respond to  hold_list request
-    alex.send(
-        JsonProtocol::HandleGetHoldingDataListResult(HandleListResultData {
-            request_id: "req_2".to_string(), // FIXME magic string should correspond to received HandleGetHoldingDataList request
-            dna_address: example_dna_address(),
-            data_address_list: vec![ENTRY_ADDRESS_3.to_string().into()],
-        })
-            .into(),
-    )?;
+    // Have alex hold some data
+    alex.hold_data(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1);
 
-    // billy asks for reported published data.
-    billy.send(
-        JsonProtocol::FetchDhtData(FetchDhtData {
-            request_id: FETCH_ENTRY_3_ID.into(),
-            dna_address: example_dna_address(),
-            requester_agent_id: BILLY_AGENT_ID.into(),
-            data_address: ENTRY_ADDRESS_3.into(),
-        })
-            .into(),
-    )?;
+    // Alex: Look for the hold_list request received from network module and reply
+    let request = alex.find_recv_msg(0, Box::new(one_is!(JsonProtocol::HandleGetHoldingDataList(_))))
+        .expect("Did not receive a HandleGetHoldingDataList request");
+    // extract request data
+    let get_list_data = if let JsonProtocol::HandleGetHoldingDataList(msg) = request { msg } else { unreachable!() };
+    // reply
+    alex.reply_get_holding_data_list(&get_list_data)?;
 
-    // Should receive HandleFetchDhtData request
-    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))))?;
-    println!("    got request 2: {:?}", request);
+    // Have billy request that data
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    let fetch_data = FetchDhtData {
+        request_id         : FETCH_ENTRY_1_ID.into(),
+        dna_address        : DNA_ADDRESS.clone(),
+        requester_agent_id : BILLY_AGENT_ID.into(),
+        data_address       : ENTRY_ADDRESS_1.clone(),
+    };
+    billy.send(JsonProtocol::FetchDhtData(fetch_data).into())?;
 
+    // Alex should receive HandleFetchDhtData request
+    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtData(_))));
+    println!("    got request: {:?}", request);
+    // extract msg data
     let fetch_data = if let JsonProtocol::HandleFetchDhtData(msg) = request { msg } else { unreachable!() };
 
-    // Respond with data
-    alex.send(
-        JsonProtocol::HandleFetchDhtDataResult(HandleDhtResultData {
-            request_id: fetch_data.request_id.clone(),
-            requester_agent_id: fetch_data.requester_agent_id.clone(),
-            dna_address: fetch_data.dna_address.clone(),
-            provider_agent_id: ALEX_AGENT_ID.to_string(),
-            data_address: fetch_data.data_address.clone(),
-            data_content: json!("hello 3"),
-        })
-            .into(),
-    )?;
+    // Alex responds: should send data back
+    alex.reply_fetch_data(&fetch_data)?;
 
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))))?;
+    // Billy should receive the data
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))));
     println!("got result: {:?}", result);
 
+    // Done
+    Ok(())
 }
 
-// TODO: double holding list
+/// Reply with some meta in hold_meta_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn double_hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
-    // FIXME
+pub fn hold_meta_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    println!("Testing: hold_meta_list_test()");
+    setup_normal(alex, billy, can_connect)?;
+
+    // Have alex hold some data
+    alex.hold_meta(&ENTRY_ADDRESS_1, META_ATTRIBUTE,&META_CONTENT_1);
+
+    // Alex: Look for the hold_list request received from network module and reply
+    let request = alex.find_recv_msg(0, Box::new(one_is!(JsonProtocol::HandleGetHoldingMetaList(_))))
+                      .expect("Did not receive a HandleGetHoldingMetaList request");
+    // extract request data
+    let get_list_data = if let JsonProtocol::HandleGetHoldingMetaList(msg) = request { msg } else { unreachable!() };
+    // reply
+    alex.reply_get_holding_meta_list(&get_list_data)?;
+
+    // Have billy request that metadata
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    let fetch_meta = FetchDhtMetaData {
+        attribute          : META_ATTRIBUTE.into(),
+        requester_agent_id : BILLY_AGENT_ID.into(),
+        request_id         : FETCH_META_1_ID.into(),
+        dna_address        : DNA_ADDRESS.clone(),
+        data_address       : ENTRY_ADDRESS_1.clone(),
+    };
+    billy.send(JsonProtocol::FetchDhtMeta(fetch_meta).into())?;
+
+    // Alex should receive HandleFetchDhtData request
+    let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchDhtMeta(_))));
+    println!("    got request 1: {:?}", request);
+    // extract msg data
+    let fetch_meta = if let JsonProtocol::HandleFetchDhtMeta(msg) = request { msg } else { unreachable!() };
+
+    // Alex responds: should send data back
+    alex.reply_fetch_meta(&fetch_meta)?;
+
+    // Billy shoudl receive the data
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))));
+    println!("got result: {:?}", result);
+
+    // Done
+    Ok(())
 }

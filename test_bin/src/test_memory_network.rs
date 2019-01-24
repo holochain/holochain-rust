@@ -40,10 +40,10 @@ fn usage() {
 fn exec_memory_network_test() -> NetResult<()> {
     println!("Testing: exec_memory_network_test()");
 
-    let mut node_a = P2pNode::new_with_unique_memory_network();
-    let mut node_b = P2pNode::new_with_config(&node_a.config, None);
+    let mut alex = P2pNode::new_with_unique_memory_network("alex".to_string());
+    let mut billy = P2pNode::new_with_config("billy".to_string(), &alex.config, None);
 
-    node_a
+    alex
         .send(
             JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
@@ -52,7 +52,7 @@ fn exec_memory_network_test() -> NetResult<()> {
             .into(),
         )
         .expect("Failed sending TrackDnaData on node_a");
-    node_b
+    billy
         .send(
             JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
@@ -62,7 +62,7 @@ fn exec_memory_network_test() -> NetResult<()> {
         )
         .expect("Failed sending TrackDnaData on node_b");
 
-    node_a
+    alex
         .send(
             JsonProtocol::SendMessage(MessageData {
                 dna_address: "sandwich".into(),
@@ -74,11 +74,11 @@ fn exec_memory_network_test() -> NetResult<()> {
             .into(),
         )
         .expect("Failed sending message to node_b");
-    let res = node_b.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))?;
+    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
     println!("got: {:?}", res);
 
     if let JsonProtocol::HandleSendMessage(msg) = res {
-        node_b
+        billy
             .send(
                 JsonProtocol::HandleSendMessageResult(MessageData {
                     dna_address: "sandwich".into(),
@@ -94,7 +94,7 @@ fn exec_memory_network_test() -> NetResult<()> {
         panic!("bad generic msg");
     }
 
-    let res = node_a.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))?;
+    let res = alex.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))));
     println!("got response: {:?}", res);
 
     if let JsonProtocol::SendMessageResult(msg) = res {
@@ -107,8 +107,8 @@ fn exec_memory_network_test() -> NetResult<()> {
     println!("test complete");
 
     // shut down the nodes
-    node_a.stop();
-    node_b.stop();
+    alex.stop();
+    billy.stop();
 
     Ok(())
 }

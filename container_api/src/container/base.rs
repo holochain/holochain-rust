@@ -360,9 +360,18 @@ impl Container {
                         "UI interface {} references bundle with id {} but no such bundle found",
                         &ui_interface_config.id, &ui_interface_config.bundle
                     ))?;
+            let connected_dna_interface = ui_interface_config
+                .clone()
+                .dna_interface
+                .map(|interface_id| config.interface_by_id(&interface_id).unwrap());
+
             self.static_servers.insert(
                 ui_interface_config.id.clone(),
-                StaticServer::from_configs(bundle_config, ui_interface_config),
+                StaticServer::from_configs(
+                    ui_interface_config,
+                    bundle_config,
+                    connected_dna_interface,
+                ),
             );
         }
 

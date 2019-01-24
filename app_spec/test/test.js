@@ -19,7 +19,7 @@ scenario2.runTape('agentId', async (t, { alice, bob }) => {
 })
 
 scenario1.runTape('show_env', async (t, { alice }) => {
-    const result = alice.call("blog", "main", "show_env", {})
+    const result = alice.call("blog", "show_env", {})
 
     t.equal(result.Ok.dna_address, alice.dnaAddress)
     t.equal(result.Ok.dna_name, "HDK-spec-rust")
@@ -119,11 +119,11 @@ scenario1.runTape('my_posts', async (t, { alice }) => {
 
 scenario1.runTape('my_posts_immediate_timeout', async (t, { alice }) => {
 
-  alice.call("blog", "main", "create_post",
+  alice.call("blog", "create_post",
     { "content": "Holo world", "in_reply_to": "" }
   )
 
-  const result = alice.call("blog", "main", "my_posts_immediate_timeout", {})
+  const result = alice.call("blog", "my_posts_immediate_timeout", {})
 
   t.ok(result.Err)
   console.log(result)

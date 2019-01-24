@@ -18,6 +18,7 @@ use hdk::{
     holochain_core_types::{cas::content::Address, entry::Entry, json::JsonString, error::HolochainError},
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
 };
+
 use blog::Env;
 
 define_zome! {
@@ -30,6 +31,12 @@ define_zome! {
     }
 
     functions: [
+
+        show_env: {
+            inputs: | |,
+            outputs: |env: ZomeApiResult<Env>|,
+            handler: blog::handle_show_env
+        }
 
         check_sum: {
             inputs: |num1: u32, num2: u32|,
@@ -93,7 +100,7 @@ define_zome! {
     ]
 
     capabilities: {
-        public (Public) [check_sum, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, recommend_post, my_recommended_posts]
+        public (Public) [show_env, check_sum, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
     }
 
 }

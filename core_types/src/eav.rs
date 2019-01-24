@@ -162,7 +162,7 @@ impl EntityAttributeValueIndex {
 pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// Adds the given EntityAttributeValue to the EntityAttributeValueStorage
     /// append only storage.
-    fn add_eav(
+    fn add_eavi(
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError>;
@@ -171,7 +171,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// - Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
     /// - Some(Attribute) = requires the given attribute (e.g. all links)
     /// - Some(Value) = requires the given value (e.g. all entities referencing an Address)
-    fn fetch_eav(
+    fn fetch_eavi(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
@@ -214,7 +214,7 @@ pub fn increment_key_till_no_collision(
 }
 
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
-    fn add_eav(
+    fn add_eavi(
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
@@ -224,7 +224,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         Ok(Some(new_eav.clone()))
     }
 
-    fn fetch_eav(
+    fn fetch_eavi(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
@@ -285,8 +285,8 @@ pub fn get_latest(
 
 impl PartialEq for EntityAttributeValueStorage {
     fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
-        self.fetch_eav(None, None, None, IndexQuery::default())
-            == other.fetch_eav(None, None, None, IndexQuery::default())
+        self.fetch_eavi(None, None, None, IndexQuery::default())
+            == other.fetch_eavi(None, None, None, IndexQuery::default())
     }
 }
 
@@ -336,7 +336,7 @@ pub fn eav_round_trip_test_runner(
     assert_eq!(
         BTreeSet::new(),
         eav_storage
-            .fetch_eav(
+            .fetch_eavi(
                 Some(entity_content.address()),
                 Some(attribute.clone()),
                 Some(value_content.address()),
@@ -345,7 +345,7 @@ pub fn eav_round_trip_test_runner(
             .expect("could not fetch eav"),
     );
 
-    eav_storage.add_eav(&eav).expect("could not add eav");
+    eav_storage.add_eavi(&eav).expect("could not add eav");
 
     let mut expected = BTreeSet::new();
     expected.insert(eav.clone());
@@ -377,7 +377,7 @@ pub fn eav_round_trip_test_runner(
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eav(e, a, v, IndexQuery::default())
+                .fetch_eavi(e, a, v, IndexQuery::default())
                 .expect("could not fetch eav")
         );
     }

@@ -34,7 +34,7 @@ impl EavMemoryStorage {
 }
 
 impl EntityAttributeValueStorage for EavMemoryStorage {
-    fn add_eav(
+    fn add_eavi(
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
@@ -44,7 +44,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         Ok(Some(new_eav.clone()))
     }
 
-    fn fetch_eav(
+    fn fetch_eavi(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,

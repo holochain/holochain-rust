@@ -30,7 +30,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let dht = context.state().unwrap().dht().meta_storage();
     let storage = &dht.clone();
     // Get crud-status
-    let status_eavs = (*storage.read().unwrap()).fetch_eav(
+    let status_eavs = (*storage.read().unwrap()).fetch_eavi(
         Some(address.clone()),
         Some(STATUS_NAME.to_string()),
         None,
@@ -68,7 +68,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     }
     // Get crud-link
     let mut maybe_crud_link = None;
-    let link_eavs = (*storage.read().unwrap()).fetch_eav(
+    let link_eavs = (*storage.read().unwrap()).fetch_eavi(
         Some(address),
         Some(LINK_NAME.to_string()),
         None,

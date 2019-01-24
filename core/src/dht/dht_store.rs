@@ -53,7 +53,7 @@ impl DhtStore {
         address: Address,
         tag: String,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        self.meta_storage.read()?.fetch_eav(
+        self.meta_storage.read()?.fetch_eavi(
             Some(address),
             Some(format!("link__{}", tag)),
             None,

@@ -165,11 +165,11 @@ impl EavFileStorage {
 }
 
 impl EntityAttributeValueStorage for EavFileStorage {
-    fn add_eav(
+    fn add_eavi(
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
-        let fetched = self.fetch_eav(
+        let fetched = self.fetch_eavi(
             Some(eav.entity()),
             Some(eav.attribute()),
             Some(eav.value()),
@@ -184,7 +184,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         Ok(Some(new_eav.clone()))
     }
 
-    fn fetch_eav(
+    fn fetch_eavi(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,

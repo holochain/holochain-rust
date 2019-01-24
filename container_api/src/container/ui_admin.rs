@@ -26,7 +26,6 @@ impl ContainerUiAdmin for Container {
         let path_string = path
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
-        
 
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
@@ -44,7 +43,7 @@ impl ContainerUiAdmin for Container {
     }
 
     /// Removes the UI bundle in the config. 
-    /// Also stops then removes its UI interface
+    /// Also stops then removes its UI interface if any exist
     fn uninstall_ui_bundle(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
         new_config.ui_bundles = new_config
@@ -53,7 +52,13 @@ impl ContainerUiAdmin for Container {
             .filter(|bundle| bundle.id != *id)
             .collect();
 
-        // TODO: add logic to stop and remove the UI interface if it has one
+        let to_remove = new_config.ui_interfaces
+            .into_iter()
+            .filter(|ui_interface| ui_interface.bundle == id.to_string());
+
+        for bundle_interface in to_remove {
+            self.remove_interface(&bundle_interface.id)?;
+        }
 
         Ok(())
     }
@@ -68,15 +73,21 @@ impl ContainerUiAdmin for Container {
     }
 
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
+
+        let to_stop = self.config.clone().ui_interfaces
+            .into_iter()
+            .filter(|ui_interface| ui_interface.id == *id);
+
+        for ui_interface in to_stop { 
+            let _ = self.stop_ui_interface(&ui_interface.id);
+        }
+
         let mut new_config = self.config.clone();
         new_config.ui_interfaces = new_config
             .ui_interfaces
             .into_iter()
             .filter(|ui_interface| ui_interface.id != *id)
             .collect();
-
-        // TODO: Also remove any references in UI bundles
-
         new_config.check_consistency()?;
         self.config = new_config;
         self.save_config()?;
@@ -84,16 +95,14 @@ impl ContainerUiAdmin for Container {
     }
 
     fn start_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let _server = self.static_servers.get(id)?;
+        let server = self.static_servers.get_mut(id)?;
         notify(format!("Starting UI interface \"{}\"...", id));
-        // server.start()
-        Ok(())
+        server.start()
     }
 
     fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError> {
-        let _server = self.static_servers.get(id)?;
+        let server = self.static_servers.get_mut(id)?;
         notify(format!("Stopping UI interface \"{}\"...", id));
-        // server.stop()
-        Ok(())
+        server.stop()
     }
 }

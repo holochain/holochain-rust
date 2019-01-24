@@ -122,4 +122,10 @@ pub mod tests {
         EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
     }
 
+    #[test]
+    fn example_eav_range() {
+        let eav_storage = EavMemoryStorage::new();
+        EavTestSuite::test_range::<ExampleAddressableContent, EavMemoryStorage>(eav_storage);
+    }
+
 }

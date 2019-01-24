@@ -392,6 +392,103 @@ impl EavTestSuite {
         }
     }
 
+    pub fn test_range<A, S>(mut eav_storage: S)
+    where
+        A: AddressableContent + Clone,
+        S: EntityAttributeValueStorage,
+    {
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+
+        let one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        // it can reference itself, why not?
+        let many_one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        let many_two = A::try_from_content(&bar_content)
+            .expect("could not create AddressableContent from Content");
+        let attribute = "one_to_many".to_string();
+        let mut expected_many_one = BTreeSet::new();
+        let mut expected_many_two = BTreeSet::new();
+        let mut expected_all_range = BTreeSet::new();
+        let addresses = vec![many_one.address(), many_two.address()];
+
+        //iterate 5 times
+        (0..5).into_iter().for_each(|s| {
+            let alter_index = s % 2;
+            let eav =
+                EntityAttributeValueIndex::new(&addresses[alter_index], &attribute, &one.address())
+                    .expect("could not create EAV");
+            let eavi = eav_storage
+                .add_eavi(&eav)
+                .expect("could not add eav")
+                .expect("Could not get eavi option");
+            if s.clone() % 2 == 0 {
+                //insert many ones
+                expected_many_one.insert(eavi.clone());
+            } else {
+                //insert many twos
+                expected_many_two.insert(eavi.clone());
+            }
+            //insert every range
+            if s.clone() > 1 {
+                expected_all_range.insert(eavi.clone());
+            } else {
+            };
+        });
+
+        // get only many one values per specified range
+        let index_query_many_one = IndexQuery::new(
+            expected_many_one.iter().next().unwrap().index(),
+            expected_many_one.iter().last().unwrap().index(),
+        );
+        assert_eq!(
+            expected_many_one,
+            eav_storage
+                .fetch_eavi(
+                    Some(many_one.address()),
+                    Some(attribute.clone()),
+                    Some(one.address()),
+                    index_query_many_one
+                )
+                .unwrap()
+        );
+
+        // get only many two values per specified range
+        let index_query_many_two = IndexQuery::new(
+            expected_many_two.iter().next().unwrap().index(),
+            expected_many_two.iter().last().unwrap().index(),
+        );
+        assert_eq!(
+            expected_many_two,
+            eav_storage
+                .fetch_eavi(
+                    Some(many_two.address()),
+                    Some(attribute.clone()),
+                    Some(one.address()),
+                    index_query_many_two
+                )
+                .unwrap()
+        );
+
+        // get all values per specified range
+        let index_query_all = IndexQuery::new(
+            expected_all_range.iter().next().unwrap().index(),
+            expected_all_range.iter().last().unwrap().index(),
+        );
+        assert_eq!(
+            expected_all_range,
+            eav_storage
+                .fetch_eavi(
+                    None,
+                    Some(attribute.clone()),
+                    Some(one.address()),
+                    index_query_all
+                )
+                .unwrap()
+        );
+    }
+
     pub fn test_many_to_one<A, S>(mut eav_storage: S)
     where
         A: AddressableContent + Clone,

@@ -12,6 +12,7 @@ use crate::{
 use chrono::offset::Utc;
 use objekt;
 use std::{
+    cmp::Ordering,
     collections::BTreeSet,
     convert::TryInto,
     sync::{Arc, RwLock},
@@ -39,9 +40,7 @@ pub type Index = i64;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-#[derive(
-    PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default, PartialOrd, Ord,
-)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default)]
 pub struct EntityAttributeValueIndex {
     entity: Entity,
     attribute: Attribute,
@@ -50,6 +49,19 @@ pub struct EntityAttributeValueIndex {
     // source: Source,
 }
 
+impl PartialOrd for EntityAttributeValueIndex {
+    fn partial_cmp(&self, other: &EntityAttributeValueIndex) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for EntityAttributeValueIndex {
+    fn cmp(&self, other: &EntityAttributeValueIndex) -> Ordering {
+        self.index.cmp(&other.index())
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct IndexQuery {
     start_time: Option<i64>,
     end_time: Option<i64>,
@@ -62,6 +74,13 @@ impl IndexQuery {
 
     pub fn end_time(&self) -> Option<i64> {
         self.end_time.clone()
+    }
+
+    pub fn new(start: i64, end: i64) -> IndexQuery {
+        IndexQuery {
+            start_time: Some(start),
+            end_time: Some(end),
+        }
     }
 }
 
@@ -112,7 +131,7 @@ impl EntityAttributeValueIndex {
         })
     }
 
-    pub fn new_with_timestamp(
+    pub fn new_with_index(
         entity: &Entity,
         attribute: &Attribute,
         value: &Value,
@@ -243,7 +262,11 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             .filter(|e| {
                 index_query
                     .start_time()
-                    .map(|start| start <= e.index())
+                    .map(|start| {
+                        println!("start {:?}", e.index().clone());
+                        println!("start condition {:?}", start.clone() <= e.index());
+                        start <= e.index()
+                    })
                     .unwrap_or_else(|| {
                         let latest = get_latest(e.clone(), map.clone())
                             .unwrap_or(EntityAttributeValueIndex::default());
@@ -253,7 +276,11 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             .filter(|e| {
                 index_query
                     .end_time()
-                    .map(|end| end >= e.index())
+                    .map(|end| {
+                        println!("end {:?}", e.index().clone());
+                        println!("start condition {:?}", end.clone() >= e.index());
+                        end >= e.index()
+                    })
                     .unwrap_or_else(|| {
                         let latest = get_latest(e.clone(), map.clone())
                             .unwrap_or(EntityAttributeValueIndex::default());
@@ -303,7 +330,7 @@ pub fn test_eav_value() -> Entry {
 }
 
 pub fn test_eav() -> EntityAttributeValueIndex {
-    EntityAttributeValueIndex::new_with_timestamp(
+    EntityAttributeValueIndex::new_with_index(
         &test_eav_entity().address(),
         &test_eav_attribute(),
         &test_eav_value().address(),
@@ -429,6 +456,13 @@ pub mod tests {
             ExampleAddressableContent,
             ExampleEntityAttributeValueStorage,
         >(test_eav_storage());
+    }
+
+    #[test]
+    fn example_eav_range() {
+        EavTestSuite::test_range::<ExampleAddressableContent, ExampleEntityAttributeValueStorage>(
+            test_eav_storage(),
+        );
     }
 
     #[test]

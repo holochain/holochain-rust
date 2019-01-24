@@ -6,7 +6,6 @@ use holochain_core_types::{
         EntityAttributeValueStorage, IndexQuery, Value,
     },
     error::{HcResult, HolochainError},
-    hash::HashString,
     json::JsonString,
 };
 use std::{
@@ -26,7 +25,7 @@ const VALUE_DIR: &str = "v";
 pub struct EavFileStorage {
     dir_path: String,
     id: Uuid,
-    current_hash: HashString,
+
     lock: Arc<RwLock<()>>,
 }
 
@@ -88,7 +87,6 @@ impl EavFileStorage {
             dir_path,
             id: Uuid::new_v4(),
             lock: Arc::new(RwLock::new(())),
-            current_hash: HashString::from(Uuid::new_v4().to_string().replace("-", "_")),
         })
     }
 
@@ -297,6 +295,14 @@ pub mod tests {
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
         EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavFileStorage>(eav_storage)
+    }
+
+    #[test]
+    fn example_eav_range() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavFileStorage::new(temp_path).unwrap();
+        EavTestSuite::test_range::<ExampleAddressableContent, EavFileStorage>(eav_storage);
     }
 
 }

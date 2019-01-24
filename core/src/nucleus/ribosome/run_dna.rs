@@ -6,11 +6,13 @@ use crate::{
     },
 };
 use holochain_core_types::{
-    error::{HcResult, HolochainError, RibosomeErrorCode, RibosomeReturnCode},
+    error::{
+        HcResult, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
+    },
     json::JsonString,
 };
-use holochain_wasm_utils::memory_allocation::decode_encoded_allocation;
-use std::{str::FromStr, sync::Arc};
+use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
+use std::{convert::TryFrom, str::FromStr, sync::Arc};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,
     ModuleInstance, NopExternals, RuntimeValue, Signature, ValueType,
@@ -100,34 +102,36 @@ pub fn run_dna(
 
     // Write input arguments in wasm memory
     // scope for mutable borrow of runtime
-    let encoded_allocation_of_input: u32;
+    let encoded_allocation_of_input: RibosomeEncodingBits;
     {
         let mut_runtime = &mut runtime;
-        let maybe_allocation_of_input = mut_runtime.memory_manager.write(&input_parameters);
-        encoded_allocation_of_input = match maybe_allocation_of_input {
+        let maybe_allocation = mut_runtime.memory_manager.write(&input_parameters);
+        encoded_allocation_of_input = match maybe_allocation {
             // No allocation to write is ok
-            Err(RibosomeErrorCode::ZeroSizedAllocation) => 0,
+            Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
             // Any other error is memory related
             Err(err) => {
-                return Err(HolochainError::RibosomeFailed(err.to_string()));
+                return Err(HolochainError::RibosomeFailed(String::from(err)));
             }
             // Write successful, encode allocation
-            Ok(allocation_of_input) => allocation_of_input.encode(),
+            Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
         }
     }
 
     // scope for mutable borrow of runtime
-    let returned_encoded_allocation: u32;
+    let returned_encoding: RibosomeEncodingBits;
     {
         let mut_runtime = &mut runtime;
 
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
-        returned_encoded_allocation = wasm_instance
+        returned_encoding = wasm_instance
             .invoke_export(
                 zome_call.fn_name.clone().as_str(),
-                &[RuntimeValue::I32(encoded_allocation_of_input as i32)],
+                &[RuntimeValue::I32(
+                    RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
+                )],
                 mut_runtime,
             )
             .map_err(|err| HolochainError::RibosomeFailed(err.to_string()))?
@@ -137,36 +141,47 @@ pub fn run_dna(
     }
 
     // Handle result returned by called zome function
-    let maybe_allocation = decode_encoded_allocation(returned_encoded_allocation);
+    let return_code = RibosomeEncodedValue::from(returned_encoding);
+
     let return_log_msg: String;
     let return_result: HcResult<JsonString>;
-    match maybe_allocation {
-        // Nothing in memory, return result depending on return_code received.
-        Err(return_code) => {
+
+    match return_code.clone() {
+        RibosomeEncodedValue::Success => {
             return_log_msg = return_code.to_string();
-            return_result = match return_code {
-                RibosomeReturnCode::Success => Ok(JsonString::null()),
-                RibosomeReturnCode::Failure(err_code) => {
-                    Err(HolochainError::RibosomeFailed(err_code.to_string()))
-                }
-            };
+            return_result = Ok(JsonString::null());
         }
-        // Something in memory, try to read and return it
-        Ok(valid_allocation) => {
-            let result = runtime.memory_manager.read(valid_allocation);
-            let maybe_zome_result = String::from_utf8(result);
-            match maybe_zome_result {
-                Err(err) => {
-                    return_log_msg = err.to_string();
-                    return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
+
+        RibosomeEncodedValue::Failure(err_code) => {
+            return_log_msg = return_code.to_string();
+            return_result = Err(HolochainError::RibosomeFailed(err_code.to_string()));
+        }
+
+        RibosomeEncodedValue::Allocation(ribosome_allocation) => {
+            match WasmAllocation::try_from(ribosome_allocation) {
+                Ok(allocation) => {
+                    let result = runtime.memory_manager.read(allocation);
+                    match String::from_utf8(result) {
+                        Ok(json_string) => {
+                            return_log_msg = json_string.clone();
+                            return_result = Ok(JsonString::from(json_string));
+                        }
+                        Err(err) => {
+                            return_log_msg = err.to_string();
+                            return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
+                        }
+                    }
                 }
-                Ok(json_str) => {
-                    return_log_msg = json_str.clone();
-                    return_result = Ok(JsonString::from(json_str));
+                Err(allocation_error) => {
+                    return_log_msg = String::from(allocation_error.clone());
+                    return_result = Err(HolochainError::RibosomeFailed(String::from(
+                        allocation_error,
+                    )));
                 }
             }
         }
     };
+
     // Log & done
     runtime.context.log(format!(
         "debug/zome: Zome Function '{}' returned: {}",

@@ -1,4 +1,3 @@
-
 const binary = require('node-pre-gyp');
 const path = require('path');
 const tape = require('tape');
@@ -32,7 +31,7 @@ const Config = {
     },
     instance: (agent, dna, name) => {
         if (!name) {
-            name = makeInstanceId(agent.name, dna.name)
+            name = agent.name
         }
         return { agent, dna, name }
     },
@@ -62,12 +61,12 @@ Container.prototype.stop = function () {
     return this._stopPromise
 }
 
-Container.prototype.call = function (id, zome, trait, fn, params) {
+Container.prototype.call = function (id, zome, fn, params) {
     const stringInput = JSON.stringify(params)
     let rawResult
     let result
     try {
-        rawResult = this._callRaw(id, zome, trait, fn, stringInput)
+        rawResult = this._callRaw(id, zome, fn, stringInput)
     } catch (e) {
         console.error("Exception occurred while calling zome function: ", e)
         throw e
@@ -103,8 +102,9 @@ Container.prototype.callSync = function (...args) {
 Container.prototype.makeCaller = function (agentId, dnaPath) {
   const instanceId = dnaPath ? makeInstanceId(agentId, dnaPath) : agentId
   return {
-    call: (zome, cap, fn, params) => this.call(instanceId, zome, cap, fn, params),
-    agentId: this.agent_id(instanceId)
+    call: (zome, fn, params) => this.call(instanceId, zome, fn, params),
+    agentId: this.agent_id(instanceId),
+    dnaAddress: this.dna_address(instanceId),
   }
 }
 
@@ -194,7 +194,8 @@ class Scenario {
                     call: (...args) => container.call(name, ...args),
                     callSync: (...args) => container.callSync(name, ...args),
                     callWithPromise: (...args) => container.callWithPromise(name, ...args),
-                    agentId: container.agent_id(name)
+                    agentId: container.agent_id(name),
+                    dnaAddress: container.dna_address(name),
                 }
             })
             return fn(stop, callers)
@@ -206,8 +207,8 @@ class Scenario {
             throw new Error("must call `scenario.setTape(require('tape'))` before running tape-based tests!")
         }
         Scenario._tape(description, t => {
-            this.run((stop, instances) => {
-                fn(t, instances)
+            this.run(async (stop, instances) => {
+                await fn(t, instances)
                 stop()
             })
             .catch(e => {

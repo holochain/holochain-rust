@@ -58,18 +58,20 @@ define_zome! {
 
     genesis: || { Ok(()) }
 
-    functions: {
-        main (Public) {
-            create_my_entry: {
-                inputs: |entry: MyEntry|,
-                outputs: |result: ZomeApiResult<Address>|,
-                handler: handle_create_my_entry
-            }
-            get_my_entry: {
-                inputs: |address: Address|,
-                outputs: |result: ZomeApiResult<Option<Entry>>|,
-                handler: handle_get_my_entry
-            }
+    functions: [
+        create_my_entry: {
+            inputs: |entry: MyEntry|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_create_my_entry
         }
+        get_my_entry: {
+            inputs: |address: Address|,
+            outputs: |result: ZomeApiResult<Option<Entry>>|,
+            handler: handle_get_my_entry
+        }
+    ]
+
+    capabilities: {
+        public (Public) [create_my_entry,get_my_entry]
     }
 }

@@ -29,7 +29,7 @@ test('instance construction with implicit name', t => {
     const agent = C.agent('allison')
     const dna = C.dna(path, 'dnaName')
     const instance = C.instance(agent, dna)
-    t.deepEqual(instance, { agent, dna, name: 'allison::dnaName' })
+    t.deepEqual(instance, { agent, dna, name: 'allison' })
     t.end()
 })
 
@@ -59,10 +59,10 @@ test('config construction', t => {
         config.dnas.map(d => d.id).sort(),
         [path]
     )
-    t.equal(config.instances[0].id, `alessia::${path}`)
+    t.equal(config.instances[0].id, `alessia`)
     t.equal(config.instances[0].agent, `alessia`)
     t.equal(config.instances[0].dna, path)
-    t.equal(config.instances[1].id, `bartolini::${path}`)
+    t.equal(config.instances[1].id, `bartolini`)
     t.equal(config.instances[1].agent, `bartolini`)
     t.equal(config.instances[1].dna, path)
     t.equal(config.interfaces.length, 0)

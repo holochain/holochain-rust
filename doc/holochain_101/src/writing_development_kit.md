@@ -44,7 +44,7 @@ The Development Kit should implement and export one function per each native fun
 In order to call these "external" functions, you will need to import them and provide their signature, but in a WASM import compatible way. In Rust, for example, this is simply:
 ```rust
 extern {
-  fn hc_commit_entry(encoded_allocation_of_input: u32) -> u32;
+  fn hc_commit_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
 }
 ```
 
@@ -60,16 +60,16 @@ The goal of the Development Kit is to expose a meaningful and easy to use versio
 5. ensure it is not oversized for the stack
 6. allocate the memory
 7. write the byte array to memory
-8. create an allocation pointer for the memory  
-  a. use a 16 bit integer for the pointers `offset`  
+8. create an allocation pointer for the memory
+  a. use a 16 bit integer for the pointers `offset`
   b. use a 16 bit integer for the pointers `length`
-9. join the pointers into a single 32 bit integer  
-  a. high bits are `offset`  
+9. join the pointers into a single 32 bit integer
+  a. high bits are `offset`
   b. low bits are `length`
-10. call the native function with that 32 bit integer and assign the result to another 32 bit integer  
+10. call the native function with that 32 bit integer and assign the result to another 32 bit integer
   a. e.g. `encoded_alloc_of_result = hc_commit_entry(encoded_alloc_of_input)`
-11. deconstruct that 32 bit integer into two variables  
-  a. use a 16 bit integer for the pointers `offset`  
+11. deconstruct that 32 bit integer into two variables
+  a. use a 16 bit integer for the pointers `offset`
   b. use a 16 bit integer for the pointers `length`
 12. read string data from memory at the `offset` address
 13. deallocate the memory
@@ -85,7 +85,7 @@ TODO
 
 When writing Zome code, it is common to need to reference aspects of the context it runs in, such as the active user/agent, or the DNA address of the app. Holochain exposes certain values through to the Zome, though it does so natively by way of the `hc_init_globals` function mentioned. Taking care to expose these values as constants will simplify the developer experience.
 
-This is done by calling `hc_init_globals` with an input value of 0. The result of calling the function is a 32 bit integer which represents the memory location of a serialized JSON object containing all the app global values. Fetch the result from memory, and deserialize the result back into an object. If appropriate, set those values as exports for the Development Kit. For example, in Rust, values become accessible in Zomes using `hdk::APP_NAME`. It's recommended to use all capital letters for the export of the constants, but as they are returned as keys on an object from `hc_init_globals` they are in lower case. The object has the following values:
+This is done by calling `hc_init_globals` with an input value of 0. The result of calling the function is a 32 bit integer which represents the memory location of a serialized JSON object containing all the app global values. Fetch the result from memory, and deserialize the result back into an object. If appropriate, set those values as exports for the Development Kit. For example, in Rust, values become accessible in Zomes using `hdk::DNA_NAME`. It's recommended to use all capital letters for the export of the constants, but as they are returned as keys on an object from `hc_init_globals` they are in lower case. The object has the following values:
 - dna_name
 - dna_address
 - agent_id_str

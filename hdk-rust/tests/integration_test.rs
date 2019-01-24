@@ -20,14 +20,16 @@ use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
+        capabilities::{Capability, CapabilityCall, CapabilityType},
         entry_types::{EntryTypeDef, LinksTo},
+        fn_declarations::FnDeclaration,
+        zome::{ZomeCapabilities, ZomeFnDeclarations},
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
         Entry, EntryWithMeta,
     },
-    error::{CoreError, HolochainError},
+    error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
 };
@@ -35,11 +37,11 @@ use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
         get_links::GetLinksResult,
-        QueryResult,
     },
     wasm_target_dir,
 };
 use std::{
+    collections::BTreeMap,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -47,55 +49,119 @@ use std::{
 use test_utils::*;
 
 #[no_mangle]
-pub fn hc_init_globals(_: u32) -> u32 {
-    0
+pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn zome_setup(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn __list_capabilities(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
 #[no_mangle]
-pub fn hc_commit_entry(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_get_entry(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_entry_address(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_query(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_update_entry(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_remove_entry(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_send(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn zome_setup(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn __list_capabilities(_: u32) -> u32 {
+pub fn __list_functions(_: u32) -> u32 {
     0
 }
 
-pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
+pub fn create_test_defs_with_fn_names(
+    fn_names: Vec<&str>,
+) -> (ZomeFnDeclarations, ZomeCapabilities) {
     let mut capability = Capability::new(CapabilityType::Public);
+    let mut fn_declarations = Vec::new();
 
     for fn_name in fn_names {
+        capability.functions.push(String::from(fn_name));
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);
-        capability.functions.push(fn_decl);
+        fn_declarations.push(fn_decl);
     }
-    capability
+    let mut capabilities = BTreeMap::new();
+    capabilities.insert("test_cap".to_string(), capability);
+    (fn_declarations, capabilities)
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
@@ -146,7 +212,7 @@ fn start_holochain_instance<T: Into<String>>(
         "{}/wasm32-unknown-unknown/release/test_globals.wasm",
         wasm_target_dir("hdk-rust/", "wasm-test/"),
     ));
-    let capabability = create_test_cap_with_fn_names(vec![
+    let defs = create_test_defs_with_fn_names(vec![
         "check_global",
         "check_commit_entry",
         "check_commit_entry_macro",
@@ -169,7 +235,7 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_modified_entry_ok",
         "send_message",
     ]);
-    let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
+    let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
 
     // TODO: construct test DNA using the auto-generated JSON feature
@@ -217,11 +283,7 @@ fn start_holochain_instance<T: Into<String>>(
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
     hc.call(
         "test_zome",
-        Some(CapabilityCall::new(
-            "test_cap".to_string(),
-            Address::from("test_token"),
-            None,
-        )),
+        Some(CapabilityCall::new(Address::from("test_token"), None)),
         fn_name,
         params,
     )
@@ -382,7 +444,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}"),
+        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"94\\\"}\"}}"),
     );
 }
 
@@ -444,7 +506,6 @@ fn can_link_entries() {
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
-
     // Create links
     let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
     let maybe_address: Result<Address, String> =
@@ -570,7 +631,7 @@ fn can_check_query() {
     );
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected: ZomeApiResult<QueryResult> = Ok(vec![Address::from(
+    let expected: ZomeApiResult<Vec<Address>> = Ok(vec![Address::from(
         "QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ",
     )]);
 

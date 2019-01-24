@@ -4,10 +4,10 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     dna::Dna,
     entry::{entry_type::EntryType, Entry},
+    error::RibosomeRuntimeBits,
 };
 use std::{convert::TryFrom, str::FromStr};
 use wasmi::{RuntimeArgs, RuntimeValue};
-use holochain_core_types::error::RibosomeRuntimeBits;
 
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
@@ -21,7 +21,8 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
         let result = dna.get_entry_type_def(entry_type_name);
         if result.is_none() {
             return Err(Some(RuntimeValue::I64(
-                holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as RibosomeRuntimeBits,
+                holochain_core_types::error::RibosomeErrorCode::UnknownEntryType
+                    as RibosomeRuntimeBits,
             )));
         }
     }

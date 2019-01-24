@@ -528,15 +528,20 @@ pub mod tests {
     pub fn persistence_dir(test_name: &str) -> String {
         let mut persist_dir: PathBuf = [".", "tmp-test"].iter().collect();
         persist_dir.push(test_name);
-        format!("persistence_dir = \"{}\"", persist_dir.to_str()
-            .expect("Could not convert dir to string")).to_string()
+        format!(
+            "persistence_dir = \"{}\"",
+            persist_dir
+                .to_str()
+                .expect("Could not convert dir to string")
+        )
+        .to_string()
     }
 
     pub fn header_block(test_name: &str) -> String {
         let mut toml = empty_briges();
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
-        toml = add_line(toml, empty_ui_interfaces());   
+        toml = add_line(toml, empty_ui_interfaces());
         toml
     }
 
@@ -742,8 +747,14 @@ id = "new-dna""#,
 
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file: PathBuf =
-            [".", "tmp-test", "test_install_dna_from_file_and_copy", "dna"].iter().collect();
+        let mut output_dna_file: PathBuf = [
+            ".",
+            "tmp-test",
+            "test_install_dna_from_file_and_copy",
+            "dna",
+        ]
+        .iter()
+        .collect();
         output_dna_file.push(new_dna.address().to_string());
         output_dna_file.set_extension("hcpkg");
 
@@ -803,8 +814,14 @@ id = "new-dna""#,
         assert_ne!(original_hash, new_hash);
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file: PathBuf =
-             [".", "tmp-test", "test_install_dna_from_file_with_properties", "dna"].iter().collect();
+        let mut output_dna_file: PathBuf = [
+            ".",
+            "tmp-test",
+            "test_install_dna_from_file_with_properties",
+            "dna",
+        ]
+        .iter()
+        .collect();
 
         output_dna_file.push(new_hash.to_string());
         output_dna_file.set_extension("hcpkg");
@@ -866,7 +883,7 @@ id = "new-dna""#,
         );
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-toml = add_block(
+        toml = add_block(
             toml,
             String::from(
                 r#"[[instances]]
@@ -876,12 +893,16 @@ id = "new-instance""#,
             ),
         );
 
-        let storage_path: PathBuf = [".", "tmp-test", test_name, "storage", "new-instance"].iter().collect();
+        let storage_path: PathBuf = [".", "tmp-test", test_name, "storage", "new-instance"]
+            .iter()
+            .collect();
         let storage_path_string = storage_path.to_str().unwrap().to_owned();
-        toml = add_block(toml, format!(
-            "[instances.storage]\npath = \"{}\"\ntype = \"file\"",
-            storage_path_string
-            )
+        toml = add_block(
+            toml,
+            format!(
+                "[instances.storage]\npath = \"{}\"\ntype = \"file\"",
+                storage_path_string
+            ),
         );
         toml = add_block(toml, interface());
         toml = add_block(toml, logger());
@@ -950,7 +971,6 @@ type = "websocket""#,
             File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
-
 
         let mut toml = empty_briges();
         toml = add_line(toml, "dnas = []".to_string());
@@ -1144,12 +1164,16 @@ id = "new-instance""#,
             ),
         );
 
-        let storage_path: PathBuf = [".", "tmp-test", test_name, "storage", "new-instance"].iter().collect();
+        let storage_path: PathBuf = [".", "tmp-test", test_name, "storage", "new-instance"]
+            .iter()
+            .collect();
         let storage_path_string = storage_path.to_str().unwrap().to_owned();
-        toml = add_block(toml, format!(
-            "[instances.storage]\npath = \"{}\"\ntype = \"file\"",
-            storage_path_string
-            )
+        toml = add_block(
+            toml,
+            format!(
+                "[instances.storage]\npath = \"{}\"\ntype = \"file\"",
+                storage_path_string
+            ),
         );
         toml = add_block(
             toml,

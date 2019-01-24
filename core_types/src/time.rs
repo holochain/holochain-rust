@@ -80,42 +80,44 @@ impl From<String> for Iso8601 {
 }
 
 /// Conversion try_from on a &Iso8601 are fallible conversions, which may produce a HolochainError
-/// if the timestamp is not valid ISO 8601 / RFC 3339.  We will allow some flexibilty; a bare
-/// timestamp missing any timezone specifier will be assumed to be UTC "Zulu".  If you keep to
-/// straight RFC 3339 timestamps, then parsing will be quick, otherwise we'll employ a regular
-/// expression to parse a more flexible subset of the ISO 8601 standard from your supplied
-/// timestamp, and then use the RFC 3339 parser again.
+/// if the timestamp is not valid ISO 8601 / RFC 3339.  We will allow some flexibilty; strip
+/// surrounding whitespace, a bare timestamp missing any timezone specifier will be assumed to be
+/// UTC "Zulu", make internal separators optional if unambiguous.  If you keep to straight RFC 3339
+/// timestamps, then parsing will be quick, otherwise we'll employ a regular expression to parse a
+/// more flexible subset of the ISO 8601 standard from your supplied timestamp, and then use the RFC
+/// 3339 parser again.
 impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
     type Error = HolochainError;
     fn try_from(lhs: &Iso8601) -> Result<DateTime<FixedOffset>,Self::Error> {
         lazy_static! {
             static ref ISO8601_RE: Regex = Regex::new(r"(?x)
                 ^
+                \s*
                 (?P<Y>\d{4})
-                -?              # allow unambiguous single digit months
+                -?              # Allow unambiguous single digit months
                 (?P<M>
                    0[12]
                  | 0?[3-9]
                  | 1[012]
                 )
-                -?              #  allow unambiguous single digit day
+                -?              # Allow unambiguous single digit day
                 (?P<D>
                    0[12]
                  | 0?[3-9]
                  | [12][0-9]
                  | 3[01]
                 )
-                (?:             # optional T or space(s)
+                (?:             # Optional T or space(s)
                    [Tt]
                  | \s+
-                )               # allow unambiguous single digit hour
+                )               # Allow unambiguous single digit hour
                 (?P<h>
                    0[12]
                  | 0?[3-9]
                  | 1[0-9]
                  | 2[0-3]
                 )
-                :?              # no need to support leap-seconds
+                :?              # No need to support leap-seconds
                 (?P<m>[0-5][0-9])
                 :?              # The whole seconds group is optional, implies 00
                 (?P<s>
@@ -123,14 +125,15 @@ impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
                     \d{2}
                     (?:[.]\d+)?
                   )?
-                )               # No timezone specifier implies Z
+                )
+                \s*              # Optional whitespace, no timezone specifier implies Z
                 (?P<Z>
                    (?:[+-]\d{2}
                      (?:[:]?\d{2})?
                    )
-                 | [Zz]
-                 | \s*
+                 | [Zz]?
                 )
+                \s*
                 $"
             ).unwrap();
         }
@@ -203,7 +206,7 @@ pub mod tests {
     #[test]
     fn test_iso_8601_basic() {
         // Different ways of specifying UTC "Zulu".  A bare timestamp will be defaulted to "Zulu".
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("2018-10-11T03:23:38+00:00")) {
+        match DateTime::<FixedOffset>::try_from( &Iso8601::from("2018-10-11T03:23:38 +00:00")) {
             Ok(ts) => assert_eq!( format!("{}", ts), "2018-10-11 03:23:38 +00:00" ),
             Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
         }
@@ -224,7 +227,7 @@ pub mod tests {
             Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
         }
         // Degenerate timestamp with unambiguous single digit month, day and hour
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("201894 323")) {
+        match DateTime::<FixedOffset>::try_from( &Iso8601::from("  201894  323  ")) {
             Ok(ts) => assert_eq!( format!("{}", ts), "2018-09-04 03:23:00 +00:00"),
             Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
         }
@@ -235,7 +238,7 @@ pub mod tests {
             Iso8601::from("2018-10-11T03:23:38") == Iso8601::from("2018-10-11T03:23:38Z")
         );
         assert!(
-            Iso8601::from("20181011 0323") == Iso8601::from("2018-10-11T03:23:00Z")
+            Iso8601::from(" 20181011  0323  Z ") == Iso8601::from("2018-10-11T03:23:00Z")
         );
 
         // Fixed-offset ISO 8601 are comparable to UTC times

@@ -157,14 +157,14 @@ impl Keypair {
     ///
     /// @param {SecBuf} data
     pub fn verify(
-        &mut self,
+        pub_keys: String,
         signature: &mut SecBuf,
         data: &mut SecBuf,
     ) -> Result<i32, HolochainError> {
         let mut sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
         let mut enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
 
-        util::decode_id(self.pub_keys.clone(), &mut sign_pub, &mut enc_pub)?;
+         util::decode_id(pub_keys, &mut sign_pub, &mut enc_pub)?;
         let v: i32 = sign::verify(signature, data, &mut sign_pub);
         Ok(v)
     }
@@ -265,7 +265,6 @@ impl Keypair {
         let mut sys_secret_check: Option<SecBuf> = None;
 
         while cipher_bundle.len() != 2 {
-            println!("Round trip");
             let mut n: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
             let mut c: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
             let mut n = &mut n[0];
@@ -275,12 +274,9 @@ impl Keypair {
             match aead::dec(&mut sys_secret, &mut cli_rx, None, &mut n, &mut c) {
                 Ok(_) => {
                     if util::check_if_wrong_secbuf(&mut sys_secret) {
-                        println!("TRUE");
                         sys_secret_check = Some(sys_secret);
                         break;
                     } else {
-                        println!("FALSE");
-
                         sys_secret_check = None;
                     }
                 }
@@ -323,13 +319,6 @@ mod tests {
 
         let keypair = Keypair::new_from_seed(&mut seed).unwrap();
 
-        // let pub_keys = keypair.pub_keys.read_lock();
-        // println!("{:?}",pub_keys);
-        // let sign_priv = keypair.sign_priv.read_lock();
-        // println!("{:?}",sign_priv);
-        // let enc_priv = keypair.enc_priv.read_lock();
-        // println!("{:?}",enc_priv);
-
         assert_eq!(64, keypair.sign_priv.len());
         assert_eq!(32, keypair.enc_priv.len());
     }
@@ -360,7 +349,7 @@ mod tests {
 
         keypair.sign(&mut message, &mut message_signed).unwrap();
 
-        let check: i32 = keypair.verify(&mut message_signed, &mut message).unwrap();
+        let check: i32 = Keypair::verify(keypair.pub_keys, &mut message_signed, &mut message).unwrap();
         assert_eq!(0, check);
     }
 

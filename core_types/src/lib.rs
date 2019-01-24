@@ -33,7 +33,6 @@ extern crate maplit;
 
 extern crate uuid;
 
-extern crate chrono;
 extern crate guid_create;
 
 pub mod cas;

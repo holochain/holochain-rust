@@ -2,20 +2,11 @@
 //! within ChainHeader to enforce that their timestamps
 //! are defined in a useful and consistent way.
 
-use chrono::{
-    DateTime,
-    offset::{
-        FixedOffset,
-    },
-};
-use std::{
-    cmp::Ordering,
-    time::Duration,
-    convert::TryFrom,
-};
+use chrono::{offset::FixedOffset, DateTime};
 use error::HolochainError;
 use json::JsonString;
 use regex::Regex;
+use std::{cmp::Ordering, convert::TryFrom, time::Duration};
 
 /// Represents a timeout for an HDK function
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
@@ -88,9 +79,10 @@ impl From<String> for Iso8601 {
 /// 3339 parser again.
 impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
     type Error = HolochainError;
-    fn try_from(lhs: &Iso8601) -> Result<DateTime<FixedOffset>,Self::Error> {
+    fn try_from(lhs: &Iso8601) -> Result<DateTime<FixedOffset>, Self::Error> {
         lazy_static! {
-            static ref ISO8601_RE: Regex = Regex::new(r"(?x)
+            static ref ISO8601_RE: Regex = Regex::new(
+                r"(?x)
                 ^
                 \s*
                 (?P<Y>\d{4})
@@ -135,7 +127,8 @@ impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
                 )
                 \s*
                 $"
-            ).unwrap();
+            )
+            .unwrap();
         }
         DateTime::parse_from_rfc3339(&lhs.0)
             .or_else(
@@ -202,40 +195,54 @@ pub mod tests {
     #[test]
     fn test_iso_8601_basic() {
         // Different ways of specifying UTC "Zulu".  A bare timestamp will be defaulted to "Zulu".
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("2018-10-11T03:23:38 +00:00")) {
-            Ok(ts) => assert_eq!( format!("{}", ts), "2018-10-11 03:23:38 +00:00" ),
-            Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("2018-10-11T03:23:38 +00:00")) {
+            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
+            Err(e) => panic!(
+                "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
+                e
+            ),
         }
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("2018-10-11T03:23:38Z")) {
-            Ok(ts) => assert_eq!( format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
-            Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("2018-10-11T03:23:38Z")) {
+            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
+            Err(e) => panic!(
+                "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
+                e
+            ),
         }
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("2018-10-11T03:23:38")) {
-            Ok(ts) => assert_eq!( format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
-            Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("2018-10-11T03:23:38")) {
+            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
+            Err(e) => panic!(
+                "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
+                e
+            ),
         }
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("2018-10-11 03:23:38")) {
-            Ok(ts) => assert_eq!( format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
-            Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("2018-10-11 03:23:38")) {
+            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:38 +00:00"),
+            Err(e) => panic!(
+                "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
+                e
+            ),
         }
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("20181011 0323")) {
-            Ok(ts) => assert_eq!( format!("{}", ts), "2018-10-11 03:23:00 +00:00"),
-            Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("20181011 0323")) {
+            Ok(ts) => assert_eq!(format!("{}", ts), "2018-10-11 03:23:00 +00:00"),
+            Err(e) => panic!(
+                "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
+                e
+            ),
         }
         // Degenerate timestamp with unambiguous single digit month, day and hour
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("  201894  323  ")) {
-            Ok(ts) => assert_eq!( format!("{}", ts), "2018-09-04 03:23:00 +00:00"),
-            Err(e) => panic!("Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}", e ),
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("  201894  323  ")) {
+            Ok(ts) => assert_eq!(format!("{}", ts), "2018-09-04 03:23:00 +00:00"),
+            Err(e) => panic!(
+                "Unexpected failure of checked DateTime<FixedOffset> try_from: {:?}",
+                e
+            ),
         }
         assert!(
             Iso8601::from("2018-10-11T03:23:38+00:00") == Iso8601::from("2018-10-11T03:23:38Z")
         );
-        assert!(
-            Iso8601::from("2018-10-11T03:23:38") == Iso8601::from("2018-10-11T03:23:38Z")
-        );
-        assert!(
-            Iso8601::from(" 20181011  0323  Z ") == Iso8601::from("2018-10-11T03:23:00Z")
-        );
+        assert!(Iso8601::from("2018-10-11T03:23:38") == Iso8601::from("2018-10-11T03:23:38Z"));
+        assert!(Iso8601::from(" 20181011  0323  Z ") == Iso8601::from("2018-10-11T03:23:00Z"));
 
         // Fixed-offset ISO 8601 are comparable to UTC times
         assert!(
@@ -255,9 +262,15 @@ pub mod tests {
         assert!(!(Iso8601::from("boo") < Iso8601::from("boo")));
 
         //let maybe_dt: Result<DateTime<FixedOffset>,HolochainError> = Iso8601::from("boo").try_into();
-        match DateTime::<FixedOffset>::try_from( &Iso8601::from("boo")) {
-            Ok(ts) => panic!("Unexpected success of checked DateTime<FixedOffset> try_from: {:?}", &ts ),
-            Err(e) => assert_eq!(format!("{}", e), "Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\""),
+        match DateTime::<FixedOffset>::try_from(&Iso8601::from("boo")) {
+            Ok(ts) => panic!(
+                "Unexpected success of checked DateTime<FixedOffset> try_from: {:?}",
+                &ts
+            ),
+            Err(e) => assert_eq!(
+                format!("{}", e),
+                "Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\""
+            ),
         }
     }
 }

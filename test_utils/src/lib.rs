@@ -58,7 +58,7 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
                 (func (export "main") (param $p0 i64) (result i64)
                     i64.const 6
                 )
-                (data (i64.const 0)
+                (data (i32.const 0)
                     "1337.0"
                 )
                 (export "memory" (memory 0))

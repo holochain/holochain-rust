@@ -33,7 +33,7 @@ impl ToString for RibosomeEncodedAllocation {
 }
 
 /// Represents all possible values passed to/from wasmi functions
-/// All wasmi functions are I32 values
+/// All wasmi functions are I64 values
 #[repr(u64)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum RibosomeEncodedValue {
@@ -143,16 +143,16 @@ impl RibosomeEncodedValue {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, DefaultJson)]
 #[rustfmt::skip]
 pub enum RibosomeErrorCode {
-    Unspecified                     = 1 << 16,
-    ArgumentDeserializationFailed   = 2 << 16,
-    OutOfMemory                     = 3 << 16,
-    ReceivedWrongActionResult       = 4 << 16,
-    CallbackFailed                  = 5 << 16,
-    RecursiveCallForbidden          = 6 << 16,
-    ResponseSerializationFailed     = 7 << 16,
-    NotAnAllocation                 = 8 << 16,
-    ZeroSizedAllocation             = 9 << 16,
-    UnknownEntryType                = 10 << 16,
+    Unspecified                     = 1 << 32,
+    ArgumentDeserializationFailed   = 2 << 32,
+    OutOfMemory                     = 3 << 32,
+    ReceivedWrongActionResult       = 4 << 32,
+    CallbackFailed                  = 5 << 32,
+    RecursiveCallForbidden          = 6 << 32,
+    ResponseSerializationFailed     = 7 << 32,
+    NotAnAllocation                 = 8 << 32,
+    ZeroSizedAllocation             = 9 << 32,
+    UnknownEntryType                = 10 << 32,
 }
 
 #[rustfmt::skip]
@@ -211,6 +211,7 @@ impl From<RibosomeErrorCode> for String {
 
 impl RibosomeErrorCode {
     pub fn from_code_int(code: RibosomeCodeBits) -> Self {
+        println!("{:?}", code);
         match code {
             0 => unreachable!(),
             2 => ArgumentDeserializationFailed,
@@ -285,8 +286,10 @@ pub mod tests {
 
     #[test]
     fn ribosome_error_code_round_trip() {
+        let code_int = RibosomeErrorCode::OutOfMemory as u64;
+        println!("zz {:?}", code_int);
         let oom = RibosomeErrorCode::from_code_int(
-            ((RibosomeErrorCode::OutOfMemory as u64) >> 32) as u32,
+            ((RibosomeErrorCode::OutOfMemory as u64) >> 32) as RibosomeCodeBits,
         );
         assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
         assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());

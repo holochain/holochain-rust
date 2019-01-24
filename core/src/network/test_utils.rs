@@ -134,13 +134,13 @@ pub fn test_wat_always_invalid() -> String {
         (i64.store (i32.const 6) (i64.const 97))
         (i64.store (i32.const 7) (i64.const 116))
 
-        (i32.const 8)
+        (i64.const 8)
     )
 
     (func
         (export "__hdk_validate_link")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
         ;; This writes "FAIL wat" into memory
         (i64.store (i32.const 0) (i64.const 70))

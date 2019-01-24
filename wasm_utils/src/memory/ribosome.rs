@@ -177,7 +177,7 @@ pub mod tests {
                 length: Length::from(8)
             }),
             WasmAllocation::try_from(RibosomeEncodedAllocation::from(
-                0b00000000000000100_0000000000001000
+                0b000000000000000000000000000000100_00000000000000000000000000001000
             )),
         );
     }
@@ -185,7 +185,7 @@ pub mod tests {
     #[test]
     fn ribosome_allocation_from_allocation_test() {
         assert_eq!(
-            RibosomeEncodedAllocation::from(0b0000000000000100_0000000000001000),
+            RibosomeEncodedAllocation::from(0b00000000000000000000000000000100_00000000000000000000000000001000),
             RibosomeEncodedAllocation::from(WasmAllocation {
                 offset: Offset::from(4),
                 length: Length::from(8)
@@ -197,7 +197,7 @@ pub mod tests {
     fn ribosome_encoded_value_from_allocation_test() {
         assert_eq!(
             RibosomeEncodedValue::Allocation(RibosomeEncodedAllocation::from(
-                0b0000000000000100_0000000000001000
+                0b00000000000000000000000000000100_00000000000000000000000000001000
             )),
             RibosomeEncodedValue::from(WasmAllocation {
                 offset: Offset::from(4),
@@ -295,7 +295,7 @@ pub mod tests {
         assert_eq!(
             Ok(WasmStack { top: Top(4) }),
             // 2 + 2 = 4
-            WasmStack::try_from_ribosome_encoding(0b0000000000000010_0000000000000010),
+            WasmStack::try_from_ribosome_encoding(0b00000000000000000000000000000010_00000000000000000000000000000010),
         );
     }
 

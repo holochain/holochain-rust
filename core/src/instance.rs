@@ -721,7 +721,7 @@ pub mod tests {
                 (func (export "genesis") (param $p0 i64) (result i64)
                     i64.const 0
                 )
-                (data (i64.const 0)
+                (data (i32.const 0)
                     ""
                 )
                 (export "memory" (memory 0))

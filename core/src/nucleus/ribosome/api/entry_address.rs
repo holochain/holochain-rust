@@ -30,9 +30,9 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
 }
 
 /// ZomeApiFunction::entry_address function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: entry_type_name and entry_value as JsonString
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 pub fn invoke_entry_address(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);

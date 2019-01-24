@@ -18,8 +18,8 @@ pub struct SinglePageManager {
 
 /// A Memory Manager limited to one wasm memory page that works like a stack.
 /// With this Memory Manager, the WASM host (i.e. the Ribosome) and WASM module (i.e. the Zome)
-/// only need to pass around an i32 to communicate any data.
-/// That i32 is the last memory allocation on the stack:
+/// only need to pass around an i64 to communicate any data.
+/// That u64 is the last memory allocation on the stack:
 /// it is split in an i16 'offset' in the upper bits and an i16 'length' in the lower bits.
 /// This fits with the 64KiB sized of a memory Page.
 /// Complex input arguments should be stored on the latest allocation on the stack.

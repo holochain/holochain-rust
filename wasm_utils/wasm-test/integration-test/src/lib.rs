@@ -364,7 +364,7 @@ pub extern "C" fn store_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBit
 pub extern "C" fn load_json_err(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     let mut stack = WasmStack::default();
 
-    let encoded = 1 << 16;
+    let encoded = 1 << 32;
     let maybe_test_struct: Result<TestStruct, HolochainError> = load_ribosome_encoded_json(encoded);
     let test_struct = match maybe_test_struct {
         Ok(test_struct) => test_struct,

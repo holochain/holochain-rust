@@ -43,7 +43,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: entry_args.address,
-        options: GetEntryOptions::default(),
+        options: Default::default(),
     };
     let maybe_entry_result = block_on(get_entry_result_workflow(&runtime.context, &get_args));
     if let Err(_err) = maybe_entry_result {

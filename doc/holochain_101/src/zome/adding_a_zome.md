@@ -17,6 +17,7 @@ The output should be as follows
 ```shell
 cargo init --lib --vcs none
 Created library package
+Generated new rust Zome at "zomes/your_zome_name"
 ```
 
 Note that in the case of a Rust Zome, which is the only language for a Zome we can generate at the moment, it will rely internally on Rust related commands (`cargo init`), meaning that Rust (and its package manager, cargo) must already ALSO be installed for this command to work successfully.

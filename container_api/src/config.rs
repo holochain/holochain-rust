@@ -363,6 +363,7 @@ pub struct InterfaceConfiguration {
     pub driver: InterfaceDriver,
     #[serde(default)]
     pub admin: bool,
+    #[serde(default)]
     pub instances: Vec<InstanceReferenceConfiguration>,
 }
 

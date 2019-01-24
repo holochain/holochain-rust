@@ -18,10 +18,11 @@ use holochain_core_types::{
     agent::AgentId,
     cas::content::Address,
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
+        capabilities::{Capability, CapabilityCall, CapabilityType},
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
+        fn_declarations::FnDeclaration,
         wasm::DnaWasm,
-        zome::{Config, Zome},
+        zome::{Config, Zome, ZomeFnDeclarations, ZomeCapabilities},
         Dna,
     },
     entry::entry_type::{AppEntryType, EntryType},
@@ -55,7 +56,7 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
     let default_wat = r#"
             (module
                 (memory (;0;) 17)
-                (func (export "main") (param $p0 i32) (result i32)
+                (func (export "public_test_fn") (param $p0 i32) (result i32)
                     i32.const 6
                 )
                 (data (i32.const 0)
@@ -77,12 +78,12 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>) -> Dna {
+pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
-    let capability = create_test_cap_with_fn_name("main");
+    let defs = create_test_defs_with_fn_name("public_test_fn");
 
-    let mut capabilities = BTreeMap::new();
-    capabilities.insert(cap_name.to_string(), capability);
+//    let mut capabilities = BTreeMap::new();
+//    capabilities.insert(cap_name.to_string(), capability);
 
     let mut test_entry_def = EntryTypeDef::new();
     test_entry_def.links_to.push(LinksTo {
@@ -110,7 +111,8 @@ pub fn create_test_dna_with_wasm(zome_name: &str, cap_name: &str, wasm: Vec<u8>)
         "some zome description",
         &Config::new(),
         &entry_types,
-        &capabilities,
+        &defs.0,
+        &defs.1,
         &DnaWasm { code: wasm },
     );
 
@@ -125,26 +127,26 @@ pub fn create_test_cap(cap_type: CapabilityType) -> Capability {
     Capability::new(cap_type)
 }
 
-pub fn create_test_cap_with_fn_name(fn_name: &str) -> Capability {
+pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, ZomeCapabilities) {
     let mut capability = Capability::new(CapabilityType::Public);
     let mut fn_decl = FnDeclaration::new();
     fn_decl.name = String::from(fn_name);
-    capability.functions.push(fn_decl);
-    capability
+    capability.functions.push(String::from(fn_name));
+    let mut capabilities = BTreeMap::new();
+    capabilities.insert("test_cap".to_string(), capability);
+
+    let mut functions = Vec::new();
+    functions.push(fn_decl);
+    (functions, capabilities)
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_cap(
+pub fn create_test_dna_with_defs(
     zome_name: &str,
-    cap_name: &str,
-    cap: &Capability,
+    defs: (ZomeFnDeclarations,ZomeCapabilities),
     wasm: &[u8],
 ) -> Dna {
     let mut dna = Dna::new();
-
-    let mut capabilities = BTreeMap::new();
-    capabilities.insert(cap_name.to_string(), cap.clone());
-
     let etypedef = EntryTypeDef::new();
     let mut entry_types = BTreeMap::new();
     entry_types.insert("testEntryType".into(), etypedef);
@@ -152,7 +154,8 @@ pub fn create_test_dna_with_cap(
         "some zome description",
         &Config::new(),
         &entry_types,
-        &capabilities,
+        &defs.0,
+        &defs.1,
         &DnaWasm {
             code: wasm.to_owned(),
         },
@@ -213,8 +216,8 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<JsonString> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
-    let capability = create_test_cap_with_fn_name(fn_name);
-    let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+    let defs = create_test_defs_with_fn_name(fn_name);
+    let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
     let context = create_test_context("alex");
     let mut hc = Holochain::new(dna.clone(), context).unwrap();
@@ -225,7 +228,6 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     return hc.call(
         "test_zome",
         Some(CapabilityCall::new(
-            "test_cap".to_string(),
             Address::from("test_token"),
             None,
         )),

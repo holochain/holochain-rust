@@ -20,8 +20,10 @@ use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
+        capabilities::{Capability, CapabilityCall, CapabilityType},
         entry_types::{EntryTypeDef, LinksTo},
+        fn_declarations::FnDeclaration,
+        zome::{ZomeCapabilities, ZomeFnDeclarations},
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
@@ -39,6 +41,7 @@ use holochain_wasm_utils::{
     wasm_target_dir,
 };
 use std::{
+    collections::BTreeMap,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -139,16 +142,26 @@ pub fn zome_setup(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 pub fn __list_capabilities(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
+#[no_mangle]
+pub fn __list_functions(_: u32) -> u32 {
+    0
+}
 
-pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
+pub fn create_test_defs_with_fn_names(
+    fn_names: Vec<&str>,
+) -> (ZomeFnDeclarations, ZomeCapabilities) {
     let mut capability = Capability::new(CapabilityType::Public);
+    let mut fn_declarations = Vec::new();
 
     for fn_name in fn_names {
+        capability.functions.push(String::from(fn_name));
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);
-        capability.functions.push(fn_decl);
+        fn_declarations.push(fn_decl);
     }
-    capability
+    let mut capabilities = BTreeMap::new();
+    capabilities.insert("test_cap".to_string(), capability);
+    (fn_declarations, capabilities)
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
@@ -199,7 +212,7 @@ fn start_holochain_instance<T: Into<String>>(
         "{}/wasm32-unknown-unknown/release/test_globals.wasm",
         wasm_target_dir("hdk-rust/", "wasm-test/"),
     ));
-    let capabability = create_test_cap_with_fn_names(vec![
+    let defs = create_test_defs_with_fn_names(vec![
         "check_global",
         "check_commit_entry",
         "check_commit_entry_macro",
@@ -222,7 +235,7 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_modified_entry_ok",
         "send_message",
     ]);
-    let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
+    let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
 
     // TODO: construct test DNA using the auto-generated JSON feature
@@ -270,11 +283,7 @@ fn start_holochain_instance<T: Into<String>>(
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
     hc.call(
         "test_zome",
-        Some(CapabilityCall::new(
-            "test_cap".to_string(),
-            Address::from("test_token"),
-            None,
-        )),
+        Some(CapabilityCall::new(Address::from("test_token"), None)),
         fn_name,
         params,
     )

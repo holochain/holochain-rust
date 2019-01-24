@@ -12,7 +12,7 @@ use crate::{
 use holochain_core_types::{
     dna::{capabilities::CapabilityCall, Dna},
     entry::cap_entries::CapTokenGrant,
-    error::{DnaError, HolochainError},
+    error::HolochainError,
     json::JsonString,
 };
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
@@ -118,14 +118,9 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
                 "No container API in context".to_string(),
             ))?;
 
-    let cap_name = match input.cap {
-        Some(cap_call) => cap_call.cap_name,
-        None => String::from(""),
-    };
-
     let method = format!(
-        "{}/{}/{}/{}",
-        input.instance_handle, input.zome_name, cap_name, input.fn_name
+        "{}/{}/{}",
+        input.instance_handle, input.zome_name, input.fn_name
     );
 
     let handler = container_api.write().unwrap();
@@ -164,40 +159,10 @@ pub fn validate_call(
         return Err(HolochainError::DnaMissing);
     }
     let dna = state.dna.clone().unwrap();
-
-    // Get zome
-    let zome = match dna.zomes.get(&fn_call.zome_name) {
-        None => {
-            return Err(HolochainError::Dna(DnaError::ZomeNotFound(format!(
-                "Zome '{}' not found",
-                fn_call.zome_name.clone()
-            ))));
-        }
-        Some(zome) => zome,
-    };
-
-    // Get capability
-    // NOTE, this will go away soon because function won't be inside the capability.
-    let capability = match zome.capabilities.get(&fn_call.cap_name()) {
-        None => {
-            return Err(HolochainError::Dna(DnaError::CapabilityNotFound(format!(
-                "Capability '{}' not found in Zome '{}'",
-                fn_call.cap_name().clone(),
-                fn_call.zome_name.clone()
-            ))));
-        }
-        Some(capability) => capability,
-    };
-    // Get ZomeFn
-    let maybe_fn = capability
-        .functions
-        .iter()
-        .find(|&fn_declaration| fn_declaration.name == fn_call.fn_name);
-    if maybe_fn.is_none() {
-        return Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(
-            format!("Zome function '{}' not found", fn_call.fn_name.clone()),
-        )));
-    }
+    // make sure the zome and function exists
+    let _ = dna
+        .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
+        .map_err(|e| HolochainError::Dna(e))?;
 
     let public = is_fn_public(&dna, &fn_call)?;
     if !public && !check_capability(context.clone(), &fn_call.clone()) {
@@ -234,7 +199,7 @@ pub(crate) fn reduce_call(
     // 2. Get the exposed Zome function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
     let code =
-        maybe_code.expect("zome not found, Should have failed before when getting capability.");
+        maybe_code.expect("zome not found, Should have failed before when validating the call.");
     state.zome_calls.insert(fn_call.clone(), None);
     launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }
@@ -290,14 +255,15 @@ pub mod tests {
                 },
                 Defn,
             },
-            tests::test_capability_call,
+            tests::{test_capability_call, test_capability_name},
         },
         workflows::author_entry::author_entry,
     };
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
+            capabilities::{Capability, CapabilityCall, CapabilityType},
+            fn_declarations::FnDeclaration,
             Dna,
         },
         entry::Entry,
@@ -308,11 +274,14 @@ pub mod tests {
 
     use futures::executor::block_on;
     use serde_json;
-    use std::sync::{
-        mpsc::{channel, RecvTimeoutError},
-        Arc,
+    use std::{
+        collections::BTreeMap,
+        sync::{
+            mpsc::{channel, RecvTimeoutError},
+            Arc,
+        },
     };
-    use test_utils::create_test_dna_with_cap;
+    use test_utils::create_test_dna_with_defs;
 
     /// dummy commit args from standard test entry
     #[cfg_attr(tarpaulin, skip)]
@@ -320,11 +289,7 @@ pub mod tests {
         let args = ZomeFnCallArgs {
             instance_handle: "instance_handle".to_string(),
             zome_name: "zome_name".to_string(),
-            cap: Some(CapabilityCall::new(
-                "cap_name".to_string(),
-                Address::from("bad cap_token"),
-                None,
-            )),
+            cap: Some(CapabilityCall::new(Address::from("bad cap_token"), None)),
             fn_name: "fn_name".to_string(),
             fn_args: "fn_args".to_string(),
         };
@@ -370,11 +335,7 @@ pub mod tests {
     ) {
         let zome_call = ZomeFnCall::new(
             "test_zome",
-            Some(CapabilityCall::new(
-                "test_cap".to_string(),
-                Address::from(token_str),
-                None,
-            )),
+            Some(CapabilityCall::new(Address::from(token_str), None)),
             "test",
             "{}",
         );
@@ -422,7 +383,7 @@ pub mod tests {
 
     #[test]
     fn test_call_no_zome() {
-        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", &test_capability_name(), None);
         let test_setup = setup_test(dna);
         let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
@@ -433,12 +394,18 @@ pub mod tests {
     fn setup_dna_for_cap_test(cap_type: CapabilityType) -> Dna {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
         let mut capability = Capability::new(cap_type);
-        capability.functions = vec![FnDeclaration {
-            name: "test".into(),
+        let fn_decl = FnDeclaration {
+            name: test_function_name(),
             inputs: Vec::new(),
             outputs: Vec::new(),
-        }];
-        create_test_dna_with_cap(&test_zome_name(), "test_cap", &capability, &wasm)
+        };
+        capability.functions = vec![fn_decl.name.clone()];
+        let mut capabilities = BTreeMap::new();
+        capabilities.insert(test_capability_name(), capability);
+        let mut functions = Vec::new();
+        functions.push(fn_decl);
+
+        create_test_dna_with_defs(&test_zome_name(), (functions, capabilities), &wasm)
     }
 
     #[test]
@@ -524,9 +491,9 @@ pub mod tests {
         let test_setup = setup_test(dna);
         let agent_token = Address::from(test_setup.context.agent_id.key.clone());
         let context = test_setup.context.clone();
-        let cap_call = CapabilityCall::new("foo".to_string(), agent_token, None);
+        let cap_call = CapabilityCall::new(agent_token, None);
         assert!(is_token_the_agent(context.clone(), &Some(cap_call)));
-        let cap_call = CapabilityCall::new("foo".to_string(), Address::from(""), None);
+        let cap_call = CapabilityCall::new(Address::from(""), None);
         assert!(!is_token_the_agent(context, &Some(cap_call)));
     }
 }

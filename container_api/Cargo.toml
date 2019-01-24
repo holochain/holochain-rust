@@ -9,7 +9,13 @@ holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 holochain_net = { path = "../net" }
 chrono = "0.4"
-futures-preview = { git = "https://github.com/holochain/futures-rs", branch = "pinned-to-alpha-11" }
+futures-preview = "=0.3.0-alpha.11"
+futures-core-preview = "=0.3.0-alpha.11"
+futures-channel-preview = "=0.3.0-alpha.11"
+futures-executor-preview = "=0.3.0-alpha.11"
+futures-io-preview = "=0.3.0-alpha.11"
+futures-sink-preview = "=0.3.0-alpha.11"
+futures-util-preview = "=0.3.0-alpha.11"
 tempfile = "3"
 serde = "1.0"
 serde_derive = "1.0"

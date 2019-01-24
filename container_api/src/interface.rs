@@ -154,39 +154,25 @@ impl ContainerApiBuilder {
         match dna {
             Some(dna) => {
                 for (zome_name, zome) in dna.zomes {
-                    for (cap_name, cap) in zome.capabilities {
-                        for func in cap.functions {
-                            let func_name = func.name;
-                            let zome_name = zome_name.clone();
-                            let cap_name = cap_name.clone();
-                            let method_name = format!(
-                                "{}/{}/{}/{}",
-                                instance_name, zome_name, cap_name, func_name
-                            );
-                            let hc_lock_inner = hc_lock.clone();
-                            self.io.add_method(&method_name, move |params| {
-                                let mut hc = hc_lock_inner.write().unwrap();
-                                let params_string =
-                                    serde_json::to_string(&params).map_err(|e| {
-                                        jsonrpc_core::Error::invalid_params(e.to_string())
-                                    })?;
-                                let response = hc
-                                    .call(
-                                        &zome_name,
-                                        Some(CapabilityCall::new(
-                                            cap_name.clone(),
-                                            Address::from("fake_token"),
-                                            None,
-                                        )),
-                                        &func_name,
-                                        &params_string,
-                                    )
-                                    .map_err(|e| {
-                                        jsonrpc_core::Error::invalid_params(e.to_string())
-                                    })?;
-                                Ok(Value::String(response.to_string()))
-                            })
-                        }
+                    for fn_decl in zome.fn_declarations {
+                        let func_name = String::from(fn_decl.name);
+                        let zome_name = zome_name.clone();
+                        let method_name = format!("{}/{}/{}", instance_name, zome_name, func_name);
+                        let hc_lock_inner = hc_lock.clone();
+                        self.io.add_method(&method_name, move |params| {
+                            let mut hc = hc_lock_inner.write().unwrap();
+                            let params_string = serde_json::to_string(&params)
+                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                            let response = hc
+                                .call(
+                                    &zome_name,
+                                    Some(CapabilityCall::new(Address::from("fake_token"), None)),
+                                    &func_name,
+                                    &params_string,
+                                )
+                                .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
+                            Ok(Value::String(response.to_string()))
+                        })
                     }
                 }
             }
@@ -792,8 +778,8 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""test-instance-1/greeter/public/hello""#));
-        assert!(!result.contains(r#""test-instance-2//test/test""#));
+        assert!(result.contains(r#""test-instance-1/greeter/hello""#));
+        assert!(!result.contains(r#""test-instance-2//test""#));
     }
 
     #[test]
@@ -812,8 +798,8 @@ pub mod tests {
         let result = format!("{:?}", handler).to_string();
         println!("{}", result);
         assert!(result.contains("info/instances"));
-        assert!(result.contains(r#""happ-store/greeter/public/hello""#));
-        assert!(!result.contains(r#""test-instance-1//test/test""#));
+        assert!(result.contains(r#""happ-store/greeter/hello""#));
+        assert!(!result.contains(r#""test-instance-1//test""#));
     }
 
     /// The below test cannot be extented to test the other RPC methods due to the singleton design of the container

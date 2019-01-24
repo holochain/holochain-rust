@@ -14,16 +14,13 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::ChainHeader,
-        dna::{
-            capabilities::{Capability, CapabilityType},
-            entry_types::EntryTypeDef,
-            Dna,
-        },
+        dna::{entry_types::EntryTypeDef, Dna},
         entry::Entry,
         json::RawString,
     };
+
     use holochain_wasm_utils::wasm_target_dir;
-    use std::sync::Arc;
+    use std::{collections::BTreeMap, sync::Arc};
     use test_utils::*;
 
     #[cfg_attr(tarpaulin, skip)]
@@ -39,12 +36,8 @@ pub mod tests {
             wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
         ));
 
-        let mut dna = create_test_dna_with_cap(
-            "test_zome",
-            "test_cap",
-            &Capability::new(CapabilityType::Public),
-            &wasm,
-        );
+        let defs = (Vec::new(), BTreeMap::new());
+        let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
         dna.zomes
             .get_mut("test_zome")

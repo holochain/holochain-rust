@@ -89,18 +89,13 @@ Container.prototype.callWithPromise = function (...args) {
         const result = this.call(...args)
         return [result, promise]
     } catch (e) {
-        return [
-            undefined, 
-            Promise.reject(e).catch(err => console.error("Error with scenario test system: ", err))
-        ]
+        return [undefined, Promise.reject(e)]
     }
 }
 
 Container.prototype.callSync = function (...args) {
     const [result, promise] = this.callWithPromise(...args)
-    return promise
-        .catch(err => console.error("Error with scenario test system: ", err))
-        .then(() => { return result })
+    return promise.then(() => result)
 }
 
 // Convenience function for making an object that can call into the container

@@ -17,7 +17,7 @@ pub fn get_link_entries(
     let target_address = link.target();
     let entry_args = &GetEntryArgs {
         address: base_address.clone(),
-        options: GetEntryOptions::default(),
+        options: Default::default(),
     };
     let base_entry_get_result = block_on(get_entry_result_workflow(&context, entry_args))?;
     if !base_entry_get_result.found() {
@@ -28,7 +28,7 @@ pub fn get_link_entries(
     let base_entry = base_entry_get_result.latest().unwrap();
     let entry_args = &GetEntryArgs {
         address: target_address.clone(),
-        options: GetEntryOptions::default(),
+        options: Default::default(),
     };
     let target_entry_get_result = block_on(get_entry_result_workflow(&context, entry_args))?;
     if !target_entry_get_result.found() {

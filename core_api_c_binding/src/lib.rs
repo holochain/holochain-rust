@@ -94,34 +94,23 @@ type CStrPtr = *mut c_char;
 pub unsafe extern "C" fn holochain_call(
     ptr: *mut Holochain,
     zome: CStrPtr,
-    capability: CStrPtr,
     token: CStrPtr,
     function: CStrPtr,
     parameters: CStrPtr,
 ) -> CStrPtr {
-    if ptr.is_null()
-        || zome.is_null()
-        || capability.is_null()
-        || function.is_null()
-        || parameters.is_null()
-    {
+    if ptr.is_null() || zome.is_null() || function.is_null() || parameters.is_null() {
         return std::ptr::null_mut();
     }
 
     let holochain = &mut *ptr;
     let zome = CStr::from_ptr(zome).to_string_lossy().into_owned();
-    let capability = CStr::from_ptr(capability).to_string_lossy().into_owned();
     let token = CStr::from_ptr(token).to_string_lossy().into_owned();
     let function = CStr::from_ptr(function).to_string_lossy().into_owned();
     let parameters = CStr::from_ptr(parameters).to_string_lossy().into_owned();
 
     match holochain.call(
         zome.as_str(),
-        Some(CapabilityCall::new(
-            capability.to_string(),
-            Address::from(token.as_str()),
-            None,
-        )),
+        Some(CapabilityCall::new(Address::from(token.as_str()), None)),
         function.as_str(),
         parameters.as_str(),
     ) {

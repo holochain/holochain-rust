@@ -66,7 +66,7 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
         "#;
     let wat_str = wat.unwrap_or_else(|| &default_wat);
 
-    println!("xxx {:?}", wat_str);
+    
 
     // Test WASM code that returns 1337 as integer
     let wasm_binary = Wat2Wasm::new()

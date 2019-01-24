@@ -602,7 +602,7 @@ pattern = ".*""#
     }
 
     pub fn test_toml() -> String {
-        let mut toml = String::from("bridges = []\npersistence_dir = \"./tmp-test/\"");
+        let mut toml = String::from("bridges = []\npersistence_dir = \".\"");
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -615,6 +615,7 @@ pattern = ".*""#
 
     fn create_test_container<T: Into<String>>(test_name: T) -> Container {
         let mut config = load_configuration::<Configuration>(&test_toml()).unwrap();
+        config.persistence_dir.push("tmp-test");
         config.persistence_dir.push(test_name.into());
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
@@ -714,8 +715,8 @@ id = "new-dna""#,
 
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file =
-            PathBuf::from("./tmp-test/test_install_dna_from_file_and_copy/dna/");
+        let mut output_dna_file: PathBuf =
+            [".", "tmp-test", "test_install_dna_from_file_and_copy", "dna"].iter().collect();
         output_dna_file.push(new_dna.address().to_string());
         output_dna_file.set_extension("hcpkg");
 
@@ -775,8 +776,9 @@ id = "new-dna""#,
         assert_ne!(original_hash, new_hash);
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file =
-            PathBuf::from("./tmp-test/test_install_dna_from_file_with_properties/dna/");
+        let mut output_dna_file: PathBuf =
+             [".", "tmp-test", "test_install_dna_from_file_with_properties", "dna"].iter().collect();
+
         output_dna_file.push(new_hash.to_string());
         output_dna_file.set_extension("hcpkg");
 

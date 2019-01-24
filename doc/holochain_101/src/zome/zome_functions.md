@@ -112,7 +112,7 @@ Containers install and uninstall, start and stop instances of DNA on devices. Th
 Imagine that there are many DNA instances running within one Container, and each DNA can have multiple Zomes. Clearly, function calls will need to include a complete enough set of arguments to know the following:
 - which instance?
 - which Zome?
-- which Capability?
+- which Capability token?
 - which function?
 - what arguments?
 
@@ -154,7 +154,7 @@ define_zome! {
         Ok(())
     }
 
-    functions: {}
+    functions: []
 }
 ```
 
@@ -162,22 +162,22 @@ define_zome! {
 
 ### Adding a Capability
 
-A Zome can have multiple Capabilities within it. This is what adding a Capability looks like:
+A Zome can have multiple Capabilities within it. This is what adding some Capabilities might look like:
 
 ```rust
 ...
 
 define_zome! {
     ...
-    functions: {
-        main (Public) {
-
+    capabilities: {
+        public (Public) [read_post]
+        authoring (Assigned) [create_post, update_post]
         }
     }
 }
 ```
 
-In this example, of a Capability with no functions, `main` is the given name of this Capability, by which it will be referenced elsewhere. `Public` is a declaration of CapabilityType for this Capability. At the time of writing, it's recommended that you only use `Public` here, since the other options for CapabilityType are still under development. The implication of `Public` is that from your local device, any request to Holochain to make a function call to this Capability of this Zome will succeed, without needing authorization.
+In this example, `public` is the name of a capability which grants `Public` Capbility-type access to the `read_post` function, and `authoring` is the name of a capability which for which token grants can be assigned to specific agents for access to the `create_post` and `update_post` functions.  The implication of `Public` is that from your local device, any request to Holochain to make a function call to this Capability of this Zome will succeed, without needing authorization.
 
 ### Adding a Zome Function
 
@@ -187,22 +187,20 @@ In order to add a Zome function, there are two primary steps that are involved.
 
 __Step 1__
 
-Since `main (Public)` expects key-value pairs, we add new functions using the following pattern:
+The `functions` section looks a bit like an array of key-value pairs:
 
 ```rust
 ...
 
 define_zome! {
     ...
-    functions: {
-        main (Public) {
-            send_message: {
-                inputs: |to_agent: Address, message: String|,
-                outputs: |response: ZomeApiResult<String>|,
-                handler: handle_send_message
-            }
+    functions: [
+        send_message: {
+            inputs: |to_agent: Address, message: String|,
+            outputs: |response: ZomeApiResult<String>|,
+            handler: handle_send_message
         }
-    }
+    ]
 }
 ```
 
@@ -244,15 +242,13 @@ fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<Stri
 
 define_zome! {
     ...
-    functions: {
-        main (Public) {
-            send_message: {
-                inputs: |to_agent: Address, message: String|,
-                outputs: |response: ZomeApiResult<String>|,
-                handler: handle_send_message
-            }
+    functions: [
+        send_message: {
+            inputs: |to_agent: Address, message: String|,
+            outputs: |response: ZomeApiResult<String>|,
+            handler: handle_send_message
         }
-    }
+    ]
 }
 ```
 

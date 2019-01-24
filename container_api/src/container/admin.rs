@@ -866,18 +866,22 @@ id = "new-dna""#,
         );
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(
+toml = add_block(
             toml,
             String::from(
                 r#"[[instances]]
 agent = "test-agent-1"
 dna = "new-dna"
-id = "new-instance"
-
-[instances.storage]
-path = "./tmp-test/test_add_instance/storage/new-instance"
-type = "file""#,
+id = "new-instance""#,
             ),
+        );
+
+        let storage_path: PathBuf = [".", "tmp-test", test_name, "storage", "new-instance"].iter().collect();
+        let storage_path_string = storage_path.to_str().unwrap().to_owned();
+        toml = add_block(toml, format!(
+            "[instances.storage]\npath = \"{}\"\ntype = \"file\"",
+            storage_path_string
+            )
         );
         toml = add_block(toml, interface());
         toml = add_block(toml, logger());
@@ -1136,12 +1140,16 @@ type = "http""#,
                 r#"[[instances]]
 agent = "test-agent-1"
 dna = "test-dna"
-id = "new-instance"
-
-[instances.storage]
-path = "./tmp-test/test_add_instance_to_interface/storage/new-instance"
-type = "file""#,
+id = "new-instance""#,
             ),
+        );
+
+        let storage_path: PathBuf = [".", "tmp-test", test_name, "storage", "new-instance"].iter().collect();
+        let storage_path_string = storage_path.to_str().unwrap().to_owned();
+        toml = add_block(toml, format!(
+            "[instances.storage]\npath = \"{}\"\ntype = \"file\"",
+            storage_path_string
+            )
         );
         toml = add_block(
             toml,
@@ -1331,8 +1339,8 @@ type = "websocket""#,
             .expect("Could not read temp config file");
 
         let mut toml = persistence_dir(test_name);
-        toml = add_block(toml, empty_ui_bundles());
-        toml = add_block(toml, empty_ui_interfaces());
+        toml = add_line(toml, empty_ui_bundles());
+        toml = add_line(toml, empty_ui_interfaces());
 
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());

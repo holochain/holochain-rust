@@ -16,6 +16,7 @@ use holochain_container_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeErrorCode},
     json::{JsonString, RawString},
+    bits_n_pieces::U16_MAX,
 };
 use holochain_wasm_utils::wasm_target_dir;
 use std::convert::TryFrom;
@@ -85,6 +86,14 @@ fn stacked_strings_test() {
     assert_eq!(
         Ok(JsonString::from("first")),
         call_zome_function_with_hc("stacked_strings"),
+    );
+}
+
+#[test]
+fn big_string_test() {
+    assert_eq!(
+        Ok(JsonString::from("(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize))),
+        call_zome_function_with_hc("big_string"),
     );
 }
 

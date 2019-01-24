@@ -4,10 +4,9 @@
 
 //use std::cmp::Ordering;
 use chrono::{offset::Utc, DateTime};
-use std::cmp::Ordering;
 use error::error::HolochainError;
 use json::JsonString;
-use std::time::Duration;
+use std::{cmp::Ordering, time::Duration};
 
 /// Represents a timeout for an HDK function
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
@@ -118,4 +117,3 @@ pub mod tests {
         assert!(!(Iso8601::from("boo") < Iso8601::from("boo")));
     }
 }
-

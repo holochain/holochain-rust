@@ -13,9 +13,9 @@ use std::{
 
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver, StorageConfiguration,
+    InterfaceDriver, StorageConfiguration, UiInterfaceConfiguration,
 };
-use container::{ContainerAdmin, CONTAINER};
+use container::{ContainerAdmin, ContainerUiAdmin, CONTAINER};
 use serde_json::map::Map;
 
 pub type InterfaceError = String;
@@ -613,6 +613,66 @@ impl ContainerApiBuilder {
             Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
         });
 
+        self
+    }
+
+    pub fn with_admin_ui_functions(mut self) -> Self {
+        self.io.add_method("admin/ui/install", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let root_dir = Self::get_as_string("root_dir", &params_map)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.install_ui_bundle_from_file(PathBuf::from(root_dir), &id))?;
+            Ok(json!({"success": true}))
+        });
+        self.io.add_method("admin/ui/uninstall", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.uninstall_ui_bundle(&id))?;
+            Ok(json!({"success": true}))
+        });
+        self.io.add_method("admin/ui/list", move |_| {
+            Ok(json!({"success": true}))
+        });
+        self.io.add_method("admin/ui_interface/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
+                jsonrpc_core::Error::invalid_params(String::from(
+                    "`port` has to be a 16bit integer",
+                ))
+            })?;            
+            let bundle = Self::get_as_string("bundle", &params_map)?;
+            let dna_interface = Self::get_as_string("dna_interface", &params_map).ok();
+
+            container_call!(|c| c.add_ui_interface(UiInterfaceConfiguration{
+                id,
+                port,
+                bundle,
+                dna_interface
+            }))?;
+            Ok(json!({"success": true}))
+        });
+        self.io.add_method("admin/ui_interface/remove", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.remove_ui_interface(&id))?;
+            Ok(json!({"success": true}))
+        });
+        self.io.add_method("admin/ui_interface/start", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.start_ui_interface(&id))?;
+            Ok(json!({"success": true}))
+        });
+        self.io.add_method("admin/ui_interface/stop", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.stop_ui_interface(&id))?;
+            Ok(json!({"success": true}))
+        });
+        self.io.add_method("admin/ui_interface/list", move |_params| {
+            Ok(json!({"success": true}))
+        });
         self
     }
 }

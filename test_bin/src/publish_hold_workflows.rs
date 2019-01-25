@@ -82,17 +82,17 @@ pub fn empty_publish_data_list_test(
 
 /// Reply some data in publish_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn publish_data_list_test(
+pub fn publish_list_test(
     alex: &mut P2pNode,
     billy: &mut P2pNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: publish_data_list_test()");
+    println!("Testing: publish_list_test()");
     setup_normal(alex, billy, can_connect)?;
 
     // author an entry without publishing it
-    alex.author_data(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
+    alex.author_entry(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
 
     // Look for the publish_list request received from network module and reply
     let request = alex
@@ -123,13 +123,13 @@ pub fn publish_data_list_test(
 
     // billy asks for reported published data.
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    let fetch_data = FetchEntryData {
+    let fetch_entry = FetchEntryData {
         request_id         : FETCH_ENTRY_1_ID.into(),
         dna_address        : DNA_ADDRESS.clone(),
         requester_agent_id : BILLY_AGENT_ID.into(),
-        entry_address: ENTRY_ADDRESS_1.clone(),
+        entry_address      : ENTRY_ADDRESS_1.clone(),
     };
-    billy.send(JsonProtocol::FetchEntry(fetch_data).into())?;
+    billy.send(JsonProtocol::FetchEntry(fetch_entry).into())?;
 
     // Alex should receive HandleFetchDhtData request
     let request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
@@ -164,7 +164,7 @@ pub fn publish_meta_list_test(
     setup_normal(alex, billy, can_connect)?;
 
     // author an entry
-    alex.author_data(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     // author a meta without publishing it
     alex.author_meta(
         &DNA_ADDRESS,

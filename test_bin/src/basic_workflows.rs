@@ -54,7 +54,7 @@ fn confirm_published_data(
     content: &serde_json::Value,
 ) -> NetResult<()> {
     // Alex publishs data on the network
-    alex.author_data(&DNA_ADDRESS, address.into(), content, true)?;
+    alex.author_entry(&DNA_ADDRESS, address.into(), content, true)?;
 
     // Check if both nodes received a HandleStore command.
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
@@ -289,7 +289,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
 
     // Again but 'wait' at the end
     // Alex publishs data & meta on the network
-    alex.author_data(&DNA_ADDRESS, &ENTRY_ADDRESS_3, &ENTRY_CONTENT_3, true)?;
+    alex.author_entry(&DNA_ADDRESS, &ENTRY_ADDRESS_3, &ENTRY_CONTENT_3, true)?;
     alex.author_meta(
         &DNA_ADDRESS,
         &ENTRY_ADDRESS_3,
@@ -336,7 +336,7 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     setup_normal(alex, billy, can_connect)?;
 
     // Alex publish data on the network
-    alex.author_data(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
 
     // Check if both nodes are asked to store it
     let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));

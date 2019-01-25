@@ -64,7 +64,7 @@ impl P2pNode {
 
 // Publish & Hold
 impl P2pNode {
-    pub fn author_data(
+    pub fn author_entry(
         &mut self,
         dna_address: &Address,
         data_address: &Address,
@@ -277,7 +277,7 @@ impl P2pNode {
 
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                println!("<<< P2pNode({}) handler: {:?}", agent_id_arg, r);
+                // println!("<<< ({}) handler: {:?}", agent_id_arg, r);
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -333,8 +333,8 @@ impl P2pNode {
         let data = self.receiver.try_recv()?;
         // Print non-ping messages
         match data {
-            Protocol::NamedBinary(_) => println!("<< P2pNode({}) recv: {:?}", self.agent_id, data),
-            Protocol::Json(_) => println!("<< P2pNode({}) recv: {:?}", self.agent_id, data),
+            Protocol::NamedBinary(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
+            Protocol::Json(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
             _ => (),
         };
 
@@ -366,10 +366,11 @@ impl P2pNode {
             let mut has_recved = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!(
-                    "P2pNode({})::listen() - received: {:?}",
-                    self.agent_id, p2p_msg
-                );
+                // Debugging code (do not remove)
+//                println!(
+//                    "({})::listen() - received: {:?}",
+//                    self.agent_id, p2p_msg
+//                );
                 has_recved = true;
                 time_ms = 0;
                 count += 1;
@@ -411,15 +412,15 @@ impl P2pNode {
 
             if let Ok(p2p_msg) = self.try_recv() {
                 println!(
-                    "P2pNode({})::wait() - received: {:?}",
+                    "({})::wait() - received: {:?}",
                     self.agent_id, p2p_msg
                 );
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    println!("\t P2pNode({})::wait() - match", self.agent_id);
+                    println!("\t ({})::wait() - match", self.agent_id);
                     return p2p_msg;
                 } else {
-                    println!("\t P2pNode({})::wait() - NO match", self.agent_id);
+                    println!("\t ({})::wait() - NO match", self.agent_id);
                 }
             }
 
@@ -427,7 +428,7 @@ impl P2pNode {
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 time_ms += 10;
                 if time_ms > timeout_ms {
-                    panic!("P2pNode({})::wait() has TIMEOUT", self.agent_id);
+                    panic!("({})::wait() has TIMEOUT", self.agent_id);
                 }
             }
         }
@@ -577,7 +578,7 @@ impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not delete)
-        println!(">> P2pNode({}) send: {:?}", self.agent_id, data);
+        println!(">> ({}) send: {:?}", self.agent_id, data);
         self.p2p_connection.send(data)
     }
 }

@@ -105,13 +105,13 @@ pub(crate) struct InMemoryServer {
     client_count: usize,
 
     // published data book: bucket_id -> entry_addresses
-    published_data_book: AddressBook,
+    published_entry_book: AddressBook,
     // stored data book: bucket_id -> entry_addresses
-    stored_data_book: AddressBook,
+    stored_entry_book: AddressBook,
     // published meta data book: bucket_id -> entry_addresses? hashed meta?
-    published_metadata_book: AddressBook,
+    published_meta_book: AddressBook,
     // stored meta data book: bucket_id -> entry_addresses? hashed meta?
-    stored_metadata_book: AddressBook,
+    stored_meta_book: AddressBook,
 
     // Keep track of which DNAs are tracked... String should be BucketId
     trackdna_book: HashSet<BucketId>,
@@ -130,9 +130,7 @@ impl InMemoryServer {
 
     fn priv_create_request(&mut self, dna_address: &Address, agent_id: &str) -> RequestId {
         let bucket_id = cat_dna_agent(dna_address, agent_id);
-        let req_id = self.priv_generate_request_id();
-        self.request_book.insert(req_id.clone(), bucket_id);
-        req_id
+        self.priv_create_request_with_bucket(&bucket_id)
     }
 
     fn priv_create_request_with_bucket(&mut self, bucket_id: &BucketId) -> RequestId {
@@ -212,10 +210,10 @@ impl InMemoryServer {
             senders_by_dna: HashMap::new(),
             client_count: 0,
             request_book: HashMap::new(),
-            published_data_book: HashMap::new(),
-            stored_data_book: HashMap::new(),
-            published_metadata_book: HashMap::new(),
-            stored_metadata_book: HashMap::new(),
+            published_entry_book: HashMap::new(),
+            stored_entry_book: HashMap::new(),
+            published_meta_book: HashMap::new(),
+            stored_meta_book: HashMap::new(),
             request_count: 0,
             trackdna_book: HashSet::new(),
         }
@@ -290,7 +288,36 @@ impl InMemoryServer {
             data
         );
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            // Note: use same order as the enum
             match json_msg {
+                JsonProtocol::SuccessResult(msg) => {
+                    // Relay directly the SuccessResult message
+                    self.priv_send_one(
+                        &msg.dna_address,
+                        &msg.to_agent_id,
+                        JsonProtocol::SuccessResult(msg.clone()).into(),
+                    )?;
+                }
+                JsonProtocol::FailureResult(msg) => {
+                    // Check if its a response to our own request
+                    let maybe_bucket_id = self
+                        .priv_check_request(&msg.request_id);
+                    if let Some(bucket_id) = maybe_bucket_id {
+                        //Debugging code (do not remove)
+                        println!(
+                            "---- InMemoryServer '{}' internal request failed: {:?}",
+                            self.name.clone(), msg.clone(),
+                        );
+                        self.priv_drop_request(&msg.request_id);
+                        return Ok(());
+                    }
+                    // If not, relay the FailureResult message to receipient
+                    self.priv_send_one(
+                        &msg.dna_address,
+                        &msg.to_agent_id,
+                        JsonProtocol::FailureResult(msg.clone()).into(),
+                    )?;
+                }
                 JsonProtocol::TrackDna(msg) => {
                     // Check if we are already tracking this dna for this agent
                     let bucket_id = cat_dna_agent(&msg.dna_address, &msg.agent_id);
@@ -320,22 +347,6 @@ impl InMemoryServer {
                 }
                 JsonProtocol::HandleSendMessageResult(msg) => {
                     self.priv_serve_HandleSendMessageResult(&msg)?;
-                }
-                JsonProtocol::SuccessResult(msg) => {
-                    // Relay directly the SuccessResult message
-                    self.priv_send_one(
-                        &msg.dna_address,
-                        &msg.to_agent_id,
-                        JsonProtocol::SuccessResult(msg.clone()).into(),
-                    )?;
-                }
-                JsonProtocol::FailureResult(msg) => {
-                    // Relay directly the FailureResult message
-                    self.priv_send_one(
-                        &msg.dna_address,
-                        &msg.to_agent_id,
-                        JsonProtocol::FailureResult(msg.clone()).into(),
-                    )?;
                 }
                 JsonProtocol::FetchEntry(msg) => {
                     self.priv_serve_FetchDhtData(&msg)?;
@@ -470,7 +481,7 @@ impl InMemoryServer {
     /// on publish, we send store requests to all nodes connected on this dna
     fn priv_serve_PublishDhtData(&mut self, msg: &EntryData) -> NetResult<()> {
         bookkeep_address(
-            &mut self.published_data_book,
+            &mut self.published_entry_book,
             &msg.dna_address,
             &msg.provider_agent_id,
             &msg.entry_address,
@@ -640,12 +651,12 @@ impl InMemoryServer {
         );
         // Compare with already published list
         // For each data not already published, request it and publish it ourselves.
-        let known_published_list = match self.published_data_book.get(&bucket_id) {
+        let known_published_list = match self.published_entry_book.get(&bucket_id) {
             Some(list) => list.clone(),
             None => Vec::new(),
         };
-        for data_address in msg.entry_address_list.clone() {
-            if known_published_list.contains(&data_address) {
+        for entry_address in msg.entry_address_list.clone() {
+            if known_published_list.contains(&entry_address) {
                 continue;
             }
             let request_id = self.priv_create_request_with_bucket(&bucket_id);
@@ -655,7 +666,7 @@ impl InMemoryServer {
                     requester_agent_id: String::new(),
                     request_id,
                     dna_address: msg.dna_address.clone(),
-                    entry_address: data_address,
+                    entry_address,
                 })
                 .into(),
             )?;
@@ -674,7 +685,7 @@ impl InMemoryServer {
         );
         // Compare with current stored_data_book
         // For each data not already holding, add it to stored_data_book?
-        let known_stored_list = match self.stored_data_book.get(&bucket_id) {
+        let known_stored_list = match self.stored_entry_book.get(&bucket_id) {
             Some(list) => list.clone(),
             None => Vec::new(),
         };
@@ -683,7 +694,7 @@ impl InMemoryServer {
                 continue;
             }
             bookkeep_address_with_bucket(
-                &mut self.stored_data_book,
+                &mut self.stored_entry_book,
                 bucket_id.clone(),
                 &data_address,
             );
@@ -705,7 +716,7 @@ impl InMemoryServer {
         );
         // Compare with already published list
         // For each metadata not already published, request it and publish it ourselves.
-        let known_published_list = match self.published_metadata_book.get(&bucket_id) {
+        let known_published_list = match self.published_meta_book.get(&bucket_id) {
             Some(list) => list.clone(),
             None => Vec::new(),
         };
@@ -740,7 +751,7 @@ impl InMemoryServer {
         );
         // Compare with current stored_meta_book
         // For each data not already holding, add it to stored_meta_book?
-        let known_stored_list = match self.stored_metadata_book.get(&bucket_id) {
+        let known_stored_list = match self.stored_meta_book.get(&bucket_id) {
             Some(list) => list.clone(),
             None => Vec::new(),
         };
@@ -750,7 +761,7 @@ impl InMemoryServer {
                 continue;
             }
             bookkeep_address_with_bucket(
-                &mut self.stored_metadata_book,
+                &mut self.stored_meta_book,
                 bucket_id.clone(),
                 &meta_address,
             );

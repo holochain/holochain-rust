@@ -44,27 +44,28 @@ fn main() {
     // List of tests
     #[cfg_attr(rustfmt, rustfmt_skip)]
     let test_fns: Vec<TwoNodesTestFn> = vec![
-        basic_workflows::setup_normal,
-        basic_workflows::send_test,
-        basic_workflows::dht_test,
-        basic_workflows::meta_test,
-        publish_hold_workflows::empty_publish_data_list_test,
-        publish_hold_workflows::publish_data_list_test,
-        publish_hold_workflows::publish_meta_list_test,
-        publish_hold_workflows::hold_list_test,
-        publish_hold_workflows::hold_meta_list_test,
+//        basic_workflows::setup_normal,
+//        basic_workflows::send_test,
+//        basic_workflows::dht_test,
+//        basic_workflows::meta_test,
+
+//        publish_hold_workflows::empty_publish_data_list_test,
+        publish_hold_workflows::publish_list_test,
+//        publish_hold_workflows::publish_meta_list_test,
+//        publish_hold_workflows::hold_list_test,
+//        publish_hold_workflows::hold_meta_list_test,
     ];
 
     // Launch tests on each setup
     for test_fn in test_fns.clone() {
-        launch_two_nodes_test_with_memory_network(test_fn).unwrap();
-        //        launch_two_nodes_test_with_ipc_mock(
-        //            &n3h_path,
-        //            "test_bin/data/mock_ipc_network_config.json",
-        //            test_fn,
-        //        )
-        //        .unwrap();
-        // launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+        // launch_two_nodes_test_with_memory_network(test_fn).unwrap();
+//                launch_two_nodes_test_with_ipc_mock(
+//                    &n3h_path,
+//                    "test_bin/data/mock_ipc_network_config.json",
+//                    test_fn,
+//                )
+//                .unwrap();
+        launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
     }
 
     // Wait a bit before closing

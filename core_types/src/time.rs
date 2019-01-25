@@ -51,7 +51,7 @@ pub struct Iso8601(String);
 
 /// Iso8601::now() and default() return the current Utc time.
 impl Iso8601 {
-    fn now() -> Iso8601 {
+    pub fn now() -> Iso8601 {
         Iso8601::from(Utc::now().to_rfc3339())
     }
 }

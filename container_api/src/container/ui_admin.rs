@@ -41,6 +41,8 @@ impl ContainerUiAdmin for Container {
             hash: "<not-used>".to_string(),
         };
 
+        
+
         let mut new_config = self.config.clone();
         new_config.ui_bundles.push(new_bundle.clone());
         new_config.check_consistency()?;
@@ -168,7 +170,7 @@ pub mod tests {
 
     #[test]
     fn test_uninstall_ui_bundle() {
-        let mut container = create_test_container("test_uninstall_ui_bundle", 3000);
+        let mut container = create_test_container("test_uninstall_ui_bundle", 3001);
         assert_eq!(
             container.uninstall_ui_bundle(&"test-bundle-id".to_string()),
             Err(HolochainError::ConfigError(
@@ -195,7 +197,7 @@ pub mod tests {
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface(3000));
+        toml = add_block(toml, interface(3001));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 
@@ -204,11 +206,11 @@ pub mod tests {
 
     #[test]
     fn test_add_ui_interface() {
-        let mut container = create_test_container("test_add_ui_interface", 3000);
+        let mut container = create_test_container("test_add_ui_interface", 3002);
         assert_eq!(
             container.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 3000,
+                port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
             }),
@@ -226,7 +228,7 @@ pub mod tests {
         assert_eq!(
             container.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 3000,
+                port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
             }),
@@ -243,7 +245,7 @@ pub mod tests {
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface(3000));
+        toml = add_block(toml, interface(3002));
         toml = add_block(
             toml,
             String::from(
@@ -255,7 +257,7 @@ root_dir = "."
 [[ui_interfaces]]
 bundle = "test-bundle-id"
 id = "test-ui-interface-id"
-port = 3000"#,
+port = 4000"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -266,7 +268,7 @@ port = 3000"#,
 
     #[test]
     fn test_remove_ui_interface() {
-        let mut container = create_test_container("test_install_dna_from_file", 3000);
+        let mut container = create_test_container("test_install_dna_from_file", 3003);
 
         assert_eq!(
             container.remove_ui_interface(&"test-ui-interface-id".to_string()),
@@ -284,7 +286,7 @@ port = 3000"#,
         assert_eq!(
             container.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 3000,
+                port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
             }),
@@ -307,7 +309,7 @@ port = 3000"#,
         toml = add_block(toml, dna());
         toml = add_block(toml, instance1());
         toml = add_block(toml, instance2());
-        toml = add_block(toml, interface(3000));
+        toml = add_block(toml, interface(3003));
         toml = add_block(
             toml,
             String::from(
@@ -325,7 +327,7 @@ root_dir = ".""#,
 
     #[test]
     fn test_start_ui_interface() {
-        let mut container = create_test_container("test_install_dna_from_file", 3000);
+        let mut container = create_test_container("test_install_dna_from_file", 3004);
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
@@ -336,7 +338,7 @@ root_dir = ".""#,
         assert_eq!(
             container.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 3000,
+                port: 4000,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
             }),
@@ -351,7 +353,7 @@ root_dir = ".""#,
 
     #[test]
     fn test_stop_ui_interface() {
-        let mut container = create_test_container("test_install_dna_from_file", 3000);
+        let mut container = create_test_container("test_install_dna_from_file", 3005);
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
@@ -362,7 +364,7 @@ root_dir = ".""#,
         assert_eq!(
             container.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
-                port: 3000,
+                port: 4001,
                 bundle: "test-bundle-id".into(),
                 dna_interface: None,
             }),

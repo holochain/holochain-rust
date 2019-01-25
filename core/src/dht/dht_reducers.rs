@@ -430,11 +430,11 @@ pub mod tests {
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);
 
-        {
-            // the base should be kept track of in case it comes in later
-            let state = locked_state.read().unwrap().dht();
-            assert_eq!(state.pending_link_bases.get(&entry.address()), Some(&link));
-        }
+        // the base should be kept track of in case it comes in later
+        assert_eq!(
+            new_dht_store.pending_link_bases.get(&entry.address()),
+            Some(&link)
+        );
 
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(
@@ -480,11 +480,10 @@ pub mod tests {
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);
 
-        {
-            // the base should be kept track of in case it comes in later
-            let state = locked_state.read().unwrap().dht();
-            assert_eq!(state.pending_link_bases.get(&entry.address()), Some(&link));
-        }
+        assert_eq!(
+            new_dht_store.pending_link_bases.get(&entry.address()),
+            Some(&link)
+        );
 
         // TODO: should this change?
         let result = new_dht_store.actions().get(&action).unwrap();

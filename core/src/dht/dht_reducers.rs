@@ -301,14 +301,12 @@ pub mod tests {
         action::{Action, ActionWrapper},
         context::Context,
         dht::{
-            actions::hold::hold_entry,
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::DhtStore,
         },
         instance::tests::test_context,
         state::{test_store, State},
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
         eav::IndexQuery,
@@ -319,7 +317,6 @@ pub mod tests {
         convert::TryFrom,
         sync::{Arc, RwLock},
     };
-    use test_utils::reduce_action_sequence;
 
     fn test_stateful_context(
         agent_name: &str,
@@ -489,12 +486,12 @@ pub mod tests {
         let result = new_dht_store.actions().get(&action).unwrap();
         assert!(result.is_err());
 
-        block_on(hold_entry(&entry, &context)).unwrap();
-        {
-            // the base should be kept track of in case it comes in later
-            let state = locked_state.read().unwrap().dht();
-            assert_eq!(state.pending_link_bases.get(&entry.address()), None);
-        }
+        let hold_action = ActionWrapper::new(Action::Hold(entry.clone()));
+        let new_dht_store =
+            (*reduce(Arc::clone(&context), Arc::new(new_dht_store), &hold_action)).clone();
+
+        assert_eq!(new_dht_store.pending_link_bases.get(&entry.address()), None);
+
         assert_eq!(
             storage
                 .read()

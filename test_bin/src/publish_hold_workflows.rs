@@ -266,7 +266,7 @@ pub fn hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
         request_id         : FETCH_ENTRY_1_ID.into(),
         dna_address        : DNA_ADDRESS.clone(),
         requester_agent_id : BILLY_AGENT_ID.into(),
-        entry_address: ENTRY_ADDRESS_1.clone(),
+        entry_address      : ENTRY_ADDRESS_1.clone(),
     };
     billy.send(JsonProtocol::FetchEntry(fetch_data).into())?;
 
@@ -328,7 +328,7 @@ pub fn hold_meta_list_test(
         requester_agent_id : BILLY_AGENT_ID.into(),
         request_id         : FETCH_META_1_ID.into(),
         dna_address        : DNA_ADDRESS.clone(),
-        entry_address: ENTRY_ADDRESS_1.clone(),
+        entry_address      : ENTRY_ADDRESS_1.clone(),
     };
     billy.send(JsonProtocol::FetchMeta(fetch_meta).into())?;
 

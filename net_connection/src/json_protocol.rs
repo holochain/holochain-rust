@@ -114,7 +114,7 @@ pub struct DropEntryData {
     #[serde(rename = "_id")]
     pub request_id: String,
 
-    #[serde(rename = "address")]
+    #[serde(rename = "dataAddress")]
     pub data_address: Address,
 }
 
@@ -127,7 +127,7 @@ pub struct FetchEntryData {
     #[serde(rename = "_id")]
     pub request_id: String,
 
-    #[serde(rename = "fromAgentId")]
+    #[serde(rename = "requesterAgentId")]
     pub requester_agent_id: String,
 
     #[serde(rename = "address")]
@@ -140,7 +140,7 @@ pub struct EntryData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
 
-    #[serde(rename = "agentId")]
+    #[serde(rename = "providerAgentId")]
     pub provider_agent_id: String,
 
     #[serde(rename = "address")]
@@ -161,7 +161,7 @@ pub struct FetchEntryResultData {
     #[serde(rename = "requesterAgentId")]
     pub requester_agent_id: String,
 
-    #[serde(rename = "agentId")]
+    #[serde(rename = "providerAgentId")]
     pub provider_agent_id: String,
     #[serde(rename = "address")]
     pub entry_address: Address,
@@ -182,10 +182,10 @@ pub struct FetchMetaData {
     #[serde(rename = "_id")]
     pub request_id: String,
 
-    #[serde(rename = "fromAgentId")]
+    #[serde(rename = "requesterAgentId")]
     pub requester_agent_id: String,
 
-    #[serde(rename = "address")]
+    #[serde(rename = "entryAddress")]
     pub entry_address: Address,
 
     pub attribute: String,
@@ -197,10 +197,10 @@ pub struct DhtMetaData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
 
-    #[serde(rename = "fromAgentId")]
+    #[serde(rename = "providerAgentId")]
     pub provider_agent_id: String,
 
-    #[serde(rename = "address")]
+    #[serde(rename = "entryAddress")]
     pub entry_address: Address,
 
     pub attribute: String,
@@ -215,9 +215,9 @@ pub struct FetchMetaResultData {
     pub request_id: String,
     #[serde(rename = "requesterAgentId")]
     pub requester_agent_id: String,
-    #[serde(rename = "agentId")]
+    #[serde(rename = "providerAgentId")]
     pub provider_agent_id: String,
-    #[serde(rename = "address")]
+    #[serde(rename = "entryAddress")]
     pub entry_address: Address,
     pub attribute: String,
     pub content: serde_json::Value,
@@ -231,7 +231,7 @@ pub struct DropMetaData {
     #[serde(rename = "_id")]
     pub request_id: String,
 
-    #[serde(rename = "address")]
+    #[serde(rename = "entryAddress")]
     pub entry_address: Address,
 
     pub attribute: String,
@@ -256,7 +256,7 @@ pub struct EntryListData {
     #[serde(rename = "_id")]
     pub request_id: String,
 
-    #[serde(rename = "dataAddressList")]
+    #[serde(rename = "entryAddressList")]
     pub entry_address_list: Vec<Address>,
 }
 
@@ -341,60 +341,60 @@ pub enum JsonProtocol {
 
     // -- Entry -- //
     /// Request data from the dht network
-    #[serde(rename = "fetchDht")]
+    #[serde(rename = "fetchEntry")]
     FetchEntry(FetchEntryData),
     /// Response from requesting dht data from the network
-    #[serde(rename = "fetchDhtResult")]
+    #[serde(rename = "fetchEntryResult")]
     FetchEntryResult(FetchEntryResultData),
     /// Another node, or the network module itself is requesting data from us
-    #[serde(rename = "handleFetchDht")]
+    #[serde(rename = "handleFetchEntry")]
     HandleFetchEntry(FetchEntryData),
     /// Successful data response for a `HandleFetchDhtData` request
-    #[serde(rename = "handleFetchDhtResult")]
+    #[serde(rename = "handleFetchEntryResult")]
     HandleFetchEntryResult(FetchEntryResultData),
 
     /// Publish data to the dht.
-    #[serde(rename = "publishDht")]
+    #[serde(rename = "publishEntry")]
     PublishEntry(EntryData),
     /// Store data on a node's dht slice.
-    #[serde(rename = "handleStoreDht")]
+    #[serde(rename = "handleStoreEntry")]
     HandleStoreEntry(EntryData),
-    #[serde(rename = "handleDropDhtData")]
+    #[serde(rename = "handleDropEntry")]
     HandleDropEntry(DropEntryData),
 
     // -- Meta -- //
     /// Request metadata from the dht
-    #[serde(rename = "fetchDhtMeta")]
+    #[serde(rename = "fetchMeta")]
     FetchMeta(FetchMetaData),
     /// Response by the network for our metadata request
-    #[serde(rename = "fetchDhtMetaResult")]
+    #[serde(rename = "fetchMetaResult")]
     FetchMetaResult(FetchMetaResultData),
     /// Another node, or the network module itself, is requesting data from us
-    #[serde(rename = "handleFetchDhtMeta")]
+    #[serde(rename = "handleFetchMeta")]
     HandleFetchMeta(FetchMetaData),
     /// Successful metadata response for a `HandleFetchMeta` request
-    #[serde(rename = "handleFetchDhtMetaResult")]
+    #[serde(rename = "handleFetchMetaResult")]
     HandleFetchMetaResult(FetchMetaResultData),
 
     /// Publish metadata to the dht.
-    #[serde(rename = "publishDhtMeta")]
+    #[serde(rename = "publishMeta")]
     PublishMeta(DhtMetaData),
     /// Store metadata on a node's dht slice.
-    #[serde(rename = "handleStoreDhtMeta")]
+    #[serde(rename = "handleStoreMeta")]
     HandleStoreMeta(DhtMetaData),
     /// Drop metadata on a node's dht slice.
-    #[serde(rename = "handleDropMetaData")]
+    #[serde(rename = "handleDropData")]
     HandleDropMeta(DropMetaData),
 
     // -- Entry lists -- //
-    #[serde(rename = "handleGetPublishingDataList")]
+    #[serde(rename = "handleGetPublishingEntryList")]
     HandleGetPublishingEntryList(GetListData),
-    #[serde(rename = "handleGetPublishingDataListResult")]
+    #[serde(rename = "handleGetPublishingEntryListResult")]
     HandleGetPublishingEntryListResult(EntryListData),
 
-    #[serde(rename = "handleGetHoldingDataList")]
+    #[serde(rename = "handleGetHoldingEntryList")]
     HandleGetHoldingEntryList(GetListData),
-    #[serde(rename = "handleGetHoldingDataListResult")]
+    #[serde(rename = "handleGetHoldingEntryListResult")]
     HandleGetHoldingEntryListResult(EntryListData),
 
     // -- Meta lists -- //

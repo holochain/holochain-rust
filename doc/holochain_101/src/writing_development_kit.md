@@ -8,15 +8,71 @@ If you are interested in supporting developers to write Zomes in an unsupported 
 
 ### Why Development Kits
 
-Development Kits are important because the WASM interface between Zomes and Holochain is really constrained. Because of WASMs design, WASM functions may only be called with 32 bit integers. Holochain implements a solution to this, but if app developers were to always have to interact with this solution directly, it would feel very complex. A Development Kit for each language should ideally be developed so that it gets so much simpler!
+Development Kits are important because the WASM interface between Zomes and Holochain is constrained to singular 64 bit integers.
 
-### The Development Kit WASM Solution
+The WASM spec allows for multiple function arguments and defines integers as neither signed nor unsigned, but Holochain only supports a single `u64` input and output for all zome functions.
 
-To enable passing arguments more complex than 32 bit integers between Zomes and Holochain, a pattern of utilizing WASM memory is used. When it is running the WASM code for a Zome, Holochain has access to both read and write from the WASM memory.
+WASM implements a single linear memory of bytes accessible by offset and length.
 
-The pattern defines that Holochain Zome API functions expect to both give and receive 32 bit integers which actually represent a WASM memory location. So to provide a Holochain Zome API function a complex argument, one must first write it into memory, and then call the function, giving it the memory location. Holochain will pull the argument from memory, execute its behaviour, store the result in memory, and return the memory location of the result. The Zome code then has to *also* lookup the result by its location in memory.
+Holochain sends and receives allocated bytes of memory to zomes by treating the 64 bit integer as two 32 bit integers (high bits as offset and low bits as length).
 
-Technically, an app developer can do all of these things if they have a reason to, but most won't want to handle the extra step involving memory. A Development Kit, then, should handle the extra step of writing to memory, and calling the native API function, and reading the result from memory, and returning that instead. Plus a few other sprinkles on top.
+If no bytes of memory are allocated (i.e. the 32 bit length is 0) the high bits map to an internal enum. This enum is contextual to the zome but typically represents errors:
+
+```rust
+pub enum RibosomeErrorCode {
+    Unspecified                     = 1 << 32,
+    ArgumentDeserializationFailed   = 2 << 32,
+    OutOfMemory                     = 3 << 32,
+    ReceivedWrongActionResult       = 4 << 32,
+    CallbackFailed                  = 5 << 32,
+    RecursiveCallForbidden          = 6 << 32,
+    ResponseSerializationFailed     = 7 << 32,
+    NotAnAllocation                 = 8 << 32,
+    ZeroSizedAllocation             = 9 << 32,
+    UnknownEntryType                = 10 << 32,
+}
+```
+
+Each development kit should abstract memory handling in some contextually idiomatic way.
+
+### The Rust Development Kit WASM Solution
+
+The standard development kit implements a simple memory stack.
+
+The `WasmAllocation` struct represents a pair of offset/length `u32` values.
+
+The `WasmStack` struct is a single "top" `u32` value that tracks the current end of linear memory that can be written to (either allocation or deallocation).
+
+Use of these structs is optional inside zome WASM, Holochain core will always write/read according to the input/output position represented by the `u64` arg/return values.
+
+Reads and write methods are provided for both primitive Rust UTF-8 strings and `JsonString` structs.
+
+Write new data to `WasmStack` as `stack.write_string(String)` and `stack.write_json(Into<JsonString>)`.
+
+If the allocation is successful a `WasmAllocation` will be returned else an `AllocationError` will result.
+
+Allocation to the stack can be handled manually as `stack.allocate(allocation)` and the next allocation can be built with `stack.next_allocation(length)`.
+
+Allocation on the stack will fail if the offset of the new allocation does not match the current stack top value.
+
+To read a previous write call `let s = allocation.read_to_string()` and standard `let foo: Result<Foo, HolochainError> = JsonString::try_from(s)` for JSON deserialization.
+
+To write a deallocation call `stack.deallocate(allocation)`.
+
+Deallocation does not clear out WASM memory, it simply moves the top of the stack back to the start of the passed allocation ready to be overwritten by the next allocation.
+
+Deallocation will fail if the allocation offset + length does not equal the current stack top.
+
+Holochain compatible encodings of allocations for the return value of zome functions can be generated with `allocation.as_ribosome_encoding()`.
+
+The development kit:
+
+- Implements the simple stack/allocation structs and methods
+- Manages a static stack for consistent writing
+- Exposes convenience functions for the Holochain API to handle relevant allocation/deallocations
+- Maps `u64` values to/from encoded error values and `u32` offset/length values for memory allocations
+
+For more details review the unit/integration test suites in `hdk-rust` and `wasm_utils`.
 
 ### Crafting the API
 

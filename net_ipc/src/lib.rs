@@ -13,9 +13,11 @@ extern crate failure;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate lazy_static;
+extern crate regex;
 extern crate rmp_serde;
 extern crate serde;
 extern crate serde_bytes;
+extern crate snowflake;
 extern crate zmq;
 
 #[macro_use]
@@ -25,3 +27,4 @@ pub mod socket;
 pub mod util;
 
 pub mod ipc_client;
+pub mod spawn;

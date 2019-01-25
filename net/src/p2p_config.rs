@@ -1,4 +1,5 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
+use snowflake;
 use std::{fs::File, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------
@@ -7,7 +8,7 @@ use std::{fs::File, str::FromStr};
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
-    MOCK,
+    MEMORY,
     IPC,
 }
 
@@ -15,7 +16,7 @@ impl FromStr for P2pBackendKind {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "MOCK" => Ok(P2pBackendKind::MOCK),
+            "MEMORY" => Ok(P2pBackendKind::MEMORY),
             "IPC" => Ok(P2pBackendKind::IPC),
             _ => Err(()),
         }
@@ -25,7 +26,7 @@ impl FromStr for P2pBackendKind {
 impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
-            P2pBackendKind::MOCK => "MOCK",
+            P2pBackendKind::MEMORY => "MEMORY",
             P2pBackendKind::IPC => "IPC",
         })
     }
@@ -85,25 +86,65 @@ impl P2pConfig {
             .expect("file is not a proper JSON of a P2pConfig struct")
     }
 
-    pub fn default_mock() -> Self {
-        P2pConfig::from_str(P2pConfig::DEFAULT_MOCK_CONFIG)
+    pub fn default_ipc_spawn() -> Self {
+        P2pConfig::from_str(P2pConfig::DEFAULT_IPC_SPAWN_CONFIG)
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
-    pub fn default_ipc() -> Self {
-        P2pConfig::from_str(P2pConfig::DEFAULT_IPC_CONFIG)
-            .expect("Invalid backend_config json on P2pConfig creation.")
+    pub fn default_ipc_uri(maybe_ipc_binding: Option<&str>) -> Self {
+        match maybe_ipc_binding {
+            None => P2pConfig::from_str(P2pConfig::DEFAULT_IPC_URI_CONFIG)
+                .expect("Invalid backend_config json on P2pConfig creation."),
+            Some(ipc_binding) => {
+                let backend_config = json!({
+                "backend_kind": "IPC",
+                "backend_config": {
+                    "socketType": "zmq",
+                    "blockConnect": false,
+                    "ipcUri": ipc_binding
+                }})
+                .to_string();
+                println!("config_str = {}", backend_config);
+                P2pConfig::from_str(&backend_config)
+                    .expect("Invalid backend_config json on P2pConfig creation.")
+            }
+        }
+    }
+
+    pub fn new_with_memory_backend(server_name: &str) -> Self {
+        P2pConfig::new(
+            P2pBackendKind::MEMORY,
+            &Self::memory_backend_string(server_name),
+        )
+    }
+
+    pub fn new_with_unique_memory_backend() -> Self {
+        Self::new_with_memory_backend(&format!(
+            "memory-auto-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ))
+    }
+
+    pub fn unique_memory_backend_string() -> String {
+        Self::memory_backend_string(&format!(
+            "memory-auto-{}",
+            snowflake::ProcessUniqueId::new().to_string()
+        ))
+    }
+
+    pub fn memory_backend_string(server_name: &str) -> String {
+        format!(
+            r#"{{
+            "serverName": "{}"
+            }}"#,
+            server_name
+        )
     }
 }
 
 // statics
 impl P2pConfig {
-    pub const DEFAULT_MOCK_CONFIG: &'static str = r#"{
-    "backend_kind": "MOCK",
-    "backend_config": ""
-    }"#;
-
-    pub const DEFAULT_IPC_CONFIG: &'static str = r#"
+    pub const DEFAULT_IPC_SPAWN_CONFIG: &'static str = r#"
     {
       "backend_kind": "IPC",
       "backend_config": {
@@ -111,10 +152,20 @@ impl P2pConfig {
         "spawn": {
           "cmd": "node",
           "env": {
-            "N3H_HACK_MODE": "1",
+            "N3H_MODE": "HACK",
             "N3H_IPC_SOCKET": "tcp://127.0.0.1:*"
           }
         }
+      }
+    }"#;
+
+    pub const DEFAULT_IPC_URI_CONFIG: &'static str = r#"
+    {
+      "backend_kind": "IPC",
+      "backend_config": {
+        "socketType": "zmq",
+        "ipcUri": "tcp://127.0.0.1:0",
+        "blockConnect": false
       }
     }"#;
 }
@@ -125,11 +176,13 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let p2p_config = P2pConfig::from_str(P2pConfig::DEFAULT_MOCK_CONFIG).unwrap();
+        let server_name = "memory_test";
+        let p2p_config =
+            P2pConfig::from_str(&P2pConfig::new_with_memory_backend(server_name).as_str()).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);
-        assert_eq!(p2p_config, P2pConfig::default_mock());
+        assert_eq!(p2p_config, P2pConfig::new_with_memory_backend(server_name));
     }
 
     #[test]

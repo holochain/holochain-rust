@@ -25,13 +25,14 @@ use holochain_core_types::{
         wasm::DnaWasm,
     },
     entry::Entry,
-    error::{HolochainError, RibosomeReturnCode},
+    error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
     validation::ValidationPackageDefinition,
 };
+use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use num_traits::FromPrimitive;
 use serde_json;
-use std::{str::FromStr, sync::Arc};
+use std::{convert::TryFrom, str::FromStr, sync::Arc};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -145,7 +146,7 @@ impl ToString for CallbackParams {
 pub enum CallbackResult {
     Pass,
     Fail(String),
-    NotImplemented,
+    NotImplemented(String),
     ValidationPackageDefinition(ValidationPackageDefinition),
     ReceiveResult(String),
 }
@@ -167,13 +168,19 @@ impl From<JsonString> for CallbackResult {
     }
 }
 
-impl From<RibosomeReturnCode> for CallbackResult {
-    fn from(ribosome_return_code: RibosomeReturnCode) -> CallbackResult {
+impl From<RibosomeEncodedValue> for CallbackResult {
+    fn from(ribosome_return_code: RibosomeEncodedValue) -> CallbackResult {
         match ribosome_return_code {
-            RibosomeReturnCode::Failure(ribosome_error_code) => {
+            RibosomeEncodedValue::Failure(ribosome_error_code) => {
                 CallbackResult::Fail(ribosome_error_code.to_string())
             }
-            RibosomeReturnCode::Success => CallbackResult::Pass,
+            RibosomeEncodedValue::Allocation(ribosome_allocation) => {
+                match WasmAllocation::try_from(ribosome_allocation) {
+                    Ok(allocation) => CallbackResult::Fail(allocation.read_to_string()),
+                    Err(allocation_error) => CallbackResult::Fail(String::from(allocation_error)),
+                }
+            }
+            RibosomeEncodedValue::Success => CallbackResult::Pass,
         }
     }
 }
@@ -198,7 +205,7 @@ pub(crate) fn run_callback(
                 CallbackResult::Fail(call_result.to_string())
             }
         }
-        Err(_) => CallbackResult::NotImplemented,
+        Err(_) => CallbackResult::NotImplemented("run_callback".into()),
     }
 }
 
@@ -211,7 +218,6 @@ pub fn call(
     let zome_call = ZomeFnCall::new(
         zome,
         Some(CapabilityCall::new(
-            function.capability().as_str().to_string(),
             Address::from(""), //FIXME!!
             None,
         )),
@@ -224,10 +230,10 @@ pub fn call(
     let dna = context.get_dna().expect("Callback called without DNA set!");
 
     match dna.get_wasm_from_zome_name(zome) {
-        None => CallbackResult::NotImplemented,
+        None => CallbackResult::NotImplemented("call/1".into()),
         Some(wasm) => {
             if wasm.code.is_empty() {
-                CallbackResult::NotImplemented
+                CallbackResult::NotImplemented("call/2".into())
             } else {
                 run_callback(context.clone(), zome_call, wasm, dna.name.clone())
             }
@@ -325,6 +331,7 @@ pub mod tests {
         zome: &str,
         canonical_name: &str,
         result: i32,
+        network_name: Option<&str>,
     ) -> Result<Instance, String> {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
@@ -335,7 +342,7 @@ pub mod tests {
             test_callback_wasm(canonical_name, result),
         );
 
-        test_instance(dna)
+        test_instance(dna, network_name)
     }
 
     #[test]

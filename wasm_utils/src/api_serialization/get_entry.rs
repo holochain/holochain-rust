@@ -4,6 +4,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
     json::*,
+    time::Timeout,
 };
 use std::collections::HashMap;
 
@@ -27,6 +28,7 @@ pub struct GetEntryOptions {
     pub entry: bool,
     pub header: bool,
     pub sources: bool,
+    pub timeout: Timeout,
 }
 
 impl Default for GetEntryOptions {
@@ -36,6 +38,7 @@ impl Default for GetEntryOptions {
             entry: true,
             header: false,
             sources: false,
+            timeout: Default::default(),
         }
     }
 }
@@ -46,12 +49,14 @@ impl GetEntryOptions {
         entry: bool,
         header: bool,
         sources: bool,
+        timeout: Timeout,
     ) -> Self {
         GetEntryOptions {
             status_request,
             entry,
             header,
             sources,
+            timeout,
         }
     }
 }
@@ -189,11 +194,8 @@ impl GetEntryResult {
         match self.result {
             GetEntryResultType::Single(ref item) => item.entry.clone(),
             GetEntryResultType::All(ref history) => {
-                let last = history.items.last();
-                if last.is_none() {
-                    return None;
-                }
-                last.unwrap().entry.clone()
+                let last = history.items.last()?;
+                last.entry.clone()
             }
         }
     }

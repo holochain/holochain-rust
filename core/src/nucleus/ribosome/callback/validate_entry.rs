@@ -61,7 +61,15 @@ pub fn validate_entry(
         // a grant should always be private, so it should always pass
         EntryType::CapTokenGrant => Ok(CallbackResult::Pass),
 
-        _ => Ok(CallbackResult::NotImplemented),
+        // TODO: actually check agent against app specific membrane validation rule
+        // like for instance: validate_agent_id(
+        //                      entry.clone(),
+        //                      validation_data,
+        //                      context,
+        //                    )?
+        EntryType::AgentId => Ok(CallbackResult::Pass),
+
+        _ => Ok(CallbackResult::NotImplemented("validate_entry".into())),
     }
 }
 
@@ -86,7 +94,7 @@ fn validate_link_entry(
         &target.entry_type(),
         &context,
     )
-    .map_err(|_| HolochainError::NotImplemented)?;
+    .map_err(|_| HolochainError::NotImplemented("validate_link_entry".into()))?;
 
     let wasm = context
         .get_wasm(&link_definition_path.zome_name)
@@ -121,7 +129,9 @@ fn validate_app_entry(
     let dna = context.get_dna().expect("Callback called without DNA set!");
     let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
     if zome_name.is_none() {
-        return Ok(CallbackResult::NotImplemented);
+        return Ok(CallbackResult::NotImplemented(
+            "validate_app_entry/1".into(),
+        ));
     }
 
     let zome_name = zome_name.unwrap();
@@ -140,7 +150,9 @@ fn validate_app_entry(
                 dna.name.clone(),
             ))
         }
-        None => Ok(CallbackResult::NotImplemented),
+        None => Ok(CallbackResult::NotImplemented(
+            "validate_app_entry/2".into(),
+        )),
     }
 }
 

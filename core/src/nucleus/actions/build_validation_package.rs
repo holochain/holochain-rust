@@ -57,6 +57,10 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
         EntryType::CapTokenGrant => {
             // FIXME
         }
+
+        EntryType::AgentId => {
+            // FIXME
+        }
         _ => {
             return ValidationPackageFuture {
                 context: context.clone(),
@@ -97,10 +101,13 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                         Err(HolochainError::ErrorGeneric(error_string))
                     }
                     CallbackResult::ValidationPackageDefinition(def) => Ok(def),
-                    CallbackResult::NotImplemented => Err(HolochainError::ErrorGeneric(format!(
-                        "ValidationPackage callback not implemented for {:?}",
-                        entry.entry_type().clone()
-                    ))),
+                    CallbackResult::NotImplemented(reason) => {
+                        Err(HolochainError::ErrorGeneric(format!(
+                            "ValidationPackage callback not implemented for {:?} ({})",
+                            entry.entry_type().clone(),
+                            reason
+                        )))
+                    }
                     _ => unreachable!(),
                 })
                 .and_then(|package_definition| {
@@ -215,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_building_validation_package_entry() {
-        let (_instance, context) = instance();
+        let (_instance, context) = instance(None);
 
         // adding other entries to not have special case of empty chain
         commit(test_entry_package_chain_entries(), &context);
@@ -243,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_building_validation_package_chain_entries() {
-        let (_instance, context) = instance();
+        let (_instance, context) = instance(None);
 
         // adding other entries to not have special case of empty chain
         commit(test_entry_package_chain_entries(), &context);
@@ -270,7 +277,7 @@ mod tests {
 
     #[test]
     fn test_building_validation_package_chain_headers() {
-        let (_instance, context) = instance();
+        let (_instance, context) = instance(None);
 
         // adding other entries to not have special case of empty chain
         commit(test_entry_package_chain_entries(), &context);
@@ -297,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_building_validation_package_chain_full() {
-        let (_instance, context) = instance();
+        let (_instance, context) = instance(None);
 
         // adding other entries to not have special case of empty chain
         commit(test_entry_package_chain_entries(), &context);

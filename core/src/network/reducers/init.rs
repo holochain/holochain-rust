@@ -5,8 +5,8 @@ use crate::{
 };
 use holochain_net::{p2p_config::P2pConfig, p2p_network::P2pNetwork};
 use holochain_net_connection::{
-    net_connection::NetConnection,
-    protocol_wrapper::{ProtocolWrapper, TrackAppData},
+    json_protocol::{JsonProtocol, TrackDnaData},
+    net_connection::NetSend,
 };
 use std::{
     str::FromStr,
@@ -26,7 +26,7 @@ pub fn reduce_init(
 
     let _ = network
         .send(
-            ProtocolWrapper::TrackApp(TrackAppData {
+            JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: network_settings.dna_address.clone(),
                 agent_id: network_settings.agent_id.clone(),
             })

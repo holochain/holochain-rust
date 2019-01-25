@@ -24,9 +24,6 @@ hash = "Qm328wyq38924y"
 id = "test/instance/1"
 dna = "test/dna"
 agent = "test/agent/1"
-[instances.logger]
-type = "simple"
-file = "app_spec.log"
 [instances.storage]
 type = "memory"
 
@@ -34,9 +31,6 @@ type = "memory"
 id = "test/instance/2"
 dna = "test/dna"
 agent = "test/agent/2"
-[instances.logger]
-type = "simple"
-file = "app_spec.log"
 [instances.storage]
 type = "memory"
 
@@ -49,20 +43,24 @@ port = 8888
 id = "test/instance/1"
 [[interfaces.instances]]
 id = "test/instance/2"
+
+[logger]
+type = "debug"
 `
 
 test('can create config from TOML', t => {
     const container = new Container(toml)
     container.start()
     t.throws(
-        () => container.call('x', 'x', 'x', 'x', 'x'),
+        () => container.call('x', 'x', 'x', 'x'),
         /No instance with id/
     )
     t.throws(
         () => container.call(
-            'test/instance/1', 'blog', 'main', 'not-a-function', 'param'
+            'test/instance/1', 'blog', 'not-a-function', 'param'
         ),
         /Zome function .*? not found/
     )
+    container.stop()
     t.end()
 })

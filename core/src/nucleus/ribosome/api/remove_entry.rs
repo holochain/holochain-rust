@@ -23,19 +23,20 @@ use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::RemoveEntry function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation
 /// Expected Address argument
-/// Returns only a RibosomeReturnCode as I32
+/// Stores/returns a RibosomeEncodedValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let try_address = Address::try_from(args_str.clone());
+
     // Exit on error
     if try_address.is_err() {
-        println!(
-            "invoke_remove_entry failed to deserialize Address: {:?}",
+        runtime.context.log(format!(
+            "err/zome: invoke_remove_entry failed to deserialize Address: {:?}",
             args_str
-        );
+        ));
         return ribosome_error_code!(ArgumentDeserializationFailed);
     }
     let deleted_entry_address = try_address.unwrap();
@@ -43,7 +44,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: deleted_entry_address,
-        options: GetEntryOptions::default(),
+        options: Default::default(),
     };
     let maybe_entry_result = block_on(get_entry_result_workflow(&runtime.context, &get_args));
     if let Err(_err) = maybe_entry_result {
@@ -57,6 +58,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
+
     // Resolve future
     let result: Result<(), HolochainError> = block_on(
         // 1. Build the context needed for validation of the entry
@@ -91,9 +93,6 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 )
             }),
     );
-    // Done
-    match result {
-        Err(_) => ribosome_error_code!(Unspecified),
-        Ok(_) => ribosome_success!(),
-    }
+
+    runtime.store_result(result)
 }

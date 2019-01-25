@@ -64,6 +64,9 @@ pub fn validate_entry<'a>(
             // FIXME
         }
 
+        EntryType::AgentId => {
+            // FIXME
+        }
         _ => {
             return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
                 format!(
@@ -90,9 +93,10 @@ pub fn validate_entry<'a>(
                 Ok(validation_result) => match validation_result {
                     CallbackResult::Fail(error_string) => Err(error_string),
                     CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented => Err(format!(
-                        "Validation callback not implemented for {:?}",
-                        entry.entry_type().clone()
+                    CallbackResult::NotImplemented(reason) => Err(format!(
+                        "Validation callback not implemented for {:?} ({})",
+                        entry.entry_type().clone(),
+                        reason
                     )),
                     _ => unreachable!(),
                 },

@@ -332,6 +332,14 @@ pub mod tests {
 
         (i32.const 0)
     )
+
+    (func
+        (export "__list_functions")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
 )
                 "#,
                     canonical_name
@@ -400,7 +408,7 @@ pub mod tests {
 
         let dna_name = &dna.name.to_string().clone();
         let (instance, context) =
-            test_instance_and_context(dna).expect("Could not create test instance");
+            test_instance_and_context(dna, None).expect("Could not create test instance");
 
         let call_result =
             test_zome_api_function_call(&dna_name, context.clone(), &instance, &wasm, args_bytes);

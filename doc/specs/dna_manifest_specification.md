@@ -145,33 +145,35 @@ They are available in keyword specific Capabilities and function names.
           ]
         }
       ], // end of entry-types
-      // Zome capabilities holding functions & signals
+      // Zome fn_declarations
+      "fn_declarations": [
+          {
+              "name": "newPost",
+              "inputs": [
+                  {
+                      "name": "post",
+                      "type": "string"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "name": "hash",
+                      "type": "string"
+                  }
+              ]
+        },
+        // ...
+      ],
+      // Zome capabilities holding mapping of functions to capabilities
       "capabilities": {
         "web_gateway":
         {
           "type": "public",
-          "functions": [
-            {
-              "fn_name": "newPost",
-              "signature":
-              {
-                  "inputs": [
-                      {
-                          "name": "post",
-                          "type": "string"
-                      }
-                  ],
-                  "outputs": [
-                      {
-                          "name": "hash",
-                          "type": "string"
-                      }
-                  ]
-              },
-            },
-            // ...
-          ],
-          "signals": [
+          "functions": ["getPost"]
+        }
+      },
+      // Zome signals
+      "signals": [
             {
               "sig_name": "posted",
               "description": "signal emmited when a post is committed",
@@ -190,7 +192,7 @@ They are available in keyword specific Capabilities and function names.
             // ...
           ],
         },
-      } // end of capabilities
+      }
     }
   ] // end of zomes
 }

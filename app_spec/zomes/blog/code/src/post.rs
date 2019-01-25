@@ -68,6 +68,16 @@ pub fn definition() -> ValidatingEntryType {
                 validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
                     Ok(())
                 }
+            ),
+            from!(
+                "%agent_id",
+                tag: "recommended_posts",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::ChainFull
+                },
+                validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
+                    Ok(())
+                }
             )
         ]
     )
@@ -111,6 +121,10 @@ mod tests {
             linked_from: vec![LinkedFrom {
                 base_type: "%agent_id".to_string(),
                 tag: "authored_posts".to_string(),
+            },
+            LinkedFrom {
+                base_type: "%agent_id".to_string(),
+                tag: "recommended_posts".to_string(),
             }],
             ..Default::default()
         };

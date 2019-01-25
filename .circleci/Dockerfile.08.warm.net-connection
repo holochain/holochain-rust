@@ -1,5 +1,0 @@
-FROM holochain/holochain-rust:circle.07.warm.dna-c-binding
-
-RUN nix-shell --run hc-test-net-connection
-
-CMD nix-shell --run hc-test-net-connection

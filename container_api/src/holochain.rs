@@ -42,7 +42,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome", Some(CapabilityCall::new("foo".to_string(), Address::from(""), None)), "some_fn", "{}");
+//! hc.call("test_zome", Some(CapabilityCall::new(Address::from(""), None)), "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -103,7 +103,7 @@ impl Holochain {
         ));
         match result {
             Ok(new_context) => {
-                context.log(format!("{} instantiated", name));
+                context.log(format!("debug/container: {} instantiated", name));
                 let hc = Holochain {
                     instance,
                     context: new_context.clone(),
@@ -187,6 +187,7 @@ mod tests {
     use holochain_core::{
         action::Action,
         context::Context,
+        logger::{test_logger, TestLogger},
         nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
@@ -195,24 +196,14 @@ mod tests {
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
     use test_utils::{
-        create_test_cap_with_fn_name, create_test_dna_with_cap, create_test_dna_with_wat,
+        create_test_defs_with_fn_name, create_test_dna_with_defs, create_test_dna_with_wat,
         create_wasm_from_file, expect_action, hc_setup_and_call_zome_fn,
     };
 
-    // TODO: TestLogger duplicated in test_utils because:
-    //  use holochain_core::{instance::tests::TestLogger};
-    // doesn't work.
-    // @see https://github.com/holochain/holochain-rust/issues/185
-    fn test_context(
-        agent_name: &str,
-    ) -> (
-        Arc<Context>,
-        Arc<Mutex<test_utils::TestLogger>>,
-        SignalReceiver,
-    ) {
+    fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
         let agent = AgentId::generate_fake(agent_name);
         let (signal_tx, signal_rx) = signal_channel();
-        let logger = test_utils::test_logger();
+        let logger = test_logger();
         (
             Arc::new(
                 ContextBuilder::new()
@@ -242,11 +233,7 @@ mod tests {
     }
 
     fn example_capability_call() -> Option<CapabilityCall> {
-        Some(CapabilityCall::new(
-            "test_cap".to_string(),
-            Address::from("test_token"),
-            None,
-        ))
+        Some(CapabilityCall::new(Address::from("test_token"), None))
     }
 
     #[test]
@@ -265,7 +252,7 @@ mod tests {
         assert_eq!(network_state.dna_address.is_some(), true);
         assert!(hc.instance.state().nucleus().has_initialized());
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(format!("{:?}", *test_logger), "[\"TestApp instantiated\"]");
+        assert!(format!("{:?}", *test_logger).contains("\"debug/container: TestApp instantiated\""));
     }
 
     fn write_agent_state_to_file() -> String {
@@ -388,7 +375,7 @@ mod tests {
 (module
  (memory 1)
  (export "memory" (memory 0))
- (export "main" (func $func0))
+ (export "public_test_fn" (func $func0))
  (func $func0 (param $p0 i32) (result i32)
        i32.const 16
        )
@@ -401,7 +388,7 @@ mod tests {
         let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
-        let result = hc.call("test_zome", example_capability_call(), "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "public_test_fn", "");
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -411,7 +398,7 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", example_capability_call(), "main", "");
+        let result = hc.call("test_zome", example_capability_call(), "public_test_fn", "");
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
@@ -433,8 +420,8 @@ mod tests {
     #[test]
     fn can_call_test() {
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("round_trip_test");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("round_trip_test");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -459,8 +446,8 @@ mod tests {
     fn can_call_commit() {
         // Setup the holochain instance
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("commit_test");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("commit_test");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         let (context, _, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
@@ -507,16 +494,13 @@ mod tests {
     fn can_call_commit_err() {
         // Setup the holochain instance
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("commit_fail_test");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
-        let (context, _, _) = test_context("alex");
+        let defs = create_test_defs_with_fn_name("commit_fail_test");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
+        let (context, _, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
@@ -534,10 +518,14 @@ mod tests {
             JsonString::from("{\"Err\":\"Argument deserialization failed\"}"),
         );
 
-        // Check in holochain instance's history that the commit event has been processed
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        expect_action(&signal_rx, |action| {
+            if let Action::ReturnZomeFunctionResult(_) = action {
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap();
     }
 
     #[test]
@@ -545,18 +533,14 @@ mod tests {
     fn can_call_debug() {
         // Setup the holochain instance
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("debug_hello");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("debug_hello");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
-        let (context, test_logger, _) = test_context("alex");
+        let (context, test_logger, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
-
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
@@ -568,14 +552,17 @@ mod tests {
 
         assert_eq!(Ok(JsonString::null()), result,);
         let test_logger = test_logger.lock().unwrap();
-        assert_eq!(
-            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello world!\\\"\\\'\", \"Zome Function \\\'debug_hello\\\' returned: Success\"]",
-            format!("{:?}", test_logger.log),
-        );
-        // Check in holochain instance's history that the debug event has been processed
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        assert!(format!("{:?}", test_logger.log).contains(
+            "\"debug/dna: \\\'\\\"Hello world!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_hello\\\' returned: Success\""));
+
+        expect_action(&signal_rx, |action| {
+            if let Action::ReturnZomeFunctionResult(_) = action {
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap();
     }
 
     #[test]
@@ -583,17 +570,14 @@ mod tests {
     fn can_call_debug_multiple() {
         // Setup the holochain instance
         let wasm = example_api_wasm();
-        let capability = create_test_cap_with_fn_name("debug_multiple");
-        let dna = create_test_dna_with_cap("test_zome", "test_cap", &capability, &wasm);
+        let defs = create_test_defs_with_fn_name("debug_multiple");
+        let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
-        let (context, test_logger, _) = test_context("alex");
+        let (context, test_logger, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 5);
 
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
@@ -609,15 +593,17 @@ mod tests {
 
         let test_logger = test_logger.lock().unwrap();
 
-        assert_eq!(
-            "[\"TestApp instantiated\", \"zome_log:DEBUG: \\\'\\\"Hello\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"world\\\"\\\'\", \"zome_log:DEBUG: \\\'\\\"!\\\"\\\'\", \"Zome Function \\\'debug_multiple\\\' returned: Success\"]",
-            format!("{:?}", test_logger.log),
-        );
+        assert!(format!("{:?}", test_logger.log).contains(
+            "\"debug/dna: \\\'\\\"Hello\\\"\\\'\", \"debug/dna: \\\'\\\"world\\\"\\\'\", \"debug/dna: \\\'\\\"!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_multiple\\\' returned: Success\""));
 
-        // Check in holochain instance's history that the deb event has been processed
-        // @TODO don't use history length in tests
-        // @see https://github.com/holochain/holochain-rust/issues/195
-        assert_eq!(hc.state().unwrap().history.len(), 7);
+        expect_action(&signal_rx, |action| {
+            if let Action::ReturnZomeFunctionResult(_) = action {
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap();
     }
 
     #[test]
@@ -640,9 +626,9 @@ mod tests {
             "{}/wasm32-unknown-unknown/release/example_api_wasm.wasm",
             wasm_target_dir("container_api/", "wasm-test/"),
         ));
-        let capability = test_utils::create_test_cap_with_fn_name("commit_test");
-        let mut dna =
-            test_utils::create_test_dna_with_cap("test_zome", "test_cap", &capability, wasm);
+        let defs = test_utils::create_test_defs_with_fn_name("commit_test");
+        let mut dna = test_utils::create_test_dna_with_defs("test_zome", defs, wasm);
+
         dna.uuid = "can_receive_action_signals".into();
         let (context, _, signal_rx) = test_context("alex");
         let timeout = 1000;

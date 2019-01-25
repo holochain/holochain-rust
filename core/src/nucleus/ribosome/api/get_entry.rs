@@ -18,7 +18,10 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            println!("invoke_get_entry() failed to deserialize: {:?}", args_str);
+            runtime.context.log(format!(
+                "err/zome: invoke_get_entry() failed to deserialize: {:?}",
+                args_str
+            ));
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
@@ -62,7 +65,13 @@ pub mod tests {
     pub fn test_get_args_bytes() -> Vec<u8> {
         let entry_args = GetEntryArgs {
             address: test_entry().address(),
-            options: GetEntryOptions::new(StatusRequestKind::Latest, true, false, false),
+            options: GetEntryOptions::new(
+                StatusRequestKind::Latest,
+                true,
+                false,
+                false,
+                Default::default(),
+            ),
         };
         JsonString::from(entry_args).into_bytes()
     }
@@ -71,7 +80,13 @@ pub mod tests {
     pub fn test_get_args_unknown() -> Vec<u8> {
         let entry_args = GetEntryArgs {
             address: Address::from("xxxxxxxxx"),
-            options: GetEntryOptions::new(StatusRequestKind::Latest, true, false, false),
+            options: GetEntryOptions::new(
+                StatusRequestKind::Latest,
+                true,
+                false,
+                false,
+                Default::default(),
+            ),
         };
         JsonString::from(entry_args).into_bytes()
     }
@@ -155,6 +170,14 @@ pub mod tests {
 
         (i32.const 0)
     )
+
+    (func
+        (export "__list_functions")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
 )
                 "#,
             )
@@ -166,14 +189,16 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
+        let netname = Some("test_get_round_trip");
         let wasm = test_get_round_trip_wat();
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
             &test_capability_name(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
-        let (context, _) = test_context_and_logger("joan");
+        let instance =
+            test_instance(dna.clone(), netname).expect("Could not initialize test instance");
+        let (context, _) = test_context_and_logger("joan", netname);
         let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().top_chain_header());

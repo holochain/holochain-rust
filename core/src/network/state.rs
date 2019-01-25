@@ -1,5 +1,5 @@
 use crate::{
-    action::ActionWrapper,
+    action::{ActionWrapper, GetEntryKey, GetLinksKey},
     network::{actions::ActionResponse, direct_message::DirectMessage},
 };
 use boolinator::*;
@@ -23,6 +23,12 @@ type Actions = HashMap<ActionWrapper, ActionResponse>;
 /// Some(Ok(Some(entry_with_meta))): we have it
 type GetEntryWithMetaResult = Option<Result<Option<EntryWithMeta>, HolochainError>>;
 
+/// This represents the state of a get_links network process:
+/// None: process started, but no response yet from the network
+/// Some(Err(_)): there was a problem at some point
+/// Some(Ok(_)): we got the list of links
+type GetLinksResult = Option<Result<Vec<Address>, HolochainError>>;
+
 /// This represents the state of a get_validation_package network process:
 /// None: process started, but no response yet from the network
 /// Some(Err(_)): there was a problem at some point
@@ -43,7 +49,13 @@ pub struct NetworkState {
 
     /// Here we store the results of GET entry processes.
     /// None means that we are still waiting for a result from the network.
-    pub get_entry_with_meta_results: HashMap<Address, GetEntryWithMetaResult>,
+    pub get_entry_with_meta_results: HashMap<GetEntryKey, GetEntryWithMetaResult>,
+
+    /// Here we store the results of GET links processes.
+    /// The key of this map is the base address and the tag name for which the links
+    /// are requested.
+    /// None means that we are still waiting for a result from the network.
+    pub get_links_results: HashMap<GetLinksKey, GetLinksResult>,
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
@@ -73,6 +85,7 @@ impl NetworkState {
             agent_id: None,
 
             get_entry_with_meta_results: HashMap::new(),
+            get_links_results: HashMap::new(),
             get_validation_package_results: HashMap::new(),
             direct_message_connections: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),
@@ -86,7 +99,7 @@ impl NetworkState {
     }
 
     pub fn initialized(&self) -> Result<(), HolochainError> {
-        (self.network.is_some() && self.dna_address.is_some() & self.agent_id.is_some()).ok_or(
+        (self.network.is_some() && self.dna_address.is_some() && self.agent_id.is_some()).ok_or(
             HolochainError::ErrorGeneric("Network not initialized".to_string()),
         )
     }

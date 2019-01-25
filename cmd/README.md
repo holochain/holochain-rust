@@ -27,9 +27,10 @@ apt-get install libzmq3-dev
 These dependencies need to be installed in order to compile, and use `hc`:
 
 - [Rust](https://www.rust-lang.org/en-US/install.html)
-  - needs to be the `nightly` build, so use the following commands, once you have first installed Rust
-  - `rustup toolchain install nightly`
-  - `rustup default nightly`
+  - needs to be the `nightly-2019-01-08` build, so use the following commands, once you have first installed Rust
+  - `rustup toolchain install nightly-2019-01-08`
+  - `rustup default nightly-2019-01-08`
+  - (the specific nightly build we use will change over time)
   - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
   - `rustup target add wasm32-unknown-unknown --toolchain nightly`
 - [Node.js](https://nodejs.org) version 8 or higher
@@ -165,9 +166,9 @@ The `package` command includes patterns inside `.gitignore` files automatically,
 ### Rust -> WASM compilation tools
 If we take Zome code in Rust as an example, you will need Rust and Cargo set up appropriately to build WASM from Rust code. WASM compilation is available on the `nightly` Rust toolchain. To enable it, run the following:
 ```shell
-$ rustup toolchain install nightly
-$ rustup target add wasm32-unknown-unknown --toolchain nightly # adds WASM as a compilation target
-$ rustup override set nightly # switch to the nightly rust toolchain for the current project directory
+$ rustup toolchain install nightly-2019-01-08
+$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-08 # adds WASM as a compilation target
+$ rustup override set nightly-2019-01-08 # switch to the nightly rust toolchain for the current project directory
 ```
 
 Once that's done, you should be able to run commands like `cargo build --target=wasm32-unknown-unknown` and have it work.

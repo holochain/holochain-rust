@@ -42,7 +42,9 @@ define_zome! {
         Ok(())
     }
 
-    functions: {}
+    functions: []
+
+    capabilitites: {}
 }
 ```
 

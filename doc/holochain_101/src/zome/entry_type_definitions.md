@@ -59,7 +59,9 @@ define_zome! {
         Ok(())
     }
 
-    functions: {}
+    functions: []
+
+    capabilities: {}
 }
 ```
 
@@ -134,7 +136,7 @@ entry!(
 
 Clearly, `native_type` is where things start to get interesting. It requires the introduction of quite a number of dependencies, first of all. Why is that?
 
-It is important to remember that the Rust code of a Zome is compiled into WASM before it can be executed by Holochain. This introduces a certain constraint. How is data passed between Holochain, and the WASM Zome code? Answer: it is stored in the WASM memory as stringified JSON data, and accessed by the WASM code and by Holochain, running the WASM interpreter. 
+It is important to remember that the Rust code of a Zome is compiled into WASM before it can be executed by Holochain. This introduces a certain constraint. How is data passed between Holochain, and the WASM Zome code? Answer: it is stored in the WASM memory as stringified JSON data, and accessed by the WASM code and by Holochain, running the WASM interpreter.
 
 JSON was chosen as the interchange format because it is so universal, and almost all languages have serializers and parsers. Rust's is called `serde`. The three `serde` related dependencies all relate to the need to serialize to and from JSON within Zomes.
 
@@ -249,7 +251,9 @@ define_zome! {
         Ok(())
     }
 
-    functions: {}
+    functions: []
+
+    capabilitites: {}
 }
 ```
 
@@ -282,7 +286,9 @@ define_zome! {
         Ok(())
     }
 
-    functions: {}
+    functions: []
+
+    capabilitites: {}
 }
 ```
 
@@ -292,4 +298,3 @@ If you want to look closely at a complete example of the use of `entry!` in a Zo
 
 #### Summary
 This is still a pretty minimal Zome, since it doesn't have any functions yet, and the most basic `genesis` behaviour, so read on to learn about how to work with those aspects of `define_zome!`.
-

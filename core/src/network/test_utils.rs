@@ -94,6 +94,14 @@ pub fn test_wat_always_valid() -> String {
 
         (i32.const 0)
     )
+
+    (func
+        (export "__list_functions")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
 )
                 "#
     .to_string()
@@ -179,6 +187,14 @@ pub fn test_wat_always_invalid() -> String {
 
     (func
         (export "__list_capabilities")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+    (func
+        (export "__list_functions")
         (param $allocation i32)
         (result i32)
 

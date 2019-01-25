@@ -20,13 +20,14 @@ use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::RemoveEntry function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation
 /// Expected Address argument
-/// Returns only a RibosomeReturnCode as I32
+/// Stores/returns a RibosomeEncodedValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let try_address = Address::try_from(args_str.clone());
+
     // Exit on error
     if try_address.is_err() {
         runtime.context.log(format!(
@@ -54,6 +55,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
+
     // Resolve future
     let result: Result<(), HolochainError> = runtime.context.block_on(
         // 1. Build the context needed for validation of the entry
@@ -88,9 +90,6 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 )
             }),
     );
-    // Done
-    match result {
-        Err(_) => ribosome_error_code!(Unspecified),
-        Ok(_) => ribosome_success!(),
-    }
+
+    runtime.store_result(result)
 }

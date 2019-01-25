@@ -124,6 +124,8 @@ extern crate lazy_static;
 extern crate directories;
 extern crate hyper;
 extern crate hyper_staticfile;
+#[cfg(test)]
+extern crate reqwest;
 extern crate tokio;
 
 pub mod config;

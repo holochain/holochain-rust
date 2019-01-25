@@ -22,10 +22,6 @@ use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::holochain_core_types::bits_n_pieces::U16_MAX;
 
-// use std::ffi::CString;
-// use holochain_wasm_utils::memory::allocation::Offset;
-// use holochain_wasm_utils::memory::allocation::Length;
-
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
     value: String,
@@ -136,7 +132,12 @@ pub extern "C" fn big_string(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut stack = WasmStack::default();
 
-    match stack.write_string(&"(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize)) {
+    // match stack.write_string(&"(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize)) {
+    //     Ok(allocation) => allocation.as_ribosome_encoding(),
+    //     Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    // }
+
+    match stack.write_string(&"11223344556677889900".repeat(U16_MAX as usize)) {
         Ok(allocation) => allocation.as_ribosome_encoding(),
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     }

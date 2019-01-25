@@ -91,10 +91,16 @@ fn stacked_strings_test() {
 
 #[test]
 fn big_string_test() {
+    let s = call_zome_function_with_hc("big_string").unwrap();
     assert_eq!(
-        Ok(JsonString::from("(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize))),
-        call_zome_function_with_hc("big_string"),
+        String::from(s).len(),
+        (U16_MAX * 20) as usize,
     );
+    // assert_eq!(
+    //     Ok(JsonString::from("z")),
+    //     // Ok(JsonString::from("(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize))),
+    //     call_zome_function_with_hc("big_string"),
+    // );
 }
 
 #[test]

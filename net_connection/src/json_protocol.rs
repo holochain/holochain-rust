@@ -46,11 +46,11 @@ pub struct PeerData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct MessageData {
-    #[serde(rename = "_id")]
-    pub msg_id: String,
-
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
+
+    #[serde(rename = "_id")]
+    pub request_id: String,
 
     #[serde(rename = "toAgentId")]
     pub to_agent_id: String,
@@ -58,7 +58,8 @@ pub struct MessageData {
     #[serde(rename = "fromAgentId")]
     pub from_agent_id: String,
 
-    pub data: serde_json::Value,
+    #[serde(rename = "data")]
+    pub content: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
@@ -72,11 +73,11 @@ pub struct TrackDnaData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct SuccessResultData {
-    #[serde(rename = "_id")]
-    pub msg_id: String,
-
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
+
+    #[serde(rename = "_id")]
+    pub request_id: String,
 
     #[serde(rename = "toAgentId")]
     pub to_agent_id: String,
@@ -87,11 +88,11 @@ pub struct SuccessResultData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct FailureResultData {
-    #[serde(rename = "_id")]
-    pub request_id: String,
-
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
+
+    #[serde(rename = "_id")]
+    pub request_id: String,
 
     #[serde(rename = "toAgentId")]
     pub to_agent_id: String,
@@ -101,17 +102,17 @@ pub struct FailureResultData {
 }
 
 //--------------------------------------------------------------------------------------------------
-// DHT Data
+// DHT Entry
 //--------------------------------------------------------------------------------------------------
 
 /// Data Request from own p2p-module
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct DhtDataRequestData {
-    #[serde(rename = "_id")]
-    pub request_id: String,
-
+pub struct DropEntryData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
+
+    #[serde(rename = "_id")]
+    pub request_id: String,
 
     #[serde(rename = "address")]
     pub data_address: Address,
@@ -119,22 +120,23 @@ pub struct DhtDataRequestData {
 
 /// Data Request from some other agent
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct FetchDhtData {
+pub struct FetchEntryData {
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+
+    #[serde(rename = "_id")]
+    pub request_id: String,
+
     #[serde(rename = "fromAgentId")]
     pub requester_agent_id: String,
 
-    // DhtDataRequestData
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    #[serde(rename = "dnaAddress")]
-    pub dna_address: Address,
     #[serde(rename = "address")]
-    pub data_address: Address,
+    pub entry_address: Address,
 }
 
 /// Generic DHT data message
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
-pub struct DhtData {
+pub struct EntryData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
 
@@ -142,63 +144,51 @@ pub struct DhtData {
     pub provider_agent_id: String,
 
     #[serde(rename = "address")]
-    pub data_address: Address,
+    pub entry_address: Address,
 
     #[serde(rename = "content")]
-    pub data_content: serde_json::Value,
+    pub entry_content: serde_json::Value,
 }
 
 /// DHT data response from a request
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson, Default)]
-pub struct HandleDhtResultData {
+pub struct FetchEntryResultData {
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+
     #[serde(rename = "_id")]
     pub request_id: String,
     #[serde(rename = "requesterAgentId")]
     pub requester_agent_id: String,
 
-    // DhtData
-    #[serde(rename = "dnaAddress")]
-    pub dna_address: Address,
     #[serde(rename = "agentId")]
     pub provider_agent_id: String,
     #[serde(rename = "address")]
-    pub data_address: Address,
+    pub entry_address: Address,
     #[serde(rename = "content")]
-    pub data_content: serde_json::Value,
+    pub entry_content: serde_json::Value,
 }
 
 //--------------------------------------------------------------------------------------------------
 // DHT metadata
 //--------------------------------------------------------------------------------------------------
 
-/// Data Request from own p2p-module
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct DhtMetaRequestData {
-    pub attribute: String,
-
-    // DhtDataRequestData
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    #[serde(rename = "dnaAddress")]
-    pub dna_address: Address,
-    #[serde(rename = "address")]
-    pub data_address: Address,
-}
-
 /// Metadata Request from another agent
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct FetchDhtMetaData {
-    pub attribute: String,
-
-    // FetchDhtData
-    #[serde(rename = "fromAgentId")]
-    pub requester_agent_id: String,
-    #[serde(rename = "_id")]
-    pub request_id: String,
+pub struct FetchMetaData {
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
+
+    #[serde(rename = "_id")]
+    pub request_id: String,
+
+    #[serde(rename = "fromAgentId")]
+    pub requester_agent_id: String,
+
     #[serde(rename = "address")]
-    pub data_address: Address,
+    pub entry_address: Address,
+
+    pub attribute: String,
 }
 
 /// Generic DHT metadata message
@@ -211,27 +201,40 @@ pub struct DhtMetaData {
     pub provider_agent_id: String,
 
     #[serde(rename = "address")]
-    pub data_address: Address,
+    pub entry_address: Address,
+
     pub attribute: String,
     pub content: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct HandleDhtMetaResultData {
+pub struct FetchMetaResultData {
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
     #[serde(rename = "_id")]
     pub request_id: String,
     #[serde(rename = "requesterAgentId")]
     pub requester_agent_id: String,
-
-    // DhtMetaData
-    #[serde(rename = "dnaAddress")]
-    pub dna_address: Address,
     #[serde(rename = "agentId")]
     pub provider_agent_id: String,
     #[serde(rename = "address")]
-    pub data_address: Address,
+    pub entry_address: Address,
     pub attribute: String,
     pub content: serde_json::Value,
+}
+
+/// Data Request from own p2p-module
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
+pub struct DropMetaData {
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+    #[serde(rename = "_id")]
+    pub request_id: String,
+
+    #[serde(rename = "address")]
+    pub entry_address: Address,
+
+    pub attribute: String,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -240,35 +243,33 @@ pub struct HandleDhtMetaResultData {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct GetListData {
-    #[serde(rename = "_id")]
-    pub request_id: String,
     #[serde(rename = "dnaAddress")]
     pub dna_address: Address,
+    #[serde(rename = "_id")]
+    pub request_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct HandleListResultData {
+pub struct EntryListData {
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+    #[serde(rename = "_id")]
+    pub request_id: String,
+
     #[serde(rename = "dataAddressList")]
-    pub data_address_list: Vec<Address>,
-
-    // GetListData
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    #[serde(rename = "dnaAddress")]
-    pub dna_address: Address,
+    pub entry_address_list: Vec<Address>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
-pub struct HandleMetaListResultData {
+pub struct MetaListData {
+    #[serde(rename = "dnaAddress")]
+    pub dna_address: Address,
+    #[serde(rename = "_id")]
+    pub request_id: String,
+
     // List of meta identifiers, a pair: (entry_address, attribute)
     #[serde(rename = "metaList")]
     pub meta_list: Vec<(Address, String)>,
-
-    // GetListData
-    #[serde(rename = "_id")]
-    pub request_id: String,
-    #[serde(rename = "dnaAddress")]
-    pub dna_address: Address,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -286,18 +287,28 @@ pub struct HandleMetaListResultData {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 #[serde(tag = "method")]
 pub enum JsonProtocol {
-    /// Success response to any message with an _id field.
+    // -- Generic responses -- //
+    /// Success response to a request (any message with an _id field.)
     #[serde(rename = "successResult")]
     SuccessResult(SuccessResultData),
-    /// Failure response to any message with an _id field.
+    /// Failure response to a request (any message with an _id field.)
     /// Can also be a response to a mal-formed request.
     #[serde(rename = "failureResult")]
     FailureResult(FailureResultData),
 
+    // -- Connection -- //
     /// Order the p2p module to be part of the network of the specified DNA.
     #[serde(rename = "trackDna")]
     TrackDna(TrackDnaData),
 
+    /// Connect to the specified multiaddr
+    #[serde(rename = "connect")]
+    Connect(ConnectData),
+    /// Notification of a connection from another peer.
+    #[serde(rename = "peerConnected")]
+    PeerConnected(PeerData),
+
+    // -- Config (deprecated?) -- //
     /// Request the current state from the p2p module
     #[serde(rename = "requestState")]
     GetState,
@@ -314,13 +325,7 @@ pub enum JsonProtocol {
     #[serde(rename = "setConfig")]
     SetConfig(ConfigData),
 
-    /// Connect to the specified multiaddr
-    #[serde(rename = "connect")]
-    Connect(ConnectData),
-    /// Notification of a connection from another peer.
-    #[serde(rename = "peerConnected")]
-    PeerConnected(PeerData),
-
+    // -- Direct Messaging -- //
     /// Send a message to another peer on the network
     #[serde(rename = "sendMessage")]
     SendMessage(MessageData),
@@ -334,78 +339,77 @@ pub enum JsonProtocol {
     #[serde(rename = "handleSendMessageResult")]
     HandleSendMessageResult(MessageData),
 
+    // -- Entry -- //
     /// Request data from the dht network
     #[serde(rename = "fetchDht")]
-    FetchDhtData(FetchDhtData),
+    FetchEntry(FetchEntryData),
     /// Response from requesting dht data from the network
     #[serde(rename = "fetchDhtResult")]
-    FetchDhtDataResult(HandleDhtResultData),
+    FetchEntryResult(FetchEntryResultData),
     /// Another node, or the network module itself is requesting data from us
     #[serde(rename = "handleFetchDht")]
-    HandleFetchDhtData(FetchDhtData),
+    HandleFetchEntry(FetchEntryData),
     /// Successful data response for a `HandleFetchDhtData` request
     #[serde(rename = "handleFetchDhtResult")]
-    HandleFetchDhtDataResult(HandleDhtResultData),
+    HandleFetchEntryResult(FetchEntryResultData),
 
     /// Publish data to the dht.
     #[serde(rename = "publishDht")]
-    PublishDhtData(DhtData),
+    PublishEntry(EntryData),
     /// Store data on a node's dht slice.
     #[serde(rename = "handleStoreDht")]
-    HandleStoreDhtData(DhtData),
+    HandleStoreEntry(EntryData),
     #[serde(rename = "handleDropDhtData")]
-    HandleDropDhtData(DhtDataRequestData),
+    HandleDropEntry(DropEntryData),
 
+    // -- Meta -- //
     /// Request metadata from the dht
     #[serde(rename = "fetchDhtMeta")]
-    FetchDhtMeta(FetchDhtMetaData),
+    FetchMeta(FetchMetaData),
     /// Response by the network for our metadata request
     #[serde(rename = "fetchDhtMetaResult")]
-    FetchDhtMetaResult(HandleDhtMetaResultData),
+    FetchMetaResult(FetchMetaResultData),
     /// Another node, or the network module itself, is requesting data from us
     #[serde(rename = "handleFetchDhtMeta")]
-    HandleFetchDhtMeta(FetchDhtMetaData),
-    /// Successful metadata response for a `HandleGetDhtMeta` request
+    HandleFetchMeta(FetchMetaData),
+    /// Successful metadata response for a `HandleFetchMeta` request
     #[serde(rename = "handleFetchDhtMetaResult")]
-    HandleFetchDhtMetaResult(HandleDhtMetaResultData),
+    HandleFetchMetaResult(FetchMetaResultData),
 
     /// Publish metadata to the dht.
     #[serde(rename = "publishDhtMeta")]
-    PublishDhtMeta(DhtMetaData),
+    PublishMeta(DhtMetaData),
     /// Store metadata on a node's dht slice.
     #[serde(rename = "handleStoreDhtMeta")]
-    HandleStoreDhtMeta(DhtMetaData),
+    HandleStoreMeta(DhtMetaData),
     /// Drop metadata on a node's dht slice.
     #[serde(rename = "handleDropMetaData")]
-    HandleDropMetaData(DhtMetaRequestData),
+    HandleDropMeta(DropMetaData),
 
-    // -- list publish & hold data -- //
+    // -- Entry lists -- //
     #[serde(rename = "handleGetPublishingDataList")]
-    HandleGetPublishingDataList(GetListData),
+    HandleGetPublishingEntryList(GetListData),
     #[serde(rename = "handleGetPublishingDataListResult")]
-    HandleGetPublishingDataListResult(HandleListResultData),
+    HandleGetPublishingEntryListResult(EntryListData),
 
     #[serde(rename = "handleGetHoldingDataList")]
-    HandleGetHoldingDataList(GetListData),
+    HandleGetHoldingEntryList(GetListData),
     #[serde(rename = "handleGetHoldingDataListResult")]
-    HandleGetHoldingDataListResult(HandleListResultData),
-    //    #[serde(rename = "handleGetDhtData")]
-    //    HandleGetDhtData(GetDhtData),
-    //    #[serde(rename = "handleGetDhtDataResult")]
-    //    HandleGetDhtDataResult(DhtData),
+    HandleGetHoldingEntryListResult(EntryListData),
 
-    // -- list publish & hold metadata -- //
+    // -- Meta lists -- //
     #[serde(rename = "handleGetPublishingMetaList")]
     HandleGetPublishingMetaList(GetListData),
     #[serde(rename = "handleGetPublishingMetaListResult")]
-    HandleGetPublishingMetaListResult(HandleMetaListResultData),
+    HandleGetPublishingMetaListResult(MetaListData),
 
     #[serde(rename = "handleGetHoldingMetaList")]
     HandleGetHoldingMetaList(GetListData),
     #[serde(rename = "handleGetHoldingMetaListResult")]
-    HandleGetHoldingMetaListResult(HandleMetaListResultData),
+    HandleGetHoldingMetaListResult(MetaListData),
 }
 
+// Convertions
 impl<'a> TryFrom<&'a Protocol> for JsonProtocol {
     type Error = Error;
     fn try_from(p: &Protocol) -> Result<Self, Error> {

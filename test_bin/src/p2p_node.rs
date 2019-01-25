@@ -1,9 +1,9 @@
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
     json_protocol::{
-        DhtData, DhtMetaData, FailureResultData, FetchDhtData, FetchDhtMetaData, GetListData,
-        HandleDhtMetaResultData, HandleDhtResultData, HandleListResultData,
-        HandleMetaListResultData, JsonProtocol, MessageData,
+        DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
+        FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
+        MessageData, MetaListData,
     },
     net_connection::NetSend,
     protocol::Protocol,
@@ -76,13 +76,13 @@ impl P2pNode {
         self.authored_data_store
             .insert(data_address.clone(), data_content.clone());
         if can_publish {
-            let msg_data = DhtData {
+            let msg_data = EntryData {
                 dna_address: dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
-                data_address: data_address.clone(),
-                data_content: data_content.clone(),
+                entry_address: data_address.clone(),
+                entry_content: data_content.clone(),
             };
-            return self.send(JsonProtocol::PublishDhtData(msg_data).into());
+            return self.send(JsonProtocol::PublishEntry(msg_data).into());
         }
         // Done
         Ok(())
@@ -107,11 +107,11 @@ impl P2pNode {
             let msg_data = DhtMetaData {
                 dna_address: dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
-                data_address: data_address.clone(),
+                entry_address: data_address.clone(),
                 attribute: attribute.to_string(),
                 content: content.clone(),
             };
-            return self.send(JsonProtocol::PublishDhtMeta(msg_data).into());
+            return self.send(JsonProtocol::PublishMeta(msg_data).into());
         }
         // Done
         Ok(())
@@ -145,13 +145,13 @@ impl P2pNode {
     // -- FETCH -- //
 
     /// Send a reponse to a FetchDhtData request
-    pub fn reply_fetch_data(&mut self, request: &FetchDhtData) -> NetResult<()> {
+    pub fn reply_fetch_data(&mut self, request: &FetchEntryData) -> NetResult<()> {
         let msg;
         {
             // Get data from local datastores
-            let mut maybe_data = self.authored_data_store.get(&request.data_address);
+            let mut maybe_data = self.authored_data_store.get(&request.entry_address);
             if maybe_data.is_none() {
-                maybe_data = self.data_store.get(&request.data_address);
+                maybe_data = self.data_store.get(&request.entry_address);
             }
             // Send failure or success response
             msg = match maybe_data.clone() {
@@ -165,15 +165,15 @@ impl P2pNode {
                     JsonProtocol::FailureResult(msg_data).into()
                 }
                 Some(data) => {
-                    let msg_data = HandleDhtResultData {
+                    let msg_data = FetchEntryResultData {
                         request_id: request.request_id.clone(),
                         requester_agent_id: request.requester_agent_id.clone(),
                         dna_address: request.dna_address.clone(),
                         provider_agent_id: self.agent_id.clone(),
-                        data_address: request.data_address.clone(),
-                        data_content: data.clone(),
+                        entry_address: request.entry_address.clone(),
+                        entry_content: data.clone(),
                     };
-                    JsonProtocol::HandleFetchDhtDataResult(msg_data).into()
+                    JsonProtocol::HandleFetchEntryResult(msg_data).into()
                 }
             };
         }
@@ -182,11 +182,11 @@ impl P2pNode {
     }
 
     /// Send a reponse to a FetchDhtMetaData request
-    pub fn reply_fetch_meta(&mut self, request: &FetchDhtMetaData) -> NetResult<()> {
+    pub fn reply_fetch_meta(&mut self, request: &FetchMetaData) -> NetResult<()> {
         let msg;
         {
             // Get meta from local datastores
-            let meta_pair = &(request.data_address.clone(), request.attribute.clone());
+            let meta_pair = &(request.entry_address.clone(), request.attribute.clone());
             let mut maybe_data = self.authored_meta_store.get(meta_pair);
             if maybe_data.is_none() {
                 maybe_data = self.meta_store.get(meta_pair);
@@ -196,18 +196,18 @@ impl P2pNode {
                 Some(data) => data.clone(),
                 None => json!(""),
             };
-            msg = HandleDhtMetaResultData {
+            msg = FetchMetaResultData {
                 request_id: request.request_id.clone(),
                 requester_agent_id: request.requester_agent_id.clone(),
                 dna_address: request.dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
-                data_address: request.data_address.clone(),
+                entry_address: request.entry_address.clone(),
                 attribute: request.attribute.clone(),
                 content: data.clone(),
             };
         }
         println!("({}) reply_fetch_meta: {:?}", self.agent_id, msg);
-        self.send(JsonProtocol::HandleFetchDhtMetaResult(msg).into())
+        self.send(JsonProtocol::HandleFetchMetaResult(msg).into())
     }
 
     // -- LISTS -- //
@@ -218,12 +218,12 @@ impl P2pNode {
             .iter()
             .map(|(k, _)| k.clone())
             .collect();
-        let msg = HandleListResultData {
-            data_address_list,
+        let msg = EntryListData {
+            entry_address_list: data_address_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
         };
-        self.send(JsonProtocol::HandleGetPublishingDataListResult(msg).into())
+        self.send(JsonProtocol::HandleGetPublishingEntryListResult(msg).into())
     }
 
     pub fn reply_get_publish_meta_list(&mut self, request: &GetListData) -> NetResult<()> {
@@ -232,7 +232,7 @@ impl P2pNode {
             .iter()
             .map(|(k, _)| k.clone())
             .collect();
-        let msg = HandleMetaListResultData {
+        let msg = MetaListData {
             meta_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
@@ -242,17 +242,17 @@ impl P2pNode {
 
     pub fn reply_get_holding_data_list(&mut self, request: &GetListData) -> NetResult<()> {
         let data_address_list = self.data_store.iter().map(|(k, _)| k.clone()).collect();
-        let msg = HandleListResultData {
-            data_address_list,
+        let msg = EntryListData {
+            entry_address_list: data_address_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
         };
-        self.send(JsonProtocol::HandleGetHoldingDataListResult(msg).into())
+        self.send(JsonProtocol::HandleGetHoldingEntryListResult(msg).into())
     }
 
     pub fn reply_get_holding_meta_list(&mut self, request: &GetListData) -> NetResult<()> {
         let meta_list = self.meta_store.iter().map(|(k, _)| k.clone()).collect();
-        let msg = HandleMetaListResultData {
+        let msg = MetaListData {
             meta_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
@@ -487,69 +487,69 @@ impl P2pNode {
                 panic!("Core should not receive HandleSendMessageResult message");
             }
 
-            JsonProtocol::FetchDhtData(_) => {
+            JsonProtocol::FetchEntry(_) => {
                 panic!("Core should not receive FetchDhtData message");
             }
-            JsonProtocol::FetchDhtDataResult(_) => {
+            JsonProtocol::FetchEntryResult(_) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchDhtData(_msg) => {
+            JsonProtocol::HandleFetchEntry(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchDhtDataResult(_msg) => {
+            JsonProtocol::HandleFetchEntryResult(_msg) => {
                 // n/a
             }
 
-            JsonProtocol::PublishDhtData(_msg) => {
+            JsonProtocol::PublishEntry(_msg) => {
                 panic!("Core should not receive PublishDhtData message");
             }
-            JsonProtocol::HandleStoreDhtData(msg) => {
+            JsonProtocol::HandleStoreEntry(msg) => {
                 // Store data in local datastore
-                self.data_store.insert(msg.data_address, msg.data_content);
+                self.data_store.insert(msg.entry_address, msg.entry_content);
             }
-            JsonProtocol::HandleDropDhtData(msg) => {
+            JsonProtocol::HandleDropEntry(msg) => {
                 // Remove data in local datastore
                 self.data_store.remove(&msg.data_address);
             }
 
-            JsonProtocol::FetchDhtMeta(_msg) => {
+            JsonProtocol::FetchMeta(_msg) => {
                 panic!("Core should not receive FetchDhtMeta message");
             }
-            JsonProtocol::FetchDhtMetaResult(_msg) => {
+            JsonProtocol::FetchMetaResult(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchDhtMeta(_msg) => {
+            JsonProtocol::HandleFetchMeta(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchDhtMetaResult(_msg) => {
+            JsonProtocol::HandleFetchMetaResult(_msg) => {
                 // n/a
             }
 
-            JsonProtocol::PublishDhtMeta(_msg) => {
+            JsonProtocol::PublishMeta(_msg) => {
                 panic!("Core should not receive PublishDhtMeta message");
             }
-            JsonProtocol::HandleStoreDhtMeta(msg) => {
+            JsonProtocol::HandleStoreMeta(msg) => {
                 // Store data in local datastore
                 self.meta_store
-                    .insert((msg.data_address, msg.attribute), msg.content);
+                    .insert((msg.entry_address, msg.attribute), msg.content);
             }
-            JsonProtocol::HandleDropMetaData(msg) => {
+            JsonProtocol::HandleDropMeta(msg) => {
                 // Remove data in local datastore
-                self.meta_store.remove(&(msg.data_address, msg.attribute));
+                self.meta_store.remove(&(msg.entry_address, msg.attribute));
             }
 
             // -- Publish & Hold data -- //
-            JsonProtocol::HandleGetPublishingDataList(_msg) => {
+            JsonProtocol::HandleGetPublishingEntryList(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleGetPublishingDataListResult(_) => {
+            JsonProtocol::HandleGetPublishingEntryListResult(_) => {
                 panic!("Core should not receive HandleGetPublishingDataListResult message");
             }
-            JsonProtocol::HandleGetHoldingDataList(_msg) => {
+            JsonProtocol::HandleGetHoldingEntryList(_msg) => {
                 // n/a
             }
             // Our request for the hold_list has returned
-            JsonProtocol::HandleGetHoldingDataListResult(_) => {
+            JsonProtocol::HandleGetHoldingEntryListResult(_) => {
                 panic!("Core should not receive HandleGetHoldingDataListResult message");
             }
 

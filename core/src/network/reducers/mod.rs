@@ -115,11 +115,11 @@ pub fn send_message(
     let id = ProcessUniqueId::new().to_string();
 
     let data = MessageData {
-        msg_id: id.clone(),
+        request_id: id.clone(),
         dna_address: network_state.dna_address.clone().unwrap(),
         to_agent_id: to_agent_id.to_string(),
         from_agent_id: network_state.agent_id.clone().unwrap(),
-        data: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
+        content: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
     };
 
     let _ = send(network_state, JsonProtocol::SendMessage(data))?;

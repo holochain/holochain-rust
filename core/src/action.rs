@@ -18,7 +18,7 @@ use holochain_core_types::{
     validation::ValidationPackage,
 };
 use holochain_net_connection::json_protocol::{
-    FetchDhtData, FetchDhtMetaData, HandleDhtMetaResultData, HandleDhtResultData,
+    FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
 use snowflake;
 use std::{
@@ -116,11 +116,11 @@ pub enum Action {
     /// Lets the network module respond to a FETCH request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
-    RespondFetch((FetchDhtData, Option<EntryWithMeta>)),
+    RespondFetch((FetchEntryData, Option<EntryWithMeta>)),
 
     /// We got a response for our FETCH request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleFetchResult(HandleDhtResultData),
+    HandleFetchResult(FetchEntryResultData),
 
     ///
     UpdateEntry((Address, Address)),
@@ -133,8 +133,8 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((FetchDhtMetaData, Vec<Address>)),
-    HandleGetLinksResult((HandleDhtMetaResultData, String)),
+    RespondGetLinks((FetchMetaData, Vec<Address>)),
+    HandleGetLinksResult((FetchMetaResultData, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)

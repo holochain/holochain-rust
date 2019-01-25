@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::json_protocol::{DhtData, DhtMetaData, JsonProtocol};
+use holochain_net_connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 use std::sync::Arc;
 
 /// Send to network a PublishDhtData message
@@ -25,12 +25,14 @@ fn publish_entry(
 ) -> Result<(), HolochainError> {
     send(
         network_state,
-        JsonProtocol::PublishDhtData(DhtData {
+        JsonProtocol::PublishEntry(EntryData {
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
-            data_address: entry_with_header.entry.address().clone(),
-            data_content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
-                .unwrap(),
+            entry_address: entry_with_header.entry.address().clone(),
+            entry_content: serde_json::from_str(
+                &serde_json::to_string(&entry_with_header).unwrap(),
+            )
+            .unwrap(),
         }),
     )
 }
@@ -47,10 +49,10 @@ fn publish_crud_meta(
     // publish crud-status
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
-            data_address: entry_address.clone(),
+            entry_address: entry_address.clone(),
             attribute: STATUS_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
         }),
@@ -62,10 +64,10 @@ fn publish_crud_meta(
     }
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
-            data_address: entry_address.clone(),
+            entry_address: entry_address.clone(),
             attribute: LINK_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
                 .unwrap(),
@@ -98,10 +100,10 @@ fn publish_link_meta(
 
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
-            data_address: link.base().clone(),
+            entry_address: link.base().clone(),
             attribute: String::from("link"),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
                 .unwrap(),

@@ -2,7 +2,7 @@ use constants::*;
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
     json_protocol::{
-        ConnectData, FetchDhtData, FetchDhtMetaData, JsonProtocol, MessageData, TrackDnaData,
+        ConnectData, FetchEntryData, FetchMetaData, JsonProtocol, MessageData, TrackDnaData,
     },
     net_connection::NetSend,
     NetResult,
@@ -57,26 +57,26 @@ fn confirm_published_data(
     alex.author_data(&DNA_ADDRESS, address.into(), content, true)?;
 
     // Check if both nodes received a HandleStore command.
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))));
+    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     println!(" got store result A: {:?}\n", result_a);
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))));
+    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     println!("got store result B: {:?}\n", result_b);
     assert!(billy.data_store.contains_key(address));
 
     // Billy asks for that data on the network.
-    let fetch_data = FetchDhtData {
+    let fetch_data = FetchEntryData {
         request_id: "testGetEntry".to_string(),
         dna_address: DNA_ADDRESS.clone(),
         requester_agent_id: BILLY_AGENT_ID.to_string(),
-        data_address: address.clone(),
+        entry_address: address.clone(),
     };
-    billy.send(JsonProtocol::FetchDhtData(fetch_data.clone()).into())?;
+    billy.send(JsonProtocol::FetchEntry(fetch_data.clone()).into())?;
 
     // Alex having that data, sends it to the network.
     alex.reply_fetch_data(&fetch_data)?;
 
     // billy should receive the data it requested from the netowrk
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))));
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))));
     println!("got dht data result: {:?}", result);
 
     Ok(())
@@ -94,29 +94,29 @@ fn confirm_published_metadata(
     // Alex publishs metadata on the network
     alex.author_meta(&DNA_ADDRESS, address, attribute, content, true)?;
     // Check if both nodes received a HandleStore command.
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtMeta(_))));
+    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
     println!("got store meta result 1: {:?}", result_a);
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtMeta(_))));
+    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
     println!("got store meta result 2: {:?}", result_b);
     assert!(billy
         .meta_store
         .contains_key(&(address.clone(), META_ATTRIBUTE.to_string())));
 
     // Billy asks for that metadata on the network.
-    let fetch_meta = FetchDhtMetaData {
+    let fetch_meta = FetchMetaData {
         request_id: "testGetMeta".to_string(),
         dna_address: DNA_ADDRESS.clone(),
         requester_agent_id: BILLY_AGENT_ID.to_string(),
-        data_address: address.clone(),
+        entry_address: address.clone(),
         attribute: META_ATTRIBUTE.to_string(),
     };
-    billy.send(JsonProtocol::FetchDhtMeta(fetch_meta.clone()).into())?;
+    billy.send(JsonProtocol::FetchMeta(fetch_meta.clone()).into())?;
 
     // Alex having that metadata, sends it to the network.
     alex.reply_fetch_meta(&fetch_meta)?;
 
     // billy should receive the metadata it requested from the netowrk
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))));
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
     println!("got dht meta result: {:?}", result);
 
     Ok(())
@@ -215,8 +215,8 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         dna_address: DNA_ADDRESS.clone(),
         to_agent_id: BILLY_AGENT_ID.to_string(),
         from_agent_id: ALEX_AGENT_ID.to_string(),
-        msg_id: "yada".to_string(),
-        data: ENTRY_CONTENT_1.clone(),
+        request_id: "yada".to_string(),
+        content: ENTRY_CONTENT_1.clone(),
     };
     alex.send(JsonProtocol::SendMessage(msg_data).into())
         .expect("Failed sending SendMessage to billy");
@@ -230,15 +230,15 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         JsonProtocol::HandleSendMessage(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!("\"hello\"".to_string(), msg.data.to_string());
+    assert_eq!("\"hello\"".to_string(), msg.content.to_string());
 
     // Send a message back from billy to alex
     let msg_data = MessageData {
         dna_address: DNA_ADDRESS.clone(),
         to_agent_id: ALEX_AGENT_ID.to_string(),
         from_agent_id: BILLY_AGENT_ID.to_string(),
-        msg_id: "yada".to_string(),
-        data: json!(format!("echo: {}", msg.data.to_string())),
+        request_id: "yada".to_string(),
+        content: json!(format!("echo: {}", msg.content.to_string())),
     };
 
     billy
@@ -251,7 +251,10 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         JsonProtocol::SendMessageResult(msg) => msg,
         _ => unreachable!(),
     };
-    assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
+    assert_eq!(
+        "\"echo: \\\"hello\\\"\"".to_string(),
+        msg.content.to_string()
+    );
 
     // Done
     Ok(())
@@ -296,30 +299,30 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     )?;
 
     // Billy sends GetDhtData message
-    let fetch_data = FetchDhtData {
+    let fetch_data = FetchEntryData {
         request_id: "testGetEntry".to_string(),
         dna_address: DNA_ADDRESS.clone(),
         requester_agent_id: BILLY_AGENT_ID.to_string(),
-        data_address: ENTRY_ADDRESS_3.clone(),
+        entry_address: ENTRY_ADDRESS_3.clone(),
     };
-    billy.send(JsonProtocol::FetchDhtData(fetch_data.clone()).into())?;
+    billy.send(JsonProtocol::FetchEntry(fetch_data.clone()).into())?;
 
     // Billy sends HandleGetDhtDataResult message
     billy.reply_fetch_data(&fetch_data)?;
 
     // Billy sends GetDhtMeta message
-    let fetch_meta = FetchDhtMetaData {
+    let fetch_meta = FetchMetaData {
         request_id: "testGetMeta".to_string(),
         dna_address: DNA_ADDRESS.clone(),
         requester_agent_id: BILLY_AGENT_ID.to_string(),
-        data_address: ENTRY_ADDRESS_3.clone(),
+        entry_address: ENTRY_ADDRESS_3.clone(),
         attribute: META_ATTRIBUTE.to_string(),
     };
-    billy.send(JsonProtocol::FetchDhtMeta(fetch_meta.clone()).into())?;
+    billy.send(JsonProtocol::FetchMeta(fetch_meta.clone()).into())?;
     // Alex sends HandleGetDhtMetaResult message
     alex.reply_fetch_meta(&fetch_meta)?;
     // billy should receive requested metadata
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtMetaResult(_))));
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
     println!("got GetDhtMetaResult: {:?}", result);
     // Done
     Ok(())
@@ -336,26 +339,26 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     alex.author_data(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))));
+    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     println!("got HandleStoreDhtData on node A: {:?}", result_a);
-    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreDhtData(_))));
+    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     println!("got HandleStoreDhtData on node B: {:?}", result_b);
     assert!(billy.data_store.contains_key(&ENTRY_ADDRESS_1));
 
     // Billy asks for that data
-    let fetch_data = FetchDhtData {
+    let fetch_data = FetchEntryData {
         request_id: "testGet".to_string(),
         dna_address: DNA_ADDRESS.clone(),
         requester_agent_id: BILLY_AGENT_ID.to_string(),
-        data_address: ENTRY_ADDRESS_1.clone(),
+        entry_address: ENTRY_ADDRESS_1.clone(),
     };
-    billy.send(JsonProtocol::FetchDhtData(fetch_data.clone()).into())?;
+    billy.send(JsonProtocol::FetchEntry(fetch_data.clone()).into())?;
 
     // Alex sends that data back to the network
     alex.reply_fetch_data(&fetch_data)?;
 
     // Billy should receive requested data
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchDhtDataResult(_))));
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))));
     println!("got GetDhtDataResult: {:?}", result);
     // Done
     Ok(())

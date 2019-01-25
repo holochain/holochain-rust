@@ -6,7 +6,7 @@ use crate::{
 };
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::json_protocol::{
-    FetchDhtData, FetchDhtMetaData, HandleDhtMetaResultData, HandleDhtResultData,
+    FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
 use regex::Regex;
 use std::{collections::HashSet, sync::Arc};
@@ -18,10 +18,10 @@ lazy_static! {
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
-pub fn handle_get_dht(get_dht_data: FetchDhtData, context: Arc<Context>) {
+pub fn handle_get_dht(get_dht_data: FetchEntryData, context: Arc<Context>) {
     let maybe_entry_with_meta = nucleus::actions::get_entry::get_entry_with_meta(
         &context,
-        Address::from(get_dht_data.data_address.clone()),
+        Address::from(get_dht_data.entry_address.clone()),
     )
     .unwrap_or_else(|error| {
         context.log(format!("err/net: Error trying to find entry {:?}", error));
@@ -34,12 +34,12 @@ pub fn handle_get_dht(get_dht_data: FetchDhtData, context: Arc<Context>) {
 }
 
 /// The network comes back with a result to our previous GET request.
-pub fn handle_get_dht_result(dht_data: HandleDhtResultData, context: Arc<Context>) {
+pub fn handle_get_dht_result(dht_data: FetchEntryResultData, context: Arc<Context>) {
     let action_wrapper = ActionWrapper::new(Action::HandleFetchResult(dht_data));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 
-pub fn handle_get_dht_meta(get_dht_meta_data: FetchDhtMetaData, context: Arc<Context>) {
+pub fn handle_get_dht_meta(get_dht_meta_data: FetchMetaData, context: Arc<Context>) {
     if LINK.is_match(&get_dht_meta_data.attribute) {
         let tag = LINK
             .captures(&get_dht_meta_data.attribute)
@@ -53,7 +53,7 @@ pub fn handle_get_dht_meta(get_dht_meta_data: FetchDhtMetaData, context: Arc<Con
             .unwrap()
             .dht()
             .get_links(
-                Address::from(get_dht_meta_data.data_address.clone()),
+                Address::from(get_dht_meta_data.entry_address.clone()),
                 tag.clone(),
             )
             .unwrap_or(HashSet::new())
@@ -67,7 +67,7 @@ pub fn handle_get_dht_meta(get_dht_meta_data: FetchDhtMetaData, context: Arc<Con
 }
 
 /// The network comes back with a result to our previous GET META request.
-pub fn handle_get_dht_meta_result(dht_meta_data: HandleDhtMetaResultData, context: Arc<Context>) {
+pub fn handle_get_dht_meta_result(dht_meta_data: FetchMetaResultData, context: Arc<Context>) {
     if LINK.is_match(&dht_meta_data.attribute) {
         let tag = LINK
             .captures(&dht_meta_data.attribute)

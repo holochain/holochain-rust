@@ -4,12 +4,12 @@ use crate::{
     network::state::NetworkState,
 };
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::json_protocol::HandleDhtMetaResultData;
+use holochain_net_connection::json_protocol::FetchMetaResultData;
 use std::sync::Arc;
 
 fn inner(
     network_state: &mut NetworkState,
-    dht_meta_data: &HandleDhtMetaResultData,
+    dht_meta_data: &FetchMetaResultData,
 ) -> Result<Vec<Address>, HolochainError> {
     network_state.initialized()?;
 
@@ -38,7 +38,7 @@ pub fn reduce_handle_get_links_result(
 
     let result = inner(network_state, dht_meta_data);
     let key = GetLinksKey {
-        base_address: Address::from(dht_meta_data.data_address.clone()),
+        base_address: Address::from(dht_meta_data.entry_address.clone()),
         tag: tag.clone(),
         id: dht_meta_data.request_id.clone(),
     };

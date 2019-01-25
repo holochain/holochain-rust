@@ -18,14 +18,14 @@ use holochain_net_connection::json_protocol::MessageData;
 /// -> we are being called
 pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
     let message: DirectMessage =
-        serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
+        serde_json::from_str(&serde_json::to_string(&message_data.content).unwrap()).unwrap();
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
             thread::spawn(move || {
                 if let Err(error) = block_on(handle_custom_direct_message(
                     Address::from(message_data.from_agent_id),
-                    message_data.msg_id,
+                    message_data.request_id,
                     custom_direct_message,
                     context.clone(),
                 )) {
@@ -41,7 +41,7 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
             thread::spawn(move || {
                 block_on(respond_validation_package_request(
                     Address::from(message_data.from_agent_id),
-                    message_data.msg_id,
+                    message_data.request_id,
                     address,
                     context.clone(),
                 ));
@@ -57,7 +57,7 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
 /// -> we called and this is the answer
 pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
     let response: DirectMessage =
-        serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
+        serde_json::from_str(&serde_json::to_string(&message_data.content).unwrap()).unwrap();
 
     let initial_message = context
         .state()
@@ -65,7 +65,7 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
         .network()
         .as_ref()
         .direct_message_connections
-        .get(&message_data.msg_id)
+        .get(&message_data.request_id)
         .cloned();
 
     match response {
@@ -76,13 +76,13 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
             }
 
             let action_wrapper = ActionWrapper::new(Action::HandleCustomSendResponse((
-                message_data.msg_id.clone(),
+                message_data.request_id.clone(),
                 custom_direct_message.payload,
             )));
             dispatch_action(context.action_channel(), action_wrapper.clone());
 
             let action_wrapper =
-                ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
+                ActionWrapper::new(Action::ResolveDirectConnection(message_data.request_id));
             dispatch_action(context.action_channel(), action_wrapper.clone());
         }
         DirectMessage::RequestValidationPackage(_) => context.log(
@@ -104,7 +104,7 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
             dispatch_action(context.action_channel(), action_wrapper.clone());
 
             let action_wrapper =
-                ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
+                ActionWrapper::new(Action::ResolveDirectConnection(message_data.request_id));
             dispatch_action(context.action_channel(), action_wrapper.clone());
         }
     };

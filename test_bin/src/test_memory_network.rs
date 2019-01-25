@@ -66,8 +66,8 @@ fn exec_memory_network_test() -> NetResult<()> {
             dna_address: "sandwich".into(),
             from_agent_id: "node-1".to_string(),
             to_agent_id: "node-2".to_string(),
-            msg_id: "yada".to_string(),
-            data: json!("hello"),
+            request_id: "yada".to_string(),
+            content: json!("hello"),
         })
         .into(),
     )
@@ -82,8 +82,8 @@ fn exec_memory_network_test() -> NetResult<()> {
                     dna_address: "sandwich".into(),
                     from_agent_id: "node-2".to_string(),
                     to_agent_id: "node-1".to_string(),
-                    msg_id: "yada".to_string(),
-                    data: json!(format!("echo: {}", msg.data.to_string())),
+                    request_id: "yada".to_string(),
+                    content: json!(format!("echo: {}", msg.data.to_string())),
                 })
                 .into(),
             )
@@ -96,7 +96,10 @@ fn exec_memory_network_test() -> NetResult<()> {
     println!("got response: {:?}", res);
 
     if let JsonProtocol::SendMessageResult(msg) = res {
-        assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
+        assert_eq!(
+            "\"echo: \\\"hello\\\"\"".to_string(),
+            msg.content.to_string()
+        );
     } else {
         panic!("bad msg");
     }

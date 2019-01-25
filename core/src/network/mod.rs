@@ -47,7 +47,7 @@ pub mod tests {
         assert!(result.is_ok());
         let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live)
             .expect("Could not create EAV");
-        let result = context1.eav_storage.write().unwrap().add_eav(&status_eav);
+        let result = context1.eav_storage.write().unwrap().add_eavi(&status_eav);
         assert!(result.is_ok());
 
         // Get it.

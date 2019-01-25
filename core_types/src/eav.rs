@@ -197,7 +197,6 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         value: Option<Value>,
         index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError>;
- 
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -316,8 +315,6 @@ impl PartialEq for EntityAttributeValueStorage {
         self.fetch_eavi(None, None, None, IndexQuery::default())
             == other.fetch_eavi(None, None, None, IndexQuery::default())
     }
-
-
 }
 
 pub fn test_eav_entity() -> Entry {

@@ -82,7 +82,6 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             })
             .collect::<BTreeSet<EntityAttributeValueIndex>>())
     }
-
 }
 
 #[cfg(test)]

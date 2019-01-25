@@ -116,7 +116,6 @@ impl EavFileStorage {
         Ok(())
     }
 
-
     fn read_from_dir<T>(
         &self,
         subscript: String,

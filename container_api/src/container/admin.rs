@@ -523,7 +523,7 @@ pub mod tests {
         Arc::new(loader)
     }
 
-    pub fn empty_briges() -> String {
+    pub fn empty_bridges() -> String {
         "bridges = []".to_string()
     }
 
@@ -536,8 +536,7 @@ pub mod tests {
     }
 
     pub fn persistence_dir(test_name: &str) -> String {
-        let mut persist_dir: PathBuf = [".", "tmp-test"].iter().collect();
-        persist_dir.push(test_name);
+        let persist_dir: PathBuf = [".", "tmp-test", test_name].iter().collect();
         format!(
             "persistence_dir = \"{}\"",
             persist_dir
@@ -548,7 +547,7 @@ pub mod tests {
     }
 
     pub fn header_block(test_name: &str) -> String {
-        let mut toml = empty_briges();
+        let mut toml = empty_bridges();
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());
         toml = add_line(toml, empty_ui_interfaces());
@@ -649,8 +648,10 @@ pattern = ".*""#
         format!("{}\n{}", base, new_line)
     }
 
-    pub fn test_toml(port: u32) -> String {
-        let mut toml = String::from("bridges = []\npersistence_dir = \".\"");
+    pub fn test_toml(test_name: &str, port: u32) -> String {
+        let mut toml = empty_bridges();
+        toml = add_line(toml, persistence_dir(test_name));        
+
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -661,10 +662,8 @@ pattern = ".*""#
         toml
     }
 
-    fn create_test_container<T: Into<String>>(test_name: T, port: u32) -> Container {
-        let mut config = load_configuration::<Configuration>(&test_toml(port)).unwrap();
-        config.persistence_dir.push("tmp-test");
-        config.persistence_dir.push(test_name.into());
+    fn create_test_container(test_name: &str, port: u32) -> Container {
+        let config = load_configuration::<Configuration>(&test_toml(test_name, port)).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
         container.load_config().unwrap();
@@ -982,7 +981,7 @@ type = "websocket""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = empty_briges();
+        let mut toml = empty_bridges();
         toml = add_line(toml, "dnas = []".to_string());
         toml = add_line(toml, "instances = []".to_string());
         toml = add_line(toml, persistence_dir(test_name));
@@ -1106,7 +1105,7 @@ type = "http""#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = empty_briges();
+        let mut toml = empty_bridges();
         toml = add_line(toml, "interfaces = []".to_string());
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_bundles());

@@ -110,7 +110,7 @@ pub async fn get_entry_result_workflow<'a>(
 ////        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live);
 ////        let meta_storage = &context.state().unwrap().dht().meta_storage().clone();
 ////        (*meta_storage.write().unwrap())
-////            .add_eav(&status_eav)
+////            .add_eavi(&status_eav)
 ////            .unwrap();
 ////        let maybe_entry_history = block_on(super::get_entry_result_workflow(&context, &args));
 ////        let entry_history = maybe_entry_history.unwrap();

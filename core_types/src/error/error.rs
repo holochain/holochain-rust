@@ -81,7 +81,9 @@ impl fmt::Display for CoreError {
 
 /// TODO rename to CoreErrorKind
 /// Enum holding all Holochain Core errors
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash, PartialOrd, Ord,
+)]
 pub enum HolochainError {
     ErrorGeneric(String),
     NotImplemented(String),

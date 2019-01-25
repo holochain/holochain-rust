@@ -28,11 +28,11 @@ apt-get install libzmq3-dev
 These dependencies need to be installed in order to compile, and use `holochain_container`:
 
 - [Rust](https://www.rust-lang.org/en-US/install.html)
-  - needs to be the `nightly` build, so use the following commands, once you have first installed Rust
-  - `rustup toolchain install nightly`
-  - `rustup default nightly`
+  - needs to be the `nightly-2019-01-08` build, so use the following commands, once you have first installed Rust
+  - `rustup toolchain install nightly-2019-01-08`
+  - `rustup default nightly-2019-01-08`
   - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
-  - `rustup target add wasm32-unknown-unknown --toolchain nightly`
+  - `rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-08`
 - [Zmq](http://zeromq.org/intro:get-the-software)
   - zeromq is a "distributed messaging" software package utilized in the networking stack of Holochain
   - the link above has common platform installation instructions
@@ -66,7 +66,7 @@ bootstrap_nodes = []
 
 ## Configuration File Spec
 
-TBD (for now you just have infer from the example!)
+TBD (for now you just have infer from the [example]((https://github.com/holochain/holochain-rust/blob/develop/container/example-config/basic.toml))!)
 
 ## Testing HTTP interface using cURL
 

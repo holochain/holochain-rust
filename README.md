@@ -13,7 +13,7 @@
 
 This is the home of the Holochain Rust libraries, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust, and extended.
 
-**Code Status:** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 released October 2017.  Alpha 1 was released May 2018.  
+**Code Status:** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 released October 2017.  Alpha 1 was released May 2018.
 
 There are [3 developer preview releases](https://github.com/holochain/holochain-rust/releases) of the Rust version. 0.0.3 is the first with a working networking implementation.
 <br/>
@@ -121,7 +121,7 @@ It is very important to be using the correct nightly version.
 
 Currently this is:
 
-`nightly-2018-12-26-x86_64-pc-windows-msvc`
+`nightly-2019-01-24-x86_64-pc-windows-msvc`
 
 The nightly version we test/develop against can always be found in the .travis.yml file.
 

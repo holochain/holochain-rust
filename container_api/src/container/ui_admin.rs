@@ -41,8 +41,6 @@ impl ContainerUiAdmin for Container {
             hash: "<not-used>".to_string(),
         };
 
-        
-
         let mut new_config = self.config.clone();
         new_config.ui_bundles.push(new_bundle.clone());
         new_config.check_consistency()?;
@@ -166,6 +164,32 @@ pub mod tests {
             container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
             Ok(())
         );
+
+        let mut config_contents = String::new();
+        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        file.read_to_string(&mut config_contents)
+            .expect("Could not read temp config file");
+
+        let mut toml = String::from("bridges = []\nui_interfaces = []");
+        toml = add_block(toml, agent1());
+        toml = add_block(toml, agent2());
+        toml = add_block(toml, dna());
+        toml = add_block(toml, instance1());
+        toml = add_block(toml, instance2());
+        toml = add_block(toml, interface(3000));
+        toml = add_block(
+            toml,
+            String::from(
+                r#"[[ui_bundles]]
+hash = "<not-used>"
+id = "test-bundle-id"
+root_dir = ".""#,
+            ),
+        );
+        toml = add_block(toml, logger());
+        toml = format!("{}\n", toml);
+
+        assert_eq!(config_contents, toml,)
     }
 
     #[test]

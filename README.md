@@ -121,7 +121,7 @@ It is very important to be using the correct nightly version.
 
 Currently this is:
 
-`nightly-2019-01-08-x86_64-pc-windows-msvc`
+`nightly-2019-01-24-x86_64-pc-windows-msvc`
 
 The nightly version we test/develop against can always be found in the .travis.yml file.
 

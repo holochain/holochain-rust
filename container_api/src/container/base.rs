@@ -538,9 +538,25 @@ impl Container {
     }
 
     pub fn save_config(&self) -> Result<(), HolochainError> {
-        fs::create_dir_all(&self.config.persistence_dir)?;
-        let mut file = File::create(&self.config_path())?;
-        file.write(serialize_configuration(&self.config)?.as_bytes())?;
+        fs::create_dir_all(&self.config.persistence_dir)
+            .map_err(|_| {
+                HolochainError::ErrorGeneric(
+                    format!("Could not directory structure {:?}", self.config.persistence_dir).into()
+                )
+            })?;
+        let mut file = File::create(&self.config_path())
+            .map_err(|_| {
+                HolochainError::ErrorGeneric(
+                    format!("Could not create file at {:?}", self.config_path()).into()
+                )
+            })?;
+
+        file.write(serialize_configuration(&self.config)?.as_bytes())
+            .map_err(|_| {
+                HolochainError::ErrorGeneric(
+                    format!("Could not save config to {:?}", self.config_path()).into()
+                )
+            })?;
         Ok(())
     }
 

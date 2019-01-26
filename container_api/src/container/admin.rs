@@ -650,7 +650,7 @@ pattern = ".*""#
 
     pub fn test_toml(test_name: &str, port: u32) -> String {
         let mut toml = empty_bridges();
-        toml = add_line(toml, persistence_dir(test_name));        
+        toml = add_line(toml, persistence_dir(test_name));
 
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());

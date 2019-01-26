@@ -4,7 +4,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::{dispatch_action_with_observer, Observer},
-    nucleus::{ribosome, state::NucleusState, actions::get_entry::get_entry_from_agent_chain},
+    nucleus::{actions::get_entry::get_entry_from_agent_chain, ribosome, state::NucleusState},
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -12,10 +12,7 @@ use holochain_core_types::{
         capabilities::{CallSignature, CapabilityCall, CapabilityType},
         wasm::DnaWasm,
     },
-    entry::{
-        cap_entries::CapTokenGrant,
-        Entry,
-    },
+    entry::{cap_entries::CapTokenGrant, Entry},
     error::{HcResult, HolochainError},
     json::JsonString,
     signature::Signature,
@@ -259,17 +256,20 @@ pub fn validate_call(
         .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
         .map_err(|e| HolochainError::Dna(e))?;
 
+    // call is valid if the call is listed in a public capability OR
+    // the capability check of the grant passes OR
+    // or the token is the agent AND the call signature is valid.
     if zome.is_fn_public(&fn_call.fn_name)
         || match fn_call.cap.clone() {
             Some(cap) => {
-                verify_call_sig(
-                    context.clone(),
-                    &cap.signature,
-                    &fn_call.fn_name,
-                    fn_call.parameters.clone(),
-                ) &&
-                (is_token_the_agent(context.clone(), &cap)
-                 || check_capability(context.clone(), fn_call))
+                check_capability(context.clone(), fn_call)
+                    || (is_token_the_agent(context.clone(), &cap)
+                        && verify_call_sig(
+                            context.clone(),
+                            &cap.signature,
+                            &fn_call.fn_name,
+                            fn_call.parameters.clone(),
+                        ))
             }
             None => false,
         }
@@ -286,7 +286,7 @@ fn is_token_the_agent(context: Arc<Context>, cap_call: &CapabilityCall) -> bool 
 fn get_grant(context: Arc<Context>, address: &Address) -> Option<CapTokenGrant> {
     match get_entry_from_agent_chain(&context, address).ok()?? {
         Entry::CapTokenGrant(grant) => Some(grant),
-        _ => None
+        _ => None,
     }
 }
 
@@ -297,10 +297,10 @@ fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
         return false;
     }
     let cap_call = fn_call.cap.clone().unwrap();
-    let maybe_grant = get_grant(context.clone(),&cap_call.cap_token);
+    let maybe_grant = get_grant(context.clone(), &cap_call.cap_token);
     match maybe_grant {
         None => false,
-        Some(grant) => verify_grant(context.clone(), &grant, fn_call)
+        Some(grant) => verify_grant(context.clone(), &grant, fn_call),
     }
 }
 
@@ -330,11 +330,6 @@ pub fn verify_call_sig<J: Into<JsonString>>(
         function,
         parameters.into()
     ));
-    println!(
-        "callsig:{:?}\nmocksig:{:?}",
-        call_sig.signature(),
-        mock_signature
-    );
     call_sig.signature() == mock_signature
 }
 
@@ -479,6 +474,20 @@ pub mod tests {
         )
     }
 
+    /// test self agent capability call
+    pub fn test_agent_capability_call<J: Into<JsonString>>(
+        context: Arc<Context>,
+        function: &str,
+        parameters: J,
+    ) -> CapabilityCall {
+        make_cap_call(
+            context.clone(),
+            Address::from(context.agent_id.key.clone()),
+            Address::from(context.agent_id.key.clone()),
+            function,
+            parameters,
+        )
+    }
     /// dummy capability call
     pub fn dummy_capability_call() -> CapabilityCall {
         CapabilityCall::new(
@@ -795,18 +804,31 @@ pub mod tests {
             Address::from("some caller"),
             CallSignature::default(),
         );
-        test_reduce_call(&test_setup, Some(cap_call.clone()), expected_failure);
+        test_reduce_call(
+            &test_setup,
+            Some(cap_call.clone()),
+            expected_failure.clone(),
+        );
 
         // make the call with an valid capability call from self
-        //        let cap_call = test_capability_call(context,"some_fn","{}");
+        let cap_call = test_agent_capability_call(test_setup.context.clone(), "test", "{}");
         test_reduce_call(&test_setup, Some(cap_call), SUCCESS_EXPECTED.clone());
+
+        // make the call with an invalid valid capability call from self
+        let cap_call = test_agent_capability_call(test_setup.context.clone(), "some_fn", "{}");
+        test_reduce_call(&test_setup, Some(cap_call), expected_failure);
 
         // make the call with an valid capability call from a different sources
         let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
-        let cap_call =
-            CapabilityCall::new(addr, Address::from("any caller"), CallSignature::default());
+        let cap_call = make_cap_call(
+            test_setup.context.clone(),
+            addr,
+            Address::from("any caller"),
+            "test",
+            "{}",
+        );
         test_reduce_call(&test_setup, Some(cap_call), SUCCESS_EXPECTED.clone());
     }
 
@@ -824,10 +846,12 @@ pub mod tests {
 
         // test assigned capability where the caller is the agent
         let agent_token_str = test_setup.context.agent_id.key.clone();
-        let cap_call = CapabilityCall::new(
+        let cap_call = make_cap_call(
+            test_setup.context.clone(),
             Address::from(agent_token_str.clone()),
             Address::from(agent_token_str),
-            CallSignature::default(),
+            "test",
+            "{}",
         );
         test_reduce_call(&test_setup, Some(cap_call), SUCCESS_EXPECTED.clone());
 
@@ -836,14 +860,25 @@ pub mod tests {
         let grant =
             CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()])).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
-        let cap_call = CapabilityCall::new(addr, someone, CallSignature::default());
-        test_reduce_call(&test_setup, Some(cap_call), SUCCESS_EXPECTED.clone());
+        let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let cap_call = make_cap_call(
+            test_setup.context.clone(),
+            grant_addr.clone(),
+            Address::from("any caller"),
+            "test",
+            "{}",
+        );
+        test_reduce_call(&test_setup, Some(cap_call), expected_failure.clone());
 
-        /* function call doesn't know who the caller is yet so can't do the check in reduce
-                let someone_else = Address::from("somoeone_else");
-                test_reduce_call(&test_setup,&String::from(addr),someone_else, expected_failure.clone());
-        */
+        // test assigned capability where the caller is someone else
+        let cap_call = make_cap_call(
+            test_setup.context.clone(),
+            grant_addr,
+            someone.clone(),
+            "test",
+            "{}",
+        );
+        test_reduce_call(&test_setup, Some(cap_call), SUCCESS_EXPECTED.clone());
     }
 
     #[test]
@@ -992,11 +1027,7 @@ pub mod tests {
         let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let context = test_setup.context;
         let maybe_grant = get_grant(context.clone(), &grant_addr);
-        assert_eq!(maybe_grant,Some(grant));
-        let agent_address =  Address::from(context.agent_id.key.clone());
-        let maybe_grant = get_grant(context.clone(),&agent_address);
-        let agent_grant = CapTokenGrant::create(CapabilityType::Assigned, Some(vec!(agent_address))).unwrap();
-        assert_eq!(maybe_grant,Some(agent_grant));
+        assert_eq!(maybe_grant, Some(grant));
     }
 
     #[test]
@@ -1041,22 +1072,6 @@ pub mod tests {
             "{}",
         );
         assert!(check_capability(context.clone(), &zome_call));
-
-        // agent cap call should succeed
-        let zome_call = ZomeFnCall::new(
-            "test_zome",
-            Some(make_cap_call(
-                context.clone(),
-                Address::from(context.agent_id.key.clone()),
-                Address::from(context.agent_id.key.clone()),
-                "test",
-                "{}",
-            )),
-            "test",
-            "{}",
-        );
-        assert!(check_capability(context.clone(), &zome_call));
-
     }
 
     #[test]

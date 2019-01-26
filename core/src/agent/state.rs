@@ -194,14 +194,14 @@ pub(crate) fn commit_entry_to_chain(
     context: &Arc<Context>,
     state: &mut AgentState,
     entry: &Entry,
-    maybe_crud_link: &Option<Address>) -> Result<(Address,ChainHeader), HolochainError> {
+    maybe_crud_link: &Option<Address>,
+) -> Result<(Address, ChainHeader), HolochainError> {
     let chain_header = create_new_chain_header(&entry, context.clone(), &maybe_crud_link);
     let storage = &state.chain.content_storage().clone();
     storage.write().unwrap().add(entry)?;
     storage.write().unwrap().add(&chain_header)?;
-    Ok((entry.address(),chain_header))
+    Ok((entry.address(), chain_header))
 }
-
 
 /// Do a Commit Action against an agent state.
 /// Intended for use inside the reducer, isolated for unit testing.
@@ -219,10 +219,12 @@ fn reduce_commit_entry(
     let action = action_wrapper.action();
     let (entry, maybe_crud_link) = unwrap_to!(action => Action::Commit);
 
-    let result = commit_entry_to_chain(&context, state, entry, maybe_crud_link).map(|(address,chain_header)| {
-        state.top_chain_header = Some(chain_header);
-        address
-    });
+    let result = commit_entry_to_chain(&context, state, entry, maybe_crud_link).map(
+        |(address, chain_header)| {
+            state.top_chain_header = Some(chain_header);
+            address
+        },
+    );
 
     let con = context.clone();
 
@@ -236,7 +238,6 @@ fn reduce_commit_entry(
     state
         .actions
         .insert(action_wrapper.clone(), ActionResponse::Commit(result));
-
 }
 
 /// maps incoming action to the correct handler
@@ -267,19 +268,21 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;
-    use super::{commit_entry_to_chain, reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
+    use super::{
+        commit_entry_to_chain, reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot,
+    };
     use crate::{
-        action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
-        instance::tests::{test_context,test_context_with_state}, state::State,
+        action::tests::test_action_wrapper_commit,
+        agent::chain_store::tests::test_chain_store,
+        instance::tests::{test_context, test_context_with_state},
+        state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::test_chain_header,
+        chain_header::{test_chain_header, ChainHeader},
         entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
         json::JsonString,
-        chain_header::ChainHeader,
-
     };
     use serde_json;
     use std::{
@@ -318,8 +321,11 @@ pub mod tests {
         let result = commit_entry_to_chain(&context, &mut agent_state, &entry, &None);
         let (address, chain_header) = result.ok().unwrap();
         assert_eq!(address, entry.address());
-        let all:Vec<ChainHeader> =  agent_state.chain().iter(&Some(chain_header.clone())).collect();
-        assert_eq!(all[0],chain_header);
+        let all: Vec<ChainHeader> = agent_state
+            .chain()
+            .iter(&Some(chain_header.clone()))
+            .collect();
+        assert_eq!(all[0], chain_header);
     }
 
     #[test]

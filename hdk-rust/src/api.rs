@@ -432,7 +432,7 @@ pub fn call<S: Into<String>>(
     Dispatch::Call.with_input(ZomeFnCallArgs {
         instance_handle: instance_handle.into(),
         zome_name: zome_name.into(),
-        cap_token:  if token_string == "" {
+        cap_token: if token_string == "" {
             Some(Address::from(token_string))
         } else {
             None

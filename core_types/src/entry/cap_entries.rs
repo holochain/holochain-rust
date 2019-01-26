@@ -96,7 +96,6 @@ impl CapTokenGrant {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use dna::capabilities::CapabilityType;
 
     #[test]
     fn test_new_cap_token_grant_entry() {

@@ -33,19 +33,26 @@ impl ContainerUiAdmin for Container {
         id: &String,
         copy: bool
     ) -> Result<(), HolochainError> {
+
+        let path = match copy {
+            true => {
+                let dest = self.config_path.clone()
+                    .join("static")
+                    .join(id);
+                fs_extra::dir::copy(&path, &dest, &fs_extra::dir::CopyOptions::new())
+                    .map_err(|e| {
+                        HolochainError::ErrorGeneric(e.to_string())
+                    })?;
+                dest
+            },
+            false => {
+                path
+            }
+        };
+
         let path_string = path
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
-
-        if copy {
-            let dest = self.config_path.clone()
-                .join("static")
-                .join(id);
-            fs_extra::dir::copy(&path, &dest, &fs_extra::dir::CopyOptions::new())
-                .map_err(|e| {
-                    HolochainError::ErrorGeneric(e.to_string())
-                })?;
-        }
 
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),

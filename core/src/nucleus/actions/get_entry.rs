@@ -3,6 +3,7 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
+    chain_header::ChainHeader,
     eav::{EntityAttributeValueIndex, IndexQuery},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
@@ -30,7 +31,11 @@ pub fn get_entry_from_agent_chain(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let maybe_header = &context.state().unwrap().agent().chain().iter(&None).filter(|header| header.entry_address() == address).next();
+    let agent = context.state().unwrap().agent();
+    let top_header = agent.top_chain_header();
+    let all:Vec<ChainHeader> =  agent.chain().iter(&top_header).collect();
+    let maybe_header = &agent.chain().iter(&top_header).filter(|header| header.entry_address() == address).next();
+
     if maybe_header.is_none() {
         return Ok(None);
     }
@@ -148,11 +153,17 @@ pub fn get_entry_with_meta<'a>(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::instance::tests::test_context_with_state;
-    use holochain_core_types::{cas::content::AddressableContent, entry::test_entry};
+    use crate::{
+        instance::tests::test_context_with_state,
+        agent::state::{commit_entry_to_chain,tests::test_agent_state},
+    };
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::test_entry,
+    };
+
 
     #[test]
-    fn get_entry_from_dht_cas() {
+    fn test_get_entry_from_dht_cas() {
         let entry = test_entry();
         let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, &entry.address());
@@ -162,4 +173,21 @@ pub mod tests {
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }
+/*
+    #[test]
+    fn test_get_entry_from_agent_chain() {
+        let entry = test_entry();
+        let context = test_context_with_state(None);
+        let result = super::get_entry_from_agent_chain(&context, &entry.address());
+        assert_eq!(Ok(None), result);
+
+        let mut agent_state = test_agent_state();
+//        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let _ = commit_entry_to_chain(&context, &mut agent_state,&entry, &None);
+
+        let result = super::get_entry_from_agent_chain(&context, &entry.address());
+        assert_eq!(Ok(Some(entry.clone())), result);
+
+    }
+*/
 }

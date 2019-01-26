@@ -984,6 +984,22 @@ pub mod tests {
     }
 
     #[test]
+    fn test_get_grant() {
+        let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
+        let test_setup = setup_test(dna);
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
+        let grant_entry = Entry::CapTokenGrant(grant.clone());
+        let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let context = test_setup.context;
+        let maybe_grant = get_grant(context.clone(), &grant_addr);
+        assert_eq!(maybe_grant,Some(grant));
+        let agent_address =  Address::from(context.agent_id.key.clone());
+        let maybe_grant = get_grant(context.clone(),&agent_address);
+        let agent_grant = CapTokenGrant::create(CapabilityType::Assigned, Some(vec!(agent_address))).unwrap();
+        assert_eq!(maybe_grant,Some(agent_grant));
+    }
+
+    #[test]
     fn test_check_capability_transferable() {
         let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
         let test_setup = setup_test(dna);
@@ -1006,12 +1022,12 @@ pub mod tests {
         );
         assert!(!check_capability(context.clone(), &zome_call));
 
-     // make the call with an valid capability call from a random source should succeed
+        // add the transferable grant and get the token which is the grant's address
         let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
 
-        // agent cap call should succeed
+        // make the call with a valid capability call from a random source should succeed
         let zome_call = ZomeFnCall::new(
             "test_zome",
             Some(make_cap_call(

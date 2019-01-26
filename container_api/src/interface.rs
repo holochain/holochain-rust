@@ -646,7 +646,7 @@ impl ContainerApiBuilder {
     ///     - `id` ID of the UI interface to start
     ///     
     /// - `admin/ui_interface/stop`
-    ///     Start a UI interface given an ID
+    ///     Stop a UI interface given an ID
     ///     Params:
     ///     - `id` ID of the UI interface to stop    
     ///     

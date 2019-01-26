@@ -6,7 +6,7 @@ use chrono::{offset::FixedOffset, DateTime, Utc};
 use error::HolochainError;
 use json::JsonString;
 use regex::Regex;
-use std::{cmp::Ordering, convert::TryFrom, time::Duration, fmt};
+use std::{cmp::Ordering, convert::TryFrom, fmt, time::Duration};
 
 /// Represents a timeout for an HDK function
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
@@ -74,12 +74,12 @@ impl fmt::Debug for Iso8601 {
             Ok(dt) => {
                 let ts = dt.to_rfc3339();
                 if self.0 != ts {
-                    write!(f, "Iso8601 {{ \"{}\" <- \"{}\" }}", ts, &self.0 )
+                    write!(f, "Iso8601 {{ \"{}\" <- \"{}\" }}", ts, &self.0)
                 } else {
-                    write!(f, "Iso8601 {{ \"{}\" }}", &self.0 )
+                    write!(f, "Iso8601 {{ \"{}\" }}", &self.0)
                 }
             }
-            Err(e) => write!(f, "Iso8601 {{ \"{}\" -> {} }}", &self.0, e ),
+            Err(e) => write!(f, "Iso8601 {{ \"{}\" -> {} }}", &self.0, e),
         }
     }
 }
@@ -214,7 +214,7 @@ impl PartialEq for Iso8601 {
 
 /// The PartialEq implements a total order, where all invalid Iso8601 are considered equal to
 /// each-other; equally invalid.  Needed to implement Ord.
-impl Eq for Iso8601 { }
+impl Eq for Iso8601 {}
 
 impl PartialOrd for Iso8601 {
     fn partial_cmp(&self, rhs: &Iso8601) -> Option<Ordering> {
@@ -235,12 +235,12 @@ impl Ord for Iso8601 {
         match DateTime::<FixedOffset>::try_from(self) {
             Ok(ts_lhs) => match DateTime::<FixedOffset>::try_from(rhs) {
                 Ok(ts_rhs) => ts_lhs.cmp(&ts_rhs),
-                Err(_) => Ordering::Greater,     // lhs is good, rhs is invalid; lhs is always > rhs (invalid)
-            }
+                Err(_) => Ordering::Greater, // lhs is good, rhs is invalid; lhs is always > rhs (invalid)
+            },
             Err(_) => match DateTime::<FixedOffset>::try_from(rhs) {
-                Ok(_) => Ordering::Less,        // lhs is invalid, rhs is valid; lhs (invalid) is always < rhs
-                Err(_) => Ordering::Equal,      // lhs and rhs both invalid; always equal-to each-other
-            }
+                Ok(_) => Ordering::Less, // lhs is invalid, rhs is valid; lhs (invalid) is always < rhs
+                Err(_) => Ordering::Equal, // lhs and rhs both invalid; always equal-to each-other
+            },
         }
     }
 }
@@ -385,7 +385,7 @@ pub mod tests {
             "boo".into(),
             "bar".into(),
         ];
-        v.sort_by(|a,b| {
+        v.sort_by(|a, b| {
             let cmp = a.cmp(b);
             //println!( "{} {:?} {}", a, cmp, b );
             cmp
@@ -394,37 +394,41 @@ pub mod tests {
             v.iter()
                 .map(|ts| format!("{:?}", &ts).to_string())
                 .collect::<Vec<String>>()
-                .join(", "), concat!(
-                    "Iso8601 { \"baz\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"baz\" }, ",
-                    "Iso8601 { \"boo\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\" }, ",
-                    "Iso8601 { \"bar\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"bar\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39+11:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39+04:00\" <- \"20181011 032339 +04:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39+03:00\" <- \"2018-10-11 03:23:39+03:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39+00:00\" <- \"2018-10-11T03:23:39Z\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39-06:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39-07:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39-08:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39-09:00\" }"
-                ));
+                .join(", "),
+            concat!(
+                "Iso8601 { \"baz\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"baz\" }, ",
+                "Iso8601 { \"boo\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\" }, ",
+                "Iso8601 { \"bar\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"bar\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39+11:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39+04:00\" <- \"20181011 032339 +04:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39+03:00\" <- \"2018-10-11 03:23:39+03:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39+00:00\" <- \"2018-10-11T03:23:39Z\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39-06:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39-07:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39-08:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39-09:00\" }"
+            )
+        );
 
-        v.sort_by(|a,b| b.cmp(a)); // reverse
+        v.sort_by(|a, b| b.cmp(a)); // reverse
         assert_eq!(
             v.iter()
                 .map(|ts| format!("{:?}", &ts).to_string())
                 .collect::<Vec<String>>()
-                .join(", "), concat!(
-                    "Iso8601 { \"2018-10-11T03:23:39-09:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39-08:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39-07:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39-06:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39+00:00\" <- \"2018-10-11T03:23:39Z\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39+03:00\" <- \"2018-10-11 03:23:39+03:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39+04:00\" <- \"20181011 032339 +04:00\" }, ",
-                    "Iso8601 { \"2018-10-11T03:23:39+11:00\" }, ",
-                    "Iso8601 { \"baz\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"baz\" }, ",
-                    "Iso8601 { \"boo\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\" }, ",
-                    "Iso8601 { \"bar\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"bar\" }"
-                ));
+                .join(", "),
+            concat!(
+                "Iso8601 { \"2018-10-11T03:23:39-09:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39-08:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39-07:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39-06:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39+00:00\" <- \"2018-10-11T03:23:39Z\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39+03:00\" <- \"2018-10-11 03:23:39+03:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39+04:00\" <- \"20181011 032339 +04:00\" }, ",
+                "Iso8601 { \"2018-10-11T03:23:39+11:00\" }, ",
+                "Iso8601 { \"baz\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"baz\" }, ",
+                "Iso8601 { \"boo\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\" }, ",
+                "Iso8601 { \"bar\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"bar\" }"
+            )
+        );
     }
 }

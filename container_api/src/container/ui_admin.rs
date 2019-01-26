@@ -12,6 +12,7 @@ pub trait ContainerUiAdmin {
         &mut self,
         path: PathBuf,
         id: &String,
+        copy: bool
     ) -> Result<(), HolochainError>;
     fn uninstall_ui_bundle(&mut self, id: &String) -> Result<(), HolochainError>;
 
@@ -30,10 +31,21 @@ impl ContainerUiAdmin for Container {
         &mut self,
         path: PathBuf,
         id: &String,
+        copy: bool
     ) -> Result<(), HolochainError> {
         let path_string = path
             .to_str()
             .ok_or(HolochainError::ConfigError("invalid path".into()))?;
+
+        if copy {
+            let dest = self.config_path.clone()
+                .join("static")
+                .join(id);
+            fs_extra::dir::copy(&path, &dest, &fs_extra::dir::CopyOptions::new())
+                .map_err(|e| {
+                    HolochainError::ErrorGeneric(e.to_string())
+                })?;
+        }
 
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
@@ -161,7 +173,7 @@ pub mod tests {
         let mut container = create_test_container("test_install_ui_bundle_from_file", 3000);
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
             Ok(())
         );
 
@@ -203,7 +215,7 @@ root_dir = ".""#,
         );
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
             Ok(())
         );
         assert_eq!(
@@ -245,7 +257,7 @@ root_dir = ".""#,
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
             Ok(())
         );
 
@@ -303,7 +315,7 @@ port = 4000"#,
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
             Ok(())
         );
 
@@ -355,7 +367,7 @@ root_dir = ".""#,
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
             Ok(())
         );
 
@@ -381,7 +393,7 @@ root_dir = ".""#,
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string()),
+            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
             Ok(())
         );
 

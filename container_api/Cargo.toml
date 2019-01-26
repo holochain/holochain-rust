@@ -38,6 +38,7 @@ directories = "1.0"
 hyper = "0.12.21"
 hyper-staticfile = "0.3.0"
 tokio = "0.1.14"
+fs_extra = "1.1"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

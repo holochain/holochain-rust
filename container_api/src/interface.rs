@@ -655,7 +655,7 @@ impl ContainerApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let root_dir = Self::get_as_string("root_dir", &params_map)?;
             let id = Self::get_as_string("id", &params_map)?;
-            container_call!(|c| c.install_ui_bundle_from_file(PathBuf::from(root_dir), &id))?;
+            container_call!(|c| c.install_ui_bundle_from_file(PathBuf::from(root_dir), &id, false))?;
             Ok(json!({"success": true}))
         });
 

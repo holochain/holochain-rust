@@ -130,6 +130,7 @@ extern crate tokio;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
+extern crate fs_extra;
 
 pub mod config;
 pub mod container;

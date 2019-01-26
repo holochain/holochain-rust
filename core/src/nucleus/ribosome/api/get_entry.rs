@@ -65,7 +65,13 @@ pub mod tests {
     pub fn test_get_args_bytes() -> Vec<u8> {
         let entry_args = GetEntryArgs {
             address: test_entry().address(),
-            options: GetEntryOptions::new(StatusRequestKind::Latest, true, false, false),
+            options: GetEntryOptions::new(
+                StatusRequestKind::Latest,
+                true,
+                false,
+                false,
+                Default::default(),
+            ),
         };
         JsonString::from(entry_args).into_bytes()
     }
@@ -74,7 +80,13 @@ pub mod tests {
     pub fn test_get_args_unknown() -> Vec<u8> {
         let entry_args = GetEntryArgs {
             address: Address::from("xxxxxxxxx"),
-            options: GetEntryOptions::new(StatusRequestKind::Latest, true, false, false),
+            options: GetEntryOptions::new(
+                StatusRequestKind::Latest,
+                true,
+                false,
+                false,
+                Default::default(),
+            ),
         };
         JsonString::from(entry_args).into_bytes()
     }
@@ -153,6 +165,14 @@ pub mod tests {
 
     (func
         (export "__list_capabilities")
+        (param $allocation i32)
+        (result i32)
+
+        (i32.const 0)
+    )
+
+    (func
+        (export "__list_functions")
         (param $allocation i32)
         (result i32)
 

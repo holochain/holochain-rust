@@ -38,8 +38,8 @@ extern void holochain_dna_get_zome_names(const Dna *ptr, CStringVec *string_vec)
 extern void holochain_dna_free_zome_names(CStringVec *string_vec);
 
 extern void holochain_dna_get_capabilities_names(const Dna *ptr, const char *zome_name, CStringVec *string_vec);
-extern void holochain_dna_get_function_names(const Dna *ptr, const char *zome_name, const char *capability_name, CStringVec *string_vec);
-extern void holochain_dna_get_function_parameters(const Dna *ptr, const char *zome_name, const char *capability_name, const char *parameter_name, CStringVec *string_vec);
+extern void holochain_dna_get_function_names(const Dna *ptr, const char *zome_name, CStringVec *string_vec);
+extern void holochain_dna_get_function_parameters(const Dna *ptr, const char *zome_name, const char *parameter_name, CStringVec *string_vec);
 
 #ifdef __cplusplus
 }

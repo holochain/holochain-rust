@@ -9,7 +9,13 @@ holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 holochain_net = { path = "../net" }
 chrono = "0.4"
-futures-preview = { git = "https://github.com/holochain/futures-rs", branch = "pinned-to-alpha-11" }
+futures-preview = "=0.3.0-alpha.12"
+futures-core-preview = "=0.3.0-alpha.12"
+futures-channel-preview = "=0.3.0-alpha.12"
+futures-executor-preview = "=0.3.0-alpha.12"
+futures-io-preview = "=0.3.0-alpha.12"
+futures-sink-preview = "=0.3.0-alpha.12"
+futures-util-preview = "=0.3.0-alpha.12"
 tempfile = "3"
 serde = "1.0"
 serde_derive = "1.0"
@@ -27,7 +33,7 @@ holochain_net_connection = { path = "../net_connection" }
 holochain_net_ipc = { path = "../net_ipc" }
 maplit = "1.0.1"
 dirs = "1.0.4"
-lazy_static = "1.2.0"
+lazy_static = "1.2"
 directories = "1.0"
 hyper = "0.12.21"
 hyper-staticfile = "0.3.0"
@@ -39,3 +45,4 @@ holochain_wasm_utils = { path = "../wasm_utils" }
 clap = "2"
 structopt = "0.2"
 tempfile = "3"
+reqwest = "0.9"

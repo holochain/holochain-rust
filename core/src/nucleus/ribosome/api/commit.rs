@@ -7,9 +7,9 @@ use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::CommitAppEntry function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: CommitArgs
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);

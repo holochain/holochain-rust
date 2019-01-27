@@ -51,7 +51,7 @@ This function will be called by the invocation dispatch (see above).
 #### Zome API function arguments
 
 The `wasmi::RuntimeArgs` passed to the Zome API function contains only a single
-`u32` value. This is an encoded representation of a single page of memory
+`u64` value. This is an encoded representation of a single page of memory
 supported by the memory manager. The 16 high bits are the memory offset and the
 16 low bits are the memory length. See the `wasm_utils` crate for more
 implementation details.
@@ -93,7 +93,7 @@ In summary, if you want to send an action and wait for a return value:
 
 The zome API function returns a value to wasm representing success or a wasm trap.
 
-The success value can only be a single `i32`.
+The success value can only be a single `u64`.
 
 Traps are a low level wasm concern and are unlikely to be directly useful to a
 zome API function implementation.

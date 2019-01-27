@@ -349,6 +349,10 @@ pub fn make_cap_call<J: Into<JsonString>>(
 
 /// verifies that this grant is valid for a given requester and token value
 pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &ZomeFnCall) -> bool {
+    if !grant.functions().contains(&fn_call.fn_name) {
+        return false;
+    }
+
     let cap_type = grant.cap_type();
     if cap_type == CapabilityType::Public {
         return true;
@@ -819,7 +823,7 @@ pub mod tests {
         test_reduce_call(&test_setup, Some(cap_call), expected_failure);
 
         // make the call with an valid capability call from a different sources
-        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("test"))).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let cap_call = make_cap_call(
@@ -858,7 +862,7 @@ pub mod tests {
         // test assigned capability where the caller is someone else
         let someone = Address::from("somoeone");
         let grant =
-            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()])).unwrap();
+            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()]), vec!(String::from("test"))).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let cap_call = make_cap_call(
@@ -1022,7 +1026,7 @@ pub mod tests {
     fn test_get_grant() {
         let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
         let test_setup = setup_test(dna);
-        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("test"))).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
         let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let context = test_setup.context;
@@ -1054,7 +1058,7 @@ pub mod tests {
         assert!(!check_capability(context.clone(), &zome_call));
 
         // add the transferable grant and get the token which is the grant's address
-        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("test"))).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
 
@@ -1110,7 +1114,7 @@ pub mod tests {
             "{}",
         );
 
-        let grant = CapTokenGrant::create(CapabilityType::Public, None).unwrap();
+        let grant = CapTokenGrant::create(CapabilityType::Public, None, vec!(String::from("test"))).unwrap();
         let token = grant.token();
         assert!(verify_grant(
             context.clone(),
@@ -1128,7 +1132,15 @@ pub mod tests {
             &zome_call_from_addr1_bad_token
         ));
 
-        let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
+        let grant_for_other_fn = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("other_fn"))).unwrap();
+        assert!(!verify_grant(
+            context.clone(),
+            &grant_for_other_fn,
+            &zome_call_valid(context.clone(), &grant_for_other_fn.token(), &test_address1)
+        ));
+
+        let grant = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("test"))).unwrap();
+
         let token = grant.token();
         assert!(!verify_grant(
             context.clone(),
@@ -1173,7 +1185,7 @@ pub mod tests {
         ));
 
         let grant =
-            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![test_address1.clone()]))
+            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![test_address1.clone()]), vec!(String::from("test")))
                 .unwrap();
         let token = grant.token();
         assert!(!verify_grant(

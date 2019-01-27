@@ -22,11 +22,13 @@ use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use futures::{
     executor::ThreadPool,
     Future,
+    task::{noop_local_waker_ref, Poll},
 };
 use std::{
-    sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{mpsc::{sync_channel, SyncSender}, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
     time::Duration,
+    pin::Pin,
 };
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
@@ -192,11 +194,25 @@ impl Context {
             .expect("Observer channel not initialized")
     }
 
-    pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output  {
-        match self.future_executor {
-            None => ThreadPool::new().expect("Default ThreadPool has to be spawnable"),
-            Some(ref executor) => executor.clone(),
-        }.run(future)
+    pub fn block_on<F: Future>(&self, mut future: F) -> <F as Future>::Output  {
+        let (sender, receiver) = sync_channel(1);
+        let context = self.clone();
+        let future_observer = move |_| {
+            if let Poll::Ready(result) = Pin::new(&mut future).poll(noop_local_waker_ref()) {
+                sender
+                    .send(result.clone())
+                    .expect("local channel to be open");
+                true
+            } else {
+                false
+            }
+        };
+
+        self.observer_channel
+            .send(future_observer)
+            .expect("Observer channel not initialized");
+
+        receiver.recv()
     }
 }
 

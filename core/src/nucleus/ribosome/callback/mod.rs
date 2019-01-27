@@ -254,7 +254,7 @@ pub mod tests {
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument
-    pub fn test_callback_wasm(canonical_name: &str, result: i32) -> Vec<u8> {
+    pub fn test_callback_wasm(canonical_name: &str, result: u64) -> Vec<u8> {
         Wat2Wasm::new()
             .canonicalize_lebs(false)
             .write_debug_names(true)
@@ -273,8 +273,8 @@ pub mod tests {
                 // define the signature as 1 input, 1 output
                 // (import "env" "<canonical name>"
                 //      (func $zome_api_function
-                //          (param i32)
-                //          (result i32)
+                //          (param i64)
+                //          (result i64)
                 //      )
                 // )
                 //
@@ -291,10 +291,10 @@ pub mod tests {
                 // (func (export "test") ...)
                 //
                 // define the memory allocation for the memory manager that the serialized input
-                // struct can be found across as an i32 to the exported function, also the function
-                // return type is i32
-                // (param $allocation i32)
-                // (result i32)
+                // struct can be found across as an i64 to the exported function, also the function
+                // return type is i64
+                // (param $allocation i64)
+                // (result i64)
                 //
                 // call the imported function and pass the exported function arguments straight
                 // through, let the return also fall straight through
@@ -312,10 +312,10 @@ pub mod tests {
 
     (func
         (export "{}")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const {})
+        (i64.const {})
     )
 )
                 "#,
@@ -330,7 +330,7 @@ pub mod tests {
     pub fn test_callback_instance(
         zome: &str,
         canonical_name: &str,
-        result: i32,
+        result: u64,
         network_name: Option<&str>,
     ) -> Result<Instance, String> {
         let dna = test_utils::create_test_dna_with_wasm(

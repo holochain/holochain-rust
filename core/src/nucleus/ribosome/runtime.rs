@@ -78,7 +78,7 @@ impl Runtime {
 
         match self.memory_manager.write(&s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
-            Ok(allocation) => Ok(Some(RuntimeValue::I32(RibosomeEncodingBits::from(
+            Ok(allocation) => Ok(Some(RuntimeValue::I64(RibosomeEncodingBits::from(
                 RibosomeEncodedValue::Allocation(allocation.into()),
             )
                 as RibosomeRuntimeBits))),

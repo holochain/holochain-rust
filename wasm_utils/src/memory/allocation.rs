@@ -213,7 +213,7 @@ pub mod tests {
     pub fn allocation_new_test() {
         assert_eq!(
             Err(AllocationError::OutOfBounds),
-            WasmAllocation::new(Offset::from(std::u16::MAX), Length::from(1)),
+            WasmAllocation::new(Offset::from(std::u32::MAX), Length::from(1)),
         );
 
         assert_eq!(

@@ -115,12 +115,11 @@ pub type AllocationResult = Result<WasmAllocation, AllocationError>;
 #[cfg(test)]
 pub mod tests {
 
-    use holochain_core_types::error::HolochainError;
+    use holochain_core_types::{bits_n_pieces::U16_MAX, error::HolochainError};
     use memory::{
         allocation::{AllocationError, Length, Offset, WasmAllocation},
         MemoryBits, MemoryInt, MEMORY_INT_MAX,
     };
-    use holochain_core_types::bits_n_pieces::U16_MAX;
 
     pub fn fake_offset() -> Offset {
         Offset(12345)

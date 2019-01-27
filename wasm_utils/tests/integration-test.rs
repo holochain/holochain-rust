@@ -14,9 +14,9 @@ extern crate test_utils;
 
 use holochain_container_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::{
+    bits_n_pieces::U16_MAX,
     error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeErrorCode},
     json::{JsonString, RawString},
-    bits_n_pieces::U16_MAX,
 };
 use holochain_wasm_utils::wasm_target_dir;
 use std::convert::TryFrom;
@@ -94,12 +94,11 @@ fn stacked_strings_test() {
 /// at this point it is fine to preinitialize multiple wasm pages (not testing dynamic)
 fn big_string_output_static() {
     let s = call_zome_function_with_hc("big_string_output_static").unwrap();
+    assert_eq!(String::from(s).len(), (U16_MAX * 20) as usize,);
     assert_eq!(
-        String::from(s).len(),
-        (U16_MAX * 20) as usize,
-    );
-    assert_eq!(
-        Ok(JsonString::from("(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize))),
+        Ok(JsonString::from(
+            "(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize)
+        )),
         call_zome_function_with_hc("big_string_output_static"),
     );
 }

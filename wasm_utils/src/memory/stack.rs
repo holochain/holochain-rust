@@ -104,13 +104,13 @@ impl TryFrom<WasmAllocation> for WasmStack {
 #[cfg(test)]
 pub mod memory_tests {
 
+    use holochain_core_types::bits_n_pieces::U16_MAX;
     use memory::{
         allocation::{AllocationError, Length, Offset, WasmAllocation},
         stack::{Top, WasmStack},
         MemoryBits, MemoryInt, MEMORY_INT_MAX,
     };
     use std::convert::TryFrom;
-    use holochain_core_types::bits_n_pieces::U16_MAX;
 
     pub fn fake_top() -> Top {
         Top(12345)
@@ -210,14 +210,8 @@ pub mod memory_tests {
         );
 
         let big_allocation = stack.next_allocation(Length::from(U16_MAX)).unwrap();
-        assert_eq!(
-            stack.allocate(big_allocation),
-            Ok(Top(13)),
-        );
-        assert_eq!(
-            stack.top(),
-            Top(U16_MAX + 13),
-        );
+        assert_eq!(stack.allocate(big_allocation), Ok(Top(13)),);
+        assert_eq!(stack.top(), Top(U16_MAX + 13),);
     }
 
     #[test]
@@ -266,12 +260,10 @@ pub mod memory_tests {
         let big = U16_MAX * 3;
         assert_eq!(
             Ok(WasmStack { top: Top(big * 2) }),
-            WasmStack::try_from(
-                WasmAllocation {
-                    offset: Offset::from(big),
-                    length: Length::from(big),
-                }
-            ),
+            WasmStack::try_from(WasmAllocation {
+                offset: Offset::from(big),
+                length: Length::from(big),
+            }),
         );
     }
 

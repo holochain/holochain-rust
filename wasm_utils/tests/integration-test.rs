@@ -92,17 +92,16 @@ fn stacked_strings_test() {
 #[test]
 /// test that we can send a big string as input to a zome function
 /// at this point it is fine to preinitialize multiple wasm pages (not testing dynamic)
-fn big_string_input_static() {
-    let s = call_zome_function_with_hc("big_string").unwrap();
+fn big_string_output_static() {
+    let s = call_zome_function_with_hc("big_string_output_static").unwrap();
     assert_eq!(
         String::from(s).len(),
         (U16_MAX * 20) as usize,
     );
-    // assert_eq!(
-    //     Ok(JsonString::from("z")),
-    //     // Ok(JsonString::from("(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize))),
-    //     call_zome_function_with_hc("big_string"),
-    // );
+    assert_eq!(
+        Ok(JsonString::from("(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize))),
+        call_zome_function_with_hc("big_string_output_static"),
+    );
 }
 
 #[test]

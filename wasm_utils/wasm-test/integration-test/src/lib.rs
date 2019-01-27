@@ -128,16 +128,11 @@ pub extern "C" fn stacked_strings(_: RibosomeEncodingBits) -> RibosomeEncodingBi
 }
 
 #[no_mangle]
-pub extern "C" fn big_string(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut stack = WasmStack::default();
 
-    // match stack.write_string(&"(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize)) {
-    //     Ok(allocation) => allocation.as_ribosome_encoding(),
-    //     Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    // }
-
-    match stack.write_string(&"11223344556677889900".repeat(U16_MAX as usize)) {
+    match stack.write_string(&"(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize)) {
         Ok(allocation) => allocation.as_ribosome_encoding(),
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     }

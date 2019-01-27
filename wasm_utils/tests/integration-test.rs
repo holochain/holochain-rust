@@ -90,7 +90,9 @@ fn stacked_strings_test() {
 }
 
 #[test]
-fn big_string_test() {
+/// test that we can send a big string as input to a zome function
+/// at this point it is fine to preinitialize multiple wasm pages (not testing dynamic)
+fn big_string_input_static() {
     let s = call_zome_function_with_hc("big_string").unwrap();
     assert_eq!(
         String::from(s).len(),

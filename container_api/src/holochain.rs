@@ -286,7 +286,7 @@ mod tests {
             Some(
                 r#"
             (module
-                (memory (;0;) 17)
+                (memory (;0;) 1)
                 (func (export "genesis") (param $p0 i64) (result i64)
                     i64.const 9
                 )
@@ -317,7 +317,7 @@ mod tests {
             Some(
                 r#"
             (module
-                (memory (;0;) 17)
+                (memory (;0;) 1)
                 (func (export "genesis") (param $p0 i64) (result i64)
                     (loop (br 0))
                     i64.const 0

@@ -21,6 +21,8 @@ use holochain_wasm_utils::memory::MemoryInt;
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::holochain_core_types::bits_n_pieces::U16_MAX;
+use wasmi::MemoryInstance;
+use wasmi::memory_units::Pages;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
@@ -131,6 +133,12 @@ pub extern "C" fn stacked_strings(_: RibosomeEncodingBits) -> RibosomeEncodingBi
 pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut stack = WasmStack::default();
+
+    let memory = MemoryInstance::alloc(Pages(1), None).unwrap();
+    // table flip emoji is 27 bytes so we need 27 pages to hold U16_MAX table flips
+    if let Err(_) = memory.grow(Pages(27) {
+        return AllocationError::OutOfBounds.as_ribosome_encoding();
+    }
 
     match stack.write_string(&"(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize)) {
         Ok(allocation) => allocation.as_ribosome_encoding(),

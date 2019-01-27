@@ -25,7 +25,6 @@ use crate::nucleus::ribosome::{
     runtime::Runtime,
     Defn,
 };
-use holochain_core_types::dna::capabilities::ReservedCapabilityNames;
 use num_traits::FromPrimitive;
 use std::str::FromStr;
 
@@ -118,13 +117,6 @@ impl Defn for ZomeApiFunction {
 
     fn from_index(i: usize) -> Self {
         FromPrimitive::from_usize(i).unwrap_or(ZomeApiFunction::MissingNo)
-    }
-
-    fn capability(&self) -> ReservedCapabilityNames {
-        // Zome API Functions are not part of any zome and capability
-        // @TODO architecture issue?
-        // @see https://github.com/holochain/holochain-rust/issues/299
-        unreachable!();
     }
 }
 

@@ -13,7 +13,17 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{dna::Dna, entry::Entry, error::HolochainError};
+use holochain_core_types::{
+    dna::{
+        Dna,
+        capabilities::{ReservedCapabilityNames, CapabilityType},
+    },
+    entry::{
+        Entry,
+        cap_entries::CapTokenGrant,
+    },
+    error::HolochainError,
+};
 use std::{pin::Pin, sync::Arc, time::*};
 
 /// Timeout in seconds for initialization process.
@@ -47,20 +57,21 @@ pub async fn initialize_application(
         action_wrapper.clone(),
     );
 
+    // internal dispatch ReturnInitializationResult
+    fn dispatch_error_result(context: &Arc<Context>, err: HolochainError) {
+        context
+            .action_channel()
+            .send(ActionWrapper::new(Action::ReturnInitializationResult(
+                Some(err.to_string()),
+            )))
+            .expect("Action channel not usable in initialize_application()");
+    }
+
     // Commit DNA to chain
     let dna_entry = Entry::Dna(dna.clone());
     let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
-        // Let initialization fail if DNA could not be committed.
-        // Currently this cannot happen since ToEntry for Dna always creates
-        // an entry from a Dna object. So I can't create a test for the code below.
-        // Hence skipping it for codecov for now but leaving it in for resilience.
-        context_clone
-            .action_channel()
-            .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                Some(dna_commit.map_err(|e| e.to_string()).err().unwrap()),
-            )))
-            .expect("Action channel not usable in initialize_application()");
+        dispatch_error_result(&context_clone, dna_commit.err().unwrap());
         return Err(HolochainError::new("error committing DNA"));
     }
 
@@ -68,19 +79,44 @@ pub async fn initialize_application(
     let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
     let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone));
 
+
+
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates
     // an entry from an Agent object. So I can't create a test for the code below.
     // Hence skipping it for codecov for now but leaving it in for resilience.
 
     if agent_id_commit.is_err() {
-        context_clone
-            .action_channel()
-            .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                Some(agent_id_commit.map_err(|e| e.to_string()).err().unwrap()),
-            )))
-            .expect("Action channel not usable in initialize_application()");
+        dispatch_error_result(&context_clone, agent_id_commit.err().unwrap());
         return Err(HolochainError::new("error committing Agent"));
+    }
+
+    let mut _public_tokens = Vec::new();
+    // Commit Public Capability Grants to chain
+    for (_, zome) in dna.clone().zomes {
+        let maybe_public = zome.capabilities.iter().find(|(cap_name,_)| *cap_name == ReservedCapabilityNames::Public.as_str());
+        if maybe_public.is_some() {
+            let (_,cap) = maybe_public.unwrap();
+            let maybe_public_cap_grant_entry = CapTokenGrant::create(CapabilityType::Public, None, cap.functions.clone());
+
+            // Let initialization fail if Public Grant could not be committed.
+            if maybe_public_cap_grant_entry.is_err() {
+                dispatch_error_result(&context_clone, maybe_public_cap_grant_entry.err().unwrap());
+                return Err(HolochainError::new("error creating public cap grant"));
+            }
+
+            let public_cap_grant_commit = await!(commit_entry(Entry::CapTokenGrant(maybe_public_cap_grant_entry.ok().unwrap()), None, &context_clone));
+
+            // Let initialization fail if Public Grant could not be committed.
+            match public_cap_grant_commit
+            {
+                Err(err) => {
+                    dispatch_error_result(&context_clone, err);
+                    return Err(HolochainError::new("error committing public grant"));
+                },
+                Ok(addr) => _public_tokens.push(addr),
+            }
+        }
     }
 
     // TODO: Question: genesis is called AFTER dna and agent entries committed??

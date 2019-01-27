@@ -16,22 +16,14 @@ use std::str::FromStr;
 pub enum ReservedCapabilityNames {
     /// Development placeholder, no production fn should use MissingNo
     MissingNo,
-
-    /// @TODO document what LifeCycle is
-    /// @see https://github.com/holochain/holochain-rust/issues/204
-    LifeCycle,
-
-    /// @TODO document what Communication is
-    /// @see https://github.com/holochain/holochain-rust/issues/204
-    Communication,
+    Public,
 }
 
 impl FromStr for ReservedCapabilityNames {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "hc_lifecycle" => Ok(ReservedCapabilityNames::LifeCycle),
-            "hc_web_gateway" => Ok(ReservedCapabilityNames::Communication),
+            "hc_public" => Ok(ReservedCapabilityNames::Public),
             _ => Err("Cannot convert string to ReservedCapabilityNames"),
         }
     }
@@ -40,8 +32,7 @@ impl FromStr for ReservedCapabilityNames {
 impl ReservedCapabilityNames {
     pub fn as_str(&self) -> &'static str {
         match *self {
-            ReservedCapabilityNames::LifeCycle => "hc_lifecycle",
-            ReservedCapabilityNames::Communication => "hc_web_gateway",
+            ReservedCapabilityNames::Public => "hc_public",
             ReservedCapabilityNames::MissingNo => "",
         }
     }
@@ -160,12 +151,8 @@ mod tests {
     /// test that ReservedCapabilityNames can be created from a canonical string
     fn test_capabilities_from_str() {
         assert_eq!(
-            Ok(ReservedCapabilityNames::LifeCycle),
-            ReservedCapabilityNames::from_str("hc_lifecycle"),
-        );
-        assert_eq!(
-            Ok(ReservedCapabilityNames::Communication),
-            ReservedCapabilityNames::from_str("hc_web_gateway"),
+            Ok(ReservedCapabilityNames::Public),
+            ReservedCapabilityNames::from_str("hc_public"),
         );
         assert_eq!(
             Err("Cannot convert string to ReservedCapabilityNames"),
@@ -176,11 +163,7 @@ mod tests {
     #[test]
     /// test that a canonical string can be created from ReservedCapabilityNames
     fn test_capabilities_as_str() {
-        assert_eq!(ReservedCapabilityNames::LifeCycle.as_str(), "hc_lifecycle");
-        assert_eq!(
-            ReservedCapabilityNames::Communication.as_str(),
-            "hc_web_gateway",
-        );
+        assert_eq!(ReservedCapabilityNames::Public.as_str(), "hc_public");
     }
 
     #[test]

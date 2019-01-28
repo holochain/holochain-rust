@@ -117,7 +117,6 @@ pub fn run_dna(
             Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
         }
     }
-    println!("xxxxx {:?}", encoded_allocation_of_input);
 
     // scope for mutable borrow of runtime
     let returned_encoding: RibosomeEncodingBits;
@@ -143,8 +142,6 @@ pub fn run_dna(
 
     // Handle result returned by called zome function
     let return_code = RibosomeEncodedValue::from(returned_encoding);
-
-    println!("yyyy {:?}", returned_encoding);
 
     let return_log_msg: String;
     let return_result: HcResult<JsonString>;

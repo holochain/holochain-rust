@@ -184,7 +184,9 @@ impl Waiter {
                         }
                         Entry::LinkRemove(_link_remove) => {
                             checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
-                            println!("warn/waiter: LinkRemove not implemented!");
+                            checker.add(move |aw| {
+                                *aw.action() == Action::RemoveLink(link_add.clone().link().clone())
+                            });
                         }
                         _ => (),
                     },

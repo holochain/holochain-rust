@@ -141,12 +141,6 @@ impl InMemoryServer {
         req_id
     }
 
-    fn priv_drop_request(&mut self, req_id: &RequestId) -> bool {
-        println!("\t\t priv_drop_request({}): has:\n {:?}", req_id, self.request_book);
-        //self.request_book.remove(req_id).is_some()
-        self.request_book.contains_key(req_id)
-    }
-
     fn priv_request_lists(&mut self, dna_address: &Address, agent_id: &str) {
         // Data
         // Request this agent's published data
@@ -311,7 +305,6 @@ impl InMemoryServer {
                             "---- InMemoryServer '{}' internal request failed: {:?}",
                             self.name.clone(), msg.clone(),
                         );
-                        self.priv_drop_request(&msg.request_id);
                         return Ok(());
                     }
                     // If not, relay the FailureResult message to receipient
@@ -538,7 +531,7 @@ impl InMemoryServer {
     fn priv_serve_HandleFetchEntryResult(&mut self, msg: &FetchEntryResultData) -> NetResult<()> {
         println!("priv_serve_HandleFetchEntryResult(): {:?}", msg);
         // if its from our own request do a publish
-        if self.priv_drop_request(&msg.request_id) {
+        if self.request_book.contains_key(&msg.request_id) {
             let dht_data = EntryData {
                 dna_address: msg.dna_address.clone(),
                 provider_agent_id: msg.provider_agent_id.clone(),
@@ -602,7 +595,7 @@ impl InMemoryServer {
     /// send back a response to a request for dht meta data
     fn priv_serve_HandleFetchDhtMetaResult(&mut self, msg: &FetchMetaResultData) -> NetResult<()> {
         // if its from our own request do a publish
-        if self.priv_drop_request(&msg.request_id) {
+        if self.request_book.contains_key(&msg.request_id) {
             let meta_data = DhtMetaData {
                 dna_address: msg.dna_address.clone(),
                 provider_agent_id: msg.provider_agent_id.clone(),
@@ -641,7 +634,6 @@ impl InMemoryServer {
             bucket_id = maybe_bucket_id.unwrap().clone();
         }
         // drop request
-        self.priv_drop_request(&request_id);
         Some(bucket_id)
     }
 

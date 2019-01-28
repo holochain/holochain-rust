@@ -63,8 +63,13 @@ pub struct ValidationData {
 
 impl ValidationData {
     /// The list of authors that have signed this entry.
-    pub fn sources(&self) -> &Vec<Address> {
-        self.package.chain_header.sources()
+    pub fn sources(&self) -> Vec<Address> {
+        self.package
+            .chain_header
+            .provenances()
+            .iter()
+            .map(|(addr, _)| addr.clone())
+            .collect()
     }
 }
 

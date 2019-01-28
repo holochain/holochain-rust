@@ -11,7 +11,7 @@ use crate::{
     },
     error::HolochainError,
     json::JsonString,
-    signature::{test_signatures, Signature},
+    signature::Signature,
     time::{test_iso_8601, Iso8601},
 };
 use std::convert::TryInto;
@@ -29,11 +29,9 @@ pub struct ChainHeader {
     entry_type: EntryType,
     /// Key to the entry of this header
     entry_address: Address,
-    /// Address(es) of the agent(s) that authored and signed this entry.
-    /// Backed by the entry_signatures below.
-    sources: Vec<Address>,
-    /// Cryptographic signature of the entry for each source respectively
-    entry_signatures: Vec<Signature>,
+    /// Address(es) of the agent(s) that authored and signed this entry,
+    /// along with their cryptographic signatures
+    provenances: Vec<Provenance>,
     /// Key to the immediately preceding header. Only the genesis Pair can have None as valid
     link: Option<Address>,
     /// Key to the most recent header of the same type, None is valid only for the first of that type
@@ -43,6 +41,8 @@ pub struct ChainHeader {
     /// ISO8601 time stamp
     timestamp: Iso8601,
 }
+
+type Provenance = (Address, Signature);
 
 impl PartialEq for ChainHeader {
     fn eq(&self, other: &ChainHeader) -> bool {
@@ -62,8 +62,7 @@ impl ChainHeader {
     pub fn new(
         entry_type: &EntryType,
         entry_address: &Address,
-        sources: &Vec<Address>,
-        entry_signatures: &Vec<Signature>,
+        provenances: &Vec<Provenance>,
         link: &Option<Address>,
         link_same_type: &Option<Address>,
         link_crud: &Option<Address>,
@@ -72,8 +71,7 @@ impl ChainHeader {
         ChainHeader {
             entry_type: entry_type.to_owned(),
             entry_address: entry_address.to_owned(),
-            sources: sources.clone(),
-            entry_signatures: entry_signatures.to_owned(),
+            provenances: provenances.clone(),
             link: link.to_owned(),
             link_same_type: link_same_type.to_owned(),
             link_crud: link_crud.to_owned(),
@@ -112,12 +110,8 @@ impl ChainHeader {
     }
 
     /// entry_signature getter
-    pub fn entry_signatures(&self) -> &Vec<Signature> {
-        &self.entry_signatures
-    }
-
-    pub fn sources(&self) -> &Vec<Address> {
-        &self.sources
+    pub fn provenances(&self) -> &Vec<Provenance> {
+        &self.provenances
     }
 }
 
@@ -136,8 +130,7 @@ pub fn test_chain_header() -> ChainHeader {
     ChainHeader::new(
         &test_entry_type(),
         &test_entry().address(),
-        &test_sources(),
-        &test_signatures(),
+        &test_provenances("sig"),
         &None,
         &None,
         &None,
@@ -145,20 +138,19 @@ pub fn test_chain_header() -> ChainHeader {
     )
 }
 
-pub fn test_sources() -> Vec<Address> {
-    vec![test_agent_id().address()]
+pub fn test_provenances(sig: &'static str) -> Vec<Provenance> {
+    vec![(test_agent_id().address(), Signature::from(sig))]
 }
 
 #[cfg(test)]
 pub mod tests {
     use crate::{
         cas::content::{Address, AddressableContent},
-        chain_header::{test_chain_header, test_sources, ChainHeader},
+        chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
             entry_type::{test_entry_type, test_entry_type_a, test_entry_type_b},
             test_entry, test_entry_a, test_entry_b,
         },
-        signature::{test_signature_b, test_signatures},
         time::test_iso_8601,
     };
 
@@ -172,8 +164,7 @@ pub mod tests {
         ChainHeader::new(
             &test_entry_type_b(),
             &test_entry_b().address(),
-            &test_sources(),
-            &vec![test_signature_b()],
+            &test_provenances("sig"),
             &None,
             &None,
             &None,
@@ -201,8 +192,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry_a.entry_type(),
                 &entry_a.address(),
-                &test_sources(),
-                &test_signatures(),
+                &test_provenances("sig"),
                 &None,
                 &None,
                 &None,
@@ -211,8 +201,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry_b.entry_type(),
                 &entry_a.address(),
-                &test_sources(),
-                &test_signatures(),
+                &test_provenances("sig"),
                 &None,
                 &None,
                 &None,
@@ -226,8 +215,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
-                &test_sources(),
-                &test_signatures(),
+                &test_provenances("sig"),
                 &None,
                 &None,
                 &None,
@@ -236,8 +224,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
-                &test_sources(),
-                &test_signatures(),
+                &test_provenances("sig"),
                 &Some(test_chain_header().address()),
                 &None,
                 &None,
@@ -275,8 +262,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
-            &test_sources(),
-            &test_signatures(),
+            &test_provenances("sig"),
             &Some(chain_header_a.address()),
             &None,
             &None,
@@ -298,8 +284,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
-            &test_sources(),
-            &vec![test_signature_b()],
+            &test_provenances("sig"),
             &Some(chain_header_a.address()),
             &None,
             &None,
@@ -309,8 +294,7 @@ pub mod tests {
         let chain_header_c = ChainHeader::new(
             &entry_c.entry_type(),
             &entry_c.address(),
-            &test_sources(),
-            &test_signatures(),
+            &test_provenances("sig"),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
             &None,
@@ -323,12 +307,6 @@ pub mod tests {
             Some(chain_header_a.address()),
             chain_header_c.link_same_type()
         );
-    }
-
-    #[test]
-    /// tests for chain_header.entry_signature()
-    fn signature() {
-        assert_eq!(&test_signatures(), test_chain_header().entry_signatures());
     }
 
     #[test]
@@ -356,8 +334,7 @@ pub mod tests {
             ChainHeader::new(
                 &test_entry_type_a(),
                 &test_entry().address(),
-                &test_sources(),
-                &test_signatures(),
+                &test_provenances("sig"),
                 &None,
                 &None,
                 &None,
@@ -367,8 +344,7 @@ pub mod tests {
             ChainHeader::new(
                 &test_entry_type_b(),
                 &test_entry().address(),
-                &test_sources(),
-                &test_signatures(),
+                &test_provenances("sig"),
                 &None,
                 &None,
                 &None,
@@ -387,8 +363,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
-                &test_sources(),
-                &test_signatures(),
+                &test_provenances("sig"),
                 &Some(test_chain_header().address()),
                 &None,
                 &None,
@@ -407,8 +382,7 @@ pub mod tests {
             ChainHeader::new(
                 &entry.entry_type(),
                 &entry.address(),
-                &test_sources(),
-                &test_signatures(),
+                &test_provenances("sig"),
                 &None,
                 &Some(test_chain_header().address()),
                 &None,

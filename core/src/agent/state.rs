@@ -171,9 +171,8 @@ pub fn create_new_chain_header(
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        &vec![agent_address],
         // @TODO signatures
-        &vec![Signature::from("")],
+        &vec![(agent_address, Signature::from("TODO"))],
         &agent_state
             .top_chain_header
             .clone()

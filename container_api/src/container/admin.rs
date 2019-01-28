@@ -539,9 +539,7 @@ pub mod tests {
         let persist_dir: PathBuf = [".", "tmp-test", test_name].iter().collect();
         format!(
             "persistence_dir = \"{}\"",
-            persist_dir
-                .to_str()
-                .expect("Could not convert dir to string")
+            persist_dir.as_path().display()
         )
         .to_string()
     }

@@ -25,10 +25,9 @@ use futures::{
     task::{noop_local_waker_ref, Poll},
 };
 use std::{
-    sync::{mpsc::{sync_channel, SyncSender}, Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{mpsc::{channel, SyncSender, Receiver}, Arc, Mutex, RwLock, RwLockReadGuard},
     thread::sleep,
     time::Duration,
-    pin::Pin,
 };
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
@@ -194,25 +193,23 @@ impl Context {
             .expect("Observer channel not initialized")
     }
 
-    pub fn block_on<F: Future>(&self, mut future: F) -> <F as Future>::Output  {
-        let (sender, receiver) = sync_channel(1);
-        let context = self.clone();
-        let future_observer = move |_| {
-            if let Poll::Ready(result) = Pin::new(&mut future).poll(noop_local_waker_ref()) {
-                sender
-                    .send(result.clone())
-                    .expect("local channel to be open");
-                true
-            } else {
-                false
-            }
-        };
-
-        self.observer_channel
-            .send(future_observer)
+    pub fn create_observer(&self) -> Receiver<()> {
+        let (observer_tx, observer_rx) = channel();
+        self.observer_channel().send(Observer{ticker: observer_tx})
             .expect("Observer channel not initialized");
+        observer_rx
+    }
 
-        receiver.recv()
+    pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output  {
+        let observer_rx = self.create_observer();
+        pin_utils::pin_mut!(future);
+
+        loop {
+            let _ = match future.as_mut().poll(noop_local_waker_ref()) {
+                Poll::Ready(result) => return result,
+                _ => observer_rx.recv_timeout(Duration::from_millis(10)),
+            };
+        }
     }
 }
 

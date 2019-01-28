@@ -7,7 +7,7 @@ use holochain_core_types::{cas::content::Address, error::HolochainError};
 use holochain_net_connection::json_protocol::{FetchMetaData, FetchMetaResultData, JsonProtocol};
 use std::sync::Arc;
 
-/// Send back to network a HandleFetchDhtMetaResult, no matter what.
+/// Send back to network a HandleFetchMetaResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 fn reduce_respond_get_links_inner(
     network_state: &mut NetworkState,

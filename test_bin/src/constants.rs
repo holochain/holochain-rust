@@ -26,5 +26,3 @@ lazy_static! {
     pub static ref META_CONTENT_3: serde_json::Value = json!("hello-3-meta");
     pub static ref DNA_ADDRESS: Address = HashString::from("DUMMY_DNA_ADDRESS");
 }
-
-// static PUBLISH_LIST_ID: &'static str = "publish_list_id_1";

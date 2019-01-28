@@ -1,17 +1,11 @@
 use basic_workflows::setup_normal;
 use constants::*;
-use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
-    json_protocol::{
-        ConnectData, DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
-        FetchEntryResultData, FetchMetaData, GetListData, JsonProtocol, MessageData, TrackDnaData,
-    },
+    json_protocol::{FetchEntryData, FetchMetaData, JsonProtocol},
     net_connection::NetSend,
     NetResult,
 };
 use p2p_node::P2pNode;
-
-use std::{thread, time};
 
 /// Test the following workflow after normal setup:
 /// sequenceDiagram
@@ -93,21 +87,12 @@ pub fn publish_list_test(
     let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetPublishingEntryList);
     alex.reply_get_publish_data_list(&get_list_data)?;
 
-    println!("\n");
-    println!("alex.reply_get_publish_data_list() DONE \n");
-
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     assert!(has_received);
 
-    println!("\n");
-    println!("alex.wait_HandleFetchEntry_and_reply() DONE \n");
-
     // billy might receive HandleDhtStore
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
-
-    println!("\n");
-    println!("billy.send(FetchEntry) ... \n");
 
     // billy asks for reported published data.
     #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -119,14 +104,9 @@ pub fn publish_list_test(
     };
     billy.send(JsonProtocol::FetchEntry(fetch_entry).into())?;
 
-    println!("\n");
-    println!("billy.send DONE \n");
-
     let has_received = alex.wait_HandleFetchEntry_and_reply();
-    println!("alex.wait_HandleFetchEntry_and_reply(): {}", has_received);
     if !has_received {
         let has_received = billy.wait_HandleFetchEntry_and_reply();
-        println!("billy.wait_HandleFetchEntry_and_reply(): {}", has_received);
         assert!(has_received);
     }
 
@@ -169,32 +149,16 @@ pub fn publish_meta_list_test(
             Box::new(one_is!(JsonProtocol::HandleGetPublishingMetaList(_))),
         )
         .expect("Did not receive a HandleGetPublishingMetaList request");
-    let get_list_data = if let JsonProtocol::HandleGetPublishingMetaList(msg) = request {
-        msg
-    } else {
-        unreachable!()
-    };
+    let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetPublishingMetaList);
     // reply with publish_meta_list
     alex.reply_get_publish_meta_list(&get_list_data)?;
 
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     assert!(has_received);
-    println!("\n");
-    println!("alex.wait_HandleFetchMeta_and_reply() DONE \n");
+
     // billy might receive HandleDhtStore
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
-
-    //    // Alex should receive a HandleFetchDhtMeta request
-    //    let maybe_request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
-    //    if maybe_request.is_some() {
-    //        let request = maybe_request.unwrap();
-    //        println!("    got request 1: {:?}", request);
-    //        // extract data
-    //        let fetch_metadata = unwrap_to!(request => JsonProtocol::HandleFetchMeta);
-    //        // Respond with data
-    //        alex.reply_fetch_meta(&fetch_metadata)?;
-    //    }
 
     // billy asks for reported published data.
     #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -252,8 +216,6 @@ pub fn hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
         // billy might receive HandleDhtStore
         let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
     }
-    println!("\n");
-    println!("alex.wait_HandleFetchEntry_and_reply() DONE \n");
 
     // Have billy request that data
     #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -314,8 +276,6 @@ pub fn hold_meta_list_test(
         // billy might receive HandleStoreMeta
         let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     }
-    println!("\n");
-    println!("alex.wait_HandleFetchMeta_and_reply() DONE \n");
 
     // Have billy request that metadata
     #[cfg_attr(rustfmt, rustfmt_skip)]

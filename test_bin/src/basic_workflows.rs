@@ -303,7 +303,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         true,
     )?;
 
-    // Billy sends GetDhtData message
+    // Billy sends FetchEntry message
     let fetch_data = FetchEntryData {
         request_id: "testGetEntry".to_string(),
         dna_address: DNA_ADDRESS.clone(),
@@ -315,7 +315,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     // Billy sends HandleGetDhtDataResult message
     billy.reply_fetch_data(&fetch_data)?;
 
-    // Billy sends GetDhtMeta message
+    // Billy sends FetchMeta message
     let fetch_meta = FetchMetaData {
         request_id: "testGetMeta".to_string(),
         dna_address: DNA_ADDRESS.clone(),
@@ -324,13 +324,13 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         attribute: META_ATTRIBUTE.to_string(),
     };
     billy.send(JsonProtocol::FetchMeta(fetch_meta.clone()).into())?;
-    // Alex sends HandleGetDhtMetaResult message
+    // Alex sends HandleGetMetaResult message
     alex.reply_fetch_meta(&fetch_meta)?;
     // billy should receive requested metadata
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
-    println!("got GetDhtMetaResult: {:?}", result);
+    println!("got GetMetaResult: {:?}", result);
     // Done
     Ok(())
 }
@@ -349,11 +349,11 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     let result_a = alex
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))))
         .unwrap();
-    println!("got HandleStoreDhtData on node A: {:?}", result_a);
+    println!("got HandleStoreEntry on node A: {:?}", result_a);
     let result_b = billy
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))))
         .unwrap();
-    println!("got HandleStoreDhtData on node B: {:?}", result_b);
+    println!("got HandleStoreEntry on node B: {:?}", result_b);
     assert!(billy.entry_store.contains_key(&ENTRY_ADDRESS_1));
 
     // Billy asks for that data
@@ -372,7 +372,7 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
-    println!("got GetDhtDataResult: {:?}", result);
+    println!("got FetchEntryResult: {:?}", result);
     // Done
     Ok(())
 }

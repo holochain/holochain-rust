@@ -21,6 +21,10 @@ use std::{
 type BucketId = String;
 type RequestId = String;
 
+/// Type for holding list of addresses per dna+agent_id
+/// i.e. map of bucket_id -> addresses
+type AddressBook = HashMap<BucketId, Vec<Address>>;
+
 /// Type for holding a map of 'network_name -> InMemoryServer'
 type InMemoryServerMap = HashMap<String, Mutex<InMemoryServer>>;
 
@@ -30,25 +34,15 @@ lazy_static! {
         RwLock::new(HashMap::new());
 }
 
-/// hash connections by dna::agent_id
-fn cat_dna_agent(dna_address: &Address, agent_id: &str) -> BucketId {
+/// return a BucketId out of a dna_address and agent_id
+fn into_bucket_id(dna_address: &Address, agent_id: &str) -> BucketId {
     format!("{}::{}", dna_address, agent_id)
 }
 
-/// "hash" metadata identifier
-fn meta_to_address(data_address: &Address, attribute: &str) -> Address {
-    HashString::from(format!("{}||{}", data_address, attribute))
+/// return a unique identifier out of a entry_address and attribute
+fn into_meta_address(entry_address: &Address, attribute: &str) -> Address {
+    HashString::from(format!("{}||{}", entry_address, attribute))
 }
-
-//fn uncat_dna_agent(bucket_id: &str) -> (Address, &str) {
-//    let v: Vec<&str> = bucket_id.split("::").collect();
-//    assert_eq!(v.len(), 2);
-//    (Addresss::from(v[0]), v[1])
-//}
-
-// Type for holding list of addresses per dna+agent_id
-// i.e. map of bucket_id -> addresses
-type AddressBook = HashMap<BucketId, Vec<Address>>;
 
 /// Add an address to a book
 fn bookkeep_address_with_bucket(book: &mut AddressBook, bucket_id: BucketId, address: &Address) {
@@ -59,32 +53,32 @@ fn bookkeep_address_with_bucket(book: &mut AddressBook, bucket_id: BucketId, add
             vec_address.push(address.clone());
             return;
         }
-    }
-    // None: Create and add a new address list
+    } // unborrow book
+      // None: Create and add a new address list
     let vec = vec![address.clone()];
     book.insert(bucket_id, vec);
 }
 
-/// Add an address to a book
+/// Add an address to a book (sugar)
 fn bookkeep_address(
     book: &mut AddressBook,
     dna_address: &Address,
     agent_id: &str,
     address: &Address,
 ) {
-    let bucket_id = cat_dna_agent(dna_address, agent_id);
+    let bucket_id = into_bucket_id(dna_address, agent_id);
     bookkeep_address_with_bucket(book, bucket_id, address);
 }
 
 /// Remove an address from a book
 /// Return true if address exists and has been successfully removed.
-fn unbookkeep_address(
+fn _unbookkeep_address(
     book: &mut AddressBook,
     dna_address: &Address,
     agent_id: &str,
     address: &Address,
 ) -> bool {
-    let bucket_id = cat_dna_agent(dna_address, agent_id);
+    let bucket_id = into_bucket_id(dna_address, agent_id);
     let maybe_vec_address = book.get_mut(&bucket_id);
     if let Some(vec_address) = maybe_vec_address {
         let result = vec_address.remove_item(address);
@@ -121,29 +115,32 @@ pub(crate) struct InMemoryServer {
     request_count: usize,
 }
 
-// Books handling
+/// Books handling
 impl InMemoryServer {
+    /// generate a new request_id
     fn priv_generate_request_id(&mut self) -> String {
         self.request_count += 1;
         format!("req_{}", self.request_count)
     }
 
+    /// generate a new request, return the request_id  (sugar)
     fn priv_create_request(&mut self, dna_address: &Address, agent_id: &str) -> RequestId {
-        let bucket_id = cat_dna_agent(dna_address, agent_id);
+        let bucket_id = into_bucket_id(dna_address, agent_id);
         self.priv_create_request_with_bucket(&bucket_id)
     }
 
+    /// generate a new request, return the request_id
     fn priv_create_request_with_bucket(&mut self, bucket_id: &BucketId) -> RequestId {
         let req_id = self.priv_generate_request_id();
-        println!("\t\t priv_create_request_with_bucket(): has {:?}", req_id);
         self.request_book
             .insert(req_id.clone(), bucket_id.to_string());
         req_id
     }
 
-    fn priv_request_lists(&mut self, dna_address: &Address, agent_id: &str) {
-        // Data
-        // Request this agent's published data
+    /// Send all Get*Lists requests to agent
+    fn priv_request_all_lists(&mut self, dna_address: &Address, agent_id: &str) {
+        // Entry
+        // Request this agent's published entries
         let request_id = self.priv_create_request(dna_address, agent_id);
         self.priv_send_one(
             dna_address,
@@ -155,7 +152,7 @@ impl InMemoryServer {
             .into(),
         )
         .expect("Sending HandleGetPublishingDataList failed");
-        // Request this agent's holding data
+        // Request this agent's holding entries
         let request_id = self.priv_create_request(dna_address, agent_id);
         self.priv_send_one(
             dna_address,
@@ -169,7 +166,7 @@ impl InMemoryServer {
         .expect("Sending HandleGetHoldingDataList failed");
 
         // Metadata
-        // Request this agent's published data
+        // Request this agent's published metadata
         let request_id = self.priv_create_request(dna_address, agent_id);
         self.priv_send_one(
             dna_address,
@@ -181,7 +178,7 @@ impl InMemoryServer {
             .into(),
         )
         .expect("Sending HandleGetPublishingMetaList failed");
-        // Request this agent's holding data
+        // Request this agent's holding metadata
         let request_id = self.priv_create_request(dna_address, agent_id);
         self.priv_send_one(
             dna_address,
@@ -200,7 +197,6 @@ impl InMemoryServer {
 impl InMemoryServer {
     /// create a new in-memory network server
     pub fn new(name: String) -> Self {
-        //println!("NEW InMemoryServer '{}'", name.clone());
         Self {
             name,
             senders: HashMap::new(),
@@ -237,25 +233,6 @@ impl InMemoryServer {
         }
     }
 
-    //    //
-    //    pub fn mock_send_one(
-    //        &mut self,
-    //        dna_address: &Address,
-    //        agent_id: &str,
-    //        data: Protocol,
-    //    ) -> NetResult<()> {
-    //        self.priv_send_one(dna_address, agent_id, data)
-    //    }
-    //
-    //    //
-    //    pub fn mock_send_all(
-    //        &mut self,
-    //        dna_address: &Address,
-    //        data: Protocol,
-    //    ) -> NetResult<()> {
-    //        self.priv_send_all(dna_address, data)
-    //    }
-
     /// register a data handler with the server (for message routing)
     pub fn register(
         &mut self,
@@ -264,7 +241,7 @@ impl InMemoryServer {
         sender: mpsc::Sender<Protocol>,
     ) -> NetResult<()> {
         self.senders
-            .insert(cat_dna_agent(dna_address, agent_id), sender.clone());
+            .insert(into_bucket_id(dna_address, agent_id), sender.clone());
         match self.senders_by_dna.entry(dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 e.get_mut().push(sender.clone());
@@ -279,11 +256,11 @@ impl InMemoryServer {
     /// process a message sent by a node to the "network"
     pub fn serve(&mut self, data: Protocol) -> NetResult<()> {
         //Debugging code (do not remove)
-        println!(
-            ">>>> InMemoryServer '{}' recv: {:?}",
-            self.name.clone(),
-            data
-        );
+        // println!(
+        //    ">>>> InMemoryServer '{}' recv: {:?}",
+        //    self.name.clone(),
+        //    data
+        // );
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
             // Note: use same order as the enum
             match json_msg {
@@ -300,11 +277,11 @@ impl InMemoryServer {
                     let maybe_bucket_id = self.priv_check_request(&msg.request_id);
                     if let Some(_) = maybe_bucket_id {
                         //Debugging code (do not remove)
-                        println!(
-                            "---- InMemoryServer '{}' internal request failed: {:?}",
-                            self.name.clone(),
-                            msg.clone(),
-                        );
+                        // println!(
+                        //     "---- InMemoryServer '{}' internal request failed: {:?}",
+                        //     self.name.clone(),
+                        //     msg.clone(),
+                        // );
                         return Ok(());
                     }
                     // If not, relay the FailureResult message to receipient
@@ -316,7 +293,7 @@ impl InMemoryServer {
                 }
                 JsonProtocol::TrackDna(msg) => {
                     // Check if we are already tracking this dna for this agent
-                    let bucket_id = cat_dna_agent(&msg.dna_address, &msg.agent_id);
+                    let bucket_id = into_bucket_id(&msg.dna_address, &msg.agent_id);
                     if self.trackdna_book.contains(&bucket_id) {
                         println!(
                             "#### InMemoryServer({}) DNA already tracked: {}",
@@ -335,7 +312,7 @@ impl InMemoryServer {
                         .into(),
                     )?;
                     // Request all data lists from this agent
-                    self.priv_request_lists(&msg.dna_address, &msg.agent_id);
+                    self.priv_request_all_lists(&msg.dna_address, &msg.agent_id);
                 }
 
                 JsonProtocol::SendMessage(msg) => {
@@ -407,11 +384,11 @@ impl InMemoryServer {
         }
         let sender = maybe_sender.unwrap();
         //Debugging code (do not remove)
-        println!(
-            "<<<< InMemoryServer '{}' send: {:?}",
-            self.name.clone(),
-            data
-        );
+        // println!(
+        //     "<<<< InMemoryServer '{}' send: {:?}",
+        //     self.name.clone(),
+        //     data
+        // );
         sender.send(data)?;
         Ok(())
     }
@@ -422,7 +399,7 @@ impl InMemoryServer {
         to_agent_id: &str,
         data: Protocol,
     ) -> NetResult<()> {
-        let bucked_id = cat_dna_agent(dna_address, to_agent_id);
+        let bucked_id = into_bucket_id(dna_address, to_agent_id);
         self.priv_send_one_with_bucket(&bucked_id, data)
     }
 
@@ -430,12 +407,12 @@ impl InMemoryServer {
     fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
             //Debugging code (do not remove)
-            println!(
-                "<<<< InMemoryServer '{}' send all: {:?} ({})",
-                self.name.clone(),
-                data.clone(),
-                dna_address.clone()
-            );
+            // println!(
+            //     "<<<< InMemoryServer '{}' send all: {:?} ({})",
+            //     self.name.clone(),
+            //     data.clone(),
+            //     dna_address.clone()
+            // );
             for val in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }
@@ -494,26 +471,19 @@ impl InMemoryServer {
     /// this works because we send store requests to all connected nodes.
     /// If there is no other node for this DNA, send a FailureResult.
     fn priv_serve_FetchEntry(&mut self, msg: &FetchEntryData) -> NetResult<()> {
-        println!("priv_serve_FetchDhtData(): {:?}", msg);
         // Find other node and forward request
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
                     // Debugging code (do not remove)
-                    println!(
-                        "<<<< InMemoryServer '{}' send: {:?}",
-                        self.name.clone(),
-                        msg.clone()
-                    );
+                    // println!(
+                    //     "<<<< InMemoryServer '{}' send: {:?}",
+                    //     self.name.clone(),
+                    //     msg.clone()
+                    // );
                     let msg: Protocol = JsonProtocol::HandleFetchEntry(msg.clone()).into();
-                    println!(
-                        "<<<< InMemoryServer '{}' send: {:?}",
-                        self.name.clone(),
-                        msg.clone()
-                    );
                     r.send(msg)?;
-                    println!("<<<< InMemoryServer OK");
                     return Ok(());
                 }
             }
@@ -537,7 +507,6 @@ impl InMemoryServer {
 
     /// send back a response to a request for dht data
     fn priv_serve_HandleFetchEntryResult(&mut self, msg: &FetchEntryResultData) -> NetResult<()> {
-        println!("priv_serve_HandleFetchEntryResult(): {:?}", msg);
         // if its from our own request do a publish
         if self.request_book.contains_key(&msg.request_id) {
             let dht_data = EntryData {
@@ -549,7 +518,6 @@ impl InMemoryServer {
             self.priv_serve_PublishEntry(&dht_data)?;
             return Ok(());
         }
-        println!("priv_serve_HandleFetchEntryResult(): NOT OUR REQUEST");
         // otherwise just send back to requester
         self.priv_send_one(
             &msg.dna_address,
@@ -627,12 +595,11 @@ impl InMemoryServer {
         // Get bucket_id and make sure its our request
         let bucket_id;
         {
-            println!(
-                "---- InMemoryServer::priv_check_request('{}') in {:?} ?",
-                request_id,
-                self.request_book.clone(),
-            );
-
+            // println!(
+            //     "---- InMemoryServer::priv_check_request('{}') in {:?} ?",
+            //     request_id,
+            //     self.request_book.clone(),
+            // );
             // Make sure its our request
             let maybe_bucket_id = self.request_book.get(&request_id.clone());
             if maybe_bucket_id.is_none() {
@@ -654,10 +621,10 @@ impl InMemoryServer {
         let bucket_id = self
             .priv_check_request(&msg.request_id)
             .expect("Not our request");
-        println!(
-            "---- InMemoryServer::HandleGetPublishingDataListResult: bucket_id = '{}'",
-            bucket_id,
-        );
+        // println!(
+        //    "---- InMemoryServer::HandleGetPublishingDataListResult: bucket_id = '{}'",
+        //    bucket_id,
+        // );
         // Compare with already published list
         // For each data not already published, request it and publish it ourselves.
         let known_published_list = match self.published_entry_book.get(&bucket_id) {
@@ -688,10 +655,10 @@ impl InMemoryServer {
         let bucket_id = self
             .priv_check_request(&msg.request_id)
             .expect("Not our request");
-        println!(
-            "---- InMemoryServer::HandleGetHoldingDataListResult: bucket_id = '{}'",
-            bucket_id,
-        );
+        // println!(
+        //    "---- InMemoryServer::HandleGetHoldingDataListResult: bucket_id = '{}'",
+        //    bucket_id,
+        // );
         // Compare with current stored_data_book
         // For each data not already holding, add it to stored_data_book?
         let known_stored_list = match self.stored_entry_book.get(&bucket_id) {
@@ -719,10 +686,10 @@ impl InMemoryServer {
         let bucket_id = self
             .priv_check_request(&msg.request_id)
             .expect("Not our request");
-        println!(
-            "---- InMemoryServer::HandleGetPublishingMetaListResult: bucket_id = '{}'",
-            bucket_id,
-        );
+        // println!(
+        //     "---- InMemoryServer::HandleGetPublishingMetaListResult: bucket_id = '{}'",
+        //     bucket_id,
+        // );
         // Compare with already published list
         // For each metadata not already published, request it and publish it ourselves.
         let known_published_list = match self.published_meta_book.get(&bucket_id) {
@@ -754,10 +721,10 @@ impl InMemoryServer {
         let bucket_id = self
             .priv_check_request(&msg.request_id)
             .expect("Not our request");
-        println!(
-            "---- InMemoryServer::HandleGetHoldingMetaListResult: bucket_id = '{}'",
-            bucket_id,
-        );
+        // println!(
+        //     "---- InMemoryServer::HandleGetHoldingMetaListResult: bucket_id = '{}'",
+        //     bucket_id,
+        // );
         // Compare with current stored_meta_book
         // For each data not already holding, add it to stored_meta_book?
         let known_stored_list = match self.stored_meta_book.get(&bucket_id) {
@@ -765,7 +732,7 @@ impl InMemoryServer {
             None => Vec::new(),
         };
         for (data_address, attribute) in msg.meta_list.clone() {
-            let meta_address = meta_to_address(&data_address, &attribute);
+            let meta_address = into_meta_address(&data_address, &attribute);
             if known_stored_list.contains(&data_address) {
                 continue;
             }

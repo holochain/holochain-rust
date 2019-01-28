@@ -2,6 +2,8 @@
 //! basically handles serialization / deserialization from / to the core
 //! protocol message types (NamedBinary and Json).
 
+#![allow(non_snake_case)]
+
 use serde_json;
 
 use failure::Error;
@@ -409,7 +411,7 @@ pub enum JsonProtocol {
     HandleGetHoldingMetaListResult(MetaListData),
 }
 
-// Convertions
+// Conversions
 impl<'a> TryFrom<&'a Protocol> for JsonProtocol {
     type Error = Error;
     fn try_from(p: &Protocol) -> Result<Self, Error> {
@@ -458,12 +460,12 @@ mod tests {
     }
 
     #[test]
-    fn it_can_convert_request_state() {
+    fn it_can_convert_GetState() {
         test_convert!(JsonProtocol::GetState);
     }
 
     #[test]
-    fn it_can_convert_state() {
+    fn it_can_convert_GetStateResult() {
         test_convert!(JsonProtocol::GetStateResult(StateData {
             state: "test_state".to_string(),
             id: "test_id".to_string(),
@@ -489,122 +491,294 @@ mod tests {
     }
 
     #[test]
-    fn it_can_convert_request_default_config() {
+    fn it_can_convert_GetDefaultConfig() {
         test_convert!(JsonProtocol::GetDefaultConfig);
     }
 
     #[test]
-    fn it_can_convert_default_config() {
+    fn it_can_convert_GetDefaultConfigResult() {
         test_convert!(JsonProtocol::GetDefaultConfigResult(ConfigData {
             config: "test".to_string(),
         }));
     }
 
     #[test]
-    fn it_can_convert_set_config() {
+    fn it_can_convert_SetConfig() {
         test_convert!(JsonProtocol::SetConfig(ConfigData {
             config: "test".to_string(),
         }));
     }
 
     #[test]
-    fn it_can_convert_set_connect() {
+    fn it_can_convert_Connect() {
         test_convert!(JsonProtocol::Connect(ConnectData {
-            address: "test".into(),
+            peer_address: "test".into(),
         }));
     }
 
     #[test]
-    fn it_can_convert_peer_connected() {
+    fn it_can_convert_PeerConnected() {
         test_convert!(JsonProtocol::PeerConnected(PeerData {
-            dna_address: "test_dna".into(),
             agent_id: "test_id".to_string(),
         }));
     }
 
     #[test]
-    fn it_can_convert_send_message() {
+    fn it_can_convert_SendMessage() {
         test_convert!(JsonProtocol::SendMessage(MessageData {
             dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
-            msg_id: "test_id".to_string(),
-            data: json!("hello"),
+            content: json!("hello"),
         }));
     }
 
     #[test]
-    fn it_can_convert_send_result() {
+    fn it_can_convert_SendMessageResult() {
         test_convert!(JsonProtocol::SendMessageResult(MessageData {
             dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
-            msg_id: "test_id".to_string(),
-            data: json!("hello"),
+            content: json!("hello"),
         }));
     }
 
     #[test]
-    fn it_can_convert_handle_send() {
+    fn it_can_convert_HandleSendMessage() {
         test_convert!(JsonProtocol::HandleSendMessage(MessageData {
             dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
-            msg_id: "test_id".to_string(),
-            data: json!("hello"),
+            content: json!("hello"),
         }));
     }
 
     #[test]
-    fn it_can_convert_handle_send_result() {
+    fn it_can_convert_HandleSendMessageResult() {
         test_convert!(JsonProtocol::HandleSendMessageResult(MessageData {
             dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
             to_agent_id: "test_to".to_string(),
             from_agent_id: "test_from".to_string(),
-            msg_id: "test_id".to_string(),
-            data: json!("hello"),
+            content: json!("hello"),
         }));
     }
 
     #[test]
-    fn it_can_convert_HandleGetPublishingDataList() {
-        test_convert!(JsonProtocol::HandleGetPublishingDataList(GetListData {
-            msg_id: "test_id".to_string(),
+    fn it_can_convert_FetchEntry() {
+        test_convert!(JsonProtocol::FetchEntry(FetchEntryData {
             dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            requester_agent_id: "test_to".to_string(),
+            entry_address: "Hk42".into(),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleFetchEntry() {
+        test_convert!(JsonProtocol::HandleFetchEntry(FetchEntryData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            requester_agent_id: "test_to".to_string(),
+            entry_address: "Hk42".into(),
+        }));
+    }
+    #[test]
+    fn it_can_convert_FetchEntryResult() {
+        test_convert!(JsonProtocol::FetchEntryResult(FetchEntryResultData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            requester_agent_id: "test_to".to_string(),
+            provider_agent_id: "test_from".to_string(),
+            entry_address: "Hk42".into(),
+            entry_content: json!("hello"),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleFetchEntryResult() {
+        test_convert!(JsonProtocol::HandleFetchEntryResult(FetchEntryResultData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            requester_agent_id: "test_to".to_string(),
+            provider_agent_id: "test_from".to_string(),
+            entry_address: "Hk42".into(),
+            entry_content: json!("hello"),
+        }));
+    }
+    #[test]
+    fn it_can_convert_PublishEntry() {
+        test_convert!(JsonProtocol::PublishEntry(EntryData {
+            dna_address: "test_dna".into(),
+            provider_agent_id: "test_from".to_string(),
+            entry_address: "Hk42".into(),
+            entry_content: json!("hello"),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleStoreEntry() {
+        test_convert!(JsonProtocol::HandleStoreEntry(EntryData {
+            dna_address: "test_dna".into(),
+            provider_agent_id: "test_from".to_string(),
+            entry_address: "Hk42".into(),
+            entry_content: json!("hello"),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleDropEntry() {
+        test_convert!(JsonProtocol::HandleDropEntry(DropEntryData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            entry_address: "Hk42".into(),
         }));
     }
 
     #[test]
-    fn it_can_convert_HandleGetPublishingDataListResult() {
-        test_convert!(JsonProtocol::HandleGetPublishingDataListResult(ListData {
-            msg_id: "test_id".to_string(),
+    fn it_can_convert_FetchMeta() {
+        test_convert!(JsonProtocol::FetchMeta(FetchMetaData {
             dna_address: "test_dna".into(),
-            address_list: vec!["data1", "data2"],
+            request_id: "test_id".to_string(),
+            requester_agent_id: "test_to".to_string(),
+            entry_address: "Hk42".into(),
+            attribute: "meta_attribute".to_string(),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleFetchMeta() {
+        test_convert!(JsonProtocol::HandleFetchMeta(FetchMetaData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            requester_agent_id: "test_to".to_string(),
+            entry_address: "Hk42".into(),
+            attribute: "meta_attribute".to_string(),
+        }));
+    }
+    #[test]
+    fn it_can_convert_FetchMetaResult() {
+        test_convert!(JsonProtocol::FetchMetaResult(FetchMetaResultData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            requester_agent_id: "test_to".to_string(),
+            provider_agent_id: "test_from".to_string(),
+            entry_address: "Hk42".into(),
+            attribute: "meta_attribute".to_string(),
+            content: json!("hello-meta"),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleFetchMetaResult() {
+        test_convert!(JsonProtocol::HandleFetchMetaResult(FetchMetaResultData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            requester_agent_id: "test_to".to_string(),
+            provider_agent_id: "test_from".to_string(),
+            entry_address: "Hk42".into(),
+            attribute: "meta_attribute".to_string(),
+            content: json!("hello-meta"),
+        }));
+    }
+    #[test]
+    fn it_can_convert_PublishMeta() {
+        test_convert!(JsonProtocol::PublishMeta(DhtMetaData {
+            dna_address: "test_dna".into(),
+            provider_agent_id: "test_from".to_string(),
+            entry_address: "Hk42".into(),
+            attribute: "meta_attribute".to_string(),
+            content: json!("hello-meta"),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleStoreMeta() {
+        test_convert!(JsonProtocol::HandleStoreMeta(DhtMetaData {
+            dna_address: "test_dna".into(),
+            provider_agent_id: "test_from".to_string(),
+            entry_address: "Hk42".into(),
+            attribute: "meta_attribute".to_string(),
+            content: json!("hello-meta"),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleDropMeta() {
+        test_convert!(JsonProtocol::HandleDropMeta(DropMetaData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+            entry_address: "Hk42".into(),
+            attribute: "meta_attribute".to_string(),
         }));
     }
 
     #[test]
-    fn it_can_convert_HandleGetHoldingDataList() {
-        test_convert!(JsonProtocol::HandleGetHoldingDataList(GetListData {
-            msg_id: "test_id".to_string(),
+    fn it_can_convert_HandleGetPublishingEntryList() {
+        test_convert!(JsonProtocol::HandleGetPublishingEntryList(GetListData {
             dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
         }));
+    }
+    #[test]
+    fn it_can_convert_HandleGetPublishingEntryListResult() {
+        test_convert!(JsonProtocol::HandleGetPublishingEntryListResult(
+            EntryListData {
+                dna_address: "test_dna".into(),
+                request_id: "test_id".to_string(),
+                entry_address_list: vec!["data1".into(), "data2".into()],
+            }
+        ));
+    }
+    #[test]
+    fn it_can_convert_HandleGetHoldingEntryList() {
+        test_convert!(JsonProtocol::HandleGetHoldingEntryList(GetListData {
+            dna_address: "test_dna".into(),
+            request_id: "test_id".to_string(),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleGetHoldingEntryListResult() {
+        test_convert!(JsonProtocol::HandleGetHoldingEntryListResult(
+            EntryListData {
+                dna_address: "test_dna".into(),
+                request_id: "test_id".to_string(),
+                entry_address_list: vec!["data1".into(), "data2".into()],
+            }
+        ));
     }
 
     #[test]
-    fn it_can_convert_HandleGetHoldingDataListResult() {
-        test_convert!(JsonProtocol::HandleGetHoldingDataListResult(ListData {
-            msg_id: "test_id".to_string(),
+    fn it_can_convert_HandleGetPublishingMetaList() {
+        test_convert!(JsonProtocol::HandleGetPublishingMetaList(GetListData {
             dna_address: "test_dna".into(),
-            address_list: vec!["data1", "data2"],
+            request_id: "test_id".to_string(),
         }));
     }
-
     #[test]
-    fn it_can_convert_HandleDropDhtData() {
-        test_convert!(JsonProtocol::HandleDropDhtData(DropData {
+    fn it_can_convert_HandleGetPublishingMetaListResult() {
+        test_convert!(JsonProtocol::HandleGetPublishingMetaListResult(
+            MetaListData {
+                dna_address: "test_dna".into(),
+                request_id: "test_id".to_string(),
+                meta_list: vec![
+                    ("data1".into(), "meta_attribute".to_string()),
+                    ("data2".into(), "meta_attribute".to_string())
+                ],
+            }
+        ));
+    }
+    #[test]
+    fn it_can_convert_HandleGetHoldingMetaList() {
+        test_convert!(JsonProtocol::HandleGetHoldingMetaList(GetListData {
             dna_address: "test_dna".into(),
-            data_address: "data1".into(),
+            request_id: "test_id".to_string(),
+        }));
+    }
+    #[test]
+    fn it_can_convert_HandleGetHoldingMetaListResult() {
+        test_convert!(JsonProtocol::HandleGetHoldingMetaListResult(MetaListData {
+            request_id: "test_id".to_string(),
+            dna_address: "test_dna".into(),
+            meta_list: vec![
+                ("data1".into(), "meta_attribute".to_string()),
+                ("data2".into(), "meta_attribute".to_string())
+            ],
         }));
     }
 }

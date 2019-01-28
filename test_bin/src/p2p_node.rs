@@ -146,18 +146,6 @@ impl P2pNode {
 
     /// Send a reponse to a FetchDhtData request
     pub fn reply_fetch_data(&mut self, request: &FetchEntryData) -> NetResult<()> {
-        println!("({}) reply_fetch_data: {:?}", self.agent_id, request);
-        println!(
-            "({}) reply_fetch_data, authored: {:?}",
-            self.agent_id,
-            self.authored_entry_store.clone()
-        );
-        println!(
-            "({}) reply_fetch_data, stored  : {:?}",
-            self.agent_id,
-            self.entry_store.clone()
-        );
-
         let msg;
         {
             // Get data from local datastores
@@ -189,7 +177,6 @@ impl P2pNode {
                 }
             };
         }
-        println!("({}) reply_fetch_data: {:?}", self.agent_id, msg);
         self.send(msg)
     }
 
@@ -218,7 +205,6 @@ impl P2pNode {
                 content: data.clone(),
             };
         }
-        println!("({}) reply_fetch_meta: {:?}", self.agent_id, msg);
         self.send(JsonProtocol::HandleFetchMetaResult(msg).into())
     }
 
@@ -289,7 +275,8 @@ impl P2pNode {
 
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                println!("<<< ({}) handler: {:?}", agent_id_arg, r);
+                // Debugging code (do not remove)
+                // println!("<<< ({}) handler: {:?}", agent_id_arg, r);
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -312,21 +299,21 @@ impl P2pNode {
         }
     }
 
-    // Constructor for an in-memory P2P Network
+    /// Constructor for an in-memory P2P Network
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_unique_memory_network(agent_id: String) -> Self {
         let config = P2pConfig::new_with_unique_memory_backend();
         return P2pNode::new_with_config(agent_id, &config, None);
     }
 
-    // Constructor for an IPC node that uses an existing n3h process and a temp folder
+    /// Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_uri_ipc_network(agent_id: String, ipc_binding: &str) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
         return P2pNode::new_with_config(agent_id, &p2p_config, None);
     }
 
-    // Constructor for an IPC node that spawns and uses a n3h process and a temp folder
+    /// Constructor for an IPC node that spawns and uses a n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_spawn_ipc_network(
         agent_id: String,
@@ -339,16 +326,17 @@ impl P2pNode {
         return P2pNode::new_with_config(agent_id, &p2p_config, Some(temp_dir));
     }
 
-    // See if there is a message to receive
+    /// See if there is a message to receive, and log it
+    /// return a JsonProtocol if the received message is of that type
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
-        // Print non-ping messages
-        match data {
-            Protocol::NamedBinary(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
-            Protocol::Json(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
-            _ => (),
-        };
+        // Debugging code: Print non-ping messages
+        // match data {
+        //     Protocol::NamedBinary(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
+        //     Protocol::Json(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
+        //     _ => (),
+        // };
 
         self.recv_msg_log.push(data.clone());
 
@@ -377,7 +365,7 @@ impl P2pNode {
         loop {
             let mut has_recved = false;
 
-            if let Ok(p2p_msg) = self.try_recv() {
+            if let Ok(_p2p_msg) = self.try_recv() {
                 // Debugging code (do not remove)
                 //                println!(
                 //                    "({})::listen() - received: {:?}",
@@ -397,21 +385,8 @@ impl P2pNode {
         }
     }
 
-    //    // look for a msg in log or wait for it
-    //    #[cfg_attr(tarpaulin, skip)]
-    //    pub fn has_or_wait(
-    //        &mut self,
-    //        ith: usize,
-    //        predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
-    //        timeout_ms: usize,
-    //    ) -> JsonProtocol {
-    //        let maybe_msg = self.find_recv_msg(ith, predicate.clone());
-    //        if maybe_msg.is_some() {
-    //            return maybe_msg.unwrap();
-    //        }
-    //        self.wait_with_timeout(predicate, timeout_ms)
-    //    }
-
+    /// wait to receive a HandleFetchEntry request and automatically reply
+    /// return true if a HandleFetchEntry has been received
     pub fn wait_HandleFetchEntry_and_reply(&mut self) -> bool {
         let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
         if maybe_request.is_none() {
@@ -426,6 +401,8 @@ impl P2pNode {
         true
     }
 
+    /// wait to receive a HandleFetchMeta request and automatically reply
+    /// return true if a HandleFetchMeta has been received
     pub fn wait_HandleFetchMeta_and_reply(&mut self) -> bool {
         let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
         if maybe_request.is_none() {
@@ -533,7 +510,8 @@ impl P2pNode {
                 // n/a
             }
             JsonProtocol::HandleFetchEntry(msg) => {
-                self.reply_fetch_data(&msg);
+                self.reply_fetch_data(&msg)
+                    .expect("Should reply to a HandleFetchEntry");
             }
             JsonProtocol::HandleFetchEntryResult(_msg) => {
                 // n/a
@@ -543,7 +521,6 @@ impl P2pNode {
                 panic!("Core should not receive PublishDhtData message");
             }
             JsonProtocol::HandleStoreEntry(msg) => {
-                println!("\t ({})::HandleStoreEntry", self.agent_id);
                 // Store data in local datastore
                 self.entry_store
                     .insert(msg.entry_address, msg.entry_content);
@@ -559,8 +536,9 @@ impl P2pNode {
             JsonProtocol::FetchMetaResult(_msg) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchMeta(_msg) => {
-                // n/a
+            JsonProtocol::HandleFetchMeta(msg) => {
+                self.reply_fetch_meta(&msg)
+                    .expect("Should reply to a HandleFetchMeta");
             }
             JsonProtocol::HandleFetchMetaResult(_msg) => {
                 // n/a
@@ -618,7 +596,7 @@ impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         // Debugging code (do not delete)
-        println!(">> ({}) send: {:?}", self.agent_id, data);
+        // println!(">> ({}) send: {:?}", self.agent_id, data);
         self.p2p_connection.send(data)
     }
 }

@@ -147,8 +147,16 @@ impl P2pNode {
     /// Send a reponse to a FetchDhtData request
     pub fn reply_fetch_data(&mut self, request: &FetchEntryData) -> NetResult<()> {
         println!("({}) reply_fetch_data: {:?}", self.agent_id, request);
-        println!("({}) reply_fetch_data, authored: {:?}", self.agent_id, self.authored_entry_store.clone());
-        println!("({}) reply_fetch_data, stored  : {:?}", self.agent_id, self.entry_store.clone());
+        println!(
+            "({}) reply_fetch_data, authored: {:?}",
+            self.agent_id,
+            self.authored_entry_store.clone()
+        );
+        println!(
+            "({}) reply_fetch_data, stored  : {:?}",
+            self.agent_id,
+            self.entry_store.clone()
+        );
 
         let msg;
         {
@@ -371,10 +379,10 @@ impl P2pNode {
 
             if let Ok(p2p_msg) = self.try_recv() {
                 // Debugging code (do not remove)
-//                println!(
-//                    "({})::listen() - received: {:?}",
-//                    self.agent_id, p2p_msg
-//                );
+                //                println!(
+                //                    "({})::listen() - received: {:?}",
+                //                    self.agent_id, p2p_msg
+                //                );
                 has_recved = true;
                 time_ms = 0;
                 count += 1;
@@ -413,7 +421,8 @@ impl P2pNode {
         // extract msg data
         let fetch_data = unwrap_to!(request => JsonProtocol::HandleFetchEntry);
         // Alex responds: should send entry data back
-        self.reply_fetch_data(&fetch_data).expect("Reply to HandleFetchEntry should work");
+        self.reply_fetch_data(&fetch_data)
+            .expect("Reply to HandleFetchEntry should work");
         true
     }
 
@@ -426,7 +435,8 @@ impl P2pNode {
         // extract msg data
         let fetch_meta = unwrap_to!(request => JsonProtocol::HandleFetchMeta);
         // Alex responds: should send entry data back
-        self.reply_fetch_meta(&fetch_meta).expect("Reply to HandleFetchMeta should work");
+        self.reply_fetch_meta(&fetch_meta)
+            .expect("Reply to HandleFetchMeta should work");
         true
     }
 
@@ -441,10 +451,7 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!(
-                    "({})::wait() - received: {:?}",
-                    self.agent_id, p2p_msg
-                );
+                println!("({})::wait() - received: {:?}", self.agent_id, p2p_msg);
                 did_something = true;
                 if predicate(&p2p_msg) {
                     println!("\t ({})::wait() - match", self.agent_id);
@@ -538,7 +545,8 @@ impl P2pNode {
             JsonProtocol::HandleStoreEntry(msg) => {
                 println!("\t ({})::HandleStoreEntry", self.agent_id);
                 // Store data in local datastore
-                self.entry_store.insert(msg.entry_address, msg.entry_content);
+                self.entry_store
+                    .insert(msg.entry_address, msg.entry_content);
             }
             JsonProtocol::HandleDropEntry(msg) => {
                 // Remove data in local datastore

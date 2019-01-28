@@ -297,13 +297,13 @@ impl InMemoryServer {
                 }
                 JsonProtocol::FailureResult(msg) => {
                     // Check if its a response to our own request
-                    let maybe_bucket_id = self
-                        .priv_check_request(&msg.request_id);
+                    let maybe_bucket_id = self.priv_check_request(&msg.request_id);
                     if let Some(_) = maybe_bucket_id {
                         //Debugging code (do not remove)
                         println!(
                             "---- InMemoryServer '{}' internal request failed: {:?}",
-                            self.name.clone(), msg.clone(),
+                            self.name.clone(),
+                            msg.clone(),
                         );
                         return Ok(());
                     }
@@ -501,9 +501,17 @@ impl InMemoryServer {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
                     // Debugging code (do not remove)
-                    println!("<<<< InMemoryServer '{}' send: {:?}", self.name.clone(), msg.clone());
+                    println!(
+                        "<<<< InMemoryServer '{}' send: {:?}",
+                        self.name.clone(),
+                        msg.clone()
+                    );
                     let msg: Protocol = JsonProtocol::HandleFetchEntry(msg.clone()).into();
-                    println!("<<<< InMemoryServer '{}' send: {:?}", self.name.clone(), msg.clone());
+                    println!(
+                        "<<<< InMemoryServer '{}' send: {:?}",
+                        self.name.clone(),
+                        msg.clone()
+                    );
                     r.send(msg)?;
                     println!("<<<< InMemoryServer OK");
                     return Ok(());

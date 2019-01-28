@@ -59,7 +59,9 @@ pub fn empty_publish_data_list_test(
     alex.reply_fetch_data(&fetch_data)?;
 
     // Billy should receive the failureResult back
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FailureResult(_)))).unwrap();
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .unwrap();
     println!("got result: {:?}", result);
 
     // Done
@@ -129,7 +131,9 @@ pub fn publish_list_test(
     }
 
     // Billy should receive the entry data
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_)))).unwrap();
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        .unwrap();
     println!("got result: {:?}", result);
 
     // Done
@@ -173,8 +177,6 @@ pub fn publish_meta_list_test(
     // reply with publish_meta_list
     alex.reply_get_publish_meta_list(&get_list_data)?;
 
-
-
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     assert!(has_received);
@@ -183,19 +185,16 @@ pub fn publish_meta_list_test(
     // billy might receive HandleDhtStore
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
 
-
-
-//    // Alex should receive a HandleFetchDhtMeta request
-//    let maybe_request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
-//    if maybe_request.is_some() {
-//        let request = maybe_request.unwrap();
-//        println!("    got request 1: {:?}", request);
-//        // extract data
-//        let fetch_metadata = unwrap_to!(request => JsonProtocol::HandleFetchMeta);
-//        // Respond with data
-//        alex.reply_fetch_meta(&fetch_metadata)?;
-//    }
-
+    //    // Alex should receive a HandleFetchDhtMeta request
+    //    let maybe_request = alex.wait(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
+    //    if maybe_request.is_some() {
+    //        let request = maybe_request.unwrap();
+    //        println!("    got request 1: {:?}", request);
+    //        // extract data
+    //        let fetch_metadata = unwrap_to!(request => JsonProtocol::HandleFetchMeta);
+    //        // Respond with data
+    //        alex.reply_fetch_meta(&fetch_metadata)?;
+    //    }
 
     // billy asks for reported published data.
     #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -215,7 +214,9 @@ pub fn publish_meta_list_test(
     }
 
     // Billy should receive the data
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_)))).unwrap();
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
     println!("got result: {:?}", result);
 
     // Done
@@ -271,7 +272,9 @@ pub fn hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
     }
 
     // Billy should receive the data
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_)))).unwrap();
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        .unwrap();
     println!("got result: {:?}", result);
 
     // Done
@@ -332,7 +335,9 @@ pub fn hold_meta_list_test(
     }
 
     // Billy shoudl receive the data
-    let result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_)))).unwrap();
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
     println!("got result: {:?}", result);
 
     // Done

@@ -62,13 +62,13 @@ fn main() {
 
     // Launch tests on each setup
     for test_fn in test_fns.clone() {
-         launch_two_nodes_test_with_memory_network(test_fn).unwrap();
-                launch_two_nodes_test_with_ipc_mock(
-                    &n3h_path,
-                    "test_bin/data/mock_ipc_network_config.json",
-                    test_fn,
-                )
-                .unwrap();
+        launch_two_nodes_test_with_memory_network(test_fn).unwrap();
+        launch_two_nodes_test_with_ipc_mock(
+            &n3h_path,
+            "test_bin/data/mock_ipc_network_config.json",
+            test_fn,
+        )
+        .unwrap();
         launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
     }
 

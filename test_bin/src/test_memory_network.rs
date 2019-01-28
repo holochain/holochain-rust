@@ -60,7 +60,9 @@ fn exec_memory_network_test() -> NetResult<()> {
         .into(),
     )
     .expect("Failed sending message to node_b");
-    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_)))).unwrap();
+    let res = billy
+        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .unwrap();
     println!("got: {:?}", res);
 
     if let JsonProtocol::HandleSendMessage(msg) = res {
@@ -80,7 +82,9 @@ fn exec_memory_network_test() -> NetResult<()> {
         panic!("bad generic msg");
     }
 
-    let res = alex.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_)))).unwrap();
+    let res = alex
+        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .unwrap();
     println!("got response: {:?}", res);
 
     if let JsonProtocol::SendMessageResult(msg) = res {

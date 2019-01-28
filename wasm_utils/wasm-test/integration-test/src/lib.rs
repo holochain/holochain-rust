@@ -139,12 +139,12 @@ pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeE
 
     let memory = match MemoryInstance::alloc(Pages(1), None) {
         Ok(memory) => memory,
-        Err(_) => return AllocationError::ZeroLength.as_ribosome_encoding(),
+        Err(_) => return AllocationError::OutOfBounds.as_ribosome_encoding(),
     };
 
     // table flip emoji is 27 bytes so we need 27 pages to hold U16_MAX table flips
     if let Err(_) = memory.grow(Pages(11)) {
-        return AllocationError::BadStackAlignment.as_ribosome_encoding();
+        return AllocationError::OutOfBounds.as_ribosome_encoding();
     };
 
     // match stack.write_string(&"fooo".repeat(U16_MAX as usize)) {

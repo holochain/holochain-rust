@@ -4,7 +4,7 @@ use holochain_wasm_utils::memory::{
     MemoryBits, MemoryInt,
 };
 use wasmi::{
-    memory_units::{Bytes, Pages, RoundUpTo},
+    // memory_units::{Bytes, Pages, RoundUpTo},
     MemoryRef, ModuleRef,
 };
 

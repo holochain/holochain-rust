@@ -143,12 +143,12 @@ pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeE
     };
 
     // table flip emoji is 27 bytes so we need 27 pages to hold U16_MAX table flips
-    if let Err(_) = memory.grow(Pages(280)) {
+    if let Err(_) = memory.grow(Pages(11)) {
         return AllocationError::BadStackAlignment.as_ribosome_encoding();
     };
 
     // match stack.write_string(&"fooo".repeat(U16_MAX as usize)) {
-    match stack.write_string(&"(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize)) {
+    match stack.write_string(&"(ಥ⌣ಥ)".repeat(U16_MAX as usize)) {
         Ok(allocation) => allocation.as_ribosome_encoding(),
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     }

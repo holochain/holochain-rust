@@ -159,7 +159,7 @@ pub (crate) fn reduce_remove_link(_context:Arc<Context>,old_store: &DhtStore,
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &format!("link__{}", link.tag()),
+            &format!("removed_link__{}", link.tag()),
             link.target(),
         );
         eav.map(|e| {
@@ -469,11 +469,11 @@ pub mod tests {
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
-        assert_eq!(hash_set.len(), 1);
-        let eav = hash_set.iter().nth(0).unwrap();
+        assert_eq!(hash_set.len(), 2);
+        let eav = hash_set.iter().nth(1).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
+        assert_eq!(eav.attribute(), format!("removed_link__{}", link.tag()));
     }
 
 

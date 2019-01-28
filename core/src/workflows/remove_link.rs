@@ -1,0 +1,61 @@
+use crate::{
+    context::Context,
+    dht::actions::remove_link::remove_link,
+    network::{
+        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
+    },
+    nucleus::actions::validate::validate_entry,
+};
+
+use holochain_core_types::{
+    entry::Entry,
+    error::HolochainError,
+    validation::{EntryAction, EntryLifecycle, ValidationData},
+};
+use std::sync::Arc;
+
+pub async fn remove_link_workflow<'a>(
+    entry_with_header: &'a EntryWithHeader,
+    context: &'a Arc<Context>,
+) -> Result<(), HolochainError> {
+    let EntryWithHeader { entry, header } = &entry_with_header;
+
+    let link_remove = match entry {
+        Entry::LinkAdd(link_add) => link_add,
+        _ => Err(HolochainError::ErrorGeneric(
+            "hold_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
+        ))?,
+    };
+    let link = link_add.link().clone();
+
+    context.log(format!("debug/workflow/hold_link: {:?}", link));
+    // 1. Get validation package from source
+    context.log(format!(
+        "debug/workflow/hold_link: getting validation package..."
+    ));
+    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
+    let validation_package = maybe_validation_package
+        .ok_or("Could not get validation package from source".to_string())?;
+    context.log(format!("debug/workflow/hold_link: got validation package!"));
+
+    // 2. Create validation data struct
+    let validation_data = ValidationData {
+        package: validation_package,
+        sources: header.sources().clone(),
+        lifecycle: EntryLifecycle::Meta,
+        action: EntryAction::Create,
+    };
+
+    // 3. Validate the entry
+    context.log(format!("debug/workflow/hold_link: validate..."));
+    await!(validate_entry(entry.clone(), validation_data, &context)).map_err(|err| {
+        context.log(format!("debug/workflow/hold_link: invalid! {:?}", err));
+        err
+    })?;
+    context.log(format!("debug/workflow/hold_link: is valid!"));
+
+    // 3. If valid store the entry in the local DHT shard
+    await!(remove_link(&link, &context))?;
+    context.log(format!("debug/workflow/hold_link: added! {:?}", link));
+    Ok(())
+}

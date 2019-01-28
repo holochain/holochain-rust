@@ -70,7 +70,7 @@ scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   const error = JSON.parse(result.Err.Internal)
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)
-  t.equal(error.line, "92")
+  t.equal(error.line, "94")
 })
 
 scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
@@ -88,7 +88,7 @@ scenario1.runTape('post max content size 280 characters', async (t, { alice }) =
 
   t.ok(inner.file)
   t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
-  t.equals(inner.line, "92")
+  t.equals(inner.line, "94")
 })
 
 scenario1.runTape('posts_by_agent', async (t, { alice }) => {

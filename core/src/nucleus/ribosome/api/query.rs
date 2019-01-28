@@ -14,9 +14,9 @@ use std::{convert::TryFrom, sync::Arc};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::query function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: ?
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 ///
 /// Specify 0 or more simple or "glob" patterns matching EntryType names, returning Vec<Address>.
 ///

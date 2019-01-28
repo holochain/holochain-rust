@@ -709,9 +709,9 @@ pub mod tests {
             Some(
                 r#"
             (module
-                (memory (;0;) 17)
-                (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 0
+                (memory (;0;) 1)
+                (func (export "genesis") (param $p0 i64) (result i64)
+                    i64.const 0
                 )
                 (data (i32.const 0)
                     ""
@@ -737,9 +737,9 @@ pub mod tests {
             Some(
                 r#"
             (module
-                (memory (;0;) 17)
-                (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 9
+                (memory (;0;) 1)
+                (func (export "genesis") (param $p0 i64) (result i64)
+                    i64.const 9
                 )
                 (data (i32.const 0)
                     "1337.0"

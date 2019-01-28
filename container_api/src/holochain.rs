@@ -395,7 +395,7 @@ mod tests {
        )
  )
 "#;
-        let dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
+        let dna = create_test_dna_with_wat("test_zome", Some(wat));
         let (context, _, _) = test_context("bob");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 

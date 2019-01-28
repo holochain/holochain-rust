@@ -1,4 +1,4 @@
-use crate::nucleus::ribosome::fn_call::ZomeFnCall;
+use crate::nucleus::{actions::initialize::Initialization, ribosome::fn_call::ZomeFnCall};
 use holochain_core_types::{
     cas::content::Address, dna::Dna, error::HolochainError, json::JsonString,
     validation::ValidationPackage,
@@ -9,7 +9,7 @@ use std::collections::HashMap;
 pub enum NucleusStatus {
     New,
     Initializing,
-    Initialized,
+    Initialized(Initialization),
     InitializationFailed(String),
 }
 
@@ -58,7 +58,17 @@ impl NucleusState {
     }
 
     pub fn has_initialized(&self) -> bool {
-        self.status == NucleusStatus::Initialized
+        match self.status {
+            NucleusStatus::Initialized(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn initialization(&self) -> Option<Initialization> {
+        match self.status {
+            NucleusStatus::Initialized(ref init) => Some(init.clone()),
+            _ => None,
+        }
     }
 
     pub fn has_initialization_failed(&self) -> bool {

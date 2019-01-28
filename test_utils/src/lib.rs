@@ -18,7 +18,7 @@ use holochain_core_types::{
     agent::AgentId,
     cas::content::Address,
     dna::{
-        capabilities::{CallSignature, Capability, CapabilityCall, CapabilityType},
+        capabilities::{ReservedCapabilityNames, CallSignature, Capability, CapabilityCall, CapabilityType},
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         fn_declarations::FnDeclaration,
         wasm::DnaWasm,
@@ -51,7 +51,7 @@ pub fn create_wasm_from_file(fname: &str) -> Vec<u8> {
 }
 
 /// Create DNA from WAT
-pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&str>) -> Dna {
+pub fn create_test_dna_with_wat(zome_name: &str, wat: Option<&str>) -> Dna {
     // Default WASM code returns 1337 as integer
     let default_wat = r#"
             (module
@@ -74,16 +74,13 @@ pub fn create_test_dna_with_wat(zome_name: &str, cap_name: &str, wat: Option<&st
         .convert(wat_str)
         .unwrap();
 
-    create_test_dna_with_wasm(zome_name, cap_name, wasm_binary.as_ref().to_vec())
+    create_test_dna_with_wasm(zome_name, wasm_binary.as_ref().to_vec())
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
-pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>) -> Dna {
+pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
     let mut dna = Dna::new();
     let defs = create_test_defs_with_fn_name("public_test_fn");
-
-//    let mut capabilities = BTreeMap::new();
-//    capabilities.insert(cap_name.to_string(), capability);
 
     let mut test_entry_def = EntryTypeDef::new();
     test_entry_def.links_to.push(LinksTo {
@@ -107,7 +104,7 @@ pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>
         test_entry_b_def,
     );
 
-    let zome = Zome::new(
+    let mut zome = Zome::new(
         "some zome description",
         &Config::new(),
         &entry_types,
@@ -116,7 +113,9 @@ pub fn create_test_dna_with_wasm(zome_name: &str, _cap_name: &str, wasm: Vec<u8>
         &DnaWasm { code: wasm },
     );
 
-    // zome.capabilities.push(capability);
+    let mut cap = Capability::new(CapabilityType::Public);
+    cap.functions.push("public_test_fn".to_string());
+    zome.capabilities.insert(ReservedCapabilityNames::Public.as_str().to_string(), cap);
     dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();

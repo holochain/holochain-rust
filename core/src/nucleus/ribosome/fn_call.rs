@@ -256,24 +256,19 @@ pub fn validate_call(
         .get_function_with_zome_name(&fn_call.zome_name, &fn_call.fn_name)
         .map_err(|e| HolochainError::Dna(e))?;
 
-    // call is valid if the call is listed in a public capability OR
-    // the capability check of the grant passes OR
-    // or the token is the agent AND the call signature is valid.
-    if zome.is_fn_public(&fn_call.fn_name)
-        || match fn_call.cap.clone() {
-            Some(cap) => {
-                check_capability(context.clone(), fn_call)
-                    || (is_token_the_agent(context.clone(), &cap)
-                        && verify_call_sig(
-                            context.clone(),
-                            &cap.signature,
-                            &fn_call.fn_name,
-                            fn_call.parameters.clone(),
-                        ))
-            }
-            None => false,
+    if match fn_call.cap.clone() {
+        Some(cap) => {
+            check_capability(context.clone(), fn_call)
+                || (is_token_the_agent(context.clone(), &cap)
+                    && verify_call_sig(
+                        context.clone(),
+                        &cap.signature,
+                        &fn_call.fn_name,
+                        fn_call.parameters.clone(),
+                    ))
         }
-    {
+        None => false,
+    } {
         return Ok((dna.name.clone(), zome.code.clone()));
     }
     Err(HolochainError::CapabilityCheckFailed)
@@ -415,7 +410,9 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            capabilities::{CallSignature, Capability, CapabilityCall, CapabilityType},
+            capabilities::{
+                CallSignature, Capability, CapabilityCall, CapabilityType, ReservedCapabilityNames,
+            },
             fn_declarations::FnDeclaration,
             Dna,
         },
@@ -559,19 +556,31 @@ pub mod tests {
     #[test]
     /// tests that calling a valid zome function returns a valid result
     fn call_zome_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (mut instance, context) =
-            test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
+        //        let (mut instance, context) =
+        //            test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        let mut test_setup = setup_test(dna);
+
+        let state = test_setup.context.state().unwrap().nucleus();
+        let init = state.initialization().unwrap();
+        let cap_call = make_cap_call(
+            test_setup.context.clone(),
+            init.get_public_token("test_zome").unwrap(),
+            Address::from("any caller"),
+            "public_test_fn",
+            "{}",
+        );
 
         // Create zome function call
         let zome_call = ZomeFnCall::new(
             "test_zome",
-            Some(test_capability_call(context, "public_test_fn", "")),
+            Some(cap_call),
+            //            Some(test_capability_call(context, "public_test_fn", "")),
             "public_test_fn",
             "",
         );
 
-        let result = super::call_and_wait_for_result(zome_call, &mut instance);
+        let result = super::call_and_wait_for_result(zome_call, &mut test_setup.instance);
 
         assert!(result.is_ok());
         assert_eq!(JsonString::from(RawString::from(1337)), result.unwrap());
@@ -622,7 +631,7 @@ pub mod tests {
     #[test]
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call:
@@ -641,7 +650,7 @@ pub mod tests {
     #[test]
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
 
         // Create bad zome function call
@@ -758,7 +767,7 @@ pub mod tests {
 
     #[test]
     fn test_call_no_zome() {
-        let dna = test_utils::create_test_dna_with_wat("bad_zome", &test_capability_name(), None);
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", None);
         let test_setup = setup_test(dna);
         let expected = Ok(Err(HolochainError::Dna(DnaError::ZomeNotFound(
             r#"Zome 'test_zome' not found"#.to_string(),
@@ -768,7 +777,7 @@ pub mod tests {
 
     fn setup_dna_for_cap_test(cap_type: CapabilityType) -> Dna {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let mut capability = Capability::new(cap_type);
+        let mut capability = Capability::new(cap_type.clone());
         let fn_decl = FnDeclaration {
             name: test_function_name(),
             inputs: Vec::new(),
@@ -776,7 +785,11 @@ pub mod tests {
         };
         capability.functions = vec![fn_decl.name.clone()];
         let mut capabilities = BTreeMap::new();
-        capabilities.insert(test_capability_name(), capability);
+        let cap_name = match CapabilityType::Public == cap_type {
+            true => ReservedCapabilityNames::Public.as_str().to_string(),
+            false => test_capability_name(),
+        };
+        capabilities.insert(cap_name, capability);
         let mut functions = Vec::new();
         functions.push(fn_decl);
 
@@ -792,8 +805,27 @@ pub mod tests {
     fn test_call_public() {
         let dna = setup_dna_for_cap_test(CapabilityType::Public);
         let test_setup = setup_test(dna);
-        // make the call with no capability call
-        test_reduce_call(&test_setup, None, SUCCESS_EXPECTED.clone());
+        let state = test_setup.context.state().unwrap().nucleus();
+        let init = state.initialization().unwrap();
+        let cap_call = make_cap_call(
+            test_setup.context.clone(),
+            init.get_public_token("test_zome").unwrap(),
+            Address::from("any caller"),
+            "test",
+            "{}",
+        );
+
+        // make the call with public token capability call
+        test_reduce_call(&test_setup, Some(cap_call), SUCCESS_EXPECTED.clone());
+
+        // make the call with a bogus public token capability call
+        let cap_call = CapabilityCall::new(
+            Address::from("foo_token"),
+            Address::from("some caller"),
+            CallSignature::default(),
+        );
+        let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
+        test_reduce_call(&test_setup, Some(cap_call), expected_failure);
     }
 
     #[test]
@@ -823,7 +855,12 @@ pub mod tests {
         test_reduce_call(&test_setup, Some(cap_call), expected_failure);
 
         // make the call with an valid capability call from a different sources
-        let grant = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("test"))).unwrap();
+        let grant = CapTokenGrant::create(
+            CapabilityType::Transferable,
+            None,
+            vec![String::from("test")],
+        )
+        .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let cap_call = make_cap_call(
@@ -861,8 +898,12 @@ pub mod tests {
 
         // test assigned capability where the caller is someone else
         let someone = Address::from("somoeone");
-        let grant =
-            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()]), vec!(String::from("test"))).unwrap();
+        let grant = CapTokenGrant::create(
+            CapabilityType::Assigned,
+            Some(vec![someone.clone()]),
+            vec![String::from("test")],
+        )
+        .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let cap_call = make_cap_call(
@@ -1026,7 +1067,12 @@ pub mod tests {
     fn test_get_grant() {
         let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
         let test_setup = setup_test(dna);
-        let grant = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("test"))).unwrap();
+        let grant = CapTokenGrant::create(
+            CapabilityType::Transferable,
+            None,
+            vec![String::from("test")],
+        )
+        .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
         let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
         let context = test_setup.context;
@@ -1058,7 +1104,12 @@ pub mod tests {
         assert!(!check_capability(context.clone(), &zome_call));
 
         // add the transferable grant and get the token which is the grant's address
-        let grant = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("test"))).unwrap();
+        let grant = CapTokenGrant::create(
+            CapabilityType::Transferable,
+            None,
+            vec![String::from("test")],
+        )
+        .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
         let grant_addr = block_on(author_entry(&grant_entry, None, &context)).unwrap();
 
@@ -1114,7 +1165,8 @@ pub mod tests {
             "{}",
         );
 
-        let grant = CapTokenGrant::create(CapabilityType::Public, None, vec!(String::from("test"))).unwrap();
+        let grant = CapTokenGrant::create(CapabilityType::Public, None, vec![String::from("test")])
+            .unwrap();
         let token = grant.token();
         assert!(verify_grant(
             context.clone(),
@@ -1132,14 +1184,24 @@ pub mod tests {
             &zome_call_from_addr1_bad_token
         ));
 
-        let grant_for_other_fn = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("other_fn"))).unwrap();
+        let grant_for_other_fn = CapTokenGrant::create(
+            CapabilityType::Transferable,
+            None,
+            vec![String::from("other_fn")],
+        )
+        .unwrap();
         assert!(!verify_grant(
             context.clone(),
             &grant_for_other_fn,
             &zome_call_valid(context.clone(), &grant_for_other_fn.token(), &test_address1)
         ));
 
-        let grant = CapTokenGrant::create(CapabilityType::Transferable, None, vec!(String::from("test"))).unwrap();
+        let grant = CapTokenGrant::create(
+            CapabilityType::Transferable,
+            None,
+            vec![String::from("test")],
+        )
+        .unwrap();
 
         let token = grant.token();
         assert!(!verify_grant(
@@ -1184,9 +1246,12 @@ pub mod tests {
             &zome_call_valid(context.clone(), &token, &test_address2)
         ));
 
-        let grant =
-            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![test_address1.clone()]), vec!(String::from("test")))
-                .unwrap();
+        let grant = CapTokenGrant::create(
+            CapabilityType::Assigned,
+            Some(vec![test_address1.clone()]),
+            vec![String::from("test")],
+        )
+        .unwrap();
         let token = grant.token();
         assert!(!verify_grant(
             context.clone(),

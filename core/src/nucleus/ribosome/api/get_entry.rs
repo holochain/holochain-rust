@@ -45,10 +45,7 @@ pub mod tests {
                 commit::tests::test_commit_args_bytes,
                 tests::{test_parameters, test_zome_name},
             },
-            fn_call::{
-                tests::{test_capability_call, test_capability_name},
-                ZomeFnCall,
-            },
+            fn_call::{tests::test_capability_call, ZomeFnCall},
         },
     };
     use holochain_core_types::{
@@ -191,11 +188,7 @@ pub mod tests {
     fn test_get_round_trip() {
         let netname = Some("test_get_round_trip");
         let wasm = test_get_round_trip_wat();
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability_name(),
-            wasm.clone(),
-        );
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
         let instance =
             test_instance(dna.clone(), netname).expect("Could not initialize test instance");
         let (context, _) = test_context_and_logger("joan", netname);
@@ -282,7 +275,6 @@ pub mod tests {
         // let wasm = test_get_round_trip_wat();
         // let dna = test_utils::create_test_dna_with_wasm(
         //     &test_zome_name(),
-        //     &test_capability_name(),
         //     wasm.clone(),
         // );
         // let instance = test_instance(dna.clone()).expect("Could not initialize test instance");

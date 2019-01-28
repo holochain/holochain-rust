@@ -258,7 +258,7 @@ pub mod tests {
 
     #[test]
     fn test_is_fn_public() {
-        let mut dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let fn_name = String::from("public_test_fn");
         assert!(dna.get_zome("test_zome").unwrap().is_fn_public(&fn_name));
 

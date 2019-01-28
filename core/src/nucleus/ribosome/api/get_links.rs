@@ -66,7 +66,6 @@ pub mod tests {
         instance::tests::{test_context_and_logger, test_instance},
         nucleus::ribosome::{
             api::{tests::*, ZomeApiFunction},
-            fn_call::tests::*,
             Defn,
         },
     };
@@ -95,11 +94,7 @@ pub mod tests {
     #[test]
     fn returns_list_of_links() {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::GetLinks.as_str());
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability_name(),
-            wasm.clone(),
-        );
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
         let dna_name = &dna.name.to_string().clone();
         let netname = Some("returns_list_of_links");

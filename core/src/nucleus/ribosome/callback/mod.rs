@@ -18,10 +18,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::{
-        capabilities::{CapabilityCall, ReservedCapabilityNames},
-        wasm::DnaWasm,
-    },
+    dna::{capabilities::CapabilityCall, wasm::DnaWasm},
     entry::Entry,
     error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
@@ -328,11 +325,8 @@ pub mod tests {
         result: i32,
         network_name: Option<&str>,
     ) -> Result<Instance, String> {
-        let dna = test_utils::create_test_dna_with_wasm(
-            zome,
-            "test_cap",
-            test_callback_wasm(canonical_name, result),
-        );
+        let dna =
+            test_utils::create_test_dna_with_wasm(zome, test_callback_wasm(canonical_name, result));
 
         test_instance(dna, network_name)
     }

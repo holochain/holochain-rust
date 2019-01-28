@@ -185,10 +185,7 @@ pub mod tests {
         instance::{tests::test_instance_and_context, Instance},
         nucleus::ribosome::{
             self,
-            fn_call::{
-                tests::{test_capability_call, test_capability_name},
-                ZomeFnCall,
-            },
+            fn_call::{tests::test_capability_call, ZomeFnCall},
             Defn,
         },
     };
@@ -399,11 +396,7 @@ pub mod tests {
         args_bytes: Vec<u8>,
     ) -> (JsonString, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(canonical_name);
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability_name(),
-            wasm.clone(),
-        );
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
         let dna_name = &dna.name.to_string().clone();
         let (instance, context) =

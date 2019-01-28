@@ -137,30 +137,45 @@ pub mod tests {
     #[test]
     fn test_create_cap_token_grant_entry() {
         let some_fn = String::from("some_fn");
-        let example_functions = vec!(some_fn);
-        let maybe_grant = CapTokenGrant::create(CapabilityType::Public, None, example_functions.clone());
+        let example_functions = vec![some_fn];
+        let maybe_grant =
+            CapTokenGrant::create(CapabilityType::Public, None, example_functions.clone());
         assert!(maybe_grant.is_ok());
         let grant = maybe_grant.unwrap();
         assert_eq!(grant.cap_type(), CapabilityType::Public);
         assert_eq!(grant.functions(), example_functions.clone());
 
-        let maybe_grant = CapTokenGrant::create(CapabilityType::Transferable, Some(Vec::new()), example_functions.clone());
+        let maybe_grant = CapTokenGrant::create(
+            CapabilityType::Transferable,
+            Some(Vec::new()),
+            example_functions.clone(),
+        );
         assert!(maybe_grant.is_ok());
         let grant = maybe_grant.unwrap();
         assert_eq!(grant.cap_type(), CapabilityType::Transferable);
 
         let test_address = Address::new();
 
-        let maybe_grant =
-            CapTokenGrant::create(CapabilityType::Public, Some(vec![test_address.clone()]), example_functions.clone());
+        let maybe_grant = CapTokenGrant::create(
+            CapabilityType::Public,
+            Some(vec![test_address.clone()]),
+            example_functions.clone(),
+        );
         assert!(maybe_grant.is_err());
-        let maybe_grant = CapTokenGrant::create(CapabilityType::Transferable, None, example_functions.clone());
+        let maybe_grant = CapTokenGrant::create(
+            CapabilityType::Transferable,
+            None,
+            example_functions.clone(),
+        );
         assert!(maybe_grant.is_ok());
         let grant = maybe_grant.unwrap();
         assert_eq!(grant.cap_type(), CapabilityType::Transferable);
 
-        let maybe_grant =
-            CapTokenGrant::create(CapabilityType::Assigned, Some(vec![test_address.clone()]), example_functions.clone());
+        let maybe_grant = CapTokenGrant::create(
+            CapabilityType::Assigned,
+            Some(vec![test_address.clone()]),
+            example_functions.clone(),
+        );
         assert!(maybe_grant.is_ok());
         let grant = maybe_grant.unwrap();
         assert_eq!(grant.cap_type(), CapabilityType::Assigned);

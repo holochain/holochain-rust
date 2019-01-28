@@ -51,7 +51,6 @@ pub mod tests {
         },
         nucleus::ribosome::{
             api::{tests::*, ZomeApiFunction},
-            fn_call::tests::*,
             Defn,
         },
     };
@@ -105,11 +104,7 @@ pub mod tests {
 
     fn create_test_instance() -> (Instance, Arc<Context>) {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::LinkEntries.as_str());
-        let dna = test_utils::create_test_dna_with_wasm(
-            &test_zome_name(),
-            &test_capability_name(),
-            wasm.clone(),
-        );
+        let dna = test_utils::create_test_dna_with_wasm(&test_zome_name(), wasm.clone());
 
         let netname = Some("create_test_instance");
         let instance = test_instance(dna, netname).expect("Could not create test instance");

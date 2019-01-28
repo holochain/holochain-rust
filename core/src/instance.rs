@@ -326,11 +326,7 @@ pub mod tests {
 
     use crate::{
         network::actions::initialize_network::initialize_network,
-        nucleus::{
-            actions::initialize::initialize_application,
-            ribosome::{callback::Callback, Defn},
-        },
-        persister::SimplePersister,
+        nucleus::actions::initialize::initialize_application, persister::SimplePersister,
         state::State,
     };
 
@@ -538,6 +534,7 @@ pub mod tests {
                     assert!(
                         entry.entry_type() == EntryType::AgentId
                             || entry.entry_type() == EntryType::Dna
+                            || entry.entry_type() == EntryType::CapTokenGrant
                     );
                     true
                 }
@@ -695,11 +692,7 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome",
-            "test_cap",
-            None,
-        );
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
 
         let instance = test_instance(dna, None);
 
@@ -713,7 +706,6 @@ pub mod tests {
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            "test_cap",
             Some(
                 r#"
             (module
@@ -742,7 +734,6 @@ pub mod tests {
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            "test_cap",
             Some(
                 r#"
             (module
@@ -773,7 +764,7 @@ pub mod tests {
         let netname = Some("can_commit_dna");
         // Create Context, Agent, Dna, and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
-        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
+        let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let dna_entry = Entry::Dna(dna);
         let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None)));
 

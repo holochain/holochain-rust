@@ -14,17 +14,37 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{
+    cas::content::Address,
     dna::{
+        capabilities::{CapabilityType, ReservedCapabilityNames},
         Dna,
-        capabilities::{ReservedCapabilityNames, CapabilityType},
     },
-    entry::{
-        Entry,
-        cap_entries::CapTokenGrant,
-    },
+    entry::{cap_entries::CapTokenGrant, Entry},
     error::HolochainError,
 };
-use std::{pin::Pin, sync::Arc, time::*};
+use std::{collections::HashMap, pin::Pin, sync::Arc, time::*};
+
+/// Initialization is the value returned by successful initialization of a DNA instance
+/// this consists of any public tokens that were granted for use by the container to
+/// map any public calls by zome, and an optional payload for the app developer to use as
+/// desired
+#[derive(Clone, Debug, PartialEq)]
+pub struct Initialization {
+    public_tokens: HashMap<String, Address>,
+    payload: Option<String>,
+}
+
+impl Initialization {
+    pub fn new() -> Initialization {
+        Initialization {
+            public_tokens: HashMap::new(),
+            payload: None,
+        }
+    }
+    pub fn get_public_token(&self, zome_name: &str) -> Option<Address> {
+        self.public_tokens.get(zome_name).map(|addr| addr.clone())
+    }
+}
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
@@ -43,8 +63,8 @@ pub async fn initialize_application(
     context: &Arc<Context>,
 ) -> Result<NucleusStatus, HolochainError> {
     if context.state().unwrap().nucleus().status != NucleusStatus::New {
-        return Err(HolochainError::new(
-            "Can't trigger initialization: Nucleus status is not New",
+        return Err(HolochainError::InitializationFailed(
+            "Can't trigger initialization: Nucleus status is not New".to_string(),
         ));
     }
 
@@ -61,9 +81,9 @@ pub async fn initialize_application(
     fn dispatch_error_result(context: &Arc<Context>, err: HolochainError) {
         context
             .action_channel()
-            .send(ActionWrapper::new(Action::ReturnInitializationResult(
-                Some(err.to_string()),
-            )))
+            .send(ActionWrapper::new(Action::ReturnInitializationResult(Err(
+                err.to_string(),
+            ))))
             .expect("Action channel not usable in initialize_application()");
     }
 
@@ -72,54 +92,64 @@ pub async fn initialize_application(
     let dna_commit = await!(commit_entry(dna_entry, None, &context_clone));
     if dna_commit.is_err() {
         dispatch_error_result(&context_clone, dna_commit.err().unwrap());
-        return Err(HolochainError::new("error committing DNA"));
+        return Err(HolochainError::InitializationFailed(
+            "error committing DNA".to_string(),
+        ));
     }
 
     // Commit AgentId to chain
     let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
     let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone));
 
-
-
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates
     // an entry from an Agent object. So I can't create a test for the code below.
     // Hence skipping it for codecov for now but leaving it in for resilience.
-
     if agent_id_commit.is_err() {
         dispatch_error_result(&context_clone, agent_id_commit.err().unwrap());
-        return Err(HolochainError::new("error committing Agent"));
+        return Err(HolochainError::InitializationFailed(
+            "error committing Agent".to_string(),
+        ));
     }
 
-    let mut _public_tokens = Vec::new();
+    let mut public_tokens = HashMap::new();
     // Commit Public Capability Grants to chain
-    for (_, zome) in dna.clone().zomes {
-        let maybe_public = zome.capabilities.iter().find(|(cap_name,_)| *cap_name == ReservedCapabilityNames::Public.as_str());
+    for (zome_name, zome) in dna.clone().zomes {
+        let maybe_public = zome
+            .capabilities
+            .iter()
+            .find(|(cap_name, _)| *cap_name == ReservedCapabilityNames::Public.as_str());
         if maybe_public.is_some() {
-            let (_,cap) = maybe_public.unwrap();
-            let maybe_public_cap_grant_entry = CapTokenGrant::create(CapabilityType::Public, None, cap.functions.clone());
+            let (_, cap) = maybe_public.unwrap();
+            let maybe_public_cap_grant_entry =
+                CapTokenGrant::create(CapabilityType::Public, None, cap.functions.clone());
 
             // Let initialization fail if Public Grant could not be committed.
             if maybe_public_cap_grant_entry.is_err() {
                 dispatch_error_result(&context_clone, maybe_public_cap_grant_entry.err().unwrap());
-                return Err(HolochainError::new("error creating public cap grant"));
+                return Err(HolochainError::InitializationFailed(
+                    "error creating public cap grant".to_string(),
+                ));
             }
 
-            let public_cap_grant_commit = await!(commit_entry(Entry::CapTokenGrant(maybe_public_cap_grant_entry.ok().unwrap()), None, &context_clone));
+            let public_cap_grant_commit = await!(commit_entry(
+                Entry::CapTokenGrant(maybe_public_cap_grant_entry.ok().unwrap()),
+                None,
+                &context_clone
+            ));
 
             // Let initialization fail if Public Grant could not be committed.
-            match public_cap_grant_commit
-            {
+            match public_cap_grant_commit {
                 Err(err) => {
                     dispatch_error_result(&context_clone, err);
-                    return Err(HolochainError::new("error committing public grant"));
-                },
-                Ok(addr) => _public_tokens.push(addr),
-            }
+                    return Err(HolochainError::InitializationFailed(
+                        "error committing public grant".to_string(),
+                    ));
+                }
+                Ok(addr) => public_tokens.insert(zome_name, addr),
+            };
         }
     }
-
-    // TODO: Question: genesis is called AFTER dna and agent entries committed??
 
     // map genesis across every zome
     let results: Vec<_> = dna
@@ -128,6 +158,7 @@ pub async fn initialize_application(
         .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
         .collect();
 
+    // if there was an error report that as the result
     let maybe_error = results
         .iter()
         .find(|ref r| match r {
@@ -136,13 +167,22 @@ pub async fn initialize_application(
         })
         .and_then(|result| match result {
             CallbackResult::Fail(error_string) => Some(error_string.clone()),
-            _ => None,
+            _ => unreachable!(),
         });
+
+    // otherwise return the Initialization struct
+    let initialization_result = match maybe_error {
+        Some(error_message) => Err(error_message),
+        None => Ok(Initialization {
+            public_tokens,
+            payload: None, // no payload for now
+        }),
+    };
 
     context_clone
         .action_channel()
         .send(ActionWrapper::new(Action::ReturnInitializationResult(
-            maybe_error,
+            initialization_result,
         )))
         .expect("Action channel not usable in initialize_application()");
 
@@ -180,7 +220,9 @@ impl Future for InitializationFuture {
             match state.nucleus().status {
                 NucleusStatus::New => Poll::Pending,
                 NucleusStatus::Initializing => Poll::Pending,
-                NucleusStatus::Initialized => Poll::Ready(Ok(NucleusStatus::Initialized)),
+                NucleusStatus::Initialized(ref init) => {
+                    Poll::Ready(Ok(NucleusStatus::Initialized(init.clone())))
+                }
                 NucleusStatus::InitializationFailed(ref error) => {
                     Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
                 }

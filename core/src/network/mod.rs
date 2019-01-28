@@ -34,7 +34,7 @@ pub mod tests {
     #[test]
     fn get_entry_roundtrip() {
         let netname = Some("get_entry_roundtrip");
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = String::from("get_entry_roundtrip");
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
@@ -63,7 +63,7 @@ pub mod tests {
     #[test]
     fn get_non_existant_entry() {
         let netname = Some("get_non_existant_entry");
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = String::from("get_non_existant_entry");
         let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice2", netname).unwrap();
         let (_, context2) =
@@ -80,7 +80,7 @@ pub mod tests {
     #[test]
     fn get_when_alone() {
         let netname = Some("get_when_alone");
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        let mut dna = create_test_dna_with_wat("test_zome", None);
         dna.uuid = String::from("get_when_alone");
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "bob3", netname).unwrap();
@@ -98,7 +98,7 @@ pub mod tests {
         let netname = Some("get_validation_package_roundtrip");
         let wat = &test_wat_always_valid();
 
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
+        let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = String::from("get_validation_package_roundtrip");
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
@@ -127,7 +127,7 @@ pub mod tests {
         let netname = Some("get_links_roundtrip");
         let wat = &test_wat_always_valid();
 
-        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
+        let mut dna = create_test_dna_with_wat("test_zome", Some(wat));
         dna.uuid = String::from("get_links_roundtrip");
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();

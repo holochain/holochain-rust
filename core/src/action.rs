@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     network::{direct_message::DirectMessage, state::NetworkState},
     nucleus::{
+        actions::initialize::Initialization,
         ribosome::fn_call::{ExecuteZomeFnResponse, ZomeFnCall},
         state::{NucleusState, ValidationResult},
     },
@@ -171,7 +172,7 @@ pub enum Action {
     InitApplication(Dna),
     /// return the result of an InitApplication action
     /// the result is Some arbitrary string
-    ReturnInitializationResult(Option<String>),
+    ReturnInitializationResult(Result<Initialization, String>),
 
     /// execute a function in a zome WASM
     ExecuteZomeFunction(ZomeFnCall),

@@ -98,6 +98,7 @@ pub enum HolochainError {
     RibosomeFailed(String),
     ConfigError(String),
     Timeout,
+    InitializationFailed(String),
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -127,6 +128,7 @@ impl fmt::Display for HolochainError {
             RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
+            InitializationFailed(err_msg) => write!(f, "{}", err_msg),
         }
     }
 }

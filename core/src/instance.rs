@@ -261,13 +261,11 @@ pub fn dispatch_action_and_wait(
 ) {
 
     let id = snowflake::ProcessUniqueId::new().to_string();
-    println!("dispatch_action_and_wait {}", id);
     let observer_rx = context.create_observer();
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     loop {
         if context.state().unwrap().history.contains(&action_wrapper) {
-            println!("done dispatch_action_and_wait {}", id);
             return;
         } else {
             observer_rx.recv().expect("Local channel must work");

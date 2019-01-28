@@ -24,17 +24,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(context: Arc<Context>, args: ZomeFnCallArgs) -> Self {
-        let params = args.fn_args.clone();
-        let cap_call = args.clone().cap_token.map(|token| {
-            make_cap_call(
-                context.clone(),
-                token,
-                Address::from(context.agent_id.key.clone()),
-                &args.fn_name,
-                params.clone(),
-            )
-        });
-        ZomeFnCall::new(&args.zome_name, cap_call, &args.fn_name, params)
+        let cap_call = make_cap_call(
+            context.clone(),
+            args.cap_token,
+            Address::from(context.agent_id.key.clone()),
+            &args.fn_name,
+            args.fn_args.clone(),
+        );
+        ZomeFnCall::new(&args.zome_name, cap_call, &args.fn_name, args.fn_args)
     }
 }
 
@@ -196,7 +193,7 @@ pub mod tests {
         let args = ZomeFnCallArgs {
             instance_handle: "instance_handle".to_string(),
             zome_name: "zome_name".to_string(),
-            cap_token: Some(Address::from("bad cap_token")),
+            cap_token: Address::from("bad cap_token"),
             fn_name: "fn_name".to_string(),
             fn_args: "fn_args".to_string(),
         };
@@ -210,7 +207,7 @@ pub mod tests {
         let args = ZomeFnCallArgs {
             instance_handle: THIS_INSTANCE.to_string(),
             zome_name: test_zome_name(),
-            cap_token: Some(Address::from("test_token")),
+            cap_token: Address::from("test_token"),
             fn_name: test_function_name(),
             fn_args: test_parameters(),
         };

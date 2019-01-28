@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     nucleus::ribosome::{
         self,
-        callback::{Callback, CallbackParams, CallbackResult},
+        callback::{make_internal_capability_call, Callback, CallbackParams, CallbackResult},
         fn_call::ZomeFnCall,
         Defn,
     },
@@ -17,16 +17,20 @@ pub fn receive(
     context: Arc<Context>,
     zome: &str,
     // we ignore params for genesis
-    params: &CallbackParams,
+    parameters: &CallbackParams,
 ) -> CallbackResult {
-    let params = match params {
+    let params = match parameters {
         CallbackParams::Receive(payload) => payload,
         _ => return CallbackResult::NotImplemented("receive/1".into()),
     };
 
     let zome_call = ZomeFnCall::new(
         zome,
-        None,
+        make_internal_capability_call(
+            context.clone(),
+            Callback::Receive.as_str(),
+            parameters.clone().into(),
+        ),
         &Callback::Receive.as_str().to_string(),
         params.clone(),
     );

@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     nucleus::ribosome::{
         self,
-        callback::{links_utils, CallbackResult},
+        callback::{links_utils, make_internal_capability_call, CallbackResult},
         fn_call::ZomeFnCall,
     },
 };
@@ -104,9 +104,14 @@ fn validate_link_entry(
         direction: link_definition_path.direction,
         validation_data,
     };
+
     let call = ZomeFnCall::new(
         &link_definition_path.zome_name,
-        None,
+        make_internal_capability_call(
+            context.clone(),
+            "__hdk_validate_link",
+            params.clone().into(),
+        ),
         "__hdk_validate_link",
         params,
     );
@@ -136,6 +141,7 @@ fn validate_app_entry(
     match context.get_wasm(&zome_name) {
         Some(wasm) => {
             let validation_call = build_validation_call(
+                context.clone(),
                 entry,
                 EntryType::App(app_entry_type),
                 zome_name,
@@ -155,6 +161,7 @@ fn validate_app_entry(
 }
 
 fn build_validation_call(
+    context: Arc<Context>,
     entry: Entry,
     entry_type: EntryType,
     zome_name: String,
@@ -168,7 +175,7 @@ fn build_validation_call(
 
     Ok(ZomeFnCall::new(
         &zome_name,
-        None,
+        make_internal_capability_call(context, "__hdk_validate_app_entry", params.clone().into()),
         "__hdk_validate_app_entry",
         params,
     ))

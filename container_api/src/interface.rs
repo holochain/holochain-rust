@@ -1,8 +1,5 @@
-use holochain_core::state::State;
-use holochain_core_types::{
-    cas::content::Address,
-    dna::capabilities::{CallSignature, CapabilityCall},
-};
+use holochain_core::{nucleus::ribosome::fn_call::make_cap_call, state::State};
+use holochain_core_types::cas::content::Address;
 use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
@@ -167,12 +164,26 @@ impl ContainerApiBuilder {
                             let params_string = serde_json::to_string(&params)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
+                            let cap_call = {
+
+                                // TODO: get the token from the paramters on only if not there
+                                // assume public token.  Also cleanup unwraps.
+                                let context = hc.context();
+                                let state = context.state().unwrap().nucleus();
+                                let init = state.initialization().unwrap();
+                                let token = init.get_public_token(&zome_name).unwrap();
+                                let caller = Address::from("fake");
+                                make_cap_call(
+                                    context.clone(),
+                                    token,
+                                    caller,
+                                    &func_name,
+                                    params_string.clone(),
+                                )
+                            };
+
                             // TODO: need to get the caller identity in here somehow
-                            let cap_call = Some(CapabilityCall::new(
-                                Address::from("fake_token"),
-                                Address::from("fake_caller"),
-                                CallSignature::default(),
-                            ));
+
                             let response = hc
                                 .call(&zome_name, cap_call, &func_name, &params_string)
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;

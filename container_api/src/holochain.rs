@@ -152,13 +152,14 @@ impl Holochain {
     pub fn call(
         &mut self,
         zome: &str,
-        cap: Option<CapabilityCall>,
+        cap: CapabilityCall,
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
         if !self.active {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
+
         let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
         Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
     }

@@ -188,17 +188,17 @@ pub(crate) fn run_callback(
     }
 }
 
-fn make_callback_capability_call(
+pub fn make_internal_capability_call(
     context: Arc<Context>,
-    function: &Callback,
-    parameters: &CallbackParams,
+    function: &str,
+    parameters: JsonString,
 ) -> CapabilityCall {
     make_cap_call(
         context.clone(),
         Address::from(context.agent_id.key.clone()),
         Address::from(context.agent_id.key.clone()),
-        function.as_str(),
-        parameters.to_string(),
+        function,
+        parameters,
     )
 }
 
@@ -210,13 +210,9 @@ pub fn call(
 ) -> CallbackResult {
     let zome_call = ZomeFnCall::new(
         zome,
-        Some(make_callback_capability_call(
-            context.clone(),
-            function,
-            params,
-        )),
+        make_internal_capability_call(context.clone(), function.as_str(), params.into()),
         &function.as_str().to_string(),
-        params,
+        params.clone(),
     );
 
     let dna = context.get_dna().expect("Callback called without DNA set!");

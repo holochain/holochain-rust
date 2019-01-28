@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     nucleus::ribosome::{
         self,
-        callback::{links_utils, CallbackResult},
+        callback::{links_utils, make_internal_capability_call, CallbackResult},
         fn_call::ZomeFnCall,
     },
 };
@@ -37,11 +37,15 @@ pub fn get_validation_package_definition(
 
             ribosome::run_dna(
                 &dna.name.clone(),
-                context,
+                context.clone(),
                 wasm.code.clone(),
                 &ZomeFnCall::new(
                     &zome_name,
-                    None,
+                    make_internal_capability_call(
+                        context,
+                        "__hdk_get_validation_package_for_entry_type",
+                        app_entry_type.clone().into(),
+                    ),
                     "__hdk_get_validation_package_for_entry_type",
                     app_entry_type.to_string(),
                 ),
@@ -76,7 +80,16 @@ pub fn get_validation_package_definition(
                 direction: link_definition_path.direction,
             };
 
-            let call = ZomeFnCall::new("", None, "__hdk_get_validation_package_for_link", params);
+            let call = ZomeFnCall::new(
+                &link_definition_path.zome_name,
+                make_internal_capability_call(
+                    context.clone(),
+                    "__hdk_get_validation_package_for_link",
+                    params.clone().into(),
+                ),
+                "__hdk_get_validation_package_for_link",
+                params,
+            );
 
             ribosome::run_dna(
                 &dna.name.clone(),

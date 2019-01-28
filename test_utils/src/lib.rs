@@ -226,11 +226,11 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     // Call the exposed wasm function
     return hc.call(
         "test_zome",
-        Some(CapabilityCall::new(
+        CapabilityCall::new(
             Address::from("test_token"),
             Address::from("test_sender"),
             CallSignature::default(),
-        )),
+        ),
         fn_name,
         r#"{}"#,
     );

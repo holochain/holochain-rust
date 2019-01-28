@@ -7,7 +7,7 @@ pub const THIS_INSTANCE: &str = "__hdk_this_instance";
 pub struct ZomeFnCallArgs {
     pub instance_handle: String,
     pub zome_name: String,
-    pub cap_token: Option<Address>,
+    pub cap_token: Address,
     pub fn_name: String,
     pub fn_args: String,
 }

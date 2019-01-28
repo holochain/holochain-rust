@@ -7,7 +7,6 @@ use crate::{
     state::State,
 };
 use futures::{
-    executor::ThreadPool,
     task::{noop_local_waker_ref, Poll},
     Future,
 };
@@ -45,7 +44,6 @@ pub struct Context {
     state: Option<Arc<RwLock<State>>>,
     pub action_channel: Option<SyncSender<ActionWrapper>>,
     pub observer_channel: Option<SyncSender<Observer>>,
-    pub future_executor: Option<ThreadPool>,
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
@@ -78,7 +76,6 @@ impl Context {
             action_channel: None,
             signal_tx: signal_tx,
             observer_channel: None,
-            future_executor: None,
             chain_storage,
             dht_storage,
             eav_storage: eav,
@@ -106,7 +103,6 @@ impl Context {
             action_channel,
             signal_tx,
             observer_channel,
-            future_executor: None,
             chain_storage: cas.clone(),
             dht_storage: cas,
             eav_storage: eav,

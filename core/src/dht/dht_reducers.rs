@@ -52,38 +52,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
-pub(crate) fn reduce_remove_link(
-    _context: Arc<Context>,
-    old_store: &DhtStore,
-    action_wrapper: &ActionWrapper,
-) -> Option<DhtStore> {
-    let action = action_wrapper.action();
-    let link = unwrap_to!(action => Action::RemoveLink);
-    let mut new_store = (*old_store).clone();
-    let storage = &old_store.content_storage().clone();
-    if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
-        new_store.actions_mut().insert(
-            action_wrapper.clone(),
-            Err(HolochainError::ErrorGeneric(String::from(
-                "Base for link not found",
-            ))),
-        );
-        Some(new_store)
-    } else {
-        let eav =
-            EntityAttributeValueIndex::new(link.base(), &format!("link__{}", link.tag()), link.target());
-        eav.map(|e| {
-            let storage = new_store.meta_storage();
-            let result = storage.write().unwrap().remove_eav(&e);
-            new_store
-                .actions_mut()
-                .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
-            Some(new_store)
-        })
-        .ok()
-        .unwrap_or(None)
-    }
-}
+
 
 //
 pub(crate) fn reduce_hold_entry(
@@ -170,8 +139,8 @@ pub(crate) fn reduce_add_link(
     }
 }
 
-pub (crate) fn reduce_remove_links(context:Arc<Context>,old_store: &DhtStore,
-    action_wrapper: &ActionWrapper)
+pub (crate) fn reduce_remove_link(_context:Arc<Context>,old_store: &DhtStore,
+    action_wrapper: &ActionWrapper) -> Option<DhtStore>
     {
         // Get Action's input data
     let action = action_wrapper.action();
@@ -183,7 +152,7 @@ pub (crate) fn reduce_remove_links(context:Arc<Context>,old_store: &DhtStore,
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
-                "Base for link not found",
+                "Base for link not found for remov",
             ))),
         );
         Some(new_store)
@@ -474,7 +443,15 @@ pub mod tests {
         let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let action = ActionWrapper::new(Action::AddLink(link.clone()));
+        let mut action = ActionWrapper::new(Action::AddLink(link.clone()));
+
+        let new_dht_store: DhtStore;
+        {
+            let state = locked_state.read().unwrap();
+
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+        }
+        action = ActionWrapper::new(Action::RemoveLink(link.clone()));
 
         let new_dht_store: DhtStore;
         {
@@ -490,22 +467,6 @@ pub mod tests {
             IndexQuery::default(),
         );
 
-        action = ActionWrapper::new(Action::RemoveLink(link.clone()));
-
-        new_dht_store: DhtStore;
-        {
-            let state = locked_state.read().unwrap();
-
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
-        }
-        let storage = new_dht_store.meta_storage();
-        let fetched = storage.read().unwrap().fetch_eavi(
-            Some(entry.address()),
-            None,
-            None,
-            IndexQuery::default(),
-        );
-
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 1);
@@ -515,59 +476,6 @@ pub mod tests {
         assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
     }
 
-    #[test]
-    fn can_delete_links() {
-        let context = test_context("bob");
-        let store = test_store(context.clone());
-        let entry = test_entry();
-
-        let locked_state = Arc::new(RwLock::new(store));
-
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let storage = context.dht_storage.clone();
-        let _ = (storage.write().unwrap()).add(&entry);
-        let context = Arc::new(context);
-
-        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
-        let action = ActionWrapper::new(Action::AddLink(link.clone()));
-
-        let mut new_dht_store: DhtStore;
-        {
-            let state = locked_state.read().unwrap();
-
-            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
-        }
-        println!("storage");
-        let storage = new_dht_store.meta_storage();
-        let fetched = storage
-            .read()
-            .unwrap()
-            .fetch_eav(Some(entry.address()), None, None);
-        assert!(fetched.is_ok());
-        let hash_set = fetched.unwrap();
-        assert_eq!(hash_set.len(), 1);
-        let eav = hash_set.iter().nth(0).unwrap();
-        assert_eq!(eav.entity(), *link.base());
-        assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
-        let action = ActionWrapper::new(Action::RemoveLink(link.clone()));
-
-        let new_delete_dht_store: DhtStore;
-        {
-            let state = locked_state.read().unwrap();
-
-            new_delete_dht_store =
-                (*reduce(Arc::clone(&context), Arc::new(new_dht_store), &action)).clone();
-        }
-        let storage = new_delete_dht_store.meta_storage();
-        let fetched = storage
-            .read()
-            .unwrap()
-            .fetch_eav(Some(entry.address()), None, None);
-        let hash_set = fetched.unwrap();
-        assert_eq!(hash_set.len(), 0);
-    }
 
     #[test]
     fn does_not_add_link_for_missing_base() {

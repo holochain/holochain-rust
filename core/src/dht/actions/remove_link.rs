@@ -11,7 +11,7 @@ use futures::{
 };
 use holochain_core_types::{error::HolochainError, link::Link};
 use std::{
-    pin::{Pin, Unpin},
+    pin::{Pin},
     sync::Arc,
 };
 

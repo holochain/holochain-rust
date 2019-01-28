@@ -120,13 +120,13 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
                         }
                         ChainHeaders => {
                             let mut package = ValidationPackage::only_header(entry_header);
-                            package.source_chain_headers = Some(all_public_chain_headers(&context));
+                            package.source_chain_headers = Some(all_chain_headers(&context));
                             package
                         }
                         ChainFull => {
                             let mut package = ValidationPackage::only_header(entry_header);
                             package.source_chain_entries = Some(all_public_chain_entries(&context));
-                            package.source_chain_headers = Some(all_public_chain_headers(&context));
+                            package.source_chain_headers = Some(all_chain_headers(&context));
                             package
                         }
                         Custom(string) => {
@@ -172,13 +172,12 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
         .collect::<Vec<_>>()
 }
 
-fn all_public_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
+fn all_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
         .iter(&top_header)
-        .filter(|ref chain_header| chain_header.entry_type().can_publish())
-        .collect::<Vec<_>>()
+        .collect()
 }
 
 /// ValidationPackageFuture resolves to the ValidationPackage or a HolochainError.
@@ -295,7 +294,7 @@ mod tests {
         let expected = ValidationPackage {
             chain_header: Some(chain_header),
             source_chain_entries: None,
-            source_chain_headers: Some(all_public_chain_headers(&context)),
+            source_chain_headers: Some(all_chain_headers(&context)),
             custom: None,
         };
 
@@ -322,7 +321,7 @@ mod tests {
         let expected = ValidationPackage {
             chain_header: Some(chain_header),
             source_chain_entries: Some(all_public_chain_entries(&context)),
-            source_chain_headers: Some(all_public_chain_headers(&context)),
+            source_chain_headers: Some(all_chain_headers(&context)),
             custom: None,
         };
 

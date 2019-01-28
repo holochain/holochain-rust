@@ -92,35 +92,6 @@ impl EntrySubmission {
     }
 }
 
-/// Dispatch ExecuteZoneFunction to and block until call has finished.
-pub fn call_zome_and_wait_for_result(
-    call: ZomeFnCall,
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
-) -> Result<JsonString, HolochainError> {
-    let call_action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
-
-    // Dispatch action with observer closure that waits for a result in the state
-    let (sender, receiver) = sync_channel(1);
-    dispatch_action_with_observer(
-        action_channel,
-        observer_channel,
-        call_action_wrapper,
-        move |state: &super::state::State| {
-            if let Some(result) = state.nucleus().zome_call_result(&call) {
-                sender
-                    .send(result.clone())
-                    .expect("local channel to be open");
-                true
-            } else {
-                false
-            }
-        },
-    );
-    // Block until we got that result through the channel:
-    receiver.recv().expect("local channel to work")
-}
-
 /// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
 /// for test only?? <-- (apparently not, since it's used in Holochain::call)
 pub fn call_and_wait_for_result(

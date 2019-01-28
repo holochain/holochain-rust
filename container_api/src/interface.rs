@@ -165,7 +165,6 @@ impl ContainerApiBuilder {
                                 .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
                             let cap_call = {
-
                                 // TODO: get the token from the paramters on only if not there
                                 // assume public token.  Also cleanup unwraps.
                                 let context = hc.context();

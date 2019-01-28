@@ -38,14 +38,13 @@ pub async fn initialize_application(
         ));
     }
 
-    let context_clone = context.clone();
-
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
     dispatch_action_and_wait(
-        &context_clone.action_channel(),
-        &context_clone.observer_channel(),
+        context.clone(),
         action_wrapper.clone(),
     );
+
+    let context_clone = context.clone();
 
     // Commit DNA to chain
     let dna_entry = Entry::Dna(dna.clone());

@@ -7,7 +7,7 @@ pub mod state;
 use crate::{
     action::{Action, ActionWrapper, NucleusReduceFn},
     context::Context,
-    instance::{dispatch_action_with_observer, Observer},
+    instance::Observer,
     nucleus::{
         ribosome::api::call::{reduce_call, validate_call},
         state::{NucleusState, NucleusStatus},
@@ -26,9 +26,10 @@ use holochain_core_types::{
 use snowflake;
 use std::{
     sync::{
-        mpsc::{sync_channel, SyncSender},
+        mpsc::{channel, SyncSender},
         Arc,
     },
+    time::Duration,
     thread,
 };
 
@@ -100,22 +101,22 @@ pub fn call_and_wait_for_result(
 ) -> Result<JsonString, HolochainError> {
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
+    let id = snowflake::ProcessUniqueId::new().to_string();
+    println!("call_and_wait_for_result {}", id);
     // Dispatch action with observer closure that waits for a result in the state
-    let (sender, receiver) = sync_channel(1);
-    instance.dispatch_with_observer(call_action, move |state: &super::state::State| {
-        if let Some(result) = state.nucleus().zome_call_result(&call) {
-            sender
-                .send(result.clone())
-                .expect("local channel to be open");
-            true
-        } else {
-            // @TODO: Use futures for this, and in case this should probably have a timeout
-            false
-        }
-    });
+    let (observer_tx, observer_rx) = channel();
+    instance.observer_channel().send(Observer{ticker: observer_tx})
+        .expect("Observer channel not initialized");
+    instance.dispatch(call_action);
 
-    // Block until we got that result through the channel:
-    receiver.recv().expect("local channel to work")
+    loop {
+        if let Some(result) = instance.state().nucleus().zome_call_result(&call) {
+            println!("done {}", id);
+            return result;
+        } else {
+            let _ = observer_rx.recv_timeout(Duration::from_millis(100));
+        }
+    }
 }
 
 pub type ZomeFnResult = HcResult<JsonString>;
@@ -388,7 +389,7 @@ pub mod tests {
         nucleus::state::tests::test_nucleus_state,
     };
     use holochain_core_types::dna::{capabilities::CapabilityCall, Dna};
-    use std::sync::Arc;
+    use std::sync::{mpsc::sync_channel, Arc};
 
     use holochain_core_types::{
         error::DnaError,

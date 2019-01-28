@@ -10,7 +10,7 @@ use holochain_core_types::{cas::content::Address};
 use futures::executor::ThreadPool;
 use std::{
     sync::{
-        mpsc::{sync_channel, Receiver, SyncSender},
+        mpsc::{channel, sync_channel, Receiver, Sender, SyncSender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
@@ -30,11 +30,9 @@ pub struct Instance {
     futures_thread_pool: ThreadPool,
 }
 
-type ClosureType = Box<FnMut(&State) -> bool + Send>;
-
 /// State Observer that executes a closure everytime the State changes.
 pub struct Observer {
-    pub sensor: ClosureType,
+    pub ticker: Sender<()>
 }
 
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
@@ -87,7 +85,7 @@ impl Instance {
             .expect("Action channel not initialized")
     }
 
-    fn observer_channel(&self) -> &SyncSender<Observer> {
+    pub fn observer_channel(&self) -> &SyncSender<Observer> {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
@@ -108,28 +106,19 @@ impl Instance {
     ///
     /// Panics if called before `start_action_loop`.
     pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
-        dispatch_action_and_wait(
-            self.action_channel(),
-            self.observer_channel(),
-            action_wrapper,
-        );
-    }
+        // Dispatch action with observer closure that waits for a result in the state
+        let (observer_tx, observer_rx) = channel();
+        dispatch_action(self.action_channel(), action_wrapper.clone());
+        self.observer_channel().send(Observer{ticker: observer_tx})
+            .expect("Observer channel not initialized");;
 
-    /// Stack an action in the Event Queue and create an Observer on it with the specified closure
-    ///
-    /// # Panics
-    ///
-    /// Panics if called before `start_action_loop`.
-    pub fn dispatch_with_observer<F>(&mut self, action_wrapper: ActionWrapper, closure: F)
-    where
-        F: 'static + FnMut(&State) -> bool + Send,
-    {
-        dispatch_action_with_observer(
-            self.action_channel(),
-            self.observer_channel(),
-            action_wrapper,
-            closure,
-        )
+        loop {
+            if self.state().history.contains(&action_wrapper) {
+                return;
+            } else {
+                observer_rx.recv().expect("Local channel must work");
+            }
+        }
     }
 
     /// Returns recievers for actions and observers that get added to this instance
@@ -210,23 +199,11 @@ impl Instance {
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
-
-        // Run all observer closures
-        {
-            let state = self
-                .state
-                .read()
-                .expect("owners of the state RwLock shouldn't panic");
-            let mut i = 0;
-            while i != state_observers.len() {
-                if (&mut state_observers[i].sensor)(&state) {
-                    state_observers.remove(i);
-                } else {
-                    i += 1;
-                }
-            }
-        }
+        // Tick all observers and remove those that have lost their receiving part
         state_observers
+            .into_iter()
+            .filter(|observer| observer.ticker.send(()).is_ok())
+            .collect()
     }
 
     /// Given an `Action` that is being processed, decide whether or not it should be
@@ -279,55 +256,23 @@ impl Instance {
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_and_wait(
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
+    context: Arc<Context>,
     action_wrapper: ActionWrapper,
 ) {
-    // Create blocking channel
-    let (sender, receiver) = sync_channel::<()>(1);
 
-    // Create blocking observer
-    let observer_action_wrapper = action_wrapper.clone();
-    let closure = move |state: &State| {
-        if state.history.contains(&observer_action_wrapper) {
-            sender
-                .send(())
-                // the channel stays connected until the first message has been sent
-                // if this fails that means that it was called after having returned done=true
-                .expect("observer called after done");
-            true
+    let id = snowflake::ProcessUniqueId::new().to_string();
+    println!("dispatch_action_and_wait {}", id);
+    let observer_rx = context.create_observer();
+    dispatch_action(context.action_channel(), action_wrapper.clone());
+
+    loop {
+        if context.state().unwrap().history.contains(&action_wrapper) {
+            println!("done dispatch_action_and_wait {}", id);
+            return;
         } else {
-            false
+            observer_rx.recv().expect("Local channel must work");
         }
-    };
-
-    dispatch_action_with_observer(&action_channel, &observer_channel, action_wrapper, closure);
-
-    // Block until Observer has sensed the completion of the Action
-    receiver.recv().expect(DISPATCH_WITHOUT_CHANNELS);
-}
-
-/// Send Action to the Event Queue and create an Observer for it with the specified closure
-///
-/// # Panics
-///
-/// Panics if the channels passed are disconnected.
-pub fn dispatch_action_with_observer<F>(
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
-    action_wrapper: ActionWrapper,
-    closure: F,
-) where
-    F: 'static + FnMut(&State) -> bool + Send,
-{
-    let observer = Observer {
-        sensor: Box::new(closure),
-    };
-
-    observer_channel
-        .send(observer)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
-    dispatch_action(action_channel, action_wrapper);
+    }
 }
 
 /// Send Action to the Event Queue
@@ -374,7 +319,7 @@ pub mod tests {
 
     use std::{
         sync::{
-            mpsc::{channel, sync_channel},
+            mpsc::channel,
             Arc, Mutex,
         },
         thread::sleep,
@@ -655,43 +600,6 @@ pub mod tests {
     }
 
     #[test]
-    /// This test shows how to call dispatch with a closure that should run
-    /// when the action results in a state change.  Note that the observer closure
-    /// needs to return a boolean to indicate that it has successfully observed what
-    /// it intends to observe.  It will keep getting called as the state changes until
-    /// it returns true.
-    /// Note also that for this test we create a channel to send something (in this case
-    /// the dna) back over, just so that the test will block until the closure is successfully
-    /// run and the assert will actually run.  If we put the assert inside the closure
-    /// the test thread could complete before the closure was called.
-    fn can_dispatch_with_observer() {
-        let netname = Some("can_dispatch_with_observer");
-        let mut instance = Instance::new(test_context("jason", netname));
-        let _ = instance.inner_setup(test_context("jane", netname));
-
-        let dna = Dna::new();
-        let (sender, receiver) = sync_channel(1);
-        instance.dispatch_with_observer(
-            ActionWrapper::new(Action::InitApplication(dna.clone())),
-            move |state: &State| match state.nucleus().dna() {
-                Some(dna) => {
-                    sender
-                        .send(dna)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
-                    true
-                }
-                None => false,
-            },
-        );
-
-        let stored_dna = receiver.recv().expect("observer dropped before done");
-
-        assert_eq!(dna, stored_dna);
-    }
-
-    #[test]
     /// tests that we can dispatch an action and block until it completes
     fn can_dispatch_and_wait() {
         let netname = Some("can_dispatch_and_wait");
@@ -705,7 +613,7 @@ pub mod tests {
         let dna = Dna::new();
 
         let action = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        instance.inner_setup(test_context("jane", netname));
+        let context = instance.inner_setup(test_context("jane", netname));
 
         // the initial state is not intialized
         assert_eq!(
@@ -713,7 +621,7 @@ pub mod tests {
             crate::nucleus::state::NucleusStatus::New
         );
 
-        instance.dispatch_and_wait(action);
+        dispatch_action_and_wait(context, action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(
             instance.state().nucleus().status(),

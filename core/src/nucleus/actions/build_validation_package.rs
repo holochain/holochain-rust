@@ -175,9 +175,7 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
 fn all_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
     let chain = context.state().unwrap().agent().chain();
     let top_header = context.state().unwrap().agent().top_chain_header();
-    chain
-        .iter(&top_header)
-        .collect()
+    chain.iter(&top_header).collect()
 }
 
 /// ValidationPackageFuture resolves to the ValidationPackage or a HolochainError.

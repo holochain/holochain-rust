@@ -119,7 +119,7 @@ pub mod tests {
         let maybe_validation_package = result.unwrap();
         assert!(maybe_validation_package.is_some());
         let validation_package = maybe_validation_package.unwrap();
-        assert_eq!(validation_package.chain_header, Some(header));
+        assert_eq!(validation_package.chain_header, header);
     }
 
     #[test]

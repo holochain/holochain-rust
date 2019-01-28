@@ -41,7 +41,6 @@ pub async fn hold_link_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        sources: header.sources().clone(),
         lifecycle: EntryLifecycle::Meta,
         action: EntryAction::Create,
     };

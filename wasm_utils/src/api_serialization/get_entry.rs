@@ -1,5 +1,6 @@
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
+    chain_header::ChainHeader,
     crud_status::CrudStatus,
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
@@ -82,6 +83,7 @@ pub struct EntryResultMeta {
 pub struct GetEntryResultItem {
     pub meta: Option<EntryResultMeta>,
     pub entry: Option<Entry>,
+    pub headers: Vec<ChainHeader>, // headers if requested in options
 }
 impl GetEntryResultItem {
     pub fn new(maybe_entry_with_meta: Option<&EntryWithMeta>) -> Self {
@@ -93,10 +95,12 @@ impl GetEntryResultItem {
                     crud_status: entry_with_meta.crud_status,
                 }),
                 entry: Some(entry_with_meta.entry.clone()),
+                headers: unimplemented!(),
             },
             _ => GetEntryResultItem {
                 meta: None,
                 entry: None,
+                headers: unimplemented!(),
             },
         }
     }
@@ -136,8 +140,6 @@ pub enum GetEntryResultType {
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone)]
 pub struct GetEntryResult {
     pub result: GetEntryResultType,
-    // pub header: Option<ChainHeader>,   // header if requested in options
-    // pub sources: Option<Vec<Address>>, // sources if requested in options
 }
 impl GetEntryResult {
     pub fn new(

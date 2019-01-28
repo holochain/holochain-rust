@@ -717,7 +717,7 @@ pub mod tests {
             Some(
                 r#"
             (module
-                (memory (;0;) 17)
+                (memory (;0;) 1)
                 (func (export "genesis") (param $p0 i64) (result i64)
                     i64.const 0
                 )
@@ -746,7 +746,7 @@ pub mod tests {
             Some(
                 r#"
             (module
-                (memory (;0;) 17)
+                (memory (;0;) 1)
                 (func (export "genesis") (param $p0 i64) (result i64)
                     i64.const 9
                 )

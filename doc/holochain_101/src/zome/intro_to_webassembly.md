@@ -16,7 +16,7 @@ Not because it needs to be understood, but so that you can get a glimpse of what
 
 ```
 (module
-    (memory (;0;) 17)
+    (memory (;0;) 1)
     (func (export "public_test_fn") (param $p0 i64) (result i64)
         i64.const 6
     )

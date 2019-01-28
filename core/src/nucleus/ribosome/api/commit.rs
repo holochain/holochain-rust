@@ -25,8 +25,10 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         }
     };
     // Wait for future to be resolved
-    let task_result: Result<Address, HolochainError> = runtime.context
-        .block_on(author_entry(&entry, None, &runtime.context));
+    let task_result: Result<Address, HolochainError> =
+        runtime
+            .context
+            .block_on(author_entry(&entry, None, &runtime.context));
 
     runtime.store_result(task_result)
 }

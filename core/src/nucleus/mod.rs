@@ -29,8 +29,8 @@ use std::{
         mpsc::{channel, SyncSender},
         Arc,
     },
-    time::Duration,
     thread,
+    time::Duration,
 };
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
@@ -105,7 +105,11 @@ pub fn call_and_wait_for_result(
     println!("call_and_wait_for_result {}", id);
     // Dispatch action with observer closure that waits for a result in the state
     let (observer_tx, observer_rx) = channel();
-    instance.observer_channel().send(Observer{ticker: observer_tx})
+    instance
+        .observer_channel()
+        .send(Observer {
+            ticker: observer_tx,
+        })
         .expect("Observer channel not initialized");
     instance.dispatch(call_action);
 

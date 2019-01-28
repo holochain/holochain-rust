@@ -39,10 +39,7 @@ pub async fn initialize_application(
     }
 
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
-    dispatch_action_and_wait(
-        context.clone(),
-        action_wrapper.clone(),
-    );
+    dispatch_action_and_wait(context.clone(), action_wrapper.clone());
 
     let context_clone = context.clone();
 

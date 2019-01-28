@@ -50,7 +50,11 @@ pub mod tests {
         assert!(result.is_ok());
 
         // Get it.
-        let result = context2.block_on(get_entry(context2.clone(), entry.address(), Default::default()));
+        let result = context2.block_on(get_entry(
+            context2.clone(),
+            entry.address(),
+            Default::default(),
+        ));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_some());
@@ -70,7 +74,11 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = context2.block_on(get_entry(context2.clone(), entry.address(), Default::default()));
+        let result = context2.block_on(get_entry(
+            context2.clone(),
+            entry.address(),
+            Default::default(),
+        ));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
@@ -86,7 +94,11 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = context1.block_on(get_entry(context1.clone(), entry.address(), Default::default()));
+        let result = context1.block_on(get_entry(
+            context1.clone(),
+            entry.address(),
+            Default::default(),
+        ));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
@@ -103,7 +115,9 @@ pub mod tests {
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 
         let entry = test_entry();
-        context1.block_on(author_entry(&entry, None, &context1)).expect("Could not author entry");
+        context1
+            .block_on(author_entry(&entry, None, &context1))
+            .expect("Could not author entry");
 
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state
@@ -134,7 +148,8 @@ pub mod tests {
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
             let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
-            let address = context1.block_on(commit_entry(entry, None, &context1))
+            let address = context1
+                .block_on(commit_entry(entry, None, &context1))
                 .expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }

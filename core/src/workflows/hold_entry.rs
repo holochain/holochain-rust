@@ -77,7 +77,9 @@ pub mod tests {
 
         // Commit entry on attackers node
         let entry = test_entry();
-        let _entry_address = context1.block_on(author_entry(&entry, None, &context1)).unwrap();
+        let _entry_address = context1
+            .block_on(author_entry(&entry, None, &context1))
+            .unwrap();
 
         // Get header which we need to trigger hold_entry_workflow
         let agent1_state = context1.state().unwrap().agent();

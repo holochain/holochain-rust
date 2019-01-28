@@ -17,10 +17,7 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use std::{
-    convert::TryFrom,
-    sync::Arc,
-};
+use std::{convert::TryFrom, sync::Arc};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
@@ -79,7 +76,13 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     crate::instance::dispatch_action(runtime.context.action_channel(), action_wrapper);
 
     loop {
-        if let Some(result) = runtime.context.state().unwrap().nucleus().zome_call_result(&zome_call) {
+        if let Some(result) = runtime
+            .context
+            .state()
+            .unwrap()
+            .nucleus()
+            .zome_call_result(&zome_call)
+        {
             return result;
         } else {
             observer_rx.recv().expect("Local channel must work");
@@ -258,8 +261,8 @@ pub mod tests {
             mpsc::{sync_channel, RecvTimeoutError},
             Arc,
         },
-        time::Duration,
         thread,
+        time::Duration,
     };
     use test_utils::create_test_dna_with_defs;
 
@@ -329,11 +332,22 @@ pub mod tests {
             &test_setup.context,
         );
 
-        while test_setup.instance.state().nucleus().zome_call_result(&zome_call).is_none() {
-            thread::sleep(Duration::from_millis(10)) ;
+        while test_setup
+            .instance
+            .state()
+            .nucleus()
+            .zome_call_result(&zome_call)
+            .is_none()
+        {
+            thread::sleep(Duration::from_millis(10));
         }
 
-        let action_result = Ok(test_setup.instance.state().nucleus().zome_call_result(&zome_call).unwrap());
+        let action_result = Ok(test_setup
+            .instance
+            .state()
+            .nucleus()
+            .zome_call_result(&zome_call)
+            .unwrap());
 
         assert_eq!(expected, action_result);
     }
@@ -370,7 +384,9 @@ pub mod tests {
         let dna = setup_dna_for_cap_test(CapabilityType::Public);
         let test_setup = setup_test(dna);
         // Expecting error since there is no function in wasm to call
-        let expected = Ok(Err(HolochainError::RibosomeFailed("Argument deserialization failed".to_string())));
+        let expected = Ok(Err(HolochainError::RibosomeFailed(
+            "Argument deserialization failed".to_string(),
+        )));
         test_reduce_call(&test_setup, "", Address::from("caller"), expected);
     }
 
@@ -382,7 +398,9 @@ pub mod tests {
         test_reduce_call(&test_setup, "", Address::from("caller"), expected_failure);
 
         // Expecting error since there is no function in wasm to call
-        let expected = Ok(Err(HolochainError::RibosomeFailed("Argument deserialization failed".to_string())));
+        let expected = Ok(Err(HolochainError::RibosomeFailed(
+            "Argument deserialization failed".to_string(),
+        )));
         let agent_token_str = test_setup.context.agent_id.key.clone();
         test_reduce_call(
             &test_setup,
@@ -393,7 +411,10 @@ pub mod tests {
 
         let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let addr = test_setup.context.block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let addr = test_setup
+            .context
+            .block_on(author_entry(&grant_entry, None, &test_setup.context))
+            .unwrap();
         test_reduce_call(
             &test_setup,
             &String::from(addr),
@@ -415,7 +436,9 @@ pub mod tests {
         );
 
         // Expecting error since there is no function in wasm to call
-        let expected = Ok(Err(HolochainError::RibosomeFailed("Argument deserialization failed".to_string())));
+        let expected = Ok(Err(HolochainError::RibosomeFailed(
+            "Argument deserialization failed".to_string(),
+        )));
         let agent_token_str = test_setup.context.agent_id.key.clone();
         test_reduce_call(
             &test_setup,
@@ -428,7 +451,10 @@ pub mod tests {
         let grant =
             CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()])).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let addr = test_setup.context.block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let addr = test_setup
+            .context
+            .block_on(author_entry(&grant_entry, None, &test_setup.context))
+            .unwrap();
         test_reduce_call(
             &test_setup,
             &String::from(addr.clone()),

@@ -18,7 +18,8 @@ pub fn get_link_entries(
         address: base_address.clone(),
         options: Default::default(),
     };
-    let base_entry_get_result = context.block_on(get_entry_result_workflow(&context, entry_args))?;
+    let base_entry_get_result =
+        context.block_on(get_entry_result_workflow(&context, entry_args))?;
     if !base_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Base for link not found",
@@ -29,7 +30,8 @@ pub fn get_link_entries(
         address: target_address.clone(),
         options: Default::default(),
     };
-    let target_entry_get_result = context.block_on(get_entry_result_workflow(&context, entry_args))?;
+    let target_entry_get_result =
+        context.block_on(get_entry_result_workflow(&context, entry_args))?;
     if !target_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Target for link not found",

@@ -1,13 +1,15 @@
-use crate::{action::ActionWrapper, context::Context, signal::Signal, state::State, workflows::application};
+use crate::{
+    action::ActionWrapper, context::Context, signal::Signal, state::State, workflows::application,
+};
 #[cfg(test)]
 use crate::{
     network::actions::initialize_network::initialize_network_with_spoofed_dna,
     nucleus::actions::initialize::initialize_application,
 };
-use holochain_core_types::{dna::Dna, error::HcResult};
-#[cfg(test)]
-use holochain_core_types::{cas::content::Address};
 use futures::executor::ThreadPool;
+#[cfg(test)]
+use holochain_core_types::cas::content::Address;
+use holochain_core_types::{dna::Dna, error::HcResult};
 use std::{
     sync::{
         mpsc::{channel, sync_channel, Receiver, Sender, SyncSender},
@@ -32,7 +34,7 @@ pub struct Instance {
 
 /// State Observer that executes a closure everytime the State changes.
 pub struct Observer {
-    pub ticker: Sender<()>
+    pub ticker: Sender<()>,
 }
 
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
@@ -42,20 +44,29 @@ impl Instance {
         100
     }
 
-    pub (in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
+    pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
         let (rx_action, rx_observer) = self.initialize_channels();
         let context = self.initialize_context(context);
         self.start_action_loop(context.clone(), rx_action, rx_observer);
         context
     }
 
-    pub fn initialize(&mut self, dna: Option<Dna>, context: Arc<Context>) -> HcResult<Arc<Context>> {
+    pub fn initialize(
+        &mut self,
+        dna: Option<Dna>,
+        context: Arc<Context>,
+    ) -> HcResult<Arc<Context>> {
         let context = self.inner_setup(context);
         context.block_on(application::initialize(self, dna, context.clone()))
     }
 
     #[cfg(test)]
-    pub fn initialize_with_spoofed_dna(&mut self, dna: Dna, spoofed_dna_address: Address, context: Arc<Context>) -> HcResult<Arc<Context>> {
+    pub fn initialize_with_spoofed_dna(
+        &mut self,
+        dna: Dna,
+        spoofed_dna_address: Address,
+        context: Arc<Context>,
+    ) -> HcResult<Arc<Context>> {
         let context = self.inner_setup(context);
         context.block_on(
             async {
@@ -109,7 +120,10 @@ impl Instance {
         // Dispatch action with observer closure that waits for a result in the state
         let (observer_tx, observer_rx) = channel();
         dispatch_action(self.action_channel(), action_wrapper.clone());
-        self.observer_channel().send(Observer{ticker: observer_tx})
+        self.observer_channel()
+            .send(Observer {
+                ticker: observer_tx,
+            })
             .expect("Observer channel not initialized");;
 
         loop {
@@ -143,7 +157,12 @@ impl Instance {
     }
 
     /// Start the Event Loop on a separate thread
-    pub fn start_action_loop(&mut self, context: Arc<Context>, rx_action: Receiver<ActionWrapper>, rx_observer: Receiver<Observer>) {
+    pub fn start_action_loop(
+        &mut self,
+        context: Arc<Context>,
+        rx_action: Receiver<ActionWrapper>,
+        rx_observer: Receiver<Observer>,
+    ) {
         let sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
@@ -255,11 +274,7 @@ impl Instance {
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action_and_wait(
-    context: Arc<Context>,
-    action_wrapper: ActionWrapper,
-) {
-
+pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWrapper) {
     let id = snowflake::ProcessUniqueId::new().to_string();
     let observer_rx = context.create_observer();
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -316,10 +331,7 @@ pub mod tests {
     };
 
     use std::{
-        sync::{
-            mpsc::channel,
-            Arc, Mutex,
-        },
+        sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
     };

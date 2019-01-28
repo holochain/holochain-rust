@@ -6,6 +6,11 @@ use crate::{
     signal::{Signal, SignalSender},
     state::State,
 };
+use futures::{
+    executor::ThreadPool,
+    task::{noop_local_waker_ref, Poll},
+    Future,
+};
 use holochain_core_types::{
     agent::AgentId,
     cas::{
@@ -19,13 +24,11 @@ use holochain_core_types::{
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use futures::{
-    executor::ThreadPool,
-    Future,
-    task::{noop_local_waker_ref, Poll},
-};
 use std::{
-    sync::{mpsc::{channel, SyncSender, Receiver}, Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{
+        mpsc::{channel, Receiver, SyncSender},
+        Arc, Mutex, RwLock, RwLockReadGuard,
+    },
     thread::sleep,
     time::Duration,
 };
@@ -195,12 +198,15 @@ impl Context {
 
     pub fn create_observer(&self) -> Receiver<()> {
         let (observer_tx, observer_rx) = channel();
-        self.observer_channel().send(Observer{ticker: observer_tx})
+        self.observer_channel()
+            .send(Observer {
+                ticker: observer_tx,
+            })
             .expect("Observer channel not initialized");
         observer_rx
     }
 
-    pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output  {
+    pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
         let observer_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 

@@ -15,7 +15,8 @@ pub fn test_instance_with_spoofed_dna(
     // Create instance and plug in our DNA
     let context = test_context(name, None);
     let mut instance = Instance::new(context.clone());
-    let context = instance.initialize_with_spoofed_dna(dna.clone(), spoofed_dna_address, context)?;
+    let context =
+        instance.initialize_with_spoofed_dna(dna.clone(), spoofed_dna_address, context)?;
 
     assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
     assert!(instance.state().nucleus().has_initialized());

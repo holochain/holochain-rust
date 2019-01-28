@@ -111,7 +111,8 @@ pub mod tests {
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
             let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
-            let address = initialized_context.block_on(commit_entry(entry, None, &initialized_context))
+            let address = initialized_context
+                .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }
@@ -119,8 +120,12 @@ pub mod tests {
         let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
         let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
 
-        assert!(initialized_context.block_on(add_link(&link1, &initialized_context)).is_ok());
-        assert!(initialized_context.block_on(add_link(&link2, &initialized_context)).is_ok());
+        assert!(initialized_context
+            .block_on(add_link(&link1, &initialized_context))
+            .is_ok());
+        assert!(initialized_context
+            .block_on(add_link(&link2, &initialized_context))
+            .is_ok());
 
         let call_result = test_zome_api_function_call(
             &dna_name,

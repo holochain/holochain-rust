@@ -42,7 +42,9 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: entry_args.address,
         options: Default::default(),
     };
-    let maybe_entry_result = runtime.context.block_on(get_entry_result_workflow(&runtime.context, &get_args));
+    let maybe_entry_result = runtime
+        .context
+        .block_on(get_entry_result_workflow(&runtime.context, &get_args));
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }

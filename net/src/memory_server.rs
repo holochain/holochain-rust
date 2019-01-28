@@ -135,13 +135,16 @@ impl InMemoryServer {
 
     fn priv_create_request_with_bucket(&mut self, bucket_id: &BucketId) -> RequestId {
         let req_id = self.priv_generate_request_id();
+        println!("\t\t priv_create_request_with_bucket(): has {:?}", req_id);
         self.request_book
             .insert(req_id.clone(), bucket_id.to_string());
         req_id
     }
 
-    fn priv_drop_request(&mut self, id: &RequestId) -> bool {
-        self.request_book.remove(id).is_some()
+    fn priv_drop_request(&mut self, req_id: &RequestId) -> bool {
+        println!("\t\t priv_drop_request({}): has:\n {:?}", req_id, self.request_book);
+        //self.request_book.remove(req_id).is_some()
+        self.request_book.contains_key(req_id)
     }
 
     fn priv_request_lists(&mut self, dna_address: &Address, agent_id: &str) {
@@ -302,7 +305,7 @@ impl InMemoryServer {
                     // Check if its a response to our own request
                     let maybe_bucket_id = self
                         .priv_check_request(&msg.request_id);
-                    if let Some(bucket_id) = maybe_bucket_id {
+                    if let Some(_) = maybe_bucket_id {
                         //Debugging code (do not remove)
                         println!(
                             "---- InMemoryServer '{}' internal request failed: {:?}",
@@ -349,14 +352,14 @@ impl InMemoryServer {
                     self.priv_serve_HandleSendMessageResult(&msg)?;
                 }
                 JsonProtocol::FetchEntry(msg) => {
-                    self.priv_serve_FetchDhtData(&msg)?;
+                    self.priv_serve_FetchEntry(&msg)?;
                 }
                 JsonProtocol::HandleFetchEntryResult(msg) => {
-                    self.priv_serve_HandleFetchDhtDataResult(&msg)?;
+                    self.priv_serve_HandleFetchEntryResult(&msg)?;
                 }
 
                 JsonProtocol::PublishEntry(msg) => {
-                    self.priv_serve_PublishDhtData(&msg)?;
+                    self.priv_serve_PublishEntry(&msg)?;
                 }
 
                 JsonProtocol::FetchMeta(msg) => {
@@ -372,7 +375,7 @@ impl InMemoryServer {
 
                 // Our request for the publish_list has returned
                 JsonProtocol::HandleGetPublishingEntryListResult(msg) => {
-                    self.priv_serve_HandleGetPublishingDataListResult(&msg)?;
+                    self.priv_serve_HandleGetPublishingEntryListResult(&msg)?;
                 }
 
                 // Our request for the hold_list has returned
@@ -479,7 +482,7 @@ impl InMemoryServer {
     // -- serve DHT data -- //
 
     /// on publish, we send store requests to all nodes connected on this dna
-    fn priv_serve_PublishDhtData(&mut self, msg: &EntryData) -> NetResult<()> {
+    fn priv_serve_PublishEntry(&mut self, msg: &EntryData) -> NetResult<()> {
         bookkeep_address(
             &mut self.published_entry_book,
             &msg.dna_address,
@@ -497,15 +500,19 @@ impl InMemoryServer {
     /// this in-memory module routes it to the first node connected on that dna.
     /// this works because we send store requests to all connected nodes.
     /// If there is no other node for this DNA, send a FailureResult.
-    fn priv_serve_FetchDhtData(&mut self, msg: &FetchEntryData) -> NetResult<()> {
+    fn priv_serve_FetchEntry(&mut self, msg: &FetchEntryData) -> NetResult<()> {
+        println!("priv_serve_FetchDhtData(): {:?}", msg);
         // Find other node and forward request
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
                     // Debugging code (do not remove)
-                    //println!("<<<< InMemoryServer '{}' send: {:?}", self.name.clone(), msg.clone());
-                    r.send(JsonProtocol::HandleFetchEntry(msg.clone()).into())?;
+                    println!("<<<< InMemoryServer '{}' send: {:?}", self.name.clone(), msg.clone());
+                    let msg: Protocol = JsonProtocol::HandleFetchEntry(msg.clone()).into();
+                    println!("<<<< InMemoryServer '{}' send: {:?}", self.name.clone(), msg.clone());
+                    r.send(msg)?;
+                    println!("<<<< InMemoryServer OK");
                     return Ok(());
                 }
             }
@@ -528,7 +535,8 @@ impl InMemoryServer {
     }
 
     /// send back a response to a request for dht data
-    fn priv_serve_HandleFetchDhtDataResult(&mut self, msg: &FetchEntryResultData) -> NetResult<()> {
+    fn priv_serve_HandleFetchEntryResult(&mut self, msg: &FetchEntryResultData) -> NetResult<()> {
+        println!("priv_serve_HandleFetchEntryResult(): {:?}", msg);
         // if its from our own request do a publish
         if self.priv_drop_request(&msg.request_id) {
             let dht_data = EntryData {
@@ -537,9 +545,10 @@ impl InMemoryServer {
                 entry_address: msg.entry_address.clone(),
                 entry_content: msg.entry_content.clone(),
             };
-            self.priv_serve_PublishDhtData(&dht_data)?;
+            self.priv_serve_PublishEntry(&dht_data)?;
             return Ok(());
         }
+        println!("priv_serve_HandleFetchEntryResult(): NOT OUR REQUEST");
         // otherwise just send back to requester
         self.priv_send_one(
             &msg.dna_address,
@@ -638,7 +647,7 @@ impl InMemoryServer {
 
     /// Received response from our request for the 'publish_list'
     /// For each data not already published, request it in order to publish it ourselves.
-    fn priv_serve_HandleGetPublishingDataListResult(
+    fn priv_serve_HandleGetPublishingEntryListResult(
         &mut self,
         msg: &EntryListData,
     ) -> NetResult<()> {

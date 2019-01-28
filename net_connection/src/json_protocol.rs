@@ -115,7 +115,7 @@ pub struct DropEntryData {
     pub request_id: String,
 
     #[serde(rename = "dataAddress")]
-    pub data_address: Address,
+    pub entry_address: Address,
 }
 
 /// Data Request from some other agent

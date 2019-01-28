@@ -16,18 +16,6 @@ use holochain_net_connection::{
 };
 use p2p_node::P2pNode;
 
-/// Macro for transforming a type check into a predicate
-macro_rules! one_is {
-    ($p:pat) => {
-        |d| {
-            if let $p = d {
-                return true;
-            }
-            return false;
-        }
-    };
-}
-
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn usage() {
@@ -72,7 +60,7 @@ fn exec_memory_network_test() -> NetResult<()> {
         .into(),
     )
     .expect("Failed sending message to node_b");
-    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
+    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_)))).unwrap();
     println!("got: {:?}", res);
 
     if let JsonProtocol::HandleSendMessage(msg) = res {
@@ -92,7 +80,7 @@ fn exec_memory_network_test() -> NetResult<()> {
         panic!("bad generic msg");
     }
 
-    let res = alex.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))));
+    let res = alex.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_)))).unwrap();
     println!("got response: {:?}", res);
 
     if let JsonProtocol::SendMessageResult(msg) = res {

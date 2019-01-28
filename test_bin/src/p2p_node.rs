@@ -31,9 +31,9 @@ pub struct P2pNode {
 
     // datastores
     // TODO: Have a datastore per dna ; perhaps in a CoreMock struct
-    pub data_store: HashMap<Address, serde_json::Value>,
+    pub entry_store: HashMap<Address, serde_json::Value>,
     pub meta_store: HashMap<(Address, String), serde_json::Value>,
-    pub authored_data_store: HashMap<Address, serde_json::Value>,
+    pub authored_entry_store: HashMap<Address, serde_json::Value>,
     pub authored_meta_store: HashMap<(Address, String), serde_json::Value>,
 }
 
@@ -71,9 +71,9 @@ impl P2pNode {
         data_content: &serde_json::Value,
         can_publish: bool,
     ) -> NetResult<()> {
-        assert!(!self.authored_data_store.get(&data_address).is_some());
-        assert!(!self.data_store.get(&data_address).is_some());
-        self.authored_data_store
+        assert!(!self.authored_entry_store.get(&data_address).is_some());
+        assert!(!self.entry_store.get(&data_address).is_some());
+        self.authored_entry_store
             .insert(data_address.clone(), data_content.clone());
         if can_publish {
             let msg_data = EntryData {
@@ -118,9 +118,9 @@ impl P2pNode {
     }
 
     pub fn hold_data(&mut self, data_address: &Address, data_content: &serde_json::Value) {
-        assert!(!self.authored_data_store.get(&data_address).is_some());
-        assert!(!self.data_store.get(&data_address).is_some());
-        self.data_store
+        assert!(!self.authored_entry_store.get(&data_address).is_some());
+        assert!(!self.entry_store.get(&data_address).is_some());
+        self.entry_store
             .insert(data_address.clone(), data_content.clone());
     }
 
@@ -146,12 +146,16 @@ impl P2pNode {
 
     /// Send a reponse to a FetchDhtData request
     pub fn reply_fetch_data(&mut self, request: &FetchEntryData) -> NetResult<()> {
+        println!("({}) reply_fetch_data: {:?}", self.agent_id, request);
+        println!("({}) reply_fetch_data, authored: {:?}", self.agent_id, self.authored_entry_store.clone());
+        println!("({}) reply_fetch_data, stored  : {:?}", self.agent_id, self.entry_store.clone());
+
         let msg;
         {
             // Get data from local datastores
-            let mut maybe_data = self.authored_data_store.get(&request.entry_address);
+            let mut maybe_data = self.authored_entry_store.get(&request.entry_address);
             if maybe_data.is_none() {
-                maybe_data = self.data_store.get(&request.entry_address);
+                maybe_data = self.entry_store.get(&request.entry_address);
             }
             // Send failure or success response
             msg = match maybe_data.clone() {
@@ -214,7 +218,7 @@ impl P2pNode {
 
     pub fn reply_get_publish_data_list(&mut self, request: &GetListData) -> NetResult<()> {
         let data_address_list = self
-            .authored_data_store
+            .authored_entry_store
             .iter()
             .map(|(k, _)| k.clone())
             .collect();
@@ -241,7 +245,7 @@ impl P2pNode {
     }
 
     pub fn reply_get_holding_data_list(&mut self, request: &GetListData) -> NetResult<()> {
-        let data_address_list = self.data_store.iter().map(|(k, _)| k.clone()).collect();
+        let data_address_list = self.entry_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = EntryListData {
             entry_address_list: data_address_list,
             request_id: request.request_id.clone(),
@@ -277,7 +281,7 @@ impl P2pNode {
 
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                // println!("<<< ({}) handler: {:?}", agent_id_arg, r);
+                println!("<<< ({}) handler: {:?}", agent_id_arg, r);
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -293,9 +297,9 @@ impl P2pNode {
             agent_id,
             recv_msg_log: Vec::new(),
             recv_dm_log: Vec::new(),
-            data_store: HashMap::new(),
+            entry_store: HashMap::new(),
             meta_store: HashMap::new(),
-            authored_data_store: HashMap::new(),
+            authored_entry_store: HashMap::new(),
             authored_meta_store: HashMap::new(),
         }
     }
@@ -400,12 +404,38 @@ impl P2pNode {
     //        self.wait_with_timeout(predicate, timeout_ms)
     //    }
 
+    pub fn wait_HandleFetchEntry_and_reply(&mut self) -> bool {
+        let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
+        if maybe_request.is_none() {
+            return false;
+        }
+        let request = maybe_request.unwrap();
+        // extract msg data
+        let fetch_data = unwrap_to!(request => JsonProtocol::HandleFetchEntry);
+        // Alex responds: should send entry data back
+        self.reply_fetch_data(&fetch_data).expect("Reply to HandleFetchEntry should work");
+        true
+    }
+
+    pub fn wait_HandleFetchMeta_and_reply(&mut self) -> bool {
+        let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
+        if maybe_request.is_none() {
+            return false;
+        }
+        let request = maybe_request.unwrap();
+        // extract msg data
+        let fetch_meta = unwrap_to!(request => JsonProtocol::HandleFetchMeta);
+        // Alex responds: should send entry data back
+        self.reply_fetch_meta(&fetch_meta).expect("Reply to HandleFetchMeta should work");
+        true
+    }
+
     /// Wait for receiving a message corresponding to predicate until timeout is reached
     pub fn wait_with_timeout(
         &mut self,
         predicate: Box<dyn Fn(&JsonProtocol) -> bool>,
         timeout_ms: usize,
-    ) -> JsonProtocol {
+    ) -> Option<JsonProtocol> {
         let mut time_ms: usize = 0;
         loop {
             let mut did_something = false;
@@ -418,7 +448,7 @@ impl P2pNode {
                 did_something = true;
                 if predicate(&p2p_msg) {
                     println!("\t ({})::wait() - match", self.agent_id);
-                    return p2p_msg;
+                    return Some(p2p_msg);
                 } else {
                     println!("\t ({})::wait() - NO match", self.agent_id);
                 }
@@ -428,7 +458,8 @@ impl P2pNode {
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 time_ms += 10;
                 if time_ms > timeout_ms {
-                    panic!("({})::wait() has TIMEOUT", self.agent_id);
+                    println!("({})::wait() has TIMEOUT", self.agent_id);
+                    return None;
                 }
             }
         }
@@ -437,7 +468,7 @@ impl P2pNode {
     /// Wait for receiving a message corresponding to predicate
     /// hard coded timeout
     #[cfg_attr(tarpaulin, skip)]
-    pub fn wait(&mut self, predicate: Box<dyn Fn(&JsonProtocol) -> bool>) -> JsonProtocol {
+    pub fn wait(&mut self, predicate: Box<dyn Fn(&JsonProtocol) -> bool>) -> Option<JsonProtocol> {
         self.wait_with_timeout(predicate, TIMEOUT_MS)
     }
 
@@ -494,8 +525,8 @@ impl P2pNode {
             JsonProtocol::FetchEntryResult(_) => {
                 // n/a
             }
-            JsonProtocol::HandleFetchEntry(_msg) => {
-                // n/a
+            JsonProtocol::HandleFetchEntry(msg) => {
+                self.reply_fetch_data(&msg);
             }
             JsonProtocol::HandleFetchEntryResult(_msg) => {
                 // n/a
@@ -505,12 +536,13 @@ impl P2pNode {
                 panic!("Core should not receive PublishDhtData message");
             }
             JsonProtocol::HandleStoreEntry(msg) => {
+                println!("\t ({})::HandleStoreEntry", self.agent_id);
                 // Store data in local datastore
-                self.data_store.insert(msg.entry_address, msg.entry_content);
+                self.entry_store.insert(msg.entry_address, msg.entry_content);
             }
             JsonProtocol::HandleDropEntry(msg) => {
                 // Remove data in local datastore
-                self.data_store.remove(&msg.data_address);
+                self.entry_store.remove(&msg.entry_address);
             }
 
             JsonProtocol::FetchMeta(_msg) => {

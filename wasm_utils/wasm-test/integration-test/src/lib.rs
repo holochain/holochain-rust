@@ -6,9 +6,12 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
+extern crate wasmi;
+
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::json::RawString;
 use holochain_wasm_utils::memory::stack::WasmStack;
+use holochain_wasm_utils::memory::allocation::AllocationError;
 
 use holochain_wasm_utils::{
     holochain_core_types::error::HolochainError,
@@ -20,10 +23,9 @@ use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
 use holochain_wasm_utils::memory::MemoryInt;
 use holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json;
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
-
-// use std::ffi::CString;
-// use holochain_wasm_utils::memory::allocation::Offset;
-// use holochain_wasm_utils::memory::allocation::Length;
+use holochain_wasm_utils::holochain_core_types::bits_n_pieces::U16_MAX;
+use wasmi::MemoryInstance;
+use wasmi::memory_units::Pages;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
@@ -128,6 +130,28 @@ pub extern "C" fn stacked_strings(_: RibosomeEncodingBits) -> RibosomeEncodingBi
     };
 
     first.as_ribosome_encoding()
+}
+
+#[no_mangle]
+pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+
+    let mut stack = WasmStack::default();
+
+    let memory = match MemoryInstance::alloc(Pages(1), None) {
+        Ok(memory) => memory,
+        Err(_) => return AllocationError::OutOfBounds.as_ribosome_encoding(),
+    };
+
+    // face emoji is 11 bytes so we need 1 pages to hold U16_MAX faces
+    if memory.grow(Pages(11)).is_err() {
+        return AllocationError::OutOfBounds.as_ribosome_encoding();
+    };
+
+    match stack.write_string(&"(ಥ⌣ಥ)".repeat(U16_MAX as usize)) {
+        Ok(allocation) => allocation.as_ribosome_encoding(),
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    }
+
 }
 
 #[no_mangle]

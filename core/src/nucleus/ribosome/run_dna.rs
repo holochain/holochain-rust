@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     nucleus::{
-        ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
+        ribosome::{api::ZomeApiFunction, memory::WasmPageManager, Runtime},
         ZomeFnCall, ZomeFnResult,
     },
 };
@@ -94,7 +94,7 @@ pub fn run_dna(
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
-        memory_manager: SinglePageManager::new(&wasm_instance),
+        memory_manager: WasmPageManager::new(&wasm_instance),
         context,
         zome_call: zome_call.clone(),
         dna_name: dna_name.to_string(),
@@ -183,9 +183,12 @@ pub fn run_dna(
     };
 
     // Log & done
-    runtime.context.log(format!(
-        "debug/zome: Zome Function '{}' returned: {}",
-        zome_call.fn_name, return_log_msg,
-    ));
+    // @TODO make this more sophisticated (truncation or something)
+    // right now we have tests that return multiple wasm pages (64k+ bytes) so this is very spammy
+    // runtime.context.log(format!(
+    //     "debug/zome: Zome Function '{}' returned: {}",
+    //     zome_call.fn_name, return_log_msg,
+    // ));
+    let _ = return_log_msg;
     return return_result;
 }

@@ -552,6 +552,7 @@ mod tests {
         );
 
         assert_eq!(Ok(JsonString::null()), result,);
+        // @TODO https://github.com/holochain/holochain-rust/issues/928
         // let test_logger = test_logger.lock().unwrap();
         // assert!(format!("{:?}", test_logger.log).contains(
         //     "\"debug/dna: \\\'\\\"Hello world!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_hello\\\' returned: Success\""));

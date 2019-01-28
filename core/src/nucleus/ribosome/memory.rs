@@ -3,10 +3,7 @@ use holochain_wasm_utils::memory::{
     stack::WasmStack,
     MemoryBits, MemoryInt,
 };
-use wasmi::{
-    // memory_units::{Bytes, Pages, RoundUpTo},
-    MemoryRef, ModuleRef,
-};
+use wasmi::{MemoryRef, ModuleRef};
 
 //--------------------------------------------------------------------------------------------------
 // WASM Memory Manager

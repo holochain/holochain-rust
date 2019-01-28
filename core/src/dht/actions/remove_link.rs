@@ -10,10 +10,7 @@ use futures::{
     task::{LocalWaker, Poll},
 };
 use holochain_core_types::{error::HolochainError, link::Link};
-use std::{
-    pin::{Pin},
-    sync::Arc,
-};
+use std::{pin::Pin, sync::Arc};
 
 /// RemoveLink Action Creator
 /// This action creator dispatches an RemoveLink action which is consumed by the DHT reducer.

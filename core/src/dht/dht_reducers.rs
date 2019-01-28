@@ -52,8 +52,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
-
-
 //
 pub(crate) fn reduce_hold_entry(
     context: Arc<Context>,
@@ -139,10 +137,12 @@ pub(crate) fn reduce_add_link(
     }
 }
 
-pub (crate) fn reduce_remove_link(_context:Arc<Context>,old_store: &DhtStore,
-    action_wrapper: &ActionWrapper) -> Option<DhtStore>
-    {
-        // Get Action's input data
+pub(crate) fn reduce_remove_link(
+    _context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    // Get Action's input data
     let action = action_wrapper.action();
     let link = unwrap_to!(action => Action::RemoveLink);
 
@@ -173,7 +173,7 @@ pub (crate) fn reduce_remove_link(_context:Arc<Context>,old_store: &DhtStore,
         .ok()
         .unwrap_or(None)
     }
-    }
+}
 
 //
 pub(crate) fn reduce_update_entry(
@@ -475,7 +475,6 @@ pub mod tests {
         assert_eq!(eav.value(), *link.target());
         assert_eq!(eav.attribute(), format!("removed_link__{}", link.tag()));
     }
-
 
     #[test]
     fn does_not_add_link_for_missing_base() {

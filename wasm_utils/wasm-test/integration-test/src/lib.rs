@@ -143,7 +143,7 @@ pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeE
     };
 
     // face emoji is 11 bytes so we need 1 pages to hold U16_MAX faces
-    if let Err(_) = memory.grow(Pages(11)) {
+    if memory.grow(Pages(11)).is_err() {
         return AllocationError::OutOfBounds.as_ribosome_encoding();
     };
 

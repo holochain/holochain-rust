@@ -72,16 +72,16 @@ impl WasmPageManager {
         // scope for mutable borrow of self
         let mem_buf = self.allocate((data.len() as MemoryInt).into())?;
 
-        let top_bytes = Bytes(MemoryInt::from(self.stack.top()) as usize);
-        let top_pages: Pages = top_bytes.round_up_to();
-        let current_pages: Pages = self.wasm_memory.current_size();
+        // let top_bytes = Bytes(MemoryInt::from(self.stack.top()) as usize);
+        // let top_pages: Pages = top_bytes.round_up_to();
+        // let current_pages: Pages = self.wasm_memory.current_size();
 
-        if current_pages < top_pages {
-            match self.wasm_memory.grow(top_pages - current_pages) {
-                Ok(new_pages) => assert_eq!(new_pages, top_pages),
-                Err(_) => return Err(AllocationError::OutOfBounds),
-            }
-        }
+        // if current_pages < top_pages {
+        //     match self.wasm_memory.grow(top_pages - current_pages) {
+        //         Ok(new_pages) => assert_eq!(new_pages, top_pages),
+        //         Err(_) => return Err(AllocationError::OutOfBounds),
+        //     }
+        // }
 
         self.wasm_memory
             .set(MemoryInt::from(mem_buf.offset()), &data)

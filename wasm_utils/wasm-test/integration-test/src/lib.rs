@@ -6,9 +6,12 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_core_types_derive;
+extern crate wasmi;
+
 use holochain_wasm_utils::holochain_core_types::json::JsonString;
 use holochain_wasm_utils::holochain_core_types::json::RawString;
 use holochain_wasm_utils::memory::stack::WasmStack;
+use holochain_wasm_utils::memory::allocation::AllocationError;
 
 use holochain_wasm_utils::{
     holochain_core_types::error::HolochainError,
@@ -134,12 +137,17 @@ pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeE
 
     let mut stack = WasmStack::default();
 
-    let memory = MemoryInstance::alloc(Pages(1), None).unwrap();
-    // table flip emoji is 27 bytes so we need 27 pages to hold U16_MAX table flips
-    if let Err(_) = memory.grow(Pages(27) {
-        return AllocationError::OutOfBounds.as_ribosome_encoding();
-    }
+    let memory = match MemoryInstance::alloc(Pages(1), None) {
+        Ok(memory) => memory,
+        Err(_) => return AllocationError::ZeroLength.as_ribosome_encoding(),
+    };
 
+    // table flip emoji is 27 bytes so we need 27 pages to hold U16_MAX table flips
+    if let Err(_) = memory.grow(Pages(280)) {
+        return AllocationError::BadStackAlignment.as_ribosome_encoding();
+    };
+
+    // match stack.write_string(&"fooo".repeat(U16_MAX as usize)) {
     match stack.write_string(&"(┛ಠ_ಠ)┛彡┻━┻".repeat(U16_MAX as usize)) {
         Ok(allocation) => allocation.as_ribosome_encoding(),
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),

@@ -72,6 +72,7 @@ impl WasmPageManager {
         // scope for mutable borrow of self
         let mem_buf = self.allocate((data.len() as MemoryInt).into())?;
 
+        // @TODO make this work when wasmi is used consistently inside/outside wasm
         // let top_bytes = Bytes(MemoryInt::from(self.stack.top()) as usize);
         // let top_pages: Pages = top_bytes.round_up_to();
         // let current_pages: Pages = self.wasm_memory.current_size();

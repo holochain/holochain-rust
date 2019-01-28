@@ -10,7 +10,7 @@ serde_json="1"
 serde_test="1"
 multihash = "0.8.0"
 holochain_core_types = { path = "../core_types" }
-lazy_static = "1.1.0"
+lazy_static = "1.2"
 snowflake = "1.2"
 glob = "0.2.11"
 uuid = { version = "0.7", features = ["v4"] }

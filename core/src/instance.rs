@@ -275,7 +275,6 @@ impl Instance {
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWrapper) {
-    let id = snowflake::ProcessUniqueId::new().to_string();
     let observer_rx = context.create_observer();
     dispatch_action(context.action_channel(), action_wrapper.clone());
 

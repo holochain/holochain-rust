@@ -534,14 +534,14 @@ fn can_roundtrip_links() {
         EntryStruct {
             stuff: "entry2".into(),
         }
-            .into(),
+        .into(),
     );
     let entry_3 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
             stuff: "entry3".into(),
         }
-            .into(),
+        .into(),
     );
     let entry_address_2 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
     let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
@@ -586,8 +586,16 @@ fn can_roundtrip_links() {
             &format!(r#"{{"address": "{}"}}"#, entry_address),
         );
 
-        assert!(maybe_result_of_get.is_ok(), "maybe_result_of_get = {:?}", maybe_result_of_get);
-        assert!(maybe_result_of_load.is_ok(), "maybe_result_of_load = {:?}", maybe_result_of_load);
+        assert!(
+            maybe_result_of_get.is_ok(),
+            "maybe_result_of_get = {:?}",
+            maybe_result_of_get
+        );
+        assert!(
+            maybe_result_of_load.is_ok(),
+            "maybe_result_of_load = {:?}",
+            maybe_result_of_load
+        );
 
         result_of_get = maybe_result_of_get.unwrap();
         let result_of_load = maybe_result_of_load.unwrap();
@@ -601,7 +609,8 @@ fn can_roundtrip_links() {
         let entries_ordering1: bool = result_of_load == JsonString::from(expected_entries.clone());
 
         let ordering2: bool = result_of_get == expected_links_reversed;
-        let entries_ordering2: bool = result_of_load == JsonString::from(expected_entries_reversed.clone());
+        let entries_ordering2: bool =
+            result_of_load == JsonString::from(expected_entries_reversed.clone());
 
         both_links_present = (ordering1 || ordering2) && (entries_ordering1 || entries_ordering2);
         if !both_links_present {

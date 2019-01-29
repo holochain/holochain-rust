@@ -513,7 +513,7 @@ pub mod tests {
         container::base::{tests::example_dna_string, DnaLoader},
     };
     use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
-    use std::{convert::TryFrom, fs::File, io::Read};
+    use std::{convert::TryFrom, env::current_dir, fs::File, io::Read};
 
     pub fn test_dna_loader() -> DnaLoader {
         let loader =
@@ -536,12 +536,11 @@ pub mod tests {
     }
 
     pub fn persistence_dir(test_name: &str) -> String {
-        let persist_dir: PathBuf = [".", "tmp-test", test_name].iter().collect();
-        format!(
-            "persistence_dir = \"{}\"",
-            persist_dir.as_path().display()
-        )
-        .to_string()
+        let persist_dir = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name);
+        format!("persistence_dir = \"{}\"", persist_dir.as_path().display()).to_string()
     }
 
     pub fn header_block(test_name: &str) -> String {
@@ -757,14 +756,12 @@ id = "new-dna""#,
 
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file: PathBuf = [
-            ".",
-            "tmp-test",
-            "test_install_dna_from_file_and_copy",
-            "dna",
-        ]
-        .iter()
-        .collect();
+        let mut output_dna_file = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name)
+            .join("dna");
+
         output_dna_file.push(new_dna.address().to_string());
         output_dna_file.set_extension("hcpkg");
 
@@ -825,7 +822,11 @@ id = "new-dna""#,
         assert_ne!(original_hash, new_hash);
         assert_eq!(container.config().dnas.len(), 2,);
 
-        let mut output_dna_file: PathBuf = [".", "tmp-test", test_name, "dna"].iter().collect();
+        let mut output_dna_file = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name)
+            .join("dna");
 
         output_dna_file.push(new_hash.to_string());
         output_dna_file.set_extension("hcpkg");
@@ -898,9 +899,13 @@ id = "new-instance""#,
             ),
         );
 
-        let storage_path: PathBuf = [".", "tmp-test", test_name, "storage", "new-instance"]
-            .iter()
-            .collect();
+        let storage_path = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name)
+            .join("storage")
+            .join("new-instance");
+
         let storage_path_string = storage_path.to_str().unwrap().to_owned();
         toml = add_block(
             toml,
@@ -1174,9 +1179,13 @@ id = "new-instance""#,
             ),
         );
 
-        let storage_path: PathBuf = [".", "tmp-test", test_name, "storage", "new-instance"]
-            .iter()
-            .collect();
+        let storage_path = current_dir()
+            .expect("Could not get current dir")
+            .join("tmp-test")
+            .join(test_name)
+            .join("storage")
+            .join("new-instance");
+
         let storage_path_string = storage_path.to_str().unwrap().to_owned();
         toml = add_block(
             toml,

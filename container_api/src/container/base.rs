@@ -38,6 +38,7 @@ use holochain_net::p2p_config::P2pConfig;
 use holochain_net_connection::net_connection::NetShutdown;
 use holochain_net_ipc::spawn::{ipc_spawn, SpawnResult};
 use interface::{ContainerApiBuilder, InstanceMap, Interface};
+use static_file_server::StaticServer;
 
 lazy_static! {
     /// This is a global and mutable Container singleton.
@@ -76,6 +77,7 @@ pub struct Container {
     pub(in crate::container) instances: InstanceMap,
     pub(in crate::container) config: Configuration,
     pub(in crate::container) config_path: PathBuf,
+    static_servers: HashMap<String, StaticServer>,
     pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::container) dna_loader: DnaLoader,
     signal_tx: Option<SignalSender>,
@@ -111,6 +113,7 @@ impl Container {
         Container {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
+            static_servers: HashMap::new(),
             config,
             config_path,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
@@ -182,6 +185,17 @@ impl Container {
             .interface_by_id(id)
             .ok_or(format!("Interface does not exist: {}", id))
             .and_then(|config| self.start_interface(&config))
+    }
+
+    pub fn start_all_static_servers(&mut self) -> Result<(), String> {
+        notify("Starting all servers".into());
+        self.static_servers.iter_mut().for_each(|(id, server)| {
+            server
+                .start()
+                .expect(&format!("Couldnt start server {}", id));
+            notify(format!("Server started for \"{}\"", id))
+        });
+        Ok(())
     }
 
     /// Starts all instances
@@ -336,6 +350,31 @@ impl Container {
             self.instances
                 .insert(id.clone(), Arc::new(RwLock::new(instance)));
         }
+
+        for ui_interface_config in config.ui_interfaces.clone() {
+            notify(format!("adding ui interface {}", &ui_interface_config.id));
+            let bundle_config =
+                config
+                    .ui_bundle_by_id(&ui_interface_config.bundle)
+                    .ok_or(format!(
+                        "UI interface {} references bundle with id {} but no such bundle found",
+                        &ui_interface_config.id, &ui_interface_config.bundle
+                    ))?;
+            let connected_dna_interface = ui_interface_config
+                .clone()
+                .dna_interface
+                .map(|interface_id| config.interface_by_id(&interface_id).unwrap());
+
+            self.static_servers.insert(
+                ui_interface_config.id.clone(),
+                StaticServer::from_configs(
+                    ui_interface_config,
+                    bundle_config,
+                    connected_dna_interface,
+                ),
+            );
+        }
+
         Ok(())
     }
 
@@ -689,25 +728,26 @@ pub mod tests {
                         "capabilities": {
                             "test": {
                                 "type": "public",
-                                "functions": [
+                                "functions": ["test"]
+                             }
+                        },
+                        "fn_declarations": [
+                            {
+                                "name": "test",
+                                "inputs": [
                                     {
-                                        "name": "test",
-                       "inputs" : [
-                            {
-                                "name": "post",
-                                "type": "string"
-                            }
-                        ],
-                        "outputs" : [
-                            {
-                                "name": "hash",
-                                "type": "string"
-                            }
-                        ]
+                                        "name": "post",
+                                        "type": "string"
+                                    }
+                                ],
+                                "outputs" : [
+                                    {
+                                        "name": "hash",
+                                        "type": "string"
                                     }
                                 ]
                             }
-                        },
+                        ],
                         "code": {
                             "code": "AAECAw=="
                         }
@@ -814,57 +854,65 @@ pub mod tests {
 
     (func
         (export "__hdk_validate_app_entry")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 
     (func
         (export "__hdk_validate_link")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 
 
     (func
         (export "__hdk_get_validation_package_for_entry_type")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
         ;; This writes "Entry" into memory
-        (i32.store (i32.const 0) (i32.const 34))
-        (i32.store (i32.const 1) (i32.const 69))
-        (i32.store (i32.const 2) (i32.const 110))
-        (i32.store (i32.const 3) (i32.const 116))
-        (i32.store (i32.const 4) (i32.const 114))
-        (i32.store (i32.const 5) (i32.const 121))
-        (i32.store (i32.const 6) (i32.const 34))
+        (i64.store (i32.const 0) (i64.const 34))
+        (i64.store (i32.const 1) (i64.const 69))
+        (i64.store (i32.const 2) (i64.const 110))
+        (i64.store (i32.const 3) (i64.const 116))
+        (i64.store (i32.const 4) (i64.const 114))
+        (i64.store (i32.const 5) (i64.const 121))
+        (i64.store (i32.const 6) (i64.const 34))
 
-        (i32.const 7)
+        (i64.const 7)
     )
 
     (func
         (export "__hdk_get_validation_package_for_link")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
         ;; This writes "Entry" into memory
-        (i32.store (i32.const 0) (i32.const 34))
-        (i32.store (i32.const 1) (i32.const 69))
-        (i32.store (i32.const 2) (i32.const 110))
-        (i32.store (i32.const 3) (i32.const 116))
-        (i32.store (i32.const 4) (i32.const 114))
-        (i32.store (i32.const 5) (i32.const 121))
-        (i32.store (i32.const 6) (i32.const 34))
+        (i64.store (i32.const 0) (i64.const 34))
+        (i64.store (i32.const 1) (i64.const 69))
+        (i64.store (i32.const 2) (i64.const 110))
+        (i64.store (i32.const 3) (i64.const 116))
+        (i64.store (i32.const 4) (i64.const 114))
+        (i64.store (i32.const 5) (i64.const 121))
+        (i64.store (i32.const 6) (i64.const 34))
 
-        (i32.const 7)
+        (i64.const 7)
     )
 
     (func
         (export "__list_capabilities")
+        (param $allocation i64)
+        (result i64)
+
+        (i64.const 0)
+    )
+
+    (func
+        (export "__list_functions")
         (param $allocation i32)
         (result i32)
 
@@ -873,22 +921,22 @@ pub mod tests {
 
     (func
         (export "hello")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
         ;; This writes "Holo World" into memory
-        (i32.store (i32.const 0) (i32.const 72))
-        (i32.store (i32.const 1) (i32.const 111))
-        (i32.store (i32.const 2) (i32.const 108))
-        (i32.store (i32.const 3) (i32.const 111))
-        (i32.store (i32.const 4) (i32.const 32))
-        (i32.store (i32.const 5) (i32.const 87))
-        (i32.store (i32.const 6) (i32.const 111))
-        (i32.store (i32.const 7) (i32.const 114))
-        (i32.store (i32.const 8) (i32.const 108))
-        (i32.store (i32.const 9) (i32.const 100))
+        (i64.store (i32.const 0) (i64.const 72))
+        (i64.store (i32.const 1) (i64.const 111))
+        (i64.store (i32.const 2) (i64.const 108))
+        (i64.store (i32.const 3) (i64.const 111))
+        (i64.store (i32.const 4) (i64.const 32))
+        (i64.store (i32.const 5) (i64.const 87))
+        (i64.store (i32.const 6) (i64.const 111))
+        (i64.store (i32.const 7) (i64.const 114))
+        (i64.store (i32.const 8) (i64.const 108))
+        (i64.store (i32.const 9) (i64.const 100))
 
-        (i32.const 10)
+        (i64.const 10)
     )
 )
                 "#
@@ -897,23 +945,24 @@ pub mod tests {
 
     fn callee_dna() -> Dna {
         let wat = &callee_wat();
-        let mut dna = create_test_dna_with_wat("greeter", "public", Some(wat));
+        let mut dna = create_test_dna_with_wat("greeter", "test_cap", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
+        dna.zomes.get_mut("greeter").unwrap().add_fn_declaration(
+            String::from("hello"),
+            vec![],
+            vec![dna::fn_declarations::FnParameter {
+                name: String::from("greeting"),
+                parameter_type: String::from("String"),
+            }],
+        );
         dna.zomes
             .get_mut("greeter")
             .unwrap()
             .capabilities
-            .get_mut("public")
+            .get_mut("test_cap")
             .unwrap()
             .functions
-            .push(dna::capabilities::FnDeclaration {
-                name: String::from("hello"),
-                inputs: vec![],
-                outputs: vec![dna::capabilities::FnParameter {
-                    name: String::from("greeting"),
-                    parameter_type: String::from("String"),
-                }],
-            });
+            .push("hello".into());
         dna
     }
 
@@ -922,8 +971,8 @@ pub mod tests {
             "{}/wasm32-unknown-unknown/release/test_bridge_caller.wasm",
             wasm_target_dir("container_api/", "test-bridge-caller/"),
         ));
-        let capabability = create_test_cap_with_fn_name("call_bridge");
-        let mut dna = create_test_dna_with_cap("main", "main", &capabability, &wasm);
+        let defs = create_test_defs_with_fn_name("call_bridge");
+        let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         dna.uuid = String::from("basic_bridge_call");
         dna
     }
@@ -942,9 +991,8 @@ pub mod tests {
             .write()
             .unwrap()
             .call(
-                "main",
+                "test_zome",
                 Some(dna::capabilities::CapabilityCall::new(
-                    String::from("main"),
                     Address::from("fake_token"),
                     None,
                 )),

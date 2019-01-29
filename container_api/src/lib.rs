@@ -122,6 +122,11 @@ extern crate dirs;
 #[macro_use]
 extern crate lazy_static;
 extern crate directories;
+extern crate hyper;
+extern crate hyper_staticfile;
+#[cfg(test)]
+extern crate reqwest;
+extern crate tokio;
 
 pub mod config;
 pub mod container;
@@ -131,5 +136,6 @@ pub mod holochain;
 pub mod interface;
 pub mod interface_impls;
 pub mod logger;
+pub mod static_file_server;
 
 pub use crate::holochain::Holochain;

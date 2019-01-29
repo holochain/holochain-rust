@@ -157,7 +157,13 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     hdk::debug("**** get result from initial, history").ok();
     let res = hdk::get_entry_result(
         &addr_v1,
-        GetEntryOptions::new(StatusRequestKind::All, true, false, false),
+        GetEntryOptions::new(
+            StatusRequestKind::All,
+            true,
+            false,
+            false,
+            Default::default(),
+        ),
     );
     assert_eq!(res.unwrap().latest().unwrap(), entry_v4.clone());
 
@@ -166,36 +172,59 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
 
 //
 pub fn handle_remove_entry_ok() -> JsonString {
+
     // Commit v1 entry
     hdk::debug("**** Commit v1 entry").ok();
     let entry_v1 = hdk_test_entry();
-    let res = hdk::commit_entry(&entry_v1);
-    let addr_v1 = res.unwrap();
+    let hopefully_address = hdk::commit_entry(&entry_v1);
+    let addr_v1 = match hopefully_address {
+        Err(_) => return hopefully_address.into(),
+        Ok(addr) => addr,
+    };
+
     // Get it
     hdk::debug("**** Get it").ok();
     let res = hdk::get_entry(&addr_v1);
-    let entry_test = res.unwrap().unwrap();
+    let entry_test = match res.clone() {
+        Err(_) => return res.into(),
+        Ok(maybe_entry) => match maybe_entry {
+            None => return res.into(),
+            Some(entry) => entry,
+        }
+    };
     assert_eq!(entry_test, entry_v1);
+
+
     // Delete it
     hdk::debug("**** Delete it").ok();
     let res = hdk::remove_entry(&addr_v1);
     assert!(res.is_ok());
+
     // Get it should fail
     hdk::debug("**** Get it should fail").ok();
     let res = hdk::get_entry(&addr_v1);
     assert_eq!(res.unwrap(), None);
+
     // Get initial should work
     hdk::debug("**** Get initial should work").ok();
     let res = hdk::get_entry_initial(&addr_v1);
     assert_eq!(res.unwrap(), Some(entry_v1));
+
     // Delete it again should fail
     hdk::debug("**** Delete it again should fail").ok();
     let res = hdk::remove_entry(&addr_v1);
     assert!(res.is_err());
+
     // Get entry_result
     let res = hdk::get_entry_result(
         &addr_v1,
-        GetEntryOptions::new(StatusRequestKind::All, false, false, false),
+        GetEntryOptions::new(
+            StatusRequestKind::All,
+            false,
+            false,
+            false,
+            Default::default(),
+        ),
     );
     hdk::debug(format!("**** get_entry_result: {:?}", res)).ok();
     match res {

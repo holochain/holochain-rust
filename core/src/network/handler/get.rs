@@ -9,7 +9,7 @@ use holochain_net_connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
 use regex::Regex;
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::BTreeSet, sync::Arc};
 
 lazy_static! {
     static ref LINK: Regex =
@@ -56,7 +56,7 @@ pub fn handle_get_dht_meta(get_dht_meta_data: FetchMetaData, context: Arc<Contex
                 Address::from(get_dht_meta_data.entry_address.clone()),
                 tag.clone(),
             )
-            .unwrap_or(HashSet::new())
+            .unwrap_or(BTreeSet::new())
             .into_iter()
             .map(|eav| eav.value())
             .collect::<Vec<_>>();

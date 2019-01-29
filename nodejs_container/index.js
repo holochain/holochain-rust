@@ -1,4 +1,3 @@
-
 const binary = require('node-pre-gyp');
 const path = require('path');
 const tape = require('tape');
@@ -56,9 +55,9 @@ Container.prototype.stop = function () {
     return this._stopPromise
 }
 
-Container.prototype.call = function (id, zome, trait, fn, params) {
+Container.prototype.call = function (id, zome, fn, params) {
     const stringInput = JSON.stringify(params);
-    const rawResult = this._callRaw(id, zome, trait, fn, stringInput);
+    const rawResult = this._callRaw(id, zome, fn, stringInput);
     let result;
     try {
         result = JSON.parse(rawResult);
@@ -70,18 +69,23 @@ Container.prototype.call = function (id, zome, trait, fn, params) {
 }
 
 Container.prototype.callWithPromise = function (...args) {
-    const promise = new Promise((fulfill, reject) => {
-        this.register_callback(() => fulfill(result))
-    })
-    const result = this.call(...args)
-    return [result, promise]
+    try {
+        const promise = new Promise((fulfill, reject) => {
+            this.register_callback(() => fulfill())
+        })
+        const result = this.call(...args)
+        return [result, promise]
+    } catch (e) {
+        return [
+            undefined, 
+            Promise.reject(e).catch(err => console.error("Error with scenario test system: ", err))
+        ]
+    }
 }
 
 Container.prototype.callSync = function (...args) {
     const [result, promise] = this.callWithPromise(...args)
-    return promise
-        .catch(err => console.error("Error with scenario test system: ", err))
-        .then(() => { return result })
+    return promise.then(() => { return result })
 }
 
 // Convenience function for making an object that can call into the container
@@ -89,7 +93,7 @@ Container.prototype.callSync = function (...args) {
 Container.prototype.makeCaller = function (agentId, dnaPath) {
   const instanceId = makeInstanceId(agentId, dnaPath)
   return {
-    call: (zome, cap, fn, params) => this.call(instanceId, zome, cap, fn, params),
+    call: (zome, fn, params) => this.call(instanceId, zome, fn, params),
     agentId: this.agent_id(instanceId)
   }
 }
@@ -140,7 +144,8 @@ class Scenario {
                 call: (...args) => container.call(id, ...args),
                 callSync: (...args) => container.callSync(id, ...args),
                 callWithPromise: (...args) => container.callWithPromise(id, ...args),
-                agentId: container.agent_id(id)
+                agentId: container.agent_id(id),
+                dnaAddress: container.dna_address(id)
             }
         })
         fn(() => container.stop(), callers)

@@ -22,9 +22,9 @@ use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::UpdateEntry function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: UpdateEntryArgs
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
@@ -43,7 +43,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: entry_args.address,
-        options: GetEntryOptions::default(),
+        options: Default::default(),
     };
     let maybe_entry_result = block_on(get_entry_result_workflow(&runtime.context, &get_args));
     if let Err(_err) = maybe_entry_result {

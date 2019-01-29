@@ -8,31 +8,36 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, error::HcResult};
-use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
+use holochain_core_types::{
+    cas::content::Address, entry::EntryWithMeta, error::HcResult, time::Timeout,
+};
+use std::{pin::Pin, sync::Arc, thread};
 
 /// FetchEntry Action Creator
 /// This is the network version of get_entry that makes the network module start
 /// a look-up process.
 ///
 /// Returns a future that resolves to an ActionResponse.
-pub async fn get_entry<'a>(
-    context: &'a Arc<Context>,
-    address: &'a Address,
+pub async fn get_entry(
+    context: Arc<Context>,
+    address: Address,
+    timeout: Timeout,
 ) -> HcResult<Option<EntryWithMeta>> {
     let key = GetEntryKey {
-        address: address.clone(),
+        address: address,
         id: snowflake::ProcessUniqueId::new().to_string(),
     };
 
     let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    let _ = async {
-        sleep(Duration::from_secs(60));
-        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key.clone()));
-        dispatch_action(context.action_channel(), action_wrapper.clone());
-    };
+    let key_inner = key.clone();
+    let context_inner = context.clone();
+    let _ = thread::spawn(move || {
+        thread::sleep(timeout.into());
+        let action_wrapper = ActionWrapper::new(Action::GetEntryTimeout(key_inner));
+        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+    });
 
     await!(GetEntryFuture {
         context: context.clone(),

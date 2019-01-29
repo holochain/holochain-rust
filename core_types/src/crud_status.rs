@@ -5,7 +5,7 @@
 
 use crate::{
     cas::content::{Address, AddressableContent, Content},
-    eav::EntityAttributeValue,
+    eav::EntityAttributeValueIndex,
     error::error::{HcResult, HolochainError},
     hash::HashString,
     json::JsonString,
@@ -26,8 +26,8 @@ pub const LINK_NAME: &str = "crud-link";
 pub fn create_crud_status_eav(
     address: &Address,
     status: CrudStatus,
-) -> HcResult<EntityAttributeValue> {
-    EntityAttributeValue::new(
+) -> HcResult<EntityAttributeValueIndex> {
+    EntityAttributeValueIndex::new(
         address,
         &STATUS_NAME.to_string(),
         &HashString::from(String::from(status)),
@@ -36,8 +36,8 @@ pub fn create_crud_status_eav(
 
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [LINK_NAME](constant.LINK_NAME.html) as the attribute
 /// and a new entry address as the value
-pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValue> {
-    EntityAttributeValue::new(from, &LINK_NAME.to_string(), to)
+pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValueIndex> {
+    EntityAttributeValueIndex::new(from, &LINK_NAME.to_string(), to)
 }
 
 /// the CRUD status of a Pair is stored using an EAV, NOT in the entry itself

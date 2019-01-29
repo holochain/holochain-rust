@@ -1,4 +1,4 @@
-if [ -z $1 ] 
+if [ -z $1 ]
 then
 	faucet test.js regressions.js
 else

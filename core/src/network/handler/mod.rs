@@ -105,7 +105,11 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
             JsonProtocol::FetchEntryResult(fetch_result_data) => {
-                if !is_for_me(&context, &fetch_result_data.dna_address, &fetch_result_data.provider_agent_id) {
+                if !is_for_me(
+                    &context,
+                    &fetch_result_data.dna_address,
+                    &fetch_result_data.provider_agent_id,
+                ) {
                     return Ok(());
                 }
                 context.log(format!(

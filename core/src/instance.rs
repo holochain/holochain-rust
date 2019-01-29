@@ -277,7 +277,7 @@ pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWra
         if context.state().unwrap().history.contains(&action_wrapper) {
             return;
         } else {
-            observer_rx.recv().expect("Local channel must work");
+            let _ = observer_rx.recv_timeout(Duration::from_millis(10));
         }
     }
 }

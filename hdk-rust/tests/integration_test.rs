@@ -525,7 +525,42 @@ fn can_roundtrip_links() {
     let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
     let maybe_address: Result<Address, String> =
         serde_json::from_str(&String::from(result.unwrap())).unwrap();
-    let address = maybe_address.unwrap();
+    let entry_address = maybe_address.unwrap();
+    println!("can_roundtrip_links: entry_address = {}\n", entry_address);
+
+    // expected results
+    let entry_2 = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry2".into(),
+        }
+            .into(),
+    );
+    let entry_3 = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry3".into(),
+        }
+            .into(),
+    );
+    let entry_address_2 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
+    let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
+
+    let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
+        entry_address_2.clone(),
+        entry_address_3.clone(),
+    ]));
+    let expected_links = JsonString::from(expected_links);
+
+    let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
+        Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
+
+    let expected_links_reversed: Result<GetLinksResult, HolochainError> =
+        Ok(GetLinksResult::new(vec![entry_address_3, entry_address_2]));
+    let expected_links_reversed = JsonString::from(expected_links_reversed);
+
+    let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
+        Ok(vec![Ok(entry_3.clone()), Ok(entry_2.clone())]);
 
     // Polling loop because the links have to get pushed over the in-memory network and then validated
     // which includes requesting a validation package and receiving it over the in-memory network.
@@ -533,71 +568,40 @@ fn can_roundtrip_links() {
     // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
     let mut both_links_present = false;
     let mut tries = 0;
-    let mut result_string = JsonString::from("");
+    let mut result_of_get = JsonString::from("");
     while !both_links_present && tries < 10 {
         tries = tries + 1;
 
         println!("\n\n\t TRY {}\n", tries);
 
         // Now get_links on the base and expect both to be there
-        let result = make_test_call(
+        let maybe_result_of_get = make_test_call(
             &mut hc,
             "links_roundtrip_get",
-            &format!(r#"{{"address": "{}"}}"#, address),
+            &format!(r#"{{"address": "{}"}}"#, entry_address),
         );
-
-        let result_load = make_test_call(
+        let maybe_result_of_load = make_test_call(
             &mut hc,
             "links_roundtrip_get_and_load",
-            &format!(r#"{{"address": "{}"}}"#, address),
+            &format!(r#"{{"address": "{}"}}"#, entry_address),
         );
 
-        assert!(result.is_ok(), "result = {:?}", result);
-        assert!(result_load.is_ok(), ";load result = {:?}", result_load);
+        assert!(maybe_result_of_get.is_ok(), "maybe_result_of_get = {:?}", maybe_result_of_get);
+        assert!(maybe_result_of_load.is_ok(), "maybe_result_of_load = {:?}", maybe_result_of_load);
 
-        result_string = result.unwrap();
-        let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
-        let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
-
-        let entries_result_string = result_load.unwrap();
-        let entry_1 = Entry::App(
-            "testEntryType".into(),
-            EntryStruct {
-                stuff: "entry2".into(),
-            }
-            .into(),
-        );
-        let entry_2 = Entry::App(
-            "testEntryType".into(),
-            EntryStruct {
-                stuff: "entry3".into(),
-            }
-            .into(),
-        );
-
-        let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
-            address_1.clone(),
-            address_2.clone(),
-        ]));
-        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-            Ok(vec![Ok(entry_1.clone()), Ok(entry_2.clone())]);
+        result_of_get = maybe_result_of_get.unwrap();
+        let result_of_load = maybe_result_of_load.unwrap();
 
         println!(
-            "can_roundtrip_links result_string - try {}:\n {:?}\n expecting:\n {:?}",
-            tries, entries_result_string, &expected_entries
+            "can_roundtrip_links: result_of_load - try {}:\n {:?}\n expecting:\n {:?}",
+            tries, result_of_load, &expected_entries,
         );
 
-        let ordering1: bool = result_string == JsonString::from(expected);
-        let entries_ordering1: bool = entries_result_string == JsonString::from(expected_entries);
+        let ordering1: bool = result_of_get == expected_links;
+        let entries_ordering1: bool = result_of_load == JsonString::from(expected_entries.clone());
 
-        let expected: Result<GetLinksResult, HolochainError> =
-            Ok(GetLinksResult::new(vec![address_2, address_1]));
-
-        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-            Ok(vec![Ok(entry_2.clone()), Ok(entry_1.clone())]);
-
-        let ordering2: bool = result_string == JsonString::from(expected);
-        let entries_ordering2: bool = entries_result_string == JsonString::from(expected_entries);
+        let ordering2: bool = result_of_get == expected_links_reversed;
+        let entries_ordering2: bool = result_of_load == JsonString::from(expected_entries_reversed.clone());
 
         both_links_present = (ordering1 || ordering2) && (entries_ordering1 || entries_ordering2);
         if !both_links_present {
@@ -606,7 +610,7 @@ fn can_roundtrip_links() {
         }
     }
 
-    assert!(both_links_present, "result = {:?}", result_string);
+    assert!(both_links_present, "result = {:?}", result_of_get);
 }
 
 #[test]

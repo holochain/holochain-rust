@@ -357,8 +357,8 @@ fn can_round_trip() {
 }
 
 #[test]
-#[cfg(not(windows))]
-fn can_get_entry() {
+// #[cfg(not(windows))]
+fn can_get_entry_ok() {
     let (mut hc, _) = start_holochain_instance("can_get_entry", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
@@ -368,7 +368,7 @@ fn can_get_entry() {
     );
     let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(expected),);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
 
     let result = make_test_call(
         &mut hc,
@@ -391,9 +391,24 @@ fn can_get_entry() {
     println!("\t can_get_entry result = {:?}", result);
     let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(expected),);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
+}
 
+#[test]
+// #[cfg(not(windows))]
+fn can_get_entry_bad() {
+    let (mut hc, _) = start_holochain_instance("can_get_entry", "alice");
+    // Call the exposed wasm function that calls the Commit API function
+    let result = make_test_call(
+        &mut hc,
+        "check_commit_entry_macro",
+        &example_valid_entry_params(),
+    );
+    let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
     // test the case with a bad address
+    println!("\n\n\n call 'check_get_entry_result' 1\n");
     let result = make_test_call(
         &mut hc,
         "check_get_entry_result",
@@ -403,12 +418,12 @@ fn can_get_entry() {
     );
     println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-
     let empty_entry_result = GetEntryResult::new(StatusRequestKind::Latest, None);
     let expected: ZomeApiResult<GetEntryResult> = Ok(empty_entry_result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad address
+    println!("\n\n\n call 'check_get_entry_result' 2\n");
     let result = make_test_call(
         &mut hc,
         "check_get_entry",
@@ -503,7 +518,7 @@ fn can_link_entries() {
 }
 
 #[test]
-#[cfg(not(windows))]
+// #[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
     // Create links
@@ -521,6 +536,8 @@ fn can_roundtrip_links() {
     let mut result_string = JsonString::from("");
     while !both_links_present && tries < 10 {
         tries = tries + 1;
+
+        println!("\n\n\t TRY {}\n", tries);
 
         // Now get_links on the base and expect both to be there
         let result = make_test_call(

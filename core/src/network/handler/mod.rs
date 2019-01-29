@@ -62,7 +62,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();
-        //context.log(format!("debug/net/handle:({}): {:?}", context.agent_id.nick, message));
+        context.log(format!("debug/net/handle:({}): {:?}", context.agent_id.nick, message));
         let maybe_json_msg = JsonProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             // context.log(format!("debug/net/handle: Received non-json message"));
@@ -81,21 +81,17 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_store_entry(dht_entry_data, context.clone())
             }
             JsonProtocol::HandleStoreMeta(dht_meta_data) => {
+                if !is_my_dna(&context, &dht_meta_data.dna_address) {
+                    return Ok(());
+                }
                 context.log(format!(
                     "debug/net/handle: HandleStoreMeta: {:?}",
                     dht_meta_data
                 ));
-                if !is_my_dna(&context, &dht_meta_data.dna_address) {
-                    return Ok(());
-                }
                 handle_store_meta(dht_meta_data, context.clone())
             }
             JsonProtocol::HandleFetchEntry(fetch_entry_data) => {
-                if !is_for_me(
-                    &context,
-                    &fetch_entry_data.dna_address,
-                    &fetch_entry_data.requester_agent_id,
-                ) {
+                if !is_my_dna(&context, &fetch_entry_data.dna_address) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -105,11 +101,14 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_entry(fetch_entry_data, context.clone())
             }
             JsonProtocol::FetchEntryResult(fetch_result_data) => {
-                if !is_for_me(
+                if !is_my_dna(&context, &fetch_result_data.dna_address) {
+                    return Ok(());
+                }
+                let is_my_request = is_my_id(
                     &context,
-                    &fetch_result_data.dna_address,
-                    &fetch_result_data.provider_agent_id,
-                ) {
+                    &fetch_result_data.requester_agent_id,
+                );
+                if !is_my_request {
                     return Ok(());
                 }
                 context.log(format!(
@@ -119,50 +118,51 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 handle_fetch_entry_result(fetch_result_data, context.clone())
             }
             JsonProtocol::HandleFetchMeta(fetch_meta_data) => {
-                if is_for_me(
-                    &context,
-                    &fetch_meta_data.dna_address,
-                    &fetch_meta_data.requester_agent_id,
-                ) {
-                    context.log(format!(
-                        "debug/net/handle: HandleFetchMeta: {:?}",
-                        fetch_meta_data
-                    ));
-                    handle_fetch_meta(fetch_meta_data, context.clone())
+                if !is_my_dna(&context, &fetch_meta_data.dna_address) {
+                    return Ok(());
                 }
+                context.log(format!(
+                    "debug/net/handle: HandleFetchMeta: {:?}",
+                    fetch_meta_data
+                ));
+                handle_fetch_meta(fetch_meta_data, context.clone())
             }
             JsonProtocol::FetchMetaResult(fetch_meta_result_data) => {
-                if is_for_me(
-                    &context,
-                    &fetch_meta_result_data.dna_address,
-                    &fetch_meta_result_data.provider_agent_id,
-                ) {
-                    // TODO: Find a proper solution for selecting DHT meta responses.
-                    // Current network implementation broadcasts messages to all nodes which means
-                    // we respond to ourselves first in most cases.
-                    // Eric and I thought the filter below (ignoring messages from ourselves)
-                    // would fix this but that breaks several tests since in most tests
-                    // we only have one instance and have to rely on the nodes local knowledge.
-                    // A proper solution has to implement some aspects of what we call the
-                    // "world model". A node needs to know what context it's in: if we are the only
-                    // node we know about (like in these tests) we can not ignore our local knowledge
-                    // but in other cases we should rather rely on the network's response.
-                    // In the end this needs a full CRDT implemention.
-                    //if is_me(
-                    //    &context,
-                    //    &get_dht_meta_data.dna_address,
-                    //    &get_dht_meta_data.from_agent_id,
-                    //) {
-                    //    context.log("debug/net/handle: Got DHT meta result from myself. Ignoring.");
-                    //    return Ok(());
-                    //} else {
-                    context.log(format!(
-                        "debug/net/handle: FetchMetaResult: {:?}",
-                        fetch_meta_result_data
-                    ));
-                    handle_fetch_meta_result(fetch_meta_result_data, context.clone())
-                    //}
+                if !is_my_dna(&context, &fetch_meta_result_data.dna_address) {
+                    return Ok(());
                 }
+                let is_my_request = is_my_id(
+                    &context,
+                    &fetch_meta_result_data.requester_agent_id,
+                );
+                if !is_my_request {
+                    return Ok(());
+                }
+                // TODO: Find a proper solution for selecting DHT meta responses.
+                // Current network implementation broadcasts messages to all nodes which means
+                // we respond to ourselves first in most cases.
+                // Eric and I thought the filter below (ignoring messages from ourselves)
+                // would fix this but that breaks several tests since in most tests
+                // we only have one instance and have to rely on the nodes local knowledge.
+                // A proper solution has to implement some aspects of what we call the
+                // "world model". A node needs to know what context it's in: if we are the only
+                // node we know about (like in these tests) we can not ignore our local knowledge
+                // but in other cases we should rather rely on the network's response.
+                // In the end this needs a full CRDT implemention.
+                //if is_me(
+                //    &context,
+                //    &get_dht_meta_data.dna_address,
+                //    &get_dht_meta_data.from_agent_id,
+                //) {
+                //    context.log("debug/net/handle: Got DHT meta result from myself. Ignoring.");
+                //    return Ok(());
+                //} else {
+                context.log(format!(
+                    "debug/net/handle: FetchMetaResult: {:?}",
+                    fetch_meta_result_data
+                ));
+                handle_fetch_meta_result(fetch_meta_result_data, context.clone())
+                //}
             }
             JsonProtocol::HandleSendMessage(message_data) => {
                 if !is_for_me(

@@ -358,7 +358,7 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
 
     // Billy asks for that data
     let fetch_data = FetchEntryData {
-        request_id: "testGet".to_string(),
+        request_id: "testGet_good".to_string(),
         dna_address: DNA_ADDRESS.clone(),
         requester_agent_id: BILLY_AGENT_ID.to_string(),
         entry_address: ENTRY_ADDRESS_1.clone(),
@@ -373,6 +373,28 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
         .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
     println!("got FetchEntryResult: {:?}", result);
+
+
+    // Billy asks for unknown data
+    let fetch_data = FetchEntryData {
+        request_id: "testGet_bad".to_string(),
+        dna_address: DNA_ADDRESS.clone(),
+        requester_agent_id: BILLY_AGENT_ID.to_string(),
+        entry_address: ENTRY_ADDRESS_2.clone(),
+    };
+    billy.send(JsonProtocol::FetchEntry(fetch_data.clone()).into())?;
+
+    // Alex sends that data back to the network
+    alex.reply_fetch_data(&fetch_data)?;
+
+    // Billy should receive FailureResult
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .unwrap();
+    println!("got FailureResult: {:?}", result);
+
+
+
     // Done
     Ok(())
 }

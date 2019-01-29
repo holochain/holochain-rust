@@ -38,6 +38,7 @@ pub mod tests {
 
     use self::wabt::Wat2Wasm;
     use crate::{
+        agent::state::create_new_chain_header,
         instance::tests::{test_context_and_logger, test_instance},
         nucleus::{
             ribosome::{
@@ -69,7 +70,6 @@ pub mod tests {
                 StatusRequestKind::Latest,
                 true,
                 false,
-                false,
                 Default::default(),
             ),
         };
@@ -83,7 +83,6 @@ pub mod tests {
             options: GetEntryOptions::new(
                 StatusRequestKind::Latest,
                 true,
-                false,
                 false,
                 Default::default(),
             ),
@@ -251,14 +250,15 @@ pub mod tests {
         )
         .expect("test should be callable");
 
-        let entry_result = GetEntryResult::new(
-            StatusRequestKind::Latest,
-            Some(&EntryWithMeta {
-                entry: test_entry(),
-                crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
-            }),
-        );
+        let entry = test_entry();
+        let entry_with_meta = EntryWithMeta {
+            entry: entry.clone(),
+            crud_status: CrudStatus::Live,
+            maybe_crud_link: None,
+        };
+        // let header = create_new_chain_header(&entry, context.clone(), &None);
+        let entry_result =
+            GetEntryResult::new(StatusRequestKind::Latest, Some((&entry_with_meta, vec![])));
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
                 ZomeApiInternalResult::success(entry_result)

@@ -15,7 +15,7 @@ extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_container_api::{error::HolochainResult, *};
-use holochain_core::logger::TestLogger;
+use holochain_core::{agent::state::create_new_chain_header, context::Context, logger::TestLogger};
 use holochain_core_types::{
     cas::content::Address,
     crud_status::CrudStatus,
@@ -180,15 +180,17 @@ fn example_valid_entry() -> Entry {
     )
 }
 
-fn example_valid_entry_result() -> GetEntryResult {
+fn example_valid_entry_result(context: Arc<Context>) -> GetEntryResult {
     let entry = example_valid_entry();
+    let entry_with_meta = &EntryWithMeta {
+        entry: entry.clone(),
+        crud_status: CrudStatus::Live,
+        maybe_crud_link: None,
+    };
+    let header = create_new_chain_header(&entry, context, &None);
     GetEntryResult::new(
         StatusRequestKind::Latest,
-        Some(&EntryWithMeta {
-            entry: entry,
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        }),
+        Some((entry_with_meta, vec![header])),
     )
 }
 
@@ -377,7 +379,8 @@ fn can_get_entry() {
             "entry_address": example_valid_entry_address()
         }))),
     );
-    let expected: ZomeApiResult<GetEntryResult> = Ok(example_valid_entry_result());
+    let expected: ZomeApiResult<GetEntryResult> =
+        Ok(example_valid_entry_result(hc.context().clone()));
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 

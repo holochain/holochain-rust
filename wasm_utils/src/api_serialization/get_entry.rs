@@ -27,8 +27,7 @@ impl Default for StatusRequestKind {
 pub struct GetEntryOptions {
     pub status_request: StatusRequestKind,
     pub entry: bool,
-    pub header: bool,
-    pub sources: bool,
+    pub headers: bool,
     pub timeout: Timeout,
 }
 
@@ -37,8 +36,7 @@ impl Default for GetEntryOptions {
         GetEntryOptions {
             status_request: StatusRequestKind::default(),
             entry: true,
-            header: false,
-            sources: false,
+            headers: false,
             timeout: Default::default(),
         }
     }
@@ -48,15 +46,13 @@ impl GetEntryOptions {
     pub fn new(
         status_request: StatusRequestKind,
         entry: bool,
-        header: bool,
-        sources: bool,
+        headers: bool,
         timeout: Timeout,
     ) -> Self {
         GetEntryOptions {
             status_request,
             entry,
-            header,
-            sources,
+            headers,
             timeout,
         }
     }
@@ -86,21 +82,21 @@ pub struct GetEntryResultItem {
     pub headers: Vec<ChainHeader>, // headers if requested in options
 }
 impl GetEntryResultItem {
-    pub fn new(maybe_entry_with_meta: Option<&EntryWithMeta>) -> Self {
+    pub fn new(maybe_entry_with_meta: Option<(&EntryWithMeta, Vec<ChainHeader>)>) -> Self {
         match maybe_entry_with_meta {
-            Some(entry_with_meta) => GetEntryResultItem {
+            Some((entry_with_meta, headers)) => GetEntryResultItem {
                 meta: Some(EntryResultMeta {
                     address: entry_with_meta.entry.address(),
                     entry_type: entry_with_meta.entry.entry_type(),
                     crud_status: entry_with_meta.crud_status,
                 }),
                 entry: Some(entry_with_meta.entry.clone()),
-                headers: unimplemented!(),
+                headers,
             },
             _ => GetEntryResultItem {
                 meta: None,
                 entry: None,
-                headers: unimplemented!(),
+                headers: Vec::new(),
             },
         }
     }
@@ -121,9 +117,9 @@ impl EntryHistory {
         }
     }
 
-    pub fn push(&mut self, entry_with_meta: &EntryWithMeta) {
+    pub fn push(&mut self, entry_with_meta: &EntryWithMeta, headers: Vec<ChainHeader>) {
         let address = entry_with_meta.entry.address();
-        let item = GetEntryResultItem::new(Some(entry_with_meta));
+        let item = GetEntryResultItem::new(Some((entry_with_meta, headers)));
         self.items.push(item);
         if let Some(new_address) = entry_with_meta.maybe_crud_link.clone() {
             self.crud_links.insert(address, new_address);
@@ -144,20 +140,22 @@ pub struct GetEntryResult {
 impl GetEntryResult {
     pub fn new(
         request_kind: StatusRequestKind,
-        maybe_entry_with_meta: Option<&EntryWithMeta>,
+        maybe_entry_with_meta_and_headers: Option<(&EntryWithMeta, Vec<ChainHeader>)>,
     ) -> Self {
         match request_kind {
             StatusRequestKind::All => {
                 let mut entry_result = GetEntryResult {
                     result: GetEntryResultType::All(EntryHistory::new()),
                 };
-                if maybe_entry_with_meta.is_some() {
-                    entry_result.push(maybe_entry_with_meta.unwrap());
+                if let Some((entry_with_meta, headers)) = maybe_entry_with_meta_and_headers {
+                    entry_result.push(entry_with_meta, headers);
                 }
                 entry_result
             }
             _ => GetEntryResult {
-                result: GetEntryResultType::Single(GetEntryResultItem::new(maybe_entry_with_meta)),
+                result: GetEntryResultType::Single(GetEntryResultItem::new(
+                    maybe_entry_with_meta_and_headers,
+                )),
             },
         }
     }
@@ -179,13 +177,15 @@ impl GetEntryResult {
     }
 
     /// adds an item to history, or if Single, writes over the current value of the item
-    pub fn push(&mut self, entry_with_meta: &EntryWithMeta) {
+    pub fn push(&mut self, entry_with_meta: &EntryWithMeta, headers: Vec<ChainHeader>) {
         match self.result {
             GetEntryResultType::Single(_) => {
-                self.result =
-                    GetEntryResultType::Single(GetEntryResultItem::new(Some(entry_with_meta)))
+                self.result = GetEntryResultType::Single(GetEntryResultItem::new(Some((
+                    entry_with_meta,
+                    headers,
+                ))))
             }
-            GetEntryResultType::All(ref mut history) => history.push(entry_with_meta),
+            GetEntryResultType::All(ref mut history) => history.push(entry_with_meta, headers),
         };
     }
 
@@ -206,7 +206,10 @@ impl GetEntryResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use holochain_core_types::entry::{test_entry, test_entry_a, test_entry_b};
+    use holochain_core_types::{
+        chain_header::test_chain_header,
+        entry::{test_entry, test_entry_a, test_entry_b},
+    };
 
     #[test]
     fn test_get_entry_result_found() {
@@ -222,11 +225,14 @@ mod tests {
     fn test_get_entry_single_latest() {
         let mut result = GetEntryResult::new(StatusRequestKind::Initial, None);
         assert_eq!(result.latest(), None);
-        result.push(&EntryWithMeta {
-            entry: test_entry(),
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        });
+        result.push(
+            &EntryWithMeta {
+                entry: test_entry(),
+                crud_status: CrudStatus::Live,
+                maybe_crud_link: None,
+            },
+            vec![test_chain_header()],
+        );
         assert!(result.found());
         assert_eq!(result.latest(), Some(test_entry()));
     }
@@ -235,16 +241,22 @@ mod tests {
     fn test_get_entry_all_latest() {
         let mut result = GetEntryResult::new(StatusRequestKind::All, None);
         assert_eq!(result.latest(), None);
-        result.push(&EntryWithMeta {
-            entry: test_entry_a(),
-            crud_status: CrudStatus::Modified,
-            maybe_crud_link: None,
-        });
-        result.push(&EntryWithMeta {
-            entry: test_entry_b(),
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        });
+        result.push(
+            &EntryWithMeta {
+                entry: test_entry_a(),
+                crud_status: CrudStatus::Modified,
+                maybe_crud_link: None,
+            },
+            vec![test_chain_header()],
+        );
+        result.push(
+            &EntryWithMeta {
+                entry: test_entry_b(),
+                crud_status: CrudStatus::Live,
+                maybe_crud_link: None,
+            },
+            vec![test_chain_header()],
+        );
         assert!(result.found());
         assert_eq!(result.latest(), Some(test_entry_b()));
     }
@@ -252,21 +264,27 @@ mod tests {
     #[test]
     fn test_clear() {
         let mut result = GetEntryResult::new(StatusRequestKind::All, None);
-        result.push(&EntryWithMeta {
-            entry: test_entry(),
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        });
+        result.push(
+            &EntryWithMeta {
+                entry: test_entry(),
+                crud_status: CrudStatus::Live,
+                maybe_crud_link: None,
+            },
+            vec![test_chain_header()],
+        );
         assert!(result.found());
         result.clear();
         assert!(!result.found());
 
         result = GetEntryResult::new(StatusRequestKind::Initial, None);
-        result.push(&EntryWithMeta {
-            entry: test_entry(),
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        });
+        result.push(
+            &EntryWithMeta {
+                entry: test_entry(),
+                crud_status: CrudStatus::Live,
+                maybe_crud_link: None,
+            },
+            vec![test_chain_header()],
+        );
         assert!(result.found());
         result.clear();
         assert!(!result.found());

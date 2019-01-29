@@ -1,5 +1,5 @@
 use crate::{context::Context, network, nucleus};
-use holochain_core_types::time::Timeout;
+use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
     cas::content::Address, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
@@ -34,11 +34,6 @@ pub async fn get_entry_result_workflow<'a>(
     context: &'a Arc<Context>,
     args: &'a GetEntryArgs,
 ) -> Result<GetEntryResult, HolochainError> {
-    if args.options.sources || args.options.header {
-        return Err(HolochainError::ErrorGeneric(
-            "sources and header option not implemented".to_string(),
-        ));
-    }
     // Setup
     let mut entry_result = GetEntryResult::new(args.options.status_request.clone(), None);
     let mut maybe_address = Some(args.address.clone());
@@ -64,7 +59,12 @@ pub async fn get_entry_result_workflow<'a>(
             }
 
             // Add entry
-            entry_result.push(&entry_with_meta);
+            let headers: Vec<ChainHeader> = if args.options.headers {
+                unimplemented!()
+            } else {
+                Vec::new()
+            };
+            entry_result.push(&entry_with_meta, headers);
 
             if args.options.status_request == StatusRequestKind::Initial {
                 break;

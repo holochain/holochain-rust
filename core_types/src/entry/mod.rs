@@ -137,6 +137,8 @@ pub struct EntryWithMeta {
     pub maybe_crud_link: Option<Address>,
 }
 
+pub type EntryWithMetaWithHeaders = (EntryWithMeta, Vec<ChainHeader>);
+
 /// dummy entry value
 #[cfg_attr(tarpaulin, skip)]
 pub fn test_entry_value() -> JsonString {

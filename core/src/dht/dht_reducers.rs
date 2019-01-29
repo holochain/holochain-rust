@@ -15,6 +15,8 @@ use holochain_core_types::{
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 
+const ENTRY_HEADER_ATTRIBUTE: &'static str = "entry-headers";
+
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
@@ -60,8 +62,15 @@ pub(crate) fn reduce_hold_entry(
     match action_wrapper.action().clone() {
         Action::Commit((entry, _)) => reduce_store_entry_common(context, old_store, &entry),
         Action::Hold(EntryWithHeader { entry, header }) => {
-            reduce_store_entry_common(context, old_store, &entry)
-            // TODO: store header here
+            let result = reduce_store_entry_common(context.clone(), old_store, &entry);
+            let eavi = EntityAttributeValueIndex::new(
+                &entry.address(),
+                &ENTRY_HEADER_ATTRIBUTE.to_string(),
+                &header.address(),
+            )
+            .ok()?; // this is OK because "entry_headers" clearly matches the regex
+            context.eav_storage.write().unwrap().add_eavi(&eavi).ok()?;
+            result
         }
         _ => unreachable!(),
     }

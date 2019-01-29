@@ -126,8 +126,7 @@ mod tests {
 
     use holochain_core_types::cas::content::Address;
     use holochain_net_connection::json_protocol::{
-        DhtMetaData, EntryData, FetchEntryData, FetchEntryResultData, FetchMetaData,
-        FetchMetaResultData, JsonProtocol, MessageData, SuccessResultData, TrackDnaData,
+        JsonProtocol, TrackDnaData,
     };
 
     fn example_dna_address() -> Address {
@@ -135,7 +134,6 @@ mod tests {
     }
 
     static AGENT_ID_1: &'static str = "agent-hash-test-1";
-    static AGENT_ID_2: &'static str = "agent-hash-test-2";
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]

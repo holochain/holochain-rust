@@ -526,7 +526,10 @@ fn can_roundtrip_links() {
     let maybe_address: Result<Address, String> =
         serde_json::from_str(&String::from(result.unwrap())).unwrap();
     let entry_address = maybe_address.unwrap();
-    println!("can_roundtrip_links: entry_address = {}\n", entry_address);
+    // println!(
+    //     "\n can_roundtrip_links: entry_address = {}\n",
+    //     entry_address
+    // );
 
     // expected results
     let entry_2 = Entry::App(

@@ -49,11 +49,11 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
     true
 }
 
-// FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
-// module that aren't really meant for us
-fn is_for_me(context: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
-    !is_my_id(context, agent_id) && is_my_dna(context, dna_address)
-}
+//// FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
+//// module that aren't really meant for us
+//fn is_for_me(context: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
+//    !is_my_id(context, agent_id) && is_my_dna(context, dna_address)
+//}
 
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
@@ -62,10 +62,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();
-        context.log(format!(
-            "debug/net/handle:({}): {:?}",
-            context.agent_id.nick, message
-        ));
+        // context.log(format!(
+        //     "debug/net/handle:({}): {:?}",
+        //     context.agent_id.nick, message
+        // ));
         let maybe_json_msg = JsonProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             // context.log(format!("debug/net/handle: Received non-json message"));
@@ -107,8 +107,8 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_my_dna(&context, &fetch_result_data.dna_address) {
                     return Ok(());
                 }
-                let is_my_request = is_my_id(&context, &fetch_result_data.requester_agent_id);
-                if !is_my_request {
+                // ignore if I'm not the requester
+                if !is_my_id(&context, &fetch_result_data.requester_agent_id) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -131,8 +131,8 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_my_dna(&context, &fetch_meta_result_data.dna_address) {
                     return Ok(());
                 }
-                let is_my_request = is_my_id(&context, &fetch_meta_result_data.requester_agent_id);
-                if !is_my_request {
+                // ignore if I'm not the requester
+                if !is_my_id(&context, &fetch_meta_result_data.requester_agent_id) {
                     return Ok(());
                 }
                 // TODO: Find a proper solution for selecting DHT meta responses.
@@ -162,27 +162,35 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 //}
             }
             JsonProtocol::HandleSendMessage(message_data) => {
-                if !is_for_me(
-                    &context,
-                    &message_data.dna_address,
-                    &message_data.from_agent_id,
-                ) {
+                if !is_my_dna(&context, &message_data.dna_address) {
                     return Ok(());
                 }
+                // ignore if it's not addressed to me
+                if !is_my_id(&context, &message_data.to_agent_id) {
+                    return Ok(());
+                }
+                context.log(format!(
+                    "debug/net/handle: HandleSendMessage: {:?}",
+                    message_data
+                ));
                 handle_send_message(message_data, context.clone())
             }
             JsonProtocol::SendMessageResult(message_data) => {
-                if !is_for_me(
-                    &context,
-                    &message_data.dna_address,
-                    &message_data.from_agent_id,
-                ) {
+                if !is_my_dna(&context, &message_data.dna_address) {
                     return Ok(());
                 }
+                // ignore if it's not addressed to me
+                if !is_my_id(&context, &message_data.to_agent_id) {
+                    return Ok(());
+                }
+                context.log(format!(
+                    "debug/net/handle: SendMessageResult: {:?}",
+                    message_data
+                ));
                 handle_send_message_result(message_data, context.clone())
             }
             JsonProtocol::PeerConnected(peer_data) => {
-                // if this is the peer connection of myself, also ignore
+                // ignore peer connection of myself
                 if is_my_id(&context, &peer_data.agent_id) {
                     return Ok(());
                 }

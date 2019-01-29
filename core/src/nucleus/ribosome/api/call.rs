@@ -17,7 +17,7 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use std::{convert::TryFrom, sync::Arc};
+use std::{convert::TryFrom, sync::Arc, time::Duration};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
@@ -85,7 +85,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
         {
             return result;
         } else {
-            observer_rx.recv().expect("Local channel must work");
+            let _ = observer_rx.recv_timeout(Duration::from_millis(10));
         }
     }
 }

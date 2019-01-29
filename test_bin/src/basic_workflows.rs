@@ -374,7 +374,6 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
         .unwrap();
     println!("got FetchEntryResult: {:?}", result);
 
-
     // Billy asks for unknown data
     let fetch_data = FetchEntryData {
         request_id: "testGet_bad".to_string(),
@@ -392,8 +391,6 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
         .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     println!("got FailureResult: {:?}", result);
-
-
 
     // Done
     Ok(())

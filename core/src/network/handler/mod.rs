@@ -62,7 +62,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();
-        context.log(format!("debug/net/handle:({}): {:?}", context.agent_id.nick, message));
+        context.log(format!(
+            "debug/net/handle:({}): {:?}",
+            context.agent_id.nick, message
+        ));
         let maybe_json_msg = JsonProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             // context.log(format!("debug/net/handle: Received non-json message"));
@@ -104,10 +107,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_my_dna(&context, &fetch_result_data.dna_address) {
                     return Ok(());
                 }
-                let is_my_request = is_my_id(
-                    &context,
-                    &fetch_result_data.requester_agent_id,
-                );
+                let is_my_request = is_my_id(&context, &fetch_result_data.requester_agent_id);
                 if !is_my_request {
                     return Ok(());
                 }
@@ -131,10 +131,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_my_dna(&context, &fetch_meta_result_data.dna_address) {
                     return Ok(());
                 }
-                let is_my_request = is_my_id(
-                    &context,
-                    &fetch_meta_result_data.requester_agent_id,
-                );
+                let is_my_request = is_my_id(&context, &fetch_meta_result_data.requester_agent_id);
                 if !is_my_request {
                     return Ok(());
                 }

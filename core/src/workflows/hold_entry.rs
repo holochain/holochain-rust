@@ -15,8 +15,8 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(
-    entry_with_header: &'a EntryWithHeader,
-    context: &'a Arc<Context>,
+    entry_with_header: EntryWithHeader,
+    context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
 
@@ -36,7 +36,7 @@ pub async fn hold_entry_workflow<'a>(
     await!(validate_entry(entry.clone(), validation_data, &context))?;
 
     // 3. If valid store the entry in the local DHT shard
-    await!(hold_entry(entry, &context))
+    await!(hold_entry(entry_with_header, context))
 }
 
 #[cfg(test)]

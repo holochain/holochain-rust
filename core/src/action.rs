@@ -1,7 +1,9 @@
 use crate::{
     agent::state::AgentState,
     context::Context,
-    network::{direct_message::DirectMessage, state::NetworkState},
+    network::{
+        direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
+    },
     nucleus::{
         state::{NucleusState, ValidationResult},
         ExecuteZomeFnResponse, ZomeFnCall,
@@ -90,7 +92,7 @@ pub enum Action {
     // -------------
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.
-    Hold(Entry),
+    Hold(EntryWithHeader),
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.

@@ -387,6 +387,7 @@ impl P2pNode {
 
     /// wait to receive a HandleFetchEntry request and automatically reply
     /// return true if a HandleFetchEntry has been received
+    #[allow(non_snake_case)]
     pub fn wait_HandleFetchEntry_and_reply(&mut self) -> bool {
         let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))));
         if maybe_request.is_none() {
@@ -403,6 +404,7 @@ impl P2pNode {
 
     /// wait to receive a HandleFetchMeta request and automatically reply
     /// return true if a HandleFetchMeta has been received
+    #[allow(non_snake_case)]
     pub fn wait_HandleFetchMeta_and_reply(&mut self) -> bool {
         let maybe_request = self.wait(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))));
         if maybe_request.is_none() {

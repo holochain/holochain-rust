@@ -149,20 +149,20 @@ pub fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
 
         alex.send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on alex");
-        let node_state_A = alex
+        let alex_state = alex
             .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
         billy
             .send(JsonProtocol::GetState.into())
             .expect("Failed sending RequestState on billy");
-        let node_state_B = billy
+        let billy_state = billy
             .wait(Box::new(one_is!(JsonProtocol::GetStateResult(_))))
             .unwrap();
 
-        one_let!(JsonProtocol::GetStateResult(state) = node_state_A {
+        one_let!(JsonProtocol::GetStateResult(state) = alex_state {
             _node1_id = state.id
         });
-        one_let!(JsonProtocol::GetStateResult(state) = node_state_B {
+        one_let!(JsonProtocol::GetStateResult(state) = billy_state {
             if !state.bindings.is_empty() {
                 node2_binding = state.bindings[0].clone();
             }

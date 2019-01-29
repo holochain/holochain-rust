@@ -1,5 +1,4 @@
 #![feature(try_from)]
-#![allow(non_snake_case)]
 
 extern crate holochain_core_types;
 extern crate holochain_net;
@@ -25,6 +24,21 @@ use p2p_node::P2pNode;
 type TwoNodesTestFn =
     fn(node1: &mut P2pNode, node2: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
 
+lazy_static! {
+    // List of tests
+    pub static ref TEST_FNS: Vec<TwoNodesTestFn> = vec![
+        basic_workflows::setup_normal,
+        basic_workflows::send_test,
+        basic_workflows::dht_test,
+        basic_workflows::meta_test,
+        publish_hold_workflows::empty_publish_data_list_test,
+        publish_hold_workflows::publish_list_test,
+        publish_hold_workflows::publish_meta_list_test,
+        publish_hold_workflows::hold_list_test,
+        publish_hold_workflows::hold_meta_list_test,
+    ];
+}
+
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn usage() {
@@ -45,23 +59,8 @@ fn main() {
         usage();
     }
 
-    // List of tests
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    let test_fns: Vec<TwoNodesTestFn> = vec![
-        basic_workflows::setup_normal,
-        basic_workflows::send_test,
-        basic_workflows::dht_test,
-        basic_workflows::meta_test,
-
-        publish_hold_workflows::empty_publish_data_list_test,
-        publish_hold_workflows::publish_list_test,
-        publish_hold_workflows::publish_meta_list_test,
-        publish_hold_workflows::hold_list_test,
-        publish_hold_workflows::hold_meta_list_test,
-    ];
-
     // Launch tests on each setup
-    for test_fn in test_fns.clone() {
+    for test_fn in TEST_FNS.clone() {
         launch_two_nodes_test_with_memory_network(test_fn).unwrap();
         launch_two_nodes_test_with_ipc_mock(
             &n3h_path,
@@ -156,4 +155,16 @@ fn launch_two_nodes_test(
     billy.stop();
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn run_tests_with_in_memory_network() {
+        for test_fn in TEST_FNS.clone() {
+            launch_two_nodes_test_with_memory_network(test_fn).unwrap();
+        }
+    }
 }

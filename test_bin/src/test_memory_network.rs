@@ -6,6 +6,11 @@ extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
 extern crate failure;
+#[macro_use]
+extern crate unwrap_to;
+
+#[macro_use]
+pub mod predicate;
 
 pub mod p2p_node;
 
@@ -73,7 +78,7 @@ fn exec_memory_network_test() -> NetResult<()> {
                     from_agent_id: "node-2".to_string(),
                     to_agent_id: "node-1".to_string(),
                     request_id: "yada".to_string(),
-                    content: json!(format!("echo: {}", msg.data.to_string())),
+                    content: json!(format!("echo: {}", msg.content.to_string())),
                 })
                 .into(),
             )

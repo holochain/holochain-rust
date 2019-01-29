@@ -18,7 +18,7 @@ lazy_static! {
 
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
-pub fn handle_get_dht(get_dht_data: FetchEntryData, context: Arc<Context>) {
+pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     let maybe_entry_with_meta = nucleus::actions::get_entry::get_entry_with_meta(
         &context,
         Address::from(get_dht_data.entry_address.clone()),
@@ -34,12 +34,12 @@ pub fn handle_get_dht(get_dht_data: FetchEntryData, context: Arc<Context>) {
 }
 
 /// The network comes back with a result to our previous GET request.
-pub fn handle_get_dht_result(dht_data: FetchEntryResultData, context: Arc<Context>) {
+pub fn handle_fetch_entry_result(dht_data: FetchEntryResultData, context: Arc<Context>) {
     let action_wrapper = ActionWrapper::new(Action::HandleFetchResult(dht_data));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 
-pub fn handle_get_dht_meta(get_dht_meta_data: FetchMetaData, context: Arc<Context>) {
+pub fn handle_fetch_meta(get_dht_meta_data: FetchMetaData, context: Arc<Context>) {
     if LINK.is_match(&get_dht_meta_data.attribute) {
         let tag = LINK
             .captures(&get_dht_meta_data.attribute)
@@ -67,7 +67,7 @@ pub fn handle_get_dht_meta(get_dht_meta_data: FetchMetaData, context: Arc<Contex
 }
 
 /// The network comes back with a result to our previous GET META request.
-pub fn handle_get_dht_meta_result(dht_meta_data: FetchMetaResultData, context: Arc<Context>) {
+pub fn handle_fetch_meta_result(dht_meta_data: FetchMetaResultData, context: Arc<Context>) {
     if LINK.is_match(&dht_meta_data.attribute) {
         let tag = LINK
             .captures(&dht_meta_data.attribute)

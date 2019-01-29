@@ -12,7 +12,7 @@ use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 
 /// The network requests us to store (i.e. hold) the given entry.
-pub fn handle_store_dht(dht_data: EntryData, context: Arc<Context>) {
+pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
     let entry_with_header: EntryWithHeader =
         serde_json::from_str(&serde_json::to_string(&dht_data.entry_content).unwrap()).unwrap();
     thread::spawn(move || {
@@ -25,7 +25,7 @@ pub fn handle_store_dht(dht_data: EntryData, context: Arc<Context>) {
 
 /// The network requests us to store meta information (links/CRUD/etc) for an
 /// entry that we hold.
-pub fn handle_store_dht_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
+pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     match dht_meta_data.attribute.as_ref() {
         "link" => {
             context.log("debug/net/handle: HandleStoreDhtMeta: got LINK. processing...");

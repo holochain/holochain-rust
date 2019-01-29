@@ -125,9 +125,7 @@ mod tests {
     use crate::p2p_config::P2pConfig;
 
     use holochain_core_types::cas::content::Address;
-    use holochain_net_connection::json_protocol::{
-        JsonProtocol, TrackDnaData,
-    };
+    use holochain_net_connection::json_protocol::{JsonProtocol, TrackDnaData};
 
     fn example_dna_address() -> Address {
         "blabladnaAddress".into()

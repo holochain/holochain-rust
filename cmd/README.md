@@ -27,9 +27,9 @@ apt-get install libzmq3-dev
 These dependencies need to be installed in order to compile, and use `hc`:
 
 - [Rust](https://www.rust-lang.org/en-US/install.html)
-  - needs to be the `nightly-2019-01-08` build, so use the following commands, once you have first installed Rust
-  - `rustup toolchain install nightly-2019-01-08`
-  - `rustup default nightly-2019-01-08`
+  - needs to be the `nightly-2019-01-24` build, so use the following commands, once you have first installed Rust
+  - `rustup toolchain install nightly-2019-01-24`
+  - `rustup default nightly-2019-01-24`
   - (the specific nightly build we use will change over time)
   - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
   - `rustup target add wasm32-unknown-unknown --toolchain nightly-2018-12-26`

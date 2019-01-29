@@ -286,9 +286,9 @@ mod tests {
             Some(
                 r#"
             (module
-                (memory (;0;) 17)
-                (func (export "genesis") (param $p0 i32) (result i32)
-                    i32.const 9
+                (memory (;0;) 1)
+                (func (export "genesis") (param $p0 i64) (result i64)
+                    i64.const 9
                 )
                 (data (i32.const 0)
                     "fail"
@@ -309,33 +309,34 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "broken-tests")]
     fn fails_instantiate_if_genesis_times_out() {
-        // let dna = create_test_dna_with_wat(
-        //     "test_zome",
-        //     Callback::Genesis.capability().as_str(),
-        //     Some(
-        //         r#"
-        //     (module
-        //         (memory (;0;) 17)
-        //         (func (export "genesis") (param $p0 i32) (result i32)
-        //             (loop (br 0))
-        //             i32.const 0
-        //         )
-        //         (export "memory" (memory 0))
-        //     )
-        // "#,
-        //     ),
-        // );
-        //
-        // let (context, _test_logger, _) = test_context("bob");
-        // let result = Holochain::new(dna.clone(), context.clone());
-        // assert!(result.is_err());
-        // assert_eq!(
-        //     HolochainInstanceError::from(HolochainError::ErrorGeneric(
-        //         "Timeout while initializing".to_string()
-        //     )),
-        //     result.err().unwrap(),
-        // );
+        let dna = create_test_dna_with_wat(
+            "test_zome",
+            Callback::Genesis.capability().as_str(),
+            Some(
+                r#"
+            (module
+                (memory (;0;) 1)
+                (func (export "genesis") (param $p0 i64) (result i64)
+                    (loop (br 0))
+                    i64.const 0
+                )
+                (export "memory" (memory 0))
+            )
+        "#,
+            ),
+        );
+
+        let (context, _test_logger, _) = test_context("bob");
+        let result = Holochain::new(dna.clone(), context.clone());
+        assert!(result.is_err());
+        assert_eq!(
+            HolochainInstanceError::from(HolochainError::ErrorGeneric(
+                "Timeout while initializing".to_string()
+            )),
+            result.err().unwrap(),
+        );
     }
 
     #[test]
@@ -376,8 +377,8 @@ mod tests {
  (memory 1)
  (export "memory" (memory 0))
  (export "public_test_fn" (func $func0))
- (func $func0 (param $p0 i32) (result i32)
-       i32.const 16
+ (func $func0 (param $p0 i64) (result i64)
+       i64.const 16
        )
  (data (i32.const 0)
        "{\"holo\":\"world\"}"
@@ -536,7 +537,7 @@ mod tests {
         let defs = create_test_defs_with_fn_name("debug_hello");
         let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
-        let (context, test_logger, signal_rx) = test_context("alex");
+        let (context, _, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -551,9 +552,10 @@ mod tests {
         );
 
         assert_eq!(Ok(JsonString::null()), result,);
-        let test_logger = test_logger.lock().unwrap();
-        assert!(format!("{:?}", test_logger.log).contains(
-            "\"debug/dna: \\\'\\\"Hello world!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_hello\\\' returned: Success\""));
+        // @TODO https://github.com/holochain/holochain-rust/issues/928
+        // let test_logger = test_logger.lock().unwrap();
+        // assert!(format!("{:?}", test_logger.log).contains(
+        //     "\"debug/dna: \\\'\\\"Hello world!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_hello\\\' returned: Success\""));
 
         expect_action(&signal_rx, |action| {
             if let Action::ReturnZomeFunctionResult(_) = action {
@@ -573,7 +575,7 @@ mod tests {
         let defs = create_test_defs_with_fn_name("debug_multiple");
         let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
-        let (context, test_logger, signal_rx) = test_context("alex");
+        let (context, _, signal_rx) = test_context("alex");
         let mut hc = Holochain::new(dna.clone(), context).unwrap();
 
         // Run the holochain instance
@@ -591,10 +593,10 @@ mod tests {
         println!("result = {:?}", result);
         assert_eq!(Ok(JsonString::null()), result,);
 
-        let test_logger = test_logger.lock().unwrap();
-
-        assert!(format!("{:?}", test_logger.log).contains(
-            "\"debug/dna: \\\'\\\"Hello\\\"\\\'\", \"debug/dna: \\\'\\\"world\\\"\\\'\", \"debug/dna: \\\'\\\"!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_multiple\\\' returned: Success\""));
+        // @TODO https://github.com/holochain/holochain-rust/issues/928
+        // let test_logger = test_logger.lock().unwrap();
+        // assert!(format!("{:?}", test_logger.log).contains(
+        //     "\"debug/dna: \\\'\\\"Hello\\\"\\\'\", \"debug/dna: \\\'\\\"world\\\"\\\'\", \"debug/dna: \\\'\\\"!\\\"\\\'\", \"debug/zome: Zome Function \\\'debug_multiple\\\' returned: Success\""));
 
         expect_action(&signal_rx, |action| {
             if let Action::ReturnZomeFunctionResult(_) = action {

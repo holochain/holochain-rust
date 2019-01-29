@@ -1,4 +1,3 @@
-
 const binary = require('node-pre-gyp');
 const path = require('path');
 const tape = require('tape');
@@ -56,9 +55,9 @@ Container.prototype.stop = function () {
     return this._stopPromise
 }
 
-Container.prototype.call = function (id, zome, trait, fn, params) {
+Container.prototype.call = function (id, zome, fn, params) {
     const stringInput = JSON.stringify(params);
-    const rawResult = this._callRaw(id, zome, trait, fn, stringInput);
+    const rawResult = this._callRaw(id, zome, fn, stringInput);
     let result;
     try {
         result = JSON.parse(rawResult);
@@ -94,7 +93,7 @@ Container.prototype.callSync = function (...args) {
 Container.prototype.makeCaller = function (agentId, dnaPath) {
   const instanceId = makeInstanceId(agentId, dnaPath)
   return {
-    call: (zome, cap, fn, params) => this.call(instanceId, zome, cap, fn, params),
+    call: (zome, fn, params) => this.call(instanceId, zome, fn, params),
     agentId: this.agent_id(instanceId)
   }
 }

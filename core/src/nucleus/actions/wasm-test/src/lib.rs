@@ -102,7 +102,15 @@ define_zome! {
         Ok(())
     }
 
-    functions: {
+    functions: [
+        test_fn: {
+            inputs: | |,
+            outputs: | x:u32 |,
+            handler: test_handler
+        }
+    ]
 
-    }
+    capabilities: {}
 }
+
+fn test_handler() -> u32 {0}

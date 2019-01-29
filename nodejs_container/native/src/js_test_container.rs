@@ -133,9 +133,8 @@ declare_types! {
         method call(mut cx) {
             let instance_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
             let zome = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
-            let cap_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
-            let fn_name = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
-            let params = cx.argument::<JsString>(4)?.to_string(&mut cx)?.value();
+            let fn_name = cx.argument::<JsString>(2)?.to_string(&mut cx)?.value();
+            let params = cx.argument::<JsString>(3)?.to_string(&mut cx)?.value();
 
             let mut this = cx.this();
 
@@ -146,7 +145,6 @@ declare_types! {
                     panic!("TestContainer: cannot use call() before start()");
                 }
                 let cap = Some(CapabilityCall::new(
-                    cap_name.to_string(),
                     Address::from(""), //FIXME
                     None,
                 ));

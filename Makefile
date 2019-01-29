@@ -1,10 +1,13 @@
 # holochain-rust Makefile
 # currently only supports 'debug' builds
 
-.PHONY: all install help
-all: build_holochain build_cmd build_nodejs
+.PHONY: all build install help
 
-install: install_cmd build_nodejs
+all: build
+
+build: build_holochain build_cmd build_nodejs_container
+
+install: build install_cmd
 
 help:
 	@echo "run 'make' to build all the libraries and binaries, and the nodejs bin-package"
@@ -161,10 +164,12 @@ test_cmd: build_cmd
 
 test_app_spec: RUST_VERSION=$(CORE_RUST_VERSION)
 test_app_spec: version_rustup ensure_wasm_target install_cmd build_nodejs_container
+	@echo -e "\033[0;93m## Testing app_spec... ##\033[0m"
 	cd app_spec && ./build_and_test.sh
 
 build_nodejs_container: RUST_VERSION=$(CORE_RUST_VERSION)
 build_nodejs_container: version_rustup core_toolchain
+	@echo -e "\033[0;93m## Building nodejs_container... ##\033[0m"
 	./scripts/build_nodejs_container.sh
 
 c_build: core_toolchain
@@ -174,6 +179,7 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 
 .PHONY: wasm_build
 wasm_build: ensure_wasm_target
+	@echo -e "\033[0;93m## Building wasm targets... ##\033[0m"
 	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd container_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd container_api/test-bridge-caller && $(CARGO) build --release --target wasm32-unknown-unknown
@@ -182,18 +188,17 @@ wasm_build: ensure_wasm_target
 
 .PHONY: build_holochain
 build_holochain: core_toolchain wasm_build
+	@echo -e "\033[0;93m## Building holochain... ##\033[0m"
 	$(CARGO) build --all --exclude hc
 
 .PHONY: build_cmd
 build_cmd: core_toolchain ensure_wasm_target
+	@echo -e "\033[0;93m## Building hc command... ##\033[0m"
 	$(CARGO) build -p hc
-
-.PHONY: build_nodejs
-build_nodejs:
-	cd nodejs_container && npm run compile && mkdir -p bin-package && cp native/index.node bin-package
 
 .PHONY: install_cmd
 install_cmd: build_cmd
+	@echo -e "\033[0;93m## Installing hc command... ##\033[0m"
 	cd cmd && $(CARGO) install -f --path .
 
 .PHONY: code_coverage

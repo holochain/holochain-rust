@@ -61,7 +61,7 @@ impl Keypair {
         hint: String,
     ) -> Result<bundle::KeyBundle, HolochainError> {
         let bundle_type: String = "hcKeypair".to_string();
-        let kk = KeyBuffer::with_corrected(&self.pub_keys)?;
+        let corrected_pub_keys = KeyBuffer::with_corrected(&self.pub_keys)?;
 
         let mut key_buf = SecBuf::with_secure(BUNDLE_DATA_LEN);
 
@@ -70,10 +70,10 @@ impl Keypair {
         key_buf.write(offset, &[1])?;
         offset += 1;
 
-        key_buf.write(1, kk.get_sig())?;
+        key_buf.write(1, corrected_pub_keys.get_sig())?;
         offset += sign::PUBLICKEYBYTES;
 
-        key_buf.write(offset, kk.get_enc())?;
+        key_buf.write(offset, corrected_pub_keys.get_enc())?;
         offset += kx::PUBLICKEYBYTES;
 
         key_buf.write(offset, &**self.sign_priv.read_lock())?;
@@ -81,8 +81,8 @@ impl Keypair {
 
         key_buf.write(offset, &**self.enc_priv.read_lock())?;
 
-        let pw_enc: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, passphrase)?;
-        let bundle_data_serialized = json::encode(&pw_enc).unwrap();
+        let password_encrypted: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, passphrase)?;
+        let bundle_data_serialized = json::encode(&password_encrypted).unwrap();
 
         // conver to base64
         let bundle_data_encoded = base64::encode(&bundle_data_serialized);
@@ -165,8 +165,8 @@ impl Keypair {
         let mut enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
 
         util::decode_id(pub_keys, &mut sign_pub, &mut enc_pub)?;
-        let v: i32 = sign::verify(signature, data, &mut sign_pub);
-        Ok(v)
+        let verified: i32 = sign::verify(signature, data, &mut sign_pub);
+        Ok(verified)
     }
 
     /// encrypt arbitrary data to be readale by potentially multiple recipients
@@ -185,8 +185,8 @@ impl Keypair {
         let mut sym_secret = SecBuf::with_secure(32);
         random_secbuf(&mut sym_secret);
 
-        let mut srv_rx = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
-        let mut srv_tx = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
+        let mut server_rx = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
+        let mut server_tx = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
 
         let pub_keys = &mut self.pub_keys;
         let mut sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
@@ -194,24 +194,34 @@ impl Keypair {
         util::decode_id(pub_keys.to_string(), &mut sign_pub, &mut enc_pub)?;
 
         for client_pk in recipient_id {
-            let mut r_sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
-            let mut r_enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
+            let mut client_sign_pub = SecBuf::with_insecure(sign::PUBLICKEYBYTES);
+            let mut client_enc_pub = SecBuf::with_insecure(kx::PUBLICKEYBYTES);
 
-            util::decode_id(client_pk.to_string(), &mut r_sign_pub, &mut r_enc_pub)?;
+            util::decode_id(
+                client_pk.to_string(),
+                &mut client_sign_pub,
+                &mut client_enc_pub,
+            )?;
 
             kx::server_session(
                 &mut enc_pub,
                 &mut self.enc_priv,
-                &mut r_enc_pub,
-                &mut srv_rx,
-                &mut srv_tx,
+                &mut client_enc_pub,
+                &mut server_rx,
+                &mut server_tx,
             )?;
 
             let mut nonce = SecBuf::with_insecure(16);
             random_secbuf(&mut nonce);
             let mut cipher = SecBuf::with_insecure(sym_secret.len() + aead::ABYTES);
 
-            aead::enc(&mut sym_secret, &mut srv_tx, None, &mut nonce, &mut cipher)?;
+            aead::enc(
+                &mut sym_secret,
+                &mut server_tx,
+                None,
+                &mut nonce,
+                &mut cipher,
+            )?;
             out.push(nonce);
             out.push(cipher);
         }
@@ -252,26 +262,32 @@ impl Keypair {
         )?;
         let mut client_enc_priv = &mut self.enc_priv;
 
-        let mut cli_rx = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
-        let mut cli_tx = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
+        let mut client_rx = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
+        let mut client_tx = SecBuf::with_insecure(kx::SESSIONKEYBYTES);
         kx::client_session(
             &mut client_enc_pub,
             &mut client_enc_priv,
             &mut source_enc_pub,
-            &mut cli_rx,
-            &mut cli_tx,
+            &mut client_rx,
+            &mut client_tx,
         )?;
 
         let mut sys_secret_check: Option<SecBuf> = None;
 
         while cipher_bundle.len() != 2 {
-            let mut n: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
-            let mut c: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
-            let mut n = &mut n[0];
-            let mut c = &mut c[0];
-            let mut sys_secret = SecBuf::with_insecure(c.len() - aead::ABYTES);
+            let mut nonce: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
+            let mut cipher: Vec<_> = cipher_bundle.splice(..1, vec![]).collect();
+            let mut nonce = &mut nonce[0];
+            let mut cipher = &mut cipher[0];
+            let mut sys_secret = SecBuf::with_insecure(cipher.len() - aead::ABYTES);
 
-            match aead::dec(&mut sys_secret, &mut cli_rx, None, &mut n, &mut c) {
+            match aead::dec(
+                &mut sys_secret,
+                &mut client_rx,
+                None,
+                &mut nonce,
+                &mut cipher,
+            ) {
                 Ok(_) => {
                     if util::check_if_wrong_secbuf(&mut sys_secret) {
                         sys_secret_check = Some(sys_secret);
@@ -286,19 +302,25 @@ impl Keypair {
             };
         }
 
-        let mut c: Vec<_> = cipher_bundle
+        let mut cipher: Vec<_> = cipher_bundle
             .splice(cipher_bundle.len() - 1.., vec![])
             .collect();
-        let mut n: Vec<_> = cipher_bundle
+        let mut nonce: Vec<_> = cipher_bundle
             .splice(cipher_bundle.len() - 1.., vec![])
             .collect();
-        let mut n = &mut n[0];
-        let mut c = &mut c[0];
-        let mut dm = SecBuf::with_insecure(c.len() - aead::ABYTES);
+        let mut nonce = &mut nonce[0];
+        let mut cipher = &mut cipher[0];
+        let mut decrypeted_message = SecBuf::with_insecure(cipher.len() - aead::ABYTES);
 
         if let Some(mut secret) = sys_secret_check {
-            aead::dec(&mut dm, &mut secret, None, &mut n, &mut c)?;
-            Ok(dm)
+            aead::dec(
+                &mut decrypeted_message,
+                &mut secret,
+                None,
+                &mut nonce,
+                &mut cipher,
+            )?;
+            Ok(decrypeted_message)
         } else {
             Err(HolochainError::new(
                 &"could not decrypt - not a recipient?".to_string(),

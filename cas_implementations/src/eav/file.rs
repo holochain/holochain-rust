@@ -190,11 +190,16 @@ impl EntityAttributeValueStorage for EavFileStorage {
         index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.read()?;
-        let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
+        let prefixes = if index_query.prefixes().len() >0 {index_query.prefixes().clone()} else {vec![""]};
+        let union_set : BTreeSet<String> = BTreeSet::new();
+        let entity_attribute_value_union = prefixes.iter().fold(union_set.clone(),|set,prefix|{
+
+        let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone()).unwrap();
+        let attribute_with_prefix = attribute.clone().map(|attri|prefix.to_string() + &attri.clone());
         let attribute_set = self
-            .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)?
+            .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute_with_prefix).unwrap()
             .clone();
-        let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value)?;
+        let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value.clone()).unwrap();
 
         let attribute_value_inter: BTreeSet<String> = value_set
             .intersection(&attribute_set.clone())
@@ -205,7 +210,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .cloned()
             .collect();
 
-        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
+            set.union(&entity_attribute_value_inter).cloned().collect()
+        });
+
+        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_union
+            .clone()
             .into_iter()
             .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
             .partition(|c| c.is_ok());
@@ -229,7 +238,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                         .start()
                         .map(|start| start <= e.index())
                         .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone())
+                            let latest = get_latest(e.clone(), map.clone(),index_query.clone())
                                 .unwrap_or(EntityAttributeValueIndex::default());
                             latest.index() == e.index()
                         })
@@ -239,7 +248,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                         .end()
                         .map(|end| end >= e.index())
                         .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone())
+                            let latest = get_latest(e.clone(), map.clone(),index_query.clone())
                                 .unwrap_or(EntityAttributeValueIndex::default());
                             latest.index() == e.index()
                         })

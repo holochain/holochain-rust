@@ -25,10 +25,8 @@ snowflake = "1.2"
 objekt="0.1.1"
 holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_sodium = { path = "../sodium" }
-uuid = { version = "0.7", features = ["v4"] }
+uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "^1.1"
-
-
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

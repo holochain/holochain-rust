@@ -16,7 +16,7 @@ impl From<Top> for MemoryInt {
 
 impl From<Top> for usize {
     fn from(top: Top) -> Self {
-        Self::from(MemoryInt::from(top))
+        MemoryInt::from(top) as usize
     }
 }
 
@@ -102,8 +102,9 @@ impl TryFrom<WasmAllocation> for WasmStack {
 }
 
 #[cfg(test)]
-pub mod tests {
+pub mod memory_tests {
 
+    use holochain_core_types::bits_n_pieces::U16_MAX;
     use memory::{
         allocation::{AllocationError, Length, Offset, WasmAllocation},
         stack::{Top, WasmStack},
@@ -148,19 +149,35 @@ pub mod tests {
     #[test]
     fn next_allocation_test() {
         let mut stack = WasmStack::new();
+
         let first_offset = Offset::from(0);
         let first_length = Length::from(5);
-        let next_allocation = stack.next_allocation(first_length);
+        let first_allocation = stack.next_allocation(first_length);
+
         assert_eq!(
-            next_allocation,
+            first_allocation,
             WasmAllocation::new(first_offset, first_length),
         );
-        stack.allocate(next_allocation.unwrap()).ok();
+
+        stack.allocate(first_allocation.unwrap()).ok();
+
         let second_offset = Offset::from(5);
         let second_length = Length::from(3);
+        let second_allocation = stack.next_allocation(second_length);
+
         assert_eq!(
-            stack.next_allocation(second_length),
+            second_allocation,
             WasmAllocation::new(second_offset, second_length),
+        );
+
+        stack.allocate(second_allocation.unwrap()).ok();
+
+        let big_offset = Offset::from(8);
+        let big_length = Length::from(U16_MAX * 2);
+
+        assert_eq!(
+            stack.next_allocation(big_length),
+            WasmAllocation::new(big_offset, big_length),
         );
     }
 
@@ -168,6 +185,7 @@ pub mod tests {
     fn allocate_test() {
         let mut stack = WasmStack::new();
         let unaligned_allocation = WasmAllocation::new(Offset::from(10), Length::from(10)).unwrap();
+
         assert_eq!(
             Err(AllocationError::BadStackAlignment),
             stack.allocate(unaligned_allocation),
@@ -177,17 +195,23 @@ pub mod tests {
         stack.allocate(first_allocation.unwrap()).ok();
 
         let second_allocation = stack.next_allocation(Length::from(8));
+
         assert_eq!(stack.allocate(second_allocation.unwrap()), Ok(Top(5)),);
         assert_eq!(stack.top(), Top(13),);
 
         let out_of_bounds_allocation = WasmAllocation {
             offset: Offset::from(13),
-            length: Length::from(std::u16::MAX),
+            length: Length::from(std::u32::MAX),
         };
+
         assert_eq!(
             Err(AllocationError::OutOfBounds),
             stack.allocate(out_of_bounds_allocation),
         );
+
+        let big_allocation = stack.next_allocation(Length::from(U16_MAX)).unwrap();
+        assert_eq!(stack.allocate(big_allocation), Ok(Top(13)),);
+        assert_eq!(stack.top(), Top(U16_MAX + 13),);
     }
 
     #[test]
@@ -220,7 +244,7 @@ pub mod tests {
         assert_eq!(
             Err(AllocationError::OutOfBounds),
             WasmStack::try_from(WasmAllocation {
-                offset: Offset::from(std::u16::MAX),
+                offset: Offset::from(std::u32::MAX),
                 length: Length::from(1)
             }),
         );
@@ -230,6 +254,15 @@ pub mod tests {
             WasmStack::try_from(WasmAllocation {
                 offset: Offset::from(30),
                 length: Length::from(30)
+            }),
+        );
+
+        let big = U16_MAX * 3;
+        assert_eq!(
+            Ok(WasmStack { top: Top(big * 2) }),
+            WasmStack::try_from(WasmAllocation {
+                offset: Offset::from(big),
+                length: Length::from(big),
             }),
         );
     }

@@ -152,6 +152,10 @@ fn handle_link_two_entries() -> ZomeApiResult<()> {
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
 }
 
+/// Commit 3 entries
+/// Commit a "test-tag" link from entry1 to entry2
+/// Commit a "test-tag" link from entry1 to entry3
+/// return entry1 address
 fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
         "testEntryType".into(),

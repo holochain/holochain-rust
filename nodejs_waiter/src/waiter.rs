@@ -1,7 +1,7 @@
 use colored::*;
 use holochain_core::{
     action::{Action, ActionWrapper},
-    network::{direct_message::DirectMessage, entry_with_header::EntryWithHeader},
+    network::entry_with_header::EntryWithHeader,
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
@@ -206,21 +206,23 @@ impl Waiter {
                         }
                     }
 
-                    (Some(checker), Action::SendDirectMessage(data)) => {
-                        let msg_id = data.msg_id;
-                        match data.message {
-                            DirectMessage::Custom(_) => {
-                                checker.add(move |aw| {
-                                    [
-                                        Action::ResolveDirectConnection(msg_id.clone()),
-                                        Action::SendDirectMessageTimeout(msg_id.clone()),
-                                    ]
-                                    .contains(aw.action())
-                                });
-                            }
-                            _ => (),
-                        }
-                    }
+                    // Don't need to check for message stuff since hdk::send is blocking
+
+                    // (Some(checker), Action::SendDirectMessage(data)) => {
+                    //     let msg_id = data.msg_id;
+                    //     match data.message {
+                    //         DirectMessage::Custom(_) => {
+                    //             checker.add(move |aw| {
+                    //                 [
+                    //                     Action::ResolveDirectConnection(msg_id.clone()),
+                    //                     Action::SendDirectMessageTimeout(msg_id.clone()),
+                    //                 ]
+                    //                 .contains(aw.action())
+                    //             });
+                    //         }
+                    //         _ => (),
+                    //     }
+                    // }
 
                     // Note that we ignore anything coming in if there's no active checker,
                     (None, _) => (),
@@ -333,10 +335,7 @@ impl Task for MainBackgroundTask {
 #[cfg(test)]
 mod tests {
     use super::{Action::*, *};
-    use holochain_core::{
-        action::DirectMessageData, network::direct_message::CustomDirectMessage,
-        nucleus::ExecuteZomeFnResponse,
-    };
+    use holochain_core::nucleus::ExecuteZomeFnResponse;
     use holochain_core_types::{
         chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_add::LinkAdd,
     };
@@ -357,17 +356,18 @@ mod tests {
         }
     }
 
-    fn msg_data(msg_id: &str) -> DirectMessageData {
-        DirectMessageData {
-            address: "fake address".into(),
-            message: DirectMessage::Custom(CustomDirectMessage {
-                zome: "fake zome".into(),
-                payload: Ok("fake payload".into()),
-            }),
-            msg_id: msg_id.into(),
-            is_response: false,
-        }
-    }
+    // not needed as long as hdk::send is blocking
+    // fn msg_data(msg_id: &str) -> DirectMessageData {
+    //     DirectMessageData {
+    //         address: "fake address".into(),
+    //         message: DirectMessage::Custom(CustomDirectMessage {
+    //             zome: "fake zome".into(),
+    //             payload: Ok("fake payload".into()),
+    //         }),
+    //         msg_id: msg_id.into(),
+    //         is_response: false,
+    //     }
+    // }
 
     fn zf_call(name: &str) -> ZomeFnCall {
         ZomeFnCall::new(name, None, name, "")
@@ -635,42 +635,43 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 0);
     }
 
-    #[test]
-    fn can_await_direct_messages() {
-        let (mut waiter, sender_tx) = test_waiter();
-        let _entry_1 = mk_entry("a", "x");
-        let _entry_2 = mk_entry("b", "y");
-        let _entry_3 = mk_entry("c", "z");
-        let call_1 = zf_call("1");
-        let call_2 = zf_call("2");
-        let msg_id_1 = "m1";
-        let msg_id_2 = "m2";
+    // not needed as long as hdk::send is blocking
+    // #[test]
+    // fn can_await_direct_messages() {
+    //     let (mut waiter, sender_tx) = test_waiter();
+    //     let _entry_1 = mk_entry("a", "x");
+    //     let _entry_2 = mk_entry("b", "y");
+    //     let _entry_3 = mk_entry("c", "z");
+    //     let call_1 = zf_call("1");
+    //     let call_2 = zf_call("2");
+    //     let msg_id_1 = "m1";
+    //     let msg_id_2 = "m2";
 
-        let control_rx_1 = test_register(&sender_tx);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
-        assert_eq!(num_conditions(&waiter, &call_1), 1);
+    //     let control_rx_1 = test_register(&sender_tx);
+    //     waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+    //     assert_eq!(num_conditions(&waiter, &call_1), 1);
 
-        waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_1))));
-        assert_eq!(num_conditions(&waiter, &call_1), 2);
+    //     waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_1))));
+    //     assert_eq!(num_conditions(&waiter, &call_1), 2);
 
-        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
-        assert_eq!(num_conditions(&waiter, &call_1), 1);
+    //     waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
+    //     assert_eq!(num_conditions(&waiter, &call_1), 1);
 
-        let control_rx_2 = test_register(&sender_tx);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
-        assert_eq!(num_conditions(&waiter, &call_2), 1);
+    //     let control_rx_2 = test_register(&sender_tx);
+    //     waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+    //     assert_eq!(num_conditions(&waiter, &call_2), 1);
 
-        waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_2))));
-        assert_eq!(num_conditions(&waiter, &call_2), 2);
+    //     waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_2))));
+    //     assert_eq!(num_conditions(&waiter, &call_2), 2);
 
-        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_2.clone()))));
-        assert_eq!(num_conditions(&waiter, &call_2), 1);
+    //     waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_2.clone()))));
+    //     assert_eq!(num_conditions(&waiter, &call_2), 1);
 
-        expect_final(control_rx_1, || {
-            waiter.process_signal(sig(ResolveDirectConnection(msg_id_1.to_string())));
-        });
-        expect_final(control_rx_2, || {
-            waiter.process_signal(sig(SendDirectMessageTimeout(msg_id_2.to_string())));
-        });
-    }
+    //     expect_final(control_rx_1, || {
+    //         waiter.process_signal(sig(ResolveDirectConnection(msg_id_1.to_string())));
+    //     });
+    //     expect_final(control_rx_2, || {
+    //         waiter.process_signal(sig(SendDirectMessageTimeout(msg_id_2.to_string())));
+    //     });
+    // }
 }

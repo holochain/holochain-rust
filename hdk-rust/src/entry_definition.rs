@@ -125,7 +125,7 @@ pub struct ValidatingLinkDefinition {
 ///             hdk::ValidationPackageDefinition::ChainFull
 ///         },
 ///
-///         validation: |post: Post, _ctx: hdk::ValidationData| {
+///         validation: |post: Post, _validation_data: hdk::ValidationData| {
 ///             (post.content.len() < 280)
 ///                 .ok_or_else(|| String::from("Content too long"))
 ///         },
@@ -139,7 +139,7 @@ pub struct ValidatingLinkDefinition {
 ///                     hdk::ValidationPackageDefinition::ChainFull
 ///                 },
 ///
-///                 validation: |base: Address, target: Address, _ctx: hdk::ValidationData| {
+///                 validation: |base: Address, target: Address, _validation_data: hdk::ValidationData| {
 ///                     Ok(())
 ///                 }
 ///             )
@@ -159,7 +159,7 @@ macro_rules! entry {
         $(native_type: $native_type:ty,)*
 
         validation_package: || $package_creator:expr,
-        validation: | $entry:ident : $entry_type:ty, $ctx:ident : hdk::ValidationData | $entry_validation:expr
+        validation: | $entry:ident : $entry_type:ty, $validation_data:ident : hdk::ValidationData | $entry_validation:expr
 
         $(
             ,
@@ -201,8 +201,8 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|entry: hdk::holochain_core_types::entry::Entry, ctx: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
-                let $ctx = ctx;
+            let validator = Box::new(|entry: hdk::holochain_core_types::entry::Entry, validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
+                let $validation_data = validation_data;
                 match entry {
                     hdk::holochain_core_types::entry::Entry::App(_, app_entry_value) => {
                         let entry: $entry_type = ::std::convert::TryInto::try_into(app_entry_value)?;
@@ -261,7 +261,7 @@ macro_rules! link {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $ctx:ident : hdk::ValidationData | $link_validation:expr
+        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
     ) => (
 
         {
@@ -269,10 +269,10 @@ macro_rules! link {
                 $package_creator
             });
 
-            let validator = Box::new(|source: Address, target: Address, ctx: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
+            let validator = Box::new(|source: Address, target: Address, validation_data: ::hdk::holochain_wasm_utils::holochain_core_types::validation::ValidationData| {
                 let $source = source;
                 let $target = target;
-                let $ctx = ctx;
+                let $validation_data = validation_data;
                 $link_validation
             });
 
@@ -299,7 +299,7 @@ macro_rules! to {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $ctx:ident : hdk::ValidationData | $link_validation:expr
+        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
     ) => (
         link!(
             direction: $crate::LinkDirection::To,
@@ -307,7 +307,7 @@ macro_rules! to {
             tag: $tag,
 
             validation_package: || $package_creator,
-            validation: | $source : Address,  $target : Address, $ctx : hdk::ValidationData | $link_validation
+            validation: | $source : Address,  $target : Address, $validation_data : hdk::ValidationData | $link_validation
         )
     )
 }
@@ -323,7 +323,7 @@ macro_rules! from {
         tag: $tag:expr,
 
         validation_package: || $package_creator:expr,
-        validation: | $source:ident : Address,  $target:ident : Address, $ctx:ident : hdk::ValidationData | $link_validation:expr
+        validation: | $source:ident : Address,  $target:ident : Address, $validation_data:ident : hdk::ValidationData | $link_validation:expr
     ) => (
         link!(
             direction: $crate::LinkDirection::From,
@@ -331,7 +331,7 @@ macro_rules! from {
             tag: $tag,
 
             validation_package: || $package_creator,
-            validation: | $source : Address,  $target : Address, $ctx : hdk::ValidationData | $link_validation
+            validation: | $source : Address,  $target : Address, $validation_data : hdk::ValidationData | $link_validation
         )
     )
 }

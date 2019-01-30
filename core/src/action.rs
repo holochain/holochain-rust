@@ -19,7 +19,9 @@ use holochain_core_types::{
     link::Link,
     validation::ValidationPackage,
 };
-use holochain_net_connection::json_protocol::{DhtData, DhtMetaData, GetDhtData, GetDhtMetaData};
+use holochain_net_connection::json_protocol::{
+    FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
+};
 use snowflake;
 use std::{
     hash::{Hash, Hasher},
@@ -110,18 +112,17 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
-    /// GetEntry by address
-    GetEntry(GetEntryKey),
+    /// Fetch an Entry on the network by address
+    FetchEntry(GetEntryKey),
 
-    /// Lets the network module respond to a GET request.
+    /// Lets the network module respond to a FETCH request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
-    RespondGet((GetDhtData, Option<EntryWithMeta>)),
+    RespondFetch((FetchEntryData, Option<EntryWithMeta>)),
 
-    /// We got a response for our GET request which needs to be
-    /// added to the state.
+    /// We got a response for our FETCH request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleGetResult(DhtData),
+    HandleFetchResult(FetchEntryResultData),
 
     ///
     UpdateEntry((Address, Address)),
@@ -134,8 +135,8 @@ pub enum Action {
     /// Last string is the stringified process unique id of this `hdk::get_links` call.
     GetLinks(GetLinksKey),
     GetLinksTimeout(GetLinksKey),
-    RespondGetLinks((GetDhtMetaData, Vec<Address>)),
-    HandleGetLinksResult((DhtMetaData, String)),
+    RespondGetLinks((FetchMetaData, Vec<Address>)),
+    HandleGetLinksResult((FetchMetaResultData, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -279,7 +280,7 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(GetEntryKey {
+        Action::FetchEntry(GetEntryKey {
             address: expected_entry_address(),
             id: String::from("test-id"),
         })
@@ -297,7 +298,7 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(GetEntryKey {
+        ActionWrapper::new(Action::FetchEntry(GetEntryKey {
             address: expected_entry_address(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         }))

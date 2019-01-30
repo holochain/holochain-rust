@@ -14,6 +14,7 @@ extern crate test_utils;
 
 use holochain_container_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::{
+    bits_n_pieces::U16_MAX,
     error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeErrorCode},
     json::{JsonString, RawString},
 };
@@ -85,6 +86,19 @@ fn stacked_strings_test() {
     assert_eq!(
         Ok(JsonString::from("first")),
         call_zome_function_with_hc("stacked_strings"),
+    );
+}
+
+#[test]
+/// test that we can send a big string as input to a zome function
+/// at this point it is fine to preinitialize multiple wasm pages (not testing dynamic)
+fn big_string_output_static() {
+    let s = call_zome_function_with_hc("big_string_output_static").unwrap();
+    let expected = "(ಥ⌣ಥ)".repeat(U16_MAX as usize);
+    assert_eq!(String::from(s).len(), expected.len());
+    assert_eq!(
+        Ok(JsonString::from(expected)),
+        call_zome_function_with_hc("big_string_output_static"),
     );
 }
 

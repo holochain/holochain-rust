@@ -12,7 +12,6 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::Entry,
     error::HolochainError,
 };
 use std::{pin::Pin, sync::Arc};

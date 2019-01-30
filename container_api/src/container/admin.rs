@@ -540,7 +540,7 @@ pub mod tests {
             .expect("Could not get current dir")
             .join("tmp-test")
             .join(test_name);
-        format!("persistence_dir = \"{}\"", persist_dir.as_path().display()).to_string()
+        format!("persistence_dir = \'{}\'", persist_dir.to_str().unwrap()).to_string()
     }
 
     pub fn header_block(test_name: &str) -> String {
@@ -553,49 +553,49 @@ pub mod tests {
 
     pub fn agent1() -> String {
         r#"[[agents]]
-id = "test-agent-1"
-key_file = "holo_tester.key"
-name = "Holo Tester 1"
-public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB""#
+id = 'test-agent-1'
+key_file = 'holo_tester.key'
+name = 'Holo Tester 1'
+public_address = 'HoloTester1-----------------------------------------------------------------------AAACZp4xHB'"#
     .to_string()
     }
 
     pub fn agent2() -> String {
         r#"[[agents]]
-id = "test-agent-2"
-key_file = "holo_tester.key"
-name = "Holo Tester 2"
-public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e""#
+id = 'test-agent-2'
+key_file = 'holo_tester.key'
+name = 'Holo Tester 2'
+public_address = 'HoloTester2-----------------------------------------------------------------------AAAGy4WW9e'"#
     .to_string()
     }
 
     pub fn dna() -> String {
         r#"[[dnas]]
-file = "app_spec.hcpkg"
-hash = "Qm328wyq38924y"
-id = "test-dna""#
+file = 'app_spec.hcpkg'
+hash = 'Qm328wyq38924y'
+id = 'test-dna'"#
             .to_string()
     }
 
     pub fn instance1() -> String {
         r#"[[instances]]
-agent = "test-agent-1"
-dna = "test-dna"
-id = "test-instance-1"
+agent = 'test-agent-1'
+dna = 'test-dna'
+id = 'test-instance-1'
 
 [instances.storage]
-type = "memory""#
+type = 'memory'"#
             .to_string()
     }
 
     pub fn instance2() -> String {
         r#"[[instances]]
-agent = "test-agent-2"
-dna = "test-dna"
-id = "test-instance-2"
+agent = 'test-agent-2'
+dna = 'test-dna'
+id = 'test-instance-2'
 
 [instances.storage]
-type = "memory""#
+type = 'memory'"#
             .to_string()
     }
 
@@ -603,37 +603,37 @@ type = "memory""#
         format!(
             r#"[[interfaces]]
 admin = true
-id = "websocket interface"
+id = 'websocket interface'
 
 [[interfaces.instances]]
-id = "test-instance-1"
+id = 'test-instance-1'
 
 [[interfaces.instances]]
-id = "test-instance-2"
+id = 'test-instance-2'
 
 [interfaces.driver]
 port = {}
-type = "websocket""#,
+type = 'websocket'"#,
             port
         )
     }
 
     pub fn logger() -> String {
         r#"[logger]
-type = ""
+type = ''
 [[logger.rules.rules]]
-color = "red"
+color = 'red'
 exclude = false
-pattern = "^err/"
+pattern = '^err/'
 
 [[logger.rules.rules]]
-color = "white"
+color = 'white'
 exclude = false
-pattern = "^debug/dna"
+pattern = '^debug/dna'
 
 [[logger.rules.rules]]
 exclude = false
-pattern = ".*""#
+pattern = '.*'"#
             .to_string()
     }
 
@@ -689,6 +689,7 @@ pattern = ".*""#
             Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
 
         assert_eq!(container.config().dnas.len(), 2,);
+
         assert_eq!(
             container.config().dnas,
             vec![
@@ -719,9 +720,9 @@ pattern = ".*""#
             toml,
             String::from(
                 r#"[[dnas]]
-file = "new-dna.hcpkg"
-hash = "QmfLwk9WrK8ZxakduUpk5uqZqitwj6t6Rbcn6P7tbn5cWW"
-id = "new-dna""#,
+file = 'new-dna.hcpkg'
+hash = 'QmfLwk9WrK8ZxakduUpk5uqZqitwj6t6Rbcn6P7tbn5cWW'
+id = 'new-dna'"#,
             ),
         );
         toml = add_block(toml, instance1());
@@ -882,9 +883,9 @@ id = "new-dna""#,
             toml,
             String::from(
                 r#"[[dnas]]
-file = "new-dna.hcpkg"
-hash = "QmfLwk9WrK8ZxakduUpk5uqZqitwj6t6Rbcn6P7tbn5cWW"
-id = "new-dna""#,
+file = 'new-dna.hcpkg'
+hash = 'QmfLwk9WrK8ZxakduUpk5uqZqitwj6t6Rbcn6P7tbn5cWW'
+id = 'new-dna'"#,
             ),
         );
         toml = add_block(toml, instance1());
@@ -893,9 +894,9 @@ id = "new-dna""#,
             toml,
             String::from(
                 r#"[[instances]]
-agent = "test-agent-1"
-dna = "new-dna"
-id = "new-instance""#,
+agent = 'test-agent-1'
+dna = 'new-dna'
+id = 'new-instance'"#,
             ),
         );
 
@@ -910,7 +911,7 @@ id = "new-instance""#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = \"{}\"\ntype = \"file\"",
+                "[instances.storage]\npath = '{}'\ntype = 'file'",
                 storage_path_string
             ),
         );
@@ -952,14 +953,14 @@ id = "new-instance""#,
             String::from(
                 r#"[[interfaces]]
 admin = true
-id = "websocket interface"
+id = 'websocket interface'
 
 [[interfaces.instances]]
-id = "test-instance-2"
+id = 'test-instance-2'
 
 [interfaces.driver]
 port = 3002
-type = "websocket""#,
+type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -1001,12 +1002,12 @@ type = "websocket""#,
             String::from(
                 r#"[[interfaces]]
 admin = true
-id = "websocket interface"
+id = 'websocket interface'
 instances = []
 
 [interfaces.driver]
 port = 3003
-type = "websocket""#,
+type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -1072,12 +1073,12 @@ type = "websocket""#,
             String::from(
                 r#"[[interfaces]]
 admin = false
-id = "new-interface"
+id = 'new-interface'
 instances = []
 
 [interfaces.driver]
 port = 8080
-type = "http""#,
+type = 'http'"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -1173,9 +1174,9 @@ type = "http""#,
             toml,
             String::from(
                 r#"[[instances]]
-agent = "test-agent-1"
-dna = "test-dna"
-id = "new-instance""#,
+agent = 'test-agent-1'
+dna = 'test-dna'
+id = 'new-instance'"#,
             ),
         );
 
@@ -1190,7 +1191,7 @@ id = "new-instance""#,
         toml = add_block(
             toml,
             format!(
-                "[instances.storage]\npath = \"{}\"\ntype = \"file\"",
+                "[instances.storage]\npath = '{}'\ntype = 'file'",
                 storage_path_string
             ),
         );
@@ -1199,20 +1200,20 @@ id = "new-instance""#,
             String::from(
                 r#"[[interfaces]]
 admin = true
-id = "websocket interface"
+id = 'websocket interface'
 
 [[interfaces.instances]]
-id = "test-instance-1"
+id = 'test-instance-1'
 
 [[interfaces.instances]]
-id = "test-instance-2"
+id = 'test-instance-2'
 
 [[interfaces.instances]]
-id = "new-instance"
+id = 'new-instance'
 
 [interfaces.driver]
 port = 3007
-type = "websocket""#,
+type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -1257,14 +1258,14 @@ type = "websocket""#,
             String::from(
                 r#"[[interfaces]]
 admin = true
-id = "websocket interface"
+id = 'websocket interface'
 
 [[interfaces.instances]]
-id = "test-instance-2"
+id = 'test-instance-2'
 
 [interfaces.driver]
 port = 3008
-type = "websocket""#,
+type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -1305,10 +1306,10 @@ type = "websocket""#,
             toml,
             String::from(
                 r#"[[agents]]
-id = "new-agent"
-key_file = "new-test-path"
-name = "Mr. New"
-public_address = "new-------------------------------------------------------------------------------AAAFeOAoWg""#,
+id = 'new-agent'
+key_file = 'new-test-path'
+name = 'Mr. New'
+public_address = 'new-------------------------------------------------------------------------------AAAFeOAoWg'"#,
             ),
         );
         toml = add_block(toml, dna());
@@ -1349,14 +1350,14 @@ public_address = "new-----------------------------------------------------------
             String::from(
                 r#"[[interfaces]]
 admin = true
-id = "websocket interface"
+id = 'websocket interface'
 
 [[interfaces.instances]]
-id = "test-instance-1"
+id = 'test-instance-1'
 
 [interfaces.driver]
 port = 3010
-type = "websocket""#,
+type = 'websocket'"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -1394,9 +1395,9 @@ type = "websocket""#,
             toml,
             String::from(
                 r#"[[bridges]]
-callee_id = "test-instance-2"
-caller_id = "test-instance-1"
-handle = "my favourite instance!""#,
+callee_id = 'test-instance-2'
+caller_id = 'test-instance-1'
+handle = 'my favourite instance!'"#,
             ),
         );
         toml = add_block(toml, dna());

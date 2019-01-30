@@ -128,6 +128,9 @@ extern crate json_patch;
 #[cfg(test)]
 extern crate reqwest;
 extern crate tokio;
+#[cfg(test)]
+#[macro_use]
+extern crate pretty_assertions;
 
 pub mod config;
 pub mod container;

@@ -209,8 +209,6 @@ impl EntityAttributeValueIndex {
         let prefixes = if index_query.prefixes().len() >0 {index_query.prefixes().clone()} else {vec![""]};
         e.map(|a| prefixes.iter().any(|prefix| {
             let attribute_with_prefix = prefix.to_string() + &a.clone();
-            println!("attribute with prefix {:?}",attribute_with_prefix.clone());
-            println!("eav {:?}",eav.clone());
             attribute_with_prefix.clone()== eav.clone()
         })).unwrap_or(true)
 

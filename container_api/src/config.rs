@@ -20,7 +20,7 @@ use holochain_core_types::{
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
-use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*};
+use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*, path::PathBuf};
 use toml;
 
 /// Main container configuration struct
@@ -58,6 +58,16 @@ pub struct Configuration {
     /// Configuration options for the network module n3h
     #[serde(default)]
     pub network: Option<NetworkConfig>,
+    /// where to persist the config file and DNAs
+    #[serde(default = "default_persistence_dir")]
+    pub persistence_dir: PathBuf,
+}
+
+pub fn default_persistence_dir() -> PathBuf {
+    dirs::home_dir()
+        .expect("No persistence_dir given in config file and no HOME dir defined. Don't know where to store config file!")
+        .join(".holochain")
+        .join("container")
 }
 
 /// There might be different kinds of loggers in the future.
@@ -483,7 +493,7 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
     let config_toml = toml::Value::try_from(config).map_err(|e| {
         HolochainError::IoError(format!("Could not serialize toml: {}", e.to_string()))
     })?;
-    toml::to_string(&config_toml).map_err(|e| {
+    toml::to_string_pretty(&config_toml).map_err(|e| {
         HolochainError::IoError(format!(
             "Could not convert toml to string: {}",
             e.to_string()

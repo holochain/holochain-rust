@@ -228,6 +228,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 .into_iter()
                 .map(|value: HcResult<EntityAttributeValueIndex>| {
                     value.unwrap_or(EntityAttributeValueIndex::default())
+                    
                 })
                 .collect();
             Ok(map

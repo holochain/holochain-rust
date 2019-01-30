@@ -145,7 +145,7 @@ pub(crate) fn reduce_remove_link(
     // Get Action's input data
     let action = action_wrapper.action();
     let link = unwrap_to!(action => Action::RemoveLink);
-
+    println!("link {:?}",link.clone());
     let mut new_store = (*old_store).clone();
     let storage = &old_store.content_storage().clone();
     if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
@@ -460,17 +460,18 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
+        let indexed_query = IndexQuery::new_only_prefixes(vec!["link__","removed_link__"]);
         let fetched = storage.read().unwrap().fetch_eavi(
             Some(entry.address()),
             None,
             None,
-            IndexQuery::default(),
+            indexed_query,
         );
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
-        assert_eq!(hash_set.len(), 2);
-        let eav = hash_set.iter().nth(1).unwrap();
+        assert_eq!(hash_set.len(), 1);
+        let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
         assert_eq!(eav.attribute(), format!("removed_link__{}", link.tag()));

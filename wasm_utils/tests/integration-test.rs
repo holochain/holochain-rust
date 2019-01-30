@@ -92,7 +92,15 @@ fn stacked_strings_test() {
 #[test]
 /// test that we can send a big string as input to a zome function
 /// at this point it is fine to preinitialize multiple wasm pages (not testing dynamic)
-fn big_string_output_static() {
+fn big_string_process_static_test() {
+    // assert happens inside the zome because this test shows internal processing
+    call_zome_function_with_hc("big_string_process_static").unwrap();
+}
+
+#[test]
+/// test that we can send a big string as input to a zome function
+/// at this point it is fine to preinitialize multiple wasm pages (not testing dynamic)
+fn big_string_output_static_test() {
     let s = call_zome_function_with_hc("big_string_output_static").unwrap();
     let expected = "(ಥ⌣ಥ)".repeat(U16_MAX as usize);
     assert_eq!(String::from(s).len(), expected.len());

@@ -14,12 +14,14 @@ fn inner(
     network_state.initialized()?;
 
     let data = MessageData {
-        msg_id: direct_message_data.msg_id.clone(),
+        request_id: direct_message_data.msg_id.clone(),
         dna_address: network_state.dna_address.clone().unwrap(),
         to_agent_id: direct_message_data.address.to_string(),
         from_agent_id: network_state.agent_id.clone().unwrap(),
-        data: serde_json::from_str(&serde_json::to_string(&direct_message_data.message).unwrap())
-            .unwrap(),
+        content: serde_json::from_str(
+            &serde_json::to_string(&direct_message_data.message).unwrap(),
+        )
+        .unwrap(),
     };
 
     let protocol_object = if direct_message_data.is_response {
@@ -27,7 +29,7 @@ fn inner(
     } else {
         network_state
             .direct_message_connections
-            .insert(data.msg_id.clone(), direct_message_data.message.clone());
+            .insert(data.request_id.clone(), direct_message_data.message.clone());
         JsonProtocol::SendMessage(data)
     };
 

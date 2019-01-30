@@ -3,20 +3,23 @@ use crate::{
     context::Context,
     network::{reducers::send, state::NetworkState},
 };
-use holochain_core_types::error::HolochainError;
-use holochain_net_connection::json_protocol::{GetDhtMetaData, JsonProtocol};
+use holochain_core_types::{error::HolochainError, hash::HashString};
+use holochain_net_connection::json_protocol::{FetchMetaData, JsonProtocol};
 use std::sync::Arc;
 
-fn inner(network_state: &mut NetworkState, key: &GetLinksKey) -> Result<(), HolochainError> {
+fn reduce_get_links_inner(
+    network_state: &mut NetworkState,
+    key: &GetLinksKey,
+) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
     send(
         network_state,
-        JsonProtocol::GetDhtMeta(GetDhtMetaData {
-            msg_id: key.id.clone(),
+        JsonProtocol::FetchMeta(FetchMetaData {
+            requester_agent_id: network_state.agent_id.clone().unwrap(),
+            request_id: key.id.clone(),
             dna_address: network_state.dna_address.clone().unwrap(),
-            from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: key.base_address.to_string(),
+            entry_address: HashString::from(key.base_address.clone()),
             attribute: format!("link__{}", key.tag),
         }),
     )
@@ -30,7 +33,7 @@ pub fn reduce_get_links(
     let action = action_wrapper.action();
     let key = unwrap_to!(action => crate::action::Action::GetLinks);
 
-    let result = match inner(network_state, &key) {
+    let result = match reduce_get_links_inner(network_state, &key) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };

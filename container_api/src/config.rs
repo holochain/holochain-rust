@@ -19,7 +19,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
-use serde::{Deserialize};
+use serde::Deserialize;
 use std::{collections::HashMap, convert::TryFrom, env, fs::File, io::prelude::*, path::PathBuf};
 use toml;
 
@@ -69,7 +69,6 @@ pub fn default_persistence_dir() -> PathBuf {
         .join(".holochain")
         .join("container")
 }
-
 
 /// There might be different kinds of loggers in the future.
 /// Currently there is a "debug" and "simple" logger.

@@ -18,19 +18,21 @@ use holochain_core_types::{
     error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeErrorCode},
     json::{JsonString, RawString},
 };
-use holochain_wasm_utils::wasm_target_dir;
+use holochain_wasm_utils::{memory::MemoryInt, wasm_target_dir};
 use std::convert::TryFrom;
 use test_utils::hc_setup_and_call_zome_fn;
-use holochain_wasm_utils::memory::MemoryInt;
 
-fn call_zome_function_with_hc<J: Into<JsonString>>(fn_name: &str, params: J) -> HolochainResult<JsonString> {
+fn call_zome_function_with_hc<J: Into<JsonString>>(
+    fn_name: &str,
+    params: J,
+) -> HolochainResult<JsonString> {
     hc_setup_and_call_zome_fn(
         &format!(
             "{}/wasm32-unknown-unknown/release/wasm_integration_test.wasm",
             wasm_target_dir("wasm_utils/", "wasm-test/integration-test/"),
         ),
         fn_name,
-        params
+        params,
     )
 }
 
@@ -96,12 +98,7 @@ fn big_string_input_static_test() {
     let s = "foobarbazbing".repeat(U16_MAX as usize);
     assert_eq!(
         JsonString::from(
-            String::from(
-                JsonString::from(
-                    RawString::from(s.clone())
-                )
-            )
-            .len() as MemoryInt
+            String::from(JsonString::from(RawString::from(s.clone()))).len() as MemoryInt
         ),
         call_zome_function_with_hc("big_string_input", RawString::from(s)).unwrap(),
     );

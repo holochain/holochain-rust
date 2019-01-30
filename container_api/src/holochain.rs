@@ -611,8 +611,11 @@ mod tests {
     #[test]
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn call_debug_stacked() {
-        let call_result =
-            hc_setup_and_call_zome_fn(&example_api_wasm_path(), "debug_stacked_hello", RawString::from(""));
+        let call_result = hc_setup_and_call_zome_fn(
+            &example_api_wasm_path(),
+            "debug_stacked_hello",
+            RawString::from(""),
+        );
         assert_eq!(
             JsonString::from("{\"value\":\"fish\"}"),
             call_result.unwrap()

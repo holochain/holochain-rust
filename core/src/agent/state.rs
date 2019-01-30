@@ -151,7 +151,7 @@ impl AddressableContent for AgentStateSnapshot {
 // @see https://github.com/holochain/holochain-rust/issues/196
 pub enum ActionResponse {
     Commit(Result<Address, HolochainError>),
-    GetEntry(Option<Entry>),
+    FetchEntry(Option<Entry>),
     GetLinks(Result<Vec<Address>, HolochainError>),
     LinkEntries(Result<Entry, HolochainError>),
 }
@@ -343,15 +343,15 @@ pub mod tests {
     fn test_get_response_to_json() {
         assert_eq!(
             JsonString::from(
-                "{\"GetEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
+                "{\"FetchEntry\":{\"App\":[\"testEntryType\",\"\\\"test entry value\\\"\"]}}"
             ),
-            JsonString::from(ActionResponse::GetEntry(Some(Entry::from(
+            JsonString::from(ActionResponse::FetchEntry(Some(Entry::from(
                 test_entry().clone()
             ))))
         );
         assert_eq!(
-            JsonString::from("{\"GetEntry\":null}"),
-            JsonString::from(ActionResponse::GetEntry(None)),
+            JsonString::from("{\"FetchEntry\":null}"),
+            JsonString::from(ActionResponse::FetchEntry(None)),
         )
     }
 

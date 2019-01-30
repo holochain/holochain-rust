@@ -20,7 +20,7 @@ impl Default for QueryArgsNames {
     }
 }
 
-// Handle automatic convertions from various types into the appropriate QueryArgsNames enum type
+// Handle automatic conversions from various types into the appropriate QueryArgsNames enum type
 impl From<EntryType> for QueryArgsNames {
     fn from(e: EntryType) -> QueryArgsNames {
         QueryArgsNames::QueryName(e.to_string())

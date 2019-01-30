@@ -107,9 +107,7 @@ pub fn call_and_wait_for_result(
     let (tick_tx, tick_rx) = channel();
     instance
         .observer_channel()
-        .send(Observer {
-            ticker: tick_tx,
-        })
+        .send(Observer { ticker: tick_tx })
         .expect("Observer channel not initialized");
     instance.dispatch(call_action);
 

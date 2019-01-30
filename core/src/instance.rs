@@ -130,9 +130,7 @@ impl Instance {
         let (tick_tx, tick_rx) = channel();
         dispatch_action(self.action_channel(), action_wrapper.clone());
         self.observer_channel()
-            .send(Observer {
-                ticker: tick_tx,
-            })
+            .send(Observer { ticker: tick_tx })
             .expect("Observer channel not initialized");;
 
         loop {

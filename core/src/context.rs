@@ -199,9 +199,7 @@ impl Context {
     pub fn create_observer(&self) -> Receiver<()> {
         let (tick_tx, tick_rx) = channel();
         self.observer_channel()
-            .send(Observer {
-                ticker: tick_tx,
-            })
+            .send(Observer { ticker: tick_tx })
             .expect("Observer channel not initialized");
         tick_rx
     }

@@ -62,7 +62,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
         // ));
         let maybe_json_msg = JsonProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
-            // context.log(format!("debug/net/handle: Received non-json message"));
             return Ok(());
         }
         match maybe_json_msg.unwrap() {

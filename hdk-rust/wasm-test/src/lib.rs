@@ -430,7 +430,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+            validation: |entry: TestEntryType, _validation_data: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             },
@@ -442,7 +442,7 @@ define_zome! {
                     validation_package: || {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
-                    validation: |source: Address, target: Address, ctx: hdk::ValidationData | {
+                    validation: |source: Address, target: Address, validation_data: hdk::ValidationData | {
                         Ok(())
                     }
                 )
@@ -459,8 +459,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
-                Err(serde_json::to_string(&ctx).unwrap())
+            validation: |_entry: TestEntryType, validation_data: hdk::ValidationData| {
+                Err(serde_json::to_string(&validation_data).unwrap())
             }
         ),
 
@@ -474,7 +474,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
+            validation: |_entry: TestEntryType, validation_data: hdk::ValidationData| {
                 Ok(())
             },
 
@@ -485,7 +485,7 @@ define_zome! {
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
                     },
-                    validation: |base: Address, target: Address, ctx: hdk::ValidationData | {
+                    validation: |base: Address, target: Address, validation_data: hdk::ValidationData | {
                         let base = match hdk::get_entry(&base)? {
                             Some(entry) => match entry {
                                 Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,

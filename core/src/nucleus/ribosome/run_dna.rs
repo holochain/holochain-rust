@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     nucleus::{
-        ribosome::{api::ZomeApiFunction, memory::SinglePageManager, Runtime},
+        ribosome::{api::ZomeApiFunction, memory::WasmPageManager, Runtime},
         ZomeFnCall, ZomeFnResult,
     },
 };
@@ -61,10 +61,10 @@ pub fn run_dna(
                 ZomeApiFunction::Abort => Ok(FuncInstance::alloc_host(
                     Signature::new(
                         &[
-                            ValueType::I32,
-                            ValueType::I32,
-                            ValueType::I32,
-                            ValueType::I32,
+                            ValueType::I64,
+                            ValueType::I64,
+                            ValueType::I64,
+                            ValueType::I64,
                         ][..],
                         None,
                     ),
@@ -72,7 +72,7 @@ pub fn run_dna(
                 )),
                 // All of our Zome API Functions have the same signature
                 _ => Ok(FuncInstance::alloc_host(
-                    Signature::new(&[ValueType::I32][..], Some(ValueType::I32)),
+                    Signature::new(&[ValueType::I64][..], Some(ValueType::I64)),
                     api_fn as usize,
                 )),
             }
@@ -94,7 +94,7 @@ pub fn run_dna(
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
-        memory_manager: SinglePageManager::new(&wasm_instance),
+        memory_manager: WasmPageManager::new(&wasm_instance),
         context,
         zome_call: zome_call.clone(),
         dna_name: dna_name.to_string(),
@@ -129,7 +129,7 @@ pub fn run_dna(
         returned_encoding = wasm_instance
             .invoke_export(
                 zome_call.fn_name.clone().as_str(),
-                &[RuntimeValue::I32(
+                &[RuntimeValue::I64(
                     RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
                 )],
                 mut_runtime,
@@ -183,9 +183,12 @@ pub fn run_dna(
     };
 
     // Log & done
-    runtime.context.log(format!(
-        "debug/zome: Zome Function '{}' returned: {}",
-        zome_call.fn_name, return_log_msg,
-    ));
+    // @TODO make this more sophisticated (truncation or something)
+    // right now we have tests that return multiple wasm pages (64k+ bytes) so this is very spammy
+    // runtime.context.log(format!(
+    //     "debug/zome: Zome Function '{}' returned: {}",
+    //     zome_call.fn_name, return_log_msg,
+    // ));
+    let _ = return_log_msg;
     return return_result;
 }

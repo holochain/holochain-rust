@@ -234,6 +234,7 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_entry_ok",
         "remove_modified_entry_ok",
         "send_message",
+        "sleep",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -761,4 +762,11 @@ fn can_send_and_receive() {
 
     let expected: ZomeApiResult<String> = Ok(String::from("Received: TEST"));
     assert_eq!(result.unwrap(), JsonString::from(expected),);
+}
+
+#[test]
+fn sleep_smoke_test() {
+    let (mut hc, _) = start_holochain_instance("sleep_smoke_test", "alice");
+    let result = make_test_call(&mut hc, "sleep", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
 }

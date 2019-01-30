@@ -357,7 +357,7 @@ fn can_round_trip() {
 }
 
 #[test]
-// #[cfg(not(windows))]
+#[cfg(not(windows))]
 fn can_get_entry_ok() {
     let (mut hc, _) = start_holochain_instance("can_get_entry", "alice");
     // Call the exposed wasm function that calls the Commit API function
@@ -394,7 +394,7 @@ fn can_get_entry_ok() {
 }
 
 #[test]
-// #[cfg(not(windows))]
+#[cfg(not(windows))]
 fn can_get_entry_bad() {
     let (mut hc, _) = start_holochain_instance("can_get_entry", "alice");
     // Call the exposed wasm function that calls the Commit API function
@@ -513,7 +513,7 @@ fn can_link_entries() {
 }
 
 #[test]
-// #[cfg(not(windows))]
+#[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
     // Create links

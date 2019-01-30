@@ -13,7 +13,7 @@ use std::{
 
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver, StorageConfiguration, UiBundleConfiguration, UiInterfaceConfiguration,
+    InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use container::{ContainerAdmin, ContainerUiAdmin, CONTAINER};
 use serde_json::map::Map;

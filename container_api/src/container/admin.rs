@@ -659,7 +659,7 @@ pattern = '.*'"#
         toml
     }
 
-    fn create_test_container(test_name: &str, port: u32) -> Container {
+    pub fn create_test_container(test_name: &str, port: u32) -> Container {
         let config = load_configuration::<Configuration>(&test_toml(test_name, port)).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();

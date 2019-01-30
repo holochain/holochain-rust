@@ -36,7 +36,7 @@ impl ContainerUiAdmin for Container {
 
         let path = match copy {
             true => {
-                let dest = self.config_path.clone()
+                let dest = self.config_path()
                     .join("static")
                     .join(id);
                 fs_extra::dir::copy(&path, &dest, &fs_extra::dir::CopyOptions::new())
@@ -185,7 +185,7 @@ pub mod tests {
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
@@ -230,7 +230,7 @@ root_dir = ".""#,
             Ok(())
         );
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
@@ -278,7 +278,7 @@ root_dir = ".""#,
             Ok(())
         );
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
@@ -342,7 +342,7 @@ port = 4000"#,
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path).expect("Could not open temp config file");
+        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 

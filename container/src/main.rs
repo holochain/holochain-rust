@@ -20,7 +20,7 @@ extern crate holochain_core_types;
 extern crate structopt;
 
 use holochain_container_api::{
-    config::{load_configuration, Configuration},
+    config::{self, load_configuration, Configuration},
     container::{mount_container_from_config, CONTAINER},
 };
 use holochain_core_types::error::HolochainError;
@@ -40,7 +40,7 @@ fn main() {
     let opt = Opt::from_args();
     let config_path = opt
         .config
-        .unwrap_or(PathBuf::from(r"~/.holochain/container_config.toml"));
+        .unwrap_or(config::default_persistence_dir().join("container-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
@@ -79,7 +79,6 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     mount_container_from_config(config);
     let mut container_guard = CONTAINER.lock().unwrap();
     let container = container_guard.as_mut().expect("Container must be mounted");
-    container.set_config_path(PathBuf::from(path));
     container.load_config()?;
     Ok(())
 }

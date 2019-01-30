@@ -38,7 +38,6 @@ pub mod tests {
 
     use self::wabt::Wat2Wasm;
     use crate::{
-        agent::state::create_new_chain_header,
         instance::tests::{test_context_and_logger, test_instance},
         nucleus::{
             ribosome::{

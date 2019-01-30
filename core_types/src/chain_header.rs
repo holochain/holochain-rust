@@ -127,10 +127,15 @@ impl AddressableContent for ChainHeader {
 
 /// returns a dummy header for use in tests
 pub fn test_chain_header() -> ChainHeader {
+    test_chain_header_with_sig("sig")
+}
+
+/// returns a dummy header for use in tests
+pub fn test_chain_header_with_sig(sig: &'static str) -> ChainHeader {
     ChainHeader::new(
         &test_entry_type(),
         &test_entry().address(),
-        &test_provenances("sig"),
+        &test_provenances(sig),
         &None,
         &None,
         &None,

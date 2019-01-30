@@ -310,7 +310,6 @@ pub mod tests {
             test_entry, test_entry_b, test_entry_c, Entry,
         },
         json::JsonString,
-        signature::Signature,
         time::test_iso_8601,
     };
 

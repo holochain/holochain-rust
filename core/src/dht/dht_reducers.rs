@@ -63,14 +63,7 @@ pub(crate) fn reduce_hold_entry(
         Action::Commit((entry, _)) => reduce_store_entry_common(context, old_store, &entry),
         Action::Hold(EntryWithHeader { entry, header }) => {
             reduce_store_entry_common(context.clone(), old_store, &entry).and_then(|state| {
-                let eavi = EntityAttributeValueIndex::new(
-                    &entry.address(),
-                    &ENTRY_HEADER_ATTRIBUTE.to_string(),
-                    &header.address(),
-                )
-                .ok()?; // this is OK because "entry_headers" clearly matches the regex
-                state.content_storage().write().unwrap().add(&header).ok()?;
-                state.meta_storage().write().unwrap().add_eavi(&eavi).ok()?;
+                state.add_header_for_entry(&entry, &header).ok()?;
                 Some(state)
             })
         }

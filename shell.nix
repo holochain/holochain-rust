@@ -153,6 +153,6 @@ stdenv.mkDerivation rec {
   shellHook = ''
    # needed for install cmd and tarpaulin
    export PATH=$PATH:~/.cargo/bin;
-   export HC_TARGET_PREFIX=/tmp/holochain/
+   export HC_TARGET_PREFIX=~/nix-holochain/
   '';
 }

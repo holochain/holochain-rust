@@ -12,7 +12,7 @@ pub trait ContainerUiAdmin {
         &mut self,
         path: PathBuf,
         id: &String,
-        copy: bool
+        copy: bool,
     ) -> Result<(), HolochainError>;
     fn uninstall_ui_bundle(&mut self, id: &String) -> Result<(), HolochainError>;
 
@@ -31,23 +31,16 @@ impl ContainerUiAdmin for Container {
         &mut self,
         path: PathBuf,
         id: &String,
-        copy: bool
+        copy: bool,
     ) -> Result<(), HolochainError> {
-
         let path = match copy {
             true => {
-                let dest = self.config_path()
-                    .join("static")
-                    .join(id);
+                let dest = self.config_path().join("static").join(id);
                 fs_extra::dir::copy(&path, &dest, &fs_extra::dir::CopyOptions::new())
-                    .map_err(|e| {
-                        HolochainError::ErrorGeneric(e.to_string())
-                    })?;
+                    .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
                 dest
-            },
-            false => {
-                path
             }
+            false => path,
         };
 
         let path_string = path
@@ -177,19 +170,27 @@ pub mod tests {
 
     #[test]
     fn test_install_ui_bundle_from_file() {
-        let mut container = create_test_container("test_install_ui_bundle_from_file", 3000);
+        let test_name = "test_install_ui_bundle_from_file";
+        let mut container = create_test_container(test_name, 3000);
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
+            container.install_ui_bundle_from_file(
+                bundle_path,
+                &"test-bundle-id".to_string(),
+                false
+            ),
             Ok(())
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\nui_interfaces = []");
+        let mut toml = empty_bridges();
+        toml = add_line(toml, persistence_dir(test_name));
+        toml = add_line(toml, empty_ui_interfaces());
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -200,9 +201,9 @@ pub mod tests {
             toml,
             String::from(
                 r#"[[ui_bundles]]
-hash = "<not-used>"
-id = "test-bundle-id"
-root_dir = ".""#,
+hash = '<not-used>'
+id = 'test-bundle-id'
+root_dir = '.'"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -213,7 +214,8 @@ root_dir = ".""#,
 
     #[test]
     fn test_uninstall_ui_bundle() {
-        let mut container = create_test_container("test_uninstall_ui_bundle", 3001);
+        let test_name = "test_uninstall_ui_bundle";
+        let mut container = create_test_container(test_name, 3001);
         assert_eq!(
             container.uninstall_ui_bundle(&"test-bundle-id".to_string()),
             Err(HolochainError::ConfigError(
@@ -222,7 +224,11 @@ root_dir = ".""#,
         );
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
+            container.install_ui_bundle_from_file(
+                bundle_path,
+                &"test-bundle-id".to_string(),
+                false
+            ),
             Ok(())
         );
         assert_eq!(
@@ -230,11 +236,12 @@ root_dir = ".""#,
             Ok(())
         );
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\nui_bundles = []\nui_interfaces = []");
+        let mut toml = header_block(test_name);
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -249,7 +256,8 @@ root_dir = ".""#,
 
     #[test]
     fn test_add_ui_interface() {
-        let mut container = create_test_container("test_add_ui_interface", 3002);
+        let test_name = "test_add_ui_interface";
+        let mut container = create_test_container(test_name, 3002);
         assert_eq!(
             container.add_ui_interface(UiInterfaceConfiguration {
                 id: "test-ui-interface-id".into(),
@@ -264,7 +272,11 @@ root_dir = ".""#,
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
+            container.install_ui_bundle_from_file(
+                bundle_path,
+                &"test-bundle-id".to_string(),
+                false
+            ),
             Ok(())
         );
 
@@ -278,11 +290,13 @@ root_dir = ".""#,
             Ok(())
         );
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []");
+        let mut toml = empty_bridges();
+        toml = add_line(toml, persistence_dir(test_name));
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -293,13 +307,13 @@ root_dir = ".""#,
             toml,
             String::from(
                 r#"[[ui_bundles]]
-hash = "<not-used>"
-id = "test-bundle-id"
-root_dir = "."
+hash = '<not-used>'
+id = 'test-bundle-id'
+root_dir = '.'
 
 [[ui_interfaces]]
-bundle = "test-bundle-id"
-id = "test-ui-interface-id"
+bundle = 'test-bundle-id'
+id = 'test-ui-interface-id'
 port = 4000"#,
             ),
         );
@@ -311,7 +325,8 @@ port = 4000"#,
 
     #[test]
     fn test_remove_ui_interface() {
-        let mut container = create_test_container("test_install_dna_from_file", 3003);
+        let test_name = "test_remove_ui_interface";
+        let mut container = create_test_container(test_name, 3003);
 
         assert_eq!(
             container.remove_ui_interface(&"test-ui-interface-id".to_string()),
@@ -322,7 +337,11 @@ port = 4000"#,
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
+            container.install_ui_bundle_from_file(
+                bundle_path,
+                &"test-bundle-id".to_string(),
+                false
+            ),
             Ok(())
         );
 
@@ -342,11 +361,14 @@ port = 4000"#,
         );
 
         let mut config_contents = String::new();
-        let mut file = File::open(&container.config_path()).expect("Could not open temp config file");
+        let mut file =
+            File::open(&container.config_path()).expect("Could not open temp config file");
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
-        let mut toml = String::from("bridges = []\nui_interfaces = []");
+        let mut toml = empty_bridges();
+        toml = add_line(toml, persistence_dir(test_name));
+        toml = add_line(toml, empty_ui_interfaces());
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
         toml = add_block(toml, dna());
@@ -357,9 +379,9 @@ port = 4000"#,
             toml,
             String::from(
                 r#"[[ui_bundles]]
-hash = "<not-used>"
-id = "test-bundle-id"
-root_dir = ".""#,
+hash = '<not-used>'
+id = 'test-bundle-id'
+root_dir = '.'"#,
             ),
         );
         toml = add_block(toml, logger());
@@ -370,11 +392,16 @@ root_dir = ".""#,
 
     #[test]
     fn test_start_ui_interface() {
-        let mut container = create_test_container("test_install_dna_from_file", 3004);
+        let test_name = "test_start_ui_interface";
+        let mut container = create_test_container(test_name, 3004);
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
+            container.install_ui_bundle_from_file(
+                bundle_path,
+                &"test-bundle-id".to_string(),
+                false
+            ),
             Ok(())
         );
 
@@ -396,11 +423,16 @@ root_dir = ".""#,
 
     #[test]
     fn test_stop_ui_interface() {
-        let mut container = create_test_container("test_install_dna_from_file", 3005);
+        let test_name = "test_stop_ui_interface";
+        let mut container = create_test_container(test_name, 3005);
 
         let bundle_path = PathBuf::from(".");
         assert_eq!(
-            container.install_ui_bundle_from_file(bundle_path, &"test-bundle-id".to_string(), false),
+            container.install_ui_bundle_from_file(
+                bundle_path,
+                &"test-bundle-id".to_string(),
+                false
+            ),
             Ok(())
         );
 

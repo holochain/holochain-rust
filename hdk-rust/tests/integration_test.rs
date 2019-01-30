@@ -764,7 +764,7 @@ fn can_send_and_receive() {
         EntryStruct {
             stuff: String::from("TEST"),
         }
-            .into(),
+        .into(),
     );
 
     let address = entry_committed_by_receive.address().to_string();

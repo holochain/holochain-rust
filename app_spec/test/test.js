@@ -32,8 +32,8 @@ scenario2.runTape('get sources', async (t, { alice, bob }) => {
   const result1 = await alice.callSync('blog', 'create_post', params)
   const result2 = await   bob.callSync('blog', 'create_post', params)
   t.equal(result1.Ok, result2.Ok)
-  const sources = alice.call('blog', 'get_sources', {address: result1.Ok})
-  t.equal(sources.Ok, [alice.dnaAddress, bob.dnaAddress])
+  const sources = bob.call('blog', 'get_sources', {address: result1.Ok})
+  t.equal(sources.Ok, [alice.agentId, bob.agentId])
 })
 
 scenario1.runTape('call', async (t, { alice }) => {

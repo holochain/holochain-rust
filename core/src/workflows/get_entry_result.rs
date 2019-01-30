@@ -1,5 +1,7 @@
-use crate::{context::Context, network, nucleus};
-use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
+use crate::{context::Context, dht::dht_reducers::ENTRY_HEADER_ATTRIBUTE, network, nucleus};
+use holochain_core_types::{
+    cas::content::AddressableContent, chain_header::ChainHeader, time::Timeout,
+};
 
 use holochain_core_types::{
     cas::content::Address, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
@@ -60,7 +62,31 @@ pub async fn get_entry_result_workflow<'a>(
 
             // Add entry
             let headers: Vec<ChainHeader> = if args.options.headers {
-                unimplemented!()
+                context
+                    .eav_storage
+                    .read()
+                    .unwrap()
+                    // fetch all EAV references to chain headers for this entry
+                    .fetch_eavi(
+                        Some(address),
+                        Some(ENTRY_HEADER_ATTRIBUTE.to_string()),
+                        None,
+                        Default::default(),
+                    )?
+                    .into_iter()
+                    // get the header addresses
+                    .map(|eavi| eavi.value())
+                    // fetch the header content from CAS
+                    .map(|a| context.chain_storage.read().unwrap().fetch(&a))
+                    // rearrange the Vec<Result<Option<_>, _>>
+                    .collect::<Result<Vec<Option<_>>, _>>()
+                    .map(|r| {
+                        r.into_iter()
+                            // ignore None values
+                            .flatten()
+                            .map(|content| ChainHeader::try_from_content(&content))
+                            .collect::<Result<Vec<_>, _>>()
+                    })??
             } else {
                 Vec::new()
             };

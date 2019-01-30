@@ -15,7 +15,7 @@ use holochain_core_types::{
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
 
-const ENTRY_HEADER_ATTRIBUTE: &'static str = "entry-headers";
+pub const ENTRY_HEADER_ATTRIBUTE: &'static str = "entry-headers";
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;

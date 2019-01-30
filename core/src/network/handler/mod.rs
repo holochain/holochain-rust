@@ -49,12 +49,6 @@ fn is_my_id(context: &Arc<Context>, agent_id: &str) -> bool {
     true
 }
 
-//// FIXME: Temporary hack to ignore messages incorrectly sent to us by the networking
-//// module that aren't really meant for us
-//fn is_for_me(context: &Arc<Context>, dna_address: &Address, agent_id: &str) -> bool {
-//    !is_my_id(context, agent_id) && is_my_dna(context, dna_address)
-//}
-
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
@@ -73,8 +67,11 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
         }
         match maybe_json_msg.unwrap() {
             JsonProtocol::HandleStoreEntry(dht_entry_data) => {
-                // NOTE data in message doesn't allow us to confirm agent!
                 if !is_my_dna(&context, &dht_entry_data.dna_address) {
+                    return Ok(());
+                }
+                // ignore my own data
+                if is_my_id(&context, &dht_entry_data.provider_agent_id) {
                     return Ok(());
                 }
                 context.log(format!(
@@ -85,6 +82,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
             }
             JsonProtocol::HandleStoreMeta(dht_meta_data) => {
                 if !is_my_dna(&context, &dht_meta_data.dna_address) {
+                    return Ok(());
+                }
+                // ignore my own data
+                if is_my_id(&context, &dht_meta_data.provider_agent_id) {
                     return Ok(());
                 }
                 context.log(format!(

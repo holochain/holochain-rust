@@ -388,7 +388,6 @@ fn can_get_entry_ok() {
             "entry_address": example_valid_entry_address()
         }))),
     );
-    println!("\t can_get_entry result = {:?}", result);
     let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
@@ -408,7 +407,6 @@ fn can_get_entry_bad() {
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected),);
     // test the case with a bad address
-    println!("\n\n\n call 'check_get_entry_result' 1\n");
     let result = make_test_call(
         &mut hc,
         "check_get_entry_result",
@@ -416,14 +414,12 @@ fn can_get_entry_bad() {
             {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
         ))),
     );
-    println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     let empty_entry_result = GetEntryResult::new(StatusRequestKind::Latest, None);
     let expected: ZomeApiResult<GetEntryResult> = Ok(empty_entry_result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 
     // test the case with a bad address
-    println!("\n\n\n call 'check_get_entry_result' 2\n");
     let result = make_test_call(
         &mut hc,
         "check_get_entry",
@@ -431,7 +427,6 @@ fn can_get_entry_bad() {
             {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
         ))),
     );
-    println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     let expected: ZomeApiResult<Option<Entry>> = Ok(None);
     assert_eq!(result.unwrap(), JsonString::from(expected));
@@ -526,10 +521,6 @@ fn can_roundtrip_links() {
     let maybe_address: Result<Address, String> =
         serde_json::from_str(&String::from(result.unwrap())).unwrap();
     let entry_address = maybe_address.unwrap();
-    // println!(
-    //     "\n can_roundtrip_links: entry_address = {}\n",
-    //     entry_address
-    // );
 
     // expected results
     let entry_2 = Entry::App(
@@ -574,9 +565,6 @@ fn can_roundtrip_links() {
     let mut result_of_get = JsonString::from("");
     while !both_links_present && tries < 10 {
         tries = tries + 1;
-
-        println!("\n\n\t TRY {}\n", tries);
-
         // Now get_links on the base and expect both to be there
         let maybe_result_of_get = make_test_call(
             &mut hc,

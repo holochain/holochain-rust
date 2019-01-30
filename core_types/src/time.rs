@@ -1,8 +1,7 @@
-//! The Iso8601 type is defined here. It is used in particular
-//! within ChainHeader to enforce that their timestamps
-//! are defined in a useful and consistent way.
+//! The Iso8601 type is defined here. It is used in particular within ChainHeader to enforce that
+//! their timestamps are defined in a useful and consistent way.
 
-use chrono::{offset::FixedOffset, DateTime, Utc};
+use chrono::{offset::FixedOffset, DateTime};
 use error::HolochainError;
 use json::JsonString;
 use regex::Regex;
@@ -49,18 +48,27 @@ impl From<usize> for Timeout {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Iso8601(String);
 
-/// Iso8601::now() and default() return the current Utc time.
-impl Iso8601 {
-    pub fn now() -> Iso8601 {
-        Iso8601::from(Utc::now().to_rfc3339())
-    }
-}
-
-impl Default for Iso8601 {
-    fn default() -> Iso8601 {
-        Iso8601::now()
-    }
-}
+/*
+ * Note that the WASM target does not have a reliable and consistent means to obtain the local time,
+ * so all chrono related `now()` methods are not usable.  Therefore, we do not implement a
+ * `Iso8601::default()` or `::now()` method at this time.  In addition, supporting internal
+ * generated current timestamps is an easy path to non-determinism in holochain Zome functions.  All
+ * times should be externally generated, and only *evaluated* by the Zome functions, not generated
+ * by them.
+ *
+ * /// Iso8601::now() and default() return the current Utc time.
+ * impl Iso8601 {
+ *     pub fn now() -> Iso8601 {
+ *         Iso8601::from(Utc::now().to_rfc3339())
+ *     }
+ * }
+ *
+ * impl Default for Iso8601 {
+ *     fn default() -> Iso8601 {
+ *         Iso8601::now()
+ *     }
+ * }
+ */
 
 impl fmt::Display for Iso8601 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -423,15 +431,6 @@ pub mod tests {
                 format!("{}", e),
                 "Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\""
             ),
-        }
-
-        // Ensure that Iso8601::default() returns the current UTC time
-        let then = Utc::now();
-        match DateTime::<FixedOffset>::try_from(&Iso8601::default()) {
-            Ok(ts) => {
-                assert!(ts.with_timezone(&Utc) >= then && ts.with_timezone(&Utc) <= Utc::now())
-            }
-            Err(e) => panic!("Unexpected failure of Iso8601::default {:?}", &e),
         }
     }
 

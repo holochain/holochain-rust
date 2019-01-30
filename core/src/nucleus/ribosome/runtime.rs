@@ -3,7 +3,7 @@ use crate::{
     nucleus::{
         ribosome::{
             api::{ZomeApiFunction, ZomeApiResult},
-            memory::SinglePageManager,
+            memory::WasmPageManager,
             Defn,
         },
         ZomeFnCall,
@@ -24,7 +24,7 @@ use wasmi::{Externals, RuntimeArgs, RuntimeValue};
 #[derive(Clone)]
 pub struct Runtime {
     /// Memory state tracker between ribosome and wasm.
-    pub memory_manager: SinglePageManager,
+    pub memory_manager: WasmPageManager,
     /// Context of Holochain. Required for operating.
     pub context: Arc<Context>,
     /// Name of the DNA that is being hosted.
@@ -78,7 +78,7 @@ impl Runtime {
 
         match self.memory_manager.write(&s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
-            Ok(allocation) => Ok(Some(RuntimeValue::I32(RibosomeEncodingBits::from(
+            Ok(allocation) => Ok(Some(RuntimeValue::I64(RibosomeEncodingBits::from(
                 RibosomeEncodedValue::Allocation(allocation.into()),
             )
                 as RibosomeRuntimeBits))),

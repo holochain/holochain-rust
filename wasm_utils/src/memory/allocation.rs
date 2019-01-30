@@ -115,7 +115,7 @@ pub type AllocationResult = Result<WasmAllocation, AllocationError>;
 #[cfg(test)]
 pub mod tests {
 
-    use holochain_core_types::error::HolochainError;
+    use holochain_core_types::{bits_n_pieces::U16_MAX, error::HolochainError};
     use memory::{
         allocation::{AllocationError, Length, Offset, WasmAllocation},
         MemoryBits, MemoryInt, MEMORY_INT_MAX,
@@ -213,7 +213,7 @@ pub mod tests {
     pub fn allocation_new_test() {
         assert_eq!(
             Err(AllocationError::OutOfBounds),
-            WasmAllocation::new(Offset::from(std::u16::MAX), Length::from(1)),
+            WasmAllocation::new(Offset::from(std::u32::MAX), Length::from(1)),
         );
 
         assert_eq!(
@@ -227,6 +227,16 @@ pub mod tests {
                 length: Length::from(1)
             }),
             WasmAllocation::new(Offset::from(1), Length::from(1)),
+        );
+
+        // allocation larger than 1 wasm page
+        let big = U16_MAX * 2;
+        assert_eq!(
+            Ok(WasmAllocation {
+                offset: Offset::from(big),
+                length: Length::from(big),
+            }),
+            WasmAllocation::new(Offset::from(big), Length::from(big)),
         );
     }
 

@@ -42,6 +42,8 @@ impl Instance {
         100
     }
 
+    /// This is initializing and starting the redux action loop and adding channels to dispatch
+    /// actions and observers to the context
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
         let (rx_action, rx_observer) = self.initialize_channels();
         let context = self.initialize_context(context);
@@ -49,6 +51,9 @@ impl Instance {
         context
     }
 
+    /// This is calling inner_setup and running the initialization workflow which makes sure that
+    /// the chain gets initialized if dna is Some.
+    /// If dna is None it is assumed the chain is already initialized, i.e. we are loading a chain.
     pub fn initialize(
         &mut self,
         dna: Option<Dna>,
@@ -58,6 +63,10 @@ impl Instance {
         context.block_on(application::initialize(self, dna, context.clone()))
     }
 
+    /// This function is only needed in tests to create integration tests in which an instance
+    /// tries to publish invalid entries.
+    /// The DNA needs to be spoofed then so that we can emulate a hacked node that does not
+    /// run the right validation checks locally but actually commits and publishes invalid data.
     #[cfg(test)]
     pub fn initialize_with_spoofed_dna(
         &mut self,
@@ -78,6 +87,8 @@ impl Instance {
         Ok(context)
     }
 
+    /// Only needed in tests to check that the initialization (and other workflows) fail
+    /// with the right error message if no DNA is present.
     #[cfg(test)]
     pub fn initialize_without_dna(&mut self, context: Arc<Context>) -> Arc<Context> {
         self.inner_setup(context)

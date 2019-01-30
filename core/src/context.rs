@@ -192,6 +192,10 @@ impl Context {
             .expect("Observer channel not initialized")
     }
 
+    /// This creates an observer for the instance's redux loop and installs it.
+    /// The returned receiver gets sent ticks from the instance every time the state
+    /// got mutated.
+    /// This enables blocking/parking the calling thread until the application state got changed.
     pub fn create_observer(&self) -> Receiver<()> {
         let (observer_tx, observer_rx) = channel();
         self.observer_channel()
@@ -202,6 +206,9 @@ impl Context {
         observer_rx
     }
 
+    /// Custom future executor that enables nested futures and nested calls of `block_on`.
+    /// This makes use of the redux action loop and the observers.
+    /// The given future gets polled everytime the instance's state got changed.
     pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
         let observer_rx = self.create_observer();
         pin_utils::pin_mut!(future);

@@ -6,6 +6,11 @@ extern crate holochain_net_connection;
 #[macro_use]
 extern crate serde_json;
 extern crate failure;
+#[macro_use]
+extern crate unwrap_to;
+
+#[macro_use]
+pub mod predicate;
 
 pub mod p2p_node;
 
@@ -15,18 +20,6 @@ use holochain_net_connection::{
     NetResult,
 };
 use p2p_node::P2pNode;
-
-/// Macro for transforming a type check into a predicate
-macro_rules! one_is {
-    ($p:pat) => {
-        |d| {
-            if let $p = d {
-                return true;
-            }
-            return false;
-        }
-    };
-}
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
@@ -40,19 +33,18 @@ fn usage() {
 fn exec_memory_network_test() -> NetResult<()> {
     println!("Testing: exec_memory_network_test()");
 
-    let mut node_a = P2pNode::new_with_unique_memory_network();
-    let mut node_b = P2pNode::new_with_config(&node_a.config, None);
+    let mut alex = P2pNode::new_with_unique_memory_network("alex".to_string());
+    let mut billy = P2pNode::new_with_config("billy".to_string(), &alex.config, None);
 
-    node_a
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: "sandwich".into(),
-                agent_id: "node-1".to_string(),
-            })
-            .into(),
-        )
-        .expect("Failed sending TrackDnaData on node_a");
-    node_b
+    alex.send(
+        JsonProtocol::TrackDna(TrackDnaData {
+            dna_address: "sandwich".into(),
+            agent_id: "node-1".to_string(),
+        })
+        .into(),
+    )
+    .expect("Failed sending TrackDnaData on node_a");
+    billy
         .send(
             JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: "sandwich".into(),
@@ -62,30 +54,31 @@ fn exec_memory_network_test() -> NetResult<()> {
         )
         .expect("Failed sending TrackDnaData on node_b");
 
-    node_a
-        .send(
-            JsonProtocol::SendMessage(MessageData {
-                dna_address: "sandwich".into(),
-                from_agent_id: "node-1".to_string(),
-                to_agent_id: "node-2".to_string(),
-                msg_id: "yada".to_string(),
-                data: json!("hello"),
-            })
-            .into(),
-        )
-        .expect("Failed sending message to node_b");
-    let res = node_b.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))?;
+    alex.send(
+        JsonProtocol::SendMessage(MessageData {
+            dna_address: "sandwich".into(),
+            from_agent_id: "node-1".to_string(),
+            to_agent_id: "node-2".to_string(),
+            request_id: "yada".to_string(),
+            content: json!("hello"),
+        })
+        .into(),
+    )
+    .expect("Failed sending message to node_b");
+    let res = billy
+        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .unwrap();
     println!("got: {:?}", res);
 
     if let JsonProtocol::HandleSendMessage(msg) = res {
-        node_b
+        billy
             .send(
                 JsonProtocol::HandleSendMessageResult(MessageData {
                     dna_address: "sandwich".into(),
                     from_agent_id: "node-2".to_string(),
                     to_agent_id: "node-1".to_string(),
-                    msg_id: "yada".to_string(),
-                    data: json!(format!("echo: {}", msg.data.to_string())),
+                    request_id: "yada".to_string(),
+                    content: json!(format!("echo: {}", msg.content.to_string())),
                 })
                 .into(),
             )
@@ -94,11 +87,16 @@ fn exec_memory_network_test() -> NetResult<()> {
         panic!("bad generic msg");
     }
 
-    let res = node_a.wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))?;
+    let res = alex
+        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .unwrap();
     println!("got response: {:?}", res);
 
     if let JsonProtocol::SendMessageResult(msg) = res {
-        assert_eq!("\"echo: \\\"hello\\\"\"".to_string(), msg.data.to_string());
+        assert_eq!(
+            "\"echo: \\\"hello\\\"\"".to_string(),
+            msg.content.to_string()
+        );
     } else {
         panic!("bad msg");
     }
@@ -107,8 +105,8 @@ fn exec_memory_network_test() -> NetResult<()> {
     println!("test complete");
 
     // shut down the nodes
-    node_a.stop();
-    node_b.stop();
+    alex.stop();
+    billy.stop();
 
     Ok(())
 }

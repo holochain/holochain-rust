@@ -62,15 +62,17 @@ pub(crate) fn reduce_hold_entry(
     match action_wrapper.action().clone() {
         Action::Commit((entry, _)) => reduce_store_entry_common(context, old_store, &entry),
         Action::Hold(EntryWithHeader { entry, header }) => {
-            let result = reduce_store_entry_common(context.clone(), old_store, &entry);
-            let eavi = EntityAttributeValueIndex::new(
-                &entry.address(),
-                &ENTRY_HEADER_ATTRIBUTE.to_string(),
-                &header.address(),
-            )
-            .ok()?; // this is OK because "entry_headers" clearly matches the regex
-            context.eav_storage.write().unwrap().add_eavi(&eavi).ok()?;
-            result
+            reduce_store_entry_common(context.clone(), old_store, &entry).and_then(|state| {
+                let eavi = EntityAttributeValueIndex::new(
+                    &entry.address(),
+                    &ENTRY_HEADER_ATTRIBUTE.to_string(),
+                    &header.address(),
+                )
+                .ok()?; // this is OK because "entry_headers" clearly matches the regex
+                state.content_storage().write().unwrap().add(&header).ok()?;
+                state.meta_storage().write().unwrap().add_eavi(&eavi).ok()?;
+                Some(state)
+            })
         }
         _ => unreachable!(),
     }

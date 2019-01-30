@@ -29,11 +29,11 @@ scenario1.runTape('show_env', async (t, { alice }) => {
 
 scenario2.runTape('get sources', async (t, { alice, bob }) => {
   const params = {content: 'whatever', in_reply_to: null}
-  const result1 = await alice.callSync('blog', 'create_post', params)
-  const result2 = await   bob.callSync('blog', 'create_post', params)
-  t.equal(result1.Ok, result2.Ok)
-  const sources = bob.call('blog', 'get_sources', {address: result1.Ok})
-  t.equal(sources.Ok, [alice.agentId, bob.agentId])
+  const address = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
+  const address2 = await bob.callSync('blog', 'create_post', params).then(x => x.Ok)
+  t.equal(address, address2)
+  const sources = bob.call('blog', 'get_sources', {address}).Ok
+  t.deepEqual(sources.sort(), [alice.agentId, bob.agentId].sort())
 })
 
 scenario1.runTape('call', async (t, { alice }) => {

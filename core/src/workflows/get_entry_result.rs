@@ -62,8 +62,9 @@ pub async fn get_entry_result_workflow<'a>(
 
             // Add entry
             let headers: Vec<ChainHeader> = if args.options.headers {
-                context
-                    .eav_storage
+                let store = context.state().expect("state uninitialized! :)").dht();
+                let addresses = store
+                    .meta_storage()
                     .read()
                     .unwrap()
                     // fetch all EAV references to chain headers for this entry
@@ -75,10 +76,12 @@ pub async fn get_entry_result_workflow<'a>(
                     )?
                     .into_iter()
                     // get the header addresses
-                    .map(|eavi| eavi.value())
+                    .map(|eavi| eavi.value());
+                context.log(format!("debug/get_entry_result_workflow: {:?}", addresses));
+                addresses
                     // fetch the header content from CAS
-                    .map(|a| context.chain_storage.read().unwrap().fetch(&a))
-                    // rearrange the Vec<Result<Option<_>, _>>
+                    .map(|a| store.content_storage().read().unwrap().fetch(&a))
+                    // rearrange
                     .collect::<Result<Vec<Option<_>>, _>>()
                     .map(|r| {
                         r.into_iter()

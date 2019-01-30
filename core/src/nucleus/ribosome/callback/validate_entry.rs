@@ -5,6 +5,7 @@ use crate::{
         ribosome::{
             self,
             callback::{links_utils, CallbackResult},
+            runtime::WasmCallData,
         },
         ZomeFnCall,
     },
@@ -185,16 +186,14 @@ fn build_validation_call(
 
 fn run_validation_callback(
     context: Arc<Context>,
-    fc: ZomeFnCall,
+    zome_call: ZomeFnCall,
     wasm: &DnaWasm,
     dna_name: String,
 ) -> CallbackResult {
     match ribosome::run_dna(
-        &dna_name,
-        context,
         wasm.code.clone(),
-        &fc,
-        Some(fc.clone().parameters.into_bytes()),
+        Some(zome_call.clone().parameters.into_bytes()),
+        WasmCallData::new_zome_call(context, dna_name, zome_call),
     ) {
         Ok(call_result) => match call_result.is_null() {
             true => CallbackResult::Pass,

@@ -53,11 +53,12 @@ impl DhtStore {
         address: Address,
         tag: String,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+        let index_query = IndexQuery::new_only_prefixes(vec!["link__","removed_link__"]);
         self.meta_storage.read()?.fetch_eavi(
             Some(address),
-            Some(format!("link__{}", tag)),
+            Some(tag),
             None,
-            IndexQuery::default(),
+            index_query,
         )
     }
 

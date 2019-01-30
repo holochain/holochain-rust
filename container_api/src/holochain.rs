@@ -191,7 +191,7 @@ mod tests {
         nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna};
+    use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna, json::RawString};
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
@@ -612,7 +612,7 @@ mod tests {
     // TODO #165 - Move test to core/nucleus and use instance directly
     fn call_debug_stacked() {
         let call_result =
-            hc_setup_and_call_zome_fn(&example_api_wasm_path(), "debug_stacked_hello");
+            hc_setup_and_call_zome_fn(&example_api_wasm_path(), "debug_stacked_hello", RawString::from(""));
         assert_eq!(
             JsonString::from("{\"value\":\"fish\"}"),
             call_result.unwrap()

@@ -359,7 +359,7 @@ fn can_round_trip() {
 #[test]
 #[cfg(not(windows))]
 fn can_get_entry_ok() {
-    let (mut hc, _) = start_holochain_instance("can_get_entry", "alice");
+    let (mut hc, _) = start_holochain_instance("can_get_entry_ok", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -396,7 +396,7 @@ fn can_get_entry_ok() {
 #[test]
 #[cfg(not(windows))]
 fn can_get_entry_bad() {
-    let (mut hc, _) = start_holochain_instance("can_get_entry", "alice");
+    let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,

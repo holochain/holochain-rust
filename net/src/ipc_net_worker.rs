@@ -267,7 +267,7 @@ impl IpcNetWorker {
         for bs_node in &self.bootstrap_nodes {
             self.ipc_relay.send(
                 JsonProtocol::Connect(ConnectData {
-                    address: bs_node.clone().into(),
+                    peer_address: bs_node.clone().into(),
                 })
                 .into(),
             )?;

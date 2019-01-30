@@ -738,6 +738,6 @@ fn can_send_and_receive() {
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected: ZomeApiResult<String> = Ok(String::from("Received: TEST"));
+    let expected: ZomeApiResult<String> = Ok(String::from("Committed: 'TEST' / address: QmamVB6GEoDCY6tWP1V1ozuJEVUU8tuSL3Qu9xWL1Su62p"));
     assert_eq!(result.unwrap(), JsonString::from(expected),);
 }

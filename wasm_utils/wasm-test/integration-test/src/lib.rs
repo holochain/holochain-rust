@@ -133,6 +133,36 @@ pub extern "C" fn stacked_strings(_: RibosomeEncodingBits) -> RibosomeEncodingBi
 }
 
 #[no_mangle]
+pub extern "C" fn big_string_process_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+
+    let mut stack = WasmStack::default();
+
+    let memory = match MemoryInstance::alloc(Pages(1), None) {
+        Ok(memory) => memory,
+        Err(_) => return AllocationError::OutOfBounds.as_ribosome_encoding(),
+    };
+
+    if memory.grow(Pages(3)).is_err() {
+        return AllocationError::OutOfBounds.as_ribosome_encoding();
+    }
+
+    // @TODO we can't handle UTF-8 in wasm??
+    // @see https://github.com/holochain/holochain-rust/issues/933
+    // let input = "╰▐ ✖ 〜 ✖ ▐╯".repeat((U16_MAX * 1) as usize);
+    let input = "foo".repeat((U16_MAX * 1) as usize);
+
+    let allocation = match stack.write_string(&input) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    };
+
+    assert_eq!(input, allocation.read_to_string());
+
+    allocation.as_ribosome_encoding()
+
+}
+
+#[no_mangle]
 pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 
     let mut stack = WasmStack::default();

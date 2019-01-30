@@ -15,28 +15,31 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_net_connection::json_protocol::{DhtData, DhtMetaData, JsonProtocol};
+use holochain_net_connection::json_protocol::{DhtMetaData, EntryData, JsonProtocol};
 use std::sync::Arc;
 
+/// Send to network a PublishDhtData message
 fn publish_entry(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-    //let entry_with_header = util::EntryWithHeader::from((entry.clone(), header.clone()));
-
     send(
         network_state,
-        JsonProtocol::PublishDhtData(DhtData {
-            msg_id: "?".to_string(),
+        JsonProtocol::PublishEntry(EntryData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            agent_id: network_state.agent_id.clone().unwrap(),
-            address: entry_with_header.entry.address().to_string(),
-            content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
-                .unwrap(),
+            provider_agent_id: network_state.agent_id.clone().unwrap(),
+            entry_address: entry_with_header.entry.address().clone(),
+            entry_content: serde_json::from_str(
+                &serde_json::to_string(&entry_with_header).unwrap(),
+            )
+            .unwrap(),
         }),
     )
 }
 
+/// Send to network:
+///  - a PublishDhtMeta message for the crud-status
+///  - a PublishDhtMeta message for the crud-link
 fn publish_crud_meta(
     network_state: &mut NetworkState,
     entry_address: Address,
@@ -46,12 +49,10 @@ fn publish_crud_meta(
     // publish crud-status
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
-            msg_id: "?".to_string(),
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            agent_id: network_state.agent_id.clone().unwrap(),
-            from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: entry_address.to_string(),
+            provider_agent_id: network_state.agent_id.clone().unwrap(),
+            entry_address: entry_address.clone(),
             attribute: STATUS_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
         }),
@@ -63,12 +64,10 @@ fn publish_crud_meta(
     }
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
-            msg_id: "?".to_string(),
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            agent_id: network_state.agent_id.clone().unwrap(),
-            from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: entry_address.to_string(),
+            provider_agent_id: network_state.agent_id.clone().unwrap(),
+            entry_address: entry_address.clone(),
             attribute: LINK_NAME.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
                 .unwrap(),
@@ -77,6 +76,7 @@ fn publish_crud_meta(
     Ok(())
 }
 
+/// Send to network a PublishDhtMeta message holding a link metadata to `entry_with_header`
 fn publish_link_meta(
     context: &Arc<Context>,
     network_state: &mut NetworkState,
@@ -100,12 +100,10 @@ fn publish_link_meta(
 
     send(
         network_state,
-        JsonProtocol::PublishDhtMeta(DhtMetaData {
-            msg_id: "?".to_string(),
+        JsonProtocol::PublishMeta(DhtMetaData {
             dna_address: network_state.dna_address.clone().unwrap(),
-            agent_id: network_state.agent_id.clone().unwrap(),
-            from_agent_id: network_state.agent_id.clone().unwrap(),
-            address: link.base().to_string(),
+            provider_agent_id: network_state.agent_id.clone().unwrap(),
+            entry_address: link.base().clone(),
             attribute: String::from("link"),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
                 .unwrap(),

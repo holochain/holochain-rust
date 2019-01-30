@@ -70,10 +70,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                 if !is_my_dna(&context, &dht_entry_data.dna_address) {
                     return Ok(());
                 }
-                // ignore my own data
-                if is_my_id(&context, &dht_entry_data.provider_agent_id) {
-                    return Ok(());
-                }
                 context.log(format!(
                     "debug/net/handle: HandleStoreEntry: {:?}",
                     dht_entry_data
@@ -82,10 +78,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
             }
             JsonProtocol::HandleStoreMeta(dht_meta_data) => {
                 if !is_my_dna(&context, &dht_meta_data.dna_address) {
-                    return Ok(());
-                }
-                // ignore my own data
-                if is_my_id(&context, &dht_meta_data.provider_agent_id) {
                     return Ok(());
                 }
                 context.log(format!(

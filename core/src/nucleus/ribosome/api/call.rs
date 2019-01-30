@@ -72,7 +72,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
 
-    let observer_rx = runtime.context.create_observer();
+    let tick_rx = runtime.context.create_observer();
     crate::instance::dispatch_action(runtime.context.action_channel(), action_wrapper);
 
     loop {
@@ -85,7 +85,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
         {
             return result;
         } else {
-            let _ = observer_rx.recv_timeout(Duration::from_millis(10));
+            let _ = tick_rx.recv_timeout(Duration::from_millis(10));
         }
     }
 }

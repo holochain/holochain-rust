@@ -104,11 +104,11 @@ pub fn call_and_wait_for_result(
     let id = snowflake::ProcessUniqueId::new().to_string();
     println!("call_and_wait_for_result {}", id);
     // Dispatch action with observer closure that waits for a result in the state
-    let (observer_tx, observer_rx) = channel();
+    let (tick_tx, tick_rx) = channel();
     instance
         .observer_channel()
         .send(Observer {
-            ticker: observer_tx,
+            ticker: tick_tx,
         })
         .expect("Observer channel not initialized");
     instance.dispatch(call_action);
@@ -118,7 +118,7 @@ pub fn call_and_wait_for_result(
             println!("done {}", id);
             return result;
         } else {
-            let _ = observer_rx.recv_timeout(Duration::from_millis(100));
+            let _ = tick_rx.recv_timeout(Duration::from_millis(100));
         }
     }
 }

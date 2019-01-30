@@ -127,11 +127,11 @@ impl Instance {
     /// Panics if called before `start_action_loop`.
     pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
         // Dispatch action with observer closure that waits for a result in the state
-        let (observer_tx, observer_rx) = channel();
+        let (tick_tx, tick_rx) = channel();
         dispatch_action(self.action_channel(), action_wrapper.clone());
         self.observer_channel()
             .send(Observer {
-                ticker: observer_tx,
+                ticker: tick_tx,
             })
             .expect("Observer channel not initialized");;
 
@@ -139,7 +139,7 @@ impl Instance {
             if self.state().history.contains(&action_wrapper) {
                 return;
             } else {
-                observer_rx.recv().expect("Local channel must work");
+                tick_rx.recv().expect("Local channel must work");
             }
         }
     }
@@ -281,14 +281,14 @@ impl Instance {
 ///
 /// Panics if the channels passed are disconnected.
 pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWrapper) {
-    let observer_rx = context.create_observer();
+    let tick_rx = context.create_observer();
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
     loop {
         if context.state().unwrap().history.contains(&action_wrapper) {
             return;
         } else {
-            let _ = observer_rx.recv_timeout(Duration::from_millis(10));
+            let _ = tick_rx.recv_timeout(Duration::from_millis(10));
         }
     }
 }

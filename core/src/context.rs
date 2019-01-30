@@ -197,26 +197,26 @@ impl Context {
     /// got mutated.
     /// This enables blocking/parking the calling thread until the application state got changed.
     pub fn create_observer(&self) -> Receiver<()> {
-        let (observer_tx, observer_rx) = channel();
+        let (tick_tx, tick_rx) = channel();
         self.observer_channel()
             .send(Observer {
-                ticker: observer_tx,
+                ticker: tick_tx,
             })
             .expect("Observer channel not initialized");
-        observer_rx
+        tick_rx
     }
 
     /// Custom future executor that enables nested futures and nested calls of `block_on`.
     /// This makes use of the redux action loop and the observers.
     /// The given future gets polled everytime the instance's state got changed.
     pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
-        let observer_rx = self.create_observer();
+        let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
 
         loop {
             let _ = match future.as_mut().poll(noop_local_waker_ref()) {
                 Poll::Ready(result) => return result,
-                _ => observer_rx.recv_timeout(Duration::from_millis(10)),
+                _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
         }
     }

@@ -1,8 +1,5 @@
 use crate::nucleus::ribosome::{api::ZomeApiResult, Runtime};
-use std::convert::TryFrom;
-use std::{
-    time::Duration, thread,
-};
+use std::{convert::TryFrom, thread, time::Duration};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::Sleep function code

@@ -1059,7 +1059,6 @@ pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
 }
 
-
 /// Lets the DNA runtime sleep for the given duration.
 /// # Examples
 /// ```rust

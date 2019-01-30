@@ -7,6 +7,7 @@ use crate::{
     cas::content::Address, chain_header::ChainHeader, entry::Entry, error::HolochainError,
     json::JsonString,
 };
+use chain_header::test_chain_header;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {
@@ -59,6 +60,21 @@ pub struct ValidationData {
     pub lifecycle: EntryLifecycle,
     /// Does the entry get committed, modified or deleted?
     pub action: EntryAction,
+}
+
+impl Default for ValidationData {
+    fn default() -> Self {
+        Self {
+            package: ValidationPackage {
+                chain_header: test_chain_header(),
+                source_chain_entries: None,
+                source_chain_headers: None,
+                custom: None,
+            },
+            lifecycle: EntryLifecycle::default(),
+            action: EntryAction::default(),
+        }
+    }
 }
 
 impl ValidationData {

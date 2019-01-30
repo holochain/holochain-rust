@@ -1,3 +1,4 @@
+use holochain_core::network::entry_with_header::EntryWithHeader;
 use neon::{context::Context, prelude::*};
 use std::{
     collections::HashSet,
@@ -16,7 +17,9 @@ use holochain_core::{
     signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent}, dna::capabilities::CapabilityCall, entry::Entry,
+    cas::content::{Address, AddressableContent},
+    dna::capabilities::CapabilityCall,
+    entry::Entry,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -32,7 +35,11 @@ fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
     loop {
         if let Signal::Internal(aw) = signal_rx.recv().unwrap() {
             let action = aw.action();
-            if let Action::Hold(Entry::AgentId(id)) = action {
+            if let Action::Hold(EntryWithHeader {
+                entry: Entry::AgentId(id),
+                header: _,
+            }) = action
+            {
                 agent_addresses.remove(&id.key);
             }
             if agent_addresses.is_empty() {

@@ -14,12 +14,13 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetLinksArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         Err(_) => {
-            runtime.context.log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
                 args_str
             ));
@@ -28,22 +29,18 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     };
 
     if input.options.status_request != LinksStatusRequestKind::Live {
-        runtime
-            .context
-            .log("get links status request other than Live not implemented!");
+        zome_call_data.context.log("get links status request other than Live not implemented!");
         return ribosome_error_code!(Unspecified);
     }
 
     if input.options.sources {
-        runtime
-            .context
-            .log("get links retrieve sources not implemented!");
+        zome_call_data.context.log("get links retrieve sources not implemented!");
         return ribosome_error_code!(Unspecified);
     }
 
     // Get links from DHT
     let maybe_links = block_on(get_links(
-        runtime.context.clone(),
+        zome_call_data.context.clone(),
         input.entry_address,
         input.tag,
         input.options.timeout,

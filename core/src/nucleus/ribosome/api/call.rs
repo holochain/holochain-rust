@@ -43,6 +43,7 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
 
@@ -50,7 +51,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            runtime.context.log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_call failed to deserialize: {:?}",
                 args_str
             ));
@@ -60,10 +61,10 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
     let result = if input.instance_handle == String::from(THIS_INSTANCE) {
         // ZomeFnCallArgs to ZomeFnCall
-        let zome_call = ZomeFnCall::from_args(runtime.context.clone(), input.clone());
+        let zome_call = ZomeFnCall::from_args(zome_call_data.context.clone(), input.clone());
 
         // Don't allow recursive calls
-        if zome_call.same_fn_as(&runtime.zome_call) {
+        if zome_call.same_fn_as(&zome_call_data.zome_call) {
             return ribosome_error_code!(RecursiveCallForbidden);
         }
         local_call(runtime, input)
@@ -75,15 +76,16 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 }
 
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+    let zome_call_data = runtime.zome_call_data().map_err(|_|HolochainError::ErrorGeneric("expecting zome call data in local call not null call".to_string()))?;
     // ZomeFnCallArgs to ZomeFnCall
-    let zome_call = ZomeFnCall::from_args(runtime.context.clone(), input);
+    let zome_call = ZomeFnCall::from_args(zome_call_data.context.clone(), input);
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
     // Send Action and block
     let (sender, receiver) = channel();
     crate::instance::dispatch_action_with_observer(
-        runtime.context.action_channel(),
-        runtime.context.observer_channel(),
+        zome_call_data.context.action_channel(),
+        zome_call_data.context.observer_channel(),
         action_wrapper.clone(),
         move |state: &crate::state::State| {
             // Observer waits for a ribosome_call_result
@@ -113,8 +115,9 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+    let zome_call_data = runtime.zome_call_data().map_err(|_|HolochainError::ErrorGeneric("expecting zome call data in bridge call not null call".to_string()))?;
     let container_api =
-        runtime
+        zome_call_data
             .context
             .container_api
             .clone()

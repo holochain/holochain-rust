@@ -4,6 +4,7 @@ use crate::{
         self,
         callback::{make_internal_capability_call, Callback, CallbackParams, CallbackResult},
         fn_call::ZomeFnCall,
+        runtime::WasmCallData,
         Defn,
     },
 };
@@ -47,11 +48,9 @@ pub fn receive(
     }
 
     match ribosome::run_dna(
-        &dna.name,
-        context,
         wasm.code.clone(),
-        &zome_call,
         Some(zome_call.clone().parameters.into_bytes()),
+        WasmCallData::new_zome_call(context,dna.name,zome_call)
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
         Err(_) => CallbackResult::NotImplemented("receive/4".into()),

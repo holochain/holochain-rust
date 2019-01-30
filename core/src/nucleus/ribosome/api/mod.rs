@@ -373,11 +373,9 @@ pub mod tests {
             test_parameters(),
         );
         ribosome::run_dna(
-            &dna_name,
-            context,
             wasm.clone(),
-            &zome_call,
             Some(args_bytes),
+            WasmCallData::new_zome_call(context,dna_name,zome_call)
         )
         .expect("test should be callable")
     }

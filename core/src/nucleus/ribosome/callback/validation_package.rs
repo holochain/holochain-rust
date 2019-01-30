@@ -5,6 +5,7 @@ use crate::{
         self,
         callback::{links_utils, make_internal_capability_call, CallbackResult},
         fn_call::ZomeFnCall,
+        runtime::WasmCallData,
     },
 };
 use holochain_core_types::{
@@ -35,21 +36,21 @@ pub fn get_validation_package_definition(
                 .get_wasm(&zome_name)
                 .ok_or(HolochainError::ErrorGeneric(String::from("no wasm found")))?;
 
-            ribosome::run_dna(
-                &dna.name.clone(),
-                context.clone(),
-                wasm.code.clone(),
-                &ZomeFnCall::new(
-                    &zome_name,
-                    make_internal_capability_call(
-                        context,
-                        "__hdk_get_validation_package_for_entry_type",
-                        app_entry_type.clone().into(),
-                    ),
+            let call = ZomeFnCall::new(
+                &zome_name,
+                make_internal_capability_call(
+                    context.clone(),
                     "__hdk_get_validation_package_for_entry_type",
-                    app_entry_type.to_string(),
+                    app_entry_type.clone().into(),
                 ),
+                "__hdk_get_validation_package_for_entry_type",
+                app_entry_type.to_string(),
+            );
+            ribosome::run_dna(
+                wasm.code.clone(),
                 Some(app_entry_type.to_string().into_bytes()),
+                WasmCallData::new_zome_call(context,dna.name,call)
+
             )?
         }
         EntryType::LinkAdd => {
@@ -92,11 +93,9 @@ pub fn get_validation_package_definition(
             );
 
             ribosome::run_dna(
-                &dna.name.clone(),
-                context,
                 wasm.code.clone(),
-                &call,
                 Some(call.parameters.into_bytes()),
+                WasmCallData::new_zome_call(context.clone(),dna.name,call)
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

@@ -4,7 +4,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::{dispatch_action_with_observer, Observer},
-    nucleus::{actions::get_entry::get_entry_from_agent_chain, ribosome, state::NucleusState},
+    nucleus::{actions::get_entry::get_entry_from_agent_chain, ribosome::{self, WasmCallData}, state::NucleusState},
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -237,14 +237,12 @@ pub fn do_call(
     thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
-            &dna_name,
-            context.clone(),
             wasm.code,
-            &fn_call,
             Some(fn_call.clone().parameters.into_bytes()),
+            WasmCallData::new_zome_call(context.clone(),dna_name,fn_call.clone())
         );
         // Construct response
-        let response = ExecuteZomeFnResponse::new(fn_call.clone(), call_result);
+        let response = ExecuteZomeFnResponse::new(fn_call, call_result);
         // Send ReturnZomeFunctionResult Action
         context
             .action_channel()

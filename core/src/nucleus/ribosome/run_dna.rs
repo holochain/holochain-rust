@@ -1,10 +1,9 @@
 use crate::{
-    context::Context,
     nucleus::ribosome::{
         api::ZomeApiFunction,
-        fn_call::{ZomeFnCall, ZomeFnResult},
+        fn_call::ZomeFnResult,
         memory::WasmPageManager,
-        Runtime,
+        runtime::{Runtime, WasmCallData},
     },
 };
 use holochain_core_types::{
@@ -14,7 +13,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
-use std::{convert::TryFrom, str::FromStr, sync::Arc};
+use std::{convert::TryFrom, str::FromStr};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,
     ModuleInstance, NopExternals, RuntimeValue, Signature, ValueType,
@@ -24,11 +23,9 @@ use wasmi::{
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
 pub fn run_dna(
-    dna_name: &str,
-    context: Arc<Context>,
     wasm: Vec<u8>,
-    zome_call: &ZomeFnCall,
     parameters: Option<Vec<u8>>,
+    data: WasmCallData,
 ) -> ZomeFnResult {
     // Create wasm module from wasm binary
     let module =
@@ -94,12 +91,12 @@ pub fn run_dna(
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
+
+    let fn_name = data.fn_name();
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
         memory_manager: WasmPageManager::new(&wasm_instance),
-        context,
-        zome_call: zome_call.clone(),
-        dna_name: dna_name.to_string(),
+        data,
     };
 
     // Write input arguments in wasm memory
@@ -130,7 +127,7 @@ pub fn run_dna(
         // which have been set in memory module
         returned_encoding = wasm_instance
             .invoke_export(
-                zome_call.fn_name.clone().as_str(),
+                &fn_name,
                 &[RuntimeValue::I64(
                     RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
                 )],

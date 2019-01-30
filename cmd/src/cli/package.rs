@@ -1,7 +1,10 @@
-use crate::{cli::test_context::test_context, config_files::Build, error::DefaultResult, util};
+use crate::{config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
-use holochain_core::nucleus::ribosome::{fn_call::ZomeFnCall, run_dna};
+use holochain_core::nucleus::ribosome::{
+    fn_call::ZomeFnCall, run_dna,
+    runtime::WasmCallData,
+};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
 use std::{
@@ -137,24 +140,10 @@ impl Packager {
 
                     let wasm_binary = base64::decode(&wasm)?;
 
-                    // Instantiating WASM and calling function to get JSON:
-                    // ribosome::run_dna is the WASM run-time imported from Holochain core.
-                    // We need to setup a shallow test context which actually is not needed
-                    // here so it doesn't matter what is in there.
-                    // TODO: extract core of run_dna() into a function that does not need a context
-                    let context = test_context("HC");
-                    // We just call into __hdk_get_json_definition() without any arguments.
-                    // What we get back is a JSON string with all the entry types and zome functions
-                    // defined in that WASM code, constructed through our Rust macros define_zome!
-                    // and entry!.
-
                     let call_result = run_dna(
-                        "HC",
-                        context,
                         wasm_binary,
-                        &ZomeFnCall::new("", None, "__hdk_get_json_definition", ""),
                         Some("{}".as_bytes().to_vec()),
-                    )?;
+                        WasmCallData::NullCall);
 
                     let json_from_wasm: Map<String, Value> =
                         serde_json::from_str(&call_result.to_string())?;

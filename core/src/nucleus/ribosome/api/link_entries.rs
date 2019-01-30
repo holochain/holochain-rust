@@ -1,5 +1,5 @@
 use crate::{
-    nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    nucleus::ribosome::{api::ZomeApiResult, runtime::Runtime},
     workflows::author_entry::author_entry,
 };
 use futures::executor::block_on;
@@ -12,13 +12,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: LinkEntriesArgs
 pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match LinkEntriesArgs::try_from(args_str.clone()) {
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            runtime.context.log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 args_str
             ));
@@ -32,7 +33,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
 
     // Wait for future to be resolved
     let result: Result<(), HolochainError> =
-        block_on(author_entry(&entry, None, &runtime.context)).map(|_| ());
+        block_on(author_entry(&entry, None, &zome_call_data.context)).map(|_| ());
 
     runtime.store_result(result)
 }

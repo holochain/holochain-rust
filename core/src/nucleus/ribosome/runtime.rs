@@ -16,13 +16,10 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use std::{convert::TryFrom, sync::Arc};
-use wasmi::{Externals, RuntimeArgs, RuntimeValue};
+use wasmi::{Externals, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
-/// Object holding data to pass around to invoked Zome API functions
 #[derive(Clone)]
-pub struct Runtime {
-    /// Memory state tracker between ribosome and wasm.
-    pub memory_manager: WasmPageManager,
+pub struct ZomeCallData {
     /// Context of Holochain. Required for operating.
     pub context: Arc<Context>,
     /// Name of the DNA that is being hosted.
@@ -31,7 +28,46 @@ pub struct Runtime {
     pub zome_call: ZomeFnCall,
 }
 
+#[derive(Clone)]
+pub enum WasmCallData {
+    ZomeCall(ZomeCallData),
+    NullCall,
+}
+waitr
+impl WasmCallData {
+    pub fn new_zome_call(context: Arc<Context>,dna_name: String, zome_call: ZomeFnCall) -> Self {
+        WasmCallData::ZomeCall(ZomeCallData {
+            context,dna_name,zome_call
+        })
+    }
+
+    pub fn fn_name(&self) -> String {
+        match self {
+            WasmCallData::ZomeCall(data)=> data.zome_call.fn_name.clone(),
+            WasmCallData::NullCall => "__hdk_get_json_definition".to_string()
+        }
+    }
+}
+
+/// Object holding data to pass around to invoked Zome API functions
+#[derive(Clone)]
+pub struct Runtime {
+    /// Memory state tracker between ribosome and wasm.
+    pub memory_manager: WasmPageManager,
+
+    /// data to be made available to the function at runtime
+    pub data: WasmCallData,
+}
+
 impl Runtime {
+
+    pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
+        match &self.data {
+            WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
+            WasmCallData::NullCall => Err(Trap::new(TrapKind::Unreachable)),
+        }
+    }
+
     /// Load a JsonString stored in wasm memory.
     /// Input RuntimeArgs should only have one input which is the encoded allocation holding
     /// the complex data as an utf8 string.

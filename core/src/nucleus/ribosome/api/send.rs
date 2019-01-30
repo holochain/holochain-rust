@@ -12,6 +12,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: SendArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let args = match SendArgs::try_from(args_str) {
@@ -21,14 +22,14 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 
     let message = CustomDirectMessage {
         payload: Ok(args.payload),
-        zome: runtime.zome_call.zome_name.clone(),
+        zome: zome_call_data.zome_call.zome_name.clone(),
     };
 
     let result = block_on(custom_send(
         args.to_agent,
         message,
         args.options.0,
-        runtime.context.clone(),
+        zome_call_data.context.clone(),
     ));
 
     runtime.store_result(result)

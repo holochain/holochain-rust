@@ -12,13 +12,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            runtime.context.log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_get_entry() failed to deserialize: {:?}",
                 args_str
             ));
@@ -26,7 +27,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    let result = block_on(get_entry_result_workflow(&runtime.context, &input));
+    let result = block_on(get_entry_result_workflow(&zome_call_data.context, &input));
     // Store result in wasm memory
     runtime.store_result(result)
 }
@@ -46,6 +47,7 @@ pub mod tests {
                 tests::{test_parameters, test_zome_name},
             },
             fn_call::{tests::test_capability_call, ZomeFnCall},
+            runtime::WasmCallData
         },
     };
     use holochain_core_types::{
@@ -213,10 +215,10 @@ pub mod tests {
         );
         let call_result = ribosome::run_dna(
             &dna.name.to_string(),
-            Arc::clone(&context),
             wasm.clone(),
-            &commit_call,
             Some(test_commit_args_bytes()),
+            WasmCallData::new_zome_call(Arc::clone(&context),dna_name.to_string(),commit_call)
+
         )
         .expect("test should be callable");
 
@@ -236,11 +238,9 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            &dna.name.to_string(),
-            Arc::clone(&context),
             wasm.clone(),
-            &get_call,
             Some(test_get_args_bytes()),
+            WasmCallData::new_zome_call(Arc::clone(&context),dna_name.to_string(),get_call)
         )
         .expect("test should be callable");
 

@@ -11,6 +11,7 @@ pub mod init_globals;
 pub mod link_entries;
 pub mod query;
 pub mod remove_entry;
+pub mod remove_link;
 pub mod send;
 pub mod update_entry;
 
@@ -18,7 +19,7 @@ use crate::nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
-        get_links::invoke_get_links, init_globals::invoke_init_globals,
+        get_links::invoke_get_links, remove_link::invoke_remove_link,init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
         send::invoke_send, update_entry::invoke_update_entry,
     },
@@ -80,6 +81,7 @@ pub enum ZomeApiFunction {
 
     LinkEntries,
     GetLinks,
+    RemoveLink,
     Query,
 
     /// Pass an entry to retrieve its address
@@ -106,6 +108,7 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::GetLinks => "hc_get_links",
             ZomeApiFunction::Query => "hc_query",
             ZomeApiFunction::EntryAddress => "hc_entry_address",
+            ZomeApiFunction::RemoveLink => "hc_remove_link",
             ZomeApiFunction::Send => "hc_send",
         }
     }
@@ -144,6 +147,7 @@ impl FromStr for ZomeApiFunction {
             "hc_get_links" => Ok(ZomeApiFunction::GetLinks),
             "hc_query" => Ok(ZomeApiFunction::Query),
             "hc_entry_address" => Ok(ZomeApiFunction::EntryAddress),
+            "hc_remove_link" => Ok(ZomeApiFunction::RemoveLink),
             "hc_send" => Ok(ZomeApiFunction::Send),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
@@ -174,6 +178,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::Call => invoke_call,
             ZomeApiFunction::LinkEntries => invoke_link_entries,
             ZomeApiFunction::GetLinks => invoke_get_links,
+            ZomeApiFunction::RemoveLink => invoke_remove_link,
             ZomeApiFunction::Query => invoke_query,
             ZomeApiFunction::EntryAddress => invoke_entry_address,
             ZomeApiFunction::Send => invoke_send,

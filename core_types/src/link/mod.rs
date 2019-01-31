@@ -44,7 +44,7 @@ impl Link {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum LinkActionKind {
     ADD,
-    DELETE,
+    REMOVE,
 }
 
 #[cfg(test)]

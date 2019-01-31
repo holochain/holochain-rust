@@ -1,13 +1,11 @@
 use crate::{
     context::Context,
     dht::actions::remove_link::remove_link,
-    network::{
-        actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
-    },
-    nucleus::actions::validate::validate_entry,
+    nucleus::actions::{build_validation_package::build_validation_package,validate::validate_entry}
 };
 
 use holochain_core_types::{
+    cas::content::Address,
     entry::Entry,
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
@@ -15,34 +13,31 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn remove_link_workflow<'a>(
-    entry_with_header: &'a EntryWithHeader,
+    entry: &'a Entry,
     context: &'a Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let EntryWithHeader { entry, header } = &entry_with_header;
 
     let link_remove = match entry {
-        Entry::LinkAdd(link_add) => link_add,
+        Entry::LinkAdd(link_remove) => link_remove,
         _ => Err(HolochainError::ErrorGeneric(
             "hold_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
         ))?,
     };
-    let link = link_add.link().clone();
+    let link = link_remove.link().clone();
 
     context.log(format!("debug/workflow/hold_link: {:?}", link));
     // 1. Get validation package from source
     context.log(format!(
         "debug/workflow/hold_link: getting validation package..."
     ));
-    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
-    let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
+    let validation_package = await!(build_validation_package(&entry, &context))?;
     context.log(format!("debug/workflow/hold_link: got validation package!"));
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        sources: header.sources().clone(),
-        lifecycle: EntryLifecycle::Meta,
+        sources: vec![Address::from("<insert your agent key here>")],
+        lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
     };
 

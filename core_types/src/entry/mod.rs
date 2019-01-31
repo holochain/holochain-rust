@@ -68,7 +68,7 @@ pub enum Entry {
     AgentId(AgentId),
     Deletion(DeletionEntry),
     LinkAdd(LinkAdd),
-    LinkRemove(LinkRemove),
+    LinkRemove(LinkAdd),
     LinkList(LinkList),
     ChainHeader(ChainHeader),
     ChainMigrate(ChainMigrate),

@@ -30,13 +30,13 @@ impl ValidationPackage {
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub enum ValidationPackageDefinition {
-    /// sending only the entry
+    /// send the header for the entry, along with the entry
     Entry,
-    /// sending all (public?) source chain entries
+    /// sending all public source chain entries
     ChainEntries,
     /// sending all source chain headers
     ChainHeaders,
-    /// sending the whole chain, entries and headers
+    /// sending the whole chain: public entries and all headers
     ChainFull,
     /// sending something custom
     Custom(String),

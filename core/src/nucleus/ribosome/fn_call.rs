@@ -4,7 +4,11 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::{dispatch_action_with_observer, Observer},
-    nucleus::{actions::get_entry::get_entry_from_agent_chain, ribosome::{self, WasmCallData}, state::NucleusState},
+    nucleus::{
+        actions::get_entry::get_entry_from_agent_chain,
+        ribosome::{self, WasmCallData},
+        state::NucleusState,
+    },
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -239,7 +243,7 @@ pub fn do_call(
         let call_result = ribosome::run_dna(
             wasm.code,
             Some(fn_call.clone().parameters.into_bytes()),
-            WasmCallData::new_zome_call(context.clone(),dna_name,fn_call.clone())
+            WasmCallData::new_zome_call(context.clone(), dna_name, fn_call.clone()),
         );
         // Construct response
         let response = ExecuteZomeFnResponse::new(fn_call, call_result);
@@ -411,10 +415,8 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            capabilities::{
-                CallSignature, Capability, CapabilityCall, CapabilityType, ReservedCapabilityNames,
-            },
-            fn_declarations::FnDeclaration,
+            capabilities::{CallSignature, CapabilityCall, CapabilityType, ReservedTraitNames},
+            fn_declarations::{FnDeclaration, TraitFns},
             Dna,
         },
         entry::{cap_entries::CapTokenGrant, Entry},
@@ -511,7 +513,7 @@ pub mod tests {
 
     /// dummy capability name compatible with ZomeFnCall
     pub fn test_capability_name() -> String {
-        "test_cap".to_string()
+        "hc_public".to_string()
     }
 
     /// dummy function name compatible with ZomeFnCall
@@ -582,7 +584,7 @@ pub mod tests {
             init.get_public_token("test_zome").unwrap(),
             Address::from("some caller"),
             "public_test_fn",
-            "{}",
+            "",
         );
 
         let result = super::call_and_wait_for_result(zome_call, &mut test_setup.instance);
@@ -777,25 +779,26 @@ pub mod tests {
         test_reduce_call(&test_setup, dummy_capability_call(), expected);
     }
 
-    fn setup_dna_for_cap_test(cap_type: CapabilityType) -> Dna {
+    fn setup_dna_for_test(make_public: bool) -> Dna {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let mut capability = Capability::new(cap_type.clone());
+        let mut trait_fns = TraitFns::new();
         let fn_decl = FnDeclaration {
             name: test_function_name(),
             inputs: Vec::new(),
             outputs: Vec::new(),
         };
-        capability.functions = vec![fn_decl.name.clone()];
-        let mut capabilities = BTreeMap::new();
-        let cap_name = match CapabilityType::Public == cap_type {
-            true => ReservedCapabilityNames::Public.as_str().to_string(),
-            false => test_capability_name(),
+        trait_fns.functions = vec![fn_decl.name.clone()];
+        let mut traits = BTreeMap::new();
+        let trait_name = if make_public {
+            ReservedTraitNames::Public.as_str().to_string()
+        } else {
+            "test_trait".to_string()
         };
-        capabilities.insert(cap_name, capability);
+        traits.insert(trait_name, trait_fns);
         let mut functions = Vec::new();
         functions.push(fn_decl);
 
-        create_test_dna_with_defs(&test_zome_name(), (functions, capabilities), &wasm)
+        create_test_dna_with_defs(&test_zome_name(), (functions, traits), &wasm)
     }
 
     // success to test_reduce_call is when the function gets called which shows up as a
@@ -805,7 +808,7 @@ pub mod tests {
 
     #[test]
     fn test_call_public() {
-        let dna = setup_dna_for_cap_test(CapabilityType::Public);
+        let dna = setup_dna_for_test(true);
         let test_setup = setup_test(dna);
         let state = test_setup.context.state().unwrap().nucleus();
         let init = state.initialization().unwrap();
@@ -832,7 +835,7 @@ pub mod tests {
 
     #[test]
     fn test_call_transferable() {
-        let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
+        let dna = setup_dna_for_test(false);
         let test_setup = setup_test(dna);
         let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
 
@@ -873,7 +876,7 @@ pub mod tests {
 
     #[test]
     fn test_call_assigned() {
-        let dna = setup_dna_for_cap_test(CapabilityType::Assigned);
+        let dna = setup_dna_for_test(false);
         let test_setup = setup_test(dna);
         let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
         let cap_call = CapabilityCall::new(
@@ -967,7 +970,7 @@ pub mod tests {
 
     #[test]
     fn test_validate_call_public() {
-        let dna = setup_dna_for_cap_test(CapabilityType::Public);
+        let dna = setup_dna_for_test(true);
         let test_setup = setup_test(dna);
         let context = test_setup.context;
         let state = context.state().unwrap().nucleus();
@@ -995,7 +998,7 @@ pub mod tests {
 
     #[test]
     fn test_validate_call_by_agent() {
-        let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
+        let dna = setup_dna_for_test(false);
         let test_setup = setup_test(dna);
         let context = test_setup.context;
         let state = context.state().unwrap().nucleus();
@@ -1063,7 +1066,7 @@ pub mod tests {
 
     #[test]
     fn test_get_grant() {
-        let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
+        let dna = setup_dna_for_test(false);
         let test_setup = setup_test(dna);
         let grant = CapTokenGrant::create(
             CapabilityType::Transferable,
@@ -1080,7 +1083,7 @@ pub mod tests {
 
     #[test]
     fn test_check_capability_transferable() {
-        let dna = setup_dna_for_cap_test(CapabilityType::Transferable);
+        let dna = setup_dna_for_test(false);
         let test_setup = setup_test(dna);
         let context = test_setup.context;
 

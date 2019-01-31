@@ -50,7 +50,7 @@ pub fn receive(
     match ribosome::run_dna(
         wasm.code.clone(),
         Some(zome_call.clone().parameters.into_bytes()),
-        WasmCallData::new_zome_call(context,dna.name,zome_call)
+        WasmCallData::new_zome_call(context, dna.name, zome_call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
         Err(_) => CallbackResult::NotImplemented("receive/4".into()),

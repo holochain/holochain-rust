@@ -153,6 +153,7 @@ pub enum RibosomeErrorCode {
     NotAnAllocation                 = 8 << 32,
     ZeroSizedAllocation             = 9 << 32,
     UnknownEntryType                = 10 << 32,
+    MismatchWasmCallDataType        = 11 << 32
 }
 
 #[rustfmt::skip]
@@ -169,6 +170,7 @@ impl RibosomeErrorCode {
             NotAnAllocation                 => "Not an allocation",
             ZeroSizedAllocation             => "Zero-sized allocation",
             UnknownEntryType                => "Unknown entry type",
+            MismatchWasmCallDataType        => "Mismatched WasmCallData type"
         }
     }
 }

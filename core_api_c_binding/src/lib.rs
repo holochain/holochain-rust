@@ -113,11 +113,11 @@ pub unsafe extern "C" fn holochain_call(
 
     match holochain.call(
         zome.as_str(),
-        Some(CapabilityCall::new(
+        CapabilityCall::new(
             Address::from(token.as_str()),
             Address::from("fake_caller"),
             CallSignature::default(),
-        )), // FIXME: caller
+        ), // FIXME: caller
         function.as_str(),
         parameters.as_str(),
     ) {

@@ -3,8 +3,7 @@
 use crate::{
     dna::{
         bridges::{Bridge, BridgePresence},
-        capabilities::{Capability, CapabilityType},
-        fn_declarations::{FnDeclaration, FnParameter},
+        fn_declarations::{FnDeclaration, FnParameter, TraitFns},
         wasm::DnaWasm,
     },
     entry::entry_type::EntryType,
@@ -53,7 +52,7 @@ impl Config {
 }
 
 pub type ZomeEntryTypes = BTreeMap<EntryType, EntryTypeDef>;
-pub type ZomeCapabilities = BTreeMap<String, Capability>;
+pub type ZomeTraits = BTreeMap<String, TraitFns>;
 pub type ZomeFnDeclarations = Vec<FnDeclaration>;
 
 /// Represents an individual "zome".
@@ -75,9 +74,9 @@ pub struct Zome {
     #[serde(deserialize_with = "deserialize_entry_types")]
     pub entry_types: ZomeEntryTypes,
 
-    /// An array of capabilities associated with this zome.
+    /// An array of traits defined in this zome.
     #[serde(default)]
-    pub capabilities: ZomeCapabilities,
+    pub traits: ZomeTraits,
 
     /// An array of functions declared in this this zome.
     #[serde(default)]
@@ -102,7 +101,7 @@ impl Default for Zome {
             config: Config::new(),
             entry_types: BTreeMap::new(),
             fn_declarations: Vec::new(),
-            capabilities: BTreeMap::new(),
+            traits: BTreeMap::new(),
             code: DnaWasm::new(),
             bridges: Vec::new(),
         }
@@ -116,7 +115,7 @@ impl Zome {
         config: &Config,
         entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
         fn_declarations: &Vec<FnDeclaration>,
-        capabilities: &BTreeMap<String, Capability>,
+        traits: &BTreeMap<String, TraitFns>,
         code: &DnaWasm,
     ) -> Zome {
         Zome {
@@ -124,7 +123,7 @@ impl Zome {
             config: config.clone(),
             entry_types: entry_types.to_owned(),
             fn_declarations: fn_declarations.to_owned(),
-            capabilities: capabilities.to_owned(),
+            traits: traits.to_owned(),
             code: code.clone(),
             bridges: Vec::new(),
         }
@@ -158,16 +157,6 @@ impl Zome {
             .iter()
             .find(|ref fn_decl| fn_decl.name == fn_name)
     }
-
-    // Helper function for finding out if a given function call is public
-    pub fn is_fn_public(&self, fn_name: &String) -> bool {
-        self.capabilities
-            .iter()
-            .find(|(_, cap)| {
-                cap.cap_type == CapabilityType::Public && cap.functions.contains(fn_name)
-            })
-            .is_some()
-    }
 }
 
 #[cfg(test)]
@@ -194,7 +183,7 @@ pub mod tests {
                 },
                 "entry_types": {},
                 "fn_delcarations": [],
-                "capabilities": {}
+                "traits": {}
             }"#,
         )
         .unwrap();
@@ -215,7 +204,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
+        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from(expected.clone()),
@@ -255,24 +244,4 @@ pub mod tests {
             "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
         );
     }
-
-    #[test]
-    fn test_is_fn_public() {
-        let mut dna = test_utils::create_test_dna_with_wat("test_zome", None);
-        let fn_name = String::from("public_test_fn");
-        assert!(dna.get_zome("test_zome").unwrap().is_fn_public(&fn_name));
-
-        let private_fn_name = String::from("non_pub_fn");
-        dna.zomes.get_mut("test_zome").unwrap().add_fn_declaration(
-            private_fn_name.clone(),
-            vec![],
-            vec![],
-        );
-
-        assert!(!dna
-            .get_zome("test_zome")
-            .unwrap()
-            .is_fn_public(&private_fn_name));
-    }
-
 }

@@ -318,7 +318,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -375,7 +375,7 @@ pub mod tests {
         ribosome::run_dna(
             wasm.clone(),
             Some(args_bytes),
-            WasmCallData::new_zome_call(context,dna_name,zome_call)
+            ribosome::WasmCallData::new_zome_call(context, dna_name.to_string(), zome_call),
         )
         .expect("test should be callable")
     }

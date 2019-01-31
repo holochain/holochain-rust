@@ -41,7 +41,6 @@ pub mod tests {
         cas::content::Address,
         dna::{
             bridges::{Bridge, BridgePresence, BridgeReference},
-            capabilities::CapabilityType,
             entry_types::EntryTypeDef,
             fn_declarations::{FnDeclaration, FnParameter, Trait},
             zome::tests::test_zome,
@@ -125,9 +124,8 @@ pub mod tests {
                                 "linked_from": []
                             }
                         },
-                        "capabilities": {
-                            "test": {
-                                "type": "public",
+                        "traits": {
+                            "hc_public": {
                                 "functions": ["test"]
                             }
                         },
@@ -193,7 +191,7 @@ pub mod tests {
                                 "linked_from": []
                             }
                         },
-                        "capabilities": {},
+                        "traits": {},
                         "fn_declarations": [],
                         "code": {"code": ""}
                     }
@@ -386,9 +384,8 @@ pub mod tests {
                         "description": "test",
                         "config": {},
                         "entry_types": {},
-                        "capabilities": {
-                            "test capability": {
-                                "type": "public"
+                        "traits": {
+                            "hc_public": {
                             }
                         },
                         "fn_declarations": [],
@@ -425,9 +422,8 @@ pub mod tests {
                         "name": "test zome",
                         "description": "test",
                         "config": {},
-                        "capabilities": {
-                            "test capability": {
-                                "type": "public",
+                        "traits": {
+                            "hc_public": {
                                 "functions": []
                             }
                         },
@@ -474,9 +470,8 @@ pub mod tests {
                         "name": "test zome",
                         "description": "test",
                         "config": {},
-                        "capabilities": {
-                            "test capability": {
-                                "type": "public",
+                        "traits": {
+                            "hc_public": {
                                 "functions": []
                             }
                         },
@@ -504,7 +499,6 @@ pub mod tests {
                                 "reference": {
                                     "traits": {
                                         "persona_management": {
-                                            "type": "public",
                                             "functions": [
                                                 {
                                                     "name": "get_persona",
@@ -522,7 +516,6 @@ pub mod tests {
                                 "reference": {
                                     "traits": {
                                         "happ_directory": {
-                                            "type": "public",
                                             "functions": [
                                                 {
                                                     "name": "get_happs",
@@ -557,7 +550,6 @@ pub mod tests {
                     reference: BridgeReference::Trait {
                         traits: btreemap! {
                             String::from("happ_directory") => Trait {
-                                cap_type: CapabilityType::Public,
                                 functions: vec![
                                     FnDeclaration {
                                         name: String::from("get_happs"),

@@ -573,7 +573,9 @@ impl Logger for NullLogger {
 pub mod tests {
     use super::*;
     use crate::config::load_configuration;
-    use holochain_core::{action::Action, signal::signal_channel};
+    use holochain_core::{
+        action::Action, nucleus::ribosome::fn_call::make_cap_call, signal::signal_channel,
+    };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
@@ -725,9 +727,8 @@ pub mod tests {
                                 "sharing": "public"
                             }
                         },
-                        "capabilities": {
+                        "traits": {
                             "test": {
-                                "type": "public",
                                 "functions": ["test"]
                              }
                         },
@@ -904,7 +905,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -945,7 +946,7 @@ pub mod tests {
 
     fn callee_dna() -> Dna {
         let wat = &callee_wat();
-        let mut dna = create_test_dna_with_wat("greeter", "test_cap", Some(wat));
+        let mut dna = create_test_dna_with_wat("greeter", Some(wat));
         dna.uuid = String::from("basic_bridge_call");
         dna.zomes.get_mut("greeter").unwrap().add_fn_declaration(
             String::from("hello"),
@@ -958,8 +959,8 @@ pub mod tests {
         dna.zomes
             .get_mut("greeter")
             .unwrap()
-            .capabilities
-            .get_mut("test_cap")
+            .traits
+            .get_mut("hc_public")
             .unwrap()
             .functions
             .push("hello".into());
@@ -987,23 +988,23 @@ pub mod tests {
             .start_all_instances()
             .expect("Instances must be spawnable");
         let caller_instance = container.instances["bridge-caller"].clone();
-        let result = caller_instance
-            .write()
-            .unwrap()
-            .call(
-                "test_zome",
-                Some(dna::capabilities::CapabilityCall::new(
-                    Address::from("fake_token"),
-                    Address::from("fake_sender"),
-                    dna::capabilities::CallSignature::default(),
-                )),
+        let mut instance = caller_instance.write().unwrap();
+
+        let cap_call = {
+            let context = instance.context();
+            make_cap_call(
+                context.clone(),
+                Address::from(context.clone().agent_id.key.clone()),
+                Address::from(context.clone().agent_id.key.clone()),
                 "call_bridge",
-                "{}",
+                "{}".to_string(),
             )
+        };
+        let result = instance
+            .call("test_zome", cap_call, "call_bridge", "{}")
             .unwrap();
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
         assert_eq!(result, JsonString::from(RawString::from("Holo World")));
     }
-
 }

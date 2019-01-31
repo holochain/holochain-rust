@@ -76,7 +76,11 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 }
 
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let zome_call_data = runtime.zome_call_data().map_err(|_|HolochainError::ErrorGeneric("expecting zome call data in local call not null call".to_string()))?;
+    let zome_call_data = runtime.zome_call_data().map_err(|_| {
+        HolochainError::ErrorGeneric(
+            "expecting zome call data in local call not null call".to_string(),
+        )
+    })?;
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(zome_call_data.context.clone(), input);
     // Create Call Action
@@ -115,7 +119,11 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let zome_call_data = runtime.zome_call_data().map_err(|_|HolochainError::ErrorGeneric("expecting zome call data in bridge call not null call".to_string()))?;
+    let zome_call_data = runtime.zome_call_data().map_err(|_| {
+        HolochainError::ErrorGeneric(
+            "expecting zome call data in bridge call not null call".to_string(),
+        )
+    })?;
     let container_api =
         zome_call_data
             .context

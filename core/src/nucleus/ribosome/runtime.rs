@@ -33,18 +33,20 @@ pub enum WasmCallData {
     ZomeCall(ZomeCallData),
     NullCall,
 }
-waitr
+
 impl WasmCallData {
-    pub fn new_zome_call(context: Arc<Context>,dna_name: String, zome_call: ZomeFnCall) -> Self {
+    pub fn new_zome_call(context: Arc<Context>, dna_name: String, zome_call: ZomeFnCall) -> Self {
         WasmCallData::ZomeCall(ZomeCallData {
-            context,dna_name,zome_call
+            context,
+            dna_name,
+            zome_call,
         })
     }
 
     pub fn fn_name(&self) -> String {
         match self {
-            WasmCallData::ZomeCall(data)=> data.zome_call.fn_name.clone(),
-            WasmCallData::NullCall => "__hdk_get_json_definition".to_string()
+            WasmCallData::ZomeCall(data) => data.zome_call.fn_name.clone(),
+            WasmCallData::NullCall => "__hdk_get_json_definition".to_string(),
         }
     }
 }
@@ -60,7 +62,6 @@ pub struct Runtime {
 }
 
 impl Runtime {
-
     pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.clone()),

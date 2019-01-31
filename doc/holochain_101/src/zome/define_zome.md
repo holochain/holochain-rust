@@ -12,10 +12,11 @@ A Zome has
 - `config`: Not Implemented Yet
 - validating entry types: definition may vary based on the language
 - a `genesis` function: a callback that Holochain expects and requires, defined in the code itself
-- `capabilities`: a collection of custom functions, which share configuration of their visibility and permissions, a.k.a who/what is allowed to call those functions
-    - custom functions: the core application logic of a Zome, written in a language that compiles to WASM, which Holochain interprets through that compiled WASM
+- `fn_declarations`: a collection of custom functions declarations,
+- `traits`: sets of named function groups used for composibility
+- `code`: the core application logic of a Zome, written in a language that compiles to WASM, which Holochain interprets through that compiled WASM
 
-To develop a Zome, you will have to become familiar with these different aspects, the most complex of which are the validating entry types, and the capabilities and function definition. Implementation details will differ depending on the language that you are developing a Zome in.
+To develop a Zome, you will have to become familiar with these different aspects, the most complex of which are the validating entry types, and the traits and function definition. Implementation details will differ depending on the language that you are developing a Zome in.
 
 ## Building in Rust: define_zome!
 
@@ -52,6 +53,6 @@ define_zome! {
 
 `genesis` represents the previously mentioned `genesis` callback that Holochain expects from every Zome. [Skip here for details.](./genesis.md)
 
-`functions` is where the capabilities and functions are defined. [Skip here for details.](./zome_functions.md)
+`functions` is where the functions are defined. [Skip here for details.](./zome_functions.md)
 
 These are the three *required* properties of `define_zome!`.

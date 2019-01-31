@@ -42,7 +42,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome", Some(CapabilityCall::new(Address::from("some_token"), Address::from("caller"), CallSignature {})), "some_fn", "{}");
+//! hc.call("test_zome", CapabilityCall::new(Address::from("some_token"), Address::from("caller"), CallSignature::default()), "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -189,16 +189,13 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::ribosome::{callback::Callback, Defn},
+        nucleus::ribosome::fn_call::make_cap_call,
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{
         agent::AgentId,
         cas::content::Address,
-        dna::{
-            capabilities::{CallSignature, CapabilityCall},
-            Dna,
-        },
+        dna::{capabilities::CapabilityCall, Dna},
     };
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
@@ -240,12 +237,15 @@ mod tests {
         create_wasm_from_file(&example_api_wasm_path())
     }
 
-    fn example_capability_call() -> Option<CapabilityCall> {
-        Some(CapabilityCall::new(
-            Address::from("test_token"),
-            Address::from("caller"),
-            CallSignature::default(),
-        ))
+    // for these tests we use the agent capability call
+    fn cap_call(context: Arc<Context>, fn_name: &str, params: &str) -> CapabilityCall {
+        make_cap_call(
+            context.clone(),
+            Address::from(context.clone().agent_id.key.clone()),
+            Address::from(context.clone().agent_id.key.clone()),
+            fn_name,
+            params.to_string(),
+        )
     }
 
     #[test]
@@ -294,7 +294,6 @@ mod tests {
     fn fails_instantiate_if_genesis_fails() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
             Some(
                 r#"
             (module
@@ -399,9 +398,11 @@ mod tests {
 "#;
         let dna = create_test_dna_with_wat("test_zome", Some(wat));
         let (context, _, _) = test_context("bob");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
-        let result = hc.call("test_zome", example_capability_call(), "public_test_fn", "");
+        let cap_call = cap_call(context.clone(), "public_test_fn", "");
+
+        let result = hc.call("test_zome", cap_call.clone(), "public_test_fn", "");
         assert!(result.is_err());
         assert_eq!(
             result.err().unwrap(),
@@ -411,7 +412,7 @@ mod tests {
         hc.start().expect("couldn't start");
 
         // always returns not implemented error for now!
-        let result = hc.call("test_zome", example_capability_call(), "public_test_fn", "");
+        let result = hc.call("test_zome", cap_call, "public_test_fn", "");
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
             result.ok().unwrap(),
@@ -436,16 +437,17 @@ mod tests {
         let defs = create_test_defs_with_fn_name("round_trip_test");
         let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         let (context, _, _) = test_context("bob");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
         hc.start().expect("couldn't start");
 
+        let params = r#"{"input_int_val":2,"input_str_val":"fish"}"#;
         // always returns not implemented error for now!
         let result = hc.call(
             "test_zome",
-            example_capability_call(),
+            cap_call(context.clone(), "round_trip_test", params),
             "round_trip_test",
-            r#"{"input_int_val":2,"input_str_val":"fish"}"#,
+            params,
         );
         assert!(result.is_ok(), "result = {:?}", result);
         assert_eq!(
@@ -462,7 +464,7 @@ mod tests {
         let defs = create_test_defs_with_fn_name("commit_test");
         let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         let (context, _, signal_rx) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -479,7 +481,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
-            example_capability_call(),
+            cap_call(context.clone(), "commit_test", r#"{}"#),
             "commit_test",
             r#"{}"#,
         );
@@ -510,7 +512,7 @@ mod tests {
         let defs = create_test_defs_with_fn_name("commit_fail_test");
         let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
         let (context, _, signal_rx) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -518,7 +520,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
-            example_capability_call(),
+            cap_call(context.clone(), "commit_fail_test", r#"{}"#),
             "commit_fail_test",
             r#"{}"#,
         );
@@ -550,7 +552,7 @@ mod tests {
         let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
         let (context, _, signal_rx) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -558,7 +560,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
-            example_capability_call(),
+            cap_call(context.clone(), "debug_hello", r#"{}"#),
             "debug_hello",
             r#"{}"#,
         );
@@ -588,7 +590,7 @@ mod tests {
         let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
         let (context, _, signal_rx) = test_context("alex");
-        let mut hc = Holochain::new(dna.clone(), context).unwrap();
+        let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
         // Run the holochain instance
         hc.start().expect("couldn't start");
@@ -596,7 +598,7 @@ mod tests {
         // Call the exposed wasm function that calls the Commit API function
         let result = hc.call(
             "test_zome",
-            example_capability_call(),
+            cap_call(context.clone(), "debug_multiple", r#"{}"#),
             "debug_multiple",
             r#"{}"#,
         );

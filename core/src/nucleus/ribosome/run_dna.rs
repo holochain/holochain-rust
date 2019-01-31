@@ -1,10 +1,8 @@
-use crate::{
-    nucleus::ribosome::{
-        api::ZomeApiFunction,
-        fn_call::ZomeFnResult,
-        memory::WasmPageManager,
-        runtime::{Runtime, WasmCallData},
-    },
+use crate::nucleus::ribosome::{
+    api::ZomeApiFunction,
+    fn_call::ZomeFnResult,
+    memory::WasmPageManager,
+    runtime::{Runtime, WasmCallData},
 };
 use holochain_core_types::{
     error::{
@@ -22,11 +20,7 @@ use wasmi::{
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
-pub fn run_dna(
-    wasm: Vec<u8>,
-    parameters: Option<Vec<u8>>,
-    data: WasmCallData,
-) -> ZomeFnResult {
+pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     // Create wasm module from wasm binary
     let module =
         wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))?;
@@ -90,7 +84,6 @@ pub fn run_dna(
 
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
-
 
     let fn_name = data.fn_name();
     // instantiate runtime struct for passing external state data over wasm but not to wasm

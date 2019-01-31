@@ -47,7 +47,7 @@ pub mod tests {
                 tests::{test_parameters, test_zome_name},
             },
             fn_call::{tests::test_capability_call, ZomeFnCall},
-            runtime::WasmCallData
+            runtime::WasmCallData,
         },
     };
     use holochain_core_types::{
@@ -163,7 +163,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -214,11 +214,9 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            &dna.name.to_string(),
             wasm.clone(),
             Some(test_commit_args_bytes()),
-            WasmCallData::new_zome_call(Arc::clone(&context),dna_name.to_string(),commit_call)
-
+            WasmCallData::new_zome_call(Arc::clone(&context), dna.name.to_string(), commit_call),
         )
         .expect("test should be callable");
 
@@ -240,7 +238,7 @@ pub mod tests {
         let call_result = ribosome::run_dna(
             wasm.clone(),
             Some(test_get_args_bytes()),
-            WasmCallData::new_zome_call(Arc::clone(&context),dna_name.to_string(),get_call)
+            WasmCallData::new_zome_call(Arc::clone(&context), dna.name.to_string(), get_call),
         )
         .expect("test should be callable");
 

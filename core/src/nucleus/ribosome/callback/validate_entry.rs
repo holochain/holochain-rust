@@ -191,7 +191,7 @@ fn run_validation_callback(
     match ribosome::run_dna(
         wasm.code.clone(),
         Some(zome_call.clone().parameters.into_bytes()),
-        WasmCallData::new_zome_call(context,dna_name,zome_call)
+        WasmCallData::new_zome_call(context, dna_name, zome_call),
     ) {
         Ok(call_result) => match call_result.is_null() {
             true => CallbackResult::Pass,

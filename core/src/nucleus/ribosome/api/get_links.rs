@@ -29,12 +29,16 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     };
 
     if input.options.status_request != LinksStatusRequestKind::Live {
-        zome_call_data.context.log("get links status request other than Live not implemented!");
+        zome_call_data
+            .context
+            .log("get links status request other than Live not implemented!");
         return ribosome_error_code!(Unspecified);
     }
 
     if input.options.sources {
-        zome_call_data.context.log("get links retrieve sources not implemented!");
+        zome_call_data
+            .context
+            .log("get links retrieve sources not implemented!");
         return ribosome_error_code!(Unspecified);
     }
 

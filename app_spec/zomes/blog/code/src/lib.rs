@@ -98,8 +98,8 @@ define_zome! {
         }
     ]
 
-    capabilities: {
-        public (Public) [show_env, check_sum, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
+    traits: {
+        hc_public [show_env, check_sum, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
     }
 
 }

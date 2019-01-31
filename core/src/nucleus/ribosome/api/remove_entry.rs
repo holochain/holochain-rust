@@ -47,7 +47,10 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: deleted_entry_address,
         options: Default::default(),
     };
-    let maybe_entry_result = block_on(get_entry_result_workflow(&zome_call_data.context, &get_args));
+    let maybe_entry_result = block_on(get_entry_result_workflow(
+        &zome_call_data.context,
+        &get_args,
+    ));
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
@@ -74,7 +77,11 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             })
             // 2. Validate the entry
             .and_then(|validation_data| {
-                validate_entry(deletion_entry.clone(), validation_data, &zome_call_data.context)
+                validate_entry(
+                    deletion_entry.clone(),
+                    validation_data,
+                    &zome_call_data.context,
+                )
             })
             // 3. Commit the valid entry to chain and DHT
             .and_then(|_| {

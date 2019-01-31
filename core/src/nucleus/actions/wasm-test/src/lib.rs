@@ -110,7 +110,7 @@ define_zome! {
         }
     ]
 
-    capabilities: {}
+    traits: {}
 }
 
 fn test_handler() -> u32 {0}

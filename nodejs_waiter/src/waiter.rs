@@ -320,7 +320,13 @@ mod tests {
         action::DirectMessageData, network::direct_message::CustomDirectMessage,
         nucleus::ribosome::fn_call::ExecuteZomeFnResponse,
     };
-    use holochain_core_types::{entry::Entry, json::JsonString, link::link_add::LinkAdd};
+    use holochain_core_types::{
+        cas::content::Address,
+        dna::capabilities::{CallSignature, CapabilityCall},
+        entry::Entry,
+        json::JsonString,
+        link::link_add::LinkAdd,
+    };
     use std::sync::mpsc::sync_channel;
 
     fn sig(a: Action) -> Signal {
@@ -344,7 +350,16 @@ mod tests {
     }
 
     fn zf_call(name: &str) -> ZomeFnCall {
-        ZomeFnCall::new(name, None, name, "")
+        ZomeFnCall::new(
+            name,
+            CapabilityCall::new(
+                Address::from("token"),
+                Address::from("caller"),
+                CallSignature::default(),
+            ),
+            name,
+            "",
+        )
     }
 
     fn zf_response(call: ZomeFnCall) -> ExecuteZomeFnResponse {

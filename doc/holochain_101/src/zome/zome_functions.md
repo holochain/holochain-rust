@@ -27,9 +27,8 @@ When Holochain loads a DNA file, to start an instance from it, it expects the pr
     "zomes": {
         "test_zome": {
             "name": "test_zome",
-            "capabilities": {
-                "test_capability": {
-                    "type": "public"
+            "traits": {
+                "hc_public": {
                     "functions": [],
                 }
             },
@@ -55,17 +54,17 @@ There are at least two reasons for this:
 These will both be discussed below.
 
 ## Capabilities
+## TODO: FIXME (convert to traits)
 
 In order to operate securely, but still be full featured, Holochain has a permissions system for function calls. This is being called "Capabilities".
 
 A Zome can have multiple Capabilities, and each Capability has one CapabilityType, from a defined set of options, as well as list of functions that are accessible using that capability. The point of selecting a CapabilityType for a set of functions is that it will allow granular control of who can call which functions of a Zome.
 
-In the example, the name of the capability was "test_capability".
+In the example, the name of the trait was "hc_public", which is a reserved trait name.
 
 ```json
-"capabilities": {
-    "test_capability": {
-        "type": "public"
+"traits": {
+    "hc_public": {
         "functions": ["get_task_list"]
     }
 }

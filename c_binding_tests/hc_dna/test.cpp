@@ -72,16 +72,14 @@ void TestHcDna::canGetZomeNames() {
 void TestHcDna::canGetCapabilityNames() {
     Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
                                               "\"zomes\":{"
-                                              "\"zome1\":{\"description\":\"lorem\",\"config\":{},\"capabilities\":{"
-                                              "    \"test_cap\":{"
-                                              "        \"type\": \"public\","
+                                              "\"zome1\":{\"description\":\"lorem\",\"config\":{},\"traits\":{"
+                                              "    \"hc_public\":{"
                                               "        \"functions\": [\"main\"]"
                                               "    },"
-                                              "    \"test_cap2\": {"
-                                              "        \"type\": \"public\","
-                                              "        \"functions\": [\"main\"]"
+                                              "    \"test_trait2\": {"
+                                              "        \"functions\": [\"test_fn\"]"
                                               "    }"
-                                              "    }," //capabilities
+                                              "    }," //traits
                                               "    \"code\": {"
                                               "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
                                               "    }"
@@ -98,8 +96,8 @@ void TestHcDna::canGetCapabilityNames() {
     QString name2 = QString("%1").arg(names.ptr[1]);
 
     QVERIFY(name1 != name2);
-    QVERIFY(name1 == QString("test_cap") || name1 == QString("test_cap2"));
-    QVERIFY(name2 == QString("test_cap") || name2 == QString("test_cap2"));
+    QVERIFY(name1 == QString("test_trait") || name1 == QString("test_trait2"));
+    QVERIFY(name2 == QString("test_trait") || name2 == QString("test_trait2"));
 
     holochain_dna_free_zome_names(&names);
     holochain_dna_free(dna);
@@ -110,12 +108,11 @@ void TestHcDna::canGetCapabilityNames() {
 void TestHcDna::canGetFunctionNames() {
     Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
                                               "\"zomes\":{"
-                                              "\"zome1\": {\"description\":\"lorem\",\"config\":{},\"capabilities\":{"
-                                              "    \"test_cap\": {"
-                                              "        \"type\": \"public\","
+                                              "\"zome1\": {\"description\":\"lorem\",\"config\":{},\"traits\":{"
+                                              "    \"hc_public\": {"
                                               "        \"functions\": [\"public_test_fn\"]"
                                               "        }"
-                                              "    }," //capabilities
+                                              "    }," //traits
                                               "    \"fn_declarations\":"
                                               "    ["
                                               "    {"
@@ -162,12 +159,11 @@ void TestHcDna::canGetFunctionParameters() {
                                               "  \"zome1\":{"
                                               "    \"description\":\"lorem\","
                                               "    \"config\":{},"
-                                              "    \"capabilities\":{"
-                                              "      \"test_cap\": {"
-                                              "        \"type\": \"public\","
+                                              "    \"traits\":{"
+                                              "      \"hc_public\": {"
                                               "        \"functions\": [\"public_test_fn\"]"
                                               "      }"
-                                              "    }," //capbilities
+                                              "    }," //traits
                                               "    \"fn_declarations\":["
                                               "          {"
                                               "            \"name\": \"public_test_fn\","

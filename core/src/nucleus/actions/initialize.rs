@@ -16,7 +16,7 @@ use futures::{
 use holochain_core_types::{
     cas::content::Address,
     dna::{
-        capabilities::{CapabilityType, ReservedCapabilityNames},
+        capabilities::{CapabilityType, ReservedTraitNames},
         Dna,
     },
     entry::{cap_entries::CapTokenGrant, Entry},
@@ -116,9 +116,9 @@ pub async fn initialize_application(
     // Commit Public Capability Grants to chain
     for (zome_name, zome) in dna.clone().zomes {
         let maybe_public = zome
-            .capabilities
+            .traits
             .iter()
-            .find(|(cap_name, _)| *cap_name == ReservedCapabilityNames::Public.as_str());
+            .find(|(cap_name, _)| *cap_name == ReservedTraitNames::Public.as_str());
         if maybe_public.is_some() {
             let (_, cap) = maybe_public.unwrap();
             let maybe_public_cap_grant_entry =

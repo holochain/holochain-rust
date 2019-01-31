@@ -108,7 +108,7 @@ scenario.run((stop, {alice, bob}) => {
 })
 ```
 
-Using `run` allows you to manage the test yourself, only providing you with the basic help of starting and stopping a fresh container instance. 
+Using `run` allows you to manage the test yourself, only providing you with the basic help of starting and stopping a fresh container instance.
 
 The previous example used `tape` to show how it compares to using `runTape`, though you could have used any test harness, like Jest or Mocha. In fact, `runTape` simply calls `run` under the hood.
 
@@ -209,7 +209,7 @@ const dna = Config.dna(dnaPath)
 // ...then make instances out of them...
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
-// ...and finally throw them all together 
+// ...and finally throw them all together
 const config = Config.container([instanceAlice, instanceBob])
 
 // The produced `config` is a fully valid container configuration and can be
@@ -248,7 +248,7 @@ Note about usage:
 Prior to version 0.0.3, a container would only return a single instance of an app. Now a container actually contains multiple instances. When performing a call to an instance, one must include the instance id. Take the following for example:
 
 ```
-const callResult = container.call(someInstanceId, someZome, someCapability, someFunction, someParams)
+const callResult = container.call(someInstanceId, someZome, someFunction, someParams)
 ```
 
 ## Deployment

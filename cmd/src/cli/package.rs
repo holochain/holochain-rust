@@ -1,10 +1,7 @@
 use crate::{config_files::Build, error::DefaultResult, util};
 use base64;
 use colored::*;
-use holochain_core::nucleus::ribosome::{
-    fn_call::ZomeFnCall, run_dna,
-    runtime::WasmCallData,
-};
+use holochain_core::nucleus::ribosome::{run_dna, WasmCallData};
 use ignore::WalkBuilder;
 use serde_json::{self, Map, Value};
 use std::{
@@ -140,13 +137,14 @@ impl Packager {
 
                     let wasm_binary = base64::decode(&wasm)?;
 
-                    let call_result = run_dna(
+                    let json_string = run_dna(
                         wasm_binary,
                         Some("{}".as_bytes().to_vec()),
-                        WasmCallData::NullCall);
+                        WasmCallData::NullCall,
+                    )?;
 
                     let json_from_wasm: Map<String, Value> =
-                        serde_json::from_str(&call_result.to_string())?;
+                        serde_json::from_str(&String::from(json_string))?;
 
                     let mut sub_tree_content = self.bundle_recurse(&node)?;
                     for key in json_from_wasm.keys() {

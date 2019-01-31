@@ -101,7 +101,7 @@ pub fn test_wat_always_valid() -> String {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -199,7 +199,7 @@ pub fn test_wat_always_invalid() -> String {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 

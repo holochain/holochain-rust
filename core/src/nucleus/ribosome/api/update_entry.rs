@@ -46,7 +46,10 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: entry_args.address,
         options: Default::default(),
     };
-    let maybe_entry_result = block_on(get_entry_result_workflow(&zome_call_data.context, &get_args));
+    let maybe_entry_result = block_on(get_entry_result_workflow(
+        &zome_call_data.context,
+        &get_args,
+    ));
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
@@ -85,7 +88,13 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
                 validate_entry(entry.clone(), validation_data, &zome_call_data.context)
             })
             // 3. Commit the valid entry to chain and DHT
-            .and_then(|_| commit_entry(entry.clone(), Some(chain_header_address), &zome_call_data.context))
+            .and_then(|_| {
+                commit_entry(
+                    entry.clone(),
+                    Some(chain_header_address),
+                    &zome_call_data.context,
+                )
+            })
             // 4. Update the entry in DHT metadata
             .and_then(|new_address| {
                 update_entry(

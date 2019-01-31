@@ -13,9 +13,8 @@ use crate::{
         self,
         callback::{genesis::genesis, receive::receive},
         fn_call::{make_cap_call, ZomeFnCall},
-        Defn,
         runtime::WasmCallData,
-
+        Defn,
     },
 };
 use holochain_core_types::{
@@ -175,7 +174,7 @@ pub(crate) fn run_callback(
     match ribosome::run_dna(
         wasm.code.clone(),
         Some(fc.clone().parameters.into_bytes()),
-        WasmCallData::new_zome_call(context,dna_name,fc)
+        WasmCallData::new_zome_call(context, dna_name, fc),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {

@@ -13,16 +13,17 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     signal::Signal,
+    nucleus::ribosome::fn_call::make_cap_call,
 };
 use holochain_core_types::{
     agent::AgentId,
     cas::content::Address,
     dna::{
-        capabilities::{ReservedCapabilityNames, CallSignature, Capability, CapabilityCall, CapabilityType},
+        capabilities::{ReservedTraitNames},
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
-        fn_declarations::FnDeclaration,
+        fn_declarations::{FnDeclaration, TraitFns},
         wasm::DnaWasm,
-        zome::{Config, Zome, ZomeFnDeclarations, ZomeCapabilities},
+        zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,
     },
     entry::entry_type::{AppEntryType, EntryType},
@@ -115,36 +116,32 @@ pub fn create_test_dna_with_wasm(zome_name: &str, wasm: Vec<u8>) -> Dna {
         &DnaWasm { code: wasm },
     );
 
-    let mut cap = Capability::new(CapabilityType::Public);
-    cap.functions.push("public_test_fn".to_string());
-    zome.capabilities.insert(ReservedCapabilityNames::Public.as_str().to_string(), cap);
+    let mut trait_fns = TraitFns::new();
+    trait_fns.functions.push("public_test_fn".to_string());
+    zome.traits.insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
     dna.zomes.insert(zome_name.to_string(), zome);
     dna.name = "TestApp".into();
     dna.uuid = "8ed84a02-a0e6-4c8c-a752-34828e302986".into();
     dna
 }
 
-pub fn create_test_cap(cap_type: CapabilityType) -> Capability {
-    Capability::new(cap_type)
-}
-
-pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, ZomeCapabilities) {
-    let mut capability = Capability::new(CapabilityType::Public);
+pub fn create_test_defs_with_fn_name(fn_name: &str) -> (ZomeFnDeclarations, ZomeTraits) {
+    let mut trait_fns = TraitFns::new();
     let mut fn_decl = FnDeclaration::new();
     fn_decl.name = String::from(fn_name);
-    capability.functions.push(String::from(fn_name));
-    let mut capabilities = BTreeMap::new();
-    capabilities.insert("test_cap".to_string(), capability);
+    trait_fns.functions.push(String::from(fn_name));
+    let mut traits = BTreeMap::new();
+    traits.insert(ReservedTraitNames::Public.as_str().to_string(), trait_fns);
 
     let mut functions = Vec::new();
     functions.push(fn_decl);
-    (functions, capabilities)
+    (functions, traits)
 }
 
 /// Prepare valid DNA struct with that WASM in a zome's capability
 pub fn create_test_dna_with_defs(
     zome_name: &str,
-    defs: (ZomeFnDeclarations,ZomeCapabilities),
+    defs: (ZomeFnDeclarations,ZomeTraits),
     wasm: &[u8],
 ) -> Dna {
     let mut dna = Dna::new();
@@ -213,7 +210,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 }
 
 // Function called at start of all unit tests:
-//   Startup holochain and do a call on the specified wasm function.
+//   Startup holochain and do a call on the specified wasm function using the admin capability
 pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<JsonString> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
@@ -221,18 +218,22 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     let dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
     let context = create_test_context("alex");
-    let mut hc = Holochain::new(dna.clone(), context).unwrap();
+    let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
+
+    let cap_call =  make_cap_call(
+        context.clone(),
+        Address::from(context.clone().agent_id.key.clone()),
+        Address::from(context.clone().agent_id.key.clone()),
+        fn_name,
+        r#"{}"#.to_string(),
+    );
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
     // Call the exposed wasm function
     return hc.call(
         "test_zome",
-        CapabilityCall::new(
-            Address::from("test_token"),
-            Address::from("test_sender"),
-            CallSignature::default(),
-        ),
+        cap_call,
         fn_name,
         r#"{}"#,
     );

@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 /// DNA.
 ///
 /// The other DNA can either be referenced statically by exact DNA address/hash or dynamically
-/// by defining the capabilities that other DNA has to provide in order to be usable as bridge.
+/// by defining the traits that other DNA has to provide in order to be usable as bridge.
 ///
 /// Bridges can be required or optional. If a required bridge DNA is not installed this DNA
 /// can't run, so required bridges are hard dependencies that have to be enforced by the container.
@@ -33,7 +33,7 @@ pub struct Bridge {
 /// * the other DNA gets created from a template and thus we don't know the exact hash
 ///   during build-time
 /// * we want to build a complex system of components that should be pluggable.
-/// Bridges can therefore also be specified by capabilities (read traits or interfaces).
+/// Bridges can therefore also be specified by traits.
 /// That means we specify a list of functions with their signatures and allow the container
 /// (through the container bridge config) to resolve this bridge by any DNA instance that
 /// implements all specified functions, just like a dynamic binding of function calls.
@@ -45,7 +45,7 @@ pub enum BridgeReference {
     Address { dna_address: Address },
 
     /// A bridge reference that defines another DNA loosely by expecting a DNA that implements
-    /// a given set of capabilities, i.e. that has specific sets of zome functions with
+    /// a given set of traits, i.e. that has specific sets of zome functions with
     /// matching signatures.
     Trait { traits: BTreeMap<String, Trait> },
 }

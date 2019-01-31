@@ -49,8 +49,7 @@ pub fn get_validation_package_definition(
             ribosome::run_dna(
                 wasm.code.clone(),
                 Some(app_entry_type.to_string().into_bytes()),
-                WasmCallData::new_zome_call(context,dna.name,call)
-
+                WasmCallData::new_zome_call(context, dna.name, call),
             )?
         }
         EntryType::LinkAdd => {
@@ -95,7 +94,7 @@ pub fn get_validation_package_definition(
             ribosome::run_dna(
                 wasm.code.clone(),
                 Some(call.parameters.into_bytes()),
-                WasmCallData::new_zome_call(context.clone(),dna.name,call)
+                WasmCallData::new_zome_call(context.clone(), dna.name, call),
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

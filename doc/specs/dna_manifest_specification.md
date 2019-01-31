@@ -53,7 +53,7 @@ hc_start_bundle_mode();
 hc_end_bundle_mode(FINISH_BUNDLE); // or CANCEL_BUNDLE
 ```
 
-### Reserved Capabilities and functions
+### Reserved Trait names
 
 Some functions are required for core process/features of Holochain to work.
 They are available in keyword specific Capabilities and function names.
@@ -164,11 +164,10 @@ They are available in keyword specific Capabilities and function names.
         },
         // ...
       ],
-      // Zome capabilities holding mapping of functions to capabilities
-      "capabilities": {
-        "web_gateway":
+      // Zome traits which group functions for composiblity
+      "traits": {
+        "public":
         {
-          "type": "public",
           "functions": ["getPost"]
         }
       },

@@ -77,7 +77,7 @@ enum Cli {
     #[structopt(
         name = "generate",
         alias = "g",
-        about = "Generates a new zome and scaffolds the given capabilities"
+        about = "Generates a new zome and scaffolds the given functions"
     )]
     Generate {
         #[structopt(

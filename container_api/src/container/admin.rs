@@ -622,7 +622,7 @@ ui_interfaces = []"#,
             String::from(
                 r#"[[dnas]]
 file = "new-dna.hcpkg"
-hash = "QmfLwk9WrK8ZxakduUpk5uqZqitwj6t6Rbcn6P7tbn5cWW"
+hash = "QmS2W2UZyB5LoxpaLozaWKVwfimxU8g8Sm1cs2TyA8CEkB"
 id = "new-dna""#,
             ),
         );
@@ -672,7 +672,7 @@ ui_interfaces = []"#,
             String::from(
                 r#"[[dnas]]
 file = "new-dna.hcpkg"
-hash = "QmfLwk9WrK8ZxakduUpk5uqZqitwj6t6Rbcn6P7tbn5cWW"
+hash = "QmS2W2UZyB5LoxpaLozaWKVwfimxU8g8Sm1cs2TyA8CEkB"
 id = "new-dna""#,
             ),
         );

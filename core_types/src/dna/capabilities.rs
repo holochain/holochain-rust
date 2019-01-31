@@ -1,4 +1,4 @@
-//! File holding all the structs for handling capabilities defined in DNA.
+//! File holding all the structs for handling capabilities
 
 use crate::{
     cas::content::Address,
@@ -7,33 +7,33 @@ use crate::{
 use std::str::FromStr;
 
 //--------------------------------------------------------------------------------------------------
-// Reserved Capabilities names
+// Reserved Trait names
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Debug, PartialEq)]
-/// Enumeration of all Capabilities known and used by HC Core
+/// Enumeration of all Traits known and used by HC Core
 /// Enumeration converts to str
-pub enum ReservedCapabilityNames {
+pub enum ReservedTraitNames {
     /// Development placeholder, no production fn should use MissingNo
     MissingNo,
     Public,
 }
 
-impl FromStr for ReservedCapabilityNames {
+impl FromStr for ReservedTraitNames {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "hc_public" => Ok(ReservedCapabilityNames::Public),
-            _ => Err("Cannot convert string to ReservedCapabilityNames"),
+            "hc_public" => Ok(ReservedTraitNames::Public),
+            _ => Err("Cannot convert string to ReservedTraitNames"),
         }
     }
 }
 
-impl ReservedCapabilityNames {
+impl ReservedTraitNames {
     pub fn as_str(&self) -> &'static str {
         match *self {
-            ReservedCapabilityNames::Public => "hc_public",
-            ReservedCapabilityNames::MissingNo => "",
+            ReservedTraitNames::Public => "hc_public",
+            ReservedTraitNames::MissingNo => "",
         }
     }
 }
@@ -84,7 +84,7 @@ impl CapabilityCall {
 // CapabilityType
 //--------------------------------------------------------------------------------------------------
 
-/// Enum for Zome CapabilityType.  Public capabilities require no token.  Transferable
+/// Enum for Zome CapabilityType.  Public capabilities require public grant token.  Transferable
 /// capabilities require a token, but don't limit the capability to specific agent(s);
 /// this functions like a password in that you can give the token to someone else and it works.
 /// Assigned capabilities check the request's signature against the list of agents to which
@@ -99,86 +99,27 @@ pub enum CapabilityType {
     Assigned,
 }
 
-/// Represents an individual capability definition in the Zomes's "capabilities" array
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub struct Capability {
-    /// capability type enum
-    #[serde(rename = "type")]
-    pub cap_type: CapabilityType,
-
-    /// "functions" array
-    #[serde(default)]
-    pub functions: Vec<String>,
-}
-
-impl Default for Capability {
-    /// Provide defaults for a Capability object
-    fn default() -> Self {
-        Capability {
-            cap_type: CapabilityType::Assigned,
-            functions: Vec::new(),
-        }
-    }
-}
-
-impl Capability {
-    /// Capability Constructor
-    pub fn new(cap_type: CapabilityType) -> Self {
-        Capability {
-            cap_type,
-            functions: Vec::new(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
 
     #[test]
-    /// test that a canonical string can be created from ReservedCapabilityNames
-    fn test_capabilities_new() {
-        let cap = Capability::default();
-        assert_eq!(cap.cap_type, CapabilityType::Assigned);
-        let cap = Capability::new(CapabilityType::Public);
-        assert_eq!(cap.cap_type, CapabilityType::Public);
-        let cap = Capability::new(CapabilityType::Transferable);
-        assert_eq!(cap.cap_type, CapabilityType::Transferable);
-    }
-
-    #[test]
-    /// test that ReservedCapabilityNames can be created from a canonical string
+    /// test that ReservedTraitNames can be created from a canonical string
     fn test_capabilities_from_str() {
         assert_eq!(
-            Ok(ReservedCapabilityNames::Public),
-            ReservedCapabilityNames::from_str("hc_public"),
+            Ok(ReservedTraitNames::Public),
+            ReservedTraitNames::from_str("hc_public"),
         );
         assert_eq!(
-            Err("Cannot convert string to ReservedCapabilityNames"),
-            ReservedCapabilityNames::from_str("foo"),
+            Err("Cannot convert string to ReservedTraitNames"),
+            ReservedTraitNames::from_str("foo"),
         );
     }
 
     #[test]
-    /// test that a canonical string can be created from ReservedCapabilityNames
+    /// test that a canonical string can be created from ReservedTraitNames
     fn test_capabilities_as_str() {
-        assert_eq!(ReservedCapabilityNames::Public.as_str(), "hc_public");
-    }
-
-    #[test]
-    fn test_capability_build_and_compare() {
-        let fixture: Capability = serde_json::from_str(
-            r#"{
-                "type": "transferable",
-                "functions": ["test"]
-            }"#,
-        )
-        .unwrap();
-
-        let mut cap = Capability::new(CapabilityType::Transferable);
-        cap.functions.push(String::from("test"));
-        assert_eq!(fixture, cap);
+        assert_eq!(ReservedTraitNames::Public.as_str(), "hc_public");
     }
 
     #[test]

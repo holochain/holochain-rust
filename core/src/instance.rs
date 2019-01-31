@@ -137,7 +137,7 @@ impl Instance {
             if self.state().history.contains(&action_wrapper) {
                 return;
             } else {
-                tick_rx.recv().expect("Local channel must work");
+                tick_rx.recv_timeout(Duration::from_millis(10)).expect("Local channel must work");
             }
         }
     }

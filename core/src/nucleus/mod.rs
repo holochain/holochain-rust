@@ -256,10 +256,6 @@ fn reduce_execute_zome_function(
             .expect("action channel to be open in reducer");
     }
 
-    context.log(format!(
-        "debug/reduce/exec_fn: Validating call: {:?}",
-        fn_call
-    ));
     // 1. Validate the call (a number of things could go wrong)
     let dna = match validate_call(context.clone(), state, &fn_call) {
         Err(err) => {
@@ -270,10 +266,6 @@ fn reduce_execute_zome_function(
         Ok(dna) => dna,
     };
 
-    context.log(format!(
-        "debug/reduce/exec_fn: executing call: {:?}",
-        fn_call
-    ));
     // 2. function WASM and execute it in a separate thread
     let maybe_code = dna.get_wasm_from_zome_name(fn_call.zome_name.clone());
     let code =

@@ -287,6 +287,7 @@ impl P2pNode {
 
     // -- LISTS -- //
 
+    /// Reply to a HandleGetPublishingEntryList request
     pub fn reply_to_HandleGetPublishingEntryList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
         let entry_address_list = self
@@ -301,7 +302,7 @@ impl P2pNode {
         };
         self.send(JsonProtocol::HandleGetPublishingEntryListResult(msg).into())
     }
-    /// Look for the publish_list request received from network module and reply
+    /// Look for the first HandleGetPublishingEntryList request received from network module and reply
     pub fn reply_to_first_HandleGetPublishingEntryList(&mut self) {
         let request = self
             .find_recv_msg(
@@ -314,7 +315,7 @@ impl P2pNode {
             .expect("Reply to HandleGetPublishingEntryList failed.");
     }
 
-
+    /// Reply to a HandleGetPublishingMetaList request
     pub fn reply_to_HandleGetPublishingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
         let meta_list = self
@@ -329,7 +330,20 @@ impl P2pNode {
         };
         self.send(JsonProtocol::HandleGetPublishingMetaListResult(msg).into())
     }
+    /// Look for the first HandleGetPublishingMetaList request received from network module and reply
+    pub fn reply_to_first_HandleGetPublishingMetaList(&mut self) {
+        let request = self
+            .find_recv_msg(
+                0,
+                Box::new(one_is!(JsonProtocol::HandleGetPublishingMetaList(_))),
+            )
+            .expect("Did not receive a HandleGetPublishingMetaList request");
+        let get_meta_list_data = unwrap_to!(request => JsonProtocol::HandleGetPublishingMetaList);
+        self.reply_to_HandleGetPublishingMetaList(&get_meta_list_data)
+            .expect("Reply to HandleGetPublishingMetaList failed.");
+    }
 
+    /// Reply to a HandleGetHoldingEntryList request
     pub fn reply_to_HandleGetHoldingEntryList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
         let entry_address_list = self.entry_store.iter().map(|(k, _)| k.clone()).collect();
@@ -340,7 +354,22 @@ impl P2pNode {
         };
         self.send(JsonProtocol::HandleGetHoldingEntryListResult(msg).into())
     }
+    /// Look for the first HandleGetHoldingEntryList request received from network module and reply
+    pub fn reply_to_first_HandleGetHoldingEntryList(&mut self) {
+        let request = self
+            .find_recv_msg(
+                0,
+                Box::new(one_is!(JsonProtocol::HandleGetHoldingEntryList(_))),
+            )
+            .expect("Did not receive a HandleGetHoldingEntryList request");
+        // extract request data
+        let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetHoldingEntryList);
+        // reply
+        self.reply_to_HandleGetHoldingEntryList(&get_list_data)
+            .expect("Reply to HandleGetHoldingEntryList failed.");
+    }
 
+    /// Reply to a HandleGetHoldingMetaList request
     pub fn reply_to_HandleGetHoldingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
         let meta_list = self.meta_store.iter().map(|(k, _)| k.clone()).collect();
@@ -351,6 +380,21 @@ impl P2pNode {
         };
         self.send(JsonProtocol::HandleGetHoldingMetaListResult(msg).into())
     }
+    /// Look for the first HandleGetHoldingMetaList request received from network module and reply
+    pub fn reply_to_first_HandleGetHoldingMetaList(&mut self) {
+        let request = self
+            .find_recv_msg(
+                0,
+                Box::new(one_is!(JsonProtocol::HandleGetHoldingMetaList(_))),
+            )
+            .expect("Did not receive a HandleGetHoldingMetaList request");
+        // extract request data
+        let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetHoldingMetaList);
+        // reply
+        self.reply_to_HandleGetHoldingMetaList(&get_list_data)
+            .expect("Reply to HandleGetHoldingMetaList failed.");
+    }
+
 }
 
 impl P2pNode {

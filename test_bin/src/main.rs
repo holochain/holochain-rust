@@ -37,6 +37,8 @@ lazy_static! {
         publish_hold_workflows::publish_meta_list_test,
         publish_hold_workflows::hold_entry_list_test,
         publish_hold_workflows::hold_meta_list_test,
+        publish_hold_workflows::double_publish_entry_list_test,
+        publish_hold_workflows::double_publish_meta_list_test,
     ];
 }
 

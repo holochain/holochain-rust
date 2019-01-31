@@ -102,9 +102,9 @@ pub(crate) struct InMemoryServer {
     published_entry_book: AddressBook,
     // stored data book: bucket_id -> entry_addresses
     stored_entry_book: AddressBook,
-    // published meta data book: bucket_id -> entry_addresses? hashed meta?
+    // published meta data book: bucket_id -> MetaAddress
     published_meta_book: AddressBook,
-    // stored meta data book: bucket_id -> entry_addresses? hashed meta?
+    // stored meta data book: bucket_id -> MetaAddress
     stored_meta_book: AddressBook,
 
     // Keep track of which DNAs are tracked... String should be BucketId
@@ -333,14 +333,14 @@ impl InMemoryServer {
                 }
 
                 JsonProtocol::FetchMeta(msg) => {
-                    self.priv_serve_FetchDhtMeta(&msg)?;
+                    self.priv_serve_FetchMeta(&msg)?;
                 }
                 JsonProtocol::HandleFetchMetaResult(msg) => {
-                    self.priv_serve_HandleFetchDhtMetaResult(&msg)?;
+                    self.priv_serve_HandleFetchMetaResult(&msg)?;
                 }
 
                 JsonProtocol::PublishMeta(msg) => {
-                    self.priv_serve_PublishDhtMeta(&msg)?;
+                    self.priv_serve_PublishMeta(&msg)?;
                 }
 
                 // Our request for the publish_list has returned
@@ -350,7 +350,7 @@ impl InMemoryServer {
 
                 // Our request for the hold_list has returned
                 JsonProtocol::HandleGetHoldingEntryListResult(msg) => {
-                    self.priv_serve_HandleGetHoldingDataListResult(&msg);
+                    self.priv_serve_HandleGetHoldingEntryListResult(&msg);
                 }
 
                 // Our request for the publish_meta_list has returned
@@ -530,7 +530,14 @@ impl InMemoryServer {
     // -- serve DHT metadata -- //
 
     /// on publish, we send store requests to all nodes connected on this dna
-    fn priv_serve_PublishDhtMeta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
+    fn priv_serve_PublishMeta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
+        let meta_address = into_meta_address(&msg.entry_address, &msg.attribute);
+        bookkeep_address(
+            &mut self.published_meta_book,
+            &msg.dna_address,
+            &msg.provider_agent_id,
+            &meta_address,
+        );
         self.priv_send_all(
             &msg.dna_address,
             JsonProtocol::HandleStoreMeta(msg.clone()).into(),
@@ -541,7 +548,7 @@ impl InMemoryServer {
     /// when someone makes a dht meta data request,
     /// this in-memory module routes it to the first node connected on that dna.
     /// this works because we also send store requests to all connected nodes.
-    fn priv_serve_FetchDhtMeta(&mut self, msg: &FetchMetaData) -> NetResult<()> {
+    fn priv_serve_FetchMeta(&mut self, msg: &FetchMetaData) -> NetResult<()> {
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
@@ -569,7 +576,7 @@ impl InMemoryServer {
     }
 
     /// send back a response to a request for dht meta data
-    fn priv_serve_HandleFetchDhtMetaResult(&mut self, msg: &FetchMetaResultData) -> NetResult<()> {
+    fn priv_serve_HandleFetchMetaResult(&mut self, msg: &FetchMetaResultData) -> NetResult<()> {
         // if its from our own request do a publish
         if self.request_book.contains_key(&msg.request_id) {
             let meta_data = DhtMetaData {
@@ -579,7 +586,7 @@ impl InMemoryServer {
                 content: msg.content.clone(),
                 attribute: msg.attribute.clone(),
             };
-            self.priv_serve_PublishDhtMeta(&meta_data)?;
+            self.priv_serve_PublishMeta(&meta_data)?;
             return Ok(());
         }
         // otherwise just send back to requester
@@ -652,12 +659,12 @@ impl InMemoryServer {
     }
 
     /// Received response from our request for the 'holding_list'
-    fn priv_serve_HandleGetHoldingDataListResult(&mut self, msg: &EntryListData) {
+    fn priv_serve_HandleGetHoldingEntryListResult(&mut self, msg: &EntryListData) {
         let bucket_id = self
             .priv_check_request(&msg.request_id)
             .expect("Not our request");
         // println!(
-        //    "---- InMemoryServer::HandleGetHoldingDataListResult: bucket_id = '{}'",
+        //    "---- InMemoryServer::HandleGetHoldingEntryListResult: bucket_id = '{}'",
         //    bucket_id,
         // );
         // Compare with current stored_data_book
@@ -693,21 +700,22 @@ impl InMemoryServer {
         // );
         // Compare with already published list
         // For each metadata not already published, request it and publish it ourselves.
-        let known_published_list = match self.published_meta_book.get(&bucket_id) {
+        let known_published_meta_list = match self.published_meta_book.get(&bucket_id) {
             Some(list) => list.clone(),
             None => Vec::new(),
         };
-        for (data_address, attribute) in msg.meta_list.clone() {
-            if known_published_list.contains(&data_address) {
+        for (entry_address, attribute) in msg.meta_list.clone() {
+            let meta_address = into_meta_address(&entry_address, &attribute);
+            if known_published_meta_list.contains(&meta_address) {
                 continue;
             }
             let request_id = self.priv_create_request_with_bucket(&bucket_id);
             let fetch_meta = FetchMetaData {
-                attribute: attribute.clone(),
                 requester_agent_id: String::new(),
                 request_id,
                 dna_address: msg.dna_address.clone(),
-                entry_address: data_address,
+                entry_address: entry_address,
+                attribute: attribute.clone(),
             };
             self.priv_send_one_with_bucket(
                 &bucket_id,
@@ -728,13 +736,13 @@ impl InMemoryServer {
         // );
         // Compare with current stored_meta_book
         // For each data not already holding, add it to stored_meta_book?
-        let known_stored_list = match self.stored_meta_book.get(&bucket_id) {
+        let known_stored_meta_list = match self.stored_meta_book.get(&bucket_id) {
             Some(list) => list.clone(),
             None => Vec::new(),
         };
-        for (data_address, attribute) in msg.meta_list.clone() {
-            let meta_address = into_meta_address(&data_address, &attribute);
-            if known_stored_list.contains(&data_address) {
+        for (entry_address, attribute) in msg.meta_list.clone() {
+            let meta_address = into_meta_address(&entry_address, &attribute);
+            if known_stored_meta_list.contains(&meta_address) {
                 continue;
             }
             bookkeep_address_with_bucket(

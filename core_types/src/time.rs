@@ -5,8 +5,8 @@ use chrono::{offset::FixedOffset, DateTime};
 use error::HolochainError;
 use json::JsonString;
 use regex::Regex;
-use std::{cmp::Ordering, convert::TryFrom, fmt, time::Duration};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::{cmp::Ordering, convert::TryFrom, fmt, time::Duration};
 
 /// Represents a timeout for an HDK function
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
@@ -49,7 +49,7 @@ impl From<usize> for Timeout {
 #[derive(Clone)]
 pub struct Iso8601 {
     original: String,
-    validated: Result<DateTime<FixedOffset>,HolochainError>
+    validated: Result<DateTime<FixedOffset>, HolochainError>,
 }
 
 /// Serialization to/from String.  This means that a timestamp will be deserialized to an Iso8601
@@ -103,7 +103,7 @@ impl fmt::Display for Iso8601 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.validated {
             Ok(dt) => write!(f, "{}", dt.to_rfc3339()), // Valid; output canonicalized form
-            Err(_) => write!(f, "{}", self.original), // Invalid; just output the original String
+            Err(_) => write!(f, "{}", self.original),   // Invalid; just output the original String
         }
     }
 }
@@ -347,17 +347,26 @@ pub mod tests {
             // and JSON round-trip.
             DateTime::<FixedOffset>::try_from(&Iso8601::from(*ts))
                 .and_then(|dt| {
-                    Ok(assert_eq!(format!("{}", dt.to_rfc3339()), "2018-10-11T03:23:38+00:00"))
+                    Ok(assert_eq!(
+                        format!("{}", dt.to_rfc3339()),
+                        "2018-10-11T03:23:38+00:00"
+                    ))
                 })
                 .and_then(|_| {
-                    Ok(assert_eq!(format!("{}", &Iso8601::from(*ts)), "2018-10-11T03:23:38+00:00"))
+                    Ok(assert_eq!(
+                        format!("{}", &Iso8601::from(*ts)),
+                        "2018-10-11T03:23:38+00:00"
+                    ))
                 })
                 .and_then(|_| {
-                    Ok(assert_eq!(Iso8601::from(*ts).to_string(), "2018-10-11T03:23:38+00:00"))
+                    Ok(assert_eq!(
+                        Iso8601::from(*ts).to_string(),
+                        "2018-10-11T03:23:38+00:00"
+                    ))
                 })
                 .and_then(|_| {
                     let serialized = serde_json::to_string(&Iso8601::from(*ts))?;
-                    assert_eq!( serialized.to_string(), "\"2018-10-11T03:23:38+00:00\"");
+                    assert_eq!(serialized.to_string(), "\"2018-10-11T03:23:38+00:00\"");
                     let deserialized: Iso8601 = serde_json::from_str(&serialized.to_string())?;
                     assert_eq!(deserialized.to_string(), "2018-10-11T03:23:38+00:00");
                     Ok(())

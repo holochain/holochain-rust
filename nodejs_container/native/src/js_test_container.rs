@@ -31,6 +31,7 @@ fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
         .map(|c| c.public_address.to_string())
         .collect();
     loop {
+        println!("await_held_agent_ids");
         if let Ok(Signal::Internal(aw)) = signal_rx.recv_timeout(Duration::from_millis(10)) {
             let action = aw.action();
             if let Action::Hold(Entry::AgentId(id)) = action {

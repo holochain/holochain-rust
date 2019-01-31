@@ -3,7 +3,7 @@
 
 use chrono::{offset::FixedOffset, DateTime};
 use error::HolochainError;
-use json::JsonString;
+use json::{default_to_json, default_try_from_json, JsonString};
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{cmp::Ordering, convert::TryFrom, fmt, time::Duration};
@@ -52,10 +52,11 @@ pub struct Iso8601 {
     validated: Result<DateTime<FixedOffset>, HolochainError>,
 }
 
-/// Serialization to/from String.  This means that a timestamp will be deserialized to an Iso8601
-/// and validated (non-prejudicially; we allow invalid timestamps to persist).  Upon serialization,
-/// the canonicalized version of the origin timestamp will be used, if valid; otherwise the original
-/// (invalid) timestamp will be used.
+/// Serialization w/ serde_json to/from String.  This means that a timestamp will be deserialized to
+/// an Iso8601 and validated (non-prejudicially; we allow invalid timestamps to persist).  Upon
+/// serialization, the canonicalized version of the origin timestamp will be used, if valid;
+/// otherwise the original (invalid) timestamp will be used.  Needed for any struct containing
+/// an Iso8601 that defines the serde::Serialize/Deserialize Traits.
 impl Serialize for Iso8601 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -70,8 +71,20 @@ impl<'de> Deserialize<'de> for Iso8601 {
     where
         D: Deserializer<'de>,
     {
-        let s = String::deserialize(deserializer)?;
-        Ok(Iso8601::from(s))
+        Ok(Iso8601::new(String::deserialize(deserializer)?))
+    }
+}
+
+/// Serialization w/ Iso8601::try_from and JsonString::from.  Used to round-trip JSON via JsonString.  
+impl From<Iso8601> for JsonString {
+    fn from(iso_8601: Iso8601) -> Self {
+        default_to_json(iso_8601.to_string())
+    }
+}
+impl TryFrom<JsonString> for Iso8601 {
+    type Error = HolochainError;
+    fn try_from(json_string: JsonString) -> Result<Self, Self::Error> {
+        Ok(Self::new(default_try_from_json(json_string)?))
     }
 }
 
@@ -268,6 +281,12 @@ impl Iso8601 {
             validated,
         }
     }
+
+    /// Access to the validated timestamp, eg.:
+    ///     `Iso8601::from("20180102 030405").validated().is_ok()`
+    pub fn validated(&self) -> &Result<DateTime<FixedOffset>, HolochainError> {
+        &self.validated
+    }
 }
 
 /// PartialEq and PartialCmp for ISO 8601 / RFC 3339 timestamps w/ timezone specification.  Note
@@ -365,10 +384,28 @@ pub mod tests {
                     ))
                 })
                 .and_then(|_| {
+                    // JSON serialization via serde_json
                     let serialized = serde_json::to_string(&Iso8601::from(*ts))?;
                     assert_eq!(serialized.to_string(), "\"2018-10-11T03:23:38+00:00\"");
                     let deserialized: Iso8601 = serde_json::from_str(&serialized.to_string())?;
                     assert_eq!(deserialized.to_string(), "2018-10-11T03:23:38+00:00");
+
+                    // JSON serialization via JsonSring
+                    let iso_8601_ser = JsonString::from(Iso8601::from(*ts));
+                    assert_eq!(iso_8601_ser.to_string(), "\"2018-10-11T03:23:38+00:00\"");
+                    let iso_8601_des = Iso8601::try_from(iso_8601_ser);
+                    assert!(iso_8601_des.is_ok());
+                    assert_eq!(
+                        iso_8601_des.unwrap().to_string(),
+                        "2018-10-11T03:23:38+00:00"
+                    );
+
+                    // JSON round-tripping w/o serde or intermediates
+                    assert_eq!(
+                        Iso8601::try_from(JsonString::from(Iso8601::from(*ts))),
+                        Ok(Iso8601::from("2018-10-11T03:23:38+00:00"))
+                    );
+
                     Ok(())
                 })
         })
@@ -424,7 +461,9 @@ pub mod tests {
         ]
         .iter()
         .map(|ts| {
-            DateTime::<FixedOffset>::try_from(&Iso8601::from(*ts)).and_then(|ts| {
+            let iso_8601 = Iso8601::from(*ts);
+            assert!(iso_8601.validated().is_ok());
+            DateTime::<FixedOffset>::try_from(&iso_8601).and_then(|ts| {
                 Ok(assert_eq!(
                     format!("{}", ts.to_rfc3339()),
                     "2015-02-18T23:59:60.234567-05:00"
@@ -449,15 +488,17 @@ pub mod tests {
             "2015-2-18 03:59:60+25",
         ]
         .iter()
-        .map(
-            |ts| match DateTime::<FixedOffset>::try_from(&Iso8601::from(*ts)) {
+        .map(|ts| {
+            let iso_8601 = Iso8601::from(*ts);
+            assert!(!iso_8601.validated().is_ok());
+            match DateTime::<FixedOffset>::try_from(&iso_8601) {
                 Ok(dt) => Err(HolochainError::ErrorGeneric(format!(
                     "Should not have succeeded in parsing {:?} into {:?}",
                     ts, dt
                 ))),
                 Err(_) => Ok(()),
-            },
-        )
+            }
+        })
         .collect::<Result<(()), HolochainError>>()
         .map_err(|e| {
             panic!(

@@ -77,19 +77,7 @@ pub mod tests {
         let entry = test_entry();
         let header1 = create_new_chain_header(&entry, context1.clone(), &None);
         let header2 = create_new_chain_header(&entry, context2.clone(), &None);
-        {
-            let mut chain1 = context1.chain_storage.write().unwrap();
-            chain1.add(&entry).unwrap();
-            chain1.add(&header1).unwrap();
-            let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live)
-                .expect("Could not create EAV");
-            context1
-                .eav_storage
-                .write()
-                .unwrap()
-                .add_eavi(&status_eav)
-                .unwrap();
-        }
+        block_on(commit_entry(entry.clone(), None, &context1)).unwrap();
         {
             let dht1 = context1.state().unwrap().dht();
             {

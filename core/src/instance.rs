@@ -11,7 +11,7 @@ use holochain_core_types::cas::content::Address;
 use holochain_core_types::{dna::Dna, error::HcResult};
 use std::{
     sync::{
-        mpsc::{channel, sync_channel, Receiver, Sender, SyncSender},
+        mpsc::{sync_channel, Receiver, Sender, SyncSender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
@@ -118,28 +118,6 @@ impl Instance {
     /// Panics if called before `start_action_loop`.
     pub fn dispatch(&mut self, action_wrapper: ActionWrapper) {
         dispatch_action(self.action_channel(), action_wrapper)
-    }
-
-    /// Stack an Action in the Event Queue and block until is has been processed.
-    ///
-    /// # Panics
-    ///
-    /// Panics if called before `start_action_loop`.
-    pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
-        // Dispatch action with observer closure that waits for a result in the state
-        let (tick_tx, tick_rx) = channel();
-        dispatch_action(self.action_channel(), action_wrapper.clone());
-        self.observer_channel()
-            .send(Observer { ticker: tick_tx })
-            .expect("Observer channel not initialized");;
-
-        loop {
-            if self.state().history.contains(&action_wrapper) {
-                return;
-            } else {
-                tick_rx.recv_timeout(Duration::from_millis(10)).expect("Local channel must work");
-            }
-        }
     }
 
     /// Returns recievers for actions and observers that get added to this instance

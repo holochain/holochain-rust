@@ -95,6 +95,12 @@ impl AgentState {
             .iter_type(&self.top_chain_header(), &entry.entry_type())
             .find(|h| h.entry_address() == &entry.address())
     }
+
+    pub fn get_header_for_entry_address(&self, entry_address: &Address) -> Option<ChainHeader> {
+        self.chain()
+            .iter(&self.top_chain_header())
+            .find(|h| h.entry_address() == entry_address)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]

@@ -2,7 +2,10 @@ use crate::{context::Context, network, nucleus};
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
 use holochain_core_types::{
-    cas::content::Address, crud_status::CrudStatus, entry::EntryWithMeta, error::HolochainError,
+    cas::content::{Address, AddressableContent},
+    crud_status::CrudStatus,
+    entry::EntryWithMeta,
+    error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
@@ -60,15 +63,10 @@ pub async fn get_entry_result_workflow<'a>(
 
             // Add entry
             let headers: Vec<ChainHeader> = if args.options.headers {
-                let state = context.state().expect("state uninitialized! :)");
-                let mut headers: Vec<_> = state
-                    .agent()
-                    .get_header_for_entry(&entry_with_meta.entry)
-                    .into_iter()
-                    .collect();
-                let mut dht_headers = state.dht().get_headers(address)?;
-                headers.append(&mut dht_headers);
-                headers
+                context
+                    .state()
+                    .expect("state uninitialized! :)")
+                    .get_headers(entry_with_meta.entry.address().clone())?
             } else {
                 Vec::new()
             };

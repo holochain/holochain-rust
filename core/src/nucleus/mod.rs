@@ -101,7 +101,6 @@ pub fn call_and_wait_for_result(
 ) -> Result<JsonString, HolochainError> {
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
-    let id = snowflake::ProcessUniqueId::new().to_string();
     // Dispatch action with observer closure that waits for a result in the state
     let (tick_tx, tick_rx) = channel();
     instance

@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
 use holochain_net_connection::{
     json_protocol::{
@@ -25,12 +27,17 @@ pub struct P2pNode {
 
     pub agent_id: String,
 
+    // my request logging
+    request_log: Vec<String>,
+    request_count: usize,
+
     // logging
     recv_msg_log: Vec<Protocol>,
     recv_dm_log: Vec<MessageData>,
 
-    // datastores
+    // datastores for one dna
     // TODO: Have a datastore per dna ; perhaps in a CoreMock struct
+    pub dna_address: Address,
     pub entry_store: HashMap<Address, serde_json::Value>,
     pub meta_store: HashMap<(Address, String), serde_json::Value>,
     pub authored_entry_store: HashMap<Address, serde_json::Value>,
@@ -62,25 +69,24 @@ impl P2pNode {
     }
 }
 
-// Publish & Hold
+// Publish, hold
 impl P2pNode {
     pub fn author_entry(
         &mut self,
-        dna_address: &Address,
-        data_address: &Address,
-        data_content: &serde_json::Value,
+        entry_address: &Address,
+        entry_content: &serde_json::Value,
         can_publish: bool,
     ) -> NetResult<()> {
-        assert!(!self.authored_entry_store.get(&data_address).is_some());
-        assert!(!self.entry_store.get(&data_address).is_some());
+        assert!(!self.authored_entry_store.get(&entry_address).is_some());
+        assert!(!self.entry_store.get(&entry_address).is_some());
         self.authored_entry_store
-            .insert(data_address.clone(), data_content.clone());
+            .insert(entry_address.clone(), entry_content.clone());
         if can_publish {
             let msg_data = EntryData {
-                dna_address: dna_address.clone(),
+                dna_address: self.dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
-                entry_address: data_address.clone(),
-                entry_content: data_content.clone(),
+                entry_address: entry_address.clone(),
+                entry_content: entry_content.clone(),
             };
             return self.send(JsonProtocol::PublishEntry(msg_data).into());
         }
@@ -90,24 +96,23 @@ impl P2pNode {
 
     pub fn author_meta(
         &mut self,
-        dna_address: &Address,
-        data_address: &Address,
+        entry_address: &Address,
         attribute: &str,
         content: &serde_json::Value,
         can_publish: bool,
     ) -> NetResult<()> {
-        let meta_address = (data_address.clone(), attribute.to_string());
+        let meta_address = (entry_address.clone(), attribute.to_string());
         assert!(!self.authored_meta_store.get(&meta_address).is_some());
         assert!(!self.meta_store.get(&meta_address).is_some());
         self.authored_meta_store.insert(
-            (data_address.clone(), attribute.to_string()),
+            (entry_address.clone(), attribute.to_string()),
             content.clone(),
         );
         if can_publish {
             let msg_data = DhtMetaData {
-                dna_address: dna_address.clone(),
+                dna_address: self.dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
-                entry_address: data_address.clone(),
+                entry_address: entry_address.clone(),
                 attribute: attribute.to_string(),
                 content: content.clone(),
             };
@@ -117,27 +122,97 @@ impl P2pNode {
         Ok(())
     }
 
-    pub fn hold_data(&mut self, data_address: &Address, data_content: &serde_json::Value) {
-        assert!(!self.authored_entry_store.get(&data_address).is_some());
-        assert!(!self.entry_store.get(&data_address).is_some());
+    pub fn hold_entry(&mut self, entry_address: &Address, entry_content: &serde_json::Value) {
+        assert!(!self.authored_entry_store.get(&entry_address).is_some());
+        assert!(!self.entry_store.get(&entry_address).is_some());
         self.entry_store
-            .insert(data_address.clone(), data_content.clone());
+            .insert(entry_address.clone(), entry_content.clone());
     }
 
     pub fn hold_meta(
         &mut self,
-        data_address: &Address,
+        entry_address: &Address,
         attribute: &str,
         content: &serde_json::Value,
     ) {
-        let meta_address = (data_address.clone(), attribute.to_string());
+        let meta_address = (entry_address.clone(), attribute.to_string());
         assert!(!self.authored_meta_store.get(&meta_address).is_some());
         assert!(!self.meta_store.get(&meta_address).is_some());
         self.meta_store.insert(
-            (data_address.clone(), attribute.to_string()),
+            (entry_address.clone(), attribute.to_string()),
             content.clone(),
         );
     }
+}
+
+/// fetch & sendMessage
+impl P2pNode {
+
+    /// generate a new request_id
+    fn generate_request_id(&mut self) -> String {
+        self.request_count += 1;
+        let request_id = format!("req_{}_{}", self.agent_id, self.request_count);
+        self.request_log.push(request_id.clone());
+        request_id
+    }
+
+    /// Node asks for some entry on the network.
+    pub fn request_entry(&mut self, entry_address: Address) -> FetchEntryData {
+        let fetch_data = FetchEntryData {
+            request_id: self.generate_request_id(),
+            dna_address: self.dna_address.clone(),
+            requester_agent_id: self.agent_id.clone(),
+            entry_address,
+        };
+        self.send(JsonProtocol::FetchEntry(fetch_data.clone()).into())
+            .expect("Sending FetchEntry failed");
+        fetch_data
+    }
+
+    /// Node asks for some meta on the network.
+    pub fn request_meta(&mut self, entry_address: Address, attribute: String) -> FetchMetaData {
+        let fetch_meta = FetchMetaData {
+            request_id: self.generate_request_id(),
+            dna_address: self.dna_address.clone(),
+            requester_agent_id: self.agent_id.to_string(),
+            entry_address,
+            attribute,
+        };
+        self.send(JsonProtocol::FetchMeta(fetch_meta.clone()).into())
+            .expect("Sending FetchMeta failed");
+        fetch_meta
+    }
+
+    /// Node sends Message on the network.
+    pub fn send_message(&mut self,  to_agent_id: String, content: serde_json::Value) -> MessageData {
+        let msg_data = MessageData {
+            dna_address: self.dna_address.clone(),
+            from_agent_id: self.agent_id.to_string(),
+            request_id: self.generate_request_id(),
+            to_agent_id,
+            content,
+        };
+        self.send(JsonProtocol::SendMessage(msg_data.clone()).into())
+            .expect("Sending SendMessage failed");
+        msg_data
+    }
+
+    /// Node sends Message on the network.
+    pub fn send_reponse(&mut self,  msg: MessageData, response_content: serde_json::Value) -> MessageData {
+        assert_eq!(msg.dna_address, self.dna_address);
+        assert_eq!(msg.to_agent_id, self.agent_id);
+        let response = MessageData {
+            dna_address: self.dna_address.clone(),
+            from_agent_id: self.agent_id.to_string(),
+            request_id: msg.request_id,
+            to_agent_id: msg.from_agent_id.clone(),
+            content: response_content,
+        };
+        self.send(JsonProtocol::HandleSendMessageResult(response.clone()).into())
+            .expect("Sending HandleSendMessageResult failed");
+        response
+    }
+
 }
 
 // Replies
@@ -145,7 +220,8 @@ impl P2pNode {
     // -- FETCH -- //
 
     /// Send a reponse to a FetchDhtData request
-    pub fn reply_fetch_data(&mut self, request: &FetchEntryData) -> NetResult<()> {
+    pub fn reply_to_HandleFetchEntry(&mut self, request: &FetchEntryData) -> NetResult<()> {
+        assert_eq!(request.dna_address, self.dna_address);
         let msg;
         {
             // Get data from local datastores
@@ -181,7 +257,8 @@ impl P2pNode {
     }
 
     /// Send a reponse to a FetchDhtMetaData request
-    pub fn reply_fetch_meta(&mut self, request: &FetchMetaData) -> NetResult<()> {
+    pub fn reply_to_HandleFetchMeta(&mut self, request: &FetchMetaData) -> NetResult<()> {
+        assert_eq!(request.dna_address, self.dna_address);
         let msg;
         {
             // Get meta from local datastores
@@ -210,21 +287,36 @@ impl P2pNode {
 
     // -- LISTS -- //
 
-    pub fn reply_get_publish_data_list(&mut self, request: &GetListData) -> NetResult<()> {
-        let data_address_list = self
+    pub fn reply_to_HandleGetPublishingEntryList(&mut self, request: &GetListData) -> NetResult<()> {
+        assert_eq!(request.dna_address, self.dna_address);
+        let entry_address_list = self
             .authored_entry_store
             .iter()
             .map(|(k, _)| k.clone())
             .collect();
         let msg = EntryListData {
-            entry_address_list: data_address_list,
+            entry_address_list: entry_address_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
         };
         self.send(JsonProtocol::HandleGetPublishingEntryListResult(msg).into())
     }
+    /// Look for the publish_list request received from network module and reply
+    pub fn reply_to_first_HandleGetPublishingEntryList(&mut self) {
+        let request = self
+            .find_recv_msg(
+                0,
+                Box::new(one_is!(JsonProtocol::HandleGetPublishingEntryList(_))),
+            )
+            .expect("Did not receive any HandleGetPublishingEntryList request");
+        let get_entry_list_data = unwrap_to!(request => JsonProtocol::HandleGetPublishingEntryList);
+        self.reply_to_HandleGetPublishingEntryList(&get_entry_list_data)
+            .expect("Reply to HandleGetPublishingEntryList failed.");
+    }
 
-    pub fn reply_get_publish_meta_list(&mut self, request: &GetListData) -> NetResult<()> {
+
+    pub fn reply_to_HandleGetPublishingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
+        assert_eq!(request.dna_address, self.dna_address);
         let meta_list = self
             .authored_meta_store
             .iter()
@@ -238,17 +330,19 @@ impl P2pNode {
         self.send(JsonProtocol::HandleGetPublishingMetaListResult(msg).into())
     }
 
-    pub fn reply_get_holding_data_list(&mut self, request: &GetListData) -> NetResult<()> {
-        let data_address_list = self.entry_store.iter().map(|(k, _)| k.clone()).collect();
+    pub fn reply_to_HandleGetHoldingEntryList(&mut self, request: &GetListData) -> NetResult<()> {
+        assert_eq!(request.dna_address, self.dna_address);
+        let entry_address_list = self.entry_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = EntryListData {
-            entry_address_list: data_address_list,
+            entry_address_list: entry_address_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
         };
         self.send(JsonProtocol::HandleGetHoldingEntryListResult(msg).into())
     }
 
-    pub fn reply_get_holding_meta_list(&mut self, request: &GetListData) -> NetResult<()> {
+    pub fn reply_to_HandleGetHoldingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
+        assert_eq!(request.dna_address, self.dna_address);
         let meta_list = self.meta_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = MetaListData {
             meta_list,
@@ -264,6 +358,7 @@ impl P2pNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_config(
         agent_id_arg: String,
+        dna_address: Address,
         config: &P2pConfig,
         _maybe_temp_dir: Option<tempfile::TempDir>,
     ) -> Self {
@@ -290,8 +385,11 @@ impl P2pNode {
             receiver,
             config: config.clone(),
             agent_id,
+            request_log: Vec::new(),
+            request_count: 0,
             recv_msg_log: Vec::new(),
             recv_dm_log: Vec::new(),
+            dna_address,
             entry_store: HashMap::new(),
             meta_store: HashMap::new(),
             authored_entry_store: HashMap::new(),
@@ -301,29 +399,34 @@ impl P2pNode {
 
     /// Constructor for an in-memory P2P Network
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_unique_memory_network(agent_id: String) -> Self {
+    pub fn new_with_unique_memory_network(agent_id: String, dna_address: Address) -> Self {
         let config = P2pConfig::new_with_unique_memory_backend();
-        return P2pNode::new_with_config(agent_id, &config, None);
+        return P2pNode::new_with_config(agent_id, dna_address, &config, None);
     }
 
     /// Constructor for an IPC node that uses an existing n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new_with_uri_ipc_network(agent_id: String, ipc_binding: &str) -> Self {
+    pub fn new_with_uri_ipc_network(
+        agent_id: String,
+        dna_address: Address,
+        ipc_binding: &str,
+    ) -> Self {
         let p2p_config = P2pConfig::default_ipc_uri(Some(ipc_binding));
-        return P2pNode::new_with_config(agent_id, &p2p_config, None);
+        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, None);
     }
 
     /// Constructor for an IPC node that spawns and uses a n3h process and a temp folder
     #[cfg_attr(tarpaulin, skip)]
     pub fn new_with_spawn_ipc_network(
         agent_id: String,
+        dna_address: Address,
         n3h_path: &str,
         maybe_config_filepath: Option<&str>,
         bootstrap_nodes: Vec<String>,
     ) -> Self {
         let (p2p_config, temp_dir) =
             create_ipc_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
-        return P2pNode::new_with_config(agent_id, &p2p_config, Some(temp_dir));
+        return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, Some(temp_dir));
     }
 
     /// See if there is a message to receive, and log it
@@ -397,7 +500,7 @@ impl P2pNode {
         // extract msg data
         let fetch_data = unwrap_to!(request => JsonProtocol::HandleFetchEntry);
         // Alex responds: should send entry data back
-        self.reply_fetch_data(&fetch_data)
+        self.reply_to_HandleFetchEntry(&fetch_data)
             .expect("Reply to HandleFetchEntry should work");
         true
     }
@@ -414,7 +517,7 @@ impl P2pNode {
         // extract msg data
         let fetch_meta = unwrap_to!(request => JsonProtocol::HandleFetchMeta);
         // Alex responds: should send entry data back
-        self.reply_fetch_meta(&fetch_meta)
+        self.reply_to_HandleFetchMeta(&fetch_meta)
             .expect("Reply to HandleFetchMeta should work");
         true
     }
@@ -498,6 +601,7 @@ impl P2pNode {
                 // n/a
             }
             JsonProtocol::HandleSendMessage(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // log the direct message sent to us
                 self.recv_dm_log.push(msg);
             }
@@ -512,7 +616,8 @@ impl P2pNode {
                 // n/a
             }
             JsonProtocol::HandleFetchEntry(msg) => {
-                self.reply_fetch_data(&msg)
+                assert_eq!(msg.dna_address, self.dna_address);
+                self.reply_to_HandleFetchEntry(&msg)
                     .expect("Should reply to a HandleFetchEntry");
             }
             JsonProtocol::HandleFetchEntryResult(_msg) => {
@@ -523,11 +628,13 @@ impl P2pNode {
                 panic!("Core should not receive PublishDhtData message");
             }
             JsonProtocol::HandleStoreEntry(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // Store data in local datastore
                 self.entry_store
                     .insert(msg.entry_address, msg.entry_content);
             }
             JsonProtocol::HandleDropEntry(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // Remove data in local datastore
                 self.entry_store.remove(&msg.entry_address);
             }
@@ -539,7 +646,8 @@ impl P2pNode {
                 // n/a
             }
             JsonProtocol::HandleFetchMeta(msg) => {
-                self.reply_fetch_meta(&msg)
+                assert_eq!(msg.dna_address, self.dna_address);
+                self.reply_to_HandleFetchMeta(&msg)
                     .expect("Should reply to a HandleFetchMeta");
             }
             JsonProtocol::HandleFetchMetaResult(_msg) => {
@@ -550,23 +658,27 @@ impl P2pNode {
                 panic!("Core should not receive PublishDhtMeta message");
             }
             JsonProtocol::HandleStoreMeta(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // Store data in local datastore
                 self.meta_store
                     .insert((msg.entry_address, msg.attribute), msg.content);
             }
             JsonProtocol::HandleDropMeta(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // Remove data in local datastore
                 self.meta_store.remove(&(msg.entry_address, msg.attribute));
             }
 
             // -- Publish & Hold data -- //
-            JsonProtocol::HandleGetPublishingEntryList(_msg) => {
+            JsonProtocol::HandleGetPublishingEntryList(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // n/a
             }
             JsonProtocol::HandleGetPublishingEntryListResult(_) => {
                 panic!("Core should not receive HandleGetPublishingDataListResult message");
             }
-            JsonProtocol::HandleGetHoldingEntryList(_msg) => {
+            JsonProtocol::HandleGetHoldingEntryList(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // n/a
             }
             // Our request for the hold_list has returned
@@ -575,13 +687,15 @@ impl P2pNode {
             }
 
             // -- Publish & Hold meta -- //
-            JsonProtocol::HandleGetPublishingMetaList(_msg) => {
+            JsonProtocol::HandleGetPublishingMetaList(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // n/a
             }
             JsonProtocol::HandleGetPublishingMetaListResult(_) => {
                 panic!("Core should not receive HandleGetPublishingMetaListResult message");
             }
-            JsonProtocol::HandleGetHoldingMetaList(_msg) => {
+            JsonProtocol::HandleGetHoldingMetaList(msg) => {
+                assert_eq!(msg.dna_address, self.dna_address);
                 // n/a
             }
             // Our request for the hold_list has returned

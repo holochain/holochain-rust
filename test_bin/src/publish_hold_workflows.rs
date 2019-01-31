@@ -1,8 +1,7 @@
 use basic_workflows::setup_normal;
 use constants::*;
 use holochain_net_connection::{
-    json_protocol::{FetchEntryData, FetchMetaData, JsonProtocol},
-    net_connection::NetSend,
+    json_protocol::JsonProtocol,
     NetResult,
 };
 use p2p_node::P2pNode;
@@ -18,39 +17,23 @@ use p2p_node::P2pNode;
 /// a-->>net: FailureResult
 /// net->>b: FailureResult
 #[cfg_attr(tarpaulin, skip)]
-pub fn empty_publish_data_list_test(
+pub fn empty_publish_entry_list_test(
     alex: &mut P2pNode,
     billy: &mut P2pNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: empty_publish_data_list_test()");
+    println!("Testing: empty_publish_entry_list_test()");
     setup_normal(alex, billy, can_connect)?;
 
     // Look for the publish_list request received from network module and reply
-    let request = alex
-        .find_recv_msg(
-            0,
-            Box::new(one_is!(JsonProtocol::HandleGetPublishingEntryList(_))),
-        )
-        .expect("Did not receive a HandleGetPublishingDataList request");
-
-    let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetPublishingEntryList);
-
-    alex.reply_get_publish_data_list(&get_list_data)?;
+    alex.reply_to_first_HandleGetPublishingEntryList();
 
     // billy asks for unpublished data.
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    let fetch_data = FetchEntryData {
-        request_id         : FETCH_ENTRY_1_ID.into(),
-        dna_address        : DNA_ADDRESS.clone(),
-        requester_agent_id : BILLY_AGENT_ID.into(),
-        entry_address      : ENTRY_ADDRESS_1.clone(),
-    };
-    billy.send(JsonProtocol::FetchEntry(fetch_data.clone()).into())?;
+    let fetch_data = billy.request_entry(ENTRY_ADDRESS_1.clone());
 
     // Alex sends a failureResult back to the network
-    alex.reply_fetch_data(&fetch_data)?;
+    alex.reply_to_HandleFetchEntry(&fetch_data)?;
 
     // Billy should receive the failureResult back
     let result = billy
@@ -64,18 +47,18 @@ pub fn empty_publish_data_list_test(
 
 /// Return some data in publish_list request
 #[cfg_attr(tarpaulin, skip)]
-pub fn publish_list_test(
+pub fn publish_entry_list_test(
     alex: &mut P2pNode,
     billy: &mut P2pNode,
     can_connect: bool,
 ) -> NetResult<()> {
     // Setup
-    println!("Testing: publish_list_test()");
+    println!("Testing: publish_entry_list_test()");
     setup_normal(alex, billy, can_connect)?;
     println!("\n");
 
     // author an entry without publishing it
-    alex.author_entry(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
 
     // Look for the publish_list request received from network module and reply
     let request = alex
@@ -85,7 +68,7 @@ pub fn publish_list_test(
         )
         .expect("Did not receive a HandleGetPublishingDataList request");
     let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetPublishingEntryList);
-    alex.reply_get_publish_data_list(&get_list_data)?;
+    alex.reply_to_HandleGetPublishingEntryList(&get_list_data)?;
 
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchEntry_and_reply();
@@ -95,14 +78,7 @@ pub fn publish_list_test(
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
 
     // billy asks for reported published data.
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    let fetch_entry = FetchEntryData {
-        request_id         : FETCH_ENTRY_1_ID.into(),
-        dna_address        : DNA_ADDRESS.clone(),
-        requester_agent_id : BILLY_AGENT_ID.into(),
-        entry_address      : ENTRY_ADDRESS_1.clone(),
-    };
-    billy.send(JsonProtocol::FetchEntry(fetch_entry).into())?;
+    billy.request_entry(ENTRY_ADDRESS_1.clone());
 
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     if !has_received {
@@ -132,10 +108,9 @@ pub fn publish_meta_list_test(
     setup_normal(alex, billy, can_connect)?;
 
     // author an entry
-    alex.author_entry(&DNA_ADDRESS, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     // author a meta without publishing it
     alex.author_meta(
-        &DNA_ADDRESS,
         &ENTRY_ADDRESS_1,
         META_ATTRIBUTE.into(),
         &META_CONTENT_1,
@@ -151,7 +126,7 @@ pub fn publish_meta_list_test(
         .expect("Did not receive a HandleGetPublishingMetaList request");
     let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetPublishingMetaList);
     // reply with publish_meta_list
-    alex.reply_get_publish_meta_list(&get_list_data)?;
+    alex.reply_to_HandleGetPublishingMetaList(&get_list_data)?;
 
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
@@ -161,15 +136,7 @@ pub fn publish_meta_list_test(
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
 
     // billy asks for reported published data.
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    let fetch_metadata = FetchMetaData {
-        request_id         : FETCH_ENTRY_1_ID.into(),
-        dna_address        : DNA_ADDRESS.clone(),
-        requester_agent_id : BILLY_AGENT_ID.into(),
-        entry_address      : ENTRY_ADDRESS_1.clone(),
-        attribute          : META_ATTRIBUTE.into(),
-    };
-    billy.send(JsonProtocol::FetchMeta(fetch_metadata).into())?;
+    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_ATTRIBUTE.into());
 
     // Alex or billy should receive HandleFetchMeta request
     let has_received = alex.wait_HandleFetchMeta_and_reply();
@@ -189,13 +156,13 @@ pub fn publish_meta_list_test(
 
 /// Reply with some data in hold_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn hold_entry_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: hold_list_test()");
     setup_normal(alex, billy, can_connect)?;
 
     // Have alex hold some data
-    alex.hold_data(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1);
+    alex.hold_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1);
 
     // Alex: Look for the hold_list request received from network module and reply
     let request = alex
@@ -207,7 +174,7 @@ pub fn hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
     // extract request data
     let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetHoldingEntryList);
     // reply
-    alex.reply_get_holding_data_list(&get_list_data)?;
+    alex.reply_to_HandleGetHoldingEntryList(&get_list_data)?;
 
     // Might receive a HandleFetchEntry request from network module:
     // hackmode would want the data right away
@@ -218,14 +185,7 @@ pub fn hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
     }
 
     // Have billy request that data
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    let fetch_data = FetchEntryData {
-        request_id         : FETCH_ENTRY_1_ID.into(),
-        dna_address        : DNA_ADDRESS.clone(),
-        requester_agent_id : BILLY_AGENT_ID.into(),
-        entry_address      : ENTRY_ADDRESS_1.clone(),
-    };
-    billy.send(JsonProtocol::FetchEntry(fetch_data).into())?;
+    billy.request_entry(ENTRY_ADDRESS_1.clone());
 
     // Alex or billy might receive HandleFetchEntry request as this moment
     let has_received = alex.wait_HandleFetchEntry_and_reply();
@@ -267,7 +227,7 @@ pub fn hold_meta_list_test(
     // extract request data
     let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetHoldingMetaList);
     // reply
-    alex.reply_get_holding_meta_list(&get_list_data)?;
+    alex.reply_to_HandleGetHoldingMetaList(&get_list_data)?;
 
     // Might receive a HandleFetchMeta request from network module:
     // hackmode would want the data right away
@@ -278,15 +238,7 @@ pub fn hold_meta_list_test(
     }
 
     // Have billy request that metadata
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    let fetch_meta = FetchMetaData {
-        attribute          : META_ATTRIBUTE.into(),
-        requester_agent_id : BILLY_AGENT_ID.into(),
-        request_id         : FETCH_META_1_ID.into(),
-        dna_address        : DNA_ADDRESS.clone(),
-        entry_address      : ENTRY_ADDRESS_1.clone(),
-    };
-    billy.send(JsonProtocol::FetchMeta(fetch_meta).into())?;
+    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_ATTRIBUTE.into());
 
     // Alex might receive HandleFetchDhtData request as this moment
     let has_received = alex.wait_HandleFetchMeta_and_reply();
@@ -297,6 +249,94 @@ pub fn hold_meta_list_test(
     // Billy shoudl receive the data
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
+    println!("got result: {:?}", result);
+
+    // Done
+    Ok(())
+}
+
+
+/// Reply with some data in hold_list
+#[cfg_attr(tarpaulin, skip)]
+pub fn double_hold_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    println!("Testing: double_hold_list_test()");
+    setup_normal(alex, billy, can_connect)?;
+
+    // Have alex hold some data
+    alex.hold_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1);
+
+    // Alex: Look for the hold_list request received from network module and reply
+    let request = alex
+        .find_recv_msg(
+            0,
+            Box::new(one_is!(JsonProtocol::HandleGetHoldingEntryList(_))),
+        )
+        .expect("Did not receive a HandleGetHoldingDataList request");
+    // extract request data
+    let get_list_data = unwrap_to!(request => JsonProtocol::HandleGetHoldingEntryList);
+    // reply
+    alex.reply_to_HandleGetHoldingEntryList(&get_list_data)?;
+
+    // Might receive a HandleFetchEntry request from network module:
+    // hackmode would want the data right away
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    if has_received {
+        // billy might receive HandleDhtStore
+        let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
+    }
+
+    // Have billy request that data
+    billy.request_entry(ENTRY_ADDRESS_1.clone());
+
+    // Alex or billy might receive HandleFetchEntry request as this moment
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    if !has_received {
+        let _has_received = billy.wait_HandleFetchEntry_and_reply();
+    }
+
+    // Billy should receive the data
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        .unwrap();
+    println!("got result: {:?}", result);
+
+    // Done
+    Ok(())
+}
+
+
+/// Reply with some data in hold_list
+#[cfg_attr(tarpaulin, skip)]
+pub fn publish_same_entry_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    println!("Testing: publish_same_entry_test()");
+    setup_normal(alex, billy, can_connect)?;
+
+    // author an entry without publishing it
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
+    // notify network module of our data
+    alex.reply_to_first_HandleGetPublishingEntryList();
+
+    // Should receive a HandleFetchEntry request from network module
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    assert!(has_received);
+    // billy might receive HandleStoreEntry
+    let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
+
+    // Have billy request that data
+    billy.request_entry(ENTRY_ADDRESS_1.clone());
+
+    // Alex or billy might receive HandleFetchEntry request as this moment
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    if !has_received {
+        let _has_received = billy.wait_HandleFetchEntry_and_reply();
+    }
+
+    // Billy should receive the data
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
     println!("got result: {:?}", result);
 

@@ -591,6 +591,7 @@ impl InMemoryServer {
         Ok(())
     }
 
+    ///
     fn priv_check_request(&mut self, request_id: &RequestId) -> Option<BucketId> {
         // Get bucket_id and make sure its our request
         let bucket_id;

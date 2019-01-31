@@ -32,7 +32,7 @@ fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
         .collect();
     loop {
         println!("await_held_agent_ids");
-        if let Signal::Internal(aw) = signal_rx.recv_timeout(Duration::from_millis(10)).unwrap() {
+        if let Ok(Signal::Internal(aw)) = signal_rx.recv_timeout(Duration::from_millis(10)) {
             let action = aw.action();
             if let Action::Hold(Entry::AgentId(id)) = action {
                 agent_addresses.remove(&id.key);

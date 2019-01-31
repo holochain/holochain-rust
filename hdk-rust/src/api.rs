@@ -645,7 +645,7 @@ pub fn get_entry_result(
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false, timeout: Default::default() })?;
+///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///

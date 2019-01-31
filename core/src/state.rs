@@ -180,7 +180,7 @@ impl State {
             // get the header addresses
             .map(|eavi| eavi.value())
             // don't include the chain header twice
-            .filter(|a| maybe_header_address.clone() != Some(a.clone()))
+            .filter(|a| maybe_header_address.as_ref() != Some(a))
             // fetch the header content from CAS
             .map(|a| self.dht().content_storage().read().unwrap().fetch(&a))
             // rearrange

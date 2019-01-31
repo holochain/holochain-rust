@@ -60,11 +60,15 @@ pub async fn get_entry_result_workflow<'a>(
 
             // Add entry
             let headers: Vec<ChainHeader> = if args.options.headers {
-                context
-                    .state()
-                    .expect("state uninitialized! :)")
-                    .dht()
-                    .get_headers(address)?
+                let state = context.state().expect("state uninitialized! :)");
+                let mut headers: Vec<_> = state
+                    .agent()
+                    .get_header_for_entry(&entry_with_meta.entry)
+                    .into_iter()
+                    .collect();
+                let mut dht_headers = state.dht().get_headers(address)?;
+                headers.append(&mut dht_headers);
+                headers
             } else {
                 Vec::new()
             };

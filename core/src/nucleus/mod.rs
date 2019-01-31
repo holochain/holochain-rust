@@ -102,7 +102,6 @@ pub fn call_and_wait_for_result(
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     let id = snowflake::ProcessUniqueId::new().to_string();
-    println!("call_and_wait_for_result {}", id);
     // Dispatch action with observer closure that waits for a result in the state
     let (tick_tx, tick_rx) = channel();
     instance
@@ -113,7 +112,6 @@ pub fn call_and_wait_for_result(
 
     loop {
         if let Some(result) = instance.state().nucleus().zome_call_result(&call) {
-            println!("done {}", id);
             return result;
         } else {
             let _ = tick_rx.recv_timeout(Duration::from_millis(100));

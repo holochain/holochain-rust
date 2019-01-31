@@ -13,7 +13,7 @@ use std::{
 
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver, StorageConfiguration,
+    InterfaceDriver,
 };
 use container::{ContainerAdmin, CONTAINER};
 use serde_json::map::Map;
@@ -371,7 +371,14 @@ impl ContainerApiBuilder {
                 let params_map = Self::unwrap_params_map(params)?;
                 let id = Self::get_as_string("id", &params_map)?;
                 let path = Self::get_as_string("path", &params_map)?;
-                container_call!(|c| c.install_dna_from_file(PathBuf::from(path), id.to_string()))?;
+                let copy = Self::get_as_bool("copy", &params_map).unwrap_or(false);
+                let properties = params_map.get("properties");
+                container_call!(|c| c.install_dna_from_file(
+                    PathBuf::from(path),
+                    id.to_string(),
+                    copy,
+                    properties
+                ))?;
                 Ok(json!({"success": true}))
             });
 
@@ -398,13 +405,7 @@ impl ContainerApiBuilder {
             let id = Self::get_as_string("id", &params_map)?;
             let dna_id = Self::get_as_string("dna_id", &params_map)?;
             let agent_id = Self::get_as_string("agent_id", &params_map)?;
-            let new_instance = InstanceConfiguration {
-                id: id.to_string(),
-                dna: dna_id.to_string(),
-                agent: agent_id.to_string(),
-                storage: StorageConfiguration::Memory, // TODO: don't actually use this. Have some idea of default store
-            };
-            container_call!(|c| c.add_instance(new_instance))?;
+            container_call!(|c| c.add_instance(&id, &dna_id, &agent_id))?;
             Ok(json!({"success": true}))
         });
 

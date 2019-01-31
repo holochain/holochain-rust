@@ -6,6 +6,7 @@ use error::HolochainError;
 use json::JsonString;
 use regex::Regex;
 use std::{cmp::Ordering, convert::TryFrom, fmt, time::Duration};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Represents a timeout for an HDK function
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
@@ -45,8 +46,34 @@ impl From<usize> for Timeout {
 /// restrictive) format.
 ///
 /// More info on the relevant [wikipedia article](https://en.wikipedia.org/wiki/ISO_8601).
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Iso8601(String);
+#[derive(Clone)]
+pub struct Iso8601 {
+    original: String,
+    validated: Result<DateTime<FixedOffset>,HolochainError>
+}
+
+/// Serialization to/from String.  This means that a timestamp will be deserialized to an Iso8601
+/// and validated (non-prejudicially; we allow invalid timestamps to persist).  Upon serialization,
+/// the canonicalized version of the origin timestamp will be used, if valid; otherwise the original
+/// (invalid) timestamp will be used.
+impl Serialize for Iso8601 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for Iso8601 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(Iso8601::from(s))
+    }
+}
 
 /*
  * Note that the WASM target does not have a reliable and consistent means to obtain the local time,
@@ -74,25 +101,25 @@ pub struct Iso8601(String);
 /// timestamp, or just the original String for invalid ones.
 impl fmt::Display for Iso8601 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match DateTime::<FixedOffset>::try_from(self) {
+        match self.validated {
             Ok(dt) => write!(f, "{}", dt.to_rfc3339()), // Valid; output canonicalized form
-            Err(_) => write!(f, "{}", self.0), // Invalid; just output the original String
+            Err(_) => write!(f, "{}", self.original), // Invalid; just output the original String
         }
     }
 }
 
 impl fmt::Debug for Iso8601 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match DateTime::<FixedOffset>::try_from(self) {
+        match &self.validated {
             Ok(dt) => {
                 let ts = dt.to_rfc3339();
-                if self.0 != ts {
-                    write!(f, "Iso8601 {{ \"{}\" <- \"{}\" }}", ts, &self.0)
+                if self.original != ts {
+                    write!(f, "Iso8601 {{ \"{}\" <- \"{}\" }}", ts, self.original)
                 } else {
-                    write!(f, "Iso8601 {{ \"{}\" }}", &self.0)
+                    write!(f, "Iso8601 {{ \"{}\" }}", self.original)
                 }
             }
-            Err(e) => write!(f, "Iso8601 {{ \"{}\" -> {} }}", &self.0, e),
+            Err(e) => write!(f, "Iso8601 {{ \"{}\" -> {} }}", self.original, e),
         }
     }
 }
@@ -108,13 +135,13 @@ impl fmt::Debug for Iso8601 {
 /// reasonable, as it would indicate an error in the code of the application, not in the logic.
 impl From<&'static str> for Iso8601 {
     fn from(s: &str) -> Iso8601 {
-        Iso8601(s.to_owned())
+        Iso8601::from(s.to_owned())
     }
 }
 
 impl From<String> for Iso8601 {
     fn from(s: String) -> Iso8601 {
-        Iso8601(s)
+        Iso8601::new(s)
     }
 }
 
@@ -124,10 +151,17 @@ impl From<String> for Iso8601 {
 /// UTC "Zulu", make internal separators optional if unambiguous.  If you keep to straight RFC 3339
 /// timestamps, then parsing will be quick, otherwise we'll employ a regular expression to parse a
 /// more flexible subset of the ISO 8601 standard from your supplied timestamp, and then use the RFC
-/// 3339 parser again.
+/// 3339 parser again.  We only do this validation once; at the creation of an Iso8601 from a
+/// String; the Result<> is used for future serialization and Eq/ParialEq/Ord/PartialOrd operations.
 impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
     type Error = HolochainError;
     fn try_from(lhs: &Iso8601) -> Result<DateTime<FixedOffset>, Self::Error> {
+        lhs.validated.to_owned()
+    }
+}
+
+impl Iso8601 {
+    pub fn new(original: String) -> Self {
         lazy_static! {
             static ref ISO8601_RE: Regex = Regex::new(
                 r"(?x)
@@ -195,12 +229,13 @@ impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
             )
             .unwrap();
         }
-        DateTime::parse_from_rfc3339(&lhs.0)
+
+        let validated = DateTime::parse_from_rfc3339(&original)
             .or_else(
-                |_| ISO8601_RE.captures(&lhs.0)
+                |_| ISO8601_RE.captures(&original)
                     .map_or_else(
                         || Err(HolochainError::ErrorGeneric(
-                            format!("Failed to find ISO 3339 or RFC 8601 timestamp in {:?}", lhs.0))),
+                            format!("Failed to find ISO 3339 or RFC 8601 timestamp in {:?}", &original))),
                         |cap| {
                             let timestamp = &format!(
                                 "{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}{}",
@@ -223,10 +258,15 @@ impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
                             DateTime::parse_from_rfc3339(timestamp)
                                 .map_err(|_| HolochainError::ErrorGeneric(
                                     format!("Attempting to convert RFC 3339 timestamp {:?} from ISO 8601 {:?} to a DateTime",
-                                            timestamp, lhs.0)))
+                                            timestamp, &original)))
                         }
                     )
-            )
+            );
+
+        Iso8601 {
+            original,
+            validated,
+        }
     }
 }
 
@@ -238,9 +278,9 @@ impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
 /// orders any invalid Iso8601s as equal, before all valid Iso8601s.
 impl PartialEq for Iso8601 {
     fn eq(&self, rhs: &Iso8601) -> bool {
-        match DateTime::<FixedOffset>::try_from(self) {
-            Ok(dt_lhs) => match DateTime::<FixedOffset>::try_from(rhs) {
-                Ok(dt_rhs) => (&dt_lhs).eq(&dt_rhs),
+        match &self.validated {
+            Ok(dt_lhs) => match &rhs.validated {
+                Ok(dt_rhs) => (dt_lhs).eq(dt_rhs),
                 Err(_e) => false,
             },
             Err(_e) => false,
@@ -254,9 +294,9 @@ impl Eq for Iso8601 {}
 
 impl PartialOrd for Iso8601 {
     fn partial_cmp(&self, rhs: &Iso8601) -> Option<Ordering> {
-        match DateTime::<FixedOffset>::try_from(self) {
-            Ok(ts_lhs) => match DateTime::<FixedOffset>::try_from(rhs) {
-                Ok(ts_rhs) => (&ts_lhs).partial_cmp(&ts_rhs),
+        match &self.validated {
+            Ok(ts_lhs) => match &rhs.validated {
+                Ok(ts_rhs) => (ts_lhs).partial_cmp(ts_rhs),
                 Err(_e) => None,
             },
             Err(_e) => None,
@@ -264,16 +304,16 @@ impl PartialOrd for Iso8601 {
     }
 }
 
-// Invalid timestamps are "greater-than" any valid timestamp.  This puts them last in an in-order
-// sort, first in a reverse sort.
+/// Invalid timestamps are "greater-than" any valid timestamp.  This puts them last in an in-order
+/// sort, first in a reverse sort.
 impl Ord for Iso8601 {
     fn cmp(&self, rhs: &Iso8601) -> Ordering {
-        match DateTime::<FixedOffset>::try_from(self) {
-            Ok(ts_lhs) => match DateTime::<FixedOffset>::try_from(rhs) {
-                Ok(ts_rhs) => ts_lhs.cmp(&ts_rhs),
+        match self.validated {
+            Ok(ts_lhs) => match &rhs.validated {
+                Ok(ts_rhs) => ts_lhs.cmp(ts_rhs),
                 Err(_) => Ordering::Greater, // lhs is good, rhs is invalid; lhs is always > rhs (invalid)
             },
-            Err(_) => match DateTime::<FixedOffset>::try_from(rhs) {
+            Err(_) => match &rhs.validated {
                 Ok(_) => Ordering::Less, // lhs is invalid, rhs is valid; lhs (invalid) is always < rhs
                 Err(_) => Ordering::Equal, // lhs and rhs both invalid; always equal-to each-other
             },
@@ -288,6 +328,7 @@ pub fn test_iso_8601() -> Iso8601 {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn test_iso_8601_basic() {
@@ -301,8 +342,9 @@ pub mod tests {
         ]
         .iter()
         .map(|ts| {
-            // Check that mapping from an Iso8601::(&str) to a DateTime yields the
-            // expected RFC 3339 / ISO 8601 timestamp
+            // Check that mapping from an Iso8601::(&str) to a DateTime yields the expected RFC 3339
+            // / ISO 8601 timestamp, via its DateTime<FixedOffset>, its fmt::Display, to_string()
+            // and JSON round-trip.
             DateTime::<FixedOffset>::try_from(&Iso8601::from(*ts))
                 .and_then(|dt| {
                     Ok(assert_eq!(format!("{}", dt.to_rfc3339()), "2018-10-11T03:23:38+00:00"))
@@ -312,6 +354,13 @@ pub mod tests {
                 })
                 .and_then(|_| {
                     Ok(assert_eq!(Iso8601::from(*ts).to_string(), "2018-10-11T03:23:38+00:00"))
+                })
+                .and_then(|_| {
+                    let serialized = serde_json::to_string(&Iso8601::from(*ts))?;
+                    assert_eq!( serialized.to_string(), "\"2018-10-11T03:23:38+00:00\"");
+                    let deserialized: Iso8601 = serde_json::from_str(&serialized.to_string())?;
+                    assert_eq!(deserialized.to_string(), "2018-10-11T03:23:38+00:00");
+                    Ok(())
                 })
         })
         .collect::<Result<(()), HolochainError>>()

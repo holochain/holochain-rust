@@ -51,4 +51,6 @@ extern "C" {
     pub(crate) fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
 
     pub(crate) fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
+
+    pub(crate) fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
 }

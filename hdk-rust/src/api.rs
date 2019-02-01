@@ -196,6 +196,7 @@ pub enum Dispatch {
     RemoveEntry,
     Query,
     Send,
+    RemoveLink
 }
 
 impl Dispatch {
@@ -231,6 +232,7 @@ impl Dispatch {
                 Dispatch::RemoveEntry => hc_remove_entry,
                 Dispatch::Query => hc_query,
                 Dispatch::Send => hc_send,
+                Dispatch::RemoveLink => hc_remove_link
             })(encoded_input)
         };
 
@@ -307,7 +309,8 @@ impl Dispatch {
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-///
+/// /// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # fn main() {
 ///
 /// fn handle_sum(num1: u32, num2: u32) -> JsonString {
@@ -384,7 +387,8 @@ impl Dispatch {
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-///
+/// /// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # fn main() {
 ///
 /// fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {

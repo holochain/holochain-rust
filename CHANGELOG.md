@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated dependencies:
   * Rust nightly to `2019-01-24`
   * futures to `0.3.0-alpha.12`
+- Adjusted so that all chain headers are sent in the validation package, not just those for public entry types
 ### Added
+- Added Zome API function `hdk::sleep(std::time::Duration)` which works the same as `std::thread::sleep`.
 - All structs/values to all HDK functions must implement `Into<JsonString>` and `TryFrom<JsonString>` (derive `DefaultJson` to do this automatically)
 - HDK globals `AGENT_ADDRESS`, `AGENT_ID_STR`, `DNA_NAME` and `DNA_ADDRESS` are now set to real, correct values.
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)

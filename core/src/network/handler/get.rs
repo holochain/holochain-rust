@@ -39,10 +39,10 @@ pub fn handle_fetch_entry_result(dht_data: FetchEntryResultData, context: Arc<Co
     dispatch_action(context.action_channel(), action_wrapper.clone());
 }
 
-pub fn handle_fetch_meta(get_dht_meta_data: FetchMetaData, context: Arc<Context>) {
-    if LINK.is_match(&get_dht_meta_data.attribute) {
+pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) {
+    if LINK.is_match(&fetch_meta_data.attribute) {
         let tag = LINK
-            .captures(&get_dht_meta_data.attribute)
+            .captures(&fetch_meta_data.attribute)
             .unwrap()
             .get(1)
             .unwrap()
@@ -53,7 +53,7 @@ pub fn handle_fetch_meta(get_dht_meta_data: FetchMetaData, context: Arc<Context>
             .unwrap()
             .dht()
             .get_links(
-                Address::from(get_dht_meta_data.entry_address.clone()),
+                Address::from(fetch_meta_data.entry_address.clone()),
                 tag.clone(),
             )
             .unwrap_or(BTreeSet::new())
@@ -61,7 +61,7 @@ pub fn handle_fetch_meta(get_dht_meta_data: FetchMetaData, context: Arc<Context>
             .map(|eav| eav.value())
             .collect::<Vec<_>>();
         let action_wrapper =
-            ActionWrapper::new(Action::RespondGetLinks((get_dht_meta_data, links)));
+            ActionWrapper::new(Action::RespondGetLinks((fetch_meta_data, links)));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     }
 }

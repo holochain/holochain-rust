@@ -147,7 +147,6 @@ impl P2pNode {
 
 /// fetch & sendMessage
 impl P2pNode {
-
     /// generate a new request_id
     fn generate_request_id(&mut self) -> String {
         self.request_count += 1;
@@ -184,7 +183,7 @@ impl P2pNode {
     }
 
     /// Node sends Message on the network.
-    pub fn send_message(&mut self,  to_agent_id: String, content: serde_json::Value) -> MessageData {
+    pub fn send_message(&mut self, to_agent_id: String, content: serde_json::Value) -> MessageData {
         let msg_data = MessageData {
             dna_address: self.dna_address.clone(),
             from_agent_id: self.agent_id.to_string(),
@@ -198,7 +197,11 @@ impl P2pNode {
     }
 
     /// Node sends Message on the network.
-    pub fn send_reponse(&mut self,  msg: MessageData, response_content: serde_json::Value) -> MessageData {
+    pub fn send_reponse(
+        &mut self,
+        msg: MessageData,
+        response_content: serde_json::Value,
+    ) -> MessageData {
         assert_eq!(msg.dna_address, self.dna_address);
         assert_eq!(msg.to_agent_id, self.agent_id);
         let response = MessageData {
@@ -212,7 +215,6 @@ impl P2pNode {
             .expect("Sending HandleSendMessageResult failed");
         response
     }
-
 }
 
 // Replies
@@ -288,7 +290,10 @@ impl P2pNode {
     // -- LISTS -- //
 
     /// Reply to a HandleGetPublishingEntryList request
-    pub fn reply_to_HandleGetPublishingEntryList(&mut self, request: &GetListData) -> NetResult<()> {
+    pub fn reply_to_HandleGetPublishingEntryList(
+        &mut self,
+        request: &GetListData,
+    ) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
         let entry_address_list = self
             .authored_entry_store
@@ -394,7 +399,6 @@ impl P2pNode {
         self.reply_to_HandleGetHoldingMetaList(&get_list_data)
             .expect("Reply to HandleGetHoldingMetaList failed.");
     }
-
 }
 
 impl P2pNode {

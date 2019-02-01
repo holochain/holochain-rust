@@ -1,9 +1,7 @@
 use constants::*;
 use holochain_core_types::cas::content::Address;
 use holochain_net_connection::{
-    json_protocol::{
-        ConnectData, JsonProtocol, TrackDnaData,
-    },
+    json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
     net_connection::NetSend,
     NetResult,
 };
@@ -68,7 +66,7 @@ fn confirm_published_metadata(
     content: &serde_json::Value,
 ) -> NetResult<()> {
     // Alex publishs metadata on the network
-    alex.author_meta( address, attribute, content, true)?;
+    alex.author_meta(address, attribute, content, true)?;
     // Check if both nodes received a HandleStore command.
     let result_a = alex
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))))
@@ -210,7 +208,10 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     assert_eq!("\"hello\"".to_string(), msg.content.to_string());
 
     // Send a message back from billy to alex
-    billy.send_reponse(msg.clone(), json!(format!("echo: {}", msg.content.to_string())));
+    billy.send_reponse(
+        msg.clone(),
+        json!(format!("echo: {}", msg.content.to_string())),
+    );
     // Check if alex received it
     let res = alex
         .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))

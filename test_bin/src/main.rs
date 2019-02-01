@@ -18,9 +18,9 @@ pub mod constants;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
 
+use constants::*;
 use holochain_net_connection::NetResult;
 use p2p_node::P2pNode;
-use constants::*;
 
 type TwoNodesTestFn =
     fn(node1: &mut P2pNode, node2: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
@@ -117,7 +117,8 @@ fn launch_two_nodes_test_with_ipc_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResult<()> {
-    let mut alex = P2pNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string(), DNA_ADDRESS.clone());
+    let mut alex =
+        P2pNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string(), DNA_ADDRESS.clone());
     let mut billy = P2pNode::new_with_config(
         BILLY_AGENT_ID.to_string(),
         DNA_ADDRESS.clone(),

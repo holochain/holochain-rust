@@ -1,9 +1,6 @@
 use basic_workflows::setup_normal;
 use constants::*;
-use holochain_net_connection::{
-    json_protocol::JsonProtocol,
-    NetResult,
-};
+use holochain_net_connection::{json_protocol::JsonProtocol, NetResult};
 use p2p_node::P2pNode;
 
 /// Test the following workflow after normal setup:
@@ -17,7 +14,11 @@ use p2p_node::P2pNode;
 /// a-->>net: FailureResult
 /// net->>b: FailureResult
 #[cfg_attr(tarpaulin, skip)]
-pub fn empty_publish_entry_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn empty_publish_entry_list_test(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     println!("Testing: empty_publish_entry_list_test()");
     setup_normal(alex, billy, can_connect)?;
@@ -73,13 +74,22 @@ pub fn publish_entry_list_test(
 
 /// Reply some data in publish_meta_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn publish_meta_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn publish_meta_list_test(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     println!("Testing: publish_meta_list_test()");
     setup_normal(alex, billy, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    alex.author_meta(&ENTRY_ADDRESS_1, META_ATTRIBUTE.into(), &META_CONTENT_1, false)?;
+    alex.author_meta(
+        &ENTRY_ADDRESS_1,
+        META_ATTRIBUTE.into(),
+        &META_CONTENT_1,
+        false,
+    )?;
     alex.reply_to_first_HandleGetPublishingMetaList();
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
@@ -104,7 +114,11 @@ pub fn publish_meta_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_conne
 
 /// Reply with some data in hold_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn hold_entry_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn hold_entry_list_test(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     println!("Testing: hold_entry_list_test()");
     setup_normal(alex, billy, can_connect)?;
@@ -203,16 +217,24 @@ pub fn double_publish_entry_list_test(
     Ok(())
 }
 
-
 /// Reply some data in publish_meta_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn double_publish_meta_list_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn double_publish_meta_list_test(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     println!("Testing: double_publish_meta_list_test()");
     setup_normal(alex, billy, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    alex.author_meta(&ENTRY_ADDRESS_1, META_ATTRIBUTE.into(), &META_CONTENT_1, true)?;
+    alex.author_meta(
+        &ENTRY_ADDRESS_1,
+        META_ATTRIBUTE.into(),
+        &META_CONTENT_1,
+        true,
+    )?;
     alex.reply_to_first_HandleGetPublishingMetaList();
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
@@ -234,8 +256,6 @@ pub fn double_publish_meta_list_test(alex: &mut P2pNode, billy: &mut P2pNode, ca
     // Done
     Ok(())
 }
-
-
 
 //#[cfg_attr(tarpaulin, skip)]
 //pub fn publish_same_entry_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {

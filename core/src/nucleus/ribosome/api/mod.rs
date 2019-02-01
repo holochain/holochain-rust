@@ -81,7 +81,6 @@ pub enum ZomeApiFunction {
 
     LinkEntries,
     GetLinks,
-    RemoveLink,
     Query,
 
     /// Pass an entry to retrieve its address
@@ -90,6 +89,8 @@ pub enum ZomeApiFunction {
     EntryAddress,
 
     Send,
+
+    RemoveLink
 }
 
 impl Defn for ZomeApiFunction {
@@ -108,8 +109,8 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::GetLinks => "hc_get_links",
             ZomeApiFunction::Query => "hc_query",
             ZomeApiFunction::EntryAddress => "hc_entry_address",
-            ZomeApiFunction::RemoveLink => "hc_remove_link",
             ZomeApiFunction::Send => "hc_send",
+            ZomeApiFunction::RemoveLink => "hc_remove_link"
         }
     }
 
@@ -147,8 +148,8 @@ impl FromStr for ZomeApiFunction {
             "hc_get_links" => Ok(ZomeApiFunction::GetLinks),
             "hc_query" => Ok(ZomeApiFunction::Query),
             "hc_entry_address" => Ok(ZomeApiFunction::EntryAddress),
-            "hc_remove_link" => Ok(ZomeApiFunction::RemoveLink),
             "hc_send" => Ok(ZomeApiFunction::Send),
+            "hc_remove_link" => Ok(ZomeApiFunction::RemoveLink),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -178,10 +179,10 @@ impl ZomeApiFunction {
             ZomeApiFunction::Call => invoke_call,
             ZomeApiFunction::LinkEntries => invoke_link_entries,
             ZomeApiFunction::GetLinks => invoke_get_links,
-            ZomeApiFunction::RemoveLink => invoke_remove_link,
             ZomeApiFunction::Query => invoke_query,
             ZomeApiFunction::EntryAddress => invoke_entry_address,
             ZomeApiFunction::Send => invoke_send,
+            ZomeApiFunction::RemoveLink => invoke_remove_link
         }
     }
 }

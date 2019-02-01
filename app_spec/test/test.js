@@ -66,9 +66,9 @@ scenario1.runTape('delete_post', async (t, { alice }) => {
   const result = alice.call("blog", "create_post", params)
   const result = alice.call("blog", "delete_post", params)
 
-  const result = alice.call("blog", "posts_by_agent", params)
+  const result_delete = alice.call("blog", "posts_by_agent", params)
 
-  t.deepEqual(result.Ok, { "addresses": [] })
+  t.deepEqual(result_delete.Ok, { "addresses": [] })
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {

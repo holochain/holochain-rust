@@ -314,10 +314,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                     .start()
                     .map(|start| start <= e.index())
                     .unwrap_or_else(|| {
-                        let latest = filtered
-                            .clone()
-                            .into_iter()
-                            .last()
+                        let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                             .unwrap_or(EntityAttributeValueIndex::default());
                         latest.index() == e.index()
                     })
@@ -327,10 +324,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                     .end()
                     .map(|end| end >= e.index())
                     .unwrap_or_else(|| {
-                        let latest = filtered
-                            .clone()
-                            .into_iter()
-                            .last()
+                        let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                             .unwrap_or(EntityAttributeValueIndex::default());
                         latest.index() == e.index()
                     })

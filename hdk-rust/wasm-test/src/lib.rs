@@ -46,6 +46,7 @@ use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use hdk::global_fns::init_global_memory;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedValue;
 use std::convert::TryFrom;
+use std::time::Duration;
 use hdk::globals::G_MEM_STACK;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -422,6 +423,10 @@ fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<Stri
     hdk::send(to_agent, message, 60000.into())
 }
 
+fn handle_sleep() -> ZomeApiResult<()> {
+    hdk::sleep(Duration::from_millis(10))
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -640,6 +645,12 @@ define_zome! {
             inputs: |to_agent: Address, message: String|,
             outputs: |response: ZomeApiResult<String>|,
             handler: handle_send_message
+        }
+
+        sleep: {
+            inputs: | |,
+            outputs: |response: ZomeApiResult<()>|,
+            handler: handle_sleep
         }
     ]
 

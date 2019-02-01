@@ -60,8 +60,7 @@ pub fn handle_fetch_meta(fetch_meta_data: FetchMetaData, context: Arc<Context>) 
             .into_iter()
             .map(|eav| eav.value())
             .collect::<Vec<_>>();
-        let action_wrapper =
-            ActionWrapper::new(Action::RespondGetLinks((fetch_meta_data, links)));
+        let action_wrapper = ActionWrapper::new(Action::RespondGetLinks((fetch_meta_data, links)));
         dispatch_action(context.action_channel(), action_wrapper.clone());
     }
 }

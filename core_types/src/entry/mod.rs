@@ -20,7 +20,7 @@ use dna::Dna;
 use entry::entry_type::{test_app_entry_type, test_app_entry_type_b, AppEntryType, EntryType};
 use error::{HcResult, HolochainError};
 use json::{default_to_json, default_try_from_json, JsonString, RawString};
-use link::{link_add::LinkAdd, link_list::LinkList, link_remove::LinkRemove};
+use link::{link_add::LinkAdd, link_list::LinkList};
 use multihash::Hash;
 use serde::{ser::SerializeTuple, Deserialize, Deserializer, Serializer};
 use snowflake;

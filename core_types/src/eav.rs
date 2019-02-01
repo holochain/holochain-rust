@@ -15,7 +15,6 @@ use std::{
     cmp::Ordering,
     collections::BTreeSet,
     convert::TryInto,
-    ops::Add,
     sync::{Arc, RwLock},
 };
 

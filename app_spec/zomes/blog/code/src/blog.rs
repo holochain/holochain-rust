@@ -80,6 +80,12 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
     Ok(address)
 }
 
+pub fn handle_delete_post(content:String,in_reply_to : Option<Address>) -> ZomeApiResult<()>
+{
+    let address = hdk::entry_address(&post_entry(content))?;
+    hdk::remove_link(&AGENT_ADDRESS,&address,"authored_posts")
+}
+
 pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
     hdk::get_links(&agent, "authored_posts")
 }

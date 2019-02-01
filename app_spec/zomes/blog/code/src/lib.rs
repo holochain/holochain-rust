@@ -56,6 +56,12 @@ define_zome! {
             handler: blog::handle_create_post
         }
 
+        handle_delete_post: {
+            inputs: |content: String, in_reply_to: Option<Address>|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_create_post
+        }
+
         posts_by_agent: {
             inputs: |agent: Address|,
             outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,

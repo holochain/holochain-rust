@@ -57,6 +57,20 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+
+scenario1.runTape('delete_post', async (t, { alice }) => {
+
+  const content = "Holo world"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const result = alice.call("blog", "create_post", params)
+  const result = alice.call("blog", "delete_post", params)
+
+  const result = alice.call("blog", "posts_by_agent", params)
+
+  t.deepEqual(result.Ok, { "addresses": [] })
+})
+
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
 
   const content = "Holo world"

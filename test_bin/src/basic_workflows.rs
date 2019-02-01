@@ -98,7 +98,7 @@ fn confirm_published_metadata(
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
-pub fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn setup_two_nodes(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Send TrackDna message on both nodes
     alex.send(
         JsonProtocol::TrackDna(TrackDnaData {
@@ -191,7 +191,7 @@ pub fn setup_normal(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
 pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: send_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
 
     // Send a message from alex to billy
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
@@ -235,7 +235,7 @@ pub fn send_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
 pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: meta_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
 
     // Send data & metadata on same address
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1)?;
@@ -288,7 +288,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
 pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: dht_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
 
     // Alex publish data on the network
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;

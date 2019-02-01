@@ -107,7 +107,7 @@ pub struct FailureResultData {
 // DHT Entry
 //--------------------------------------------------------------------------------------------------
 
-/// Data Request from own p2p-module
+/// Drop some data request from own p2p-module
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct DropEntryData {
     #[serde(rename = "dnaAddress")]
@@ -225,7 +225,7 @@ pub struct FetchMetaResultData {
     pub content: serde_json::Value,
 }
 
-/// Data Request from own p2p-module
+/// Drop some data request from own p2p-module
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct DropMetaData {
     #[serde(rename = "dnaAddress")]

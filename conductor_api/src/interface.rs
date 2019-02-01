@@ -11,11 +11,11 @@ use std::{
     sync::{mpsc::Receiver, Arc, RwLock},
 };
 
+use conductor::{ConductorAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
     InterfaceDriver,
 };
-use conductor::{ConductorAdmin, CONDUCTOR};
 use serde_json::map::Map;
 
 pub type InterfaceError = String;
@@ -611,7 +611,7 @@ pub trait Interface {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::{config::Configuration, conductor::tests::test_conductor};
+    use crate::{conductor::tests::test_conductor, config::Configuration};
 
     fn example_config_and_instances() -> (Configuration, InstanceMap) {
         let conductor = test_conductor();

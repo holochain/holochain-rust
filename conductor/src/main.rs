@@ -20,8 +20,8 @@ extern crate holochain_core_types;
 extern crate structopt;
 
 use holochain_conductor_api::{
-    config::{self, load_configuration, Configuration},
     conductor::{mount_conductor_from_config, CONDUCTOR},
+    config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::error::HolochainError;
 use std::{fs::File, io::prelude::*, path::PathBuf};

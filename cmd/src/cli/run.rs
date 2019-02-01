@@ -2,8 +2,8 @@ use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
 use holochain_conductor_api::{
-    config::*,
     conductor::{mount_conductor_from_config, CONDUCTOR},
+    config::*,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;

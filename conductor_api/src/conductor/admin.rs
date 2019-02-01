@@ -1,9 +1,9 @@
 use crate::{
+    conductor::{base::notify, Conductor},
     config::{
         AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
         InstanceReferenceConfiguration, InterfaceConfiguration, StorageConfiguration,
     },
-    conductor::{base::notify, Conductor},
     error::HolochainInstanceError,
 };
 use holochain_core_types::{cas::content::AddressableContent, error::HolochainError};
@@ -509,8 +509,8 @@ impl ConductorAdmin for Conductor {
 pub mod tests {
     use super::*;
     use crate::{
-        config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
         conductor::base::{tests::example_dna_string, DnaLoader},
+        config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
     };
     use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
     use std::{convert::TryFrom, env::current_dir, fs::File, io::Read};

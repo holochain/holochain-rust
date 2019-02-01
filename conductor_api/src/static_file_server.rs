@@ -1,5 +1,5 @@
-use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use conductor::base::notify;
+use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use error::HolochainResult;
 use hyper::{
     http::{response::Builder, uri},

@@ -132,8 +132,8 @@ extern crate tokio;
 #[macro_use]
 extern crate pretty_assertions;
 
-pub mod config;
 pub mod conductor;
+pub mod config;
 pub mod context_builder;
 pub mod error;
 pub mod holochain;

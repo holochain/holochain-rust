@@ -196,7 +196,7 @@ pub enum Dispatch {
     RemoveEntry,
     Query,
     Send,
-    RemoveLink
+    RemoveLink,
 }
 
 impl Dispatch {
@@ -232,7 +232,7 @@ impl Dispatch {
                 Dispatch::RemoveEntry => hc_remove_entry,
                 Dispatch::Query => hc_query,
                 Dispatch::Send => hc_send,
-                Dispatch::RemoveLink => hc_remove_link
+                Dispatch::RemoveLink => hc_remove_link,
             })(encoded_input)
         };
 

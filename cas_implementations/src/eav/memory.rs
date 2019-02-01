@@ -57,7 +57,11 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
             .into_iter()
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|e| {
-                EntityAttributeValueIndex::filter_on_eav_with_prefix(&e.attribute(), attribute.as_ref(),&index_query)
+                EntityAttributeValueIndex::filter_on_eav_with_prefix(
+                    &e.attribute(),
+                    attribute.as_ref(),
+                    &index_query,
+                )
             })
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
             .filter(|e| {
@@ -65,7 +69,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
                     .start()
                     .map(|start| start <= e.index())
                     .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), map.clone(),index_query.clone())
+                        let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                             .unwrap_or(EntityAttributeValueIndex::default());
                         latest.index() == e.index()
                     })
@@ -75,7 +79,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
                     .end()
                     .map(|end| end >= e.index())
                     .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), map.clone(),index_query.clone())
+                        let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                             .unwrap_or(EntityAttributeValueIndex::default());
                         latest.index() == e.index()
                     })

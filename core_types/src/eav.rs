@@ -66,7 +66,7 @@ impl Ord for EntityAttributeValueIndex {
 pub struct IndexQuery<'a> {
     start: Option<i64>,
     end: Option<i64>,
-    prefixes: Vec<&'a str>
+    prefixes: Vec<&'a str>,
 }
 
 impl<'a> IndexQuery<'a> {
@@ -78,15 +78,14 @@ impl<'a> IndexQuery<'a> {
         self.end.clone()
     }
 
-    pub fn prefixes(&self) ->Vec<&str>
-    {
+    pub fn prefixes(&self) -> Vec<&str> {
         self.prefixes.clone()
     }
     pub fn new(start: i64, end: i64) -> IndexQuery<'a> {
         IndexQuery {
             start: Some(start),
             end: Some(end),
-            prefixes : Vec::new()
+            prefixes: Vec::new(),
         }
     }
 
@@ -94,15 +93,15 @@ impl<'a> IndexQuery<'a> {
         IndexQuery {
             start,
             end,
-            prefixes : Vec::new()
+            prefixes: Vec::new(),
         }
     }
 
-     pub fn new_only_prefixes(prefixes : Vec<&'a str>) -> IndexQuery<'a> {
+    pub fn new_only_prefixes(prefixes: Vec<&'a str>) -> IndexQuery<'a> {
         IndexQuery {
             start: None,
             end: None,
-            prefixes 
+            prefixes,
         }
     }
 }
@@ -112,12 +111,10 @@ impl<'a> Default for IndexQuery<'a> {
         IndexQuery {
             start: None,
             end: None,
-            prefixes : Vec::new()
+            prefixes: Vec::new(),
         }
     }
 }
-
-
 
 impl AddressableContent for EntityAttributeValueIndex {
     fn content(&self) -> Content {
@@ -195,23 +192,29 @@ impl EntityAttributeValueIndex {
     /// this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
     pub fn filter_on_eav<T>(eav: &T, e: Option<&T>) -> bool
     where
-        T: PartialOrd 
+        T: PartialOrd,
     {
-
-            e.map(|a| a == eav).unwrap_or(true)
-        
+        e.map(|a| a == eav).unwrap_or(true)
     }
 
-
     /// this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
-    pub fn filter_on_eav_with_prefix<'a>(eav: &'a String, e: Option<&'a String>,index_query : &'a IndexQuery<'a>) -> bool
-    {
-        let prefixes = if index_query.prefixes().len() >0 {index_query.prefixes().clone()} else {vec![""]};
-        e.map(|a| prefixes.iter().any(|prefix| {
-            let attribute_with_prefix = prefix.to_string() + &a.clone();
-            attribute_with_prefix.clone()== eav.clone()
-        })).unwrap_or(true)
-
+    pub fn filter_on_eav_with_prefix<'a>(
+        eav: &'a String,
+        e: Option<&'a String>,
+        index_query: &'a IndexQuery<'a>,
+    ) -> bool {
+        let prefixes = if index_query.prefixes().len() > 0 {
+            index_query.prefixes().clone()
+        } else {
+            vec![""]
+        };
+        e.map(|a| {
+            prefixes.iter().any(|prefix| {
+                let attribute_with_prefix = prefix.to_string() + &a.clone();
+                attribute_with_prefix.clone() == eav.clone()
+            })
+        })
+        .unwrap_or(true)
     }
 }
 
@@ -292,36 +295,44 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         let new_map = map.clone();
-        let filtered : BTreeSet<EntityAttributeValueIndex> = new_map
+        let filtered: BTreeSet<EntityAttributeValueIndex> = new_map
             .into_iter()
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
             .filter(|e| {
-                EntityAttributeValueIndex::filter_on_eav_with_prefix(&e.attribute(), attribute.as_ref(),&index_query)
+                EntityAttributeValueIndex::filter_on_eav_with_prefix(
+                    &e.attribute(),
+                    attribute.as_ref(),
+                    &index_query,
+                )
             })
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
             .collect();
         let filtered_dates = filtered
-                            .clone()
-                            .into_iter()
-                            .filter(|e| {
+            .clone()
+            .into_iter()
+            .filter(|e| {
                 index_query
                     .start()
-                    .map(|start| {
-                        start <= e.index()
-                    })
+                    .map(|start| start <= e.index())
                     .unwrap_or_else(|| {
-                        let latest = filtered.clone().into_iter().last().unwrap_or(EntityAttributeValueIndex::default());
+                        let latest = filtered
+                            .clone()
+                            .into_iter()
+                            .last()
+                            .unwrap_or(EntityAttributeValueIndex::default());
                         latest.index() == e.index()
                     })
             })
             .filter(|e| {
                 index_query
                     .end()
-                    .map(|end| {
-                        end >= e.index()
-                    })
+                    .map(|end| end >= e.index())
                     .unwrap_or_else(|| {
-                        let latest = filtered.clone().into_iter().last().unwrap_or(EntityAttributeValueIndex::default());
+                        let latest = filtered
+                            .clone()
+                            .into_iter()
+                            .last()
+                            .unwrap_or(EntityAttributeValueIndex::default());
                         latest.index() == e.index()
                     })
             })
@@ -334,7 +345,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
 pub fn get_latest(
     eav: EntityAttributeValueIndex,
     map: BTreeSet<EntityAttributeValueIndex>,
-    index_query : IndexQuery
+    index_query: IndexQuery,
 ) -> HcResult<EntityAttributeValueIndex> {
     let filter = map
         .clone()
@@ -342,18 +353,20 @@ pub fn get_latest(
         .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), Some(&eav.entity())))
         .filter(|e| {
             let prefixes = index_query.prefixes();
-            let attribute_without_prefix = prefixes.iter().fold(eav.attribute(),|attribute,prefix|{
-                if eav.attribute().starts_with(prefix)
-                {
-                    let attri = attribute.clone();
-                    attri.replace(prefix,"")
-                }
-                else
-                {
-                    attribute.clone()
-                }
-            });
-            EntityAttributeValueIndex::filter_on_eav_with_prefix(&e.attribute(), Some(&attribute_without_prefix),&index_query)
+            let attribute_without_prefix =
+                prefixes.iter().fold(eav.attribute(), |attribute, prefix| {
+                    if eav.attribute().starts_with(prefix) {
+                        let attri = attribute.clone();
+                        attri.replace(prefix, "")
+                    } else {
+                        attribute.clone()
+                    }
+                });
+            EntityAttributeValueIndex::filter_on_eav_with_prefix(
+                &e.attribute(),
+                Some(&attribute_without_prefix),
+                &index_query,
+            )
         })
         .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), Some(&eav.value())));
     filter.last().ok_or(HolochainError::ErrorGeneric(

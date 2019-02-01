@@ -19,9 +19,9 @@ use crate::nucleus::ribosome::{
     api::{
         call::invoke_call, commit::invoke_commit_app_entry, debug::invoke_debug,
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
-        get_links::invoke_get_links, remove_link::invoke_remove_link,init_globals::invoke_init_globals,
+        get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
-        send::invoke_send, update_entry::invoke_update_entry,
+        remove_link::invoke_remove_link, send::invoke_send, update_entry::invoke_update_entry,
     },
     runtime::Runtime,
     Defn,
@@ -90,7 +90,7 @@ pub enum ZomeApiFunction {
 
     Send,
 
-    RemoveLink
+    RemoveLink,
 }
 
 impl Defn for ZomeApiFunction {
@@ -110,7 +110,7 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::Query => "hc_query",
             ZomeApiFunction::EntryAddress => "hc_entry_address",
             ZomeApiFunction::Send => "hc_send",
-            ZomeApiFunction::RemoveLink => "hc_remove_link"
+            ZomeApiFunction::RemoveLink => "hc_remove_link",
         }
     }
 
@@ -182,7 +182,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::Query => invoke_query,
             ZomeApiFunction::EntryAddress => invoke_entry_address,
             ZomeApiFunction::Send => invoke_send,
-            ZomeApiFunction::RemoveLink => invoke_remove_link
+            ZomeApiFunction::RemoveLink => invoke_remove_link,
         }
     }
 }
@@ -438,7 +438,7 @@ pub mod tests {
             ("hc_query", ZomeApiFunction::Query),
             ("hc_entry_address", ZomeApiFunction::EntryAddress),
             ("hc_send", ZomeApiFunction::Send),
-            ("hc_remove_link",ZomeApiFunction::RemoveLink)
+            ("hc_remove_link", ZomeApiFunction::RemoveLink),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -468,7 +468,7 @@ pub mod tests {
             (ZomeApiFunction::Query, "hc_query"),
             (ZomeApiFunction::EntryAddress, "hc_entry_address"),
             (ZomeApiFunction::Send, "hc_send"),
-            (ZomeApiFunction::RemoveLink, "hc_remove_link")
+            (ZomeApiFunction::RemoveLink, "hc_remove_link"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -489,7 +489,7 @@ pub mod tests {
             ("hc_query", 11),
             ("hc_entry_address", 12),
             ("hc_send", 13),
-            ("hc_remove_link",14)
+            ("hc_remove_link", 14),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -510,7 +510,7 @@ pub mod tests {
             (11, ZomeApiFunction::Query),
             (12, ZomeApiFunction::EntryAddress),
             (13, ZomeApiFunction::Send),
-            (14,ZomeApiFunction::RemoveLink)
+            (14, ZomeApiFunction::RemoveLink),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

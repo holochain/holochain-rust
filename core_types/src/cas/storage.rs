@@ -572,9 +572,6 @@ impl EavTestSuite {
             });
         }
     }
-
-
-    
 }
 
 #[cfg(test)]

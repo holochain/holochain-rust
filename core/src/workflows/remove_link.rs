@@ -1,7 +1,9 @@
 use crate::{
     context::Context,
     dht::actions::remove_link::remove_link,
-    nucleus::actions::{build_validation_package::build_validation_package,validate::validate_entry}
+    nucleus::actions::{
+        build_validation_package::build_validation_package, validate::validate_entry,
+    },
 };
 
 use holochain_core_types::{
@@ -16,7 +18,6 @@ pub async fn remove_link_workflow<'a>(
     entry: &'a Entry,
     context: &'a Arc<Context>,
 ) -> Result<(), HolochainError> {
-
     let link_remove = match entry {
         Entry::LinkAdd(link_remove) => link_remove,
         _ => Err(HolochainError::ErrorGeneric(

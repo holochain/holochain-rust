@@ -1,6 +1,6 @@
 use crate::{
-    workflows::remove_link::remove_link_workflow,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
+    workflows::remove_link::remove_link_workflow,
 };
 use futures::executor::block_on;
 use holochain_core_types::{entry::Entry, error::HolochainError, link::link_add::LinkAdd};
@@ -26,7 +26,6 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-
 
     let link = input.to_link();
     let link_add = LinkAdd::from_link(&link);

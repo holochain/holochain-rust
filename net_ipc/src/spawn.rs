@@ -4,7 +4,10 @@
 
 use holochain_net_connection::{net_connection::NetShutdown, NetResult};
 
-use std::{collections::HashMap, io::Read};
+use std::{
+    collections::HashMap,
+    io::{Read, Write},
+};
 
 pub struct SpawnResult {
     pub kill: NetShutdown,
@@ -17,6 +20,7 @@ pub fn ipc_spawn(
     cmd: String,
     args: Vec<String>,
     work_dir: String,
+    config: String,
     env: HashMap<String, String>,
     block_connect: bool,
 ) -> NetResult<SpawnResult> {
@@ -24,11 +28,19 @@ pub fn ipc_spawn(
 
     child
         .stdout(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::piped())
         .args(&args)
         .envs(&env)
         .current_dir(work_dir);
 
     let mut child = child.spawn()?;
+
+    if let Some(ref mut child_stdin) = child.stdin {
+        child_stdin.write(&config.into_bytes())?;
+    }
+
+    // close the pipe so the process can proceed
+    child.stdin = None;
 
     let mut out = SpawnResult {
         kill: None,

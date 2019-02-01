@@ -46,7 +46,7 @@ fn definition() -> ValidatingEntryType {
             hdk::ValidationPackageDefinition::Entry
         },
 
-        validation: |_my_entry: MyEntry, _ctx: hdk::ValidationData| {
+        validation: |_my_entry: MyEntry, _validation_data: hdk::ValidationData| {
             Ok(())
         }
     )

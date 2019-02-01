@@ -131,7 +131,7 @@ macro_rules! load_string {
 ///                 hdk::ValidationPackageDefinition::ChainFull
 ///             },
 ///
-///             validation: |post: Post, _ctx: hdk::ValidationData| {
+///             validation: |post: Post, _validation_data: hdk::ValidationData| {
 ///                 (post.content.len() < 280)
 ///                     .ok_or_else(|| String::from("Content too long"))
 ///             }

@@ -124,9 +124,13 @@ extern crate lazy_static;
 extern crate directories;
 extern crate hyper;
 extern crate hyper_staticfile;
+extern crate json_patch;
 #[cfg(test)]
 extern crate reqwest;
 extern crate tokio;
+#[cfg(test)]
+#[macro_use]
+extern crate pretty_assertions;
 
 pub mod config;
 pub mod container;

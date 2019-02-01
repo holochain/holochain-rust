@@ -210,8 +210,8 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 }
 
 // Function called at start of all unit tests:
-//   Startup holochain and do a call on the specified wasm function using the admin capability
-pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<JsonString> {
+//   Startup holochain and do a call on the specified wasm function.
+pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(wasm_path: &str, fn_name: &str, params: J) -> HolochainResult<JsonString> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
     let defs = create_test_defs_with_fn_name(fn_name);
@@ -220,12 +220,13 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
     let context = create_test_context("alex");
     let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
+    let params_string = String::from(params.into());
     let cap_call =  make_cap_call(
         context.clone(),
         Address::from(context.clone().agent_id.key.clone()),
         Address::from(context.clone().agent_id.key.clone()),
         fn_name,
-        r#"{}"#.to_string(),
+        params_string.clone(),
     );
 
     // Run the holochain instance
@@ -235,7 +236,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
         "test_zome",
         cap_call,
         fn_name,
-        r#"{}"#,
+        &params_string,
     );
 }
 

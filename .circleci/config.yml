@@ -27,16 +27,16 @@ jobs:
       command: nix-shell --run hc-test-cmd
 
    - run:
-       name: install node container
-       command: nix-shell --run hc-install-node-container
+       name: install node conductor
+       command: nix-shell --run hc-install-node-conductor
 
    - run:
        name: app spec tests
        command: nix-shell --run hc-test-app-spec
 
    - run:
-       name: nodejs container tests
-       command: nix-shell --run hc-test-node-container
+       name: nodejs conductor tests
+       command: nix-shell --run hc-test-node-conductor
 
  # https://circleci.com/docs/2.0/building-docker-images/
  docker.start:

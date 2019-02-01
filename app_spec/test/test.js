@@ -64,11 +64,10 @@ scenario1.runTape('delete_post', async (t, { alice }) => {
   const in_reply_to = null
   const params = { content, in_reply_to }
   const result = alice.call("blog", "create_post", params)
-  const result = alice.call("blog", "delete_post", params)
-
-  const result_delete = alice.call("blog", "posts_by_agent", params)
-
-  t.deepEqual(result_delete.Ok, { "addresses": [] })
+  const result_delete = alice.call("blog", "delete_post", params)
+  t.ok(result_delete.Ok)
+  const result_list = alice.call("blog", "posts_by_agent", params)
+  t.deepEqual(result_list.Ok, { "addresses": [] })
 })
 
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {

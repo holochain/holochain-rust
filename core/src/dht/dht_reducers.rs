@@ -453,6 +453,8 @@ pub mod tests {
         }
         action = ActionWrapper::new(Action::RemoveLink(link.clone()));
 
+        let _ = new_dht_store.meta_storage();
+
         let new_dht_store: DhtStore;
         {
             let state = locked_state.read().unwrap();

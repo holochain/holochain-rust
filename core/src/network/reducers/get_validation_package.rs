@@ -17,6 +17,8 @@ fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), H
         ))?;
     let direct_message = DirectMessage::RequestValidationPackage(header.entry_address().clone());
 
+    println!("in inner reduce_get_validation_package");
+
     send_message(network_state, source_address, direct_message)
 }
 
@@ -28,6 +30,8 @@ pub fn reduce_get_validation_package(
     let action = action_wrapper.action();
     let header = unwrap_to!(action => crate::action::Action::GetValidationPackage);
     let entry_address = header.entry_address().clone();
+
+    println!("in reduce_get_validation_package");
 
     let result = match inner(network_state, header) {
         Ok(()) => None,

@@ -22,6 +22,7 @@ pub async fn hold_entry_workflow<'a>(
 
     // 1. Get validation package from source
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
+    context.log(format!("debug/hold_entry_workflow: Got maybe_validation_package"));
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
 

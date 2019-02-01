@@ -24,6 +24,7 @@ pub struct NetConnectionThread {
 impl NetSend for NetConnectionThread {
     /// send a message to the worker within NetConnectionThread's child thread.
     fn send(&mut self, data: Protocol) -> NetResult<()> {
+        println!("in net_connection_thread send");
         self.send_channel.send(data)?;
         Ok(())
     }

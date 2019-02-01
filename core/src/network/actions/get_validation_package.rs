@@ -27,6 +27,7 @@ pub async fn get_validation_package(
     let entry_address = header.entry_address().clone();
     let action_wrapper = ActionWrapper::new(Action::GetValidationPackage(header));
     dispatch_action(context.action_channel(), action_wrapper.clone());
+    context.log(format!("debug/get_validation_package: Getting validation_package"));
     await!(GetValidationPackageFuture {
         context: context.clone(),
         address: entry_address,

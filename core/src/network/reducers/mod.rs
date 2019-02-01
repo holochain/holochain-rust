@@ -122,6 +122,9 @@ pub fn send_message(
         content: serde_json::from_str(&serde_json::to_string(&message).unwrap()).unwrap(),
     };
 
+    println!("in send_message");
+    dbg!(&data);
+
     let _ = send(network_state, JsonProtocol::SendMessage(data))?;
 
     network_state.direct_message_connections.insert(id, message);

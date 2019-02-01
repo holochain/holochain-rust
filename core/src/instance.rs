@@ -175,7 +175,7 @@ impl Instance {
         // Mutate state
         {
             let new_state: State;
-
+            println!("process_action new_state");
             {
                 // Only get a read lock first so code in reducers can read state as well
                 let state = self

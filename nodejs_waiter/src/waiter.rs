@@ -181,10 +181,11 @@ impl Waiter {
                                 *aw.action() == Action::AddLink(link_add.clone().link().clone())
                             });
                         }
-                        Entry::LinkRemove(_link_remove) => {
+                        Entry::LinkRemove(link_remove) => {
                             checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
                             checker.add(move |aw| {
-                                *aw.action() == Action::RemoveLink(link_add.clone().link().clone())
+                                *aw.action()
+                                    == Action::RemoveLink(link_remove.clone().link().clone())
                             });
                         }
                         _ => (),

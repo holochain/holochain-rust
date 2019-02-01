@@ -143,7 +143,7 @@ impl Waiter {
     }
 
     /// Alter state based on signals that come in, if a checker is registered.
-    /// A checker gets registered if a ControlSender was passed in from TestContainer.
+    /// A checker gets registered if a ControlSender was passed in from TestConductor.
     /// Some signals add a "condition", which is a function looking for other signals.
     /// When one of those "checkee" signals comes in, it removes the checker from the state.
     pub fn process_signal(&mut self, sig: Signal) {
@@ -252,15 +252,15 @@ impl Waiter {
     }
 }
 
-/// This Task is started with the TestContainer and is stopped with the TestContainer.
+/// This Task is started with the TestConductor and is stopped with the TestConductor.
 /// It runs in a Node worker thread, receiving Signals and running them through
-/// the Waiter. Each TestContainer spawns its own MainBackgroundTask.
+/// the Waiter. Each TestConductor spawns its own MainBackgroundTask.
 pub struct MainBackgroundTask {
-    /// The Receiver<Signal> for the Container
+    /// The Receiver<Signal> for the Conductor
     signal_rx: SignalReceiver,
     /// The Waiter is in a RefCell because perform() uses an immutable &self reference
     waiter: RefCell<Waiter>,
-    /// This Mutex is flipped from true to false from within the TestContainer
+    /// This Mutex is flipped from true to false from within the TestConductor
     is_running: Arc<Mutex<bool>>,
 }
 

@@ -1,0 +1,47 @@
+{
+  "name": "@holochain/holochain-nodejs",
+  "version": "0.3.0",
+  "description": "Nodejs Holochain Conductor primarily for test execution",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/holochain/holochain-rust.git"
+  },
+  "main": "index.js",
+  "author": "Holochain Core Dev Team <devcore@holochain.org>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "scripts": {
+    "compile": "neon build --release",
+    "clean": "neon clean",
+    "test": "faucet test/*"
+  },
+  "dependencies": {
+    "faucet": "^0.0.1",
+    "neon-cli": "^0.2.0",
+    "node-pre-gyp": "^0.11.0"
+  },
+  "devDependencies": {
+    "neon-cli": "^0.2.0",
+    "shelljs": "^0.8.2",
+    "tape": "^4.9.2"
+  },
+  "binary": {
+    "module_name": "index",
+    "module_path": "./bin-package",
+    "host": "https://github.com/holochain/holochain-rust/releases/download/",
+    "remote_path": "holochain-nodejs-v{version}"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

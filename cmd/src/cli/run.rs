@@ -1,9 +1,9 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
-use holochain_container_api::{
+use holochain_conductor_api::{
     config::*,
-    container::{mount_container_from_config, CONTAINER},
+    conductor::{mount_conductor_from_config, CONDUCTOR},
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
@@ -16,7 +16,7 @@ const DNA_CONFIG_ID: &str = "hc-run-dna";
 const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
-/// Starts a small container with the current application running
+/// Starts a small conductor with the current application running
 pub fn run(
     package: bool,
     port: u16,
@@ -122,22 +122,22 @@ pub fn run(
         ..Default::default()
     };
 
-    mount_container_from_config(base_config);
-    let mut container_guard = CONTAINER.lock().unwrap();
-    let container = container_guard.as_mut().expect("Container must be mounted");
+    mount_conductor_from_config(base_config);
+    let mut conductor_guard = CONDUCTOR.lock().unwrap();
+    let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
 
-    container
+    conductor
         .load_config()
         .map_err(|err| format_err!("{}", err))?;
 
-    container.start_all_interfaces();
-    container.start_all_instances()?;
+    conductor.start_all_interfaces();
+    conductor.start_all_instances()?;
 
     println!(
-        "Holochain development container started. Running {} server on port {}",
+        "Holochain development conductor started. Running {} server on port {}",
         interface_type, port
     );
-    println!("Type 'exit' to stop the container and exit the program");
+    println!("Type 'exit' to stop the conductor and exit the program");
 
     let mut rl = rustyline::Editor::<()>::new();
 
@@ -183,12 +183,12 @@ mod tests {
             .args(&["run", "--package"])
             .output()
             .expect("should run");
-        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m bundle file at \\\"bundle.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development container started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the container and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"\\u{1b}[1;32mCreated\\u{1b}[0m bundle file at \\\"bundle.json\\\"\\nStarting instance \\\"test-instance\\\"...\\nHolochain development conductor started. Running websocket server on port 8888\\nType \\\'exit\\\' to stop the conductor and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
 
         let output = run2_cmd
             .args(&["run", "--interface", "http"])
             .output()
             .expect("should run");
-        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"Starting instance \\\"test-instance\\\"...\\nHolochain development container started. Running http server on port 8888\\nType \\\'exit\\\' to stop the container and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
+        assert_eq!(format!("{:?}",output),"Output { status: ExitStatus(ExitStatus(256)), stdout: \"Starting instance \\\"test-instance\\\"...\\nHolochain development conductor started. Running http server on port 8888\\nType \\\'exit\\\' to stop the conductor and exit the program\\n\", stderr: \"Error: EOF\\n\" }");
     }
 }

@@ -2,7 +2,7 @@ use crate::{cas::content::Address, dna::fn_declarations::Trait};
 use std::collections::BTreeMap;
 
 /// A bridge is the definition of a connection to another DNA that runs under the same agency,
-/// i.e. in the same container.
+/// i.e. in the same conductor.
 ///
 /// Defining a bridge means that the code in this DNA can call zome functions of that other
 /// DNA.
@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 /// by defining the capabilities that other DNA has to provide in order to be usable as bridge.
 ///
 /// Bridges can be required or optional. If a required bridge DNA is not installed this DNA
-/// can't run, so required bridges are hard dependencies that have to be enforced by the container.
+/// can't run, so required bridges are hard dependencies that have to be enforced by the conductor.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 pub struct Bridge {
     /// Required or optional
@@ -34,8 +34,8 @@ pub struct Bridge {
 ///   during build-time
 /// * we want to build a complex system of components that should be pluggable.
 /// Bridges can therefore also be specified by capabilities (read traits or interfaces).
-/// That means we specify a list of functions with their signatures and allow the container
-/// (through the container bridge config) to resolve this bridge by any DNA instance that
+/// That means we specify a list of functions with their signatures and allow the conductor
+/// (through the conductor bridge config) to resolve this bridge by any DNA instance that
 /// implements all specified functions, just like a dynamic binding of function calls.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
 #[serde(untagged)]

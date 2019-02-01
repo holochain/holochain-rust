@@ -1,3 +1,3 @@
-cd nodejs_container
+cd nodejs_conductor
 yarn install --ignore-scripts
 node ./publish.js

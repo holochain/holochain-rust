@@ -38,10 +38,10 @@ let
   '';
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
-  hc-install-cmd = nixpkgs.writeShellScriptBin "hc-install-cmd" "cargo build -p hc --release && cargo install -f --path cmd";
-  hc-install-conductor = nixpkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
+  hc-install-cli = nixpkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
+  hc-install-conductor = nixpkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain_conductor --release && cargo install -f --path conductor";
 
-  hc-test-cmd = nixpkgs.writeShellScriptBin "hc-test-cmd" "cd cmd && cargo test";
+  hc-test-cli = nixpkgs.writeShellScriptBin "hc-test-cli" "cd cli && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
   hc-test-node-conductor = nixpkgs.writeShellScriptBin "hc-test-node-conductor" "cd nodejs_conductor && npm test";
 
@@ -110,11 +110,11 @@ stdenv.mkDerivation rec {
     hc-install-tarpaulin
     hc-tarpaulin
 
-    hc-install-cmd
+    hc-install-cli
     hc-install-conductor
     hc-install-node-conductor
 
-    hc-test-cmd
+    hc-test-cli
     hc-test-app-spec
     hc-test-node-conductor
 
@@ -151,7 +151,7 @@ stdenv.mkDerivation rec {
   RUSTUP_TOOLCHAIN = "nightly-${date}";
 
   shellHook = ''
-   # needed for install cmd and tarpaulin
+   # needed for install cli and tarpaulin
    export PATH=$PATH:~/.cargo/bin;
    export HC_TARGET_PREFIX=~/nix-holochain/
   '';

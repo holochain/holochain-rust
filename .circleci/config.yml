@@ -19,12 +19,12 @@ jobs:
    - checkout
 
    - run:
-       name: install cmd
-       command: nix-shell --run hc-install-cmd
+       name: install cli
+       command: nix-shell --run hc-install-cli
 
    - run:
-      name: test cmd
-      command: nix-shell --run hc-test-cmd
+      name: test cli
+      command: nix-shell --run hc-test-cli
 
    - run:
        name: install node conductor

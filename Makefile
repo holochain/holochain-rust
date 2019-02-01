@@ -2,9 +2,9 @@
 # currently only supports 'debug' builds
 
 .PHONY: all install help
-all: build_holochain build_cmd build_nodejs
+all: build_holochain build_cli build_nodejs
 
-install: install_cmd build_nodejs
+install: install_cli build_nodejs
 
 help:
 	@echo "run 'make' to build all the libraries and binaries, and the nodejs bin-package"
@@ -13,8 +13,8 @@ help:
 	@echo "run 'make test_app_spec' to build and test app_spec API tests"
 	@echo "run 'make clean' to clean up the build environment"
 	@echo "run 'make test_holochain' to test holochain builds"
-	@echo "run 'make test_cmd' to build and test the command line tool builds"
-	@echo "run 'make install_cmd' to build and install the command line tool builds"
+	@echo "run 'make test_cli' to build and test the command line tool builds"
+	@echo "run 'make install_cli' to build and install the command line tool builds"
 	@echo "run 'make test-something' to run cargo tests matching 'something'"
 
 SHELL = /bin/bash
@@ -146,7 +146,7 @@ ${C_BINDING_DIRS}:
 	cd $@; $(MAKE)
 
 # execute all tests: holochain, command-line tools, app spec, nodejs conductor, and "C" bindings
-test: test_holochain test_cmd test_app_spec c_binding_tests ${C_BINDING_TESTS}
+test: test_holochain test_cli test_app_spec c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
 	RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
@@ -156,11 +156,11 @@ test_holochain: build_holochain
 test-%: build_holochain
 	RUSTFLAGS="-D warnings" $(CARGO) test $* -- --nocapture
 
-test_cmd: build_cmd
-	cd cmd && RUSTFLAGS="-D warnings" $(CARGO) test
+test_cli: build_cli
+	cd cli && RUSTFLAGS="-D warnings" $(CARGO) test
 
 test_app_spec: RUST_VERSION=$(CORE_RUST_VERSION)
-test_app_spec: version_rustup ensure_wasm_target install_cmd build_nodejs_conductor
+test_app_spec: version_rustup ensure_wasm_target install_cli build_nodejs_conductor
 	cd app_spec && ./build_and_test.sh
 
 build_nodejs_conductor: RUST_VERSION=$(CORE_RUST_VERSION)
@@ -184,17 +184,17 @@ wasm_build: ensure_wasm_target
 build_holochain: core_toolchain wasm_build
 	$(CARGO) build --all --exclude hc
 
-.PHONY: build_cmd
-build_cmd: core_toolchain ensure_wasm_target
+.PHONY: build_cli
+build_cli: core_toolchain ensure_wasm_target
 	$(CARGO) build -p hc
 
 .PHONY: build_nodejs
 build_nodejs:
 	cd nodejs_conductor && npm run compile && mkdir -p bin-package && cp native/index.node bin-package
 
-.PHONY: install_cmd
-install_cmd: build_cmd
-	cd cmd && $(CARGO) install -f --path .
+.PHONY: install_cli
+install_cli: build_cli
+	cd cli && $(CARGO) install -f --path .
 
 .PHONY: code_coverage
 code_coverage: core_toolchain wasm_build install_ci

@@ -66,7 +66,7 @@ The [container crate](container) uses the [container_api](container_api) to impl
 The [nodejs_container](nodejs_container) directory implements a node package that creates a container that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
 
 ### HC Command-line developer tool.
-The [cmd crate](cmd) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a containter.  For more details see the [crate README](cmd/README.md).
+The [cli crate](cli) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a containter.  For more details see the [crate README](cli/README.md).
 
 ## App Spec Driven Development
 We use a practice for coordinating additions and features that starts with adding a feature to a sample application so that we know we have a working example all the times.  You can read about [the details here](/CONTRIBUTING.md#app-spec-driven-development)
@@ -80,7 +80,7 @@ There is a work-in-progress book of documentation being written about `holochain
 
 **The following instructions are for developing Holochain Core or the HDK itself**
 
-There are two components needed currently to run Holochain applications, the core (what's in this repo) and also [the networking engine](https://github.com/holochain/n3h).  You can install and work on core using the built-in mock network following the instructions below, but if you want to actually test out your apps using the real networking, you will have to install [the networking component](https://github.com/holochain/n3h) following the instructions in the readme there.  (Note: please see the instructions in the [`hc` command-line tool readme](./cmd/README.md#using-real-networking) or the [container readme](./container/README.md#using-real-networking) for how to configure the tools to use and activate the networking component.
+There are two components needed currently to run Holochain applications, the core (what's in this repo) and also [the networking engine](https://github.com/holochain/n3h).  You can install and work on core using the built-in mock network following the instructions below, but if you want to actually test out your apps using the real networking, you will have to install [the networking component](https://github.com/holochain/n3h) following the instructions in the readme there.  (Note: please see the instructions in the [`hc` command-line tool readme](./cli/README.md#using-real-networking) or the [container readme](./container/README.md#using-real-networking) for how to configure the tools to use and activate the networking component.
 
 There are three approaches to building and testing Holochain: using `make`, `docker` or `nix`:
 
@@ -157,7 +157,7 @@ nix-shell --run hc-test
 Note that there are also make commands for running the tests of just core, or the command-line line tools or app_spec separately:
 
 ``` shell
-make test_cmd
+make test_cli
 make test_holochain
 make test_app_spec
 make build_nodejs_container

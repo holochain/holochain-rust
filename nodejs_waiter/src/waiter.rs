@@ -180,15 +180,13 @@ impl Waiter {
                     (_, Action::ExecuteZomeFunction(call)) => match self.sender_rx.try_recv() {
                         Ok(sender) => {
                             self.add_call(call.clone(), sender);
-                            self.current_checker()
-                                .unwrap()
-                                .add(num_instances, move |aw| {
-                                    if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
-                                        r.call() == call
-                                    } else {
-                                        false
-                                    }
-                                });
+                            self.current_checker().unwrap().add(1, move |aw| {
+                                if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
+                                    r.call() == call
+                                } else {
+                                    false
+                                }
+                            });
                         }
                         Err(_) => {
                             self.deactivate_current();
@@ -196,7 +194,6 @@ impl Waiter {
                         }
                     },
 
-                    // TODO: limit to App entry?
                     (Some(checker), Action::Commit((entry, _))) => match entry.clone() {
                         Entry::App(_, _) => {
                             // TODO: is there a possiblity that this can get messed up if the same

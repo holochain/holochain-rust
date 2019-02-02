@@ -56,10 +56,10 @@ define_zome! {
             handler: blog::handle_create_post
         }
 
-        handle_delete_post: {
+        delete_post: {
             inputs: |content: String, in_reply_to: Option<Address>|,
             outputs: |result: ZomeApiResult<Address>|,
-            handler: blog::handle_create_post
+            handler: blog::handle_delete_post
         }
 
         posts_by_agent: {

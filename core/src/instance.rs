@@ -197,7 +197,7 @@ impl Instance {
             *state = new_state;
         }
 
-        // @TODO: add a big fat debug logger here
+        context.log(format!("debug/reduce: {:?}", action_wrapper.action()));
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers

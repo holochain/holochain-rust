@@ -45,14 +45,14 @@ _windows_template: &_windows_template
   - NODE_PATH="/c/Program Files (x86)\Nodist\bin\node_modules;$NODE_PATH"
   - PATH="$PATH:/c/Program Files (x86)/Nodist/bin"
 
-_unix_nodejs_container_template: &_unix_nodejs_container_template
+_unix_nodejs_conductor_template: &_unix_nodejs_conductor_template
   before_install:
     # install our own nodejs to get a reasonable version
     - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
     - curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1
     - export PATH=$HOME/.yarn/bin:$PATH
   script:
-    - make build_nodejs_container
+    - make build_nodejs_conductor
   # manually cache as we manually install rustup
   # https://docs.travis-ci.com/user/caching/#rust-cargo-cache
   cache:
@@ -104,14 +104,14 @@ _nodejs_deploy_template: &_nodejs_deploy_template
       directories:
           - node_modules
   script:
-      - ./scripts/build_nodejs_container.sh
+      - ./scripts/build_nodejs_conductor.sh
   # deploy the node-pre-gyp binary to github releases so it's there when the npm package is installed
   deploy:
       provider: releases
       api_key:
           secure: nrLixlb3mlfRoxBDp5+fBV3I81N2LhJIj7hIB+fg0RT452w0+hHuTCn79NJ4tN4M2DlENlS9o+no3wzGw/CRUuyW2/4BKQQ24B1Obf7gMQJD4p0NE8uX9SZ7er08Ndc5HjC0ZfIBTB53GKI/j5gv9vmM9qcrdeGMtCAzuM10WJBgesT7TCNrrD0iPXYtPfzyNMJXtu8VrRMBZt3dW2wrvUy73CujVECbH4BbFKOEl/EQ9Gyi8KkSSKZoeXLXHMJiuMTBrDVlUY69m9o37X6MePHmpFSDiykPGsYa8hAQcWnCY9a9LORq7scbqYeTBEVijS58jfiVPQM/tC7LPhWNPgZ2jw0V7t+tM6tTYpJjIiAf83rnNwd6I+uhjWd7QuJvgo7LfZKcSCEIW4MYgcaK14QuJv4e+tbzrJNqkskIHYcSAF5Zzvc7CkyTO5wEnfNsiKDKLmdVvgMzAxyBfT+7J0msBOvqLirSPGXJcYRpZT0kSDwfgYyqRw3gXOjUgtONS+nC3MiV/vZ74c53qt/37R2+GmDRpB4viEiYTHGZmM4woXUF58Jg6mgaLjMJaI80DbTUr8pKudNtS31EWCP0EdNflzv5Ewlu/CwAmPA0AHuk5ZyvQNtQFERVw80nP7g210Layj6rLKMvEMgiecLgw1VmzOEoGPnMksnyJpplyqA=
       file_glob: true
-      file: nodejs_container/bin-package/*.tar.gz
+      file: nodejs_conductor/bin-package/*.tar.gz
       skip_cleanup: true
       # publish only if we're building a tag and if the PERFORM_NODE_DEPLOY is set to 1
       on:
@@ -119,7 +119,7 @@ _nodejs_deploy_template: &_nodejs_deploy_template
           condition: $PERFORM_NODE_DEPLOY = 1
       name: $TRAVIS_TAG
 
-_windows_nodejs_container_template: &_windows_nodejs_container_template
+_windows_nodejs_conductor_template: &_windows_nodejs_conductor_template
   install:
     - choco upgrade yarn
     - export PATH="/c/Program Files (x86)/Yarn/bin:$PATH"
@@ -129,7 +129,7 @@ _windows_nodejs_container_template: &_windows_nodejs_container_template
     - npm config set msvs_version 2015
     - yarn config set msvs_version 2015 --global
   script:
-      - sh ./scripts/build_nodejs_container.sh
+      - sh ./scripts/build_nodejs_conductor.sh
 # nodejs specific deployment templates stop here
 
 # holochain-cmd deploy template
@@ -156,8 +156,8 @@ _cmd_deploy_template: &_cmd_deploy_template
         tags: true
     name: $TRAVIS_TAG
 
-# holochain-container deploy template
-_container_deploy_template: &_container_deploy_template
+# holochain-conductor deploy template
+_conductor_deploy_template: &_conductor_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
@@ -165,16 +165,16 @@ _container_deploy_template: &_container_deploy_template
   before_script:
     - . ./scripts/install/release-deps-auto.sh
   script:
-    - cargo rustc --manifest-path container/Cargo.toml --target $TARGET --release -- -C lto
-    - mkdir container-$TRAVIS_TAG-$TARGET
-    - cp target/$TARGET/release/holochain_container container/LICENSE container/README.md container-$TRAVIS_TAG-$TARGET/
-    - tar czf container-$TRAVIS_TAG-$TARGET.tar.gz container-$TRAVIS_TAG-$TARGET/
+    - cargo rustc --manifest-path conductor/Cargo.toml --target $TARGET --release -- -C lto
+    - mkdir conductor-$TRAVIS_TAG-$TARGET
+    - cp target/$TARGET/release/holochain_conductor conductor/LICENSE conductor/README.md conductor-$TRAVIS_TAG-$TARGET/
+    - tar czf conductor-$TRAVIS_TAG-$TARGET.tar.gz conductor-$TRAVIS_TAG-$TARGET/
   deploy:
     provider: releases
     api_key:
         secure: nrLixlb3mlfRoxBDp5+fBV3I81N2LhJIj7hIB+fg0RT452w0+hHuTCn79NJ4tN4M2DlENlS9o+no3wzGw/CRUuyW2/4BKQQ24B1Obf7gMQJD4p0NE8uX9SZ7er08Ndc5HjC0ZfIBTB53GKI/j5gv9vmM9qcrdeGMtCAzuM10WJBgesT7TCNrrD0iPXYtPfzyNMJXtu8VrRMBZt3dW2wrvUy73CujVECbH4BbFKOEl/EQ9Gyi8KkSSKZoeXLXHMJiuMTBrDVlUY69m9o37X6MePHmpFSDiykPGsYa8hAQcWnCY9a9LORq7scbqYeTBEVijS58jfiVPQM/tC7LPhWNPgZ2jw0V7t+tM6tTYpJjIiAf83rnNwd6I+uhjWd7QuJvgo7LfZKcSCEIW4MYgcaK14QuJv4e+tbzrJNqkskIHYcSAF5Zzvc7CkyTO5wEnfNsiKDKLmdVvgMzAxyBfT+7J0msBOvqLirSPGXJcYRpZT0kSDwfgYyqRw3gXOjUgtONS+nC3MiV/vZ74c53qt/37R2+GmDRpB4viEiYTHGZmM4woXUF58Jg6mgaLjMJaI80DbTUr8pKudNtS31EWCP0EdNflzv5Ewlu/CwAmPA0AHuk5ZyvQNtQFERVw80nP7g210Layj6rLKMvEMgiecLgw1VmzOEoGPnMksnyJpplyqA=
     file_glob: true
-    file: container-$TRAVIS_TAG-$TARGET.tar.gz
+    file: conductor-$TRAVIS_TAG-$TARGET.tar.gz
     skip_cleanup: true
     on:
         tags: true
@@ -229,11 +229,11 @@ jobs:
        - TEST_PATH=wasm_utils/
        - WASM_PATH=wasm-test/integration-test/
 
-    - name: "windows container_api"
+    - name: "windows conductor_api"
       <<: *_windows_template_lite
       env:
-       - TEST_P=holochain_container_api
-       - TEST_PATH=container_api/
+       - TEST_P=holochain_conductor_api
+       - TEST_PATH=conductor_api/
        - WASM_PATH=wasm-test/
        - WASM_PATH_2=test-bridge-caller/
 
@@ -349,35 +349,35 @@ jobs:
         - TARGET=x86_64-pc-windows-gnu
         - CRATE_NAME=hc
 
-# holochain-container releases section
-    - name: "CONTAINER DEPLOY - 64 bit Linux"
-      <<: *_container_deploy_template
+# holochain-conductor releases section
+    - name: "CONDUCTOR DEPLOY - 64 bit Linux"
+      <<: *_conductor_deploy_template
       env:
         - TARGET=x86_64-unknown-linux-gnu
-        - CRATE_NAME=container
+        - CRATE_NAME=conductor
       os: linux
 
-    - name: "CONTAINER DEPLOY - 64 bit OSX"
-      <<: *_container_deploy_template
+    - name: "CONDUCTOR DEPLOY - 64 bit OSX"
+      <<: *_conductor_deploy_template
       env:
         - TARGET=x86_64-apple-darwin
-        - CRATE_NAME=container
+        - CRATE_NAME=conductor
       os: osx
-    - name: "CONTAINER DEPLOY - 64 bit Windows MSVC"
-      <<: *_container_deploy_template
+    - name: "CONDUCTOR DEPLOY - 64 bit Windows MSVC"
+      <<: *_conductor_deploy_template
       os: windows
       rust: nightly-2019-01-24-x86_64-pc-windows-msvc
       env:
         - TARGET=x86_64-pc-windows-msvc
-        - CRATE_NAME=container
+        - CRATE_NAME=conductor
 
-    - name: "CONTAINER DEPLOY - 64 bit Windows GNU"
-      <<: *_container_deploy_template
+    - name: "CONDUCTOR DEPLOY - 64 bit Windows GNU"
+      <<: *_conductor_deploy_template
       os: windows
       rust: nightly-2019-01-24-x86_64-pc-windows-gnu
       env:
         - TARGET=x86_64-pc-windows-gnu
-        - CRATE_NAME=container
+        - CRATE_NAME=conductor
 
     # holochain-nodejs releases section
     - name: "Linux - Node 8"
@@ -385,44 +385,44 @@ jobs:
       <<: *_to_deploy_template
       <<: *_env_node_8_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_unix_nodejs_container_template
+      <<: *_unix_nodejs_conductor_template
     - name: "Linux - Node 10"
       <<: *_linux_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_10_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_unix_nodejs_container_template
+      <<: *_unix_nodejs_conductor_template
     - name: "Linux - Node 11"
       <<: *_linux_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_11_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_unix_nodejs_container_template
+      <<: *_unix_nodejs_conductor_template
 
     - name: "OSX - Node 8"
       <<: *_macosx_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_8_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_unix_nodejs_container_template
+      <<: *_unix_nodejs_conductor_template
     - name: "OSX - Node 10"
       <<: *_macosx_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_10_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_unix_nodejs_container_template
+      <<: *_unix_nodejs_conductor_template
     - name: "OSX - Node 11"
       <<: *_macosx_nodejs_template
       <<: *_to_deploy_template
       <<: *_env_node_11_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_unix_nodejs_container_template
+      <<: *_unix_nodejs_conductor_template
 
     - name: "Windows - Node 8"
       <<: *_windows_template
       <<: *_to_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_windows_nodejs_container_template
+      <<: *_windows_nodejs_conductor_template
       env:
         - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
         - NODIST_X64=1
@@ -432,7 +432,7 @@ jobs:
       <<: *_windows_template
       <<: *_to_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_windows_nodejs_container_template
+      <<: *_windows_nodejs_conductor_template
       env:
         - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
         - NODIST_X64=1
@@ -442,7 +442,7 @@ jobs:
       <<: *_windows_template
       <<: *_to_deploy_template
       <<: *_nodejs_deploy_template
-      <<: *_windows_nodejs_container_template
+      <<: *_windows_nodejs_conductor_template
       env:
         - NODIST_PREFIX="/c/Program Files (x86)\Nodist"
         - NODIST_X64=1

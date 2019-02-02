@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Headers from other agents are stored in the EAV
 - `hdk::get_entry_results` supports return of ChainHeaders for all agents who have committed the same entry
+- `cmd` crate (which implements the `hc` command line tool) renamed to `cli`
 - Encoded values in ribosome function's input/output are u64 (up from u32)
 - Capabilities now separated from function declarations in `define_zome!` and calling zome functions no longer uses capability name parameter [#791](https://github.com/holochain/holochain-rust/pull/779)
 - Updated dependencies:

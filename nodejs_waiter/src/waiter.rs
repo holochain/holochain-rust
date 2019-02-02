@@ -26,7 +26,8 @@ pub enum ControlMsg {
 }
 
 /// A predicate function which examines an ActionWrapper to see if it is
-/// the one it's looking for
+/// the one it's looking for. `count` specifies how many of this Action to
+/// look for before being satisfied.
 struct CallFxCondition {
     count: usize,
     predicate: Box<Fn(&ActionWrapper) -> bool + 'static + Send>,
@@ -37,20 +38,22 @@ impl CallFxCondition {
         Self { count, predicate }
     }
 
+    /// If the predicate is satisfied, decrement the total number of checks
     pub fn run(&mut self, aw: &ActionWrapper) {
         if (self.predicate)(aw) {
             self.count -= 1;
         }
     }
 
+    /// The true if the predicate returned `true` `count` times
     pub fn satisfied(&self) -> bool {
         self.count == 0
     }
 }
 
-/// A set of closures, each of which checks for a certain condition to be met
-/// (usually for a certain action to be seen). When the condition specified by the closure
-/// is met, that closure is removed from the set of checks.
+/// A set of `CallFxCondition`s, each of which checks for a certain condition to be met
+/// (usually for a certain action to be seen) a certain number of times.
+/// When the condition specified is satisfied, it is removed from the set of checks.
 ///
 /// When the set of checks goes from non-empty to empty, send a message via `tx`
 /// to the `CallBlockingTask` on the other side
@@ -177,6 +180,7 @@ impl Waiter {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
+                    // Pair every `ExecuteZomeFunction` with one `ReturnZomeFunctionResult`
                     (_, Action::ExecuteZomeFunction(call)) => match self.sender_rx.try_recv() {
                         Ok(sender) => {
                             self.add_call(call.clone(), sender);
@@ -195,6 +199,7 @@ impl Waiter {
                     },
 
                     (Some(checker), Action::Commit((entry, _))) => match entry.clone() {
+                        // Pair every `Commit` with N `Hold`s
                         Entry::App(_, _) => {
                             // TODO: is there a possiblity that this can get messed up if the same
                             // entry is committed multiple times?
@@ -202,6 +207,7 @@ impl Waiter {
                                 *aw.action() == Action::Hold(entry.clone())
                             });
                         }
+                        // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s
                         Entry::LinkAdd(link_add) => {
                             checker.add(num_instances, move |aw| {
                                 *aw.action() == Action::Hold(entry.clone())
@@ -210,6 +216,7 @@ impl Waiter {
                                 *aw.action() == Action::AddLink(link_add.clone().link().clone())
                             });
                         }
+                        // Pair every `LinkRemove` with N `Hold`s
                         Entry::LinkRemove(_link_remove) => {
                             checker.add(num_instances, move |aw| {
                                 *aw.action() == Action::Hold(entry.clone())

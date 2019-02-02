@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-  "cmd",
+  "cli",
   "container",
   "container_api",
   "core_api_c_binding",

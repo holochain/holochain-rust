@@ -379,7 +379,7 @@ mod tests {
 
         // Assert for equality
         // TODO add .hcignore file itself to the bundle so that source and dest folders are the same
-        // @see https://github.com/holochain/holochain-cmd/issues/38
+        // @see https://github.com/holochain/holochain-cli/issues/38
         // assert!(!dir_diff::is_different(&source_path, &dest_path).unwrap());
     }
 

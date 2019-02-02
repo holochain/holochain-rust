@@ -16,7 +16,9 @@ use holochain_core::{
     signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent}, dna::capabilities::CapabilityCall, entry::Entry,
+    cas::content::{Address, AddressableContent},
+    dna::capabilities::CapabilityCall,
+    entry::Entry,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -93,7 +95,8 @@ declare_types! {
                 tc.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
                     tc.container.start_all_instances().map_err(|e| e.to_string()).map(|_| {
                         await_held_agent_ids(tc.container.config(), &signal_rx);
-                        let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone());
+                        let num_instances = tc.container.instances().len();
+                        let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone(), num_instances);
                         background_task.schedule(js_callback);
                         tc.is_started = true;
 

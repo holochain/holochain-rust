@@ -126,6 +126,18 @@ fn big_string_output_static_test() {
 }
 
 #[test]
+fn big_string_output_dynamic_test() {
+    let s = call_zome_function_with_hc("big_string_output_dynamic", RawString::from("")).unwrap();
+    let expected = "◦•●◉✿ ъﻨց օuէթuէ รէгﻨռց ժկռﻪოﻨ८ﻪllկ ﻪժժ ოկ թﻪցεร թlȥ ✿◉●•◦".repeat((U16_MAX * 12) as usize);
+    println!("{:?}", s);
+    assert_eq!(String::from(s).len(), expected.len());
+    assert_eq!(
+        Ok(JsonString::from(expected)),
+        call_zome_function_with_hc("big_string_output_dynamic", RawString::from("")),
+    );
+}
+
+#[test]
 pub fn round_trip_foo_test() {
     assert_eq!(
         Ok(JsonString::from("foo")),

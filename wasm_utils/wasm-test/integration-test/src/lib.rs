@@ -26,6 +26,8 @@ use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::holochain_core_types::bits_n_pieces::U16_MAX;
 use wasmi::MemoryInstance;
 use wasmi::memory_units::Pages;
+use wasmi::memory_units::Bytes;
+use wasmi::memory_units::RoundUpTo;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedAllocation;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
@@ -201,6 +203,41 @@ pub extern "C" fn big_string_output_static(_: RibosomeEncodingBits) -> RibosomeE
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
     }
 
+}
+
+#[no_mangle]
+pub extern "C" fn big_string_output_dynamic(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    // let s = "◦•●◉✿ ъﻨց օuէթuէ รէгﻨռց ժկռﻪოﻨ८ﻪllկ ﻪժժ ოկ թﻪցεร թlȥ ✿◉●•◦".repeat((U16_MAX * 1) as usize);
+    let s = "foo".repeat((U16_MAX * 1) as usize);
+
+    // let stack = WasmStack::default();
+
+    let memory = match MemoryInstance::alloc(Pages(1), None) {
+        Ok(memory) => memory,
+        Err(_) => return AllocationError::BadStackAlignment.as_ribosome_encoding(),
+    };
+
+    let top_bytes = Bytes((s.as_bytes().len() as MemoryInt) as usize);
+    let top_pages: Pages = top_bytes.round_up_to();
+    let current_pages: Pages = memory.current_size();
+
+    if current_pages < top_pages {
+        match memory.grow(top_pages - current_pages) {
+            Ok(_) => {},
+            Err(_) => return AllocationError::BadStackAlignment.as_ribosome_encoding(),
+        }
+    }
+
+    let allocation = match WasmAllocation::new((0 as MemoryInt).into(), (s.as_bytes().len() as MemoryInt).into()) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    };
+
+    if let Err(_) = memory.set(allocation.offset().into(), s.as_bytes()) {
+        return AllocationError::ZeroLength.as_ribosome_encoding();
+    };
+
+    allocation.as_ribosome_encoding()
 }
 
 #[no_mangle]

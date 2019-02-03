@@ -51,7 +51,7 @@ An HDK for [Assemblyscript](https://github.com/Assemblyscript/assemblyscript) is
 We expect many more languages to be added by the community, and there is even an article on how to [write a kit for a new language](https://developer.holochain.org/guide/latest/writing_development_kit.html).
 
 ### Conductor API
-*Core* only implements the logic for the execution of a single application. Because the Holochain app ecosystem relies on DNA composibility, we need to be able to load and instantiate multiple DNAs.  We call an executable that can do this an *conductor*.  The first such conductors we implemented were the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) conductor which we used for running javascript based tests.
+*Core* only implements the logic for the execution of a single application. Because the Holochain app ecosystem relies on DNA composibility, we need to be able to load and instantiate multiple DNAs.  We call an executable that can do this a *Conductor*.  The first such Conductors we implemented were the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) Conductor which we used for running javascript based tests.
 
 These gave us the experience from which we abstracted the [conductor_api](conductor_api) crate which specifies and implements a standard way for building conductors, including specifying the various interfaces that might be available for executing calls on a particular DNA, i.e. websockets, HTTP, Unix domain sockets, carrier pigeon network, etc...
 

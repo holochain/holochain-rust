@@ -29,7 +29,7 @@ This `holochain-rust` repository implements a number of distinct yet overlapping
 1. A library and syntax for use in Rust based development of Zomes within DNAs, called Holochain Development Kit: [*hdk-rust*](#hdk-rust)
 1. A library for managing instances and connecting them to interfaces: [*conductor-api*](#conductor-api)
 1. A Rust based Conductor that uses the conductor_api: [*conductor*](#rust-conductor)
-1. A nodejs based conductor for running tests: [*nodejs-conductor*](#nodejs-conductor)
+1. A nodejs based Conductor for running tests: [*nodejs-conductor*](#nodejs-conductor)
 1. A command line developer tool: [*hc*](#hc-command-line-developer-tool)
 1. A sample application that we use to demonstrate the current functionality and drive development: [*app-spec*](#app-spec-driven-development)
 

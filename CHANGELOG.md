@@ -4,6 +4,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- core now depends on `pretty_assertions` crate
 - `ChainHeader::sources()` is now `ChainHeader::provenances()`
 - Headers from other agents are stored in the EAV
 - `hdk::get_entry_results` supports return of ChainHeaders for all agents who have committed the same entry

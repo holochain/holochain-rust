@@ -81,7 +81,7 @@ pub mod tests {
         // Get header which we need to trigger hold_entry_workflow
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state
-            .get_header_for_entry(&entry)
+            .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
         let entry_with_header = EntryWithHeader { entry, header };
 

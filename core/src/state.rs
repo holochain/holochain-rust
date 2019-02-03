@@ -162,8 +162,12 @@ impl State {
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
     pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
-        let chain_header = self.agent().get_header_for_entry_address(&entry_address);
-        let maybe_header_address = chain_header.clone().map(|h| h.address());
+        let headers: Vec<ChainHeader> = self
+            .agent()
+            .iter_chain()
+            .filter(|h| h.entry_address() == &entry_address)
+            .collect();
+        let header_addresses: Vec<Address> = headers.iter().map(|h| h.address()).collect();
         let mut dht_headers = self
             .dht()
             .meta_storage()
@@ -180,7 +184,7 @@ impl State {
             // get the header addresses
             .map(|eavi| eavi.value())
             // don't include the chain header twice
-            .filter(|a| maybe_header_address.as_ref() != Some(a))
+            .filter(|a| !header_addresses.contains(a))
             // fetch the header content from CAS
             .map(|a| self.dht().content_storage().read().unwrap().fetch(&a))
             // rearrange
@@ -192,9 +196,11 @@ impl State {
                     .map(|content| ChainHeader::try_from_content(&content))
                     .collect::<Result<Vec<_>, _>>()
             })??;
-        let mut headers: Vec<_> = chain_header.into_iter().collect();
-        headers.append(&mut dht_headers);
-        Ok(headers)
+        {
+            let mut all_headers = headers;
+            all_headers.append(&mut dht_headers);
+            Ok(all_headers)
+        }
     }
 }
 

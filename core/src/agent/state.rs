@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
-    agent::chain_store::ChainStore,
+    agent::chain_store::{ChainStore, ChainStoreIterator},
     context::Context,
     state::State,
     workflows::get_entry_result::get_entry_result_workflow,
@@ -63,6 +63,10 @@ impl AgentState {
         self.top_chain_header.clone()
     }
 
+    pub fn iter_chain(&self) -> ChainStoreIterator {
+        self.chain.iter(&self.top_chain_header)
+    }
+
     pub fn get_agent_address(&self) -> HcResult<Address> {
         self.chain()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
@@ -90,16 +94,10 @@ impl AgentState {
         }
     }
 
-    pub fn get_header_for_entry(&self, entry: &Entry) -> Option<ChainHeader> {
+    pub fn get_most_recent_header_for_entry(&self, entry: &Entry) -> Option<ChainHeader> {
         self.chain()
             .iter_type(&self.top_chain_header(), &entry.entry_type())
             .find(|h| h.entry_address() == &entry.address())
-    }
-
-    pub fn get_header_for_entry_address(&self, entry_address: &Address) -> Option<ChainHeader> {
-        self.chain()
-            .iter(&self.top_chain_header())
-            .find(|h| h.entry_address() == entry_address)
     }
 }
 

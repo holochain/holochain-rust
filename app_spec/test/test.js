@@ -33,14 +33,17 @@ scenario1.runTape('show_env', async (t, { alice }) => {
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
   const params = {content: 'whatever', in_reply_to: null}
   const address = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
+  const address1 = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
   const address2 = await bob.callSync('blog', 'create_post', params).then(x => x.Ok)
   const address3 = await carol.callSync('blog', 'create_post', params).then(x => x.Ok)
+  t.equal(address, address1)
   t.equal(address, address2)
   t.equal(address, address3)
   const sources1 = alice.call('blog', 'get_sources', {address}).Ok.sort()
   const sources2 = bob.call('blog', 'get_sources', {address}).Ok.sort()
   const sources3 = carol.call('blog', 'get_sources', {address}).Ok.sort()
-  const expected = [alice.agentId, bob.agentId, carol.agentId].sort()
+  // NB: alice shows up twice because she published the same entry twice
+  const expected = [alice.agentId, alice.agentId, bob.agentId, carol.agentId].sort()
   t.deepEqual(sources1, expected)
   t.deepEqual(sources2, expected)
   t.deepEqual(sources3, expected)

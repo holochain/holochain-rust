@@ -27,12 +27,34 @@ pub enum ControlMsg {
 }
 
 /// A predicate function which examines an ActionWrapper to see if it is
-/// the one it's looking for
-type CallFxCondition = Box<Fn(&ActionWrapper) -> bool + 'static + Send>;
+/// the one it's looking for. `count` specifies how many of this Action to
+/// look for before being satisfied.
+struct CallFxCondition {
+    count: usize,
+    predicate: Box<Fn(&ActionWrapper) -> bool + 'static + Send>,
+}
 
-/// A set of closures, each of which checks for a certain condition to be met
-/// (usually for a certain action to be seen). When the condition specified by the closure
-/// is met, that closure is removed from the set of checks.
+impl CallFxCondition {
+    pub fn new(count: usize, predicate: Box<Fn(&ActionWrapper) -> bool + 'static + Send>) -> Self {
+        Self { count, predicate }
+    }
+
+    /// If the predicate is satisfied, decrement the total number of checks
+    pub fn run(&mut self, aw: &ActionWrapper) {
+        if (self.predicate)(aw) {
+            self.count -= 1;
+        }
+    }
+
+    /// The true if the predicate returned `true` `count` times
+    pub fn satisfied(&self) -> bool {
+        self.count == 0
+    }
+}
+
+/// A set of `CallFxCondition`s, each of which checks for a certain condition to be met
+/// (usually for a certain action to be seen) a certain number of times.
+/// When the condition specified is satisfied, it is removed from the set of checks.
 ///
 /// When the set of checks goes from non-empty to empty, send a message via `tx`
 /// to the `CallBlockingTask` on the other side
@@ -49,11 +71,12 @@ impl CallFxChecker {
         }
     }
 
-    pub fn add<F>(&mut self, f: F) -> ()
+    pub fn add<F>(&mut self, count: usize, f: F) -> ()
     where
         F: Fn(&ActionWrapper) -> bool + 'static + Send,
     {
-        self.conditions.push(Box::new(f));
+        self.conditions
+            .push(CallFxCondition::new(count, Box::new(f)));
         println!(
             "\n*** Condition {}: {} -> {}",
             "ADDED".green(),
@@ -65,7 +88,10 @@ impl CallFxChecker {
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
         let was_empty = self.conditions.is_empty();
         let size = self.conditions.len();
-        self.conditions.retain(|condition| !condition(aw));
+        for condition in &mut self.conditions {
+            condition.run(aw)
+        }
+        self.conditions.retain(|condition| !condition.satisfied());
         if size != self.conditions.len() {
             println!(
                 "\n*** Condition {}: {} -> {}",
@@ -132,14 +158,16 @@ pub struct Waiter {
     checkers: HashMap<ZomeFnCall, CallFxChecker>,
     current: Option<ZomeFnCall>,
     sender_rx: Receiver<ControlSender>,
+    num_instances: usize,
 }
 
 impl Waiter {
-    pub fn new(sender_rx: Receiver<ControlSender>) -> Self {
+    pub fn new(sender_rx: Receiver<ControlSender>, num_instances: usize) -> Self {
         Self {
             checkers: HashMap::new(),
             current: None,
             sender_rx,
+            num_instances,
         }
     }
 
@@ -148,14 +176,16 @@ impl Waiter {
     /// Some signals add a "condition", which is a function looking for other signals.
     /// When one of those "checkee" signals comes in, it removes the checker from the state.
     pub fn process_signal(&mut self, sig: Signal) {
+        let num_instances = self.num_instances;
         match sig {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
+                    // Pair every `ExecuteZomeFunction` with one `ReturnZomeFunctionResult`
                     (_, Action::ExecuteZomeFunction(call)) => match self.sender_rx.try_recv() {
                         Ok(sender) => {
                             self.add_call(call.clone(), sender);
-                            self.current_checker().unwrap().add(move |aw| {
+                            self.current_checker().unwrap().add(1, move |aw| {
                                 if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
                                     r.call() == call
                                 } else {
@@ -169,32 +199,34 @@ impl Waiter {
                         }
                     },
 
-                    // TODO: limit to App entry?
                     (Some(checker), Action::Commit((committed_entry, _))) => {
                         match committed_entry.clone() {
+                            // Pair every `Commit` with N `Hold`s
                             Entry::App(_, _) => {
                                 // TODO: is there a possiblity that this can get messed up if the same
                                 // entry is committed multiple times?
-                                checker.add(move |aw| match aw.action() {
+                                checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
                                         *entry == committed_entry
                                     }
                                     _ => false,
                                 });
                             }
+                            // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s
                             Entry::LinkAdd(link_add) => {
-                                checker.add(move |aw| match aw.action() {
+                                checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
                                         *entry == committed_entry
                                     }
                                     _ => false,
                                 });
-                                checker.add(move |aw| {
+                                checker.add(num_instances, move |aw| {
                                     *aw.action() == Action::AddLink(link_add.clone().link().clone())
                                 });
                             }
+                            // Pair every `LinkRemove` with N `Hold`s
                             Entry::LinkRemove(_link_remove) => {
-                                checker.add(move |aw| match aw.action() {
+                                checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
                                         *entry == committed_entry
                                     }
@@ -287,10 +319,11 @@ impl MainBackgroundTask {
         signal_rx: SignalReceiver,
         sender_rx: Receiver<ControlSender>,
         is_running: Arc<Mutex<bool>>,
+        num_instances: usize,
     ) -> Self {
         let this = Self {
             signal_rx,
-            waiter: RefCell::new(Waiter::new(sender_rx)),
+            waiter: RefCell::new(Waiter::new(sender_rx, num_instances)),
             is_running,
         };
         this
@@ -403,7 +436,7 @@ mod tests {
 
     fn test_waiter() -> (Waiter, SyncSender<ControlSender>) {
         let (sender_tx, sender_rx) = sync_channel(1);
-        let waiter = Waiter::new(sender_rx);
+        let waiter = Waiter::new(sender_rx, 1);
         (waiter, sender_tx)
     }
 

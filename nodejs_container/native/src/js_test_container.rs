@@ -148,11 +148,11 @@ declare_types! {
                 if !tc.is_started {
                     panic!("TestContainer: cannot use call() before start()");
                 }
-                let cap = Some(CapabilityCall::new(
+                let cap = CapabilityCall::new(
                     Address::from("fake_token"), //FIXME
                     Address::from("fake_sender"), //FIXME
                     CallSignature::default(),
-                ));
+                );
                 let instance_arc = tc.container.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();

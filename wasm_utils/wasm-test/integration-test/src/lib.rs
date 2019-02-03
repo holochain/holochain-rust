@@ -26,6 +26,7 @@ use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::holochain_core_types::bits_n_pieces::U16_MAX;
 use wasmi::MemoryInstance;
 use wasmi::memory_units::Pages;
+use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedAllocation;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
@@ -130,6 +131,24 @@ pub extern "C" fn stacked_strings(_: RibosomeEncodingBits) -> RibosomeEncodingBi
     };
 
     first.as_ribosome_encoding()
+}
+
+#[no_mangle]
+// returns the length of the input string so we can verify externally how much data was sent in
+pub extern "C" fn big_string_input(big_string: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    let input_allocation = match WasmAllocation::try_from(RibosomeEncodedAllocation::from(big_string)) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    };
+
+    let mut stack = WasmStack::default();
+
+    let allocation = match stack.write_string(&format!("{:?}", input_allocation.read_to_string().len())) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    };
+
+    allocation.as_ribosome_encoding()
 }
 
 #[no_mangle]

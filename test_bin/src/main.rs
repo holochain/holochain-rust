@@ -18,6 +18,7 @@ pub mod constants;
 pub mod p2p_node;
 pub mod publish_hold_workflows;
 
+use constants::*;
 use holochain_net_connection::NetResult;
 use p2p_node::P2pNode;
 
@@ -31,11 +32,13 @@ lazy_static! {
         basic_workflows::send_test,
         basic_workflows::dht_test,
         basic_workflows::meta_test,
-        publish_hold_workflows::empty_publish_data_list_test,
-        publish_hold_workflows::publish_list_test,
+        publish_hold_workflows::empty_publish_entry_list_test,
+        publish_hold_workflows::publish_entry_list_test,
         publish_hold_workflows::publish_meta_list_test,
-        publish_hold_workflows::hold_list_test,
+        publish_hold_workflows::hold_entry_list_test,
         publish_hold_workflows::hold_meta_list_test,
+        publish_hold_workflows::double_publish_entry_list_test,
+        publish_hold_workflows::double_publish_meta_list_test,
     ];
 }
 
@@ -87,12 +90,17 @@ fn launch_two_nodes_test_with_ipc_mock(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = P2pNode::new_with_spawn_ipc_network(
-        "alex".to_string(),
+        ALEX_AGENT_ID.to_string(),
+        DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
-    let mut billy = P2pNode::new_with_uri_ipc_network("billy".to_string(), &alex.endpoint());
+    let mut billy = P2pNode::new_with_uri_ipc_network(
+        BILLY_AGENT_ID.to_string(),
+        DNA_ADDRESS.clone(),
+        &alex.endpoint(),
+    );
 
     println!("IPC-MOCK TWO NODE TEST");
     println!("======================");
@@ -109,8 +117,14 @@ fn launch_two_nodes_test_with_ipc_mock(
 // Do general test with config
 #[cfg_attr(tarpaulin, skip)]
 fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResult<()> {
-    let mut alex = P2pNode::new_with_unique_memory_network("alex".to_string());
-    let mut billy = P2pNode::new_with_config("billy".to_string(), &alex.config, None);
+    let mut alex =
+        P2pNode::new_with_unique_memory_network(ALEX_AGENT_ID.to_string(), DNA_ADDRESS.clone());
+    let mut billy = P2pNode::new_with_config(
+        BILLY_AGENT_ID.to_string(),
+        DNA_ADDRESS.clone(),
+        &alex.config,
+        None,
+    );
 
     println!("IN-MEMORY TWO NODE TEST");
     println!("=======================");
@@ -133,13 +147,15 @@ fn launch_two_nodes_test(
 ) -> NetResult<()> {
     // Create two nodes
     let mut alex = P2pNode::new_with_spawn_ipc_network(
-        "alex".to_string(),
+        ALEX_AGENT_ID.to_string(),
+        DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
-        "billy".to_string(),
+        BILLY_AGENT_ID.to_string(),
+        DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],

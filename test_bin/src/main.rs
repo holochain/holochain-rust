@@ -146,6 +146,7 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
         None,
     );
 
+    println!("");
     print_two_nodes_test_name("IN-MEMORY TWO NODE TEST", test_fn);
     println!("=======================");
     test_fn(&mut alex, &mut billy, false)?;
@@ -180,6 +181,7 @@ fn launch_two_nodes_test_with_ipc_mock(
         &alex.endpoint(),
     );
 
+    println!("");
     print_two_nodes_test_name("IPC-MOCK TWO NODE TEST: ", test_fn);
     println!("======================");
     test_fn(&mut alex, &mut billy, false)?;
@@ -216,10 +218,11 @@ fn launch_two_nodes_test(
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
 
+    println!("");
     print_two_nodes_test_name("N3H TWO NODE TEST: ", test_fn);
-    println!("====================");
+    println!("=================");
     test_fn(&mut alex, &mut billy, true)?;
-    println!("===============");
+    println!("============");
     print_two_nodes_test_name("N3H TEST END: ", test_fn);
     println!("");
     // Kill nodes
@@ -253,6 +256,7 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
     );
 
     // Launch test
+    println!("");
     print_three_nodes_test_name("IN-MEMORY THREE NODE TEST: ", test_fn);
     println!("=========================");
     test_fn(&mut alex, &mut billy, &mut camille,false)?;
@@ -296,6 +300,7 @@ fn launch_three_nodes_test_with_ipc_mock(
         &alex.endpoint(),
     );
 
+    println!("");
     print_three_nodes_test_name("IPC-MOCK THREE NODE TEST: ", test_fn);
     println!("========================");
     test_fn(&mut alex, &mut billy, &mut camille, false)?;
@@ -340,10 +345,11 @@ fn launch_three_nodes_test(
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
 
+    println!("");
     print_three_nodes_test_name("N3H THREE NODE TEST: ", test_fn);
-    println!("======================");
+    println!("===================");
     test_fn(&mut alex, &mut billy, &mut camille, true)?;
-    println!("===============");
+    println!("============");
     print_three_nodes_test_name("N3H TEST END: ", test_fn);
     println!("");
     // Kill nodes

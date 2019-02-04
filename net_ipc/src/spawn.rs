@@ -85,8 +85,12 @@ pub fn ipc_spawn(
 
     println!("READY! {} {:?}", out.ipc_binding, out.p2p_bindings);
 
+    // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {
-        child.kill().expect("failed to kill ipc sub-process")
+            match child.kill() {
+                Ok(()) => (),
+                Err(e) => println!("failed to kill ipc sub-process: {:?}", e),
+            };
     }));
 
     Ok(out)

@@ -6,6 +6,7 @@ use crate::{
 use error::HolochainInstanceError;
 use holochain_core_types::error::HolochainError;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 pub trait ContainerUiAdmin {
     fn install_ui_bundle_from_file(
@@ -35,9 +36,12 @@ impl ContainerUiAdmin for Container {
     ) -> Result<(), HolochainError> {
         let path = match copy {
             true => {
-                let dest = self.config_path().join("static").join(id);
-                fs_extra::dir::copy(&path, &dest, &fs_extra::dir::CopyOptions::new())
-                    .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
+                let dest = self.config.persistence_dir.join("static").join(id);
+
+                Arc::get_mut(&mut self.ui_dir_copier).unwrap()(&path, &dest).map_err(|e| {
+                    HolochainError::ErrorGeneric(format!("Error copying DNA from {} to {}: {}", 
+                        path.display(), dest.display(), e))
+                })?;
                 dest
             }
             false => path,
@@ -164,9 +168,17 @@ impl ContainerUiAdmin for Container {
 
 #[cfg(test)]
 pub mod tests {
+    use container::base::UiDirCopier;
     use super::*;
     use container::admin::tests::*;
     use std::{fs::File, io::Read};
+
+    pub fn test_ui_copier() -> UiDirCopier {
+        let copier = Box::new(|_source: &PathBuf, _dest: &PathBuf| {
+            Ok(())
+        }) as Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>;
+        Arc::new(copier)
+    }
 
     #[test]
     fn test_install_ui_bundle_from_file() {
@@ -212,10 +224,13 @@ root_dir = '.'"#,
         assert_eq!(config_contents, toml,)
     }
 
-    #[test]
+   #[test]
     fn test_install_ui_bundle_from_file_and_copy() {
         let test_name = "test_install_ui_bundle_from_file_and_copy";
         let mut container = create_test_container(test_name, 3100);
+
+        container.ui_dir_copier = test_ui_copier();
+
         let bundle_path = PathBuf::from(".");
         assert_eq!(
             container.install_ui_bundle_from_file(
@@ -232,6 +247,8 @@ root_dir = '.'"#,
         file.read_to_string(&mut config_contents)
             .expect("Could not read temp config file");
 
+        let dest = container.config.persistence_dir.join("static").join("test-bundle-id");
+
         let mut toml = empty_bridges();
         toml = add_line(toml, persistence_dir(test_name));
         toml = add_line(toml, empty_ui_interfaces());
@@ -246,10 +263,10 @@ root_dir = '.'"#,
             String::from(
                 r#"[[ui_bundles]]
 hash = '<not-used>'
-id = 'test-bundle-id'
-root_dir = '.'"#,
+id = 'test-bundle-id'"#,
             ),
         );
+        toml = add_line(toml, format!("root_dir = '{}'", dest.display()));
         toml = add_block(toml, logger());
         toml = format!("{}\n", toml);
 

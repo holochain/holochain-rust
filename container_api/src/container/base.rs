@@ -80,6 +80,7 @@ pub struct Container {
     pub(in crate::container) static_servers: HashMap<String, StaticServer>,
     pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::container) dna_loader: DnaLoader,
+    pub(in crate::container) ui_dir_copier: UiDirCopier,    
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<JsonString>,
@@ -95,7 +96,8 @@ impl Drop for Container {
 }
 
 type SignalSender = SyncSender<Signal>;
-pub type DnaLoader = Arc<Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>>;
+pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
+pub type UiDirCopier = Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
 // preparing for having container notifiers go to one of the log streams
 pub fn notify(msg: String) {
@@ -112,6 +114,7 @@ impl Container {
             static_servers: HashMap::new(),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
+            ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
             logger: DebugLogger::new(rules),
             p2p_config: None,
@@ -447,7 +450,8 @@ impl Container {
 
                 // Get DNA
                 let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
-                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_config.file).map_err(
+                let dna_file = PathBuf::from(&dna_config.file);
+                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(
                     |_| {
                         HolochainError::ConfigError(format!(
                             "Could not load DNA file \"{}\"",
@@ -471,12 +475,28 @@ impl Container {
     }
 
     /// Default DnaLoader that actually reads files from the filesystem
-    fn load_dna(file: &String) -> Result<Dna, HolochainError> {
-        notify(format!("Reading DNA from {}", file));
+    fn load_dna(file: &PathBuf) -> Result<Dna, HolochainError> {
+        notify(format!("Reading DNA from {}", file.display()));
         let mut f = File::open(file)?;
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
         Dna::try_from(JsonString::from(contents))
+    }
+
+    fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
+        notify(format!("Copying UI from {} to {}", source.display(), dest.display()));
+        fs::create_dir_all(dest).map_err(|_| {
+            HolochainError::ErrorGeneric(
+                format!(
+                    "Could not directory structure {:?}",
+                    dest
+                )
+                .into(),
+            )
+        })?;
+        fs_extra::dir::copy(&source, &dest, &fs_extra::dir::CopyOptions::new())
+            .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
+        Ok(())
     }
 
     fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
@@ -625,13 +645,13 @@ pub mod tests {
     use test_utils::*;
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader = Box::new(|path: &String| {
-            Ok(match path.as_ref() {
+        let loader = Box::new(|path: &PathBuf| {
+            Ok(match path.to_str().unwrap().as_ref() {
                 "bridge/callee.dna" => callee_dna(),
                 "bridge/caller.dna" => caller_dna(),
                 _ => Dna::try_from(JsonString::from(example_dna_string())).unwrap(),
             })
-        }) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>;
+        }) as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
@@ -804,7 +824,7 @@ pub mod tests {
         let file_path = tempdir.path().join("test.dna.json");
         let mut tmp_file = File::create(file_path.clone()).unwrap();
         writeln!(tmp_file, "{}", example_dna_string()).unwrap();
-        match Container::load_dna(&file_path.into_os_string().into_string().unwrap()) {
+        match Container::load_dna(&file_path) {
             Ok(dna) => {
                 assert_eq!(dna.name, "my dna");
             }

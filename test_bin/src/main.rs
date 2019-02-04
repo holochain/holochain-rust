@@ -10,6 +10,7 @@ extern crate tempfile;
 extern crate lazy_static;
 #[macro_use]
 extern crate unwrap_to;
+extern crate backtrace;
 
 #[macro_use]
 pub mod predicate;
@@ -54,6 +55,24 @@ lazy_static! {
     ];
     pub static ref MULTI_NODES_TEST_FNS: Vec<MultiNodesTestFn> = vec![
     ];
+}
+
+fn print_three_nodes_test_name(print_str: &str, test_fn: ThreeNodesTestFn) {
+    print_test_name(print_str, test_fn as *mut std::os::raw::c_void);
+}
+
+fn print_two_nodes_test_name(print_str: &str, test_fn: TwoNodesTestFn) {
+    print_test_name(print_str, test_fn as *mut std::os::raw::c_void);
+}
+
+/// Print name of test function
+fn print_test_name(print_str: &str, test_fn: *mut std::os::raw::c_void) {
+    backtrace::resolve(test_fn, |symbol| {
+        let mut full_name = symbol.name().unwrap().as_str().unwrap().to_string();
+        let mut test_name = full_name.split_off("holochain_test_bin::".to_string().len());
+        test_name.push_str("()");
+        println!("{}{}", print_str, test_name);
+    });
 }
 
 // this is all debug code, no need to track code test coverage
@@ -127,11 +146,12 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
         None,
     );
 
-    println!("IN-MEMORY TWO NODE TEST");
+    print_two_nodes_test_name("IN-MEMORY TWO NODE TEST", test_fn);
     println!("=======================");
     test_fn(&mut alex, &mut billy, false)?;
     println!("==================");
-    println!("IN-MEMORY TEST END\n");
+    print_two_nodes_test_name("IN-MEMORY TEST END: ", test_fn);
+    println!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -160,11 +180,12 @@ fn launch_two_nodes_test_with_ipc_mock(
         &alex.endpoint(),
     );
 
-    println!("IPC-MOCK TWO NODE TEST");
+    print_two_nodes_test_name("IPC-MOCK TWO NODE TEST: ", test_fn);
     println!("======================");
     test_fn(&mut alex, &mut billy, false)?;
     println!("===================");
-    println!("IPC-MOCKED TEST END\n");
+    print_two_nodes_test_name("IPC-MOCKED TEST END: ", test_fn);
+    println!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -195,11 +216,12 @@ fn launch_two_nodes_test(
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
 
-    println!("NORMAL TWO NODE TEST");
+    print_two_nodes_test_name("N3H TWO NODE TEST: ", test_fn);
     println!("====================");
     test_fn(&mut alex, &mut billy, true)?;
     println!("===============");
-    println!("NORMAL TEST END\n");
+    print_two_nodes_test_name("N3H TEST END: ", test_fn);
+    println!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -231,11 +253,12 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
     );
 
     // Launch test
-    println!("IN-MEMORY THREE NODE TEST");
+    print_three_nodes_test_name("IN-MEMORY THREE NODE TEST: ", test_fn);
     println!("=========================");
     test_fn(&mut alex, &mut billy, &mut camille,false)?;
     println!("==================");
-    println!("IN-MEMORY TEST END\n");
+    print_three_nodes_test_name("IN-MEMORY TEST END: ", test_fn);
+    println!("");
 
     // Kill nodes
     alex.stop();
@@ -273,11 +296,12 @@ fn launch_three_nodes_test_with_ipc_mock(
         &alex.endpoint(),
     );
 
-    println!("IPC-MOCK THREE NODE TEST");
+    print_three_nodes_test_name("IPC-MOCK THREE NODE TEST: ", test_fn);
     println!("========================");
     test_fn(&mut alex, &mut billy, &mut camille, false)?;
     println!("===================");
-    println!("IPC-MOCKED TEST END\n");
+    print_three_nodes_test_name("IPC-MOCKED TEST END: ", test_fn);
+    println!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -316,12 +340,12 @@ fn launch_three_nodes_test(
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
 
-    println!("NORMAL THREE NODE TEST");
+    print_three_nodes_test_name("N3H THREE NODE TEST: ", test_fn);
     println!("======================");
     test_fn(&mut alex, &mut billy, &mut camille, true)?;
     println!("===============");
-    println!("NORMAL TEST END\n");
-
+    print_three_nodes_test_name("N3H TEST END: ", test_fn);
+    println!("");
     // Kill nodes
     alex.stop();
     billy.stop();

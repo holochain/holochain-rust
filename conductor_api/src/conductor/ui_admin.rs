@@ -1,6 +1,6 @@
 use crate::{
-    config::{UiBundleConfiguration, UiInterfaceConfiguration},
     conductor::{base::notify, Conductor},
+    config::{UiBundleConfiguration, UiInterfaceConfiguration},
     static_file_server::StaticServer,
 };
 use error::HolochainInstanceError;

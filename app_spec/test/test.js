@@ -63,7 +63,7 @@ scenario1.runTape('delete_post', async (t, { alice }) => {
   const content = "Holo world"
   const in_reply_to = null
   const params = { content, in_reply_to }
-  const result = alice.call("blog", "create_post", params)
+  const result = await alice.callSync("blog", "create_post", params)
   const result_delete = alice.call("blog", "delete_post", params)
   t.ok(result_delete.Ok)
   const result_list = alice.call("blog", "posts_by_agent", params)

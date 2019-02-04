@@ -27,8 +27,12 @@ use p2p_node::P2pNode;
 type TwoNodesTestFn =
     fn(alex: &mut P2pNode, billy: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
 
-type ThreeNodesTestFn =
-fn(alex: &mut P2pNode, billy: &mut P2pNode, camille: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
+type ThreeNodesTestFn = fn(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    camille: &mut P2pNode,
+    can_test_connect: bool,
+) -> NetResult<()>;
 
 type MultiNodesTestFn = fn(nodes: &mut Vec<P2pNode>, can_test_connect: bool) -> NetResult<()>;
 
@@ -113,13 +117,13 @@ fn main() {
 
     // Launch tests on each setup
     for test_fn in THREE_NODES_TEST_FNS.clone() {
-         launch_three_nodes_test_with_memory_network(test_fn).unwrap();
+        launch_three_nodes_test_with_memory_network(test_fn).unwrap();
         launch_three_nodes_test_with_ipc_mock(
             &n3h_path,
             "test_bin/data/mock_ipc_network_config.json",
             test_fn,
         )
-            .unwrap();
+        .unwrap();
         launch_three_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
     }
 
@@ -259,7 +263,7 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
     println!("");
     print_three_nodes_test_name("IN-MEMORY THREE NODE TEST: ", test_fn);
     println!("=========================");
-    test_fn(&mut alex, &mut billy, &mut camille,false)?;
+    test_fn(&mut alex, &mut billy, &mut camille, false)?;
     println!("==================");
     print_three_nodes_test_name("IN-MEMORY TEST END: ", test_fn);
     println!("");
@@ -272,7 +276,6 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
     // Done
     Ok(())
 }
-
 
 // do general test with hackmode
 #[cfg_attr(tarpaulin, skip)]

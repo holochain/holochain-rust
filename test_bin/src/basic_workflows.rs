@@ -98,7 +98,11 @@ fn confirm_published_metadata(
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
 #[cfg_attr(tarpaulin, skip)]
-pub fn setup_two_nodes(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn setup_two_nodes(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Send TrackDna message on both nodes
     alex.send(
         JsonProtocol::TrackDna(TrackDnaData {

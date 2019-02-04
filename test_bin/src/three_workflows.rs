@@ -22,9 +22,9 @@ pub fn setup_three_nodes(
             dna_address: DNA_ADDRESS.clone(),
             agent_id: ALEX_AGENT_ID.to_string(),
         })
-            .into(),
+        .into(),
     )
-        .expect("Failed sending TrackDnaData on alex");
+    .expect("Failed sending TrackDnaData on alex");
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
@@ -36,7 +36,7 @@ pub fn setup_three_nodes(
                 dna_address: DNA_ADDRESS.clone(),
                 agent_id: BILLY_AGENT_ID.to_string(),
             })
-                .into(),
+            .into(),
         )
         .expect("Failed sending TrackDnaData on billy");
     let connect_result_2 = billy
@@ -50,7 +50,7 @@ pub fn setup_three_nodes(
                 dna_address: DNA_ADDRESS.clone(),
                 agent_id: CAMILLE_AGENT_ID.to_string(),
             })
-                .into(),
+            .into(),
         )
         .expect("Failed sending TrackDnaData on camille");
     let connect_result_3 = camille
@@ -89,9 +89,11 @@ pub fn setup_three_nodes(
                 node2_binding = state.bindings[0].clone();
             }
         });
-        one_let!(JsonProtocol::GetStateResult(_state) = camille_state {
+        one_let!(
+            JsonProtocol::GetStateResult(_state) = camille_state {
             // n/a
-        });
+        }
+        );
 
         // Connect nodes between them
         println!("Connect Alex to Billy ({})", node2_binding);
@@ -99,7 +101,7 @@ pub fn setup_three_nodes(
             JsonProtocol::Connect(ConnectData {
                 peer_address: node2_binding.clone().into(),
             })
-                .into(),
+            .into(),
         )?;
         // Make sure Peers are connected
         let result_a = alex
@@ -123,7 +125,7 @@ pub fn setup_three_nodes(
             JsonProtocol::Connect(ConnectData {
                 peer_address: node2_binding.into(),
             })
-                .into(),
+            .into(),
         )?;
         // Make sure Peers are connected
         let result_a = alex
@@ -158,7 +160,6 @@ pub fn setup_three_nodes(
     Ok(())
 }
 
-
 /// Reply with some data in hold_list
 #[cfg_attr(tarpaulin, skip)]
 pub fn hold_and_publish_test(
@@ -184,15 +185,15 @@ pub fn hold_and_publish_test(
     // Have billy author the same data
     billy.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
 
-//    // Should NOT receive a HandleStoreEntry request from network module?
-//    let maybe_request = alex
-//        .find_recv_msg(
-//            0,
-//            Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))),
-//        );
-//    assert!(maybe_request.is_none());
-//    let maybe_request = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))), 2000);
-//    assert!(maybe_request.is_none());
+    //    // Should NOT receive a HandleStoreEntry request from network module?
+    //    let maybe_request = alex
+    //        .find_recv_msg(
+    //            0,
+    //            Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))),
+    //        );
+    //    assert!(maybe_request.is_none());
+    //    let maybe_request = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))), 2000);
+    //    assert!(maybe_request.is_none());
 
     // Camille requests that entry
     camille.request_entry(ENTRY_ADDRESS_1.clone());

@@ -87,10 +87,10 @@ pub fn ipc_spawn(
 
     // Set shutdown function to kill the sub-process
     out.kill = Some(Box::new(move || {
-            match child.kill() {
-                Ok(()) => (),
-                Err(e) => println!("failed to kill ipc sub-process: {:?}", e),
-            };
+        match child.kill() {
+            Ok(()) => (),
+            Err(e) => println!("failed to kill ipc sub-process: {:?}", e),
+        };
     }));
 
     Ok(out)

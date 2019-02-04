@@ -2,7 +2,6 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use futures::executor::block_on;
 use holochain_core_types::{cas::content::Address, entry::Entry, error::HolochainError};
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -27,7 +26,9 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     };
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> =
-        block_on(author_entry(&entry, None, &runtime.context));
+        runtime
+            .context
+            .block_on(author_entry(&entry, None, &runtime.context));
 
     runtime.store_result(task_result)
 }

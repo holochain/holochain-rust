@@ -11,10 +11,10 @@ use std::{
     sync::{mpsc::Receiver, Arc, RwLock},
 };
 
-use conductor::{ConductorAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver,
+    InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use serde_json::map::Map;
 
@@ -598,6 +598,142 @@ impl ConductorApiBuilder {
             let bridges =
                 conductor_call!(|c| Ok(c.config().bridges) as Result<Vec<Bridge>, String>)?;
             Ok(serde_json::to_value(bridges).map_err(|_| jsonrpc_core::Error::internal_error())?)
+        });
+
+        self
+    }
+
+    /// Adds a further set of functions to the Conductor RPC for managing
+    /// static UI bundles and HTTP interfaces to these.
+    /// This adds the following RPC endpoints:
+    ///
+    /// - `admin/ui/install`
+    ///     Install a UI bundle that can later be hosted by an interface
+    ///     Params:
+    ///     - `id` ID used to refer to this bundle
+    ///     - `root_dir` Directory to host on the HTTP server
+    ///     
+    /// - `admin/ui/uninstall`
+    ///     Uninstall and remove from the config a UI bundle by ID. This will also stop and remove
+    ///     any ui interfaces that are serving this bundle
+    ///     Params:
+    ///     - `id` ID of the UI bundle to remove
+    ///     
+    /// - `admin/ui/list`
+    ///     List all the currently installed UI bundles
+    ///
+    /// - `admin/ui_interface/add`
+    ///     Add a new UI interface to serve a given bundle on a particular port.
+    ///     This can also optionally specify a dna_interface which this UI should connect to.
+    ///     If a dna_interface is included then the route /_dna_connections.json will be available and
+    ///     to instruct the UI as to where it should connect
+    ///     Params:
+    ///     - `id` ID used to refer to this ui interface
+    ///     - `port` Port to host the HTTP server on
+    ///     - `bundle` UI bundle to serve on this port
+    ///     - `dna_interface` DNA interface this UI can connect to (Optional)
+    ///     
+    /// - `admin/ui_interface/remove`
+    ///     Remove an interface by ID
+    ///     Params:
+    ///     - `id` ID of the UI interface to remove
+    ///     
+    /// - `admin/ui_interface/list`
+    ///     List all the UI interfaces
+    ///     
+    /// - `admin/ui_interface/start`
+    ///     Start a UI interface given an ID
+    ///     Params:
+    ///     - `id` ID of the UI interface to start
+    ///     
+    /// - `admin/ui_interface/stop`
+    ///     Stop a UI interface given an ID
+    ///     Params:
+    ///     - `id` ID of the UI interface to stop    
+    ///     
+    pub fn with_admin_ui_functions(mut self) -> Self {
+        self.io.add_method("admin/ui/install", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let root_dir = Self::get_as_string("root_dir", &params_map)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.install_ui_bundle_from_file(
+                PathBuf::from(root_dir),
+                &id,
+                false
+            ))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/ui/uninstall", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            container_call!(|c| c.uninstall_ui_bundle(&id))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io.add_method("admin/ui/list", move |_| {
+            let ui_bundles = container_call!(
+                |c| Ok(c.config().ui_bundles) as Result<Vec<UiBundleConfiguration>, String>
+            )?;
+            Ok(serde_json::Value::Array(
+                ui_bundles.iter().map(|bundle| json!(bundle)).collect(),
+            ))
+        });
+
+        self.io.add_method("admin/ui_interface/add", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let id = Self::get_as_string("id", &params_map)?;
+            let port = u16::try_from(Self::get_as_int("port", &params_map)?).map_err(|_| {
+                jsonrpc_core::Error::invalid_params(String::from(
+                    "`port` has to be a 16bit integer",
+                ))
+            })?;
+            let bundle = Self::get_as_string("bundle", &params_map)?;
+            let dna_interface = Self::get_as_string("dna_interface", &params_map).ok();
+
+            container_call!(|c| c.add_ui_interface(UiInterfaceConfiguration {
+                id,
+                port,
+                bundle,
+                dna_interface
+            }))?;
+            Ok(json!({"success": true}))
+        });
+
+        self.io
+            .add_method("admin/ui_interface/remove", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                container_call!(|c| c.remove_ui_interface(&id))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io
+            .add_method("admin/ui_interface/start", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                container_call!(|c| c.start_ui_interface(&id))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io
+            .add_method("admin/ui_interface/stop", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let id = Self::get_as_string("id", &params_map)?;
+                container_call!(|c| c.stop_ui_interface(&id))?;
+                Ok(json!({"success": true}))
+            });
+
+        self.io.add_method("admin/ui_interface/list", move |_| {
+            let ui_interfaces =
+                container_call!(|c| Ok(c.config().ui_interfaces)
+                    as Result<Vec<UiInterfaceConfiguration>, String>)?;
+            Ok(serde_json::Value::Array(
+                ui_interfaces
+                    .iter()
+                    .map(|ui_interface| json!(ui_interface))
+                    .collect(),
+            ))
         });
 
         self

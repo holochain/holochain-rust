@@ -1,6 +1,7 @@
 use conductor::base::notify;
 use config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration};
 use error::HolochainResult;
+use holochain_core_types::error::HolochainError;
 use hyper::{
     http::{response::Builder, uri},
     rt::Future,
@@ -151,15 +152,17 @@ impl StaticServer {
         Ok(())
     }
 
-    pub fn stop(&mut self) -> Result<(), String> {
+    pub fn stop(&mut self) -> HolochainResult<()> {
         match self.shutdown_signal.clone() {
             Some(shutdown_signal) => {
-                shutdown_signal.send(()).map_err(|e| e.to_string())?;
+                shutdown_signal
+                    .send(())
+                    .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
                 self.running = false;
                 self.shutdown_signal = None;
                 Ok(())
             }
-            None => Err("server is already stopped".into()),
+            None => Err(HolochainError::ErrorGeneric("server is already stopped".into()).into()),
         }
     }
 }

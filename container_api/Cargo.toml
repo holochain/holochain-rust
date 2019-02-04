@@ -39,6 +39,7 @@ json-patch = "0.2.2"
 hyper = "0.12.21"
 hyper-staticfile = "0.3.0"
 tokio = "0.1.14"
+fs_extra = "1.1"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
@@ -47,4 +48,4 @@ clap = "2"
 structopt = "0.2"
 tempfile = "3"
 reqwest = "0.9"
-pretty_assertions = "0.5.1"
+pretty_assertions = "*"

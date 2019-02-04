@@ -516,10 +516,10 @@ pub mod tests {
     use std::{convert::TryFrom, env::current_dir, fs::File, io::Read};
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader =
-            Box::new(
-                |_: &String| Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap()),
-            ) as Box<FnMut(&String) -> Result<Dna, HolochainError> + Send + Sync>;
+        let loader = Box::new(|_: &PathBuf| {
+            Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
+        })
+            as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 
@@ -637,7 +637,7 @@ pattern = '.*'"#
             .to_string()
     }
 
-    fn add_block(base: String, new_block: String) -> String {
+    pub fn add_block(base: String, new_block: String) -> String {
         format!("{}\n\n{}", base, new_block)
     }
 
@@ -646,8 +646,7 @@ pattern = '.*'"#
     }
 
     pub fn test_toml(test_name: &str, port: u32) -> String {
-        let mut toml = empty_bridges();
-        toml = add_line(toml, persistence_dir(test_name));
+        let mut toml = header_block(test_name);
 
         toml = add_block(toml, agent1());
         toml = add_block(toml, agent2());
@@ -659,7 +658,7 @@ pattern = '.*'"#
         toml
     }
 
-    fn create_test_container(test_name: &str, port: u32) -> Container {
+    pub fn create_test_container(test_name: &str, port: u32) -> Container {
         let config = load_configuration::<Configuration>(&test_toml(test_name, port)).unwrap();
         let mut container = Container::from_config(config.clone());
         container.dna_loader = test_dna_loader();
@@ -686,7 +685,7 @@ pattern = '.*'"#
         );
 
         let new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.hcpkg")).unwrap();
 
         assert_eq!(container.config().dnas.len(), 2,);
 
@@ -753,7 +752,7 @@ id = 'new-dna'"#,
         );
 
         let new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.hcpkg")).unwrap();
 
         assert_eq!(container.config().dnas.len(), 2,);
 
@@ -816,7 +815,7 @@ id = 'new-dna'"#,
         );
 
         let mut new_dna =
-            Arc::get_mut(&mut test_dna_loader()).unwrap()(&String::from("new-dna.hcpkg")).unwrap();
+            Arc::get_mut(&mut test_dna_loader()).unwrap()(&PathBuf::from("new-dna.hcpkg")).unwrap();
         let original_hash = new_dna.address();
         new_dna.properties = new_props;
         let new_hash = new_dna.address();

@@ -37,6 +37,7 @@ impl ZomeFnCall {
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
+    println!("invoke_call 1");
 
     let input = match ZomeFnCallArgs::try_from(args_str.clone()) {
         Ok(input) => input,
@@ -50,7 +51,10 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         }
     };
 
+    println!("invoke_call 2");
+
     let result = if input.instance_handle == String::from(THIS_INSTANCE) {
+        println!("invoke_call 3");
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(input.clone());
 
@@ -58,24 +62,33 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         if zome_call.same_fn_as(&runtime.zome_call) {
             return ribosome_error_code!(RecursiveCallForbidden);
         }
+        println!("invoke_call 4");
         local_call(runtime, input)
     } else {
+        println!("invoke_call 5");
         bridge_call(runtime, input)
     };
+    println!("invoke_call 6");
 
     runtime.store_result(result)
 }
 
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     // ZomeFnCallArgs to ZomeFnCall
+    println!("local_call 1");
     let zome_call = ZomeFnCall::from_args(input);
+    println!("local_call 2");
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
+    println!("local_call 3");
 
     let tick_rx = runtime.context.create_observer();
+    println!("local_call 4");
     crate::instance::dispatch_action(runtime.context.action_channel(), action_wrapper);
+    println!("local_call 5");
 
     loop {
+        println!("local_call loop");
         if let Some(result) = runtime
             .context
             .state()
@@ -83,8 +96,10 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
             .nucleus()
             .zome_call_result(&zome_call)
         {
+            println!("local_call result");
             return result;
         } else {
+            println!("local_call wait");
             let _ = tick_rx.recv_timeout(Duration::from_millis(10));
         }
     }

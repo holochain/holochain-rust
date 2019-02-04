@@ -28,7 +28,7 @@ pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
 pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     match dht_meta_data.attribute.as_ref() {
         "link" => {
-            context.log("debug/net/handle: HandleStoreDhtMeta: got LINK. processing...");
+            context.log("debug/net/handle: HandleStoreMeta: got LINK. processing...");
             let entry_with_header: EntryWithHeader = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content)
                     .expect("dht_meta_data should be EntryWithHader"),
@@ -42,7 +42,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
             });
         }
         STATUS_NAME => {
-            context.log("debug/net/handle: HandleStoreDhtMeta: got CRUD status. processing...");
+            context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
             let _crud_status: CrudStatus = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content)
                     .expect("dht_meta_data should be crud_status"),
@@ -51,7 +51,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
             // FIXME: block_on hold crud_status metadata in DHT?
         }
         LINK_NAME => {
-            context.log("debug/net/handle: HandleStoreDhtMeta: got CRUD LINK. processing...");
+            context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
             let _crud_link: Address = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content)
                     .expect("dht_meta_data should be crud_link"),

@@ -346,6 +346,7 @@ pub fn get_latest(
         .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), Some(&eav.entity())))
         .filter(|e| {
             let prefixes = index_query.prefixes();
+            //find a better way of handling tags with prefixes already
             let attribute_without_prefix =
                 prefixes.iter().fold(eav.attribute(), |attribute, prefix| {
                     if eav.attribute().starts_with(prefix) {

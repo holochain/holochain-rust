@@ -26,6 +26,7 @@ use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use holochain_wasm_utils::holochain_core_types::bits_n_pieces::U16_MAX;
 use wasmi::MemoryInstance;
 use wasmi::memory_units::Pages;
+use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedAllocation;
 
 #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
 struct TestStruct {
@@ -130,6 +131,54 @@ pub extern "C" fn stacked_strings(_: RibosomeEncodingBits) -> RibosomeEncodingBi
     };
 
     first.as_ribosome_encoding()
+}
+
+#[no_mangle]
+// returns the length of the input string so we can verify externally how much data was sent in
+pub extern "C" fn big_string_input(big_string: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    let input_allocation = match WasmAllocation::try_from(RibosomeEncodedAllocation::from(big_string)) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    };
+
+    let mut stack = WasmStack::default();
+
+    let allocation = match stack.write_string(&format!("{:?}", input_allocation.read_to_string().len())) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    };
+
+    allocation.as_ribosome_encoding()
+}
+
+#[no_mangle]
+pub extern "C" fn big_string_process_static(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+
+    let mut stack = WasmStack::default();
+
+    let memory = match MemoryInstance::alloc(Pages(1), None) {
+        Ok(memory) => memory,
+        Err(_) => return AllocationError::OutOfBounds.as_ribosome_encoding(),
+    };
+
+    if memory.grow(Pages(3)).is_err() {
+        return AllocationError::OutOfBounds.as_ribosome_encoding();
+    }
+
+    // @TODO we can't handle UTF-8 in wasm??
+    // @see https://github.com/holochain/holochain-rust/issues/933
+    // let input = "╰▐ ✖ 〜 ✖ ▐╯".repeat((U16_MAX * 1) as usize);
+    let input = "foo".repeat((U16_MAX * 1) as usize);
+
+    let allocation = match stack.write_string(&input) {
+        Ok(allocation) => allocation,
+        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
+    };
+
+    assert_eq!(input, allocation.read_to_string());
+
+    allocation.as_ribosome_encoding()
+
 }
 
 #[no_mangle]

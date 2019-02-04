@@ -61,8 +61,7 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 scenario1.runTape('delete_post', async (t, { alice }) => {
 
   const content = "Holo world"
-  const in_reply_to = null
-  const params = { content, in_reply_to }
+  const params = { content}
   const result = alice.call("blog", "create_post", params)
   const result_delete = alice.call("blog", "delete_post", params)
   t.ok(result_delete.Ok)

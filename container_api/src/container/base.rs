@@ -235,6 +235,8 @@ impl Container {
                 "attempt to spawn network when not configured".to_string(),
             ))?;
 
+        let opaque_net_config = String::from("{}");
+
         println!(
             "Spawning network with working directory: {}",
             network_config.n3h_persistence_path
@@ -250,6 +252,7 @@ impl Container {
                 network_config.n3h_path.clone()
             )],
             network_config.n3h_persistence_path.clone(),
+            opaque_net_config,
             hashmap! {
                 String::from("N3H_MODE") => network_config.n3h_mode.clone(),
                 String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),

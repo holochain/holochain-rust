@@ -52,7 +52,7 @@
     - [WebSockets](./json_rpc_websockets.md)
   - [Real Networking](./real_networking.md)
   - [Container Admin](./container_admin.md)
-- [(E) Building Holochain Apps: User Interfaces](./apps_user_interfaces.md)
+- [Building Holochain Apps: User Interfaces](./apps_user_interfaces.md)
 - [(E) Going Live with Holochain Apps](./live_hc_apps.md)
   - [(E) Creating Versioned Releases](./creating_versioned_releases.md)
 - [(E) Building Holochain Apps: Advanced Topics](./apps_advanced_topics.md)

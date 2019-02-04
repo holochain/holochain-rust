@@ -54,7 +54,7 @@ impl NetConnectionThread {
             send_endpoint
                 .send(endpoint)
                 .expect("Sending endpoint address should work.");
-            drop(send_endpoint);
+            // drop(send_endpoint);
             // Loop as long owner wants to
             let mut sleep_duration_us = 100_u64;
             while can_keep_running_child.load(Ordering::Relaxed) {

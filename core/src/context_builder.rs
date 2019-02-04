@@ -5,7 +5,9 @@ use holochain_cas_implementations::{
 };
 
 use crate::{
+    action::ActionWrapper,
     context::{stub_network_config, Context},
+    instance::Observer,
     logger::{Logger, SimpleLogger},
     persister::SimplePersister,
     signal::SignalSender,
@@ -15,7 +17,7 @@ use holochain_core_types::{
     error::HolochainError, json::JsonString,
 };
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{mpsc::SyncSender, Arc, Mutex, RwLock};
 
 /// This type helps building [context objects](struct.Context.html) that need to be
 /// passed in to Holochain intances.
@@ -126,6 +128,35 @@ impl ContextBuilder {
             self.container_api,
             self.signal_tx,
         )
+    }
+
+    pub fn spawn_with_channels(
+        self,
+        action_channel: &SyncSender<ActionWrapper>,
+        observer_channel: &SyncSender<Observer>,
+    ) -> Context {
+        let chain_storage = self
+            .chain_storage
+            .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
+        let dht_storage = self
+            .dht_storage
+            .unwrap_or(Arc::new(RwLock::new(MemoryStorage::new())));
+        let eav_storage = self
+            .eav_storage
+            .unwrap_or(Arc::new(RwLock::new(EavMemoryStorage::new())));
+
+        Context::new_with_channels(
+            self.agent_id.unwrap_or(AgentId::generate_fake("alice")),
+            self.logger.unwrap_or(Arc::new(Mutex::new(SimpleLogger {}))),
+            Arc::new(Mutex::new(SimplePersister::new(chain_storage.clone()))),
+            Some(action_channel.clone()),
+            self.signal_tx,
+            Some(observer_channel.clone()),
+            dht_storage,
+            eav_storage,
+            self.network_config.unwrap_or(stub_network_config()),
+        )
+        .unwrap()
     }
 }
 

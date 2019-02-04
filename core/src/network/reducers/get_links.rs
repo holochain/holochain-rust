@@ -70,7 +70,7 @@ mod tests {
         state::test_store,
     };
     use holochain_core_types::error::HolochainError;
-    use std::sync::{Arc, RwLock};
+    use std::sync::{mpsc, Arc, RwLock};
 
     #[test]
     pub fn reduce_get_links_without_network_initialized() {
@@ -104,10 +104,9 @@ mod tests {
     // This test needs to be refactored.
     // It is non-deterministically failing with "sending on a closed channel" originating form
     // within the in-memory network.
-    #[cfg(feature = "broken-tests")]
     pub fn reduce_get_links_test() {
         let netname = Some("reduce_get_links_test");
-        let context = test_context("alice", netname);
+        let context = Arc::new(ContextBuilder::new().spawn());
         let store = test_store(context.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
@@ -137,7 +136,12 @@ mod tests {
     // within the in-memory network.
     pub fn reduce_get_links_timeout_test() {
         let netname = Some("reduce_get_links_timeout_test");
-        let mut context = Arc::new(ContextBuilder::new().spawn());
+
+        let (action_sender, action_recv) = mpsc::sync_channel(200);
+        let (observer_sender, observer_recv) = mpsc::sync_channel(200);
+        let mut context =
+            Arc::new(ContextBuilder::new().spawn_with_channels(&action_sender, &observer_sender));
+
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
 
@@ -194,5 +198,8 @@ mod tests {
             maybe_get_entry_result,
             Some(Some(Err(HolochainError::Timeout)))
         );
+
+        action_recv.recv().unwrap();
+        observer_recv.recv().unwrap();
     }
 }

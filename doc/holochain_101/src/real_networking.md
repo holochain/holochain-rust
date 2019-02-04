@@ -1,6 +1,6 @@
 # Real Networking
 
-`hc run` uses mock networking by default and therefore can't talk to any other nodes.  If you want to test multiple nodes you will need to install the [n3h](https://github.com/holochain/n3h) networking component (following the instructions on the readme there).  
+`hc run` uses mock networking by default and therefore doesn't talk to any other nodes.  If you wish to test multiple nodes you will need to install the [n3h](https://github.com/holochain/n3h) networking component (following the instructions on the readme).  
 
 If you set the HC_N3H_PATH environment variable to the path where you installed it, `hc run` will automatically default to using real networking.
 

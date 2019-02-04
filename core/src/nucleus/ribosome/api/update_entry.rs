@@ -57,7 +57,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Get latest entry's ChainHeader
     let agent_state = &runtime.context.state().unwrap().agent();
     let chain_header_address = agent_state
-        .chain()
+        .chain_store()
         .iter(&agent_state.top_chain_header())
         .find(|header| header.entry_address() == &latest_entry.address())
         .map(|header| header.address().clone())

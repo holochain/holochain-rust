@@ -68,7 +68,7 @@ impl State {
             cas: Arc<RwLock<dyn ContentAddressableStorage>>,
         ) -> HcResult<Dna> {
             let dna_entry_header = agent_state
-                .chain()
+                .chain_store()
                 .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
                 .last()
                 .ok_or(HolochainError::ErrorGeneric(

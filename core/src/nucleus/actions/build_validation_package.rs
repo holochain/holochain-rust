@@ -155,7 +155,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
 }
 
 fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
-    let chain = context.state().unwrap().agent().chain();
+    let chain = context.state().unwrap().agent().chain_store();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
         .iter(&top_header)
@@ -173,7 +173,7 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
 }
 
 fn all_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
-    let chain = context.state().unwrap().agent().chain();
+    let chain = context.state().unwrap().agent().chain_store();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain.iter(&top_header).collect()
 }

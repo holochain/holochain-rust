@@ -516,10 +516,10 @@ pub mod tests {
     use std::{convert::TryFrom, env::current_dir, fs::File, io::Read};
 
     pub fn test_dna_loader() -> DnaLoader {
-        let loader =
-            Box::new(
-                |_: &PathBuf| Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap()),
-            ) as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+        let loader = Box::new(|_: &PathBuf| {
+            Ok(Dna::try_from(JsonString::from(example_dna_string())).unwrap())
+        })
+            as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 

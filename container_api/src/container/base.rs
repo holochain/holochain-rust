@@ -80,7 +80,7 @@ pub struct Container {
     pub(in crate::container) static_servers: HashMap<String, StaticServer>,
     pub(in crate::container) interface_threads: HashMap<String, Sender<()>>,
     pub(in crate::container) dna_loader: DnaLoader,
-    pub(in crate::container) ui_dir_copier: UiDirCopier,    
+    pub(in crate::container) ui_dir_copier: UiDirCopier,
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<JsonString>,
@@ -97,7 +97,8 @@ impl Drop for Container {
 
 type SignalSender = SyncSender<Signal>;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
-pub type UiDirCopier = Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
+pub type UiDirCopier =
+    Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
 
 // preparing for having container notifiers go to one of the log streams
 pub fn notify(msg: String) {
@@ -451,14 +452,12 @@ impl Container {
                 // Get DNA
                 let dna_config = config.dna_by_id(&instance_config.dna).unwrap();
                 let dna_file = PathBuf::from(&dna_config.file);
-                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(
-                    |_| {
-                        HolochainError::ConfigError(format!(
-                            "Could not load DNA file \"{}\"",
-                            dna_config.file
-                        ))
-                    },
-                )?;
+                let dna = Arc::get_mut(&mut self.dna_loader).unwrap()(&dna_file).map_err(|_| {
+                    HolochainError::ConfigError(format!(
+                        "Could not load DNA file \"{}\"",
+                        dna_config.file
+                    ))
+                })?;
 
                 Holochain::new(dna, Arc::new(context)).map_err(|hc_err| hc_err.to_string())
             })
@@ -484,15 +483,13 @@ impl Container {
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
-        notify(format!("Copying UI from {} to {}", source.display(), dest.display()));
+        notify(format!(
+            "Copying UI from {} to {}",
+            source.display(),
+            dest.display()
+        ));
         fs::create_dir_all(dest).map_err(|_| {
-            HolochainError::ErrorGeneric(
-                format!(
-                    "Could not directory structure {:?}",
-                    dest
-                )
-                .into(),
-            )
+            HolochainError::ErrorGeneric(format!("Could not directory structure {:?}", dest).into())
         })?;
         fs_extra::dir::copy(&source, &dest, &fs_extra::dir::CopyOptions::new())
             .map_err(|e| HolochainError::ErrorGeneric(e.to_string()))?;
@@ -651,7 +648,8 @@ pub mod tests {
                 "bridge/caller.dna" => caller_dna(),
                 _ => Dna::try_from(JsonString::from(example_dna_string())).unwrap(),
             })
-        }) as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
+        })
+            as Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>;
         Arc::new(loader)
     }
 

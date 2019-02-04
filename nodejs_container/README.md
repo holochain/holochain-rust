@@ -46,8 +46,8 @@ const scenario = new Scenario([instanceAlice, instanceBob])
 //   - the second argument is an object containing an interface into each instance specified in the config
 scenario.runTape("test something", (t, {alice, bob}) => {
     // fire zome function calls from both agents
-    const result1 = alice.call('zome', 'capability', 'function', {params: 'go here'})
-    const result2 = bob.call('zome', 'capability', 'function', {params: 'go here'})
+    const result1 = alice.call('zome', 'function', {params: 'go here'})
+    const result2 = bob.call('zome', 'function', {params: 'go here'})
     // make some tape assertions
     t.ok(result1)
     t.equal(result2, 'expected value')

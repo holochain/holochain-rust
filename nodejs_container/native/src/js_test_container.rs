@@ -5,6 +5,7 @@ use std::{
         mpsc::{sync_channel, SyncSender},
         Arc, Mutex,
     },
+    time::Duration,
 };
 
 use holochain_container_api::{
@@ -16,7 +17,9 @@ use holochain_core::{
     signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent}, dna::capabilities::CapabilityCall, entry::Entry,
+    cas::content::{Address, AddressableContent},
+    dna::capabilities::CapabilityCall,
+    entry::Entry,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -30,7 +33,8 @@ fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
         .map(|c| c.public_address.to_string())
         .collect();
     loop {
-        if let Signal::Internal(aw) = signal_rx.recv().unwrap() {
+        println!("await_held_agent_ids");
+        if let Ok(Signal::Internal(aw)) = signal_rx.recv_timeout(Duration::from_millis(10)) {
             let action = aw.action();
             if let Action::Hold(Entry::AgentId(id)) = action {
                 agent_addresses.remove(&id.key);
@@ -93,7 +97,8 @@ declare_types! {
                 tc.container.load_config_with_signal(Some(signal_tx)).and_then(|_| {
                     tc.container.start_all_instances().map_err(|e| e.to_string()).map(|_| {
                         await_held_agent_ids(tc.container.config(), &signal_rx);
-                        let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone());
+                        let num_instances = tc.container.instances().len();
+                        let background_task = MainBackgroundTask::new(signal_rx, sender_rx, tc.is_running.clone(), num_instances);
                         background_task.schedule(js_callback);
                         tc.is_started = true;
 

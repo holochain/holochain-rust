@@ -216,7 +216,7 @@ impl Waiter {
                                 *aw.action() == Action::AddLink(link_add.clone().link().clone())
                             });
                         }
-                        Entry::RemoveLink(link_remove) => {
+                        Entry::LinkRemove(link_remove) => {
                             // Pair every `LinkRemove` with N `Hold`s
                             checker.add(num_instances, move |aw| {
                                 *aw.action() == Action::Hold(entry.clone())

@@ -121,18 +121,21 @@ fn main() {
 
     // Configure logger
     //let mut tweetlog = Tweetlog::new();
-    let mut tweetlog = g_tweetlog.write().unwrap();
-    //tweetlog.add("errorlog");
-    let default_level = LogLevel::from(config["log"]["default"].as_str().unwrap().chars().next().unwrap());
-    tweetlog.set(default_level, None);
-    // set level per tag
-    //let v = config["log"]["tags"];
-    let tag_map: HashMap<String, String> = serde_json::from_value(config["log"]["tags"].clone()).expect("missing/bad 'tags' config");
-    for (tag, level_str) in tag_map {
-        let level = LogLevel::from(level_str.as_str().chars().next().unwrap());
-        tweetlog.set(level, Some(tag));
+    {
+        let mut tweetlog = g_tweetlog.write().unwrap();
+        //tweetlog.add("errorlog");
+        let default_level = LogLevel::from(config["log"]["default"].as_str().unwrap().chars().next().unwrap());
+        tweetlog.set(default_level, None);
+        // set level per tag
+        //let v = config["log"]["tags"];
+        let tag_map: HashMap<String, String> = serde_json::from_value(config["log"]["tags"].clone()).expect("missing/bad 'tags' config");
+        for (tag, level_str) in tag_map {
+            let level = LogLevel::from(level_str.as_str().chars().next().unwrap());
+            tweetlog.set(level, Some(tag.clone()));
+            tweetlog.listen_to_tag(&tag, Tweetlog::console);
+        }
+        tweetlog.listen(Tweetlog::console);
     }
-    tweetlog.listen(Tweetlog::console);
     // set global logger
     //g_tweetlog = tweetlog;
 

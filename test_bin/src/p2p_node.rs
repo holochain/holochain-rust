@@ -371,6 +371,9 @@ impl P2pNode {
     }
     /// Look for the first HandleGetPublishingMetaList request received from network module and reply
     pub fn reply_to_first_HandleGetPublishingMetaList(&mut self) {
+        {
+            g_tweetlog.read().unwrap().tt("p2pnode", &format!("--- HandleGetPublishingMetaList: {}", self.agent_id));
+        }
         let request = self
             .find_recv_msg(
                 0,
@@ -461,7 +464,9 @@ impl P2pNode {
 
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                g_tweetlog.read().unwrap().tt("p2pnode", &format!("<<< ({}) handler: {:?}", agent_id_arg, r));
+                {
+                    g_tweetlog.read().unwrap().tt("p2pnode", &format!("<<< ({}) handler: {:?}", agent_id_arg, r));
+                }
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -530,7 +535,9 @@ impl P2pNode {
              Protocol::Json(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
              _ => "".to_string(),
          };
-        g_tweetlog.read().unwrap().tt("p2pnode", &dbg_msg);
+        {
+            g_tweetlog.read().unwrap().tt("p2pnode", &dbg_msg);
+        }
 
         self.recv_msg_log.push(data.clone());
 
@@ -542,7 +549,9 @@ impl P2pNode {
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    g_tweetlog.read().unwrap().ee("p2pnode", &format!("###### Received parse error: {} {:?}", s, data));
+                    {
+                        g_tweetlog.read().unwrap().ee("p2pnode", &format!("###### Received parse error: {} {:?}", s, data));
+                    }
                 }
                 Err(e)
             }
@@ -560,10 +569,12 @@ impl P2pNode {
             let mut has_recved = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                g_tweetlog.read().unwrap().tt("p2pnode", &format!(
-                    "({})::listen() - received: {:?}",
-                    self.agent_id, p2p_msg,
-                ));
+                {
+                    g_tweetlog.read().unwrap().tt("p2pnode", &format!(
+                        "({})::listen() - received: {:?}",
+                        self.agent_id, p2p_msg,
+                    ));
+                }
                 has_recved = true;
                 time_ms = 0;
                 count += 1;
@@ -626,10 +637,10 @@ impl P2pNode {
                 g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() - received: {:?}", self.agent_id, p2p_msg));
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("\t ({})::wait() - match", self.agent_id));
+                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() - match", self.agent_id));
                     return Some(p2p_msg);
                 } else {
-                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("\t ({})::wait() - NO match", self.agent_id));
+                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() - NO match", self.agent_id));
                 }
             }
 
@@ -815,7 +826,9 @@ impl P2pNode {
 impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        g_tweetlog.read().unwrap().tt("p2pnode", &format!(">> ({}) send: {:?}", self.agent_id, data));
+        {
+            g_tweetlog.read().unwrap().tt("p2pnode", &format!(">> ({}) send: {:?}", self.agent_id, data));
+        }
         self.p2p_connection.send(data)
     }
 }
@@ -835,7 +848,9 @@ fn create_ipc_config(
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
 
-    g_tweetlog.read().unwrap().ii("p2pnode", &format!("create_ipc_config() dir = {}\n", dir));
+    {
+        g_tweetlog.read().unwrap().ii("p2pnode", &format!("create_ipc_config() dir = {}\n", dir));
+    }
 
     // Create config
     let config = match maybe_config_filepath {

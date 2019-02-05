@@ -270,39 +270,58 @@ pub fn many_meta_test(
     setup_two_nodes(alex, billy, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    g_tweetlog.read().unwrap().d("entry authored");
+    {
+        g_tweetlog.read().unwrap().d("entry authored");
+    }
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
         &META_LINK_CONTENT_1,
         true,
     )?;
-    g_tweetlog.read().unwrap().d("META_LINK_CONTENT_1 authored");
+    {
+        g_tweetlog.read().unwrap().d("META_LINK_CONTENT_1 authored");
+    }
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
         &META_CRUD_CONTENT,
         true,
     )?;
+    {
+        g_tweetlog.read().unwrap().d("META_CRUD_CONTENT authored");
+    }
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
         &META_LINK_CONTENT_2,
         false,
     )?;
+    {
+        g_tweetlog.read().unwrap().d("META_LINK_CONTENT_2 authored");
+    }
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
         &META_LINK_CONTENT_3,
         false,
     )?;
+    {
+        g_tweetlog.read().unwrap().d("META_LINK_CONTENT_3 authored");
+    }
     alex.reply_to_first_HandleGetPublishingMetaList();
-    // Should NOT receive a HandleFetchEntry request from network module
+
+
+    // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
-    assert!(!has_received);
+    assert!(has_received);
+
+
     // billy might receive HandleDhtStore
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
-
+    {
+        g_tweetlog.read().unwrap().d("alex has_received done");
+    }
 
     // billy asks for reported published data.
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
@@ -311,6 +330,10 @@ pub fn many_meta_test(
     if !has_received {
         billy.wait_HandleFetchMeta_and_reply();
     }
+    {
+        g_tweetlog.read().unwrap().d("billy has_received done");
+    }
+
     // Billy should receive the data
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))

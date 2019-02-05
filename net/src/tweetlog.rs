@@ -173,7 +173,6 @@ impl Tweetlog {
         };
         // Find logger, if unknown tag use general
         let maybe_logger = self.log_by_tag.get(tag);
-        // println!("maybe_logger({}) = {:?}", tag, maybe_logger);
         let logger = match maybe_logger {
             None => self.log_by_tag.get("_").unwrap(),
             Some(logger) => logger,
@@ -228,9 +227,14 @@ impl Tweetlog {
     // -- provided listeners -- //
 
     pub fn console(level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
+//        match maybe_tag {
+//            None      => println!("(global)[{}]  {}", level.as_char(), msg),
+//            Some(tag) => println!("({:?})[{}]  {}", tag, level.as_char(), msg),
+//        }
+        // print without tag
         match maybe_tag {
-            None      => println!("(global)[{}]  {}", level.as_char(), msg),
-            Some(tag) => println!("({:?})[{}]  {}", tag, level.as_char(), msg),
+            None      => println!("[{}] {}", level.as_char(), msg),
+            Some(tag) => println!("[{}] {}", level.as_char(), msg),
         }
     }
 }
@@ -303,6 +307,26 @@ mod tests {
         tweetlog.i("hello info");
         tweetlog.w("hello warning");
         tweetlog.e("hello error");
-
     }
+
+//    #[test]
+//    fn log_tag_println_hello() {
+//        let mut tweetlog = Tweetlog::new();
+//        tweetlog.add("errorlog");
+//
+//        // set general logging to error only
+//        tweetlog.set(LogLevel::Warning, None);
+//        tweetlog.listen(Tweetlog::console);
+//
+//        // set testlogger output to trace level
+//        tweetlog.add("tracelog");
+//        tweetlog.set(LogLevel::Trace, Some("tracelog".to_string()));
+//        tweetlog.listen_to_tag("tracelog", Tweetlog::console);
+//
+//        tweetlog.t("hello trace");
+//        tweetlog.d("hello debug");
+//        tweetlog.i("hello info");
+//        tweetlog.w("hello warning");
+//        tweetlog.e("hello error");
+//    }
 }

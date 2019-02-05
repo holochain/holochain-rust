@@ -86,8 +86,8 @@ pub fn publish_meta_list_test(
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     alex.author_meta(
         &ENTRY_ADDRESS_1,
-        META_ATTRIBUTE.into(),
-        &META_CONTENT_1,
+        META_LINK_ATTRIBUTE.into(),
+        &META_LINK_CONTENT_1,
         false,
     )?;
     alex.reply_to_first_HandleGetPublishingMetaList();
@@ -97,7 +97,7 @@ pub fn publish_meta_list_test(
     // billy might receive HandleDhtStore
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     // billy asks for reported published data.
-    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_ATTRIBUTE.into());
+    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
     // Alex or billy should receive HandleFetchMeta request
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     if !has_received {
@@ -160,7 +160,7 @@ pub fn hold_meta_list_test(
     println!("Testing: hold_meta_list_test()");
     setup_two_nodes(alex, billy, can_connect)?;
     // Have alex hold some data
-    alex.hold_meta(&ENTRY_ADDRESS_1, META_ATTRIBUTE, &META_CONTENT_1);
+    alex.hold_meta(&ENTRY_ADDRESS_1, META_LINK_ATTRIBUTE, &META_LINK_CONTENT_1);
     // Alex: Look for the hold_list request received from network module and reply
     alex.reply_to_first_HandleGetHoldingMetaList();
     // Might receive a HandleFetchMeta request from network module:
@@ -171,7 +171,7 @@ pub fn hold_meta_list_test(
         let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     }
     // Have billy request that metadata
-    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_ATTRIBUTE.into());
+    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
     // Alex might receive HandleFetchMeta request as this moment
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     if !has_received {
@@ -231,8 +231,8 @@ pub fn double_publish_meta_list_test(
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     alex.author_meta(
         &ENTRY_ADDRESS_1,
-        META_ATTRIBUTE.into(),
-        &META_CONTENT_1,
+        META_LINK_ATTRIBUTE.into(),
+        &META_LINK_CONTENT_1,
         true,
     )?;
     alex.reply_to_first_HandleGetPublishingMetaList();
@@ -242,7 +242,7 @@ pub fn double_publish_meta_list_test(
     // billy might receive HandleDhtStore
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
     // billy asks for reported published data.
-    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_ATTRIBUTE.into());
+    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
     // Alex or billy should receive HandleFetchMeta request
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     if !has_received {
@@ -256,6 +256,82 @@ pub fn double_publish_meta_list_test(
     // Done
     Ok(())
 }
+
+/// Reply some data in publish_meta_list
+#[cfg_attr(tarpaulin, skip)]
+pub fn many_meta_test(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
+    // Setup
+    println!("Testing: many_meta_test()");
+    setup_two_nodes(alex, billy, can_connect)?;
+    // Author meta and reply to HandleGetPublishingMetaList
+    alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    alex.author_meta(
+        &ENTRY_ADDRESS_1,
+        META_LINK_ATTRIBUTE.into(),
+        &META_LINK_CONTENT_1,
+        true,
+    )?;
+    alex.author_meta(
+        &ENTRY_ADDRESS_1,
+        META_LINK_ATTRIBUTE.into(),
+        &META_CRUD_CONTENT,
+        true,
+    )?;
+    alex.author_meta(
+        &ENTRY_ADDRESS_1,
+        META_LINK_ATTRIBUTE.into(),
+        &META_LINK_CONTENT_2,
+        false,
+    )?;
+    alex.author_meta(
+        &ENTRY_ADDRESS_1,
+        META_LINK_ATTRIBUTE.into(),
+        &META_LINK_CONTENT_3,
+        false,
+    )?;
+    alex.reply_to_first_HandleGetPublishingMetaList();
+    // Should NOT receive a HandleFetchEntry request from network module
+    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    assert!(!has_received);
+    // billy might receive HandleDhtStore
+    let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
+
+
+    // billy asks for reported published data.
+    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
+    // Alex or billy should receive HandleFetchMeta request
+    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    if !has_received {
+        billy.wait_HandleFetchMeta_and_reply();
+    }
+    // Billy should receive the data
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
+    println!("got result 1: {:?}", result);
+
+    // billy asks for reported published data.
+    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_CRUD_ATTRIBUTE.into());
+    // Alex or billy should receive HandleFetchMeta request
+    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    if !has_received {
+        billy.wait_HandleFetchMeta_and_reply();
+    }
+    // Billy should receive the data
+    let result = billy
+        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
+        .unwrap();
+    println!("got result 2: {:?}", result);
+
+
+    // Done
+    Ok(())
+}
+
 
 //#[cfg_attr(tarpaulin, skip)]
 //pub fn publish_same_entry_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {

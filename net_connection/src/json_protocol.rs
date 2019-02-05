@@ -7,10 +7,18 @@
 use serde_json;
 
 use failure::Error;
-use holochain_core_types::{cas::content::Address, error::HolochainError, json::JsonString};
+use holochain_core_types::{
+    cas::content::Address, error::HolochainError, hash::HashString, json::JsonString,
+};
 use std::convert::TryFrom;
 
 use super::protocol::Protocol;
+
+// Tuple holding all the info required for identifying a metadata:
+// (entry_address, attribute, content which is a HashString)
+pub type MetaTuple = (Address, String, Address);
+// (entry_address, attribute)
+pub type MetaKey = (Address, String);
 
 fn get_default_state_id() -> String {
     "undefined".to_string()
@@ -206,7 +214,9 @@ pub struct DhtMetaData {
     pub entry_address: Address,
 
     pub attribute: String,
-    pub content: serde_json::Value,
+    // single string or list of hashs
+    #[serde(rename = "contentList")]
+    pub content_list: Vec<Address>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
@@ -222,7 +232,10 @@ pub struct FetchMetaResultData {
     #[serde(rename = "entryAddress")]
     pub entry_address: Address,
     pub attribute: String,
-    pub content: serde_json::Value,
+    // // List of (hash, content) pairs.
+    // single string or list of hashs
+    #[serde(rename = "contentList")]
+    pub content_list: Vec<Address>,
 }
 
 /// Drop some data request from own p2p-module
@@ -269,9 +282,9 @@ pub struct MetaListData {
     #[serde(rename = "_id")]
     pub request_id: String,
 
-    // List of meta identifiers, a pair: (entry_address, attribute)
+    // List of meta identifiers, a pair: (entry_address, attribute, hashed_content)
     #[serde(rename = "metaList")]
-    pub meta_list: Vec<(Address, String)>,
+    pub meta_list: Vec<MetaTuple>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -757,8 +770,16 @@ mod tests {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
                 meta_list: vec![
-                    ("data1".into(), "meta_attribute".to_string()),
-                    ("data2".into(), "meta_attribute".to_string())
+                    (
+                        "data1".into(),
+                        "meta_attribute".to_string(),
+                        "hashed_content".to_string()
+                    ),
+                    (
+                        "data2".into(),
+                        "meta_attribute".to_string(),
+                        "hashed_content".to_string()
+                    )
                 ],
             }
         ));
@@ -776,8 +797,16 @@ mod tests {
             request_id: "test_id".to_string(),
             dna_address: "test_dna".into(),
             meta_list: vec![
-                ("data1".into(), "meta_attribute".to_string()),
-                ("data2".into(), "meta_attribute".to_string())
+                (
+                    "data1".into(),
+                    "meta_attribute".to_string(),
+                    "hashed_content".to_string()
+                ),
+                (
+                    "data2".into(),
+                    "meta_attribute".to_string(),
+                    "hashed_content".to_string()
+                )
             ],
         }));
     }

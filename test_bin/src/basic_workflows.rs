@@ -63,10 +63,10 @@ fn confirm_published_metadata(
     billy: &mut P2pNode,
     address: &Address,
     attribute: &str,
-    content: &serde_json::Value,
+    content: &Address,
 ) -> NetResult<()> {
     // Alex publishs metadata on the network
-    alex.author_meta(address, attribute, content, true)?;
+    let meta_tuple = alex.author_meta(address, attribute, content, true)?;
     // Check if both nodes received a HandleStore command.
     let result_a = alex
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))))
@@ -76,12 +76,10 @@ fn confirm_published_metadata(
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))))
         .unwrap();
     println!("got store meta result 2: {:?}", result_b);
-    assert!(billy
-        .meta_store
-        .contains_key(&(address.clone(), META_ATTRIBUTE.to_string())));
+    assert!(billy.meta_store.contains_key(&meta_tuple));
 
     // Billy asks for that metadata on the network.
-    let fetch_meta = billy.request_meta(address.clone(), META_ATTRIBUTE.to_string());
+    let fetch_meta = billy.request_meta(address.clone(), META_LINK_ATTRIBUTE.to_string());
 
     // Alex having that metadata, sends it to the network.
     alex.reply_to_HandleFetchMeta(&fetch_meta)?;
@@ -247,8 +245,8 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         alex,
         billy,
         &ENTRY_ADDRESS_1,
-        META_ATTRIBUTE,
-        &META_CONTENT_1,
+        META_LINK_ATTRIBUTE,
+        &META_LINK_CONTENT_1,
     )?;
 
     // Again but now send metadata first
@@ -256,8 +254,8 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         alex,
         billy,
         &ENTRY_ADDRESS_2,
-        META_ATTRIBUTE,
-        &META_CONTENT_2,
+        META_LINK_ATTRIBUTE,
+        &META_LINK_CONTENT_2,
     )?;
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_2, &ENTRY_CONTENT_2)?;
 
@@ -266,8 +264,8 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     alex.author_entry(&ENTRY_ADDRESS_3, &ENTRY_CONTENT_3, true)?;
     alex.author_meta(
         &ENTRY_ADDRESS_3,
-        &META_ATTRIBUTE.to_string(),
-        &META_CONTENT_3,
+        &META_LINK_ATTRIBUTE.to_string(),
+        &META_LINK_CONTENT_3,
         true,
     )?;
     // Billy sends FetchEntry message
@@ -275,7 +273,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     // Billy sends HandleFetchEntryResult message
     billy.reply_to_HandleFetchEntry(&fetch_data)?;
     // Billy sends FetchMeta message
-    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_3.clone(), META_ATTRIBUTE.to_string());
+    let fetch_meta = billy.request_meta(ENTRY_ADDRESS_3.clone(), META_LINK_ATTRIBUTE.to_string());
     // Alex sends HandleFetchMetaResult message
     alex.reply_to_HandleFetchMeta(&fetch_meta)?;
     // billy should receive requested metadata

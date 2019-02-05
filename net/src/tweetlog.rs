@@ -133,7 +133,7 @@ impl Tweetlog {
     }
 
     // callback according to level and tag
-    fn tweet(&self, level: LogLevel, maybe_tag: Option<String>, msg: &str) {
+    fn tweet(&self, level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
         // replace None to "_"
         let tag = match maybe_tag {
             None => "_".to_string(),
@@ -161,17 +161,36 @@ impl Tweetlog {
     pub fn t(&self, msg: &str) {
         self.tweet(LogLevel::Trace, None, msg);
     }
+    pub fn tt(&self, tag: &str, msg: &str) {
+        self.tweet(LogLevel::Trace, Some(tag), msg);
+    }
+
     pub fn d(&self, msg: &str){
         self.tweet(LogLevel::Debug, None, msg);
     }
+    pub fn dd(&self, tag: &str, msg: &str) {
+        self.tweet(LogLevel::Debug, Some(tag), msg);
+    }
+
     pub fn i(&self, msg: &str){
         self.tweet(LogLevel::Info, None, msg);
     }
+    pub fn ii(&self, tag: &str, msg: &str) {
+        self.tweet(LogLevel::Info, Some(tag), msg);
+    }
+
     pub fn w(&self, msg: &str){
         self.tweet(LogLevel::Warning, None, msg);
     }
+    pub fn ww(&self, tag: &str, msg: &str) {
+        self.tweet(LogLevel::Warning, Some(tag), msg);
+    }
+
     pub fn e(&self, msg: &str){
         self.tweet(LogLevel::Error, None, msg);
+    }
+    pub fn ee(&self, tag: &str, msg: &str) {
+        self.tweet(LogLevel::Error, Some(tag), msg);
     }
 
     // -- provided listeners -- //

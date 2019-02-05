@@ -5,15 +5,15 @@ use holochain_net_connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
         FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaListData,
+        MessageData, MetaListData, MetaTuple, MetaKey,
     },
     net_connection::NetSend,
     protocol::Protocol,
     NetResult,
 };
-use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
-
-use holochain_core_types::cas::content::Address;
+use std::{collections::{HashMap, HashSet}, convert::TryFrom, sync::mpsc};
+use multihash::Hash;
+use holochain_core_types::{cas::content::Address, hash::HashString};
 
 static TIMEOUT_MS: usize = 5000;
 
@@ -39,9 +39,9 @@ pub struct P2pNode {
     // TODO: Have a datastore per dna ; perhaps in a CoreMock struct
     pub dna_address: Address,
     pub entry_store: HashMap<Address, serde_json::Value>,
-    pub meta_store: HashMap<(Address, String), serde_json::Value>,
+    pub meta_store: HashMap<MetaKey, HashSet<Address>>,
     pub authored_entry_store: HashMap<Address, serde_json::Value>,
-    pub authored_meta_store: HashMap<(Address, String), serde_json::Value>,
+    pub authored_meta_store: HashMap<MetaKey, HashSet<Address>>,
 }
 
 // Search logs
@@ -98,28 +98,43 @@ impl P2pNode {
         &mut self,
         entry_address: &Address,
         attribute: &str,
-        content: &serde_json::Value,
+        content: &Address,
         can_publish: bool,
-    ) -> NetResult<()> {
-        let meta_address = (entry_address.clone(), attribute.to_string());
-        assert!(!self.authored_meta_store.get(&meta_address).is_some());
-        assert!(!self.meta_store.get(&meta_address).is_some());
-        self.authored_meta_store.insert(
-            (entry_address.clone(), attribute.to_string()),
-            content.clone(),
-        );
+    ) -> NetResult<MetaKey> {
+        let meta_key = (entry_address.clone(), attribute.to_string());
+
+        // Must not already have meta
+        {
+            {
+                let maybe_stored_map = self.meta_store.get(&meta_key);
+                assert!(maybe_stored_map.is_none() || maybe_stored_map.unwrap().get(&content).is_none());
+            }
+            // bookkeep
+            if let None = self.authored_meta_store.get_mut(&meta_key) {
+                let mut set = HashSet::new();
+                set.insert(content.clone());
+                self.authored_meta_store.insert(meta_key.clone(), set);
+            } else {
+                if let Some(set) = self.authored_meta_store.get_mut(&meta_key) {
+                        assert!(set.get(&content).is_none());
+                        set.insert(content.clone());
+                    };
+            };
+        }
+        // publish it
         if can_publish {
             let msg_data = DhtMetaData {
                 dna_address: self.dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: entry_address.clone(),
                 attribute: attribute.to_string(),
-                content: content.clone(),
+                content_list: vec![content.clone()],
             };
-            return self.send(JsonProtocol::PublishMeta(msg_data).into());
+            let res = self.send(JsonProtocol::PublishMeta(msg_data).into());
+            return res.map(|_| meta_key);
         }
         // Done
-        Ok(())
+        Ok(meta_key.clone())
     }
 
     pub fn hold_entry(&mut self, entry_address: &Address, entry_content: &serde_json::Value) {
@@ -133,15 +148,25 @@ impl P2pNode {
         &mut self,
         entry_address: &Address,
         attribute: &str,
-        content: &serde_json::Value,
+        content: &Address,
     ) {
-        let meta_address = (entry_address.clone(), attribute.to_string());
-        assert!(!self.authored_meta_store.get(&meta_address).is_some());
-        assert!(!self.meta_store.get(&meta_address).is_some());
-        self.meta_store.insert(
-            (entry_address.clone(), attribute.to_string()),
-            content.clone(),
-        );
+        let meta_key = (entry_address.clone(), attribute.to_string());
+        // Must not already have meta
+        {
+            let maybe_authored_map = self.authored_meta_store.get(&meta_key);
+            assert!(maybe_authored_map.is_none() || maybe_authored_map.unwrap().get(&content).is_none());
+        }
+        // create or update hashmap
+        if let None = self.meta_store.get(&meta_key) {
+                let mut set = HashSet::new();
+                set.insert(content.clone());
+                self.meta_store.insert(meta_key, set);
+            } else {
+            if let Some(set) = self.meta_store.get_mut(&meta_key) {
+                assert!(set.get(&content).is_none());
+                set.insert(content.clone());
+            };
+        };
     }
 }
 
@@ -264,15 +289,15 @@ impl P2pNode {
         let msg;
         {
             // Get meta from local datastores
-            let meta_pair = &(request.entry_address.clone(), request.attribute.clone());
-            let mut maybe_data = self.authored_meta_store.get(meta_pair);
-            if maybe_data.is_none() {
-                maybe_data = self.meta_store.get(meta_pair);
+            let meta_key = &(request.entry_address.clone(), request.attribute.clone());
+            let mut maybe_meta_set = self.authored_meta_store.get(meta_key);
+            if maybe_meta_set.is_none() {
+                maybe_meta_set = self.meta_store.get(meta_key);
             }
             // if meta not found send empty content (will make the aggregation easier)
-            let data = match maybe_data.clone() {
-                Some(data) => data.clone(),
-                None => json!(""),
+            let meta_set = match maybe_meta_set.clone() {
+                Some(set) => set.clone(),
+                None => HashSet::new(),
             };
             msg = FetchMetaResultData {
                 request_id: request.request_id.clone(),
@@ -281,7 +306,7 @@ impl P2pNode {
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: request.entry_address.clone(),
                 attribute: request.attribute.clone(),
-                content: data.clone(),
+                content_list: meta_set.iter().map(|v| v.clone()).collect(),
             };
         }
         self.send(JsonProtocol::HandleFetchMetaResult(msg).into())
@@ -323,11 +348,16 @@ impl P2pNode {
     /// Reply to a HandleGetPublishingMetaList request
     pub fn reply_to_HandleGetPublishingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
-        let meta_list = self
+        let meta_sets: Vec<(HashString, String, HashSet<Address>)> = self
             .authored_meta_store
             .iter()
-            .map(|(k, _)| k.clone())
+            .map(|((k1, k2), v)| (k1.clone(), k2.clone(), v.clone()))
             .collect();
+        let mut meta_list: Vec<MetaTuple> = Vec::new();
+        for (k1, k2, set) in meta_sets {
+            let mut vec: Vec<MetaTuple> = set.iter().map(|v| (k1.clone(), k2.clone(), v.clone())).collect();
+            meta_list.append(&mut vec);
+        }
         let msg = MetaListData {
             meta_list,
             request_id: request.request_id.clone(),
@@ -377,7 +407,16 @@ impl P2pNode {
     /// Reply to a HandleGetHoldingMetaList request
     pub fn reply_to_HandleGetHoldingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
-        let meta_list = self.meta_store.iter().map(|(k, _)| k.clone()).collect();
+        let meta_sets: Vec<(HashString, String, HashSet<Address>)> = self
+            .meta_store
+            .iter()
+            .map(|((k1, k2), v)| (k1.clone(), k2.clone(), v.clone()))
+            .collect();
+        let mut meta_list: Vec<MetaTuple> = Vec::new();
+        for (k1, k2, set) in meta_sets {
+            let mut vec: Vec<MetaTuple> = set.iter().map(|v| (k1.clone(), k2.clone(), v.clone())).collect();
+            meta_list.append(&mut vec);
+        }
         let msg = MetaListData {
             meta_list,
             request_id: request.request_id.clone(),
@@ -420,6 +459,8 @@ impl P2pNode {
             Box::new(move |r| {
                 // Debugging code (do not remove)
                 // println!("<<< ({}) handler: {:?}", agent_id_arg, r);
+
+                tweetlog.dd("p2pnode", format!("<<< ({}) handler: {:?}", agent_id_arg, r));
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -707,9 +748,23 @@ impl P2pNode {
             }
             JsonProtocol::HandleStoreMeta(msg) => {
                 assert_eq!(msg.dna_address, self.dna_address);
+                // Change vec to set
+                let meta_set = msg.content_list.iter().map(|v| v.clone()).collect();
+
+
+//                for content in msg.content_list {
+//                    self.meta_store
+//                        .insert(, msg.content_list);
+//                }
+
                 // Store data in local datastore
-                self.meta_store
-                    .insert((msg.entry_address, msg.attribute), msg.content);
+                let meta_key = &(msg.entry_address, msg.attribute);
+                if let None = self.meta_store.get(meta_key) {
+                    self.meta_store.insert(meta_key.clone(), meta_set);
+                } else {
+                    if let Some(set) = self.meta_store.get_mut(meta_key) { set.extend(meta_set);
+                    };
+                };
             }
             JsonProtocol::HandleDropMeta(msg) => {
                 assert_eq!(msg.dna_address, self.dna_address);

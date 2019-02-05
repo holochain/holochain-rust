@@ -11,6 +11,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate unwrap_to;
 extern crate backtrace;
+extern crate multihash;
 
 #[macro_use]
 pub mod predicate;
@@ -23,6 +24,7 @@ pub mod three_workflows;
 use constants::*;
 use holochain_net_connection::NetResult;
 use p2p_node::P2pNode;
+use std::fs::File;
 
 type TwoNodesTestFn =
     fn(alex: &mut P2pNode, billy: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
@@ -39,19 +41,20 @@ type MultiNodesTestFn = fn(nodes: &mut Vec<P2pNode>, can_test_connect: bool) -> 
 lazy_static! {
     // List of tests
     pub static ref TWO_NODES_BASIC_TEST_FNS: Vec<TwoNodesTestFn> = vec![
-        basic_workflows::setup_two_nodes,
-        basic_workflows::send_test,
-        basic_workflows::dht_test,
-        basic_workflows::meta_test,
+//        basic_workflows::setup_two_nodes,
+//        basic_workflows::send_test,
+//        basic_workflows::dht_test,
+//        basic_workflows::meta_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
-        publish_hold_workflows::empty_publish_entry_list_test,
-        publish_hold_workflows::publish_entry_list_test,
-        publish_hold_workflows::publish_meta_list_test,
-        publish_hold_workflows::hold_entry_list_test,
-        publish_hold_workflows::hold_meta_list_test,
-        publish_hold_workflows::double_publish_entry_list_test,
-        publish_hold_workflows::double_publish_meta_list_test,
+//        publish_hold_workflows::empty_publish_entry_list_test,
+//        publish_hold_workflows::publish_entry_list_test,
+//        publish_hold_workflows::publish_meta_list_test,
+//        publish_hold_workflows::hold_entry_list_test,
+//        publish_hold_workflows::hold_meta_list_test,
+//        publish_hold_workflows::double_publish_entry_list_test,
+//        publish_hold_workflows::double_publish_meta_list_test,
+        publish_hold_workflows::many_meta_test,
     ];
     pub static ref THREE_NODES_TEST_FNS: Vec<ThreeNodesTestFn> = vec![
         three_workflows::setup_three_nodes,
@@ -61,15 +64,18 @@ lazy_static! {
     ];
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn print_three_nodes_test_name(print_str: &str, test_fn: ThreeNodesTestFn) {
     print_test_name(print_str, test_fn as *mut std::os::raw::c_void);
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn print_two_nodes_test_name(print_str: &str, test_fn: TwoNodesTestFn) {
     print_test_name(print_str, test_fn as *mut std::os::raw::c_void);
 }
 
 /// Print name of test function
+#[cfg_attr(tarpaulin, skip)]
 fn print_test_name(print_str: &str, test_fn: *mut std::os::raw::c_void) {
     backtrace::resolve(test_fn, |symbol| {
         let mut full_name = symbol.name().unwrap().as_str().unwrap().to_string();
@@ -81,23 +87,33 @@ fn print_test_name(print_str: &str, test_fn: *mut std::os::raw::c_void) {
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
-fn usage() {
-    println!("Usage: holochain_test_bin <path_to_n3h>");
-    std::process::exit(1);
+fn load_config_file(filepath: &str) -> serde_json::Value {
+    let config_file =
+        File::open(filepath).expect("Failed to open filepath on Network Test config.");
+    serde_json::from_reader(config_file)
+        .expect("file is not proper JSON")
 }
+
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
 fn main() {
-    // Check args
+    // Check args ; get config filepath
     let args: Vec<String> = std::env::args().collect();
+    let mut config_path = String::new();
     if args.len() != 2 {
-        usage();
+        println!("Usage: No config file supplied. Using default config: data/test_config.json");
+    } else {
+        config_path = args[1].clone();
     }
-    let n3h_path = args[1].clone();
-    if n3h_path == "" {
-        usage();
+    if config_path == "" {
+        println!("Usage: No config file supplied. Using default config: data/test_config.json");
+        config_path = format!("data{}test_config.json", std::path::MAIN_SEPARATOR).to_string();
     }
+
+    // Load config
+    let config = load_config_file(&config_path);
+    let n3h_path = config["N3H_PATH"].clone().to_string();
 
     // Merge two nodes tests
     let mut test_fns = TWO_NODES_BASIC_TEST_FNS.clone();
@@ -105,26 +121,38 @@ fn main() {
 
     // Launch tests on each setup
     for test_fn in test_fns {
-        launch_two_nodes_test_with_memory_network(test_fn).unwrap();
-        launch_two_nodes_test_with_ipc_mock(
-            &n3h_path,
-            "test_bin/data/mock_ipc_network_config.json",
-            test_fn,
-        )
-        .unwrap();
-        launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+        if config["TEST_IN_MEMORY"].as_bool().unwrap() {
+            launch_two_nodes_test_with_memory_network(test_fn).unwrap();
+        }
+        if config["TEST_IPC_MOCK"].as_bool().unwrap() {
+            launch_two_nodes_test_with_ipc_mock(
+                &n3h_path,
+                "test_bin/data/mock_ipc_network_config.json",
+                test_fn,
+            )
+                .unwrap();
+        }
+        if config["TEST_HACK_MODE"].as_bool().unwrap() {
+            launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+        }
     }
 
     // Launch tests on each setup
     for test_fn in THREE_NODES_TEST_FNS.clone() {
-        launch_three_nodes_test_with_memory_network(test_fn).unwrap();
-        launch_three_nodes_test_with_ipc_mock(
-            &n3h_path,
-            "test_bin/data/mock_ipc_network_config.json",
-            test_fn,
-        )
-        .unwrap();
-        launch_three_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+        if config["TEST_IN_MEMORY"].as_bool().unwrap() {
+            launch_three_nodes_test_with_memory_network(test_fn).unwrap();
+        }
+        if config["TEST_IPC_MOCK"].as_bool().unwrap() {
+            launch_three_nodes_test_with_ipc_mock(
+                &n3h_path,
+                "test_bin/data/mock_ipc_network_config.json",
+                test_fn,
+            )
+                .unwrap();
+        }
+        if config["TEST_HACK_MODE"].as_bool().unwrap() {
+            launch_three_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+        }
     }
 
     // Wait a bit before closing
@@ -151,7 +179,7 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
     );
 
     println!("");
-    print_two_nodes_test_name("IN-MEMORY TWO NODE TEST", test_fn);
+    print_two_nodes_test_name("IN-MEMORY TWO NODE TEST: ", test_fn);
     println!("=======================");
     test_fn(&mut alex, &mut billy, false)?;
     println!("==================");

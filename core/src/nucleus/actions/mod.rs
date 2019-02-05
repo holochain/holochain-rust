@@ -96,7 +96,7 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
-        let chain = context.state().unwrap().agent().chain();
+        let chain = context.state().unwrap().agent().chain_store();
 
         let commit_result = context.block_on(commit_entry(entry.clone(), None, &context.clone()));
         assert!(commit_result.is_ok());

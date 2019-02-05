@@ -11,7 +11,6 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
     error::HolochainError,
-    hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
@@ -57,7 +56,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     // Get latest entry's ChainHeader
     let agent_state = &runtime.context.state().unwrap().agent();
     let chain_header_address = agent_state
-        .chain()
+        .chain_store()
         .iter(&agent_state.top_chain_header())
         .find(|header| header.entry_address() == &latest_entry.address())
         .map(|header| header.address().clone())
@@ -73,7 +72,6 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             .and_then(|validation_package| {
                 future::ready(Ok(ValidationData {
                     package: validation_package,
-                    sources: vec![HashString::from("<insert your agent key here>")],
                     lifecycle: EntryLifecycle::Chain,
                     action: EntryAction::Modify,
                 }))

@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-docker build -f docker/Dockerfile.arm64v8 -t holochain "$@" .

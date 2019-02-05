@@ -101,7 +101,7 @@ The `name` is the most important thing here, because when a function call to an 
 
 In order to maintain compabitility with a variety of languages, it was decided to use a language agnostic data interchange format for inputs and ouputs. JSON, the modern web format was selected. Other formats may be supported in the future.
 
-Put simply, this has two big implications: Holochain Container implementations must handle JSON serialization and deserialization on the "outside", and HDKs and Zomes must handle JSON serialization and deserialization on the "inside". Holochain agrees only to mediate between the two by passing a string (which should represent valid JSON data).
+Put simply, this has two big implications: Holochain Conductor implementations must handle JSON serialization and deserialization on the "outside", and HDKs and Zomes must handle JSON serialization and deserialization on the "inside". Holochain agrees only to mediate between the two by passing a string (which should represent valid JSON data).
 
 ## How Zome Functions Are Called
 

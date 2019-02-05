@@ -6,6 +6,10 @@ use crate::{
     signal::{Signal, SignalSender},
     state::State,
 };
+use futures::{
+    task::{noop_local_waker_ref, Poll},
+    Future,
+};
 use holochain_core_types::{
     agent::AgentId,
     cas::{
@@ -20,7 +24,10 @@ use holochain_core_types::{
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
-    sync::{mpsc::SyncSender, Arc, Mutex, RwLock, RwLockReadGuard},
+    sync::{
+        mpsc::{channel, Receiver, SyncSender},
+        Arc, Mutex, RwLock, RwLockReadGuard,
+    },
     thread::sleep,
     time::Duration,
 };
@@ -41,7 +48,7 @@ pub struct Context {
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
-    pub container_api: Option<Arc<RwLock<IoHandler>>>,
+    pub conductor_api: Option<Arc<RwLock<IoHandler>>>,
     pub signal_tx: Option<SyncSender<Signal>>,
 }
 
@@ -58,7 +65,7 @@ impl Context {
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
-        container_api: Option<Arc<RwLock<IoHandler>>>,
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
@@ -73,7 +80,7 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             network_config,
-            container_api,
+            conductor_api,
         }
     }
 
@@ -100,7 +107,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             network_config,
-            container_api: None,
+            conductor_api: None,
         })
     }
 
@@ -183,6 +190,33 @@ impl Context {
         self.observer_channel
             .as_ref()
             .expect("Observer channel not initialized")
+    }
+
+    /// This creates an observer for the instance's redux loop and installs it.
+    /// The returned receiver gets sent ticks from the instance every time the state
+    /// got mutated.
+    /// This enables blocking/parking the calling thread until the application state got changed.
+    pub fn create_observer(&self) -> Receiver<()> {
+        let (tick_tx, tick_rx) = channel();
+        self.observer_channel()
+            .send(Observer { ticker: tick_tx })
+            .expect("Observer channel not initialized");
+        tick_rx
+    }
+
+    /// Custom future executor that enables nested futures and nested calls of `block_on`.
+    /// This makes use of the redux action loop and the observers.
+    /// The given future gets polled everytime the instance's state got changed.
+    pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
+        let tick_rx = self.create_observer();
+        pin_utils::pin_mut!(future);
+
+        loop {
+            let _ = match future.as_mut().poll(noop_local_waker_ref()) {
+                Poll::Ready(result) => return result,
+                _ => tick_rx.recv_timeout(Duration::from_millis(10)),
+            };
+        }
     }
 }
 

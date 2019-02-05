@@ -58,7 +58,32 @@ impl From<u32> for JsonString {
     }
 }
 
+impl From<i32> for JsonString {
+    fn from(u: i32) -> JsonString {
+        default_to_json(u)
+    }
+}
+
+impl From<u64> for JsonString {
+    fn from(u: u64) -> JsonString {
+        default_to_json(u)
+    }
+}
+
+impl From<u128> for JsonString {
+    fn from(u: u128) -> JsonString {
+        default_to_json(u)
+    }
+}
+
 impl TryFrom<JsonString> for u32 {
+    type Error = HolochainError;
+    fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+        default_try_from_json(j)
+    }
+}
+
+impl TryFrom<JsonString> for u64 {
     type Error = HolochainError;
     fn try_from(j: JsonString) -> Result<Self, Self::Error> {
         default_try_from_json(j)

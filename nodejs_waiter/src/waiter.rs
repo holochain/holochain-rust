@@ -1,7 +1,6 @@
 use colored::*;
 use holochain_core::{
     action::{Action, ActionWrapper},
-    network::direct_message::DirectMessage,
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
@@ -27,12 +26,34 @@ pub enum ControlMsg {
 }
 
 /// A predicate function which examines an ActionWrapper to see if it is
-/// the one it's looking for
-type CallFxCondition = Box<Fn(&ActionWrapper) -> bool + 'static + Send>;
+/// the one it's looking for. `count` specifies how many of this Action to
+/// look for before being satisfied.
+struct CallFxCondition {
+    count: usize,
+    predicate: Box<Fn(&ActionWrapper) -> bool + 'static + Send>,
+}
 
-/// A set of closures, each of which checks for a certain condition to be met
-/// (usually for a certain action to be seen). When the condition specified by the closure
-/// is met, that closure is removed from the set of checks.
+impl CallFxCondition {
+    pub fn new(count: usize, predicate: Box<Fn(&ActionWrapper) -> bool + 'static + Send>) -> Self {
+        Self { count, predicate }
+    }
+
+    /// If the predicate is satisfied, decrement the total number of checks
+    pub fn run(&mut self, aw: &ActionWrapper) {
+        if (self.predicate)(aw) {
+            self.count -= 1;
+        }
+    }
+
+    /// The true if the predicate returned `true` `count` times
+    pub fn satisfied(&self) -> bool {
+        self.count == 0
+    }
+}
+
+/// A set of `CallFxCondition`s, each of which checks for a certain condition to be met
+/// (usually for a certain action to be seen) a certain number of times.
+/// When the condition specified is satisfied, it is removed from the set of checks.
 ///
 /// When the set of checks goes from non-empty to empty, send a message via `tx`
 /// to the `CallBlockingTask` on the other side
@@ -49,11 +70,12 @@ impl CallFxChecker {
         }
     }
 
-    pub fn add<F>(&mut self, f: F) -> ()
+    pub fn add<F>(&mut self, count: usize, f: F) -> ()
     where
         F: Fn(&ActionWrapper) -> bool + 'static + Send,
     {
-        self.conditions.push(Box::new(f));
+        self.conditions
+            .push(CallFxCondition::new(count, Box::new(f)));
         println!(
             "\n*** Condition {}: {} -> {}",
             "ADDED".green(),
@@ -65,7 +87,10 @@ impl CallFxChecker {
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
         let was_empty = self.conditions.is_empty();
         let size = self.conditions.len();
-        self.conditions.retain(|condition| !condition(aw));
+        for condition in &mut self.conditions {
+            condition.run(aw)
+        }
+        self.conditions.retain(|condition| !condition.satisfied());
         if size != self.conditions.len() {
             println!(
                 "\n*** Condition {}: {} -> {}",
@@ -132,30 +157,34 @@ pub struct Waiter {
     checkers: HashMap<ZomeFnCall, CallFxChecker>,
     current: Option<ZomeFnCall>,
     sender_rx: Receiver<ControlSender>,
+    num_instances: usize,
 }
 
 impl Waiter {
-    pub fn new(sender_rx: Receiver<ControlSender>) -> Self {
+    pub fn new(sender_rx: Receiver<ControlSender>, num_instances: usize) -> Self {
         Self {
             checkers: HashMap::new(),
             current: None,
             sender_rx,
+            num_instances,
         }
     }
 
     /// Alter state based on signals that come in, if a checker is registered.
-    /// A checker gets registered if a ControlSender was passed in from TestContainer.
+    /// A checker gets registered if a ControlSender was passed in from TestConductor.
     /// Some signals add a "condition", which is a function looking for other signals.
     /// When one of those "checkee" signals comes in, it removes the checker from the state.
     pub fn process_signal(&mut self, sig: Signal) {
+        let num_instances = self.num_instances;
         match sig {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
+                    // Pair every `ExecuteZomeFunction` with one `ReturnZomeFunctionResult`
                     (_, Action::ExecuteZomeFunction(call)) => match self.sender_rx.try_recv() {
                         Ok(sender) => {
                             self.add_call(call.clone(), sender);
-                            self.current_checker().unwrap().add(move |aw| {
+                            self.current_checker().unwrap().add(1, move |aw| {
                                 if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
                                     r.call() == call
                                 } else {
@@ -169,41 +198,51 @@ impl Waiter {
                         }
                     },
 
-                    // TODO: limit to App entry?
                     (Some(checker), Action::Commit((entry, _))) => match entry.clone() {
+                        // Pair every `Commit` with N `Hold`s
                         Entry::App(_, _) => {
                             // TODO: is there a possiblity that this can get messed up if the same
                             // entry is committed multiple times?
-                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
+                            checker.add(num_instances, move |aw| {
+                                *aw.action() == Action::Hold(entry.clone())
+                            });
                         }
+                        // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s
                         Entry::LinkAdd(link_add) => {
-                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
-                            checker.add(move |aw| {
+                            checker.add(num_instances, move |aw| {
+                                *aw.action() == Action::Hold(entry.clone())
+                            });
+                            checker.add(num_instances, move |aw| {
                                 *aw.action() == Action::AddLink(link_add.clone().link().clone())
                             });
                         }
+                        // Pair every `LinkRemove` with N `Hold`s
                         Entry::LinkRemove(_link_remove) => {
-                            checker.add(move |aw| *aw.action() == Action::Hold(entry.clone()));
+                            checker.add(num_instances, move |aw| {
+                                *aw.action() == Action::Hold(entry.clone())
+                            });
                             println!("warn/waiter: LinkRemove not implemented!");
                         }
                         _ => (),
                     },
 
-                    (Some(checker), Action::SendDirectMessage(data)) => {
-                        let msg_id = data.msg_id;
-                        match data.message {
-                            DirectMessage::Custom(_) => {
-                                checker.add(move |aw| {
-                                    [
-                                        Action::ResolveDirectConnection(msg_id.clone()),
-                                        Action::SendDirectMessageTimeout(msg_id.clone()),
-                                    ]
-                                    .contains(aw.action())
-                                });
-                            }
-                            _ => (),
-                        }
-                    }
+                    // Don't need to check for message stuff since hdk::send is blocking
+
+                    // (Some(checker), Action::SendDirectMessage(data)) => {
+                    //     let msg_id = data.msg_id;
+                    //     match data.message {
+                    //         DirectMessage::Custom(_) => {
+                    //             checker.add(move |aw| {
+                    //                 [
+                    //                     Action::ResolveDirectConnection(msg_id.clone()),
+                    //                     Action::SendDirectMessageTimeout(msg_id.clone()),
+                    //                 ]
+                    //                 .contains(aw.action())
+                    //             });
+                    //         }
+                    //         _ => (),
+                    //     }
+                    // }
 
                     // Note that we ignore anything coming in if there's no active checker,
                     (None, _) => (),
@@ -251,15 +290,15 @@ impl Waiter {
     }
 }
 
-/// This Task is started with the TestContainer and is stopped with the TestContainer.
+/// This Task is started with the TestConductor and is stopped with the TestConductor.
 /// It runs in a Node worker thread, receiving Signals and running them through
-/// the Waiter. Each TestContainer spawns its own MainBackgroundTask.
+/// the Waiter. Each TestConductor spawns its own MainBackgroundTask.
 pub struct MainBackgroundTask {
-    /// The Receiver<Signal> for the Container
+    /// The Receiver<Signal> for the Conductor
     signal_rx: SignalReceiver,
     /// The Waiter is in a RefCell because perform() uses an immutable &self reference
     waiter: RefCell<Waiter>,
-    /// This Mutex is flipped from true to false from within the TestContainer
+    /// This Mutex is flipped from true to false from within the TestConductor
     is_running: Arc<Mutex<bool>>,
 }
 
@@ -268,10 +307,11 @@ impl MainBackgroundTask {
         signal_rx: SignalReceiver,
         sender_rx: Receiver<ControlSender>,
         is_running: Arc<Mutex<bool>>,
+        num_instances: usize,
     ) -> Self {
         let this = Self {
             signal_rx,
-            waiter: RefCell::new(Waiter::new(sender_rx)),
+            waiter: RefCell::new(Waiter::new(sender_rx, num_instances)),
             is_running,
         };
         this
@@ -316,10 +356,7 @@ impl Task for MainBackgroundTask {
 #[cfg(test)]
 mod tests {
     use super::{Action::*, *};
-    use holochain_core::{
-        action::DirectMessageData, network::direct_message::CustomDirectMessage,
-        nucleus::ExecuteZomeFnResponse,
-    };
+    use holochain_core::nucleus::ExecuteZomeFnResponse;
     use holochain_core_types::{entry::Entry, json::JsonString, link::link_add::LinkAdd};
     use std::sync::mpsc::sync_channel;
 
@@ -331,17 +368,18 @@ mod tests {
         Entry::App(ty.into(), JsonString::from(content))
     }
 
-    fn msg_data(msg_id: &str) -> DirectMessageData {
-        DirectMessageData {
-            address: "fake address".into(),
-            message: DirectMessage::Custom(CustomDirectMessage {
-                zome: "fake zome".into(),
-                payload: Ok("fake payload".into()),
-            }),
-            msg_id: msg_id.into(),
-            is_response: false,
-        }
-    }
+    // not needed as long as hdk::send is blocking
+    // fn msg_data(msg_id: &str) -> DirectMessageData {
+    //     DirectMessageData {
+    //         address: "fake address".into(),
+    //         message: DirectMessage::Custom(CustomDirectMessage {
+    //             zome: "fake zome".into(),
+    //             payload: Ok("fake payload".into()),
+    //         }),
+    //         msg_id: msg_id.into(),
+    //         is_response: false,
+    //     }
+    // }
 
     fn zf_call(name: &str) -> ZomeFnCall {
         ZomeFnCall::new(name, None, name, "")
@@ -377,7 +415,7 @@ mod tests {
 
     fn test_waiter() -> (Waiter, SyncSender<ControlSender>) {
         let (sender_tx, sender_rx) = sync_channel(1);
-        let waiter = Waiter::new(sender_rx);
+        let waiter = Waiter::new(sender_rx, 1);
         (waiter, sender_tx)
     }
 
@@ -595,42 +633,43 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 0);
     }
 
-    #[test]
-    fn can_await_direct_messages() {
-        let (mut waiter, sender_tx) = test_waiter();
-        let _entry_1 = mk_entry("a", "x");
-        let _entry_2 = mk_entry("b", "y");
-        let _entry_3 = mk_entry("c", "z");
-        let call_1 = zf_call("1");
-        let call_2 = zf_call("2");
-        let msg_id_1 = "m1";
-        let msg_id_2 = "m2";
+    // not needed as long as hdk::send is blocking
+    // #[test]
+    // fn can_await_direct_messages() {
+    //     let (mut waiter, sender_tx) = test_waiter();
+    //     let _entry_1 = mk_entry("a", "x");
+    //     let _entry_2 = mk_entry("b", "y");
+    //     let _entry_3 = mk_entry("c", "z");
+    //     let call_1 = zf_call("1");
+    //     let call_2 = zf_call("2");
+    //     let msg_id_1 = "m1";
+    //     let msg_id_2 = "m2";
 
-        let control_rx_1 = test_register(&sender_tx);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
-        assert_eq!(num_conditions(&waiter, &call_1), 1);
+    //     let control_rx_1 = test_register(&sender_tx);
+    //     waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+    //     assert_eq!(num_conditions(&waiter, &call_1), 1);
 
-        waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_1))));
-        assert_eq!(num_conditions(&waiter, &call_1), 2);
+    //     waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_1))));
+    //     assert_eq!(num_conditions(&waiter, &call_1), 2);
 
-        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
-        assert_eq!(num_conditions(&waiter, &call_1), 1);
+    //     waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
+    //     assert_eq!(num_conditions(&waiter, &call_1), 1);
 
-        let control_rx_2 = test_register(&sender_tx);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
-        assert_eq!(num_conditions(&waiter, &call_2), 1);
+    //     let control_rx_2 = test_register(&sender_tx);
+    //     waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+    //     assert_eq!(num_conditions(&waiter, &call_2), 1);
 
-        waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_2))));
-        assert_eq!(num_conditions(&waiter, &call_2), 2);
+    //     waiter.process_signal(sig(SendDirectMessage(msg_data(msg_id_2))));
+    //     assert_eq!(num_conditions(&waiter, &call_2), 2);
 
-        waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_2.clone()))));
-        assert_eq!(num_conditions(&waiter, &call_2), 1);
+    //     waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_2.clone()))));
+    //     assert_eq!(num_conditions(&waiter, &call_2), 1);
 
-        expect_final(control_rx_1, || {
-            waiter.process_signal(sig(ResolveDirectConnection(msg_id_1.to_string())));
-        });
-        expect_final(control_rx_2, || {
-            waiter.process_signal(sig(SendDirectMessageTimeout(msg_id_2.to_string())));
-        });
-    }
+    //     expect_final(control_rx_1, || {
+    //         waiter.process_signal(sig(ResolveDirectConnection(msg_id_1.to_string())));
+    //     });
+    //     expect_final(control_rx_2, || {
+    //         waiter.process_signal(sig(SendDirectMessageTimeout(msg_id_2.to_string())));
+    //     });
+    // }
 }

@@ -2,7 +2,6 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use futures::executor::block_on;
 use holochain_core_types::{entry::Entry, error::HolochainError, link::link_add::LinkAdd};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
@@ -31,8 +30,10 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let entry = Entry::LinkAdd(link_add);
 
     // Wait for future to be resolved
-    let result: Result<(), HolochainError> =
-        block_on(author_entry(&entry, None, &runtime.context)).map(|_| ());
+    let result: Result<(), HolochainError> = runtime
+        .context
+        .block_on(author_entry(&entry, None, &runtime.context))
+        .map(|_| ());
 
     runtime.store_result(result)
 }
@@ -57,7 +58,6 @@ pub mod tests {
             tests::*,
         },
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
         entry::{test_entry, Entry},
@@ -141,7 +141,8 @@ pub mod tests {
     fn returns_ok_if_base_is_present() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(test_entry(), None, &context))
+        context
+            .block_on(commit_entry(test_entry(), None, &context))
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
@@ -164,7 +165,8 @@ pub mod tests {
     fn errors_with_wrong_tag() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(test_entry(), None, &context))
+        context
+            .block_on(commit_entry(test_entry(), None, &context))
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(
@@ -186,10 +188,12 @@ pub mod tests {
     fn works_with_linked_from_defined_link() {
         let (instance, context) = create_test_instance();
 
-        block_on(commit_entry(test_entry(), None, &context))
+        context
+            .block_on(commit_entry(test_entry(), None, &context))
             .expect("Could not commit entry for testing");
 
-        block_on(commit_entry(test_entry_b(), None, &context))
+        context
+            .block_on(commit_entry(test_entry_b(), None, &context))
             .expect("Could not commit entry for testing");
 
         let call_result = test_zome_api_function_call(

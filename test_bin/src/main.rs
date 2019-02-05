@@ -1,6 +1,7 @@
 #![feature(try_from)]
 
 extern crate holochain_core_types;
+#[macro_use]
 extern crate holochain_net;
 extern crate holochain_net_connection;
 #[macro_use]

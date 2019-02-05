@@ -3,7 +3,7 @@
 use holochain_net::{
     p2p_config::*,
     p2p_network::P2pNetwork,
-    tweetlog::*,
+    tweetlog::*, tweetlog::Loggy,
 };
 use holochain_net_connection::{
     json_protocol::{
@@ -16,7 +16,6 @@ use holochain_net_connection::{
     NetResult,
 };
 use std::{collections::{HashMap, HashSet}, convert::TryFrom, sync::mpsc};
-use multihash::Hash;
 use holochain_core_types::{cas::content::Address, hash::HashString};
 
 static TIMEOUT_MS: usize = 5000;
@@ -46,6 +45,8 @@ pub struct P2pNode {
     pub meta_store: HashMap<MetaKey, HashSet<Address>>,
     pub authored_entry_store: HashMap<Address, serde_json::Value>,
     pub authored_meta_store: HashMap<MetaKey, HashSet<Address>>,
+
+    pub logger: Loggy,
 }
 
 // Search logs
@@ -489,6 +490,7 @@ impl P2pNode {
             meta_store: HashMap::new(),
             authored_entry_store: HashMap::new(),
             authored_meta_store: HashMap::new(),
+            logger: Loggy::new("p2pnode"),
         }
     }
 
@@ -535,9 +537,7 @@ impl P2pNode {
              Protocol::Json(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
              _ => "".to_string(),
          };
-        {
-            g_tweetlog.read().unwrap().tt("p2pnode", &dbg_msg);
-        }
+        self.logger.t(&dbg_msg);
 
         self.recv_msg_log.push(data.clone());
 
@@ -549,9 +549,7 @@ impl P2pNode {
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    {
-                        g_tweetlog.read().unwrap().ee("p2pnode", &format!("###### Received parse error: {} {:?}", s, data));
-                    }
+                    self.logger.t(&format!("###### Received parse error: {} {:?}", s, data));
                 }
                 Err(e)
             }
@@ -569,12 +567,10 @@ impl P2pNode {
             let mut has_recved = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                {
-                    g_tweetlog.read().unwrap().tt("p2pnode", &format!(
+                self.logger.t(&format!(
                         "({})::listen() - received: {:?}",
                         self.agent_id, p2p_msg,
                     ));
-                }
                 has_recved = true;
                 time_ms = 0;
                 count += 1;
@@ -634,13 +630,13 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() - received: {:?}", self.agent_id, p2p_msg));
+                self.logger.i(&format!("({})::wait() - received: {:?}", self.agent_id, p2p_msg));
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() - match", self.agent_id));
+                    self.logger.i(&format!("({})::wait() - match", self.agent_id));
                     return Some(p2p_msg);
                 } else {
-                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() - NO match", self.agent_id));
+                    self.logger.i(&format!("({})::wait() - NO match", self.agent_id));
                 }
             }
 
@@ -648,7 +644,7 @@ impl P2pNode {
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 time_ms += 10;
                 if time_ms > timeout_ms {
-                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() has TIMEOUT", self.agent_id));
+                    self.logger.i(&format!("({})::wait() has TIMEOUT", self.agent_id));
                     return None;
                 }
             }
@@ -826,9 +822,7 @@ impl P2pNode {
 impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        {
-            g_tweetlog.read().unwrap().tt("p2pnode", &format!(">> ({}) send: {:?}", self.agent_id, data));
-        }
+        self.logger.i(&format!(">> ({}) send: {:?}", self.agent_id, data));
         self.p2p_connection.send(data)
     }
 }
@@ -848,9 +842,7 @@ fn create_ipc_config(
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
 
-    {
-        g_tweetlog.read().unwrap().ii("p2pnode", &format!("create_ipc_config() dir = {}\n", dir));
-    }
+    g_tweetlog.read().unwrap().ii("p2pnode", &format!("create_ipc_config() dir = {}\n", dir));
 
     // Create config
     let config = match maybe_config_filepath {

@@ -12,7 +12,6 @@ type TweetLoggerMap = HashMap<String, Mutex<Tweetlog>>;
 pub type listenerCallback = fn(LogLevel, Option<&str>, &str);
 
 
-
 /// this is the actual memory space for our loggers
 #[warn(non_upper_case_globals)]
 lazy_static! {
@@ -21,6 +20,27 @@ lazy_static! {
 
     pub static ref g_tweetlog: RwLock<Tweetlog> = RwLock::new(Tweetlog::new());
     //pub static ref g_tweetlog: Tweetlog = Tweetlog::new();
+}
+
+#[macro_export]
+macro_rules! tweet_t {
+    ($s:expr) => { { g_tweetlog.read().unwrap().t($s) } };
+}
+#[macro_export]
+macro_rules! tweet_d {
+    ($s:expr) => { { g_tweetlog.read().unwrap().d($s) } };
+}
+#[macro_export]
+macro_rules! tweet_i {
+    ($s:expr) => { { g_tweetlog.read().unwrap().i($s) } };
+}
+#[macro_export]
+macro_rules! tweet_w {
+    ($s:expr) => { { g_tweetlog.read().unwrap().w($s) } };
+}
+#[macro_export]
+macro_rules! tweet_e {
+    ($s:expr) => { { g_tweetlog.read().unwrap().e($s) } };
 }
 
 
@@ -35,9 +55,8 @@ pub enum LogLevel {
 
 
 impl From<char> for LogLevel {
-    fn from(letter: char) -> Self {
-        //assert!(letter.len() == 1);
-        match letter {
+    fn from(l: char) -> Self {
+        match l {
             't' => LogLevel::Trace,
             'd' => LogLevel::Debug,
             'i' => LogLevel::Info,
@@ -60,6 +79,34 @@ impl LogLevel {
 
     pub fn as_char(&self) -> char {
         LogLevel::to_char(self)
+    }
+}
+
+
+#[derive(Debug)]
+pub struct Loggy {
+    tag: String,
+}
+
+impl Loggy {
+    pub fn new(tag: &str) -> Self {
+        Loggy { tag: tag.to_owned() }
+    }
+
+    pub fn t(&self, msg: &str) {
+        g_tweetlog.read().unwrap().tweet(LogLevel::Trace, Some(&self.tag), msg);
+    }
+    pub fn d(&self, msg: &str){
+        g_tweetlog.read().unwrap().tweet(LogLevel::Debug, Some(&self.tag), msg);
+    }
+    pub fn i(&self, msg: &str){
+        g_tweetlog.read().unwrap().tweet(LogLevel::Info, Some(&self.tag), msg);
+    }
+    pub fn w(&self, msg: &str){
+        g_tweetlog.read().unwrap().tweet(LogLevel::Warning, Some(&self.tag), msg);
+    }
+    pub fn e(&self, msg: &str){
+        g_tweetlog.read().unwrap().tweet(LogLevel::Error, Some(&self.tag), msg);
     }
 }
 

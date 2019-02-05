@@ -140,6 +140,97 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#toml-configuration-files" id="toml-configuration-files"><h1>TOML Configuration Files</h1></a>
+<p>The conductor requires a configuration file to run.</p>
+<p>You can put your configuration file in <code>~/.holochain/conductor_config.toml</code> or run <code>holochain_conductor</code> explicitly with the <code>-c</code> to specify where to find it.</p>
+<p>The <a href="./testing_functions.html#configuration-alternatives">holochain-nodejs conductor</a> also accepts the same TOML based configuration.</p>
+<pre><code class="language-toml">bridges = []
+
+[[agents]]
+id = &quot;test agent 1&quot;
+key_file = &quot;holo_tester.key&quot;
+name = &quot;Holo Tester 1&quot;
+public_address = &quot;HoloTester1-----------------------------------------------------------------------AAACZp4xHB&quot;
+
+[[agents]]
+id = &quot;test agent 2&quot;
+key_file = &quot;holo_tester.key&quot;
+name = &quot;Holo Tester 2&quot;
+public_address = &quot;HoloTester2-----------------------------------------------------------------------AAAGy4WW9e&quot;
+
+[[dnas]]
+file = &quot;example-config/app_spec.hcpkg&quot;
+hash = &quot;Qm328wyq38924y&quot;
+id = &quot;app spec rust&quot;
+
+[[instances]]
+agent = &quot;test agent 1&quot;
+dna = &quot;app spec rust&quot;
+id = &quot;app spec instance 1&quot;
+
+[instances.storage]
+path = &quot;example-config/tmp-storage&quot;
+type = &quot;file&quot;
+
+[[instances]]
+agent = &quot;test agent 2&quot;
+dna = &quot;app spec rust&quot;
+id = &quot;app spec instance 2&quot;
+
+[instances.storage]
+path = &quot;example-config/tmp-storage&quot;
+type = &quot;file&quot;
+
+[[interfaces]]
+admin = true
+id = &quot;websocket interface&quot;
+
+[[interfaces.instances]]
+id = &quot;app spec instance 1&quot;
+
+[[interfaces.instances]]
+id = &quot;app spec instance 2&quot;
+
+[interfaces.driver]
+port = 3000
+type = &quot;websocket&quot;
+
+[[interfaces]]
+admin = true
+id = &quot;http interface&quot;
+
+[[interfaces.instances]]
+id = &quot;app spec instance 1&quot;
+
+[[interfaces.instances]]
+id = &quot;app spec instance 2&quot;
+
+[interfaces.driver]
+port = 4000
+type = &quot;http&quot;
+
+[logger]
+type = &quot;debug&quot;
+[[logger.rules.rules]]
+color = &quot;red&quot;
+exclude = false
+pattern = &quot;^err/&quot;
+
+[[logger.rules.rules]]
+color = &quot;white&quot;
+exclude = false
+pattern = &quot;^debug/dna&quot;
+
+[[logger.rules.rules]]
+exclude = false
+pattern = &quot;.*&quot;
+</code></pre>
+<a class="header" href="#using-real-networking" id="using-real-networking"><h3>Using real networking</h3></a>
+<p>The conductor currently uses mock networking by default. To use real networking you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the conductor where it can find n3h.  It should look something like this:</p>
+<pre><code class="language-toml">[network]
+n3h_path = &quot;/home/eric/holochain/n3h&quot;
+n3h_persistence_path = &quot;/tmp&quot;
+bootstrap_nodes = []
+</code></pre>
 
                         <hr />
                         <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_toml.md">suggest an edit</a>

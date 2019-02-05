@@ -139,7 +139,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <a class="header" href="#conductors" id="conductors"><h1>Conductors</h1></a>
+                        <a class="header" href="#running-holochain-apps-conductors" id="running-holochain-apps-conductors"><h1>Running Holochain Apps: Conductors</h1></a>
 <p>To introduce Conductors, it is useful to zoom out for a moment to the level of how Holochain runs on devices.</p>
 <p>Because Holochain is intended to be highly platform and system compatible, the core logic is written in such a way that it can be included into many different codebases. Think of MacOSX, Linux, Windows, Android, iOS, and more. Thus, the core of Holochain was made to be simply a library that gets included in another wrapper which mounts, executes and manages it. Because filling this new need is such a foundational aspect of Holochain, it has its' own name: <em>Conductor</em>.</p>
 <p>Conductors configure, install, uninstall, start and stop instances of DNA on devices. They also create a channel to securely make function calls into the Zome functions of DNA instances.</p>

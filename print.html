@@ -1678,7 +1678,7 @@ scenario.run((stop, {alice, bob}) =&gt; {
 </code></pre>
 <p>Using <code>run</code> allows you to manage the test yourself, only providing you with the basic help of starting and stopping a fresh conductor instance.</p>
 <p>The previous example used <code>tape</code> to show how it compares to using <code>runTape</code>, though you could have used any test harness, like Jest or Mocha. In fact, <code>runTape</code> simply calls <code>run</code> under the hood.</p>
-<a class="header" href="#conductors" id="conductors"><h1>Conductors</h1></a>
+<a class="header" href="#running-holochain-apps-conductors" id="running-holochain-apps-conductors"><h1>Running Holochain Apps: Conductors</h1></a>
 <p>To introduce Conductors, it is useful to zoom out for a moment to the level of how Holochain runs on devices.</p>
 <p>Because Holochain is intended to be highly platform and system compatible, the core logic is written in such a way that it can be included into many different codebases. Think of MacOSX, Linux, Windows, Android, iOS, and more. Thus, the core of Holochain was made to be simply a library that gets included in another wrapper which mounts, executes and manages it. Because filling this new need is such a foundational aspect of Holochain, it has its' own name: <em>Conductor</em>.</p>
 <p>Conductors configure, install, uninstall, start and stop instances of DNA on devices. They also create a channel to securely make function calls into the Zome functions of DNA instances.</p>
@@ -1706,8 +1706,141 @@ scenario.run((stop, {alice, bob}) =&gt; {
 <p>dynamic configuration of the conductor via admin level RPC</p>
 <p>Saving of that new configuration to your system</p>
 <a class="header" href="#development-conductor" id="development-conductor"><h1>Development Conductor</h1></a>
+<p>Meant primarily for accelerating the development process, the easiest Conductor to run, with zero configuration required, is the <code>hc run</code> Conductor. It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory a DNA instance is contained. The most basic command to run is:</p>
+<pre><code class="language-shell">hc run
+</code></pre>
+<p>This will start the DNA instance in a Conductor and open, by default, a WebSocket JSON-RPC server on port <code>8888</code>. How to use the API for this is covered in more depth in the <a href="./json_rpc_interfaces.html">JSON-RPC interfaces article</a>.</p>
+<p>The following are the options for configuring <code>hc run</code>, should you need something besides the defaults.</p>
+<a class="header" href="#packaging" id="packaging"><h3>Packaging</h3></a>
+<p><code>-b</code>/<code>--package</code></p>
+<p>Package your DNA before running it. Recall that to <a href="">package</a> is to build the <code>bundle.json</code> file from the source files. <code>hc run</code> always looks for a <code>bundle.json</code> file in the root of your DNA folder, so make sure that one exists there when trying to use it. <code>hc run --package</code> will do this, or run <code>hc package</code> beforehand.</p>
+<p><strong>example</strong></p>
+<pre><code class="language-shell">hc run --package
+</code></pre>
+<a class="header" href="#storage" id="storage"><h3>Storage</h3></a>
+<p><code>--persist</code></p>
+<p>Persist source chain and DHT data onto the file system. By default, none of the data being written to the source chain gets persisted beyond the running of the server. This will store data in the same directory as your DNA source code, in a hidden folder called <code>.hc</code>.</p>
+<p><strong>example</strong></p>
+<pre><code class="language-shell">hc run --persist
+</code></pre>
+<a class="header" href="#interfaces" id="interfaces"><h3>Interfaces</h3></a>
+<p><code>--interface</code></p>
+<p>Select a particular JSON-RPC interface to serve your DNA instance over.</p>
+<p>The JSON-RPC interface will expose, via a port on your device, a WebSocket or an HTTP server. It can be used to make function calls to the Zomes of a DNA instance.</p>
+<p>The default interface is <code>websocket</code>.</p>
+<p><strong>examples</strong>
+To run it as HTTP, run:</p>
+<pre><code class="language-shell">hc run --interface http
+</code></pre>
+<p>To explicitly run it as WebSockets, run:</p>
+<pre><code class="language-shell">hc run --interface websocket
+</code></pre>
+<a class="header" href="#port" id="port"><h3>Port</h3></a>
+<p><code>-p</code>/<code>--port</code></p>
+<p>Customize the port number that the server runs on.</p>
+<p><strong>example</strong></p>
+<pre><code class="language-shell">hc run --port 3400
+</code></pre>
+<a class="header" href="#networking" id="networking"><h3>Networking</h3></a>
+<p><code>--networked</code></p>
+<p>Select whether the Conductor should network with other nodes that are running instances of the same DNA. By default this does not occur, instead the instance runs in isolation from the network, allowing only the developer to locally access it.</p>
+<p>This option requires more configuration, which can be read about in the
+<a href="./real_networking.html">real networking article</a>.</p>
+<a class="header" href="#stopping-the-server" id="stopping-the-server"><h3>Stopping the Server</h3></a>
+<p>Once you are done with the server, to quit type <code>exit</code> then press <code>Enter</code>, or press <code>Ctrl-C</code>.</p>
 <a class="header" href="#production-conductor" id="production-conductor"><h1>Production Conductor</h1></a>
 <a class="header" href="#toml-configuration-files" id="toml-configuration-files"><h1>TOML Configuration Files</h1></a>
+<p>The conductor requires a configuration file to run.</p>
+<p>You can put your configuration file in <code>~/.holochain/conductor_config.toml</code> or run <code>holochain_conductor</code> explicitly with the <code>-c</code> to specify where to find it.</p>
+<p>The <a href="./testing_functions.html#configuration-alternatives">holochain-nodejs conductor</a> also accepts the same TOML based configuration.</p>
+<pre><code class="language-toml">bridges = []
+
+[[agents]]
+id = &quot;test agent 1&quot;
+key_file = &quot;holo_tester.key&quot;
+name = &quot;Holo Tester 1&quot;
+public_address = &quot;HoloTester1-----------------------------------------------------------------------AAACZp4xHB&quot;
+
+[[agents]]
+id = &quot;test agent 2&quot;
+key_file = &quot;holo_tester.key&quot;
+name = &quot;Holo Tester 2&quot;
+public_address = &quot;HoloTester2-----------------------------------------------------------------------AAAGy4WW9e&quot;
+
+[[dnas]]
+file = &quot;example-config/app_spec.hcpkg&quot;
+hash = &quot;Qm328wyq38924y&quot;
+id = &quot;app spec rust&quot;
+
+[[instances]]
+agent = &quot;test agent 1&quot;
+dna = &quot;app spec rust&quot;
+id = &quot;app spec instance 1&quot;
+
+[instances.storage]
+path = &quot;example-config/tmp-storage&quot;
+type = &quot;file&quot;
+
+[[instances]]
+agent = &quot;test agent 2&quot;
+dna = &quot;app spec rust&quot;
+id = &quot;app spec instance 2&quot;
+
+[instances.storage]
+path = &quot;example-config/tmp-storage&quot;
+type = &quot;file&quot;
+
+[[interfaces]]
+admin = true
+id = &quot;websocket interface&quot;
+
+[[interfaces.instances]]
+id = &quot;app spec instance 1&quot;
+
+[[interfaces.instances]]
+id = &quot;app spec instance 2&quot;
+
+[interfaces.driver]
+port = 3000
+type = &quot;websocket&quot;
+
+[[interfaces]]
+admin = true
+id = &quot;http interface&quot;
+
+[[interfaces.instances]]
+id = &quot;app spec instance 1&quot;
+
+[[interfaces.instances]]
+id = &quot;app spec instance 2&quot;
+
+[interfaces.driver]
+port = 4000
+type = &quot;http&quot;
+
+[logger]
+type = &quot;debug&quot;
+[[logger.rules.rules]]
+color = &quot;red&quot;
+exclude = false
+pattern = &quot;^err/&quot;
+
+[[logger.rules.rules]]
+color = &quot;white&quot;
+exclude = false
+pattern = &quot;^debug/dna&quot;
+
+[[logger.rules.rules]]
+exclude = false
+pattern = &quot;.*&quot;
+</code></pre>
+<a class="header" href="#using-real-networking" id="using-real-networking"><h3>Using real networking</h3></a>
+<p>The conductor currently uses mock networking by default. To use real networking you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the conductor where it can find n3h.  It should look something like this:</p>
+<pre><code class="language-toml">[network]
+n3h_path = &quot;/home/eric/holochain/n3h&quot;
+n3h_persistence_path = &quot;/tmp&quot;
+bootstrap_nodes = []
+</code></pre>
 <a class="header" href="#intro-to-json-rpc-interfaces" id="intro-to-json-rpc-interfaces"><h1>Intro to JSON-RPC Interfaces</h1></a>
 <p>The JSON-RPC interface will expose, via a port on your device, a WebSocket or an HTTP server, via which you can make function calls to the Zomes of your DNA.</p>
 <a class="header" href="#json-rpc" id="json-rpc"><h2>JSON-RPC</h2></a>
@@ -1718,6 +1851,67 @@ scenario.run((stop, {alice, bob}) =&gt; {
 <p><code>method</code>: specifies the method on the &quot;remote&quot; (Holochain) to call.</p>
 <p><code>params</code>: (optional) contains a JSON object which holds the data to be given as arguments to the method being called, if the method expects them.</p>
 <a class="header" href="#conductor-json-rpc-api" id="conductor-json-rpc-api"><h1>Conductor JSON-RPC API</h1></a>
+<a class="header" href="#querying-running-dna-instances" id="querying-running-dna-instances"><h2>Querying Running DNA Instances</h2></a>
+<p>Holochain Conductors expose a method <code>info/instances</code>. What it does is return a list of the running DNA instances in the Conductor. For each running instance, it provides the instance &quot;ID&quot;, the name of the DNA, and the agent &quot;id&quot;. The instance IDs will be particularly useful in other circumstances.</p>
+<p>The method <code>info/instances</code> doesn't require any input parameters, so <code>params</code> can be left off the request.</p>
+<a class="header" href="#example" id="example"><h3>Example</h3></a>
+<p><strong>example request</strong></p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;id&quot;: &quot;0&quot;,
+    &quot;method&quot;: &quot;info/instances&quot;
+}
+</code></pre>
+<p><strong>example response</strong></p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;result&quot;: [{&quot;id&quot;:&quot;test-instance&quot;,&quot;dna&quot;:&quot;hc-run-dna&quot;,&quot;agent&quot;:&quot;hc-run-agent&quot;}],
+    &quot;id&quot;: &quot;0&quot;
+}
+</code></pre>
+<a class="header" href="#calling-zome-functions" id="calling-zome-functions"><h2>Calling Zome Functions</h2></a>
+<p>The following explains the general JSON-RPC pattern for how to call a Zome function.</p>
+<a class="header" href="#method" id="method"><h3>method</h3></a>
+<p>To call a Zome function, for the <code>method</code> we need three things:</p>
+<ol>
+<li>The instance ID, corresponding to the instance IDs returned by <code>info/instances</code></li>
+<li>The name of the Zome</li>
+<li>The name of the function</li>
+</ol>
+<p>The three are combined into a single string, separated by forward slash (<code>/</code>) characters, to use as the JSON-RPC &quot;method&quot;.</p>
+<p>In the last example, the instance ID &quot;test-instance&quot; was returned, which can be used here as the instance ID. Say there was a Zome in a DNA called &quot;blogs&quot;, this is the Zome name. That Zome has a function called &quot;create_blog&quot;, that is the function name. Append these together with <code>/</code> characters to get the &quot;method&quot; for the JSON-RPC call.</p>
+<p><strong>example method</strong></p>
+<pre><code>&quot;test-instance/blogs/create_blog&quot;
+</code></pre>
+<a class="header" href="#params" id="params"><h3>params</h3></a>
+<p>Unlike <code>info/instances</code>, Zome functions usually expect arguments. To give arguments, a JSON object should be constructed.</p>
+<blockquote>
+<p>Any top level keys of the input object should correspond <strong>exactly</strong> with the name of an argument expected by the Zome method being called.</p>
+</blockquote>
+<p><strong>example params</strong></p>
+<pre><code class="language-json">{ &quot;blog&quot;: { &quot;content&quot;: &quot;sample content&quot; }}
+</code></pre>
+<a class="header" href="#example-1" id="example-1"><h3>Example</h3></a>
+<p><strong>example request</strong></p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;id&quot;: &quot;0&quot;,
+    &quot;method&quot;: &quot;test-instance/blogs/create_blog&quot;,
+    &quot;params&quot;: {
+        &quot;blog&quot;: {
+            &quot;content&quot;:&quot;sample content&quot;
+        }
+    }
+}
+</code></pre>
+<p><strong>example response</strong></p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;result&quot;: &quot;{\&quot;Ok\&quot;:\&quot;QmUwoQAtmg7frBjcn1GZX5fwcPf3ENiiMhPPro6DBM4V19\&quot;}&quot;,
+    &quot;id&quot;: &quot;0&quot;
+}
+</code></pre>
+<p>This response suggests that the function call was successful (&quot;Ok&quot;) and provides the DHT address of the freshly committed blog entry (&quot;QmU...&quot;).</p>
 <a class="header" href="#http" id="http"><h1>HTTP</h1></a>
 <p>Any coding language, or tool, which can make HTTP requests can make requests to a running DNA instance. Based on the API exposed by Holochain, these must be <code>POST</code> requests, use the &quot;application/json&quot; Content-Type, and follow the JSON-RPC standard.</p>
 <p>The HTTP example below will demonstrate how easy it is to make calls to a running DNA instance, just using the cURL tool for HTTP requests from a terminal.</p>
@@ -1727,7 +1921,7 @@ scenario.run((stop, {alice, bob}) =&gt; {
 <a class="header" href="#starting-an-http-server-with-holochain" id="starting-an-http-server-with-holochain"><h2>Starting an HTTP Server with <code>holochain</code></h2></a>
 <a class="header" href="#http-example" id="http-example"><h2>HTTP Example</h2></a>
 <p>This whole example assumes that one of the methods listed above has been used to start an HTTP server on port 8888 with a valid DNA instance running in it.</p>
-<a class="header" href="#calling-zome-functions" id="calling-zome-functions"><h3>Calling Zome Functions</h3></a>
+<a class="header" href="#calling-zome-functions-1" id="calling-zome-functions-1"><h3>Calling Zome Functions</h3></a>
 <p>The following discusses how to use cURL (and thus HTTP generally) to make calls to Zome functions.</p>
 <p>To use as the JSON-RPC &quot;method&quot; the instance ID, the Zome name, and the function name are combined into a single string, separated by forward slash (<code>/</code>) characters. It could look like the following:
 <code>&quot;method&quot;: &quot;test-instance/blogs/create_blog&quot;</code></p>
@@ -1778,7 +1972,7 @@ ws.on('open', function() {
   // do stuff in here
 })
 </code></pre>
-<a class="header" href="#calling-zome-functions-1" id="calling-zome-functions-1"><h3>Calling Zome Functions</h3></a>
+<a class="header" href="#calling-zome-functions-2" id="calling-zome-functions-2"><h3>Calling Zome Functions</h3></a>
 <p>The following discusses how to use <code>rpc-websockets</code> to make calls to Zome functions.</p>
 <p>To use as the JSON-RPC &quot;method&quot; the instance ID, the Zome name, and the function name are combined into a single string, separated by forward slash (<code>/</code>) characters. It could look like the following:
 <code>'test-instance/blogs/create_blog'</code></p>
@@ -1860,7 +2054,7 @@ ws.close()
 (libp2p) [i] QmUmUF..V71C got ping, sending pong
 </code></pre>
 <p>This means that the nodes are able to communicate! Watch the logs for gossip, as you take actions (that alter the source chain) in either node.</p>
-<a class="header" href="#conductor-admin" id="conductor-admin"><h1>Conductor Admin</h1></a>
+<a class="header" href="#administering-conductors" id="administering-conductors"><h1>Administering Conductors</h1></a>
 <a class="header" href="#building-holochain-apps-user-interfaces" id="building-holochain-apps-user-interfaces"><h1>Building Holochain Apps: User Interfaces</h1></a>
 <p>Holochain is designed to be flexible and accomodating when it comes to building user interfaces. There is not a single approach to developing user interfaces that is enforced by Holochain, though there are some approaches that have extra tooling, support and focus. First and foremost, Holochain supports APIs that make building UIs with the technologies of the web (HTML, CSS, JS, etc) easy.</p>
 <p>Put simply, it is entirely possible to build a user interface for Holochain completely in HTML, CSS, and JavaScript.</p>

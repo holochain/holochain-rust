@@ -140,6 +140,67 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#conductor-json-rpc-api" id="conductor-json-rpc-api"><h1>Conductor JSON-RPC API</h1></a>
+<a class="header" href="#querying-running-dna-instances" id="querying-running-dna-instances"><h2>Querying Running DNA Instances</h2></a>
+<p>Holochain Conductors expose a method <code>info/instances</code>. What it does is return a list of the running DNA instances in the Conductor. For each running instance, it provides the instance &quot;ID&quot;, the name of the DNA, and the agent &quot;id&quot;. The instance IDs will be particularly useful in other circumstances.</p>
+<p>The method <code>info/instances</code> doesn't require any input parameters, so <code>params</code> can be left off the request.</p>
+<a class="header" href="#example" id="example"><h3>Example</h3></a>
+<p><strong>example request</strong></p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;id&quot;: &quot;0&quot;,
+    &quot;method&quot;: &quot;info/instances&quot;
+}
+</code></pre>
+<p><strong>example response</strong></p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;result&quot;: [{&quot;id&quot;:&quot;test-instance&quot;,&quot;dna&quot;:&quot;hc-run-dna&quot;,&quot;agent&quot;:&quot;hc-run-agent&quot;}],
+    &quot;id&quot;: &quot;0&quot;
+}
+</code></pre>
+<a class="header" href="#calling-zome-functions" id="calling-zome-functions"><h2>Calling Zome Functions</h2></a>
+<p>The following explains the general JSON-RPC pattern for how to call a Zome function.</p>
+<a class="header" href="#method" id="method"><h3>method</h3></a>
+<p>To call a Zome function, for the <code>method</code> we need three things:</p>
+<ol>
+<li>The instance ID, corresponding to the instance IDs returned by <code>info/instances</code></li>
+<li>The name of the Zome</li>
+<li>The name of the function</li>
+</ol>
+<p>The three are combined into a single string, separated by forward slash (<code>/</code>) characters, to use as the JSON-RPC &quot;method&quot;.</p>
+<p>In the last example, the instance ID &quot;test-instance&quot; was returned, which can be used here as the instance ID. Say there was a Zome in a DNA called &quot;blogs&quot;, this is the Zome name. That Zome has a function called &quot;create_blog&quot;, that is the function name. Append these together with <code>/</code> characters to get the &quot;method&quot; for the JSON-RPC call.</p>
+<p><strong>example method</strong></p>
+<pre><code>&quot;test-instance/blogs/create_blog&quot;
+</code></pre>
+<a class="header" href="#params" id="params"><h3>params</h3></a>
+<p>Unlike <code>info/instances</code>, Zome functions usually expect arguments. To give arguments, a JSON object should be constructed.</p>
+<blockquote>
+<p>Any top level keys of the input object should correspond <strong>exactly</strong> with the name of an argument expected by the Zome method being called.</p>
+</blockquote>
+<p><strong>example params</strong></p>
+<pre><code class="language-json">{ &quot;blog&quot;: { &quot;content&quot;: &quot;sample content&quot; }}
+</code></pre>
+<a class="header" href="#example-1" id="example-1"><h3>Example</h3></a>
+<p><strong>example request</strong></p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;id&quot;: &quot;0&quot;,
+    &quot;method&quot;: &quot;test-instance/blogs/create_blog&quot;,
+    &quot;params&quot;: {
+        &quot;blog&quot;: {
+            &quot;content&quot;:&quot;sample content&quot;
+        }
+    }
+}
+</code></pre>
+<p><strong>example response</strong></p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;result&quot;: &quot;{\&quot;Ok\&quot;:\&quot;QmUwoQAtmg7frBjcn1GZX5fwcPf3ENiiMhPPro6DBM4V19\&quot;}&quot;,
+    &quot;id&quot;: &quot;0&quot;
+}
+</code></pre>
+<p>This response suggests that the function call was successful (&quot;Ok&quot;) and provides the DHT address of the freshly committed blog entry (&quot;QmU...&quot;).</p>
 
                         <hr />
                         <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_json_rpc_api.md">suggest an edit</a>

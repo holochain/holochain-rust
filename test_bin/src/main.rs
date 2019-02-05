@@ -24,7 +24,11 @@ pub mod three_workflows;
 use constants::*;
 use holochain_net_connection::NetResult;
 use p2p_node::P2pNode;
-use std::fs::File;
+use std::{
+    fs::File,
+    collections::HashMap,
+};
+use holochain_net::tweetlog::*;
 
 type TwoNodesTestFn =
     fn(alex: &mut P2pNode, billy: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
@@ -115,16 +119,37 @@ fn main() {
     let config = load_config_file(&config_path);
     let n3h_path = config["N3H_PATH"].clone().to_string();
 
-    // Merge two nodes tests
-    let mut test_fns = TWO_NODES_BASIC_TEST_FNS.clone();
-    test_fns.append(&mut TWO_NODES_LIST_TEST_FNS.clone());
+    // Configure logger
+    //let mut tweetlog = Tweetlog::new();
+    let mut tweetlog = g_tweetlog.write().unwrap();
+    //tweetlog.add("errorlog");
+    let default_level = LogLevel::from(config["log"]["default"].as_str().unwrap().chars().next().unwrap());
+    tweetlog.set(default_level, None);
+    // set level per tag
+    //let v = config["log"]["tags"];
+    let tag_map: HashMap<String, String> = serde_json::from_value(config["log"]["tags"].clone()).expect("missing/bad 'tags' config");
+    for (tag, level_str) in tag_map {
+        let level = LogLevel::from(level_str.as_str().chars().next().unwrap());
+        tweetlog.set(level, Some(tag));
+    }
+    tweetlog.listen(Tweetlog::console);
+    // set global logger
+    //g_tweetlog = tweetlog;
 
+    // Merge two nodes test suites
+    let mut test_fns = Vec::new();
+    if config["suites"]["BASIC_WORKFLOWS"].as_bool().unwrap() {
+        test_fns.append(&mut TWO_NODES_BASIC_TEST_FNS.clone());
+    }
+    if config["suites"]["LIST_WORKFLOWS"].as_bool().unwrap() {
+        test_fns.append(&mut TWO_NODES_LIST_TEST_FNS.clone());
+    }
     // Launch tests on each setup
     for test_fn in test_fns {
-        if config["TEST_IN_MEMORY"].as_bool().unwrap() {
+        if config["modes"]["IN_MEMORY"].as_bool().unwrap() {
             launch_two_nodes_test_with_memory_network(test_fn).unwrap();
         }
-        if config["TEST_IPC_MOCK"].as_bool().unwrap() {
+        if config["modes"]["IPC_MOCK"].as_bool().unwrap() {
             launch_two_nodes_test_with_ipc_mock(
                 &n3h_path,
                 "test_bin/data/mock_ipc_network_config.json",
@@ -132,26 +157,28 @@ fn main() {
             )
                 .unwrap();
         }
-        if config["TEST_HACK_MODE"].as_bool().unwrap() {
+        if config["modes"]["HACK_MODE"].as_bool().unwrap() {
             launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
         }
     }
 
-    // Launch tests on each setup
-    for test_fn in THREE_NODES_TEST_FNS.clone() {
-        if config["TEST_IN_MEMORY"].as_bool().unwrap() {
-            launch_three_nodes_test_with_memory_network(test_fn).unwrap();
-        }
-        if config["TEST_IPC_MOCK"].as_bool().unwrap() {
-            launch_three_nodes_test_with_ipc_mock(
-                &n3h_path,
-                "test_bin/data/mock_ipc_network_config.json",
-                test_fn,
-            )
-                .unwrap();
-        }
-        if config["TEST_HACK_MODE"].as_bool().unwrap() {
-            launch_three_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+    // Launch THREE_WORKFLOWS tests on each setup
+    if config["suites"]["THREE_WORKFLOWS"].as_bool().unwrap() {
+        for test_fn in THREE_NODES_TEST_FNS.clone() {
+            if config["modes"]["IN_MEMORY"].as_bool().unwrap() {
+                launch_three_nodes_test_with_memory_network(test_fn).unwrap();
+            }
+            if config["modes"]["IPC_MOCK"].as_bool().unwrap() {
+                launch_three_nodes_test_with_ipc_mock(
+                    &n3h_path,
+                    "test_bin/data/mock_ipc_network_config.json",
+                    test_fn,
+                )
+                    .unwrap();
+            }
+            if config["modes"]["HACK_MODE"].as_bool().unwrap() {
+                launch_three_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+            }
         }
     }
 

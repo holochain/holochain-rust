@@ -1,6 +1,10 @@
 #![allow(non_snake_case)]
 
-use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
+use holochain_net::{
+    p2p_config::*,
+    p2p_network::P2pNetwork,
+    tweetlog::*,
+};
 use holochain_net_connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
@@ -460,7 +464,7 @@ impl P2pNode {
                 // Debugging code (do not remove)
                 // println!("<<< ({}) handler: {:?}", agent_id_arg, r);
 
-                tweetlog.dd("p2pnode", format!("<<< ({}) handler: {:?}", agent_id_arg, r));
+                g_tweetlog.read().unwrap().tt("p2pnode", &format!("<<< ({}) handler: {:?}", agent_id_arg, r));
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -557,12 +561,16 @@ impl P2pNode {
         loop {
             let mut has_recved = false;
 
-            if let Ok(_p2p_msg) = self.try_recv() {
+            if let Ok(p2p_msg) = self.try_recv() {
                 // Debugging code (do not remove)
-                //                println!(
-                //                    "({})::listen() - received: {:?}",
-                //                    self.agent_id, p2p_msg
-                //                );
+//                                println!(
+//                                    "({})::listen() - received: {:?}",
+//                                    self.agent_id, p2p_msg
+//                                );
+                g_tweetlog.read().unwrap().tt("p2pnode", &format!(
+                    "({})::listen() - received: {:?}",
+                    self.agent_id, p2p_msg,
+                ));
                 has_recved = true;
                 time_ms = 0;
                 count += 1;

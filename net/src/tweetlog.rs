@@ -8,16 +8,18 @@ use std::{
 /// Type for holding a map of 'logger_name -> Tweetlog'
 type TweetLoggerMap = HashMap<String, Mutex<Tweetlog>>;
 
-pub type listenerCallback = fn(LogLevel, Option<String>, &str);
+#[warn(non_camel_case_types)]
+pub type listenerCallback = fn(LogLevel, Option<&str>, &str);
 
 
 
 /// this is the actual memory space for our loggers
+#[warn(non_upper_case_globals)]
 lazy_static! {
 //    pub(crate) static ref TWEET_LOGGER_MAP: RwLock<Tweetlog> =
 //        RwLock::new(HashMap::new());
 
-            pub(crate) static ref TWEETLOG: RwLock<Tweetlog> =
+            pub static ref g_tweetlog: RwLock<Tweetlog> =
         RwLock::new(Tweetlog::new());
 
 }
@@ -31,6 +33,37 @@ pub enum LogLevel {
     Warning,
     Error,
 }
+
+
+impl From<char> for LogLevel {
+    fn from(letter: char) -> Self {
+        //assert!(letter.len() == 1);
+        match letter {
+            't' => LogLevel::Trace,
+            'd' => LogLevel::Debug,
+            'i' => LogLevel::Info,
+            'w' => LogLevel::Warning,
+            'e' => LogLevel::Error,
+            _ => unreachable!(),
+        }
+    }
+}
+impl LogLevel {
+    pub fn to_char(level: &LogLevel) -> char {
+        match level {
+            LogLevel::Trace => 't',
+            LogLevel::Debug => 'd',
+            LogLevel::Info => 'i',
+            LogLevel::Warning => 'w',
+            LogLevel::Error => 'e',
+        }
+    }
+
+    pub fn as_char(&self) -> char {
+        LogLevel::to_char(self)
+    }
+}
+
 
 #[derive(Debug)]
 struct Logger {
@@ -136,11 +169,11 @@ impl Tweetlog {
     fn tweet(&self, level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
         // replace None to "_"
         let tag = match maybe_tag {
-            None => "_".to_string(),
+            None => "_",
             Some(tag) => tag,
         };
         // Find logger, if unknown tag use general
-        let maybe_logger = self.log_by_tag.get(&tag);
+        let maybe_logger = self.log_by_tag.get(tag);
         // println!("maybe_logger({}) = {:?}", tag, maybe_logger);
         let logger = match maybe_logger {
             None => self.log_by_tag.get("_").unwrap(),
@@ -149,7 +182,7 @@ impl Tweetlog {
         // print if logger can
         if (logger.level.clone() as usize) <= (level.clone() as usize) {
             for cb in logger.callbacks.clone() {
-                cb(level.clone(), Some(tag.clone()), msg);
+                cb(level.clone(), Some(tag), msg);
             }
 
         }
@@ -195,10 +228,10 @@ impl Tweetlog {
 
     // -- provided listeners -- //
 
-    pub fn console(level: LogLevel, maybe_tag: Option<String>, msg: &str) {
+    pub fn console(level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
         match maybe_tag {
-            None      => println!("{:?}  \t  {}", level, msg),
-            Some(tag) => println!("{:?}  {}  {}", level, tag, msg),
+            None      => println!("(global)[{}]  {}", level.as_char(), msg),
+            Some(tag) => println!("({:?})[{}]  {}", tag, level.as_char(), msg),
         }
     }
 }

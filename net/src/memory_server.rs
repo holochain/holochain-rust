@@ -17,7 +17,7 @@ use std::{
     convert::TryFrom,
     sync::{mpsc, Mutex, RwLock},
 };
-use multihash::Hash;
+use crate::tweetlog::*;
 
 type BucketId = String;
 type RequestId = String;

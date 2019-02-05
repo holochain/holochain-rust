@@ -80,7 +80,9 @@ pub mod tests {
         let entry = test_entry();
         let header1 = create_new_chain_header(&entry, context1.clone(), &None);
         let header2 = create_new_chain_header(&entry, context2.clone(), &None);
-        block_on(commit_entry(entry.clone(), None, &context1)).unwrap();
+        context1
+            .block_on(commit_entry(entry.clone(), None, &context1))
+            .unwrap();
         {
             let dht1 = context1.state().unwrap().dht();
             {
@@ -97,7 +99,7 @@ pub mod tests {
                 ..Default::default()
             },
         };
-        let result = block_on(get_entry_result_workflow(&context1, &args));
+        let result = context1.block_on(get_entry_result_workflow(&context1, &args));
         if let GetEntryResultType::Single(item) = result.unwrap().result {
             let headers = item.headers;
             assert_eq!(headers, vec![header1, header2]);

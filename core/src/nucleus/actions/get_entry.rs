@@ -119,12 +119,7 @@ pub fn get_entry_with_meta<'a>(
         Ok(Some(entry)) => entry,
     };
     // 2. try to get the entry's metadata
-    let maybe_meta = get_entry_crud_meta_from_dht(context, address);
-    if let Err(err) = maybe_meta {
-        return Err(err);
-    }
-    let (crud_status, maybe_crud_link) = maybe_meta
-        .unwrap()
+    let (crud_status, maybe_crud_link) = get_entry_crud_meta_from_dht(context, address)?
         .expect("Entry should have crud-status metadata");
     let item = EntryWithMeta {
         entry,

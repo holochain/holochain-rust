@@ -2,7 +2,7 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
+        get_latest, increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
         EntityAttributeValueStorage, IndexQuery, Value,
     },
     error::{HcResult, HolochainError},
@@ -122,7 +122,7 @@ impl EavFileStorage {
         eav_constraint: Option<T>,
     ) -> HcResult<BTreeSet<String>>
     where
-        T: ToString,
+        T: ToString + std::fmt::Debug,
     {
         let address = eav_constraint
             .map(|e| e.to_string())
@@ -205,30 +205,38 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .cloned()
             .collect();
 
-        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
+        let total = entity_attribute_value_inter.len();
+        let eav: BTreeSet<_> = entity_attribute_value_inter
             .into_iter()
-            .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
-            .partition(|c| c.is_ok());
-        if error.len() > 0 {
+            .filter_map(|content| {
+                EntityAttributeValueIndex::try_from_content(&JsonString::from(content)).ok()
+            })
+            .collect();
+        if eav.len() < total {
+            // not all EAVs were converted
             Err(HolochainError::ErrorGeneric(
                 "Error Converting EAVs".to_string(),
             ))
         } else {
             Ok(eav
+                .clone()
                 .into_iter()
-                .filter_map(|maybe_e| {
-                    maybe_e.ok().filter(|e| {
-                        let lower = index_query
-                            .start()
-                            .map(|start| start <= e.index())
-                            .unwrap_or(false);
-                        let upper = index_query
-                            .end()
-                            .map(|end| end >= e.index())
-                            .unwrap_or(false);
+                .filter(|e| {
+                    let check_is_latest = || {
+                        get_latest(e.clone(), eav.clone())
+                            .map(|latest| latest.index() == e.index())
+                            .unwrap_or(false)
+                    };
+                    let lower = index_query
+                        .start()
+                        .map(|start| start <= e.index())
+                        .unwrap_or_else(check_is_latest);
+                    let upper = index_query
+                        .end()
+                        .map(|end| end >= e.index())
+                        .unwrap_or_else(check_is_latest);
 
-                        lower && upper
-                    })
+                    lower && upper
                 })
                 .collect())
         }

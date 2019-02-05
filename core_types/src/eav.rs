@@ -27,20 +27,21 @@ pub type Entity = Address;
 /// Using String for EAV attributes (not e.g. an enum) keeps it simple and open
 #[derive(PartialEq, Eq, PartialOrd, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub enum Attribute {
-    NullAttribute,
-    // #[serde(rename = "crud-status")]
+    #[serde(rename = "crud-status")]
     CrudStatus,
-    // #[serde(rename = "crud-link")]
+
+    #[serde(rename = "crud-link")]
     CrudLink,
-    // #[serde(rename = "link")]
+
+    #[serde(rename = "link")]
     Link,
+
     LinkTag(String),
 }
 
 impl fmt::Display for Attribute {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Attribute::NullAttribute => write!(f, "null"),
             Attribute::CrudStatus => write!(f, "crud-status"),
             Attribute::CrudLink => write!(f, "crud-link"),
             Attribute::Link => write!(f, "link"),

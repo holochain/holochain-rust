@@ -214,10 +214,10 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 "Error Converting EAVs".to_string(),
             ))
         } else {
-            let r: BTreeSet<EntityAttributeValueIndex> = eav
+            Ok(eav
                 .into_iter()
                 .filter_map(|maybe_e| {
-                    maybe_e.ok().and_then(|e| {
+                    maybe_e.ok().filter(|e| {
                         let lower = index_query
                             .start()
                             .map(|start| start <= e.index())
@@ -226,15 +226,11 @@ impl EntityAttributeValueStorage for EavFileStorage {
                             .end()
                             .map(|end| end >= e.index())
                             .unwrap_or(false);
-                        if lower && upper {
-                            Some(e)
-                        } else {
-                            None
-                        }
+
+                        lower && upper
                     })
                 })
-                .collect();
-            Ok(r)
+                .collect())
         }
     }
 }

@@ -48,7 +48,7 @@ pub struct Context {
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
-    pub container_api: Option<Arc<RwLock<IoHandler>>>,
+    pub conductor_api: Option<Arc<RwLock<IoHandler>>>,
     pub signal_tx: Option<SyncSender<Signal>>,
 }
 
@@ -65,7 +65,7 @@ impl Context {
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
-        container_api: Option<Arc<RwLock<IoHandler>>>,
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
@@ -80,7 +80,7 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             network_config,
-            container_api,
+            conductor_api,
         }
     }
 
@@ -107,7 +107,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             network_config,
-            container_api: None,
+            conductor_api: None,
         })
     }
 

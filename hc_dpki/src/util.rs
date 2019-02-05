@@ -2,10 +2,11 @@ use crate::bundle;
 use holochain_core_types::{agent::KeyBuffer, error::HolochainError};
 use holochain_sodium::{aead, kx, pwhash, secbuf::SecBuf};
 
-// allow overrides for unit-testing purposes
-pub const PW_HASH_OPS_LIMIT: u64 = pwhash::OPSLIMIT_SENSITIVE;
-pub const PW_HASH_MEM_LIMIT: usize = pwhash::MEMLIMIT_SENSITIVE;
-pub const PW_HASH_ALGO: i8 = pwhash::ALG_ARGON2ID13;
+pub type OpsLimit = u64;
+pub type MemLimit = usize;
+pub type PwHashAlgo = i8;
+
+pub struct PwHashConfig(pub OpsLimit, pub MemLimit, pub PwHashAlgo);
 
 /// simplify the api for generating a password hash with our set parameters
 ///
@@ -18,15 +19,14 @@ pub fn pw_hash(
     password: &mut SecBuf,
     salt: &mut SecBuf,
     hash: &mut SecBuf,
+    config: Option<PwHashConfig>,
 ) -> Result<(), HolochainError> {
-    pwhash::hash(
-        password,
-        PW_HASH_OPS_LIMIT,
-        PW_HASH_MEM_LIMIT,
-        PW_HASH_ALGO,
-        salt,
-        hash,
-    )?;
+    let config = config.unwrap_or(PwHashConfig(
+        pwhash::OPSLIMIT_SENSITIVE,
+        pwhash::MEMLIMIT_SENSITIVE,
+        pwhash::ALG_ARGON2ID13,
+    ));
+    pwhash::hash(password, config.0, config.1, config.2, salt, hash)?;
     Ok(())
 }
 
@@ -40,6 +40,7 @@ pub fn pw_hash(
 pub fn pw_enc(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
+    config: Option<PwHashConfig>,
 ) -> Result<bundle::ReturnBundleData, HolochainError> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
@@ -47,7 +48,7 @@ pub fn pw_enc(
     let mut nonce = SecBuf::with_insecure(aead::NONCEBYTES);
     holochain_sodium::random::random_secbuf(&mut nonce);
     let mut cipher = SecBuf::with_insecure(data.len() + aead::ABYTES);
-    pw_hash(passphrase, &mut salt, &mut secret)?;
+    pw_hash(passphrase, &mut salt, &mut secret, config)?;
     aead::enc(data, &mut secret, None, &mut nonce, &mut cipher)?;
 
     let salt = salt.read_lock().to_vec();
@@ -72,6 +73,7 @@ pub fn pw_dec(
     bundle: &bundle::ReturnBundleData,
     passphrase: &mut SecBuf,
     decrypted_data: &mut SecBuf,
+    config: Option<PwHashConfig>,
 ) -> Result<(), HolochainError> {
     let mut secret = SecBuf::with_secure(kx::SESSIONKEYBYTES);
     let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
@@ -80,7 +82,7 @@ pub fn pw_dec(
     convert_vec_to_secbuf(&bundle.nonce, &mut nonce);
     let mut cipher = SecBuf::with_insecure(bundle.cipher.len());
     convert_vec_to_secbuf(&bundle.cipher, &mut cipher);
-    pw_hash(passphrase, &mut salt, &mut secret)?;
+    pw_hash(passphrase, &mut salt, &mut secret, config)?;
     aead::dec(decrypted_data, &mut secret, None, &mut nonce, &mut cipher)?;
     Ok(())
 }
@@ -162,6 +164,12 @@ mod tests {
     use super::*;
     use crate::holochain_sodium::random::random_secbuf;
 
+    const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
+        pwhash::OPSLIMIT_INTERACTIVE,
+        pwhash::MEMLIMIT_INTERACTIVE,
+        pwhash::ALG_ARGON2ID13,
+    ));
+
     #[test]
     fn it_should_encrypt_data() {
         let mut data = SecBuf::with_insecure(32);
@@ -176,10 +184,11 @@ mod tests {
             password[0] = 42;
             password[1] = 222;
         }
-        let mut bundle: bundle::ReturnBundleData = pw_enc(&mut data, &mut password).unwrap();
+        let mut bundle: bundle::ReturnBundleData =
+            pw_enc(&mut data, &mut password, TEST_CONFIG).unwrap();
 
         let mut dec_mess = SecBuf::with_insecure(32);
-        pw_dec(&mut bundle, &mut password, &mut dec_mess).unwrap();
+        pw_dec(&mut bundle, &mut password, &mut dec_mess, TEST_CONFIG).unwrap();
 
         let data = data.read_lock();
         let dec_mess = dec_mess.read_lock();
@@ -196,9 +205,9 @@ mod tests {
             password[1] = 222;
         }
         let mut salt = SecBuf::with_insecure(pwhash::SALTBYTES);
-        pw_hash(&mut password, &mut salt, &mut pw2_hash).unwrap();
+        pw_hash(&mut password, &mut salt, &mut pw2_hash, TEST_CONFIG).unwrap();
         let pw2_hash = pw2_hash.read_lock();
-        assert_eq!("[124, 13, 239, 131, 202, 34, 12, 72, 56, 58, 18, 154, 215, 207, 166, 28, 51, 135, 79, 11, 48, 221, 203, 15, 167, 156, 132, 32, 200, 180, 17, 36]",  format!("{:?}", *pw2_hash));
+        assert_eq!("[134, 156, 170, 171, 184, 19, 40, 158, 64, 227, 105, 252, 59, 175, 119, 226, 77, 238, 49, 61, 27, 174, 47, 246, 179, 168, 88, 200, 65, 11, 14, 159]",  format!("{:?}", *pw2_hash));
     }
 
     #[test]

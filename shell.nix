@@ -80,17 +80,8 @@ let
   '';
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
-   ulimit -a;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target  || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target keypair::tests::it_should_set_keypair_from_seed || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target util::tests::it_should_decode_to_create_pub_key || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target keypair::tests::it_should_get_id || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target keypair::tests::it_should_sign_message_and_verify || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target keypair::tests::it_should_get_bundle || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target util::tests::it_should_generate_pw_hash_with_salt || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target util::tests::it_should_encrypt_data || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target keypair::tests::it_should_get_from_bundle || true;
-   cargo test -p holochain_dpki --release --target-dir "$HC_TARGET_PREFIX"target keypair::tests::it_should_try_get_bundle_and_decode_it || true;
+   hc-build-wasm
+   cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
   '';
 
 in

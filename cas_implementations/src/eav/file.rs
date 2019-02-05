@@ -2,7 +2,7 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        get_latest, increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
+        increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
         EntityAttributeValueStorage, IndexQuery, Value,
     },
     error::{HcResult, HolochainError},
@@ -214,37 +214,27 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 "Error Converting EAVs".to_string(),
             ))
         } else {
-            let map: BTreeSet<EntityAttributeValueIndex> = eav
-                .clone()
+            let r: BTreeSet<EntityAttributeValueIndex> = eav
                 .into_iter()
-                .map(|value: HcResult<EntityAttributeValueIndex>| {
-                    value.unwrap_or(EntityAttributeValueIndex::default())
+                .filter_map(|maybe_e| {
+                    maybe_e.ok().and_then(|e| {
+                        let lower = index_query
+                            .start()
+                            .map(|start| start <= e.index())
+                            .unwrap_or(false);
+                        let upper = index_query
+                            .end()
+                            .map(|end| end >= e.index())
+                            .unwrap_or(false);
+                        if lower && upper {
+                            Some(e)
+                        } else {
+                            None
+                        }
+                    })
                 })
                 .collect();
-            Ok(map
-                .clone()
-                .into_iter()
-                .filter(|e| {
-                    index_query
-                        .start()
-                        .map(|start| start <= e.index())
-                        .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone())
-                                .unwrap_or(EntityAttributeValueIndex::default());
-                            latest.index() == e.index()
-                        })
-                })
-                .filter(|e| {
-                    index_query
-                        .end()
-                        .map(|end| end >= e.index())
-                        .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone())
-                                .unwrap_or(EntityAttributeValueIndex::default());
-                            latest.index() == e.index()
-                        })
-                })
-                .collect::<BTreeSet<EntityAttributeValueIndex>>())
+            Ok(r)
         }
     }
 }

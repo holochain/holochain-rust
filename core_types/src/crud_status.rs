@@ -101,7 +101,7 @@ mod tests {
             },
             storage::{test_content_addressable_storage, ExampleContentAddressableStorage},
         },
-        eav::eav_round_trip_test_runner,
+        eav::{eav_round_trip_test_runner, Attribute},
         json::{JsonString, RawString},
     };
 
@@ -111,7 +111,7 @@ mod tests {
             RawString::from("example"),
         ))
         .unwrap();
-        let attribute = String::from("favourite-badge");
+        let attribute = Attribute::LinkTag("favourite-badge".into());
         let value_content: Content =
             CrudStatus::try_from_content(&JsonString::from(CrudStatus::Rejected))
                 .unwrap()

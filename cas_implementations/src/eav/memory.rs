@@ -65,9 +65,9 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
                     .start()
                     .map(|start| start <= e.index())
                     .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), map.clone())
-                            .unwrap_or(EntityAttributeValueIndex::default());
-                        latest.index() == e.index()
+                        get_latest(e.clone(), map.clone())
+                            .map(|latest| latest.index() == e.index())
+                            .unwrap_or(false)
                     })
             })
             .filter(|e| {
@@ -75,9 +75,9 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
                     .end()
                     .map(|end| end >= e.index())
                     .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), map.clone())
-                            .unwrap_or(EntityAttributeValueIndex::default());
-                        latest.index() == e.index()
+                        get_latest(e.clone(), map.clone())
+                            .map(|latest| latest.index() == e.index())
+                            .unwrap_or(false)
                     })
             })
             .collect::<BTreeSet<EntityAttributeValueIndex>>())

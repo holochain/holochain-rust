@@ -35,7 +35,6 @@ pub enum Attribute {
     // #[serde(rename = "link")]
     Link,
     LinkTag(String),
-    Custom(String),
 }
 
 impl fmt::Display for Attribute {
@@ -46,25 +45,7 @@ impl fmt::Display for Attribute {
             Attribute::CrudLink => write!(f, "crud-link"),
             Attribute::Link => write!(f, "link"),
             Attribute::LinkTag(name) => write!(f, "link__{}", name),
-            Attribute::Custom(name) => write!(f, "custom-{}", name),
         }
-    }
-}
-
-impl Default for Attribute {
-    fn default() -> Self {
-        Attribute::NullAttribute
-    }
-}
-
-impl From<String> for Attribute {
-    fn from(s: String) -> Attribute {
-        Attribute::Custom(s)
-    }
-}
-impl From<&str> for Attribute {
-    fn from(s: &str) -> Attribute {
-        Attribute::Custom(s.into())
     }
 }
 
@@ -81,7 +62,7 @@ pub type Index = i64;
 // type Source ...
 /// The basic struct for EntityAttributeValue triple, implemented as AddressableContent
 /// including the necessary serialization inherited.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson, Default)]
+#[derive(PartialEq, Eq, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct EntityAttributeValueIndex {
     entity: Entity,
     attribute: Attribute,
@@ -145,7 +126,7 @@ impl AddressableContent for EntityAttributeValueIndex {
 }
 
 fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
-    if let Attribute::Custom(name) = attribute {
+    if let Attribute::LinkTag(name) = attribute {
         let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
             .build()
             .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
@@ -313,9 +294,9 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                         start <= e.index()
                     })
                     .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), map.clone())
-                            .unwrap_or(EntityAttributeValueIndex::default());
-                        latest.index() == e.index()
+                        get_latest(e.clone(), map.clone())
+                            .map(|latest| latest.index() == e.index())
+                            .unwrap_or(false)
                     })
             })
             .filter(|e| {
@@ -327,9 +308,9 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                         end >= e.index()
                     })
                     .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), map.clone())
-                            .unwrap_or(EntityAttributeValueIndex::default());
-                        latest.index() == e.index()
+                        get_latest(e.clone(), map.clone())
+                            .map(|latest| latest.index() == e.index())
+                            .unwrap_or(false)
                     })
             })
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
@@ -367,7 +348,7 @@ pub fn test_eav_entity() -> Entry {
 }
 
 pub fn test_eav_attribute() -> Attribute {
-    "foo-attribute".into()
+    Attribute::LinkTag("foo-attribute".into())
 }
 
 pub fn test_eav_value() -> Entry {
@@ -535,49 +516,49 @@ pub mod tests {
     fn validate_attribute_paths() {
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &"abc".to_string(),
+            &Attribute::LinkTag("abc".into()),
             &test_eav_entity().address()
         )
         .is_ok());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &"abc123".to_string(),
+            &Attribute::LinkTag("abc123".into()),
             &test_eav_entity().address()
         )
         .is_ok());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &"123".to_string(),
+            &Attribute::LinkTag("123".into()),
             &test_eav_entity().address()
         )
         .is_ok());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &"link_:{}".to_string(),
+            &Attribute::LinkTag("link_:{}".into()),
             &test_eav_entity().address()
         )
         .is_err());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &"link_\"".to_string(),
+            &Attribute::LinkTag("link_\"".into()),
             &test_eav_entity().address()
         )
         .is_err());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &"link_/".to_string(),
+            &Attribute::LinkTag("link_/".into()),
             &test_eav_entity().address()
         )
         .is_err());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &"link_\\".to_string(),
+            &Attribute::LinkTag("link_\\".into()),
             &test_eav_entity().address()
         )
         .is_err());
         assert!(EntityAttributeValueIndex::new(
             &test_eav_entity().address(),
-            &"link_?".to_string(),
+            &Attribute::LinkTag("link_?".into()),
             &test_eav_entity().address()
         )
         .is_err());

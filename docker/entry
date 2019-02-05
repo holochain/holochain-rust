@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ -n "$HOST_UID" ]; then
   OLDID=`id -u holochain`

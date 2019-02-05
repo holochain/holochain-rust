@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Detect whether we are on a OSX host, determine host user ID
 # This gives a warning on linux that must be ignored.

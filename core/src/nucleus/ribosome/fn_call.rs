@@ -200,7 +200,6 @@ pub fn do_call(
     ));
     // 1. Validate the call (a number of things could go wrong)
     let (dna_name, wasm) = validate_call(context.clone(), state, &fn_call)?;
-
     context.log(format!(
         "debug/reduce/do_call: executing call: {:?}",
         fn_call
@@ -709,24 +708,18 @@ pub mod tests {
             &test_setup.context,
         );
 
-        while test_setup
-            .instance
-            .state()
-            .nucleus()
-            .zome_call_result(&zome_call)
-            .is_none()
-        {
+        loop {
+            let action_result = test_setup
+                .instance
+                .state()
+                .nucleus()
+                .zome_call_result(&zome_call);
+            if action_result.is_some() {
+                assert_eq!(expected, Ok(action_result.unwrap()));
+                return;
+            }
             thread::sleep(Duration::from_millis(10));
         }
-
-        let action_result = Ok(test_setup
-            .instance
-            .state()
-            .nucleus()
-            .zome_call_result(&zome_call)
-            .unwrap());
-
-        assert_eq!(expected, action_result);
     }
 
     #[test]
@@ -761,10 +754,14 @@ pub mod tests {
         create_test_dna_with_defs(&test_zome_name(), (functions, traits), &wasm)
     }
 
-    // success to test_reduce_call is when the function gets called which shows up as a
-    // timeout error because the test wasm doesn't have any test functions defined.
-    static SUCCESS_EXPECTED: Result<Result<JsonString, HolochainError>, RecvTimeoutError> =
-        Err(RecvTimeoutError::Disconnected);
+    // success to test_reduce_call is when the function gets called which shows up as an
+    // argument deserialization error because we are reusing the wasm from test_zome_ap_function
+    // which just passes the function parameter through to "invoke_call" which expects a
+    // ZomeFnCallArgs struct which the test "{}" is not!
+    // TODO: fix this bit of crazyness
+    fn SUCCESS_EXPECTED() -> Result<Result<JsonString, HolochainError>, RecvTimeoutError> {
+        Ok(Err(HolochainError::RibosomeFailed("Argument deserialization failed".to_string())))
+    }
 
     #[test]
     fn test_call_public() {
@@ -781,7 +778,7 @@ pub mod tests {
         );
 
         // make the call with public token capability call
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED.clone());
+        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
 
         // make the call with a bogus public token capability call
         let cap_call = CapabilityCall::new(
@@ -809,7 +806,7 @@ pub mod tests {
 
         // make the call with an valid capability call from self
         let cap_call = test_agent_capability_call(test_setup.context.clone(), "test", "{}");
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED.clone());
+        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
 
         // make the call with an invalid valid capability call from self
         let cap_call = test_agent_capability_call(test_setup.context.clone(), "some_fn", "{}");
@@ -831,7 +828,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED.clone());
+        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
     }
 
     #[test]
@@ -855,7 +852,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED.clone());
+        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
 
         // test assigned capability where the caller is someone else
         let someone = Address::from("somoeone");
@@ -884,7 +881,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED.clone());
+        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
     }
 
     #[test]

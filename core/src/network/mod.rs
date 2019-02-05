@@ -22,7 +22,6 @@ pub mod tests {
         },
         workflows::author_entry::author_entry,
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         crud_status::{create_crud_status_eav, CrudStatus},
@@ -51,7 +50,11 @@ pub mod tests {
         assert!(result.is_ok());
 
         // Get it.
-        let result = block_on(get_entry(context2, entry.address(), Default::default()));
+        let result = context2.block_on(get_entry(
+            context2.clone(),
+            entry.address(),
+            Default::default(),
+        ));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_some());
@@ -71,7 +74,11 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = block_on(get_entry(context2, entry.address(), Default::default()));
+        let result = context2.block_on(get_entry(
+            context2.clone(),
+            entry.address(),
+            Default::default(),
+        ));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
@@ -87,7 +94,11 @@ pub mod tests {
 
         let entry = test_entry();
 
-        let result = block_on(get_entry(context1, entry.address(), Default::default()));
+        let result = context1.block_on(get_entry(
+            context1.clone(),
+            entry.address(),
+            Default::default(),
+        ));
         assert!(result.is_ok());
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_none());
@@ -104,7 +115,9 @@ pub mod tests {
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 
         let entry = test_entry();
-        block_on(author_entry(&entry, None, &context1)).expect("Could not author entry");
+        context1
+            .block_on(author_entry(&entry, None, &context1))
+            .expect("Could not author entry");
 
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state
@@ -113,7 +126,7 @@ pub mod tests {
 
         let (_, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
-        let result = block_on(get_validation_package(header.clone(), &context2));
+        let result = context2.block_on(get_validation_package(header.clone(), &context2));
 
         assert!(result.is_ok());
         let maybe_validation_package = result.unwrap();
@@ -135,7 +148,8 @@ pub mod tests {
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
             let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
-            let address = block_on(commit_entry(entry, None, &context1))
+            let address = context1
+                .block_on(commit_entry(entry, None, &context1))
                 .expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }
@@ -143,14 +157,14 @@ pub mod tests {
         let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
         let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
 
-        assert!(block_on(add_link(&link1, &context1)).is_ok());
-        assert!(block_on(add_link(&link2, &context1)).is_ok());
+        assert!(context1.block_on(add_link(&link1, &context1)).is_ok());
+        assert!(context1.block_on(add_link(&link2, &context1)).is_ok());
 
         let (_, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
 
-        let maybe_links = block_on(get_links(
-            context2,
+        let maybe_links = context2.block_on(get_links(
+            context2.clone(),
             entry_addresses[0].clone(),
             String::from("test-tag"),
             Default::default(),

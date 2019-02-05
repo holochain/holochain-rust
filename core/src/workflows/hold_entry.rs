@@ -77,7 +77,9 @@ pub mod tests {
 
         // Commit entry on attackers node
         let entry = test_entry();
-        let _entry_address = block_on(author_entry(&entry, None, &context1)).unwrap();
+        let _entry_address = context1
+            .block_on(author_entry(&entry, None, &context1))
+            .unwrap();
 
         // Get header which we need to trigger hold_entry_workflow
         let agent1_state = context1.state().unwrap().agent();
@@ -87,7 +89,7 @@ pub mod tests {
         let entry_with_header = EntryWithHeader { entry, header };
 
         // Call hold_entry_workflow on victim DHT node
-        let result = block_on(hold_entry_workflow(&entry_with_header, &context2));
+        let result = context2.block_on(hold_entry_workflow(&entry_with_header, &context2));
 
         // ... and expect validation to fail with message defined in test WAT:
         assert!(result.is_err());

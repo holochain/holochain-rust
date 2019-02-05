@@ -83,7 +83,7 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
 pub fn handle_delete_post(content:String) -> ZomeApiResult<Address>
 {
     let address = hdk::entry_address(&post_entry(content))?;
-    hdk::remove_link(&AGENT_ADDRESS,&address.clone(),"authored_posts")
+    hdk::remove_link(&AGENT_ADDRESS,&address.clone(),"authored_posts")?;
     Ok(address)
 }
 

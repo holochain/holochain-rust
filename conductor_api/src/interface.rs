@@ -11,10 +11,10 @@ use std::{
     sync::{mpsc::Receiver, Arc, RwLock},
 };
 
-use conductor::{ConductorAdmin, CONDUCTOR};
+use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
 use config::{
     AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration, InterfaceConfiguration,
-    InterfaceDriver,
+    InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
 };
 use serde_json::map::Map;
 

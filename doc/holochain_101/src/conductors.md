@@ -26,9 +26,12 @@ Configuration of...
 - [instances.storage]
 - [[interfaces]] (admin)
 - [[interfaces.instances]]
+- [[ui_bundles]]
+- [[ui_interfaces]]
 - [interfaces.driver]
 - [logger]
 - [network]
+- [persistence dir]
 
 dynamic configuration of the conductor via admin level RPC
 

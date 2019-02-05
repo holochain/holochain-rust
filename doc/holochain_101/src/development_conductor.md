@@ -70,7 +70,7 @@ hc run --port 3400
 Select whether the Conductor should network with other nodes that are running instances of the same DNA. By default this does not occur, instead the instance runs in isolation from the network, allowing only the developer to locally access it.
 
 This option requires more configuration, which can be read about in the 
-[real networking article](./real_networking.md).
+[configuring networking article](./hc_configuring_networking.md).
 
 ### Stopping the Server
 Once you are done with the server, to quit type `exit` then press `Enter`, or press `Ctrl-C`.

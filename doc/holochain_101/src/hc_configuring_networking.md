@@ -1,4 +1,4 @@
-# Real Networking
+# Configuring Networking for `hc run`
 
 `hc run` uses mock networking by default and therefore doesn't talk to any other nodes.  If you wish to test multiple nodes you will need to install the [n3h](https://github.com/holochain/n3h) networking component (following the instructions on the readme).  
 
@@ -46,3 +46,4 @@ In the terminal logs that follow, you should see:
 ```
 
 This means that the nodes are able to communicate! Watch the logs for gossip, as you take actions (that alter the source chain) in either node.
+

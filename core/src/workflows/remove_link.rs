@@ -32,12 +32,12 @@ pub async fn remove_link_workflow<'a>(
     context.log(format!("debug/workflow/hold_link: got validation package!"));
 
     // 2. Create validation data struct
-    let validation_data = ValidationData {
+    /*let validation_data = ValidationData {
         package: validation_package,
         sources: vec![Address::from("<insert your agent key here>")],
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
-    };
+    };*/
 
     // 3. Validate the entry
     context.log(format!("debug/workflow/hold_link: validate..."));

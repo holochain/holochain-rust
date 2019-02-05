@@ -80,6 +80,8 @@ let
   '';
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
+   ulimit -a
+   exit 1
    hc-build-wasm
    cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
   '';

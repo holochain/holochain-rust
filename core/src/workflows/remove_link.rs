@@ -19,7 +19,7 @@ pub async fn remove_link_workflow<'a>(
     context: &'a Arc<Context>,
 ) -> Result<(), HolochainError> {
     let link_remove = match entry {
-        Entry::LinkAdd(link_remove) => link_remove,
+        Entry::LinkRemove(link_remove) => link_remove,
         _ => Err(HolochainError::ErrorGeneric(
             "hold_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
         ))?,

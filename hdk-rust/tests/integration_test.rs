@@ -1,5 +1,5 @@
 #![feature(try_from)]
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate tempfile;
@@ -14,10 +14,10 @@ extern crate holochain_wasm_utils;
 extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
-use holochain_container_api::{error::HolochainResult, *};
+use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
     dna::{
         capabilities::{Capability, CapabilityCall, CapabilityType},
@@ -763,7 +763,29 @@ fn can_send_and_receive() {
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected: ZomeApiResult<String> = Ok(String::from("Received: TEST"));
+    let entry_committed_by_receive = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: String::from("TEST"),
+        }
+        .into(),
+    );
+
+    let address = entry_committed_by_receive.address().to_string();
+
+    let expected: ZomeApiResult<String> = Ok(format!("Committed: 'TEST' / address: {}", address));
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
+
+    let result = make_test_call(
+        &mut hc,
+        "check_get_entry",
+        &String::from(JsonString::from(json!({
+            "entry_address": address,
+        }))),
+    );
+
+    let expected: ZomeApiResult<Entry> = Ok(entry_committed_by_receive);
+    assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 

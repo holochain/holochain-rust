@@ -7,10 +7,7 @@ use crate::{
     },
     workflows::get_entry_result::get_entry_result_workflow,
 };
-use futures::{
-    executor::block_on,
-    future::{self, TryFutureExt},
-};
+use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::{deletion_entry::DeletionEntry, Entry},
@@ -45,7 +42,9 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: deleted_entry_address,
         options: Default::default(),
     };
-    let maybe_entry_result = block_on(get_entry_result_workflow(&runtime.context, &get_args));
+    let maybe_entry_result = runtime
+        .context
+        .block_on(get_entry_result_workflow(&runtime.context, &get_args));
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
@@ -59,7 +58,7 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
     // Resolve future
-    let result: Result<(), HolochainError> = block_on(
+    let result: Result<(), HolochainError> = runtime.context.block_on(
         // 1. Build the context needed for validation of the entry
         build_validation_package(&deletion_entry, &runtime.context)
             .and_then(|validation_package| {

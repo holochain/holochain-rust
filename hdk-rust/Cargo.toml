@@ -16,7 +16,7 @@ pretty_assertions = "0.5.1"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils" }
-holochain_container_api = { path = "../container_api" }
+holochain_conductor_api = { path = "../conductor_api" }
 holochain_core = { path = "../core" }
 holochain_core_types = { path = "../core_types" }
 tempfile = "3"

@@ -280,8 +280,8 @@ impl Tweetlog {
 //        }
         // print without tag
         match maybe_tag {
-            None      => println!("[{}] {}", level.as_char(), msg),
-            Some(tag) => println!("[{}] {}", level.as_char(), msg),
+            None      => println!("[{}] {}\n", level.as_char(), msg),
+            Some(tag) => println!("[{}] {}\n", level.as_char(), msg),
         }
     }
 }

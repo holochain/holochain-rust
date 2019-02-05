@@ -121,14 +121,12 @@ fn main() {
     let n3h_path = config["N3H_PATH"].clone().to_string();
 
     // Configure logger
-    //let mut tweetlog = Tweetlog::new();
     {
         let mut tweetlog = g_tweetlog.write().unwrap();
         //tweetlog.add("errorlog");
         let default_level = LogLevel::from(config["log"]["default"].as_str().unwrap().chars().next().unwrap());
         tweetlog.set(default_level, None);
         // set level per tag
-        //let v = config["log"]["tags"];
         let tag_map: HashMap<String, String> = serde_json::from_value(config["log"]["tags"].clone()).expect("missing/bad 'tags' config");
         for (tag, level_str) in tag_map {
             let level = LogLevel::from(level_str.as_str().chars().next().unwrap());
@@ -137,8 +135,6 @@ fn main() {
         }
         tweetlog.listen(Tweetlog::console);
     }
-    // set global logger
-    //g_tweetlog = tweetlog;
 
     // Merge two nodes test suites
     let mut test_fns = Vec::new();

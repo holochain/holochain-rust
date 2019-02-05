@@ -111,7 +111,7 @@ impl P2pNode {
         {
             {
                 let maybe_stored_map = self.meta_store.get(&meta_key);
-                assert!(maybe_stored_map.is_none() || maybe_stored_map.unwrap().get(&content).is_none());
+                assert!(maybe_stored_map.is_none() || maybe_stored_map.expect("meta shoud exist").get(&content).is_none());
             }
             // bookkeep
             if let None = self.authored_meta_store.get_mut(&meta_key) {
@@ -461,9 +461,6 @@ impl P2pNode {
 
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                // Debugging code (do not remove)
-                // println!("<<< ({}) handler: {:?}", agent_id_arg, r);
-
                 g_tweetlog.read().unwrap().tt("p2pnode", &format!("<<< ({}) handler: {:?}", agent_id_arg, r));
                 sender.send(r?)?;
                 Ok(())
@@ -528,11 +525,12 @@ impl P2pNode {
     pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
         // Debugging code: Print non-ping messages
-        // match data {
-        //     Protocol::NamedBinary(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
-        //     Protocol::Json(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
-        //     _ => (),
-        // };
+         let dbg_msg = match data {
+             Protocol::NamedBinary(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
+             Protocol::Json(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
+             _ => "".to_string(),
+         };
+        g_tweetlog.read().unwrap().tt("p2pnode", &dbg_msg);
 
         self.recv_msg_log.push(data.clone());
 
@@ -544,7 +542,7 @@ impl P2pNode {
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    println!("###### Received parse error ###### {} {:?}", s, data);
+                    g_tweetlog.read().unwrap().ee("p2pnode", &format!("###### Received parse error: {} {:?}", s, data));
                 }
                 Err(e)
             }
@@ -562,11 +560,6 @@ impl P2pNode {
             let mut has_recved = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                // Debugging code (do not remove)
-//                                println!(
-//                                    "({})::listen() - received: {:?}",
-//                                    self.agent_id, p2p_msg
-//                                );
                 g_tweetlog.read().unwrap().tt("p2pnode", &format!(
                     "({})::listen() - received: {:?}",
                     self.agent_id, p2p_msg,
@@ -630,13 +623,13 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!("({})::wait() - received: {:?}", self.agent_id, p2p_msg);
+                g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() - received: {:?}", self.agent_id, p2p_msg));
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    println!("\t ({})::wait() - match", self.agent_id);
+                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("\t ({})::wait() - match", self.agent_id));
                     return Some(p2p_msg);
                 } else {
-                    println!("\t ({})::wait() - NO match", self.agent_id);
+                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("\t ({})::wait() - NO match", self.agent_id));
                 }
             }
 
@@ -644,7 +637,7 @@ impl P2pNode {
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 time_ms += 10;
                 if time_ms > timeout_ms {
-                    println!("({})::wait() has TIMEOUT", self.agent_id);
+                    g_tweetlog.read().unwrap().ii("p2pnode", &format!("({})::wait() has TIMEOUT", self.agent_id));
                     return None;
                 }
             }
@@ -822,8 +815,7 @@ impl P2pNode {
 impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        // Debugging code (do not delete)
-        // println!(">> ({}) send: {:?}", self.agent_id, data);
+        g_tweetlog.read().unwrap().tt("p2pnode", &format!(">> ({}) send: {:?}", self.agent_id, data));
         self.p2p_connection.send(data)
     }
 }
@@ -843,7 +835,7 @@ fn create_ipc_config(
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
 
-    println!("create_ipc_config() dir = {}\n", dir);
+    g_tweetlog.read().unwrap().ii("p2pnode", &format!("create_ipc_config() dir = {}\n", dir));
 
     // Create config
     let config = match maybe_config_filepath {

@@ -2,6 +2,7 @@ use basic_workflows::setup_two_nodes;
 use constants::*;
 use holochain_net_connection::{json_protocol::JsonProtocol, NetResult};
 use p2p_node::P2pNode;
+use holochain_net::tweetlog::*;
 
 /// Test the following workflow after normal setup:
 /// sequenceDiagram
@@ -269,12 +270,14 @@ pub fn many_meta_test(
     setup_two_nodes(alex, billy, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    g_tweetlog.read().unwrap().d("entry authored");
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
         &META_LINK_CONTENT_1,
         true,
     )?;
+    g_tweetlog.read().unwrap().d("META_LINK_CONTENT_1 authored");
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),

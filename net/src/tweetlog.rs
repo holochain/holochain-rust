@@ -19,9 +19,8 @@ lazy_static! {
 //    pub(crate) static ref TWEET_LOGGER_MAP: RwLock<Tweetlog> =
 //        RwLock::new(HashMap::new());
 
-            pub static ref g_tweetlog: RwLock<Tweetlog> =
-        RwLock::new(Tweetlog::new());
-
+    pub static ref g_tweetlog: RwLock<Tweetlog> = RwLock::new(Tweetlog::new());
+    //pub static ref g_tweetlog: Tweetlog = Tweetlog::new();
 }
 
 

@@ -305,13 +305,14 @@ pub mod tests {
 
     use crate::{
         action::{Action, ActionWrapper},
+        context::Context,
         dht::{
             dht_reducers::{reduce, reduce_hold_entry},
             dht_store::DhtStore,
         },
         instance::tests::test_context,
         network::entry_with_header::EntryWithHeader,
-        state::test_store,
+        state::{test_store, State},
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -324,6 +325,20 @@ pub mod tests {
         convert::TryFrom,
         sync::{Arc, RwLock},
     };
+
+    fn test_stateful_context(
+        agent_name: &str,
+        network_name: Option<&str>,
+    ) -> (Arc<Context>, Arc<RwLock<State>>) {
+        let context = test_context(agent_name, network_name);
+        let store = test_store(context.clone());
+
+        let locked_state = Arc::new(RwLock::new(store));
+
+        let mut context = (*context).clone();
+        context.set_state(locked_state.clone());
+        (Arc::new(context), locked_state)
+    }
 
     #[test]
     fn reduce_hold_entry_test() {
@@ -366,17 +381,11 @@ pub mod tests {
 
     #[test]
     fn can_add_links() {
-        let context = test_context("bob", None);
-        let store = test_store(context.clone());
+        let (context, locked_state) = test_stateful_context("bilal", None);
         let entry = test_entry();
 
-        let locked_state = Arc::new(RwLock::new(store));
-
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
         let storage = context.dht_storage.clone();
         let _ = (storage.write().unwrap()).add(&entry);
-        let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));
@@ -406,15 +415,8 @@ pub mod tests {
 
     #[test]
     fn does_not_add_link_for_missing_base() {
-        let context = test_context("bob", None);
-        let store = test_store(context.clone());
+        let (context, locked_state) = test_stateful_context("bobbi", None);
         let entry = test_entry();
-
-        let locked_state = Arc::new(RwLock::new(store));
-
-        let mut context = (*context).clone();
-        context.set_state(locked_state.clone());
-        let context = Arc::new(context);
 
         let link = Link::new(&entry.address(), &entry.address(), "test-tag");
         let action = ActionWrapper::new(Action::AddLink(link.clone()));

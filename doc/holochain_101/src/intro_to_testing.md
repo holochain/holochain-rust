@@ -5,9 +5,9 @@ In order to provide a familiar testing framework, a nodejs version of the Holoch
 A basic test framework for nodejs called [Tape](https://github.com/substack/tape) has received priority support thus far, but other test frameworks can be used.
 
 At a basic level, here is how testing the Holochain DNA you are developing works:
-- import the nodejs Holochain Container
-- load your packaged DNA into the Container, and otherwise configure it
-- use an exposed method on the Container to make function calls to the DNA, and check that the results are what you expect them to be
+- import the nodejs Holochain Conductor
+- load your packaged DNA into the Conductor, and otherwise configure it
+- use an exposed method on the Conductor to make function calls to the DNA, and check that the results are what you expect them to be
 
 This small chapter will overview how to approach testing Holochain DNA.
 

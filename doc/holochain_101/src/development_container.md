@@ -1,11 +1,11 @@
-# Development Container
+# Development Conductor
 
-Meant primarily for accelerating the development process, the easiest Container to run, with zero configuration required, is the `hc run` Container. It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory a DNA instance is contained. The most basic command to run is:
+Meant primarily for accelerating the development process, the easiest Conductor to run, with zero configuration required, is the `hc run` Conductor. It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory a DNA instance is contained. The most basic command to run is:
 ```shell
 hc run
 ```
 
-This will start the DNA instance in a Container and open, by default, a WebSocket JSON-RPC server on port `8888`. How to use the API for this is covered in more depth in the [JSON-RPC interfaces article](./json_rpc_interfaces.md).
+This will start the DNA instance in a Conductor and open, by default, a WebSocket JSON-RPC server on port `8888`. How to use the API for this is covered in more depth in the [JSON-RPC interfaces article](./json_rpc_interfaces.md).
 
 The following are the options for configuring `hc run`, should you need something besides the defaults.
 
@@ -67,7 +67,7 @@ hc run --port 3400
 
 `--networked`
 
-Select whether the Container should network with other nodes that are running instances of the same DNA. By default this does not occur, instead the instance runs in isolation from the network, allowing only the developer to locally access it.
+Select whether the Conductor should network with other nodes that are running instances of the same DNA. By default this does not occur, instead the instance runs in isolation from the network, allowing only the developer to locally access it.
 
 This option requires more configuration, which can be read about in the 
 [real networking article](./real_networking.md).

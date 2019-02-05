@@ -9,14 +9,14 @@ const tape = require('tape')
 // Create a scenario object in the same fashion as the previous example
 const scenario = new Scenario([instanceAlice, instanceBob])
 
-// scenario.run only manages the Container for us now, but we have to manage the test itself
+// scenario.run only manages the Conductor for us now, but we have to manage the test itself
 scenario.run((stop, {alice, bob}) => {
     tape("test something", t => {
         const result = alice.call('zome', 'capability', 'function', {params: 'go here'})
         t.equal(result, 'expected value')
         // the following two steps were not necessary when using runTape:
         t.end() // end the test
-        stop() // use this injected function to stop the container
+        stop() // use this injected function to stop the conductor
     })
 })
 
@@ -25,11 +25,11 @@ scenario.run((stop, {alice, bob}) => {
         // write more tests in the same fashion
         t.equal(2 + 2, 4)
         t.end()
-        stop() // but don't forget to stop the container when it's done!
+        stop() // but don't forget to stop the conductor when it's done!
     })
 })
 ```
 
-Using `run` allows you to manage the test yourself, only providing you with the basic help of starting and stopping a fresh container instance. 
+Using `run` allows you to manage the test yourself, only providing you with the basic help of starting and stopping a fresh conductor instance. 
 
 The previous example used `tape` to show how it compares to using `runTape`, though you could have used any test harness, like Jest or Mocha. In fact, `runTape` simply calls `run` under the hood.

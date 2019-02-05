@@ -1,6 +1,6 @@
 # Handling Asynchronous Network Effects
 
-In the previous example, we used `alice.call()` to call a zome function. This returns immediately with a value, even though the test network created by the container is still running, sending messages back and forth between agents for purposes of validation and replication, etc. In many test cases, you will want to wait until all of this network activity has died down to advance to the next step.
+In the previous example, we used `alice.call()` to call a zome function. This returns immediately with a value, even though the test network created by the conductor is still running, sending messages back and forth between agents for purposes of validation and replication, etc. In many test cases, you will want to wait until all of this network activity has died down to advance to the next step.
 
 For instance, take the very common scenario as an example:
 
@@ -23,7 +23,7 @@ scenario.run(async (stop, {alice, bob}) => {
         t.equal(result, 'expected value')
         // the following two steps were not necessary when using runTape:
         t.end() // end the test
-        stop() // use this injected function to stop the container
+        stop() // use this injected function to stop the conductor
     })
 })
 ```

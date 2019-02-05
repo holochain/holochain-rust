@@ -3,7 +3,7 @@
 The purpose of the `holochain-nodejs` module is to make integration tests and scenario tests able to be written as simply and with as little boilerplate as possible. However, the module also provides even more basic functionality, making it possible to build tests with whatever tradeoff between convenience and customization is right for your project.
 
 ```javascript
-const { Config, Container } = require('@holochain/holochain-nodejs')
+const { Config, Conductor } = require('@holochain/holochain-nodejs')
 
 
 // specify two agents...
@@ -18,19 +18,19 @@ const dna = Config.dna(dnaPath)
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 // ...and finally throw them all together 
-const config = Config.container([instanceAlice, instanceBob])
+const config = Config.conductor([instanceAlice, instanceBob])
 
-// The produced `config` is a fully valid container configuration and can be
-// passed directly to the container constructor
-const container = new Container(config)
-container.start()
+// The produced `config` is a fully valid conductor configuration and can be
+// passed directly to the conductor constructor
+const conductor = new Conductor(config)
+conductor.start()
 ```
 
-## Using the container
+## Using the conductor
 
 ```javascript
-const container = new Container(config)
-container.start()
+const conductor = new Conductor(config)
+conductor.start()
 
 // When building up a config using `Config`, the instance ID is automatically assigned
 // as the given agent ID plus a double colon plus the given dnaPath.
@@ -38,27 +38,27 @@ container.start()
 const aliceInstanceId = aliceName + '::' + dnaPath
 
 // zome functions can be called using the following, assuming the vars are defined with valid values
-const callResult = container.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
+const callResult = conductor.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
 // the same could be accomplished using the following, makeCaller is for convenience
-const alice = container.makeCaller(aliceName, dnaPath)
+const alice = conductor.makeCaller(aliceName, dnaPath)
 const altCallResult = alice.call(zome, capability, fnName, paramsAsObject)
 
 // get the actual agent_id for an instance, by passing an instance id
-const aliceAgentId = container.agent_id(aliceInstanceId)
+const aliceAgentId = conductor.agent_id(aliceInstanceId)
 
 // stop all running instances
-container.stop()
+conductor.stop()
 ```
 
 ### Configuration Alternatives
 
-Simply use the same configuration as you would for `holochain_container`, and pass it to the constructor for `Container`. The configuration may be a string of valid TOML, or a Javascript object with the same structure
+Simply use the same configuration as you would for `holochain_conductor`, and pass it to the constructor for `Conductor`. The configuration may be a string of valid TOML, or a Javascript object with the same structure
 
 #### Using a Javascript Object
 
 ```javascript
-const { Container } = require('@holochain/holochain-nodejs')
-const container = new Container({
+const { Conductor } = require('@holochain/holochain-nodejs')
+const conductor = new Conductor({
     agents: [],
     dnas: [],
     instances: [],
@@ -66,15 +66,15 @@ const container = new Container({
     // etc...
 })
 
-container.start()
+conductor.start()
 // do what you will
-container.stop()
+conductor.stop()
 ```
 
 #### Using TOML
 
 ```javascript
-const { Container } = require('@holochain/holochain-nodejs')
+const { Conductor } = require('@holochain/holochain-nodejs')
 const toml = `
 [[agents]]
 <agent config>
@@ -85,10 +85,10 @@ const toml = `
 [[instances]]
 ...etc...
 `
-const container = new Container(toml)
+const conductor = new Conductor(toml)
 
-container.start()
+conductor.start()
 // do what you will
-container.stop()
+conductor.stop()
 ```
 

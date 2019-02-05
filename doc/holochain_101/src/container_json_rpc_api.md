@@ -1,10 +1,10 @@
-# Container JSON-RPC API
+# Conductor JSON-RPC API
 
 
 
 ## Querying Running DNA Instances
 
-Holochain Containers expose a method `info/instances`. What it does is return a list of the running DNA instances in the Container. For each running instance, it provides the instance "ID", the name of the DNA, and the agent "id". The instance IDs will be particularly useful in other circumstances.
+Holochain Conductors expose a method `info/instances`. What it does is return a list of the running DNA instances in the Conductor. For each running instance, it provides the instance "ID", the name of the DNA, and the agent "id". The instance IDs will be particularly useful in other circumstances.
 
 The method `info/instances` doesn't require any input parameters, so `params` can be left off the request.
 

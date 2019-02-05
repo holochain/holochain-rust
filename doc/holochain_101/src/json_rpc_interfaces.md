@@ -7,7 +7,7 @@ JSON-RPC is a specification for using the JSON data format in a particular way, 
 
 The format for the JSON-RPC request/response pattern is really simple. A request is a JSON object  with just a few mandatory values which must be passed.
 
-`jsonrpc`: specifies the JSON-RPC spec this request follows. The JSON-RPC spec used by Holochain Containers is `2.0`.
+`jsonrpc`: specifies the JSON-RPC spec this request follows. The JSON-RPC spec used by Holochain Conductors is `2.0`.
 
 `id`: specifies the ID for this particular request. This is so that the request and response can be matched, even if they get transmitted out of order.
 

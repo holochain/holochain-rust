@@ -1,10 +1,10 @@
 # TOML Configuration Files
 
-The container requires a configuration file to run.
+The conductor requires a configuration file to run.
 
-You can put your configuration file in `~/.holochain/container_config.toml` or run `holochain_container` explicitly with the `-c` to specify where to find it.
+You can put your configuration file in `~/.holochain/conductor_config.toml` or run `holochain_conductor` explicitly with the `-c` to specify where to find it.
 
-The [holochain-nodejs container](./testing_functions.md#configuration-alternatives) also accepts the same TOML based configuration.
+The [holochain-nodejs conductor](./testing_functions.md#configuration-alternatives) also accepts the same TOML based configuration.
 
 ```toml
 bridges = []
@@ -90,7 +90,7 @@ pattern = ".*"
 ```
 
 ### Using real networking
-The container currently uses mock networking by default. To use real networking you have to install the [n3h networking component](https://github.com/holochain/n3h) and add a configuration block into the config file to tell the container where it can find n3h.  It should look something like this:
+The conductor currently uses mock networking by default. To use real networking you have to install the [n3h networking component](https://github.com/holochain/n3h) and add a configuration block into the config file to tell the conductor where it can find n3h.  It should look something like this:
 
 ```toml
 [network]

@@ -318,7 +318,7 @@ impl Dispatch {
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// /// # #[no_mangle]
 /// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// 
+///
 /// # fn main() {
 ///
 /// fn handle_sum(num1: u32, num2: u32) -> JsonString {
@@ -399,7 +399,7 @@ impl Dispatch {
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// /// # #[no_mangle]
 /// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
-/// 
+///
 /// # fn main() {
 ///
 /// fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {

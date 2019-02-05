@@ -245,7 +245,7 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_modified_entry_ok",
         "send_message",
         "sleep",
-        "remove_link"
+        "remove_link",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();

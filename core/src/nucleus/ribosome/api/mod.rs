@@ -22,7 +22,8 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
-        send::invoke_send, sleep::invoke_sleep, update_entry::invoke_update_entry,remove_link::invoke_remove_link
+        remove_link::invoke_remove_link, send::invoke_send, sleep::invoke_sleep,
+        update_entry::invoke_update_entry,
     },
     runtime::Runtime,
     Defn,

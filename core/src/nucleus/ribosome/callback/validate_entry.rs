@@ -54,6 +54,12 @@ pub fn validate_entry(
             context,
         )?),
 
+        EntryType::LinkRemove => Ok(validate_link_entry(
+            entry.clone(),
+            validation_data,
+            context,
+        )?),
+
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
         EntryType::Deletion => Ok(CallbackResult::Pass),

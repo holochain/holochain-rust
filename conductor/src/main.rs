@@ -12,7 +12,7 @@
 /// This is mainly a thin wrapper around the structs and functions defined there.
 ///
 /// If called without arguments, this executable tries to load a configuration from
-/// ~/.holochain/conductor_config.toml.
+/// ~/.holochain/conductor/conductor_config.toml.
 /// A custom config can be provided with the --config, -c flag.
 extern crate clap;
 extern crate holochain_conductor_api;

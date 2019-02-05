@@ -10,7 +10,7 @@ pub mod test_utils;
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        agent::actions::commit::commit_entry,
+        agent::{actions::commit::commit_entry, state::create_new_chain_header},
         dht::actions::add_link::add_link,
         instance::tests::test_instance_and_context_by_name,
         network::{
@@ -20,13 +20,16 @@ pub mod tests {
             },
             test_utils::test_wat_always_valid,
         },
-        workflows::author_entry::author_entry,
+        workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         crud_status::{create_crud_status_eav, CrudStatus},
         entry::{entry_type::test_app_entry_type, test_entry, Entry},
         link::Link,
+    };
+    use holochain_wasm_utils::api_serialization::get_entry::{
+        GetEntryArgs, GetEntryOptions, GetEntryResultType,
     };
     use test_utils::*;
 
@@ -61,6 +64,46 @@ pub mod tests {
         let entry_with_meta = maybe_entry_with_meta.unwrap();
         assert_eq!(entry_with_meta.entry, entry);
         assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
+    }
+
+    #[test]
+    fn get_entry_results_roundtrip() {
+        let netname = Some("get_entry_results_roundtrip");
+        let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
+        dna.uuid = String::from("get_entry_results_roundtrip");
+        let (_, context1) =
+            test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
+        let (_, context2) =
+            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
+
+        // Create Entry & crud-status metadata, and store it.
+        let entry = test_entry();
+        let header1 = create_new_chain_header(&entry, context1.clone(), &None);
+        let header2 = create_new_chain_header(&entry, context2.clone(), &None);
+        context1
+            .block_on(commit_entry(entry.clone(), None, &context1))
+            .unwrap();
+        {
+            let dht1 = context1.state().unwrap().dht();
+            {
+                dht1.content_storage().write().unwrap().add(&entry).unwrap();
+                dht1.add_header_for_entry(&entry, &header2).unwrap();
+            }
+        }
+
+        // Get it.
+        let args = GetEntryArgs {
+            address: entry.address(),
+            options: GetEntryOptions {
+                headers: true,
+                ..Default::default()
+            },
+        };
+        let result = context1.block_on(get_entry_result_workflow(&context1, &args));
+        if let GetEntryResultType::Single(item) = result.unwrap().result {
+            let headers = item.headers;
+            assert_eq!(headers, vec![header1, header2]);
+        }
     }
 
     #[test]
@@ -121,7 +164,7 @@ pub mod tests {
 
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state
-            .get_header_for_entry(&entry)
+            .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
 
         let (_, context2) =
@@ -132,7 +175,7 @@ pub mod tests {
         let maybe_validation_package = result.unwrap();
         assert!(maybe_validation_package.is_some());
         let validation_package = maybe_validation_package.unwrap();
-        assert_eq!(validation_package.chain_header, Some(header));
+        assert_eq!(validation_package.chain_header, header);
     }
 
     #[test]

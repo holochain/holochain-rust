@@ -4,7 +4,7 @@ use holochain_core_types::{
 };
 use std::{convert::TryInto, sync::Arc};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct EntryWithHeader {
     pub entry: Entry,
     pub header: ChainHeader,

@@ -1,7 +1,7 @@
 use crate::{
     bundle,
     holochain_sodium::{kx, secbuf::SecBuf, sign},
-    util,
+    util::{self, PwHashConfig},
 };
 use holochain_core_types::{agent::KeyBuffer, error::HolochainError};
 use rustc_serialize::json;
@@ -59,6 +59,7 @@ impl Keypair {
         &mut self,
         passphrase: &mut SecBuf,
         hint: String,
+        config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
         let bundle_type: String = "hcKeypair".to_string();
         let corrected_pub_keys = KeyBuffer::with_corrected(&self.pub_keys)?;
@@ -81,7 +82,8 @@ impl Keypair {
 
         key_buf.write(offset, &**self.enc_priv.read_lock())?;
 
-        let password_encrypted: bundle::ReturnBundleData = util::pw_enc(&mut key_buf, passphrase)?;
+        let password_encrypted: bundle::ReturnBundleData =
+            util::pw_enc(&mut key_buf, passphrase, config)?;
         let bundle_data_serialized = json::encode(&password_encrypted).unwrap();
 
         // conver to base64
@@ -102,13 +104,14 @@ impl Keypair {
     pub fn from_bundle(
         bundle: &bundle::KeyBundle,
         passphrase: &mut SecBuf,
+        config: Option<PwHashConfig>,
     ) -> Result<Keypair, HolochainError> {
         // decoding the bundle.data of type util::ReturnBundledata
         let bundle_decoded = base64::decode(&bundle.data)?;
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
         let data: bundle::ReturnBundleData = json::decode(&bundle_string).unwrap();
         let mut decrypted_data = SecBuf::with_secure(BUNDLE_DATA_LEN);
-        util::pw_dec(&data, passphrase, &mut decrypted_data)?;
+        util::pw_dec(&data, passphrase, &mut decrypted_data, config)?;
         let mut sign_priv = SecBuf::with_secure(64);
         let mut enc_priv = SecBuf::with_secure(32);
 
@@ -332,7 +335,13 @@ impl Keypair {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::holochain_sodium::random::random_secbuf;
+    use crate::holochain_sodium::{pwhash, random::random_secbuf};
+
+    const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
+        pwhash::OPSLIMIT_INTERACTIVE,
+        pwhash::MEMLIMIT_INTERACTIVE,
+        pwhash::ALG_ARGON2ID13,
+    ));
 
     #[test]
     fn it_should_set_keypair_from_seed() {
@@ -520,10 +529,11 @@ mod tests {
         random_secbuf(&mut passphrase);
 
         let bundle: bundle::KeyBundle = keypair
-            .get_bundle(&mut passphrase, "hint".to_string())
+            .get_bundle(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
-        let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase).unwrap();
+        let keypair_from_bundle =
+            Keypair::from_bundle(&bundle, &mut passphrase, TEST_CONFIG).unwrap();
 
         assert_eq!(64, keypair_from_bundle.sign_priv.len());
         assert_eq!(32, keypair_from_bundle.enc_priv.len());
@@ -539,7 +549,7 @@ mod tests {
         random_secbuf(&mut passphrase);
 
         let bundle: bundle::KeyBundle = keypair
-            .get_bundle(&mut passphrase, "hint".to_string())
+            .get_bundle(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
         println!("Bundle.bundle_type: {}", bundle.bundle_type);
@@ -558,14 +568,15 @@ mod tests {
         random_secbuf(&mut passphrase);
 
         let bundle: bundle::KeyBundle = keypair
-            .get_bundle(&mut passphrase, "hint".to_string())
+            .get_bundle(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
         println!("Bundle.bundle_type: {}", bundle.bundle_type);
         println!("Bundle.Hint: {}", bundle.hint);
         println!("Bundle.data: {}", bundle.data);
 
-        let keypair_from_bundle = Keypair::from_bundle(&bundle, &mut passphrase).unwrap();
+        let keypair_from_bundle =
+            Keypair::from_bundle(&bundle, &mut passphrase, TEST_CONFIG).unwrap();
 
         assert_eq!(64, keypair_from_bundle.sign_priv.len());
         assert_eq!(32, keypair_from_bundle.enc_priv.len());

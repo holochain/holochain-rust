@@ -1,4 +1,4 @@
-# Conductors
+# Running Holochain Apps: Conductors
 
 To introduce Conductors, it is useful to zoom out for a moment to the level of how Holochain runs on devices.
 

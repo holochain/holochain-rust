@@ -9,15 +9,6 @@ let
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
-  nodejs-8_13 = nixpkgs.nodejs-8_x.overrideAttrs(oldAttrs: rec {
-    name = "nodejs-${version}";
-    version = "8.13.0";
-    src = nixpkgs.fetchurl {
-      url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
-      sha256 = "1qidcj4smxsz3pmamg3czgk6hlbw71yw537h2jfk7iinlds99a9a";
-    };
-  });
-
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
    rm -rf ~/.cargo/registry;
@@ -39,7 +30,7 @@ let
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
   hc-install-cli = nixpkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
-  hc-install-conductor = nixpkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain_conductor --release && cargo install -f --path conductor";
+  hc-install-conductor = nixpkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
 
   hc-test-cli = nixpkgs.writeShellScriptBin "hc-test-cli" "cd cli && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
@@ -99,7 +90,7 @@ stdenv.mkDerivation rec {
     pkgconfig
     rust-build
 
-    nodejs-8_13
+    nodejs-8_x
     yarn
 
     hc-flush-cargo-registry

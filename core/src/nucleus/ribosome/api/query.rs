@@ -74,7 +74,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         // Result<ChainStoreQueryResult,...>
         QueryArgsNames::QueryList(pats) => {
             let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>
-            agent.chain().query(
+            agent.chain_store().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> Vec[&str]
                 ChainStoreQueryOptions {
@@ -86,7 +86,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
         }
         QueryArgsNames::QueryName(name) => {
             let refs: Vec<&str> = vec![&name]; // String -> Vec<&str>
-            agent.chain().query(
+            agent.chain_store().query(
                 &Some(top),
                 refs.as_slice(), // Vec<&str> -> &[&str]
                 ChainStoreQueryOptions {
@@ -99,7 +99,7 @@ pub fn invoke_query(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     };
     let result = match maybe_result {
         // TODO #793: the Err(_code) is the RibosomeErrorCode, but we can't import that type here.
-        // Perhaps return chain().query should return Some(result)/None instead, and the fixed
+        // Perhaps return chain_store().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
         Ok(result) => Ok(match (query.options.entries, result) {
             (false, ChainStoreQueryResult::Addresses(addresses)) => {

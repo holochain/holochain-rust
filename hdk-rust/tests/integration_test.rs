@@ -1,5 +1,5 @@
 #![feature(try_from)]
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate tempfile;
@@ -14,7 +14,7 @@ extern crate holochain_wasm_utils;
 extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
-use holochain_container_api::{error::HolochainResult, *};
+use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::{logger::TestLogger, nucleus::ribosome::fn_call::make_cap_call};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -184,14 +184,12 @@ fn example_valid_entry() -> Entry {
 
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
-    GetEntryResult::new(
-        StatusRequestKind::Latest,
-        Some(&EntryWithMeta {
-            entry: entry,
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        }),
-    )
+    let entry_with_meta = &EntryWithMeta {
+        entry: entry.clone(),
+        crud_status: CrudStatus::Live,
+        maybe_crud_link: None,
+    };
+    GetEntryResult::new(StatusRequestKind::Latest, Some((entry_with_meta, vec![])))
 }
 
 fn example_valid_entry_params() -> String {
@@ -734,7 +732,7 @@ fn can_remove_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"items\":[{\"meta\":{\"address\":\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\",\"entry_type\":{\"App\":\"testEntryType\"},\"crud_status\":\"deleted\"},\"entry\":{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]}}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
+        JsonString::from("{\"items\":[{\"meta\":{\"address\":\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\",\"entry_type\":{\"App\":\"testEntryType\"},\"crud_status\":\"deleted\"},\"entry\":{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]},\"headers\":[]}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
         ),
     );
 }

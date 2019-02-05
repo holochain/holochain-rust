@@ -1,6 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper, AgentReduceFn},
-    agent::chain_store::ChainStore,
+    agent::chain_store::{ChainStore, ChainStoreIterator},
     context::Context,
     state::State,
     workflows::get_entry_result::get_entry_result_workflow,
@@ -27,24 +27,27 @@ pub struct AgentState {
     // @TODO this will blow up memory, implement as some kind of dropping/FIFO with a limit?
     // @see https://github.com/holochain/holochain-rust/issues/166
     actions: HashMap<ActionWrapper, ActionResponse>,
-    chain: ChainStore,
+    chain_store: ChainStore,
     top_chain_header: Option<ChainHeader>,
 }
 
 impl AgentState {
     /// builds a new, empty AgentState
-    pub fn new(chain: ChainStore) -> AgentState {
+    pub fn new(chain_store: ChainStore) -> AgentState {
         AgentState {
             actions: HashMap::new(),
-            chain,
+            chain_store,
             top_chain_header: None,
         }
     }
 
-    pub fn new_with_top_chain_header(chain: ChainStore, chain_header: ChainHeader) -> AgentState {
+    pub fn new_with_top_chain_header(
+        chain_store: ChainStore,
+        chain_header: ChainHeader,
+    ) -> AgentState {
         AgentState {
             actions: HashMap::new(),
-            chain,
+            chain_store,
             top_chain_header: Some(chain_header),
         }
     }
@@ -55,16 +58,20 @@ impl AgentState {
         self.actions.clone()
     }
 
-    pub fn chain(&self) -> ChainStore {
-        self.chain.clone()
+    pub fn chain_store(&self) -> ChainStore {
+        self.chain_store.clone()
     }
 
     pub fn top_chain_header(&self) -> Option<ChainHeader> {
         self.top_chain_header.clone()
     }
 
+    pub fn iter_chain(&self) -> ChainStoreIterator {
+        self.chain_store.iter(&self.top_chain_header)
+    }
+
     pub fn get_agent_address(&self) -> HcResult<Address> {
-        self.chain()
+        self.chain_store()
             .iter_type(&self.top_chain_header, &EntryType::AgentId)
             .nth(0)
             .and_then(|chain_header| Some(chain_header.entry_address().clone()))
@@ -90,8 +97,8 @@ impl AgentState {
         }
     }
 
-    pub fn get_header_for_entry(&self, entry: &Entry) -> Option<ChainHeader> {
-        self.chain()
+    pub fn get_most_recent_header_for_entry(&self, entry: &Entry) -> Option<ChainHeader> {
+        self.chain_store()
             .iter_type(&self.top_chain_header(), &entry.entry_type())
             .find(|h| h.entry_address() == &entry.address())
     }
@@ -171,15 +178,14 @@ pub fn create_new_chain_header(
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        &vec![agent_address],
         // @TODO signatures
-        &vec![Signature::from("")],
+        &vec![(agent_address, Signature::from("TODO"))],
         &agent_state
             .top_chain_header
             .clone()
             .and_then(|chain_header| Some(chain_header.address())),
         &agent_state
-            .chain()
+            .chain_store()
             .iter_type(&agent_state.top_chain_header, &entry.entry_type())
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
@@ -197,7 +203,7 @@ pub(crate) fn commit_entry_to_chain(
     maybe_crud_link: &Option<Address>,
 ) -> Result<(Address, ChainHeader), HolochainError> {
     let chain_header = create_new_chain_header(&entry, context.clone(), &maybe_crud_link);
-    let storage = &state.chain.content_storage().clone();
+    let storage = &state.chain_store.content_storage().clone();
     storage.write().unwrap().add(entry)?;
     storage.write().unwrap().add(&chain_header)?;
     Ok((entry.address(), chain_header))
@@ -322,7 +328,7 @@ pub mod tests {
         let (address, chain_header) = result.ok().unwrap();
         assert_eq!(address, entry.address());
         let all: Vec<ChainHeader> = agent_state
-            .chain()
+            .chain_store()
             .iter(&Some(chain_header.clone()))
             .collect();
         assert_eq!(all[0], chain_header);

@@ -36,7 +36,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             let mut found_entries: Vec<Address> = vec![];
             for chain_header in state
                 .agent()
-                .chain()
+                .chain_store()
                 .iter_type(&maybe_top, &EntryType::AgentId)
             {
                 found_entries.push(chain_header.entry_address().to_owned());

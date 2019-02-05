@@ -33,7 +33,7 @@ pub fn get_entry_from_agent_chain(
     let agent = context.state().unwrap().agent();
     let top_header = agent.top_chain_header();
     let maybe_header = &agent
-        .chain()
+        .chain_store()
         .iter(&top_header)
         .filter(|header| header.entry_address() == address)
         .next();
@@ -41,7 +41,7 @@ pub fn get_entry_from_agent_chain(
     if maybe_header.is_none() {
         return Ok(None);
     }
-    let cas = context.state().unwrap().agent().chain().content_storage();
+    let cas = context.state().unwrap().agent().chain_store().content_storage();
     get_entry_from_cas(&cas.clone(), address)
 }
 
@@ -49,7 +49,12 @@ pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let cas = context.state().unwrap().agent().chain().content_storage();
+    let cas = context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .content_storage();
     get_entry_from_cas(&cas.clone(), address)
 }
 

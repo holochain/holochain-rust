@@ -12,7 +12,6 @@ use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
-    hash::HashString,
     validation::{EntryAction, EntryLifecycle, ValidationData},
 };
 use holochain_wasm_utils::api_serialization::get_entry::*;
@@ -67,7 +66,6 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             .and_then(|validation_package| {
                 future::ready(Ok(ValidationData {
                     package: validation_package,
-                    sources: vec![HashString::from("<insert your agent key here>")],
                     lifecycle: EntryLifecycle::Chain,
                     action: EntryAction::Delete,
                 }))

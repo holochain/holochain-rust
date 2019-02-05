@@ -28,6 +28,8 @@ pub extern crate holochain_core_types;
 #[macro_use]
 pub extern crate holochain_core_types_derive;
 pub extern crate holochain_wasm_utils;
+// #[macro_use]
+pub extern crate pretty_assertions;
 
 pub mod api;
 #[macro_use]

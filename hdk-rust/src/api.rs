@@ -265,7 +265,7 @@ impl Dispatch {
 }
 
 /// Call an exposed function from another zome or another (bridged) instance running
-/// on the same agent in the same container.
+/// on the same agent in the same conductor.
 /// Arguments for the called function are passed as `JsonString`.
 /// Returns the value that's returned by the given function as a json str.
 /// # Examples

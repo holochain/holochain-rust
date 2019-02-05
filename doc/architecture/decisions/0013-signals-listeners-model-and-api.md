@@ -10,7 +10,7 @@ Accepted
 
 In the go code we used polling from the UI to discover local state changes, be they in the source-chain or in the DHT.  We want to change this to an event based model where UI (or other clients, like bridged apps) can become listeners to signals.  Additionally there are system level signals (like warrants) as well as other app level definable signals that we want consumers of exposed holochain app APIs to be able to access on a push (i.e. listening) basis.
 
-Note that this is only about signals that can be listened to by container/composer context, i.e. by the client of the core_api, NOT by the app nodes themselves.
+Note that this is only about signals that can be listened to by conductor context, i.e. by the client of the core_api, NOT by the app nodes themselves.
 
 ## Decision
 
@@ -47,7 +47,7 @@ emit("Post",postHash)
 
 - We need to clarify when you can use a `emit()` call, i.e. is it valid during validations and genesis?
 
-- We need to make sure that app developers understand that this doesn't happen globally, but rather just to the clients that subscribed to the signal from the container.
+- We need to make sure that app developers understand that this doesn't happen globally, but rather just to the clients that subscribed to the signal from the conductor.
 
 - We need to think through what system signals we want to emit.
 

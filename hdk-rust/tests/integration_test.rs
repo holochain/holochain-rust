@@ -1,5 +1,5 @@
 #![feature(try_from)]
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate tempfile;
@@ -14,7 +14,7 @@ extern crate holochain_wasm_utils;
 extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
-use holochain_container_api::{error::HolochainResult, *};
+use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},

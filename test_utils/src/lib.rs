@@ -1,5 +1,5 @@
 extern crate holochain_cas_implementations;
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
@@ -7,7 +7,7 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
 
-use holochain_container_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
+use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
     context::Context,

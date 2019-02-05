@@ -2,8 +2,8 @@
 
 members = [
   "cli",
-  "container",
-  "container_api",
+  "conductor",
+  "conductor_api",
   "core_api_c_binding",
   "core",
   "dna_c_binding",
@@ -19,7 +19,7 @@ members = [
 exclude = [
   "test_utils",
   "app_spec",
-  "nodejs_container/native",
+  "nodejs_conductor/native",
   "rust_sodium-sys",
   "zmq-sys",
 ]

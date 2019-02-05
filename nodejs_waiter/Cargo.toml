@@ -8,7 +8,7 @@ edition = "2018"
 colored = "1"
 neon = "0.2.0"
 neon-serde = "0.1.1"
-holochain_container_api = { path = "../container_api" }
+holochain_conductor_api = { path = "../conductor_api" }
 holochain_core = { path = "../core" }
 holochain_net = { path = "../net" }
 holochain_core_types = { path = "../core_types" }

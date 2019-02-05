@@ -154,7 +154,7 @@ For example this can be awkard when handling `Result` values. The `Result` enum
 has two variants in Rust, `Ok` and `Err`. Both of these, like all enum variants
 in Rust, follow the title case convention.
 
-This means that in a JS container/HDK consuming JSON values returned from zome
+This means that in a JS conductor/HDK consuming JSON values returned from zome
 functions that return a `Result` (a good idea!) we see this JavaScript:
 
 ```javascript
@@ -168,12 +168,12 @@ idiomatic JavaScript.
 As the JSON structure comes from the Rust compiler, we have two options:
 
 - Force serde to output JSON that follows the conventions of another language
-- Force containers/HDKs to provide sugar to map between Rust/XXX idioms
+- Force conductors/HDKs to provide sugar to map between Rust/XXX idioms
 - Force developers to work with a very leaky abstraction over the Rust compiler
 
 As the first option requires a lot of boilerplate and isn't interoperable
 across all languages anyway (e.g. kebab case, snake case, etc.) we currently
-are pushing this sugar down to container/HDK implementations. Additionally, the
+are pushing this sugar down to conductor/HDK implementations. Additionally, the
 serialized form of entries is used to calculate `Address` values for storage
 and retrieval from the local chain and DHT so we need to be very careful here
 as it will be hard to change in the future.
@@ -244,8 +244,8 @@ Yes, `serde` supports many serialization options but:
 - Serde is already quite heavy in compilation/WASM files so we don't want to
   bloat that more with edge-case serialization needs
   - every new format is a new crate
-- We don't (yet) have any use-cases showing that JSON is a problem/bottleneck
-- Adding more serialization options would exacerbate non-idiomatic container
+- We don't (yet) have any use-cases showing that JSON is a problem/bottlenec<k
+- Adding more serialization options would exacerbate non-idiomatic conductor
   and HDK data structure mapping issues (see above)
 
 ## JsonString

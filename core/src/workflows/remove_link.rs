@@ -1,9 +1,6 @@
 use crate::{
-    context::Context,
-    dht::actions::remove_link::remove_link,
-    nucleus::actions::{
-        build_validation_package::build_validation_package, validate::validate_entry,
-    },
+    context::Context, dht::actions::remove_link::remove_link,
+    nucleus::actions::build_validation_package::build_validation_package,
 };
 
 use holochain_core_types::{

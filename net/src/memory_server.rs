@@ -449,7 +449,7 @@ impl InMemoryServer {
         Ok(())
     }
 
-    // -- serve DHT data -- //
+    // -- serve DHT Entry -- //
 
     /// on publish, we send store requests to all nodes connected on this dna
     fn priv_serve_PublishEntry(&mut self, msg: &EntryData) -> NetResult<()> {

@@ -41,6 +41,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `admin/bridge/add`
   * `admin/bridge/remove`
   * `admin/bridge/list`
+  
+- Hosting of static files over HTTP to allow for container hosted web UIs
+- UI bundle admin RPC functions
+   Adds a further set of functions to the container RPC for managing 
+   static UI bundles and HTTP interfaces to these.
+   This adds the following RPC endpoints:
+   
+   * `admin/ui/install`
+   * `admin/ui/uninstall`
+   * `admin/ui/list`
+   * `admin/ui_interface/add`
+   * `admin/ui_interface/remove`
+   * `admin/ui_interface/list`
+   * `admin/ui_interface/start`
+   * `admin/ui_interface/stop`
 
   See rustdoc of `container_api::interface::ContainerApiBuilder` for a full description of these functions.
 - Container can serve static directories called ui_bundles over HTTP that can be configured in the container config toml file. This HTTP server also implements a virtual json file at "/_dna_connections.json" that returns the DNA interface (if any) the UI is configured to connect to. Hc-web-client will use this to automatically connect to the correct DNA interface on page load.

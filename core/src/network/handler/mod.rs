@@ -9,7 +9,6 @@ use crate::{
         handler::{get::*, send::*, store::*},
     },
 };
-use futures::executor::block_on;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
@@ -204,7 +203,7 @@ fn republish_all_public_chain_entries(context: &Arc<Context>) {
         .filter(|ref chain_header| chain_header.entry_type().can_publish())
         .for_each(|chain_header| {
             let hash = HashString::from(chain_header.entry_address().to_string());
-            match block_on(publish(hash.clone(), context)) {
+            match context.block_on(publish(hash.clone(), context)) {
                 Err(e) => context.log(format!(
                     "err/net/handle: unable to publish {:?}, got error: {:?}",
                     hash, e

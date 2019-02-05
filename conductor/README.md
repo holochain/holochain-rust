@@ -52,7 +52,7 @@ Run `holochain --version` to confirm that it built.
 
 The conductor requires a configuration file to run, you can see a [sample here](https://github.com/holochain/holochain-rust/blob/develop/conductor/example-config/basic.toml)
 
-You can put your configuration file in `~/.holochain/conductor_config.toml` or run `holochain` explicitly with the `-c` to specify where to find it.
+You can put your configuration file in `~/.holochain/conductor/conductor_config.toml` or run `holochain` explicitly with the `-c` to specify where to find it.
 
 ### Using real networking
 The conductor currently uses mock networking by default. To use real networking you have to install the [n3h networking component](https://github.com/holochain/n3h) and add a configuration block into the config file to tell the conductor where it can find n3h.  It should look something like this:

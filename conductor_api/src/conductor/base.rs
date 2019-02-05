@@ -519,6 +519,7 @@ impl Conductor {
 
         if interface_config.admin {
             conductor_api_builder = conductor_api_builder.with_admin_dna_functions();
+            conductor_api_builder = conductor_api_builder.with_admin_ui_functions();
         }
 
         conductor_api_builder.spawn()

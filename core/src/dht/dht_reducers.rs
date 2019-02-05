@@ -7,8 +7,8 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::{EntityAttributeValueIndex, IndexQuery},
+    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
+    eav::{Attribute, EntityAttributeValueIndex, IndexQuery},
     entry::Entry,
     error::HolochainError,
 };
@@ -120,7 +120,7 @@ pub(crate) fn reduce_add_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &format!("link__{}", link.tag()),
+            &Attribute::LinkTag(link.tag().to_owned()),
             link.target(),
         );
         eav.map(|e| {
@@ -240,7 +240,7 @@ fn reduce_remove_entry_inner(
     let meta_storage = &new_store.meta_storage().clone();
     let maybe_status_eav = meta_storage.read().unwrap().fetch_eavi(
         Some(latest_deleted_address.clone()),
-        Some(STATUS_NAME.to_string()),
+        Some(Attribute::CrudStatus),
         None,
         IndexQuery::default(),
     );
@@ -305,7 +305,7 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        eav::IndexQuery,
+        eav::{Attribute, IndexQuery},
         entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };
@@ -386,7 +386,7 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), format!("link__{}", link.tag()));
+        assert_eq!(eav.attribute(), Attribute::LinkTag(link.tag().to_owned()));
     }
 
     #[test]

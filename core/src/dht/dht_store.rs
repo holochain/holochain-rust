@@ -1,7 +1,7 @@
 use crate::action::ActionWrapper;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
-    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage, IndexQuery},
+    eav::{Attribute, EntityAttributeValueIndex, EntityAttributeValueStorage, IndexQuery},
     error::HolochainError,
 };
 
@@ -55,7 +55,7 @@ impl DhtStore {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         self.meta_storage.read()?.fetch_eavi(
             Some(address),
-            Some(format!("link__{}", tag)),
+            Some(Attribute::LinkTag(tag)),
             None,
             IndexQuery::default(),
         )

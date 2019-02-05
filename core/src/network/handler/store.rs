@@ -3,10 +3,7 @@ use crate::{
     network::entry_with_header::EntryWithHeader,
     workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
-use holochain_core_types::{
-    cas::content::Address,
-    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-};
+use holochain_core_types::{cas::content::Address, crud_status::CrudStatus, eav::Attribute};
 use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 
@@ -25,39 +22,37 @@ pub fn handle_store_entry(dht_data: EntryData, context: Arc<Context>) {
 /// The network requests us to store meta information (links/CRUD/etc) for an
 /// entry that we hold.
 pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
-    match dht_meta_data.attribute.as_ref() {
-        "link" => {
-            context.log("debug/net/handle: HandleStoreMeta: got LINK. processing...");
-            let entry_with_header: EntryWithHeader = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content)
-                    .expect("dht_meta_data should be EntryWithHader"),
-            )
-            .expect("dht_meta_data should be EntryWithHader");
-            thread::spawn(move || {
-                match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
-                    Err(error) => context.log(format!("err/net/dht: {}", error)),
-                    _ => (),
-                }
-            });
-        }
-        STATUS_NAME => {
-            context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
-            let _crud_status: CrudStatus = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content)
-                    .expect("dht_meta_data should be crud_status"),
-            )
-            .expect("dht_meta_data should be crud_status");
-            // FIXME: block_on hold crud_status metadata in DHT?
-        }
-        LINK_NAME => {
-            context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
-            let _crud_link: Address = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content)
-                    .expect("dht_meta_data should be crud_link"),
-            )
-            .expect("dht_meta_data should be crud_link");
-            // FIXME: block_on hold crud_link metadata in DHT?
-        }
-        _ => {}
+    let attr = dht_meta_data.attribute;
+    // @TODO: If network crates will switch to using the `Attribute` enum,
+    // we can match on the enum directly
+    if attr == Attribute::Link.to_string() {
+        context.log("debug/net/handle: HandleStoreMeta: got LINK. processing...");
+        let entry_with_header: EntryWithHeader = serde_json::from_str(
+            &serde_json::to_string(&dht_meta_data.content)
+                .expect("dht_meta_data should be EntryWithHader"),
+        )
+        .expect("dht_meta_data should be EntryWithHader");
+        thread::spawn(move || {
+            match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
+                Err(error) => context.log(format!("err/net/dht: {}", error)),
+                _ => (),
+            }
+        });
+    } else if attr == Attribute::CrudStatus.to_string() {
+        context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
+        let _crud_status: CrudStatus = serde_json::from_str(
+            &serde_json::to_string(&dht_meta_data.content)
+                .expect("dht_meta_data should be crud_status"),
+        )
+        .expect("dht_meta_data should be crud_status");
+    // FIXME: block_on hold crud_status metadata in DHT?
+    } else if attr == Attribute::CrudLink.to_string() {
+        context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
+        let _crud_link: Address = serde_json::from_str(
+            &serde_json::to_string(&dht_meta_data.content)
+                .expect("dht_meta_data should be crud_link"),
+        )
+        .expect("dht_meta_data should be crud_link");
+        // FIXME: block_on hold crud_link metadata in DHT?
     }
 }

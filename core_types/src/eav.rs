@@ -19,13 +19,54 @@ use std::{
 };
 
 use regex::RegexBuilder;
-use std::fmt::Debug;
+use std::fmt::{self, Debug};
 
 /// Address of AddressableContent representing the EAV entity
 pub type Entity = Address;
 
 /// Using String for EAV attributes (not e.g. an enum) keeps it simple and open
-pub type Attribute = String;
+#[derive(PartialEq, Eq, PartialOrd, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
+pub enum Attribute {
+    NullAttribute,
+    // #[serde(rename = "crud-status")]
+    CrudStatus,
+    // #[serde(rename = "crud-link")]
+    CrudLink,
+    // #[serde(rename = "link")]
+    Link,
+    LinkTag(String),
+    Custom(String),
+}
+
+impl fmt::Display for Attribute {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Attribute::NullAttribute => write!(f, "null"),
+            Attribute::CrudStatus => write!(f, "crud-status"),
+            Attribute::CrudLink => write!(f, "crud-link"),
+            Attribute::Link => write!(f, "link"),
+            Attribute::LinkTag(name) => write!(f, "link__{}", name),
+            Attribute::Custom(name) => write!(f, "custom-{}", name),
+        }
+    }
+}
+
+impl Default for Attribute {
+    fn default() -> Self {
+        Attribute::NullAttribute
+    }
+}
+
+impl From<String> for Attribute {
+    fn from(s: String) -> Attribute {
+        Attribute::Custom(s)
+    }
+}
+impl From<&str> for Attribute {
+    fn from(s: &str) -> Attribute {
+        Attribute::Custom(s.into())
+    }
+}
 
 /// Address of AddressableContent representing the EAV value
 pub type Value = Address;
@@ -104,15 +145,19 @@ impl AddressableContent for EntityAttributeValueIndex {
 }
 
 fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
-    let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
-        .build()
-        .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
-    if !regex.is_match(attribute) {
-        Ok(())
+    if let Attribute::Custom(name) = attribute {
+        let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
+            .build()
+            .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;
+        if !regex.is_match(name) {
+            Ok(())
+        } else {
+            Err(HolochainError::ErrorGeneric(
+                "Attribute name invalid".to_string(),
+            ))
+        }
     } else {
-        Err(HolochainError::ErrorGeneric(
-            "Attribute name invalid".to_string(),
-        ))
+        Ok(())
     }
 }
 
@@ -321,8 +366,8 @@ pub fn test_eav_entity() -> Entry {
     test_entry_a()
 }
 
-pub fn test_eav_attribute() -> String {
-    "foo-attribute".to_string()
+pub fn test_eav_attribute() -> Attribute {
+    "foo-attribute".into()
 }
 
 pub fn test_eav_value() -> Entry {
@@ -349,7 +394,7 @@ pub fn test_eav_address() -> Address {
 
 pub fn eav_round_trip_test_runner(
     entity_content: impl AddressableContent + Clone,
-    attribute: String,
+    attribute: Attribute,
     value_content: impl AddressableContent + Clone,
 ) {
     let eav = EntityAttributeValueIndex::new(

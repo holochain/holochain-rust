@@ -10,15 +10,16 @@ use crate::{
     hash::HashString,
     json::JsonString,
 };
+use eav::Attribute;
 use std::{convert::TryInto, str::FromStr};
 
 // @TODO are these the correct key names?
 // @see https://github.com/holochain/holochain-rust/issues/143
 /// The [EAV](../eav/index.html) attribute name utilized for storing metadata about the lifecycle related status
 /// of an entry
-pub const STATUS_NAME: &str = "crud-status";
+pub const STATUS_NAME: Attribute = Attribute::CrudStatus;
 /// The [EAV](../eav/index.html) attribute name utilized for storing metadata that indicates the address of an updated version of a given entry
-pub const LINK_NAME: &str = "crud-link";
+pub const LINK_NAME: Attribute = Attribute::CrudLink;
 
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an entry address as the Entity, [STATUS_NAME](constant.STATUS_NAME.html) as the attribute
 /// and CrudStatus as the value.
@@ -29,7 +30,7 @@ pub fn create_crud_status_eav(
 ) -> HcResult<EntityAttributeValueIndex> {
     EntityAttributeValueIndex::new(
         address,
-        &STATUS_NAME.to_string(),
+        &STATUS_NAME,
         &HashString::from(String::from(status)),
     )
 }
@@ -37,7 +38,7 @@ pub fn create_crud_status_eav(
 /// Create a new [EAV](../eav/struct.EntityAttributeValue.html) with an old entry address as the Entity, [LINK_NAME](constant.LINK_NAME.html) as the attribute
 /// and a new entry address as the value
 pub fn create_crud_link_eav(from: &Address, to: &Address) -> HcResult<EntityAttributeValueIndex> {
-    EntityAttributeValueIndex::new(from, &LINK_NAME.to_string(), to)
+    EntityAttributeValueIndex::new(from, &LINK_NAME, to)
 }
 
 /// the CRUD status of a Pair is stored using an EAV, NOT in the entry itself

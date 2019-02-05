@@ -5,7 +5,7 @@
 
 use crate::{
     cas::content::{Address, AddressableContent, Content},
-    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage, IndexQuery},
+    eav::{Attribute, EntityAttributeValueIndex, EntityAttributeValueStorage, IndexQuery},
     entry::{test_entry_unique, Entry},
     error::HolochainError,
     json::RawString,
@@ -244,15 +244,16 @@ impl EavTestSuite {
     pub fn test_round_trip(
         mut eav_storage: impl EntityAttributeValueStorage + Clone,
         entity_content: impl AddressableContent,
-        attribute: String,
+        attribute_name: String,
         value_content: impl AddressableContent,
     ) {
         let eav = EntityAttributeValueIndex::new(
             &entity_content.address(),
-            &"favourite-color".to_string(),
+            &Attribute::Custom("favourite-color".into()),
             &value_content.address(),
         )
         .expect("Could create entityAttributeValue");
+        let attribute = Attribute::Custom(attribute_name);
 
         let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
 
@@ -327,7 +328,7 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let many_three = A::try_from_content(&baz_content)
             .expect("could not create AddressableContent from Content");
-        let attribute = "one_to_many".to_string();
+        let attribute = Attribute::Custom("one_to_many".to_string());
 
         let mut expected = BTreeSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
@@ -407,7 +408,7 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let many_two = A::try_from_content(&bar_content)
             .expect("could not create AddressableContent from Content");
-        let attribute = "one_to_many".to_string();
+        let attribute = "one_to_many".into();
         let mut expected_many_one = BTreeSet::new();
         let mut expected_many_two = BTreeSet::new();
         let mut expected_all_range = BTreeSet::new();
@@ -508,7 +509,7 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let many_three = A::try_from_content(&baz_content)
             .expect("could not create AddressableContent from Content");
-        let attribute = "many_to_one".to_string();
+        let attribute = "many_to_one".into();
 
         let mut expected = BTreeSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {

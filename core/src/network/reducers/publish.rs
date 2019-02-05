@@ -12,6 +12,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
+    eav::Attribute,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
@@ -104,7 +105,7 @@ fn publish_link_meta(
             dna_address: network_state.dna_address.clone().unwrap(),
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: link.base().clone(),
-            attribute: String::from("link"),
+            attribute: Attribute::Link.to_string(),
             content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
                 .unwrap(),
         }),

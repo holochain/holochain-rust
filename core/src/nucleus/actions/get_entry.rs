@@ -2,8 +2,8 @@ extern crate serde_json;
 use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
-    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::{EntityAttributeValueIndex, IndexQuery},
+    crud_status::CrudStatus,
+    eav::{Attribute, EntityAttributeValueIndex, IndexQuery},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
@@ -51,7 +51,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     // Get crud-status
     let status_eavs = (*storage.read().unwrap()).fetch_eavi(
         Some(address.clone()),
-        Some(STATUS_NAME.to_string()),
+        Some(Attribute::CrudStatus),
         None,
         IndexQuery::default(),
     )?;
@@ -89,7 +89,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let mut maybe_crud_link = None;
     let link_eavs = (*storage.read().unwrap()).fetch_eavi(
         Some(address),
-        Some(LINK_NAME.to_string()),
+        Some(Attribute::CrudLink),
         None,
         IndexQuery::default(),
     )?;

@@ -97,7 +97,7 @@ impl EavFileStorage {
     ) -> Result<(), HolochainError> {
         let address: String = match &*subscript {
             ENTITY_DIR => eav.entity().to_string(),
-            ATTRIBUTE_DIR => eav.attribute(),
+            ATTRIBUTE_DIR => eav.attribute().to_string(),
             VALUE_DIR => eav.value().to_string(),
             _ => String::new(),
         };

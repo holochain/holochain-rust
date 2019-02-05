@@ -30,7 +30,12 @@ pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let cas = context.state().unwrap().agent().chain().content_storage();
+    let cas = context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .content_storage();
     get_entry_from_cas(&cas.clone(), address)
 }
 

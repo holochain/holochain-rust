@@ -304,13 +304,12 @@ pub mod tests {
     use holochain_cas_implementations::cas::file::FilesystemStorage;
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::{test_chain_header, test_sources, ChainHeader},
+        chain_header::{test_chain_header, test_provenances, ChainHeader},
         entry::{
             entry_type::{test_entry_type_b, AppEntryType},
             test_entry, test_entry_b, test_entry_c, Entry,
         },
         json::JsonString,
-        signature::{test_signature_b, test_signature_c, test_signatures, Signature},
         time::test_iso_8601,
     };
 
@@ -331,8 +330,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![test_signature_b()],
+            &test_provenances("sig"),
             &Some(chain_header_a.address()),
             &None,
             &None,
@@ -373,8 +371,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry_b.entry_type(),
             &entry_b.address(),
-            &test_sources(),
-            &test_signatures(),
+            &test_provenances("sig"),
             &Some(chain_header_a.address()),
             &None,
             &None,
@@ -385,8 +382,7 @@ pub mod tests {
         let chain_header_c = ChainHeader::new(
             &entry_c.entry_type(),
             &entry_c.address(),
-            &test_sources(),
-            &test_signatures(),
+            &test_provenances("sig"),
             &Some(chain_header_b.address()),
             &Some(chain_header_a.address()),
             &None,
@@ -448,8 +444,7 @@ pub mod tests {
         let chain_header_b = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![test_signature_b()],
+            &test_provenances("sig-b"),
             &Some(chain_header_a.address()), // .link                (to previous entry)
             &None, // .link_same_type      (to previous entry of same type)
             &None,
@@ -459,8 +454,7 @@ pub mod tests {
         let chain_header_c = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![test_signature_c()],
+            &test_provenances("sig-c"),
             &Some(chain_header_b.address()),
             &Some(chain_header_b.address()),
             &None,
@@ -473,8 +467,7 @@ pub mod tests {
         let chain_header_d = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![Signature::from("sig-d")],
+            &test_provenances("sig-d"),
             &Some(chain_header_c.address()),
             &None,
             &None,
@@ -487,8 +480,7 @@ pub mod tests {
         let chain_header_e = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![Signature::from("sig-e")],
+            &test_provenances("sig-e"),
             &Some(chain_header_d.address()),
             &None,
             &None,
@@ -623,8 +615,7 @@ pub mod tests {
         let chain_header_f = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![Signature::from("sig-f")],
+            &test_provenances("sig"),
             &Some(chain_header_e.address()),
             &None,
             &None,
@@ -634,8 +625,7 @@ pub mod tests {
         let chain_header_g = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![Signature::from("sig-g")],
+            &test_provenances("sig"),
             &Some(chain_header_f.address()),
             &None,
             &None,
@@ -645,8 +635,7 @@ pub mod tests {
         let chain_header_h = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![Signature::from("sig-g")],
+            &test_provenances("sig"),
             &Some(chain_header_g.address()),
             &None,
             &None,
@@ -710,8 +699,7 @@ pub mod tests {
         let chain_header_i = ChainHeader::new(
             &entry.entry_type(),
             &entry.address(),
-            &test_sources(),
-            &vec![Signature::from("sig-i")],
+            &test_provenances("sig"),
             &Some(chain_header_h.address()),
             &None,
             &None,

@@ -24,7 +24,8 @@ use std::fmt::{self, Debug};
 /// Address of AddressableContent representing the EAV entity
 pub type Entity = Address;
 
-/// Using String for EAV attributes (not e.g. an enum) keeps it simple and open
+/// All Attribute values are pre-defined here. If ever a user-defined Attribute is needed,
+/// just add a new Custom variant for it with a String parameter
 #[derive(PartialEq, Eq, PartialOrd, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub enum Attribute {
     #[serde(rename = "crud-status")]
@@ -32,6 +33,9 @@ pub enum Attribute {
 
     #[serde(rename = "crud-link")]
     CrudLink,
+
+    #[serde(rename = "entry-header")]
+    EntryHeader,
 
     #[serde(rename = "link")]
     Link,
@@ -44,6 +48,7 @@ impl fmt::Display for Attribute {
         match self {
             Attribute::CrudStatus => write!(f, "crud-status"),
             Attribute::CrudLink => write!(f, "crud-link"),
+            Attribute::EntryHeader => write!(f, "entry-header"),
             Attribute::Link => write!(f, "link"),
             Attribute::LinkTag(name) => write!(f, "link__{}", name),
         }

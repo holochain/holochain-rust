@@ -25,7 +25,7 @@ use std::fmt::Debug;
 pub type Entity = Address;
 
 /// Using String for EAV attributes (not e.g. an enum) keeps it simple and open
-pub type Attribute = String;
+pub type Attribute = String; // BUT we totally could make it an enum with a Custom variant!
 
 /// Address of AddressableContent representing the EAV value
 pub type Value = Address;

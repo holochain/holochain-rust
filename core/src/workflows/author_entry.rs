@@ -79,7 +79,6 @@ pub async fn author_entry<'a>(
 pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
-    use futures::executor::block_on;
     use holochain_core_types::{entry::test_entry, json::JsonString};
     use std::{thread, time};
 
@@ -93,7 +92,9 @@ pub mod tests {
         let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
         let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
-        let entry_address = block_on(author_entry(&test_entry(), None, &context1)).unwrap();
+        let entry_address = context1
+            .block_on(author_entry(&test_entry(), None, &context1))
+            .unwrap();
         thread::sleep(time::Duration::from_millis(500));
 
         let mut json: Option<JsonString> = None;

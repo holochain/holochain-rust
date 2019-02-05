@@ -8,7 +8,6 @@ use crate::{
         respond_validation_package_request::respond_validation_package_request,
     },
 };
-use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
 use std::{sync::Arc, thread};
 
@@ -23,7 +22,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
     match message {
         DirectMessage::Custom(custom_direct_message) => {
             thread::spawn(move || {
-                if let Err(error) = block_on(handle_custom_direct_message(
+                if let Err(error) = context.block_on(handle_custom_direct_message(
                     Address::from(message_data.from_agent_id),
                     message_data.request_id,
                     custom_direct_message,
@@ -39,7 +38,7 @@ pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
             thread::spawn(move || {
-                block_on(respond_validation_package_request(
+                context.block_on(respond_validation_package_request(
                     Address::from(message_data.from_agent_id),
                     message_data.request_id,
                     address,

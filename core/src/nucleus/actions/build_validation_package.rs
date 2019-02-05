@@ -214,7 +214,6 @@ mod tests {
     use super::*;
     use crate::nucleus::actions::tests::*;
 
-    use futures::executor::block_on;
     use holochain_core_types::validation::ValidationPackage;
 
     #[test]
@@ -228,7 +227,7 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_entry(), &context);
 
-        let maybe_validation_package = block_on(build_validation_package(
+        let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_entry(),
             &context.clone(),
         ));
@@ -256,7 +255,7 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_entries(), &context);
 
-        let maybe_validation_package = block_on(build_validation_package(
+        let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_entries(),
             &context.clone(),
         ));
@@ -284,7 +283,7 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_headers(), &context);
 
-        let maybe_validation_package = block_on(build_validation_package(
+        let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_headers(),
             &context.clone(),
         ));
@@ -311,7 +310,7 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_full(), &context);
 
-        let maybe_validation_package = block_on(build_validation_package(
+        let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_full(),
             &context.clone(),
         ));

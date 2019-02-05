@@ -1,7 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::RECV_DEFAULT_TIMEOUT_MS,
     nucleus::{
         ribosome::{
             api::ZomeApiResult,
@@ -15,10 +14,7 @@ use holochain_core_types::{cas::content::Address, error::HolochainError, json::J
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use std::{
-    convert::TryFrom,
-    sync::{mpsc::channel, Arc},
-};
+use std::{convert::TryFrom, sync::Arc, time::Duration};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
@@ -81,41 +77,26 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
             "expecting zome call data in local call not null call".to_string(),
         )
     })?;
+    let context = zome_call_data.context;
     // ZomeFnCallArgs to ZomeFnCall
-    let zome_call = ZomeFnCall::from_args(zome_call_data.context.clone(), input);
+    let zome_call = ZomeFnCall::from_args(context.clone(), input);
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
-    // Send Action and block
-    let (sender, receiver) = channel();
-    crate::instance::dispatch_action_with_observer(
-        zome_call_data.context.action_channel(),
-        zome_call_data.context.observer_channel(),
-        action_wrapper.clone(),
-        move |state: &crate::state::State| {
-            // Observer waits for a ribosome_call_result
-            let maybe_result = state.nucleus().zome_call_result(&zome_call);
-            match maybe_result {
-                Some(result) => {
-                    // @TODO never panic in wasm
-                    // @see https://github.com/holochain/holochain-rust/issues/159
-                    sender
-                        .send(result)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
+    let tick_rx = context.create_observer();
+    crate::instance::dispatch_action(context.action_channel(), action_wrapper);
 
-                    true
-                }
-                None => false,
-            }
-        },
-    );
-    // TODO #97 - Return error if timeout or something failed
-    // return Err(_);
-
-    receiver
-        .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
-        .expect("observer dropped before done")
+    loop {
+        if let Some(result) = context
+            .state()
+            .unwrap()
+            .nucleus()
+            .zome_call_result(&zome_call)
+        {
+            return result;
+        } else {
+            let _ = tick_rx.recv_timeout(Duration::from_millis(10));
+        }
+    }
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
@@ -124,14 +105,13 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
             "expecting zome call data in bridge call not null call".to_string(),
         )
     })?;
-    let container_api =
-        zome_call_data
-            .context
-            .container_api
-            .clone()
-            .ok_or(HolochainError::ConfigError(
-                "No container API in context".to_string(),
-            ))?;
+    let context = zome_call_data.context;
+    let container_api = context
+        .container_api
+        .clone()
+        .ok_or(HolochainError::ConfigError(
+            "No container API in context".to_string(),
+        ))?;
 
     let method = format!(
         "{}/{}/{}",
@@ -226,5 +206,4 @@ pub mod tests {
             .expect("args should serialize")
             .into_bytes()
     }
-
 }

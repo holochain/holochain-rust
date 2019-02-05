@@ -58,14 +58,12 @@
 //!```
 
 use crate::error::{HolochainInstanceError, HolochainResult};
-use futures::executor::block_on;
 use holochain_core::{
     context::Context,
     instance::Instance,
     nucleus::ribosome::fn_call::{call_and_wait_for_result, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
-    workflows::application,
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityCall, Dna},
@@ -95,12 +93,7 @@ impl Holochain {
         mut instance: Instance,
     ) -> HolochainResult<Self> {
         let name = dna.name.clone();
-        instance.start_action_loop(context.clone());
-        let result = block_on(application::initialize(
-            &instance,
-            Some(dna),
-            context.clone(),
-        ));
+        let result = instance.initialize(Some(dna), context.clone());
         match result {
             Ok(new_context) => {
                 context.log(format!("debug/container: {} instantiated", name));
@@ -121,8 +114,7 @@ impl Holochain {
             .load(context.clone())?
             .unwrap_or(State::new(context.clone()));
         let mut instance = Instance::from_state(loaded_state.clone());
-        instance.start_action_loop(context.clone());
-        let new_context = block_on(application::initialize(&instance, None, context.clone()))?;
+        let new_context = instance.initialize(None, context.clone())?;
         Ok(Holochain {
             instance,
             context: new_context.clone(),

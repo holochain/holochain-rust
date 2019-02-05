@@ -68,14 +68,10 @@ pub async fn initialize_application(
         ));
     }
 
-    let context_clone = context.clone();
-
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
-    dispatch_action_and_wait(
-        &context_clone.action_channel(),
-        &context_clone.observer_channel(),
-        action_wrapper.clone(),
-    );
+    dispatch_action_and_wait(context.clone(), action_wrapper.clone());
+
+    let context_clone = context.clone();
 
     // internal dispatch ReturnInitializationResult
     fn dispatch_error_result(context: &Arc<Context>, err: HolochainError) {

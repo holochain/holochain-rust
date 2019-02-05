@@ -7,10 +7,7 @@ use crate::{
     },
     workflows::get_entry_result::get_entry_result_workflow,
 };
-use futures::{
-    executor::block_on,
-    future::{self, TryFutureExt},
-};
+use futures::future::{self, TryFutureExt};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::{deletion_entry::DeletionEntry, Entry},
@@ -28,13 +25,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Stores/returns a RibosomeEncodedValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let zome_call_data = runtime.zome_call_data()?;
+    let context = zome_call_data.context;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let try_address = Address::try_from(args_str.clone());
 
     // Exit on error
     if try_address.is_err() {
-        zome_call_data.context.log(format!(
+        context.log(format!(
             "err/zome: invoke_remove_entry failed to deserialize Address: {:?}",
             args_str
         ));
@@ -47,10 +45,9 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         address: deleted_entry_address,
         options: Default::default(),
     };
-    let maybe_entry_result = block_on(get_entry_result_workflow(
-        &zome_call_data.context,
-        &get_args,
-    ));
+    let maybe_entry_result = context
+        .clone()
+        .block_on(get_entry_result_workflow(&context, &get_args));
     if let Err(_err) = maybe_entry_result {
         return ribosome_error_code!(Unspecified);
     }
@@ -64,9 +61,9 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
     // Resolve future
-    let result: Result<(), HolochainError> = block_on(
+    let result: Result<(), HolochainError> = context.clone().block_on(
         // 1. Build the context needed for validation of the entry
-        build_validation_package(&deletion_entry, &zome_call_data.context)
+        build_validation_package(&deletion_entry, &context)
             .and_then(|validation_package| {
                 future::ready(Ok(ValidationData {
                     package: validation_package,
@@ -77,25 +74,21 @@ pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
             })
             // 2. Validate the entry
             .and_then(|validation_data| {
-                validate_entry(
-                    deletion_entry.clone(),
-                    validation_data,
-                    &zome_call_data.context,
-                )
+                validate_entry(deletion_entry.clone(), validation_data, &context)
             })
             // 3. Commit the valid entry to chain and DHT
             .and_then(|_| {
                 commit_entry(
                     deletion_entry.clone(),
                     Some(deleted_entry_address.clone()),
-                    &zome_call_data.context,
+                    &context,
                 )
             })
             // 4. Remove the entry in DHT metadata
             .and_then(|_| {
                 remove_entry(
-                    &zome_call_data.context,
-                    zome_call_data.context.action_channel(),
+                    &context,
+                    context.action_channel(),
                     deleted_entry_address.clone(),
                     deletion_entry.address().clone(),
                 )

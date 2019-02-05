@@ -3,7 +3,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::{dispatch_action_with_observer, Observer},
+    instance::Observer,
     nucleus::{
         actions::get_entry::get_entry_from_agent_chain,
         ribosome::{self, WasmCallData},
@@ -24,10 +24,11 @@ use holochain_core_types::{
 use snowflake;
 use std::{
     sync::{
-        mpsc::{sync_channel, SyncSender},
+        mpsc::{channel, SyncSender},
         Arc,
     },
     thread,
+    time::Duration,
 };
 
 /// Struct holding data for requesting the execution of a Zome function (ExecuteZomeFunction Action)
@@ -136,35 +137,6 @@ pub(crate) fn reduce_return_zome_function_result(
     state.zome_calls.insert(fr.call(), Some(fr.result()));
 }
 
-/// Dispatch ExecuteZoneFunction to and block until call has finished.
-pub fn call_zome_and_wait_for_result(
-    call: ZomeFnCall,
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
-) -> Result<JsonString, HolochainError> {
-    let call_action_wrapper = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
-
-    // Dispatch action with observer closure that waits for a result in the state
-    let (sender, receiver) = sync_channel(1);
-    dispatch_action_with_observer(
-        action_channel,
-        observer_channel,
-        call_action_wrapper,
-        move |state: &crate::state::State| {
-            if let Some(result) = state.nucleus().zome_call_result(&call) {
-                sender
-                    .send(result.clone())
-                    .expect("local channel to be open");
-                true
-            } else {
-                false
-            }
-        },
-    );
-    // Block until we got that result through the channel:
-    receiver.recv().expect("local channel to work")
-}
-
 /// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
 /// for test only?? <-- (apparently not, since it's used in Holochain::call)
 pub fn call_and_wait_for_result(
@@ -174,21 +146,20 @@ pub fn call_and_wait_for_result(
     let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
 
     // Dispatch action with observer closure that waits for a result in the state
-    let (sender, receiver) = sync_channel(1);
-    instance.dispatch_with_observer(call_action, move |state: &crate::state::State| {
-        if let Some(result) = state.nucleus().zome_call_result(&call) {
-            sender
-                .send(result.clone())
-                .expect("local channel to be open");
-            true
-        } else {
-            // @TODO: Use futures for this, and in case this should probably have a timeout
-            false
-        }
-    });
+    let (tick_tx, tick_rx) = channel();
+    instance
+        .observer_channel()
+        .send(Observer { ticker: tick_tx })
+        .expect("Observer channel not initialized");
+    instance.dispatch(call_action);
 
-    // Block until we got that result through the channel:
-    receiver.recv().expect("local channel to work")
+    loop {
+        if let Some(result) = instance.state().nucleus().zome_call_result(&call) {
+            return result;
+        } else {
+            let _ = tick_rx.recv_timeout(Duration::from_millis(100));
+        }
+    }
 }
 
 pub type ZomeFnResult = HcResult<JsonString>;
@@ -398,7 +369,7 @@ pub mod tests {
     use crate::{
         action::{tests::test_action_wrapper_rzfr, Action, ActionWrapper},
         context::Context,
-        instance::{tests::*, Instance, Observer, RECV_DEFAULT_TIMEOUT_MS},
+        instance::{tests::*, Instance, Observer},
         nucleus::{
             reduce,
             ribosome::{
@@ -428,7 +399,7 @@ pub mod tests {
     use std::{
         collections::BTreeMap,
         sync::{
-            mpsc::{channel, RecvTimeoutError},
+            mpsc::{sync_channel, RecvTimeoutError},
             Arc,
         },
     };
@@ -619,9 +590,10 @@ pub mod tests {
     /// tests that calling an invalid DNA returns the correct error
     fn call_ribosome_wrong_dna() {
         let netname = Some("call_ribosome_wrong_dna");
-        let mut instance = Instance::new(test_context("janet", netname));
+        let context = test_context("janet", netname);
+        let mut instance = Instance::new(context.clone());
 
-        instance.start_action_loop(test_context("jane", netname));
+        instance.initialize_without_dna(context);
 
         let call = ZomeFnCall::new("test_zome", dummy_capability_call(), "public_test_fn", "{}");
         let result = super::call_and_wait_for_result(call, &mut instance);
@@ -729,42 +701,30 @@ pub mod tests {
         let zome_call = ZomeFnCall::new("test_zome", cap_call, "test", "{}");
         let zome_call_action = ActionWrapper::new(Action::Call(zome_call.clone()));
 
-        // process the action
-        let (sender, receiver) = channel();
-        let closure = move |state: &crate::state::State| {
-            // Observer waits for a ribosome_call_result
-            let opt_res = state.nucleus().zome_call_result(&zome_call);
-            match opt_res {
-                Some(res) => {
-                    // @TODO never panic in wasm
-                    // @see https://github.com/holochain/holochain-rust/issues/159
-                    sender
-                        .send(res)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
-
-                    true
-                }
-                None => false,
-            }
-        };
-
-        let observer = Observer {
-            sensor: Box::new(closure),
-        };
-
-        let mut state_observers: Vec<Observer> = Vec::new();
-        state_observers.push(observer);
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = sync_channel(1);
         test_setup.instance.process_action(
             zome_call_action,
-            state_observers,
+            Vec::new(),
             &rx_observer,
             &test_setup.context,
         );
 
-        let action_result = receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS);
+        while test_setup
+            .instance
+            .state()
+            .nucleus()
+            .zome_call_result(&zome_call)
+            .is_none()
+        {
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        let action_result = Ok(test_setup
+            .instance
+            .state()
+            .nucleus()
+            .zome_call_result(&zome_call)
+            .unwrap());
 
         assert_eq!(expected, action_result);
     }

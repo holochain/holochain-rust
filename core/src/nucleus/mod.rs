@@ -15,6 +15,7 @@ use crate::{
         state::{NucleusState, NucleusStatus},
     },
 };
+
 use std::sync::Arc;
 
 /// Reduce ReturnInitializationResult Action
@@ -224,6 +225,7 @@ pub mod tests {
 
         assert_eq!(reduced_nucleus.has_initialized(), true);
         assert_eq!(reduced_nucleus.has_initialization_failed(), false);
+
         assert_eq!(reduced_nucleus.initialization().is_some(), true);
         assert_eq!(
             reduced_nucleus.status(),

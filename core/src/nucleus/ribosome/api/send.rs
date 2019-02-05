@@ -2,7 +2,6 @@ use crate::{
     network::{actions::custom_send::custom_send, direct_message::CustomDirectMessage},
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
-use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::send::SendArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -25,7 +24,7 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         zome: zome_call_data.zome_call.zome_name.clone(),
     };
 
-    let result = block_on(custom_send(
+    let result = zome_call_data.context.clone().block_on(custom_send(
         args.to_agent,
         message,
         args.options.0,

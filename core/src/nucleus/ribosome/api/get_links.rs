@@ -2,7 +2,6 @@ use crate::{
     network::actions::get_links::get_links,
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
 };
-use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksStatusRequestKind,
 };
@@ -43,8 +42,8 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     }
 
     // Get links from DHT
-    let maybe_links = block_on(get_links(
-        zome_call_data.context.clone(),
+    let maybe_links = zome_call_data.context.clone().block_on(get_links(
+        zome_call_data.context,
         input.entry_address,
         input.tag,
         input.options.timeout,
@@ -70,7 +69,6 @@ pub mod tests {
             Defn,
         },
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::Address,
         entry::{entry_type::test_app_entry_type, Entry},
@@ -107,7 +105,8 @@ pub mod tests {
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
             let entry = Entry::App(test_app_entry_type(), format!("entry{} value", i).into());
-            let address = block_on(commit_entry(entry, None, &initialized_context))
+            let address = initialized_context
+                .block_on(commit_entry(entry, None, &initialized_context))
                 .expect("Could not commit entry for testing");
             entry_addresses.push(address);
         }
@@ -115,8 +114,12 @@ pub mod tests {
         let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
         let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
 
-        assert!(block_on(add_link(&link1, &initialized_context)).is_ok());
-        assert!(block_on(add_link(&link2, &initialized_context)).is_ok());
+        assert!(initialized_context
+            .block_on(add_link(&link1, &initialized_context))
+            .is_ok());
+        assert!(initialized_context
+            .block_on(add_link(&link2, &initialized_context))
+            .is_ok());
 
         let call_result = test_zome_api_function_call(
             &dna_name,

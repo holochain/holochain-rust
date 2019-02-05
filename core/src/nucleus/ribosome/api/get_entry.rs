@@ -2,7 +2,6 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::get_entry_result::get_entry_result_workflow,
 };
-use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -13,13 +12,14 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let zome_call_data = runtime.zome_call_data()?;
+    let context = zome_call_data.context;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.log(format!(
+            context.log(format!(
                 "err/zome: invoke_get_entry() failed to deserialize: {:?}",
                 args_str
             ));
@@ -27,7 +27,7 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    let result = block_on(get_entry_result_workflow(&zome_call_data.context, &input));
+    let result = context.block_on(get_entry_result_workflow(&context, &input));
     // Store result in wasm memory
     runtime.store_result(result)
 }

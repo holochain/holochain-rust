@@ -547,7 +547,19 @@ define_zome! {
     genesis: || { Ok(()) }
 
     receive: |payload| {
-        format!("Received: {}", payload)
+        {
+            let entry = Entry::App(
+                "testEntryType".into(),
+                EntryStruct {
+                    stuff: payload.clone(),
+                }
+                .into(),
+            );
+            match hdk::commit_entry(&entry) {
+                Ok(address) => format!("Committed: '{}' / address: {}", payload, address.to_string()),
+                Err(error) => format!("Error committing in receive: '{}'", error.to_string()),
+            }
+        }
     }
 
     functions: [

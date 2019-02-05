@@ -1,5 +1,5 @@
 const path = require('path')
-const { Config, Container, Scenario } = require('../../nodejs_container')
+const { Config, Conductor, Scenario } = require('../../nodejs_conductor')
 Scenario.setTape(require('tape'))
 
 const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")

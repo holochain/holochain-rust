@@ -1,0 +1,1 @@
+{"value":"{\"name\":\"\",\"description\":\"\",\"version\":\"\",\"uuid\":\"896c1d6a-5bad-41bd-89c9-b83b94f9eafb\",\"dna_spec_version\":\"\",\"properties\":{},\"zomes\":{}}","entry_type":"%dna"}

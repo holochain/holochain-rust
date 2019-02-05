@@ -1,0 +1,40 @@
+bridges = []
+dnas = []
+instances = []
+
+[[agents]]
+id = "test-agent-1"
+key_file = "holo_tester.key"
+name = "Holo Tester 1"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+
+[[agents]]
+id = "test-agent-2"
+key_file = "holo_tester.key"
+name = "Holo Tester 2"
+public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+instances = []
+
+[interfaces.driver]
+port = 3000
+type = "websocket"
+
+[logger]
+type = ""
+[[logger.rules.rules]]
+color = "red"
+exclude = false
+pattern = "^err/"
+
+[[logger.rules.rules]]
+color = "white"
+exclude = false
+pattern = "^debug/dna"
+
+[[logger.rules.rules]]
+exclude = false
+pattern = ".*"

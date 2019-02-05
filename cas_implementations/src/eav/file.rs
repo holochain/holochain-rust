@@ -122,7 +122,7 @@ impl EavFileStorage {
         eav_constraint: Option<T>,
     ) -> HcResult<BTreeSet<String>>
     where
-        T: ToString + std::fmt::Debug,
+        T: ToString,
     {
         let address = eav_constraint
             .map(|e| e.to_string())

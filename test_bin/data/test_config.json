@@ -6,15 +6,15 @@
     "HACK_MODE": false
   },
   "suites": {
-    "BASIC_WORKFLOWS": false,
+    "BASIC_WORKFLOWS": true,
     "LIST_WORKFLOWS": true,
-    "THREE_WORKFLOWS": false
+    "THREE_WORKFLOWS": true
   },
   "log": {
     "default": "d",
     "tags": {
-      "p2pnode": "t",
-      "memory_server": "t"
+      "p2pnode": "d",
+      "memory_server": "d"
     },
     "listeners": [
     "console"

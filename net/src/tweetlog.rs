@@ -1,58 +1,50 @@
 use std::{
     collections::{HashMap, HashSet},
     string::*,
-    sync::{mpsc, Mutex, RwLock},
+    sync::RwLock,
 };
 
-/// Type for holding a map of 'logger_name -> Tweetlog'
-type TweetLoggerMap = HashMap<String, Mutex<Tweetlog>>;
-
-#[warn(non_camel_case_types)]
+#[allow(non_camel_case_types)]
 pub type listenerCallback = fn(LogLevel, Option<&str>, &str);
 
 /// this is the actual memory space for our loggers
-#[warn(non_upper_case_globals)]
 lazy_static! {
-//    pub(crate) static ref TWEET_LOGGER_MAP: RwLock<Tweetlog> =
-//        RwLock::new(HashMap::new());
-
-    pub static ref g_tweetlog: RwLock<Tweetlog> = RwLock::new(Tweetlog::new());
-    //pub static ref g_tweetlog: Tweetlog = Tweetlog::new();
+    pub static ref TWEETLOG: RwLock<Tweetlog> = RwLock::new(Tweetlog::new());
 }
 
 #[macro_export]
 macro_rules! log_t {
     ($($arg:tt)+) => { {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().t(&msg);
+        TWEETLOG.read().unwrap().t(&msg);
       } };
 }
 #[macro_export]
 macro_rules! log_d {
     ($($arg:tt)+) => { {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().d(&msg);
+        TWEETLOG.read().unwrap().d(&msg);
       } };
 }
 #[macro_export]
 macro_rules! log_i {
     ($($arg:tt)+) => { {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().i(&msg);
+        TWEETLOG.read().unwrap().i(&msg);
       } };
 }
 #[macro_export]
 macro_rules! log_w {
     ($($arg:tt)+) => { {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().w(&msg);
+        TWEETLOG.read().unwrap().w(&msg);
       } };
 }
 #[macro_export]
 macro_rules! log_e {
     ($($arg:tt)+) => { {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().e(&msg);
+        TWEETLOG.read().unwrap().e(&msg);
       } };
 }
 
@@ -60,35 +52,35 @@ macro_rules! log_e {
 macro_rules! log_tt {
     ($tag:expr, $($arg:tt)+) => {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().tt($tag, &msg);
+        TWEETLOG.read().unwrap().tt($tag, &msg);
     };
 }
 #[macro_export]
 macro_rules! log_dd {
     ($tag:expr, $($arg:tt)+) => {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().dd($tag, &msg);
+        TWEETLOG.read().unwrap().dd($tag, &msg);
     };
 }
 #[macro_export]
 macro_rules! log_ii {
     ($tag:expr, $($arg:tt)+) => {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().ii($tag, &msg);
+        TWEETLOG.read().unwrap().ii($tag, &msg);
     };
 }
 #[macro_export]
 macro_rules! log_ww {
     ($tag:expr, $($arg:tt)+) => {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().ww($tag, &msg);
+        TWEETLOG.read().unwrap().ww($tag, &msg);
     };
 }
 #[macro_export]
 macro_rules! log_ee {
     ($tag:expr, $($arg:tt)+) => {
         let msg = format!($($arg)+);
-        g_tweetlog.read().unwrap().ee($tag, &msg);
+        TWEETLOG.read().unwrap().ee($tag, &msg);
     };
 }
 
@@ -142,31 +134,31 @@ impl TweetProxy {
     }
 
     pub fn t(&self, msg: &str) {
-        g_tweetlog
+        TWEETLOG
             .read()
             .unwrap()
             .tweet(LogLevel::Trace, Some(&self.tag), msg);
     }
     pub fn d(&self, msg: &str) {
-        g_tweetlog
+        TWEETLOG
             .read()
             .unwrap()
             .tweet(LogLevel::Debug, Some(&self.tag), msg);
     }
     pub fn i(&self, msg: &str) {
-        g_tweetlog
+        TWEETLOG
             .read()
             .unwrap()
             .tweet(LogLevel::Info, Some(&self.tag), msg);
     }
     pub fn w(&self, msg: &str) {
-        g_tweetlog
+        TWEETLOG
             .read()
             .unwrap()
             .tweet(LogLevel::Warning, Some(&self.tag), msg);
     }
     pub fn e(&self, msg: &str) {
-        g_tweetlog
+        TWEETLOG
             .read()
             .unwrap()
             .tweet(LogLevel::Error, Some(&self.tag), msg);
@@ -333,15 +325,11 @@ impl Tweetlog {
 
     // -- provided listeners -- //
 
+    // print without tag
     pub fn console(level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
-        //        match maybe_tag {
-        //            None      => println!("(global)[{}]  {}", level.as_char(), msg),
-        //            Some(tag) => println!("({:?})[{}]  {}", tag, level.as_char(), msg),
-        //        }
-        // print without tag
         match maybe_tag {
             None => println!("[{}] {}\n", level.as_char(), msg),
-            Some(tag) => println!("[{}] {}\n", level.as_char(), msg),
+            Some(_tag) => println!("[{}] {}\n", level.as_char(), msg),
         }
     }
 }

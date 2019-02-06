@@ -1,6 +1,6 @@
 use constants::*;
 use holochain_core_types::cas::content::Address;
-use holochain_net::tweetlog::g_tweetlog;
+use holochain_net::tweetlog::TWEETLOG;
 use holochain_net_connection::{
     json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
     net_connection::NetSend,

@@ -51,7 +51,7 @@ An HDK for [Assemblyscript](https://github.com/Assemblyscript/assemblyscript) is
 We expect many more languages to be added by the community, and there is even an article on how to [write a kit for a new language](https://developer.holochain.org/guide/latest/writing_development_kit.html).
 
 ### Conductor API
-*Core* only implements the logic for the execution of a single application. Because the Holochain app ecosystem relies on DNA composibility, we need to be able to load and instantiate multiple DNAs.  We call an executable that can do this a *Conductor*.  The first such Conductors we implemented were the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) Conductor which we used for running javascript based tests.
+*Core* only implements the logic for the execution of a single application. Because the Holochain app ecosystem relies on DNA composibility, we need to be able to load and instantiate multiple DNAs.  We call an executable that can do this a *Conductor*.  The first such Conductors we implemented were the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) which we used for running JavaScript based tests.
 
 These gave us the experience from which we abstracted the [conductor_api](conductor_api) crate which specifies and implements a standard way for building conductors, including specifying the various interfaces that might be available for executing calls on a particular DNA, i.e. websockets, HTTP, Unix domain sockets, carrier pigeon network, etc...
 
@@ -66,7 +66,7 @@ The [conductor crate](conductor) uses the [conductor_api](conductor_api) to impl
 The [nodejs_conductor](nodejs_conductor) directory implements a node package that creates a conductor that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
 
 ### HC Command-line developer tool.
-The [cli crate](cli) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a containter.  For more details see the [crate README](cli/README.md).
+The [cli crate](cli) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a conductor.  For more details see the [crate README](cli/README.md).
 
 ## App Spec Driven Development
 We use a practice for coordinating additions and features that starts with adding a feature to a sample application so that we know we have a working example all the times.  You can read about [the details here](/CONTRIBUTING.md#app-spec-driven-development)

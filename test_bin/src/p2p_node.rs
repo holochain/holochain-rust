@@ -16,12 +16,8 @@ use holochain_net_connection::{
     protocol::Protocol,
     NetResult,
 };
-use std::{
-    collections::{HashMap},
-    convert::TryFrom,
-    sync::mpsc,
-};
-use multihash::{Hash};
+use multihash::Hash;
+use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
 
 static TIMEOUT_MS: usize = 5000;
 
@@ -34,9 +30,10 @@ pub struct MetaStore {
 }
 
 impl MetaStore {
-
     pub fn new() -> Self {
-        MetaStore { store: HashMap::new() }
+        MetaStore {
+            store: HashMap::new(),
+        }
     }
 
     /// Check if this value is already stored
@@ -54,18 +51,24 @@ impl MetaStore {
         let hash = HashString::encode_from_str(&v.to_string(), Hash::SHA2256);
         if let None = self.store.get_mut(&meta_key) {
             let mut map = HashMap::new();
-            log_tt!("metastore",
+            log_tt!(
+                "metastore",
                 "MetaStore: first content for '{:?}' = {} | {}",
-                meta_key, v, hash,
+                meta_key,
+                v,
+                hash,
             );
             map.insert(hash, v);
             self.store.insert(meta_key, map);
         } else {
             if let Some(map) = self.store.get_mut(&meta_key) {
                 assert!(map.get(&hash).is_none());
-                log_tt!("metastore",
+                log_tt!(
+                    "metastore",
                     "MetaStore: adding content for '{:?}' = {} | {}",
-                    meta_key, v, hash,
+                    meta_key,
+                    v,
+                    hash,
                 );
                 map.insert(hash, v);
             };
@@ -189,7 +192,8 @@ impl P2pNode {
         {
             // Must not already have meta
             assert!(!self.meta_store.has(meta_key.clone(), link_entry_address));
-            self.authored_meta_store.insert(meta_key.clone(), link_entry_address.clone());
+            self.authored_meta_store
+                .insert(meta_key.clone(), link_entry_address.clone());
         }
         // publish it
         if can_publish {
@@ -214,10 +218,17 @@ impl P2pNode {
             .insert(entry_address.clone(), entry_content.clone());
     }
 
-    pub fn hold_meta(&mut self, entry_address: &Address, attribute: &str, link_entry_address: &serde_json::Value) {
+    pub fn hold_meta(
+        &mut self,
+        entry_address: &Address,
+        attribute: &str,
+        link_entry_address: &serde_json::Value,
+    ) {
         let meta_key = (entry_address.clone(), attribute.to_string());
         // Must not already have meta
-        assert!(!self.authored_meta_store.has(meta_key.clone(), link_entry_address));
+        assert!(!self
+            .authored_meta_store
+            .has(meta_key.clone(), link_entry_address));
         self.meta_store.insert(meta_key, link_entry_address.clone());
     }
 }
@@ -354,7 +365,7 @@ impl P2pNode {
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: request.entry_address.clone(),
                 attribute: request.attribute.clone(),
-                content_list: metas
+                content_list: metas,
             };
         }
         self.send(JsonProtocol::HandleFetchMetaResult(msg).into())
@@ -790,11 +801,11 @@ impl P2pNode {
                 }
             }
             // TODO
-//            JsonProtocol::HandleDropMeta(msg) => {
-//                assert_eq!(msg.dna_address, self.dna_address);
-//                // Remove data in local datastore
-//                self.meta_store.remove(&(msg.entry_address, msg.attribute));
-//            }
+            //            JsonProtocol::HandleDropMeta(msg) => {
+            //                assert_eq!(msg.dna_address, self.dna_address);
+            //                // Remove data in local datastore
+            //                self.meta_store.remove(&(msg.entry_address, msg.attribute));
+            //            }
 
             // -- Publish & Hold data -- //
             JsonProtocol::HandleGetPublishingEntryList(msg) => {

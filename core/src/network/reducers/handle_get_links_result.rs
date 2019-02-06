@@ -13,8 +13,10 @@ fn reduce_handle_get_links_result_inner(
 ) -> Result<Vec<Address>, HolochainError> {
     network_state.initialized()?;
     // was expecting dht_meta_data.content to be a jsonified array of EntryWithHeader
-    let res = serde_json::from_str(&serde_json::to_string(&dht_meta_data.content_list)
-        .expect("Failed to deserialize dht_meta_data"));
+    let res = serde_json::from_str(
+        &serde_json::to_string(&dht_meta_data.content_list)
+            .expect("Failed to deserialize dht_meta_data"),
+    );
     if let Err(_) = res {
         return Err(HolochainError::ErrorGeneric(
             "Failed to deserialize Vec<Address> from HandleGetLinkResult DhtMetaData content"
@@ -31,7 +33,10 @@ pub fn reduce_handle_get_links_result(
 ) {
     let action = action_wrapper.action();
     let (dht_meta_data, tag) = unwrap_to!(action => crate::action::Action::HandleGetLinksResult);
-    println!("\n ### reduce_handle_get_links_result() dht_meta_data = {:?} ({})", dht_meta_data, tag);
+    println!(
+        "\n ### reduce_handle_get_links_result() dht_meta_data = {:?} ({})",
+        dht_meta_data, tag
+    );
 
     context.log(format!(
         "debug/reduce/handle_get_links_result: Got response from {}: {:?}",

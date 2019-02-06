@@ -64,16 +64,14 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::ribosome::{fn_call::{call_and_wait_for_result, ZomeFnCall},
-                        capabilities::CapabilityRequest},
+    nucleus::ribosome::{
+        capabilities::CapabilityRequest,
+        fn_call::{call_and_wait_for_result, ZomeFnCall},
+    },
     persister::{Persister, SimplePersister},
     state::State,
 };
-use holochain_core_types::{
-    dna::Dna,
-    error::HolochainError,
-    json::JsonString,
-};
+use holochain_core_types::{dna::Dna, error::HolochainError, json::JsonString};
 use std::sync::Arc;
 
 /// contains a Holochain application instance
@@ -185,16 +183,10 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::ribosome::capabilities::CapabilityRequest,
-        nucleus::ribosome::fn_call::make_cap_request_for_call,
+        nucleus::ribosome::{capabilities::CapabilityRequest, fn_call::make_cap_request_for_call},
         signal::{signal_channel, SignalReceiver},
     };
-    use holochain_core_types::{
-        agent::AgentId,
-        cas::content::Address,
-        dna::Dna,
-        json::RawString,
-    };
+    use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna, json::RawString};
     use holochain_wasm_utils::wasm_target_dir;
     use std::sync::{Arc, Mutex};
     use tempfile::tempdir;

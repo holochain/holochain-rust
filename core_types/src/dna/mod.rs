@@ -24,10 +24,10 @@
 //! ```
 
 pub mod bridges;
-pub mod traits;
 pub mod dna;
 pub mod entry_types;
 pub mod fn_declarations;
+pub mod traits;
 pub mod wasm;
 pub mod zome;
 

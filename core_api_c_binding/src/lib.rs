@@ -7,16 +7,10 @@ extern crate holochain_net;
 
 use holochain_conductor_api::{context_builder::ContextBuilder, Holochain};
 use holochain_core::{
-    context::Context,
-    logger::Logger,
-    nucleus::ribosome::capabilities::CapabilityRequest,
+    context::Context, logger::Logger, nucleus::ribosome::capabilities::CapabilityRequest,
 };
 use holochain_core_types::{
-    agent::AgentId,
-    cas::content::Address,
-    dna::Dna,
-    error::HolochainError,
-    signature::Signature,
+    agent::AgentId, cas::content::Address, dna::Dna, error::HolochainError, signature::Signature,
 };
 
 use std::sync::Arc;

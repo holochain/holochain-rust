@@ -11,9 +11,9 @@ use crate::{
     context::Context,
     nucleus::ribosome::{
         self,
-        capabilities::CapabilityRequest,
-        fn_call::{ZomeFnCall,make_cap_request_for_call},
         callback::{genesis::genesis, receive::receive},
+        capabilities::CapabilityRequest,
+        fn_call::{make_cap_request_for_call, ZomeFnCall},
         runtime::WasmCallData,
         Defn,
     },

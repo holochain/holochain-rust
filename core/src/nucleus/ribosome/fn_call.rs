@@ -6,16 +6,17 @@ use crate::{
     instance::Observer,
     nucleus::{
         actions::get_entry::get_entry_from_agent_chain,
-        ribosome::{self, WasmCallData, capabilities::CapabilityRequest},
+        ribosome::{self, capabilities::CapabilityRequest, WasmCallData},
         state::NucleusState,
     },
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::{
-        wasm::DnaWasm,
+    dna::wasm::DnaWasm,
+    entry::{
+        cap_entries::{CapTokenGrant, CapabilityType},
+        Entry,
     },
-    entry::{cap_entries::{CapTokenGrant, CapabilityType}, Entry},
     error::{HcResult, HolochainError},
     json::JsonString,
     signature::Signature,
@@ -29,7 +30,6 @@ use std::{
     thread,
     time::Duration,
 };
-
 
 /// Struct holding data for requesting the execution of a Zome function (ExecuteZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -348,7 +348,11 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
         CapabilityType::Assigned => {
             // unwraps are safe because type comes from the shape of
             // the assignee, and the from must some by the check above.
-            if !grant.assignees().unwrap().contains(&fn_call.cap.provenance.0) {
+            if !grant
+                .assignees()
+                .unwrap()
+                .contains(&fn_call.cap.provenance.0)
+            {
                 return false;
             }
             true
@@ -383,11 +387,14 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            traits::ReservedTraitNames,
             fn_declarations::{FnDeclaration, TraitFns},
+            traits::ReservedTraitNames,
             Dna,
         },
-        entry::{cap_entries::{CapTokenGrant, CapabilityType}, Entry},
+        entry::{
+            cap_entries::{CapTokenGrant, CapabilityType},
+            Entry,
+        },
         error::{DnaError, HolochainError},
         json::{JsonString, RawString},
         signature::Signature,
@@ -923,7 +930,10 @@ pub mod tests {
         );
         assert_eq!(cap_request.cap_token, dummy_capability_token());
         assert_eq!(cap_request.provenance.0, Address::from("caller"));
-        assert_eq!(cap_request.provenance.1, make_call_sig(context, "some_fn", "{}"));
+        assert_eq!(
+            cap_request.provenance.1,
+            make_call_sig(context, "some_fn", "{}")
+        );
     }
 
     #[test]
@@ -1093,7 +1103,13 @@ pub mod tests {
         fn zome_call_valid(context: Arc<Context>, token: &Address, addr: &Address) -> ZomeFnCall {
             ZomeFnCall::new(
                 "test_zome",
-                make_cap_request_for_call(context.clone(), token.clone(), addr.clone(), "test", "{}"),
+                make_cap_request_for_call(
+                    context.clone(),
+                    token.clone(),
+                    addr.clone(),
+                    "test",
+                    "{}",
+                ),
                 "test",
                 "{}",
             )

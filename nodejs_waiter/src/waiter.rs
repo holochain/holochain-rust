@@ -369,16 +369,11 @@ impl Task for MainBackgroundTask {
 mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::ribosome::{
-        capabilities::CapabilityRequest,
-        fn_call::ExecuteZomeFnResponse,
+        capabilities::CapabilityRequest, fn_call::ExecuteZomeFnResponse,
     };
     use holochain_core_types::{
-        cas::content::Address,
-        chain_header::test_chain_header,
-        entry::Entry,
-        json::JsonString,
-        link::link_add::LinkAdd,
-        signature::Signature,
+        cas::content::Address, chain_header::test_chain_header, entry::Entry, json::JsonString,
+        link::link_add::LinkAdd, signature::Signature,
     };
     use std::sync::mpsc::sync_channel;
 

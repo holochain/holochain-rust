@@ -5,21 +5,20 @@ use holochain_core_types::{
     signature::{Provenance, Signature},
 };
 
-
 /// a struct to hold the capability information needed to make any capability request,
 /// namely the provenance of the request (the agent address an signature) and the
 /// actual token being used to make the request
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct CapabilityRequest {
     pub cap_token: Address,
-    pub provenance: Provenance
+    pub provenance: Provenance,
 }
 
 impl CapabilityRequest {
     pub fn new(token: Address, requester: Address, signature: Signature) -> Self {
         CapabilityRequest {
             cap_token: token,
-            provenance: (requester,signature),
+            provenance: (requester, signature),
         }
     }
 }
@@ -27,9 +26,7 @@ impl CapabilityRequest {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use holochain_core_types::{
-        cas::content::Address,
-    };
+    use holochain_core_types::cas::content::Address;
 
     #[test]
     fn test_capability_request_new() {
@@ -41,7 +38,7 @@ pub mod tests {
         assert_eq!(
             CapabilityRequest {
                 cap_token: Address::from("123"),
-                provenance: (Address::from("requester"),Signature::fake()),
+                provenance: (Address::from("requester"), Signature::fake()),
             },
             cap_call
         );

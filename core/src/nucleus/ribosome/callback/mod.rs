@@ -11,15 +11,16 @@ use crate::{
     context::Context,
     nucleus::ribosome::{
         self,
+        capabilities::CapabilityRequest,
+        fn_call::{ZomeFnCall,make_cap_request_for_call},
         callback::{genesis::genesis, receive::receive},
-        fn_call::{make_cap_call, ZomeFnCall},
         runtime::WasmCallData,
         Defn,
     },
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::{capabilities::CapabilityCall, wasm::DnaWasm},
+    dna::wasm::DnaWasm,
     entry::Entry,
     error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
@@ -191,8 +192,8 @@ pub fn make_internal_capability_call(
     context: Arc<Context>,
     function: &str,
     parameters: JsonString,
-) -> CapabilityCall {
-    make_cap_call(
+) -> CapabilityRequest {
+    make_cap_request_for_call(
         context.clone(),
         Address::from(context.agent_id.key.clone()),
         Address::from(context.agent_id.key.clone()),

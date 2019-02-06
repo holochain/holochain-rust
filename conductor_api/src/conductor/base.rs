@@ -636,7 +636,7 @@ pub mod tests {
     use super::*;
     use crate::config::load_configuration;
     use holochain_core::{
-        action::Action, nucleus::ribosome::fn_call::make_cap_call, signal::signal_channel,
+        action::Action, nucleus::ribosome::fn_call::make_cap_request_for_call, signal::signal_channel,
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
     use holochain_wasm_utils::wasm_target_dir;
@@ -1055,7 +1055,7 @@ pub mod tests {
 
         let cap_call = {
             let context = instance.context();
-            make_cap_call(
+            make_cap_request_for_call(
                 context.clone(),
                 Address::from(context.clone().agent_id.key.clone()),
                 Address::from(context.clone().agent_id.key.clone()),

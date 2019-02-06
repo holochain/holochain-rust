@@ -15,11 +15,8 @@ use futures::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::{
-        capabilities::{CapabilityType, ReservedTraitNames},
-        Dna,
-    },
-    entry::{cap_entries::CapTokenGrant, Entry},
+    dna::{Dna,traits::ReservedTraitNames,},
+    entry::{cap_entries::{CapTokenGrant, CapabilityType}, Entry},
     error::HolochainError,
 };
 use std::{collections::HashMap, pin::Pin, sync::Arc, time::*};
@@ -139,6 +136,7 @@ pub async fn initialize_application(
                 Err(err) => {
                     dispatch_error_result(&context_clone, err);
                     return Err(HolochainError::InitializationFailed(
+
                         "error committing public grant".to_string(),
                     ));
                 }

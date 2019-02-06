@@ -4,7 +4,7 @@ use crate::{
     nucleus::{
         ribosome::{
             api::ZomeApiResult,
-            fn_call::{do_call, make_cap_call, ZomeFnCall},
+            fn_call::{do_call, make_cap_request_for_call, ZomeFnCall},
             Runtime,
         },
         state::NucleusState,
@@ -20,7 +20,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 // ZomeFnCallArgs to ZomeFnCall
 impl ZomeFnCall {
     fn from_args(context: Arc<Context>, args: ZomeFnCallArgs) -> Self {
-        let cap_call = make_cap_call(
+        let cap_call = make_cap_request_for_call(
             context.clone(),
             args.cap_token,
             Address::from(context.agent_id.key.clone()),

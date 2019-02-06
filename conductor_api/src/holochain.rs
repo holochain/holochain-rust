@@ -13,11 +13,14 @@
 //! extern crate holochain_cas_implementations;
 //! extern crate tempfile;
 //! use holochain_conductor_api::{*, context_builder::ContextBuilder};
+//! use holochain_core::nucleus::ribosome::capabilities::CapabilityRequest;
 //! use holochain_core_types::{
 //!     cas::content::Address,
 //!     agent::AgentId,
-//!     dna::{Dna, capabilities::{CallSignature, CapabilityCall}},
-//!     json::JsonString};
+//!     dna::Dna,
+//!     json::JsonString,
+//!     signature::Signature,
+//! };
 //! use std::sync::Arc;
 //! use tempfile::tempdir;
 //!
@@ -42,7 +45,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome", CapabilityCall::new(Address::from("some_token"), Address::from("caller"), CallSignature::default()), "some_fn", "{}");
+//! hc.call("test_zome", CapabilityRequest::new(Address::from("some_token"), Address::from("caller"), Signature::fake()), "some_fn", "{}");
 //!
 //! // get the state
 //! {
@@ -61,12 +64,13 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::ribosome::fn_call::{call_and_wait_for_result, ZomeFnCall},
+    nucleus::ribosome::{fn_call::{call_and_wait_for_result, ZomeFnCall},
+                        capabilities::CapabilityRequest},
     persister::{Persister, SimplePersister},
     state::State,
 };
 use holochain_core_types::{
-    dna::{capabilities::CapabilityCall, Dna},
+    dna::Dna,
     error::HolochainError,
     json::JsonString,
 };
@@ -144,7 +148,7 @@ impl Holochain {
     pub fn call(
         &mut self,
         zome: &str,
-        cap: CapabilityCall,
+        cap: CapabilityRequest,
         fn_name: &str,
         params: &str,
     ) -> HolochainResult<JsonString> {
@@ -181,13 +185,14 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::ribosome::fn_call::make_cap_call,
+        nucleus::ribosome::capabilities::CapabilityRequest,
+        nucleus::ribosome::fn_call::make_cap_request_for_call,
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{
         agent::AgentId,
         cas::content::Address,
-        dna::{capabilities::CapabilityCall, Dna},
+        dna::Dna,
         json::RawString,
     };
     use holochain_wasm_utils::wasm_target_dir;
@@ -231,8 +236,8 @@ mod tests {
     }
 
     // for these tests we use the agent capability call
-    fn cap_call(context: Arc<Context>, fn_name: &str, params: &str) -> CapabilityCall {
-        make_cap_call(
+    fn cap_call(context: Arc<Context>, fn_name: &str, params: &str) -> CapabilityRequest {
+        make_cap_request_for_call(
             context.clone(),
             Address::from(context.clone().agent_id.key.clone()),
             Address::from(context.clone().agent_id.key.clone()),

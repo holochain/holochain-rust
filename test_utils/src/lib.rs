@@ -13,13 +13,13 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     signal::Signal,
-    nucleus::ribosome::fn_call::make_cap_call,
+    nucleus::ribosome::fn_call::make_cap_request_for_call,
 };
 use holochain_core_types::{
     agent::AgentId,
     cas::content::Address,
     dna::{
-        capabilities::{ReservedTraitNames},
+        traits::ReservedTraitNames,
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
         wasm::DnaWasm,
@@ -221,7 +221,7 @@ pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(wasm_path: &str, fn_name: 
     let mut hc = Holochain::new(dna.clone(), context.clone()).unwrap();
 
     let params_string = String::from(params.into());
-    let cap_call =  make_cap_call(
+    let cap_call =  make_cap_request_for_call(
         context.clone(),
         Address::from(context.clone().agent_id.key.clone()),
         Address::from(context.clone().agent_id.key.clone()),

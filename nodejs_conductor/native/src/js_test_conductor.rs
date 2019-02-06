@@ -16,9 +16,12 @@ use holochain_conductor_api::{
 use holochain_core::{
     action::Action,
     signal::{signal_channel, Signal, SignalReceiver},
+    nucleus::ribosome::capabilities::CapabilityRequest,
 };
 use holochain_core_types::{
-    cas::content::{Address, AddressableContent}, dna::capabilities::{CallSignature, CapabilityCall}, entry::Entry,
+    cas::content::{Address, AddressableContent},
+    entry::{Entry, cap_entry::CapabilityType},
+    signature::Signature,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -155,10 +158,10 @@ declare_types! {
                 if !tc.is_started {
                     panic!("TestConductor: cannot use call() before start()");
                 }
-                let cap = CapabilityCall::new(
+                let cap = CapabilityRequest::new(
                     Address::from("fake_token"), //FIXME
                     Address::from("fake_sender"), //FIXME
-                    CallSignature::default(),
+                    Signature::fake(),
                 );
                 let instance_arc = tc.conductor.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));

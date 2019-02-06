@@ -15,7 +15,7 @@ extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_conductor_api::{error::HolochainResult, *};
-use holochain_core::{logger::TestLogger, nucleus::ribosome::fn_call::make_cap_call};
+use holochain_core::{logger::TestLogger, nucleus::ribosome::fn_call::make_cap_request_for_call};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
@@ -289,7 +289,7 @@ fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainR
         let init = state.initialization().unwrap();
         let token = init.get_public_token("test_zome").unwrap();
         let caller = Address::from("fake");
-        make_cap_call(context.clone(), token, caller, fn_name, params.to_string())
+        make_cap_request_for_call(context.clone(), token, caller, fn_name, params.to_string())
     };
     hc.call("test_zome", cap_call, fn_name, params)
 }

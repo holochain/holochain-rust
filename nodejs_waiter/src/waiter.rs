@@ -1,8 +1,8 @@
 use colored::*;
 use holochain_core::{
     action::{Action, ActionWrapper},
-    nucleus::ribosome::fn_call::ZomeFnCall,
     network::entry_with_header::EntryWithHeader,
+    nucleus::ribosome::fn_call::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
 use holochain_core_types::entry::Entry;
@@ -371,10 +371,10 @@ mod tests {
     use holochain_core::nucleus::ribosome::fn_call::ExecuteZomeFnResponse;
     use holochain_core_types::{
         cas::content::Address,
+        chain_header::test_chain_header,
         dna::capabilities::{CallSignature, CapabilityCall},
         entry::Entry,
         json::JsonString,
-        chain_header::test_chain_header,
         link::link_add::LinkAdd,
     };
     use std::sync::mpsc::sync_channel;

@@ -41,7 +41,12 @@ pub fn get_entry_from_agent_chain(
     if maybe_header.is_none() {
         return Ok(None);
     }
-    let cas = context.state().unwrap().agent().chain_store().content_storage();
+    let cas = context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .content_storage();
     get_entry_from_cas(&cas.clone(), address)
 }
 

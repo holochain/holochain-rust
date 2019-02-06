@@ -760,7 +760,9 @@ pub mod tests {
     // ZomeFnCallArgs struct which the test "{}" is not!
     // TODO: fix this bit of crazyness
     fn SUCCESS_EXPECTED() -> Result<Result<JsonString, HolochainError>, RecvTimeoutError> {
-        Ok(Err(HolochainError::RibosomeFailed("Argument deserialization failed".to_string())))
+        Ok(Err(HolochainError::RibosomeFailed(
+            "Argument deserialization failed".to_string(),
+        )))
     }
 
     #[test]

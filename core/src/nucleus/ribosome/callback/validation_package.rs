@@ -88,6 +88,44 @@ pub fn get_validation_package_definition(
                 Some(call.parameters.into_bytes()),
             )?
         }
+        EntryType::LinkRemove => {
+            let link_remove = match entry {
+                Entry::LinkAdd(link_add) => link_add,
+                _ => {
+                    return Err(HolochainError::ValidationFailed(
+                        "Failed to extract LinkAdd".into(),
+                    ));
+                }
+            };
+            let (base, target) = links_utils::get_link_entries(link_remove.link(), &context)?;
+
+            let link_definition_path = links_utils::find_link_definition_in_dna(
+                &base.entry_type(),
+                link_remove.link().tag(),
+                &target.entry_type(),
+                &context,
+            )?;
+
+            let wasm = context
+                .get_wasm(&link_definition_path.zome_name)
+                .expect("Couldn't get WASM for zome");
+
+            let params = LinkValidationPackageArgs {
+                entry_type: link_definition_path.entry_type_name,
+                tag: link_definition_path.tag,
+                direction: link_definition_path.direction,
+            };
+
+            let call = ZomeFnCall::new("", None, "__hdk_get_validation_package_for_link", params);
+
+            ribosome::run_dna(
+                &dna.name.clone(),
+                context,
+                wasm.code.clone(),
+                &call,
+                Some(call.parameters.into_bytes()),
+            )?
+        }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),
         EntryType::CapTokenGrant => JsonString::from(ValidationPackageDefinition::Entry),
         EntryType::AgentId => JsonString::from(ValidationPackageDefinition::Entry),

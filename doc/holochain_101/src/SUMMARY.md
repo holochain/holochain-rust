@@ -38,6 +38,7 @@
   - [.build Files](./build_files.md)
   - [.hcignore Files](./hcignore_files.md)
 - [Building Holochain Apps: Testing](intro_to_testing.md)
+  - [Running Tests](./running_tests.md)
   - [Testing Functions](./testing_functions.md)
   - [Scenario Testing](./scenario_testing.md)
   - [Handling Networking Asynchronicity](./handling_async.md)

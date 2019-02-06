@@ -1,7 +1,7 @@
 use super::seed::InitializeSeed::{MnemonicInit, SeedInit};
 use crate::{
     bundle,
-    holochain_sodium::{kdf, pwhash, random::random_secbuf, secbuf::SecBuf},
+    holochain_sodium::{kdf, pwhash, secbuf::SecBuf},
     keypair::Keypair,
     util::{self, PwHashConfig},
 };
@@ -285,15 +285,6 @@ mod tests {
     }
 
     #[test]
-    fn it_should_create_a_random_root_seed() {
-        let mut seed_buf_in = SecBuf::with_insecure(16);
-        random_secbuf(&mut seed_buf_in);
-
-        let rs = RootSeed::new_random();
-
-        assert_eq!("hcRootSeed".to_string(), rs.s.seed_type);
-    }
-    #[test]
     fn creating_seed_bundle() {
         let mut seed_buf_in = SecBuf::with_insecure(32);
         random_secbuf(&mut seed_buf_in);
@@ -321,7 +312,7 @@ mod tests {
         let mut seed_buf_in = SecBuf::with_insecure(16);
         random_secbuf(&mut seed_buf_in);
 
-        let mut rs = RootSeed::new_random();
+        let mut rs = RootSeed::new(seed_buf_in);
 
         let seed: HolochainError = rs.get_device_seed(0).unwrap_err();
         assert_eq!(
@@ -335,7 +326,7 @@ mod tests {
         let mut seed_buf_in = SecBuf::with_insecure(16);
         random_secbuf(&mut seed_buf_in);
 
-        let mut rs = RootSeed::new_random();
+        let mut rs = RootSeed::new(seed_buf_in);
 
         let ds: DeviceSeed = rs.get_device_seed(3).unwrap();
         assert_eq!("hcDeviceSeed".to_string(), ds.s.seed_type);
@@ -345,7 +336,7 @@ mod tests {
         let mut seed_buf_in = SecBuf::with_insecure(16);
         random_secbuf(&mut seed_buf_in);
 
-        let mut rs = RootSeed::new_random();
+        let mut rs = RootSeed::new(seed_buf_in);
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
         let seed: HolochainError = ds
@@ -362,7 +353,7 @@ mod tests {
         let mut seed_buf_in = SecBuf::with_insecure(16);
         random_secbuf(&mut seed_buf_in);
 
-        let mut rs = RootSeed::new_random();
+        let mut rs = RootSeed::new(seed_buf_in);
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
         let dps: DevicePinSeed = ds
@@ -377,7 +368,7 @@ mod tests {
         let mut seed_buf_in = SecBuf::with_insecure(16);
         random_secbuf(&mut seed_buf_in);
 
-        let mut rs = RootSeed::new_random();
+        let mut rs = RootSeed::new(seed_buf_in);
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
         let mut dps: DevicePinSeed = ds

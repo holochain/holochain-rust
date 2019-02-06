@@ -4,13 +4,9 @@ use std::{
     sync::RwLock,
 };
 
-#[allow(non_camel_case_types)]
-pub type listenerCallback = fn(LogLevel, Option<&str>, &str);
-
-/// this is the actual memory space for our loggers
-lazy_static! {
-    pub static ref TWEETLOG: RwLock<Tweetlog> = RwLock::new(Tweetlog::new());
-}
+//--------------------------------------------------------------------------------------------------
+// MACROS
+//--------------------------------------------------------------------------------------------------
 
 #[macro_export]
 macro_rules! log_t {
@@ -84,6 +80,10 @@ macro_rules! log_ee {
     };
 }
 
+//--------------------------------------------------------------------------------------------------
+// LOGLEVEL
+//--------------------------------------------------------------------------------------------------
+
 #[derive(Debug, Clone)]
 pub enum LogLevel {
     Trace = 1,
@@ -121,71 +121,48 @@ impl LogLevel {
     }
 }
 
+//--------------------------------------------------------------------------------------------------
+// TWEETLOGGER
+//--------------------------------------------------------------------------------------------------
+
+/// TweetLog has a TweetLogger per Tag
+/// which has its own loglevel and callbacks
 #[derive(Debug)]
-pub struct TweetProxy {
-    tag: String,
-}
-
-impl TweetProxy {
-    pub fn new(tag: &str) -> Self {
-        TweetProxy {
-            tag: tag.to_owned(),
-        }
-    }
-
-    pub fn t(&self, msg: &str) {
-        TWEETLOG
-            .read()
-            .unwrap()
-            .tweet(LogLevel::Trace, Some(&self.tag), msg);
-    }
-    pub fn d(&self, msg: &str) {
-        TWEETLOG
-            .read()
-            .unwrap()
-            .tweet(LogLevel::Debug, Some(&self.tag), msg);
-    }
-    pub fn i(&self, msg: &str) {
-        TWEETLOG
-            .read()
-            .unwrap()
-            .tweet(LogLevel::Info, Some(&self.tag), msg);
-    }
-    pub fn w(&self, msg: &str) {
-        TWEETLOG
-            .read()
-            .unwrap()
-            .tweet(LogLevel::Warning, Some(&self.tag), msg);
-    }
-    pub fn e(&self, msg: &str) {
-        TWEETLOG
-            .read()
-            .unwrap()
-            .tweet(LogLevel::Error, Some(&self.tag), msg);
-    }
-}
-
-#[derive(Debug)]
-struct Logger {
+struct TweetLogger {
     pub level: LogLevel,
     pub callbacks: HashSet<listenerCallback>,
 }
 
-impl Logger {
+impl TweetLogger {
     pub fn new() -> Self {
-        Logger::with_level(LogLevel::Info)
+        TweetLogger::with_level(LogLevel::Info)
     }
 
     pub fn with_level(level: LogLevel) -> Self {
-        Logger {
+        TweetLogger {
             level,
             callbacks: HashSet::new(),
         }
     }
 }
 
+//--------------------------------------------------------------------------------------------------
+// TWEETLOG
+//--------------------------------------------------------------------------------------------------
+
+#[allow(non_camel_case_types)]
+type listenerCallback = fn(LogLevel, Option<&str>, &str);
+
+/// this is the actual memory space for our Tweetlog singleton
+lazy_static! {
+    pub static ref TWEETLOG: RwLock<Tweetlog> = RwLock::new(Tweetlog::new());
+}
+
+/// Tweetlog singleton
+/// Holds a TweetLogger per Tag
+/// Creates a global Tag: "_"
 pub struct Tweetlog {
-    log_by_tag: HashMap<String, Logger>,
+    log_by_tag: HashMap<String, TweetLogger>,
 }
 
 impl Tweetlog {
@@ -193,18 +170,20 @@ impl Tweetlog {
         let mut tlog = Tweetlog {
             log_by_tag: HashMap::new(),
         };
-        tlog.log_by_tag.insert("_".to_string(), Logger::new());
+        tlog.log_by_tag.insert("_".to_string(), TweetLogger::new());
         tlog
     }
 }
 
 impl Tweetlog {
-    pub fn add(&mut self, tag: &str) /* -> Self */
-    {
-        self.log_by_tag.insert(tag.to_string(), Logger::new());
+    /// Create internal TweetLogger for a Tag
+    /// as well as a TweetProxy
+    pub fn add(&mut self, tag: &str) -> TweetProxy {
+        self.log_by_tag.insert(tag.to_string(), TweetLogger::new());
+        TweetProxy::new(tag)
     }
 
-    // Setting the logging level, either globally, or per-tag
+    /// Set the logging level, either globally, or for a tag
     pub fn set(&mut self, level: LogLevel, maybe_tag: Option<String>) {
         let tag = match maybe_tag {
             None => "_".to_string(),
@@ -219,7 +198,7 @@ impl Tweetlog {
             };
         }
         // otherwise create new one
-        self.log_by_tag.insert(tag, Logger::with_level(level));
+        self.log_by_tag.insert(tag, TweetLogger::with_level(level));
     }
 
     //    pub fn resetLevels(&mut self) {
@@ -244,7 +223,7 @@ impl Tweetlog {
     //        }
     //    }
 
-    // Clear any registered log listeners or levels
+    /// Clear any registered log listeners or levels
     pub fn unlisten(&mut self, tag: &str) {
         let maybe_logger = self.log_by_tag.get_mut(tag);
         if let Some(logger) = maybe_logger {
@@ -252,7 +231,7 @@ impl Tweetlog {
         }
     }
 
-    // Check if a given level and tag would be logged
+    /// Check if a given level and tag would be logged
     pub fn should(&self, level: LogLevel, maybe_tag: Option<String>) -> bool {
         let tag = match maybe_tag {
             None => "_".to_string(),
@@ -265,7 +244,7 @@ impl Tweetlog {
         }
     }
 
-    // callback according to level and tag
+    /// callback according to level and tag
     fn tweet(&self, level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
         // replace None to "_"
         let tag = match maybe_tag {
@@ -325,7 +304,7 @@ impl Tweetlog {
 
     // -- provided listeners -- //
 
-    // print without tag
+    /// println without displaying tag
     pub fn console(level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
         match maybe_tag {
             None => println!("[{}] {}\n", level.as_char(), msg),
@@ -333,6 +312,59 @@ impl Tweetlog {
         }
     }
 }
+
+//--------------------------------------------------------------------------------------------------
+// TWEETPROXY
+//--------------------------------------------------------------------------------------------------
+
+/// A facade for calling the singleton with a specific tag
+#[derive(Debug)]
+pub struct TweetProxy {
+    tag: String,
+}
+
+impl TweetProxy {
+    pub fn new(tag: &str) -> Self {
+        TweetProxy {
+            tag: tag.to_owned(),
+        }
+    }
+
+    pub fn t(&self, msg: &str) {
+        TWEETLOG
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Trace, Some(&self.tag), msg);
+    }
+    pub fn d(&self, msg: &str) {
+        TWEETLOG
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Debug, Some(&self.tag), msg);
+    }
+    pub fn i(&self, msg: &str) {
+        TWEETLOG
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Info, Some(&self.tag), msg);
+    }
+    pub fn w(&self, msg: &str) {
+        TWEETLOG
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Warning, Some(&self.tag), msg);
+    }
+    pub fn e(&self, msg: &str) {
+        TWEETLOG
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Error, Some(&self.tag), msg);
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// TESTS
+//--------------------------------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

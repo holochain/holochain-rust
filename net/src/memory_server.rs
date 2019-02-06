@@ -534,7 +534,6 @@ impl InMemoryServer {
     /// on publish, we send store requests to all nodes connected on this dna
     fn priv_serve_PublishMeta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         for content in msg.content_list.clone() {
-            // let hashed_content = HashString::encode_from_bytes(msg.content_list.to_string().as_bytes(), Hash::SHA2256);
             let meta_id = into_meta_id(&(
                 msg.entry_address.clone(),
                 msg.attribute.clone(),
@@ -738,7 +737,7 @@ impl InMemoryServer {
         let mut request_meta_key = Vec::new();
         for meta_tuple in msg.meta_list.clone() {
             let meta_address = into_meta_id(&meta_tuple);
-            // dont send request to known meta
+            // dont send request for a known meta
             if known_published_meta_list.contains(&meta_address) {
                 continue;
             }

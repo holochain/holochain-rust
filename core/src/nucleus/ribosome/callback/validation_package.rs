@@ -90,7 +90,7 @@ pub fn get_validation_package_definition(
         }
         EntryType::LinkRemove => {
             let link_remove = match entry {
-                Entry::LinkAdd(link_add) => link_add,
+                Entry::LinkRemove(link_remove) => link_remove,
                 _ => {
                     return Err(HolochainError::ValidationFailed(
                         "Failed to extract LinkAdd".into(),

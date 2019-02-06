@@ -142,33 +142,35 @@
                         <a class="header" href="#running-holochain-apps-conductors" id="running-holochain-apps-conductors"><h1>Running Holochain Apps: Conductors</h1></a>
 <p>To introduce Conductors, it is useful to zoom out for a moment to the level of how Holochain runs on devices.</p>
 <p>Because Holochain is intended to be highly platform and system compatible, the core logic is written in such a way that it can be included into many different codebases. Think of MacOSX, Linux, Windows, Android, iOS, and more. Thus, the core of Holochain was made to be simply a library that gets included in another wrapper which mounts, executes and manages it. Because filling this new need is such a foundational aspect of Holochain, it has its' own name: <em>Conductor</em>.</p>
-<p>Conductors configure, install, uninstall, start and stop instances of DNA on devices. They also create a channel to securely make function calls into the Zome functions of DNA instances.</p>
-<p>Conductors can implement a diversity of interfaces to perform these function calls, which opens an abundance of opportunity. Another way to build Holochain into an application is to use language bindings from the Rust built version of the Conductor, to another language, that then allows for the direct use of Holochain in that language.</p>
-<p>Holochain provides two reference Conductors, one for <a href="https://www.npmjs.com/package/@holochain/holochain-nodejs">Nodejs</a> (which is built using the language bindings approach), and the other a <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor">binary executable written in Rust</a>.</p>
-<a class="header" href="#conductor-configuration" id="conductor-configuration"><h2>Conductor Configuration</h2></a>
-<p>There are lots of different ways to configure a Conductor, and many different parts that can be configured. Broadly speaking, here are the parts that can be configured for a Conductor:</p>
-<ol>
-<li>Information concerning the cryptographic keys to be used for signing, and t</li>
-</ol>
-<p>Initial TOML based configuration</p>
-<p>Configuration of...</p>
+<p>Conductors play quite a number of important roles:</p>
 <ul>
-<li>[[bridges]]</li>
-<li>[[agents]]</li>
-<li>[[dnas]]</li>
-<li>[[instances]]</li>
-<li>[instances.storage]</li>
-<li>[[interfaces]] (admin)</li>
-<li>[[interfaces.instances]]</li>
-<li>[[ui_bundles]]</li>
-<li>[[ui_interfaces]]</li>
-<li>[interfaces.driver]</li>
-<li>[logger]</li>
-<li>[network]</li>
-<li>[persistence dir]</li>
+<li>installing, uninstalling, configuring, starting and stopping instances of DNA</li>
+<li>exposing APIs to securely make function calls into the Zome functions of DNA instances</li>
+<li>accepting information concerning the cryptographic keys and agent info to be used for identity and signing, and passing it into Holochain</li>
+<li>establishing &quot;bridging&quot; between DNA instances</li>
+<li>serving files for web based user interfaces</li>
 </ul>
-<p>dynamic configuration of the conductor via admin level RPC</p>
-<p>Saving of that new configuration to your system</p>
+<p>Those are the basic functions of a Conductor, but in addition to that, a Conductor also allows for the configuration of the networking module for Holochain, enables logging, and if you choose to, exposes APIs at a special 'admin' level that allows for the dynamic configuration of the Conductor while it runs. By default, configuration of the Conductor is done via a static configuration file, written in <a href="https://github.com/toml-lang/toml">TOML</a>.</p>
+<p>In regards to the Zome functions APIs, Conductors can implement a diversity of interfaces to perform these function calls, creating an abundance of opportunity. Another way to build Holochain into an application is to use language bindings from the Rust built version of the Conductor, to another language, that then allows for the direct use of Holochain in that language.</p>
+<p>There are currently three Conductor implementations:</p>
+<ul>
+<li><a href="https://www.npmjs.com/package/@holochain/holochain-nodejs">Nodejs</a>
+<ul>
+<li>this is built using the language bindings approach, using <a href="">neon</a></li>
+</ul>
+</li>
+<li><a href="./development_conductor.html">hc run</a>
+<ul>
+<li>this is a zero config quick Conductor for development</li>
+</ul>
+</li>
+<li><a href="./production_conductor.html"><code>holochain</code> executable</a>
+<ul>
+<li>this is a highly configurable sophisticated Conductor for running DNA instances long term</li>
+</ul>
+</li>
+</ul>
+<p>The articles that follow discuss these different Conductors in greater detail.</p>
 
                         <hr />
                         <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductors.md">suggest an edit</a>

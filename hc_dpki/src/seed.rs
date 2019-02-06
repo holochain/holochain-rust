@@ -155,12 +155,12 @@ impl DevicePinSeed {
     pub fn get_application_keypair(&mut self, index: u64) -> Result<Keypair, HolochainError> {
         (index >= 1).ok_or(HolochainError::ErrorGeneric("Invalid index".to_string()))?;
 
-        let mut out_seed = SecBuf::with_insecure(32);
-        let mut placeholder = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
+        let mut out_seed = SecBuf::with_secure(32);
+        let mut context = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
         kdf::derive(
             &mut out_seed,
-            index.clone(),
-            &mut placeholder,
+            index,
+            &mut context,
             &mut self.s.seed_buf,
         )?;
 
@@ -239,11 +239,11 @@ impl RootSeed {
         (index >= 1).ok_or(HolochainError::ErrorGeneric("Invalid index".to_string()))?;
 
         let mut out_seed = SecBuf::with_insecure(32);
-        let mut placeholder = SecBuf::with_insecure_from_string("HCDEVICE".to_string());
+        let mut context = SecBuf::with_insecure_from_string("HCDEVICE".to_string());
         kdf::derive(
             &mut out_seed,
-            index.clone(),
-            &mut placeholder,
+            index,
+            &mut context,
             &mut self.s.seed_buf,
         )?;
         Ok(DeviceSeed::new(out_seed))

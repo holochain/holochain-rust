@@ -460,7 +460,6 @@ impl From<JsonProtocol> for Protocol {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use holochain_core_types::hash::HashString;
 
     macro_rules! test_convert {
         ($e:expr) => {
@@ -675,7 +674,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content_list: vec![HashString::from("hello-meta")],
+            content_list: vec![json!("hello-meta")],
         }));
     }
     #[test]
@@ -687,7 +686,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content_list: vec![HashString::from("hello-meta")],
+            content_list: vec![json!("hello-meta")],
         }));
     }
     #[test]
@@ -697,7 +696,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content_list: vec![HashString::from("hello-meta")],
+            content_list: vec![json!("hello-meta")],
         }));
     }
     #[test]
@@ -707,7 +706,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content_list: vec![HashString::from("hello-meta")],
+            content_list: vec![json!("hello-meta")],
         }));
     }
     #[test]

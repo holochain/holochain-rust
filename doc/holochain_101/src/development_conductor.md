@@ -1,6 +1,6 @@
 # Development Conductor
 
-Meant primarily for accelerating the development process, the easiest Conductor to run, with zero configuration required, is the `hc run` Conductor. It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory a DNA instance is contained. The most basic command to run is:
+Meant primarily for accelerating the development process, the easiest Conductor to run, with zero configuration required, is the `hc run` Conductor, which is built right into the [development command line tools](./intro_to_command_line_tools.md). It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory valid DNA source files are contained. The command is simply:
 ```shell
 hc run
 ```

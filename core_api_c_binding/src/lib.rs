@@ -1,11 +1,11 @@
 extern crate directories;
 extern crate holochain_cas_implementations;
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
 
-use holochain_container_api::{context_builder::ContextBuilder, Holochain};
+use holochain_conductor_api::{context_builder::ContextBuilder, Holochain};
 use holochain_core::context::Context;
 use holochain_core_types::{cas::content::Address, dna::Dna, error::HolochainError};
 

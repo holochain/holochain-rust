@@ -157,13 +157,7 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
     hdk::debug("**** get result from initial, history").ok();
     let res = hdk::get_entry_result(
         &addr_v1,
-        GetEntryOptions::new(
-            StatusRequestKind::All,
-            true,
-            false,
-            false,
-            Default::default(),
-        ),
+        GetEntryOptions::new(StatusRequestKind::All, true, false, Default::default()),
     );
     assert_eq!(res.unwrap().latest().unwrap(), entry_v4.clone());
 
@@ -172,7 +166,6 @@ pub(crate) fn handle_update_entry_ok() -> JsonString {
 
 //
 pub fn handle_remove_entry_ok() -> JsonString {
-
     // Commit v1 entry
     hdk::debug("**** Commit v1 entry").ok();
     let entry_v1 = hdk_test_entry();
@@ -190,10 +183,9 @@ pub fn handle_remove_entry_ok() -> JsonString {
         Ok(maybe_entry) => match maybe_entry {
             None => return res.into(),
             Some(entry) => entry,
-        }
+        },
     };
     assert_eq!(entry_test, entry_v1);
-
 
     // Delete it
     hdk::debug("**** Delete it").ok();
@@ -218,13 +210,7 @@ pub fn handle_remove_entry_ok() -> JsonString {
     // Get entry_result
     let res = hdk::get_entry_result(
         &addr_v1,
-        GetEntryOptions::new(
-            StatusRequestKind::All,
-            false,
-            false,
-            false,
-            Default::default(),
-        ),
+        GetEntryOptions::new(StatusRequestKind::All, false, false, Default::default()),
     );
     hdk::debug(format!("**** get_entry_result: {:?}", res)).ok();
     match res {

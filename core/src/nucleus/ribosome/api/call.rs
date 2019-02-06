@@ -1,7 +1,6 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    instance::RECV_DEFAULT_TIMEOUT_MS,
     nucleus::{
         is_fn_public, launch_zome_fn_call,
         ribosome::{api::ZomeApiResult, Runtime},
@@ -18,10 +17,7 @@ use holochain_core_types::{
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use std::{
-    convert::TryFrom,
-    sync::{mpsc::channel, Arc},
-};
+use std::{convert::TryFrom, sync::Arc, time::Duration};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
@@ -75,47 +71,33 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     let zome_call = ZomeFnCall::from_args(input);
     // Create Call Action
     let action_wrapper = ActionWrapper::new(Action::Call(zome_call.clone()));
-    // Send Action and block
-    let (sender, receiver) = channel();
-    crate::instance::dispatch_action_with_observer(
-        runtime.context.action_channel(),
-        runtime.context.observer_channel(),
-        action_wrapper.clone(),
-        move |state: &crate::state::State| {
-            // Observer waits for a ribosome_call_result
-            let maybe_result = state.nucleus().zome_call_result(&zome_call);
-            match maybe_result {
-                Some(result) => {
-                    // @TODO never panic in wasm
-                    // @see https://github.com/holochain/holochain-rust/issues/159
-                    sender
-                        .send(result)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
 
-                    true
-                }
-                None => false,
-            }
-        },
-    );
-    // TODO #97 - Return error if timeout or something failed
-    // return Err(_);
+    let tick_rx = runtime.context.create_observer();
+    crate::instance::dispatch_action(runtime.context.action_channel(), action_wrapper);
 
-    receiver
-        .recv_timeout(RECV_DEFAULT_TIMEOUT_MS)
-        .expect("observer dropped before done")
+    loop {
+        if let Some(result) = runtime
+            .context
+            .state()
+            .unwrap()
+            .nucleus()
+            .zome_call_result(&zome_call)
+        {
+            return result;
+        } else {
+            let _ = tick_rx.recv_timeout(Duration::from_millis(10));
+        }
+    }
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let container_api =
+    let conductor_api =
         runtime
             .context
-            .container_api
+            .conductor_api
             .clone()
             .ok_or(HolochainError::ConfigError(
-                "No container API in context".to_string(),
+                "No conductor API in context".to_string(),
             ))?;
 
     let method = format!(
@@ -123,7 +105,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
         input.instance_handle, input.zome_name, input.fn_name
     );
 
-    let handler = container_api.write().unwrap();
+    let handler = conductor_api.write().unwrap();
 
     let id = ProcessUniqueId::new();
     let request = format!(
@@ -242,7 +224,7 @@ pub mod tests {
 
     use crate::{
         context::Context,
-        instance::{tests::test_instance_and_context, Instance, Observer, RECV_DEFAULT_TIMEOUT_MS},
+        instance::{tests::test_instance_and_context, Instance},
         nucleus::{
             ribosome::{
                 api::{
@@ -272,14 +254,15 @@ pub mod tests {
     };
     use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 
-    use futures::executor::block_on;
     use serde_json;
     use std::{
         collections::BTreeMap,
         sync::{
-            mpsc::{channel, RecvTimeoutError},
+            mpsc::{sync_channel, RecvTimeoutError},
             Arc,
         },
+        thread,
+        time::Duration,
     };
     use test_utils::create_test_dna_with_defs;
 
@@ -341,42 +324,30 @@ pub mod tests {
         );
         let zome_call_action = ActionWrapper::new(Action::Call(zome_call.clone()));
 
-        // process the action
-        let (sender, receiver) = channel();
-        let closure = move |state: &crate::state::State| {
-            // Observer waits for a ribosome_call_result
-            let opt_res = state.nucleus().zome_call_result(&zome_call);
-            match opt_res {
-                Some(res) => {
-                    // @TODO never panic in wasm
-                    // @see https://github.com/holochain/holochain-rust/issues/159
-                    sender
-                        .send(res)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
-
-                    true
-                }
-                None => false,
-            }
-        };
-
-        let observer = Observer {
-            sensor: Box::new(closure),
-        };
-
-        let mut state_observers: Vec<Observer> = Vec::new();
-        state_observers.push(observer);
-        let (_, rx_observer) = channel::<Observer>();
+        let (_, rx_observer) = sync_channel(1);
         test_setup.instance.process_action(
             zome_call_action,
-            state_observers,
+            Vec::new(),
             &rx_observer,
             &test_setup.context,
         );
 
-        let action_result = receiver.recv_timeout(RECV_DEFAULT_TIMEOUT_MS);
+        while test_setup
+            .instance
+            .state()
+            .nucleus()
+            .zome_call_result(&zome_call)
+            .is_none()
+        {
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        let action_result = Ok(test_setup
+            .instance
+            .state()
+            .nucleus()
+            .zome_call_result(&zome_call)
+            .unwrap());
 
         assert_eq!(expected, action_result);
     }
@@ -412,8 +383,10 @@ pub mod tests {
     fn test_call_public() {
         let dna = setup_dna_for_cap_test(CapabilityType::Public);
         let test_setup = setup_test(dna);
-        // Expecting timeout since there is no function in wasm to call
-        let expected = Err(RecvTimeoutError::Disconnected);
+        // Expecting error since there is no function in wasm to call
+        let expected = Ok(Err(HolochainError::RibosomeFailed(
+            "Argument deserialization failed".to_string(),
+        )));
         test_reduce_call(&test_setup, "", Address::from("caller"), expected);
     }
 
@@ -424,8 +397,10 @@ pub mod tests {
         let expected_failure = Ok(Err(HolochainError::CapabilityCheckFailed));
         test_reduce_call(&test_setup, "", Address::from("caller"), expected_failure);
 
-        // Expecting timeout since there is no function in wasm to call
-        let expected = Err(RecvTimeoutError::Disconnected);
+        // Expecting error since there is no function in wasm to call
+        let expected = Ok(Err(HolochainError::RibosomeFailed(
+            "Argument deserialization failed".to_string(),
+        )));
         let agent_token_str = test_setup.context.agent_id.key.clone();
         test_reduce_call(
             &test_setup,
@@ -436,7 +411,10 @@ pub mod tests {
 
         let grant = CapTokenGrant::create(CapabilityType::Transferable, None).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let addr = test_setup
+            .context
+            .block_on(author_entry(&grant_entry, None, &test_setup.context))
+            .unwrap();
         test_reduce_call(
             &test_setup,
             &String::from(addr),
@@ -457,8 +435,10 @@ pub mod tests {
             expected_failure.clone(),
         );
 
-        // Expecting timeout since there is no function in wasm to call
-        let expected = Err(RecvTimeoutError::Disconnected);
+        // Expecting error since there is no function in wasm to call
+        let expected = Ok(Err(HolochainError::RibosomeFailed(
+            "Argument deserialization failed".to_string(),
+        )));
         let agent_token_str = test_setup.context.agent_id.key.clone();
         test_reduce_call(
             &test_setup,
@@ -471,7 +451,10 @@ pub mod tests {
         let grant =
             CapTokenGrant::create(CapabilityType::Assigned, Some(vec![someone.clone()])).unwrap();
         let grant_entry = Entry::CapTokenGrant(grant);
-        let addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
+        let addr = test_setup
+            .context
+            .block_on(author_entry(&grant_entry, None, &test_setup.context))
+            .unwrap();
         test_reduce_call(
             &test_setup,
             &String::from(addr.clone()),

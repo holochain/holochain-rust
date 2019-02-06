@@ -13,6 +13,6 @@ holochain_core_types_derive = { path = "../core_types_derive" }
 [dev-dependencies]
 test_utils = { path = "../test_utils"}
 holochain_core = { path = "../core" }
-holochain_container_api = { path = "../container_api" }
+holochain_conductor_api = { path = "../conductor_api" }
 holochain_cas_implementations= {path="../cas_implementations"}
 tempfile = "3"

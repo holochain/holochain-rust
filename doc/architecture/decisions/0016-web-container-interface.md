@@ -1,4 +1,4 @@
-# 16. Container Interface for web UI clients
+# 16. Conductor Interface for web UI clients
 
 Date: 2018-09-14
 
@@ -7,7 +7,7 @@ Date: 2018-09-14
 Accepted
 
 ## Context
-* We have an implementation of a Holochain container that can load QML based UIs: https://github.com/holochain/holosqape
+* We have an implementation of a Holochain conductor that can load QML based UIs: https://github.com/holochain/holosqape
 * We also want to support HTML/JS/CSS based UIs
 * We need to enable pure Web clients to connect to a HoloPort for the Holo use-case
 * With [ADR 13](https://github.com/holochain/holochain-rust/blob/develop/doc/architecture/decisions/0013-signals-listeners-model-and-api.md)
@@ -17,7 +17,7 @@ Accepted
 ## Requirements
 It seems we need the advantages of both worlds:
 * having a rich context in which apps run so we can do bridging and other sophisticated
-  app composability features (the need for a container/composer)
+  app composability features (the need for a conductor/composer)
 * we need clients that are running any kind of UI (or connecting with IoT devices)
   to be able to connect with Holochain apps easily
 ### Mandatory
@@ -33,10 +33,10 @@ It seems we need the advantages of both worlds:
 
 ## Considered Solutions
 
-### 1. Daemon container that accepts function calls via RESTful HTTP requests
+### 1. Daemon conductor that accepts function calls via RESTful HTTP requests
 
 This is the solution implemented in proto.
-A single daemon container exposes end-points for calling functions namespaced by app and by zome.
+A single daemon conductor exposes end-points for calling functions namespaced by app and by zome.
 
 #### Benefits
 
@@ -68,13 +68,13 @@ Secondary drawback (in the proto version) is that HTTP requests include a lot of
 contextual information in headers etc. that aren't being handled at all right
 now, and don't have a clear "right way" to handle in a Holochain context
 
-### 2. Daemon container that exposes WebSockets for bi-directional communication
+### 2. Daemon conductor that exposes WebSockets for bi-directional communication
 
 Instead of using HTTP, keep a permanent WebSocket connection between UI client
 and Holochain node.
 
 Define a protocol to use over the WebSocket so that clients can take advantage
-of container features such as talking to multiple apps.
+of conductor features such as talking to multiple apps.
 
 Make use of sessions and a permission system to only expose certain apps or
 capabilities to remote UIs. WebSocket/streaming permission systems commonly work
@@ -144,7 +144,7 @@ Holochain specific SDKs, whether official or unofficial. If an SDK is not
 available for your language/environment (e.g. Python) then you have no ability
 to access the server.
 
-### 3. Daemon container that exposes REST + Server Sent Events (SSE) for push communication
+### 3. Daemon conductor that exposes REST + Server Sent Events (SSE) for push communication
 
 Works the same as REST but implements Server Sent Events for push of data the
 client has subscribed to. SSE was part of HTML5, now part of the EventSource
@@ -172,7 +172,7 @@ provided to maintain the connection.
 Automatic reconnection handling might be a bad thing for _Holo_ if said handling
 doesn't align with those needs.
 
-### 4. Daemon container that exposes REST + Long polling client
+### 4. Daemon conductor that exposes REST + Long polling client
 
 Long polling is a more sophisticated (or hacky, depending on your POV) approach
 to a simple poll loop on the client.
@@ -216,7 +216,7 @@ to the same _Holo_ backend somehow.
 Some connection overhead relative to WebSockets. Whether this is is a real issue
 depends on volume/frequency of reconnections/pushes.
 
-### 5. Daemon container communicating with browser plug-in via IPC
+### 5. Daemon conductor communicating with browser plug-in via IPC
 
 This is similar to MetaMask for Ethereum communicating with a local node via IPC.
 
@@ -240,12 +240,12 @@ Requires development of the plug-in.
 Impossible to use with any client that cannot install the plug-in (e.g. python,
 postman, cURL, etc.).
 
-### 6. Holochain container runs a custom browser that exposes calls directly
+### 6. Holochain conductor runs a custom browser that exposes calls directly
 
 This is comparable to the Mist browser for Ethereum and currently implemented
 for QML front-ends with [HoloSqape](https://github.com/holochain/holosqape).
 
-This could be re-done with web technology such as [Electron](https://electronjs.org/) and [Holochain-nodejs](https://github.com/holochain/holochain-nodejs).  
+This could be re-done with web technology such as [Electron](https://electronjs.org/) and [Holochain-nodejs](https://github.com/holochain/holochain-nodejs).
 
 #### Benefits
 
@@ -272,7 +272,7 @@ There is also the possibility to implement multiple of the above (as Ethereum ha
 
 Start with: Option 2.
 
-The existing Holochain container project HoloSqape is to be extended to provide a **WebSocket interface**
+The existing Holochain conductor project HoloSqape is to be extended to provide a **WebSocket interface**
 (next to the QML based GUI plug-in system) that enables many different kinds of external
 user interfaces to connect to the local Holochain node, authenticate, issue zome calls and receive zome signals,
 depending on permissions administered by the local user of the node through an admin UI or default settings.

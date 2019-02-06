@@ -24,9 +24,9 @@ let
    rm -rf ~/.cargo/git;
   '';
 
-  hc-install-node-container = nixpkgs.writeShellScriptBin "hc-install-node-container"
+  hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
-   . ./scripts/build_nodejs_container.sh;
+   . ./scripts/build_nodejs_conductor.sh;
   '';
 
   hc-install-tarpaulin = nixpkgs.writeShellScriptBin "hc-install-tarpaulin"
@@ -39,11 +39,11 @@ let
   hc-tarpaulin = nixpkgs.writeShellScriptBin "hc-tarpaulin" "cargo tarpaulin --ignore-tests --timeout 600 --all --out Xml --skip-clean -v -e holochain_core_api_c_binding -e hdk -e hc -e holochain_core_types_derive";
 
   hc-install-cli = nixpkgs.writeShellScriptBin "hc-install-cli" "cargo build -p hc --release && cargo install -f --path cli";
-  hc-install-container = nixpkgs.writeShellScriptBin "hc-install-container" "cargo build -p holochain_container --release && cargo install -f --path container";
+  hc-install-conductor = nixpkgs.writeShellScriptBin "hc-install-conductor" "cargo build -p holochain --release && cargo install -f --path conductor";
 
   hc-test-cli = nixpkgs.writeShellScriptBin "hc-test-cli" "cd cli && cargo test";
   hc-test-app-spec = nixpkgs.writeShellScriptBin "hc-test-app-spec" "cd app_spec && . build_and_test.sh";
-  hc-test-node-container = nixpkgs.writeShellScriptBin "hc-test-node-container" "cd nodejs_container && npm test";
+  hc-test-node-conductor = nixpkgs.writeShellScriptBin "hc-test-node-conductor" "cd nodejs_conductor && npm test";
 
   hc-fmt = nixpkgs.writeShellScriptBin "hc-fmt" "cargo fmt";
   hc-fmt-check = nixpkgs.writeShellScriptBin "hc-fmt-check" "cargo fmt -- --check";
@@ -70,8 +70,8 @@ let
   wasm-paths = [
    "hdk-rust/wasm-test"
    "wasm_utils/wasm-test/integration-test"
-   "container_api/wasm-test"
-   "container_api/test-bridge-caller"
+   "conductor_api/wasm-test"
+   "conductor_api/test-bridge-caller"
    "core/src/nucleus/actions/wasm-test"
   ];
   hc-build-wasm = nixpkgs.writeShellScriptBin "hc-build-wasm"
@@ -111,12 +111,12 @@ stdenv.mkDerivation rec {
     hc-tarpaulin
 
     hc-install-cli
-    hc-install-container
-    hc-install-node-container
+    hc-install-conductor
+    hc-install-node-conductor
 
     hc-test-cli
     hc-test-app-spec
-    hc-test-node-container
+    hc-test-node-conductor
 
     hc-fmt
     hc-fmt-check

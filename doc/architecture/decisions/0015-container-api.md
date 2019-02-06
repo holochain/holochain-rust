@@ -4,7 +4,17 @@ Date: 2018-09-17
 
 ## Status
 
-Accepted
+Deprecated
+
+## Deprecation notes:
+
+This ADR is deprecated and needs to be updated:
+
+1. We renamed Container to Conductor
+2. We moved our main conductor implementation to a native Rust version rather that the initial Holosqape
+C++/QML version
+3. We moved to the terminology of DNA instead of App for what runs in a conductor
+4. What have advanced capabilities so what's described here is no longer accurate.
 
 ## Glossary
 * **Container**: *We have been struggling to find a term for this concept that feels fitting.

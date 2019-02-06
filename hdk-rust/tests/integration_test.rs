@@ -1,5 +1,5 @@
 #![feature(try_from)]
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate tempfile;
@@ -14,10 +14,10 @@ extern crate holochain_wasm_utils;
 extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
-use holochain_container_api::{error::HolochainResult, *};
+use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
     dna::{
         capabilities::{Capability, CapabilityCall, CapabilityType},
@@ -187,14 +187,12 @@ fn example_valid_entry() -> Entry {
 
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
-    GetEntryResult::new(
-        StatusRequestKind::Latest,
-        Some(&EntryWithMeta {
-            entry: entry,
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        }),
-    )
+    let entry_with_meta = &EntryWithMeta {
+        entry: entry.clone(),
+        crud_status: CrudStatus::Live,
+        maybe_crud_link: None,
+    };
+    GetEntryResult::new(StatusRequestKind::Latest, Some((entry_with_meta, vec![])))
 }
 
 fn example_valid_entry_params() -> String {
@@ -734,7 +732,7 @@ fn can_remove_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"items\":[{\"meta\":{\"address\":\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\",\"entry_type\":{\"App\":\"testEntryType\"},\"crud_status\":\"deleted\"},\"entry\":{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]}}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
+        JsonString::from("{\"items\":[{\"meta\":{\"address\":\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\",\"entry_type\":{\"App\":\"testEntryType\"},\"crud_status\":\"deleted\"},\"entry\":{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]},\"headers\":[]}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
         ),
     );
 }
@@ -765,7 +763,29 @@ fn can_send_and_receive() {
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected: ZomeApiResult<String> = Ok(String::from("Received: TEST"));
+    let entry_committed_by_receive = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: String::from("TEST"),
+        }
+        .into(),
+    );
+
+    let address = entry_committed_by_receive.address().to_string();
+
+    let expected: ZomeApiResult<String> = Ok(format!("Committed: 'TEST' / address: {}", address));
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
+
+    let result = make_test_call(
+        &mut hc,
+        "check_get_entry",
+        &String::from(JsonString::from(json!({
+            "entry_address": address,
+        }))),
+    );
+
+    let expected: ZomeApiResult<Entry> = Ok(entry_committed_by_receive);
+    assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected),);
 }
 

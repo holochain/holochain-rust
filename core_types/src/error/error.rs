@@ -4,6 +4,7 @@ use crate::{
     json::*,
 };
 use futures::channel::oneshot::Canceled as FutureCanceled;
+use holochain_sodium::error::SodiumError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -122,6 +123,15 @@ impl fmt::Display for HolochainError {
             RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
+        }
+    }
+}
+
+impl From<SodiumError> for HolochainError {
+    fn from(error: SodiumError) -> Self {
+        match error {
+            SodiumError::Generic(s) => HolochainError::new(&s),
+            SodiumError::OutputLength(s) => HolochainError::new(&s),
         }
     }
 }

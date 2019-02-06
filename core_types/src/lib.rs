@@ -33,6 +33,8 @@ extern crate maplit;
 
 extern crate uuid;
 
+extern crate holochain_sodium;
+
 pub mod cas;
 pub mod chain_header;
 pub mod crud_status;

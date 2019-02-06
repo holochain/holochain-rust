@@ -1,8 +1,7 @@
-
 use std::{
+    collections::{HashMap, HashSet},
     string::*,
     sync::{mpsc, Mutex, RwLock},
-    collections::{HashMap, HashSet},
 };
 
 /// Type for holding a map of 'logger_name -> Tweetlog'
@@ -10,7 +9,6 @@ type TweetLoggerMap = HashMap<String, Mutex<Tweetlog>>;
 
 #[warn(non_camel_case_types)]
 pub type listenerCallback = fn(LogLevel, Option<&str>, &str);
-
 
 /// this is the actual memory space for our loggers
 #[warn(non_upper_case_globals)]
@@ -103,7 +101,6 @@ pub enum LogLevel {
     Error,
 }
 
-
 impl From<char> for LogLevel {
     fn from(l: char) -> Self {
         match l {
@@ -132,7 +129,6 @@ impl LogLevel {
     }
 }
 
-
 #[derive(Debug)]
 pub struct TweetProxy {
     tag: String,
@@ -140,26 +136,42 @@ pub struct TweetProxy {
 
 impl TweetProxy {
     pub fn new(tag: &str) -> Self {
-        TweetProxy { tag: tag.to_owned() }
+        TweetProxy {
+            tag: tag.to_owned(),
+        }
     }
 
     pub fn t(&self, msg: &str) {
-        g_tweetlog.read().unwrap().tweet(LogLevel::Trace, Some(&self.tag), msg);
+        g_tweetlog
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Trace, Some(&self.tag), msg);
     }
-    pub fn d(&self, msg: &str){
-        g_tweetlog.read().unwrap().tweet(LogLevel::Debug, Some(&self.tag), msg);
+    pub fn d(&self, msg: &str) {
+        g_tweetlog
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Debug, Some(&self.tag), msg);
     }
-    pub fn i(&self, msg: &str){
-        g_tweetlog.read().unwrap().tweet(LogLevel::Info, Some(&self.tag), msg);
+    pub fn i(&self, msg: &str) {
+        g_tweetlog
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Info, Some(&self.tag), msg);
     }
-    pub fn w(&self, msg: &str){
-        g_tweetlog.read().unwrap().tweet(LogLevel::Warning, Some(&self.tag), msg);
+    pub fn w(&self, msg: &str) {
+        g_tweetlog
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Warning, Some(&self.tag), msg);
     }
-    pub fn e(&self, msg: &str){
-        g_tweetlog.read().unwrap().tweet(LogLevel::Error, Some(&self.tag), msg);
+    pub fn e(&self, msg: &str) {
+        g_tweetlog
+            .read()
+            .unwrap()
+            .tweet(LogLevel::Error, Some(&self.tag), msg);
     }
 }
-
 
 #[derive(Debug)]
 struct Logger {
@@ -194,9 +206,9 @@ impl Tweetlog {
     }
 }
 
-
 impl Tweetlog {
-    pub fn add(&mut self, tag: &str) /* -> Self */ {
+    pub fn add(&mut self, tag: &str) /* -> Self */
+    {
         self.log_by_tag.insert(tag.to_string(), Logger::new());
     }
 
@@ -218,11 +230,11 @@ impl Tweetlog {
         self.log_by_tag.insert(tag, Logger::with_level(level));
     }
 
-//    pub fn resetLevels(&mut self) {
-//        for (_, mut logger) in self.log_by_tag {
-//            logger.level = LogLevel::Info;
-//        }
-//    }
+    //    pub fn resetLevels(&mut self) {
+    //        for (_, mut logger) in self.log_by_tag {
+    //            logger.level = LogLevel::Info;
+    //        }
+    //    }
 
     pub fn listen(&mut self, cb: listenerCallback) {
         self.listen_to_tag("_", cb);
@@ -233,12 +245,12 @@ impl Tweetlog {
         logger.callbacks.insert(cb);
     }
 
-//    // Clear any registered log listeners or levels
-//    pub fn unlistenAll(&mut self) {
-//        for (_, mut logger) in self.log_by_tag {
-//            logger.callbacks.clear();
-//        }
-//    }
+    //    // Clear any registered log listeners or levels
+    //    pub fn unlistenAll(&mut self) {
+    //        for (_, mut logger) in self.log_by_tag {
+    //            logger.callbacks.clear();
+    //        }
+    //    }
 
     // Clear any registered log listeners or levels
     pub fn unlisten(&mut self, tag: &str) {
@@ -279,9 +291,7 @@ impl Tweetlog {
             for cb in logger.callbacks.clone() {
                 cb(level.clone(), Some(tag), msg);
             }
-
         }
-
     }
 
     // -- sugar -- //
@@ -293,28 +303,28 @@ impl Tweetlog {
         self.tweet(LogLevel::Trace, Some(tag), msg);
     }
 
-    pub fn d(&self, msg: &str){
+    pub fn d(&self, msg: &str) {
         self.tweet(LogLevel::Debug, None, msg);
     }
     pub fn dd(&self, tag: &str, msg: &str) {
         self.tweet(LogLevel::Debug, Some(tag), msg);
     }
 
-    pub fn i(&self, msg: &str){
+    pub fn i(&self, msg: &str) {
         self.tweet(LogLevel::Info, None, msg);
     }
     pub fn ii(&self, tag: &str, msg: &str) {
         self.tweet(LogLevel::Info, Some(tag), msg);
     }
 
-    pub fn w(&self, msg: &str){
+    pub fn w(&self, msg: &str) {
         self.tweet(LogLevel::Warning, None, msg);
     }
     pub fn ww(&self, tag: &str, msg: &str) {
         self.tweet(LogLevel::Warning, Some(tag), msg);
     }
 
-    pub fn e(&self, msg: &str){
+    pub fn e(&self, msg: &str) {
         self.tweet(LogLevel::Error, None, msg);
     }
     pub fn ee(&self, tag: &str, msg: &str) {
@@ -324,18 +334,17 @@ impl Tweetlog {
     // -- provided listeners -- //
 
     pub fn console(level: LogLevel, maybe_tag: Option<&str>, msg: &str) {
-//        match maybe_tag {
-//            None      => println!("(global)[{}]  {}", level.as_char(), msg),
-//            Some(tag) => println!("({:?})[{}]  {}", tag, level.as_char(), msg),
-//        }
+        //        match maybe_tag {
+        //            None      => println!("(global)[{}]  {}", level.as_char(), msg),
+        //            Some(tag) => println!("({:?})[{}]  {}", tag, level.as_char(), msg),
+        //        }
         // print without tag
         match maybe_tag {
-            None      => println!("[{}] {}\n", level.as_char(), msg),
+            None => println!("[{}] {}\n", level.as_char(), msg),
             Some(tag) => println!("[{}] {}\n", level.as_char(), msg),
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -370,7 +379,6 @@ mod tests {
         assert!(tweetlog.should(LogLevel::Info, None));
         assert!(tweetlog.should(LogLevel::Warning, None));
         assert!(tweetlog.should(LogLevel::Error, None));
-
     }
 
     #[test]
@@ -406,24 +414,24 @@ mod tests {
         tweetlog.e("hello error");
     }
 
-//    #[test]
-//    fn log_tag_println_hello() {
-//        let mut tweetlog = Tweetlog::new();
-//        tweetlog.add("errorlog");
-//
-//        // set general logging to error only
-//        tweetlog.set(LogLevel::Warning, None);
-//        tweetlog.listen(Tweetlog::console);
-//
-//        // set testlogger output to trace level
-//        tweetlog.add("tracelog");
-//        tweetlog.set(LogLevel::Trace, Some("tracelog".to_string()));
-//        tweetlog.listen_to_tag("tracelog", Tweetlog::console);
-//
-//        tweetlog.t("hello trace");
-//        tweetlog.d("hello debug");
-//        tweetlog.i("hello info");
-//        tweetlog.w("hello warning");
-//        tweetlog.e("hello error");
-//    }
+    //    #[test]
+    //    fn log_tag_println_hello() {
+    //        let mut tweetlog = Tweetlog::new();
+    //        tweetlog.add("errorlog");
+    //
+    //        // set general logging to error only
+    //        tweetlog.set(LogLevel::Warning, None);
+    //        tweetlog.listen(Tweetlog::console);
+    //
+    //        // set testlogger output to trace level
+    //        tweetlog.add("tracelog");
+    //        tweetlog.set(LogLevel::Trace, Some("tracelog".to_string()));
+    //        tweetlog.listen_to_tag("tracelog", Tweetlog::console);
+    //
+    //        tweetlog.t("hello trace");
+    //        tweetlog.d("hello debug");
+    //        tweetlog.i("hello info");
+    //        tweetlog.w("hello warning");
+    //        tweetlog.e("hello error");
+    //    }
 }

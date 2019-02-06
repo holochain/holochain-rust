@@ -1,22 +1,26 @@
 #![allow(non_snake_case)]
 
+use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net::{
     p2p_config::*,
     p2p_network::P2pNetwork,
-    tweetlog::*, tweetlog::TweetProxy,
+    tweetlog::{TweetProxy, *},
 };
 use holochain_net_connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
         FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaListData, MetaTuple, MetaKey,
+        MessageData, MetaKey, MetaListData, MetaTuple,
     },
     net_connection::NetSend,
     protocol::Protocol,
     NetResult,
 };
-use std::{collections::{HashMap, HashSet}, convert::TryFrom, sync::mpsc};
-use holochain_core_types::{cas::content::Address, hash::HashString};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+    sync::mpsc,
+};
 
 static TIMEOUT_MS: usize = 5000;
 
@@ -112,20 +116,32 @@ impl P2pNode {
         {
             {
                 let maybe_stored_map = self.meta_store.get(&meta_key);
-                assert!(maybe_stored_map.is_none() || maybe_stored_map.expect("meta shoud exist").get(&content).is_none());
+                assert!(
+                    maybe_stored_map.is_none()
+                        || maybe_stored_map
+                            .expect("meta shoud exist")
+                            .get(&content)
+                            .is_none()
+                );
             }
             // bookkeep
             if let None = self.authored_meta_store.get_mut(&meta_key) {
                 let mut set = HashSet::new();
-                self.logger.t(&format!("author_meta: first content for '{:?}' = {}", meta_key, content));
+                self.logger.t(&format!(
+                    "author_meta: first content for '{:?}' = {}",
+                    meta_key, content
+                ));
                 set.insert(content.clone());
                 self.authored_meta_store.insert(meta_key.clone(), set);
             } else {
                 if let Some(set) = self.authored_meta_store.get_mut(&meta_key) {
-                        assert!(set.get(&content).is_none());
-                    self.logger.t(&format!("author_meta: adding content for '{:?}' = {}", meta_key, content));
-                        set.insert(content.clone());
-                    };
+                    assert!(set.get(&content).is_none());
+                    self.logger.t(&format!(
+                        "author_meta: adding content for '{:?}' = {}",
+                        meta_key, content
+                    ));
+                    set.insert(content.clone());
+                };
             };
         }
         // publish it
@@ -151,24 +167,21 @@ impl P2pNode {
             .insert(entry_address.clone(), entry_content.clone());
     }
 
-    pub fn hold_meta(
-        &mut self,
-        entry_address: &Address,
-        attribute: &str,
-        content: &Address,
-    ) {
+    pub fn hold_meta(&mut self, entry_address: &Address, attribute: &str, content: &Address) {
         let meta_key = (entry_address.clone(), attribute.to_string());
         // Must not already have meta
         {
             let maybe_authored_map = self.authored_meta_store.get(&meta_key);
-            assert!(maybe_authored_map.is_none() || maybe_authored_map.unwrap().get(&content).is_none());
+            assert!(
+                maybe_authored_map.is_none() || maybe_authored_map.unwrap().get(&content).is_none()
+            );
         }
         // create or update hashmap
         if let None = self.meta_store.get(&meta_key) {
-                let mut set = HashSet::new();
-                set.insert(content.clone());
-                self.meta_store.insert(meta_key, set);
-            } else {
+            let mut set = HashSet::new();
+            set.insert(content.clone());
+            self.meta_store.insert(meta_key, set);
+        } else {
             if let Some(set) = self.meta_store.get_mut(&meta_key) {
                 assert!(set.get(&content).is_none());
                 set.insert(content.clone());
@@ -363,7 +376,10 @@ impl P2pNode {
             .collect();
         let mut meta_list: Vec<MetaTuple> = Vec::new();
         for (k1, k2, set) in meta_sets {
-            let mut vec: Vec<MetaTuple> = set.iter().map(|v| (k1.clone(), k2.clone(), v.clone())).collect();
+            let mut vec: Vec<MetaTuple> = set
+                .iter()
+                .map(|v| (k1.clone(), k2.clone(), v.clone()))
+                .collect();
             meta_list.append(&mut vec);
         }
         let msg = MetaListData {
@@ -375,7 +391,10 @@ impl P2pNode {
     }
     /// Look for the first HandleGetPublishingMetaList request received from network module and reply
     pub fn reply_to_first_HandleGetPublishingMetaList(&mut self) {
-        self.logger.t(&format!("--- HandleGetPublishingMetaList: {}", self.agent_id));
+        self.logger.t(&format!(
+            "--- HandleGetPublishingMetaList: {}",
+            self.agent_id
+        ));
         let request = self
             .find_recv_msg(
                 0,
@@ -423,7 +442,10 @@ impl P2pNode {
             .collect();
         let mut meta_list: Vec<MetaTuple> = Vec::new();
         for (k1, k2, set) in meta_sets {
-            let mut vec: Vec<MetaTuple> = set.iter().map(|v| (k1.clone(), k2.clone(), v.clone())).collect();
+            let mut vec: Vec<MetaTuple> = set
+                .iter()
+                .map(|v| (k1.clone(), k2.clone(), v.clone()))
+                .collect();
             meta_list.append(&mut vec);
         }
         let msg = MetaListData {
@@ -529,11 +551,11 @@ impl P2pNode {
     pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
         // logging code: log non-ping messages
-         let dbg_msg = match data {
-             Protocol::NamedBinary(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
-             Protocol::Json(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
-             _ => "".to_string(),
-         };
+        let dbg_msg = match data {
+            Protocol::NamedBinary(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
+            Protocol::Json(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
+            _ => "".to_string(),
+        };
         self.logger.t(&dbg_msg);
 
         self.recv_msg_log.push(data.clone());
@@ -546,7 +568,8 @@ impl P2pNode {
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    self.logger.e(&format!("###### Received parse error: {} {:?}", s, data));
+                    self.logger
+                        .e(&format!("###### Received parse error: {} {:?}", s, data));
                 }
                 Err(e)
             }
@@ -565,9 +588,9 @@ impl P2pNode {
 
             if let Ok(p2p_msg) = self.try_recv() {
                 self.logger.t(&format!(
-                        "({})::listen() - received: {:?}",
-                        self.agent_id, p2p_msg,
-                    ));
+                    "({})::listen() - received: {:?}",
+                    self.agent_id, p2p_msg,
+                ));
                 has_recved = true;
                 time_ms = 0;
                 count += 1;
@@ -627,13 +650,18 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                self.logger.i(&format!("({})::wait() - received: {:?}", self.agent_id, p2p_msg));
+                self.logger.i(&format!(
+                    "({})::wait() - received: {:?}",
+                    self.agent_id, p2p_msg
+                ));
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    self.logger.i(&format!("({})::wait() - match", self.agent_id));
+                    self.logger
+                        .i(&format!("({})::wait() - match", self.agent_id));
                     return Some(p2p_msg);
                 } else {
-                    self.logger.i(&format!("({})::wait() - NO match", self.agent_id));
+                    self.logger
+                        .i(&format!("({})::wait() - NO match", self.agent_id));
                 }
             }
 
@@ -641,7 +669,8 @@ impl P2pNode {
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 time_ms += 10;
                 if time_ms > timeout_ms {
-                    self.logger.i(&format!("({})::wait() has TIMEOUT", self.agent_id));
+                    self.logger
+                        .i(&format!("({})::wait() has TIMEOUT", self.agent_id));
                     return None;
                 }
             }
@@ -756,18 +785,18 @@ impl P2pNode {
                 // Change vec to set
                 let meta_set = msg.content_list.iter().map(|v| v.clone()).collect();
 
-
-//                for content in msg.content_list {
-//                    self.meta_store
-//                        .insert(, msg.content_list);
-//                }
+                //                for content in msg.content_list {
+                //                    self.meta_store
+                //                        .insert(, msg.content_list);
+                //                }
 
                 // Store data in local datastore
                 let meta_key = &(msg.entry_address, msg.attribute);
                 if let None = self.meta_store.get(meta_key) {
                     self.meta_store.insert(meta_key.clone(), meta_set);
                 } else {
-                    if let Some(set) = self.meta_store.get_mut(meta_key) { set.extend(meta_set);
+                    if let Some(set) = self.meta_store.get_mut(meta_key) {
+                        set.extend(meta_set);
                     };
                 };
             }
@@ -819,7 +848,8 @@ impl P2pNode {
 impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        self.logger.i(&format!(">> ({}) send: {:?}", self.agent_id, data));
+        self.logger
+            .i(&format!(">> ({}) send: {:?}", self.agent_id, data));
         self.p2p_connection.send(data)
     }
 }
@@ -839,7 +869,7 @@ fn create_ipc_config(
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
 
-   log_i!("create_ipc_config() dir = {}", dir);
+    log_i!("create_ipc_config() dir = {}", dir);
 
     // Create config
     let config = match maybe_config_filepath {

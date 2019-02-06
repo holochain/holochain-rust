@@ -1,12 +1,12 @@
 use constants::*;
 use holochain_core_types::cas::content::Address;
+use holochain_net::tweetlog::g_tweetlog;
 use holochain_net_connection::{
     json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
     net_connection::NetSend,
     NetResult,
 };
 use p2p_node::P2pNode;
-use holochain_net::tweetlog::g_tweetlog;
 
 // TODO make test: Sending a Message before doing a 'TrackApp' should fail
 //fn no_track_test(

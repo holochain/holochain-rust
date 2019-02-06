@@ -23,13 +23,10 @@ pub mod publish_hold_workflows;
 pub mod three_workflows;
 
 use constants::*;
+use holochain_net::tweetlog::*;
 use holochain_net_connection::NetResult;
 use p2p_node::P2pNode;
-use std::{
-    fs::File,
-    collections::HashMap,
-};
-use holochain_net::tweetlog::*;
+use std::{collections::HashMap, fs::File};
 
 type TwoNodesTestFn =
     fn(alex: &mut P2pNode, billy: &mut P2pNode, can_test_connect: bool) -> NetResult<()>;
@@ -95,10 +92,8 @@ fn print_test_name(print_str: &str, test_fn: *mut std::os::raw::c_void) {
 fn load_config_file(filepath: &str) -> serde_json::Value {
     let config_file =
         File::open(filepath).expect("Failed to open filepath on Network Test config.");
-    serde_json::from_reader(config_file)
-        .expect("file is not proper JSON")
+    serde_json::from_reader(config_file).expect("file is not proper JSON")
 }
-
 
 // this is all debug code, no need to track code test coverage
 #[cfg_attr(tarpaulin, skip)]
@@ -107,13 +102,22 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let mut config_path = String::new();
     if args.len() != 2 {
-        println!("Usage: No config file supplied. Using default config: test_bin/data/test_config.json");
+        println!(
+            "Usage: No config file supplied. Using default config: test_bin/data/test_config.json"
+        );
     } else {
         config_path = args[1].clone();
     }
     if config_path == "" {
-        println!("Usage: No config file supplied. Using default config: test_bin/data/test_config.json");
-        config_path = format!("test_bin{}data{}test_config.json", std::path::MAIN_SEPARATOR, std::path::MAIN_SEPARATOR).to_string();
+        println!(
+            "Usage: No config file supplied. Using default config: test_bin/data/test_config.json"
+        );
+        config_path = format!(
+            "test_bin{}data{}test_config.json",
+            std::path::MAIN_SEPARATOR,
+            std::path::MAIN_SEPARATOR
+        )
+        .to_string();
     }
 
     // Load config
@@ -125,10 +129,19 @@ fn main() {
     {
         let mut tweetlog = g_tweetlog.write().unwrap();
         //tweetlog.add("errorlog");
-        let default_level = LogLevel::from(config["log"]["default"].as_str().unwrap().chars().next().unwrap());
+        let default_level = LogLevel::from(
+            config["log"]["default"]
+                .as_str()
+                .unwrap()
+                .chars()
+                .next()
+                .unwrap(),
+        );
         tweetlog.set(default_level, None);
         // set level per tag
-        let tag_map: HashMap<String, String> = serde_json::from_value(config["log"]["tags"].clone()).expect("missing/bad 'tags' config");
+        let tag_map: HashMap<String, String> =
+            serde_json::from_value(config["log"]["tags"].clone())
+                .expect("missing/bad 'tags' config");
         for (tag, level_str) in tag_map {
             let level = LogLevel::from(level_str.as_str().chars().next().unwrap());
             tweetlog.set(level, Some(tag.clone()));
@@ -156,7 +169,7 @@ fn main() {
                 "test_bin/data/mock_ipc_network_config.json",
                 test_fn,
             )
-                .unwrap();
+            .unwrap();
         }
         if config["modes"]["HACK_MODE"].as_bool().unwrap() {
             launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
@@ -175,10 +188,11 @@ fn main() {
                     "test_bin/data/mock_ipc_network_config.json",
                     test_fn,
                 )
-                    .unwrap();
+                .unwrap();
             }
             if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-                launch_three_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+                launch_three_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn)
+                    .unwrap();
             }
         }
     }

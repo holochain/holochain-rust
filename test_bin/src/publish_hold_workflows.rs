@@ -1,8 +1,8 @@
 use basic_workflows::setup_two_nodes;
 use constants::*;
+use holochain_net::tweetlog::*;
 use holochain_net_connection::{json_protocol::JsonProtocol, NetResult};
 use p2p_node::P2pNode;
-use holochain_net::tweetlog::*;
 
 /// Test the following workflow after normal setup:
 /// sequenceDiagram
@@ -260,11 +260,7 @@ pub fn double_publish_meta_list_test(
 
 /// Reply some data in publish_meta_list
 #[cfg_attr(tarpaulin, skip)]
-pub fn many_meta_test(
-    alex: &mut P2pNode,
-    billy: &mut P2pNode,
-    can_connect: bool,
-) -> NetResult<()> {
+pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
     // Setup
     println!("Testing: many_meta_test()");
     setup_two_nodes(alex, billy, can_connect)?;
@@ -302,11 +298,9 @@ pub fn many_meta_test(
     log_d!("META_LINK_CONTENT_3 authored");
     alex.reply_to_first_HandleGetPublishingMetaList();
 
-
     // Should receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     assert!(has_received);
-
 
     // billy might receive HandleDhtStore
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
@@ -332,8 +326,7 @@ pub fn many_meta_test(
     // Billy should receive the data
     let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
     if result.is_none() {
-        result = billy
-            .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+        result = billy.wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
     }
     let result = result.unwrap();
     log_i!("got result 1: {:?}", result);
@@ -362,7 +355,6 @@ pub fn many_meta_test(
     // Done
     Ok(())
 }
-
 
 //#[cfg_attr(tarpaulin, skip)]
 //pub fn publish_same_entry_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {

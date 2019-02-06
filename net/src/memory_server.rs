@@ -2,12 +2,13 @@
 
 #![allow(non_snake_case)]
 
+use crate::tweetlog::*;
 use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net_connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
         FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaListData, PeerData, MetaTuple,
+        MessageData, MetaListData, MetaTuple, PeerData,
     },
     protocol::Protocol,
     NetResult,
@@ -17,7 +18,6 @@ use std::{
     convert::TryFrom,
     sync::{mpsc, Mutex, RwLock},
 };
-use crate::tweetlog::*;
 
 type BucketId = String;
 type RequestId = String;
@@ -43,7 +43,10 @@ fn into_bucket_id(dna_address: &Address, agent_id: &str) -> BucketId {
 /// return a unique identifier out of a entry_address and attribute
 // fn into_meta_address(entry_address: &Address, attribute: &str) -> Address {
 pub fn into_meta_id(meta_tuple: &MetaTuple) -> Address {
-    HashString::from(format!("{}||{}||{}", meta_tuple.0, meta_tuple.1, meta_tuple.2))
+    HashString::from(format!(
+        "{}||{}||{}",
+        meta_tuple.0, meta_tuple.1, meta_tuple.2
+    ))
 }
 
 /// Add an address to a book
@@ -220,18 +223,21 @@ impl InMemoryServer {
 
     /// A client clocks in on this server
     pub fn clock_in(&mut self) {
-        self.log.t(&format!("+++ '{}' clock_in()", self.name.clone()));
+        self.log
+            .t(&format!("+++ '{}' clock_in()", self.name.clone()));
         self.client_count += 1;
     }
 
     /// A client clocks out of this server.
     /// If there is no clients left. Clear all the channels.
     pub fn clock_out(&mut self) {
-        self.log.t(&format!("--- '{}' clock_out", self.name.clone()));
+        self.log
+            .t(&format!("--- '{}' clock_out", self.name.clone()));
         assert!(self.client_count > 0);
         self.client_count -= 1;
         if self.client_count == 0 {
-            self.log.t(&format!("--- '{}' CLEAR CHANNELS", self.name.clone()));
+            self.log
+                .t(&format!("--- '{}' CLEAR CHANNELS", self.name.clone()));
             self.senders.clear();
             self.senders_by_dna.clear();
         }
@@ -259,11 +265,8 @@ impl InMemoryServer {
 
     /// process a message sent by a node to the "network"
     pub fn serve(&mut self, data: Protocol) -> NetResult<()> {
-        self.log.d(&format!(
-            ">>>> '{}' recv: {:?}",
-            self.name.clone(),
-            data
-         ));
+        self.log
+            .d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
         if let Ok(json_msg) = JsonProtocol::try_from(&data) {
             // Note: use same order as the enum
             match json_msg {
@@ -280,10 +283,10 @@ impl InMemoryServer {
                     let maybe_bucket_id = self.priv_check_request(&msg.request_id);
                     if let Some(_) = maybe_bucket_id {
                         self.log.d(&format!(
-                             "---- '{}' internal request failed: {:?}",
-                             self.name.clone(),
-                             msg.clone(),
-                         ));
+                            "---- '{}' internal request failed: {:?}",
+                            self.name.clone(),
+                            msg.clone(),
+                        ));
                         return Ok(());
                     }
                     // If not, relay the FailureResult message to receipient
@@ -378,14 +381,18 @@ impl InMemoryServer {
     fn priv_send_one_with_bucket(&mut self, bucket_id: &str, data: Protocol) -> NetResult<()> {
         let maybe_sender = self.senders.get_mut(bucket_id);
         if maybe_sender.is_none() {
-            self.log.e(&format!("#### '{}' error: No sender channel found", self.name.clone()));
+            self.log.e(&format!(
+                "#### '{}' error: No sender channel found",
+                self.name.clone()
+            ));
             return Err(format_err!(
                 "No sender channel found ({})",
                 self.name.clone()
             ));
         }
         let sender = maybe_sender.unwrap();
-        self.log.d(&format!("<<<< '{}' send: {:?}", self.name.clone(), data));
+        self.log
+            .d(&format!("<<<< '{}' send: {:?}", self.name.clone(), data));
         sender.send(data)?;
         Ok(())
     }
@@ -404,11 +411,11 @@ impl InMemoryServer {
     fn priv_send_all(&mut self, dna_address: &Address, data: Protocol) -> NetResult<()> {
         if let Some(arr) = self.senders_by_dna.get_mut(dna_address) {
             self.log.d(&format!(
-                 "<<<< '{}' send all: {:?} ({})",
-                 self.name.clone(),
-                 data.clone(),
-                 dna_address.clone()
-             ));
+                "<<<< '{}' send all: {:?} ({})",
+                self.name.clone(),
+                data.clone(),
+                dna_address.clone()
+            ));
             for val in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }
@@ -473,10 +480,10 @@ impl InMemoryServer {
                 if !e.get().is_empty() {
                     let r = &e.get_mut()[0];
                     self.log.d(&format!(
-                         "<<<< '{}' send: {:?}",
-                         self.name.clone(),
-                         msg.clone()
-                     ));
+                        "<<<< '{}' send: {:?}",
+                        self.name.clone(),
+                        msg.clone()
+                    ));
                     let msg: Protocol = JsonProtocol::HandleFetchEntry(msg.clone()).into();
                     r.send(msg)?;
                     return Ok(());
@@ -528,7 +535,11 @@ impl InMemoryServer {
     fn priv_serve_PublishMeta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         for content in msg.content_list.clone() {
             // let hashed_content = HashString::encode_from_bytes(msg.content_list.to_string().as_bytes(), Hash::SHA2256);
-            let meta_id = into_meta_id(&(msg.entry_address.clone(), msg.attribute.clone(), content.clone()));
+            let meta_id = into_meta_id(&(
+                msg.entry_address.clone(),
+                msg.attribute.clone(),
+                content.clone(),
+            ));
             bookkeep_address(
                 &mut self.published_meta_book,
                 &msg.dna_address,
@@ -585,7 +596,11 @@ impl InMemoryServer {
                 None => Vec::new(),
             };
             for content in msg.content_list.clone() {
-                let meta_address = into_meta_id(&(msg.entry_address.clone(), msg.attribute.clone(), content.clone()));
+                let meta_address = into_meta_id(&(
+                    msg.entry_address.clone(),
+                    msg.attribute.clone(),
+                    content.clone(),
+                ));
                 if known_published_meta_list.contains(&meta_address) {
                     continue;
                 }
@@ -615,10 +630,10 @@ impl InMemoryServer {
         let bucket_id;
         {
             self.log.d(&format!(
-                 "---- priv_check_request('{}') in {:?} ?",
-                 request_id,
-                 self.request_book.clone(),
-             ));
+                "---- priv_check_request('{}') in {:?} ?",
+                request_id,
+                self.request_book.clone(),
+            ));
             // Make sure its our request
             let maybe_bucket_id = self.request_book.get(&request_id.clone());
             if maybe_bucket_id.is_none() {
@@ -643,7 +658,7 @@ impl InMemoryServer {
         self.log.d(&format!(
             "---- HandleGetPublishingDataListResult: bucket_id = '{}'",
             bucket_id,
-         ));
+        ));
         // Compare with already published list
         // For each data not already published, request it and publish it ourselves.
         let known_published_list = match self.published_entry_book.get(&bucket_id) {
@@ -677,7 +692,7 @@ impl InMemoryServer {
         self.log.d(&format!(
             "---- HandleGetHoldingEntryListResult: bucket_id = '{}'",
             bucket_id,
-         ));
+        ));
         // Compare with current stored_data_book
         // For each data not already holding, add it to stored_data_book?
         let known_stored_list = match self.stored_entry_book.get(&bucket_id) {
@@ -706,16 +721,19 @@ impl InMemoryServer {
             .priv_check_request(&msg.request_id)
             .expect("Not our request");
         self.log.d(&format!(
-             "---- HandleGetPublishingMetaListResult: bucket_id = '{}'",
-             bucket_id,
-         ));
+            "---- HandleGetPublishingMetaListResult: bucket_id = '{}'",
+            bucket_id,
+        ));
         // Compare with already published list
         // For each metadata not already published, request it and publish it ourselves.
         let known_published_meta_list = match self.published_meta_book.get(&bucket_id) {
             Some(list) => list.clone(),
             None => Vec::new(),
         };
-        self.log.t(&format!("known_published_meta_list = {:?}", known_published_meta_list));
+        self.log.t(&format!(
+            "known_published_meta_list = {:?}",
+            known_published_meta_list
+        ));
 
         let mut request_meta_key = Vec::new();
         for meta_tuple in msg.meta_list.clone() {
@@ -753,9 +771,9 @@ impl InMemoryServer {
             .priv_check_request(&msg.request_id)
             .expect("Not our request");
         self.log.d(&format!(
-             "---- HandleGetHoldingMetaListResult: bucket_id = '{}'",
-             bucket_id,
-         ));
+            "---- HandleGetHoldingMetaListResult: bucket_id = '{}'",
+            bucket_id,
+        ));
         // Compare with current stored_meta_book
         // For each data not already holding, add it to stored_meta_book?
         let known_stored_meta_list = match self.stored_meta_book.get(&bucket_id) {
@@ -767,11 +785,7 @@ impl InMemoryServer {
             if known_stored_meta_list.contains(&meta_id) {
                 continue;
             }
-            bookkeep_address_with_bucket(
-                &mut self.stored_meta_book,
-                bucket_id.clone(),
-                &meta_id,
-            );
+            bookkeep_address_with_bucket(&mut self.stored_meta_book, bucket_id.clone(), &meta_id);
         }
     }
 }

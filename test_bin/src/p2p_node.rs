@@ -3,7 +3,7 @@
 use holochain_net::{
     p2p_config::*,
     p2p_network::P2pNetwork,
-    tweetlog::*, tweetlog::Loggy,
+    tweetlog::*, tweetlog::TweetProxy,
 };
 use holochain_net_connection::{
     json_protocol::{
@@ -46,7 +46,7 @@ pub struct P2pNode {
     pub authored_entry_store: HashMap<Address, serde_json::Value>,
     pub authored_meta_store: HashMap<MetaKey, HashSet<Address>>,
 
-    pub logger: Loggy,
+    pub logger: TweetProxy,
 }
 
 // Search logs
@@ -460,9 +460,7 @@ impl P2pNode {
         // use a mpsc channel for messaging between p2p connection and main thread
         let (sender, receiver) = mpsc::channel::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
-
         let agent_id = agent_id_arg.clone();
-
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
                 {
@@ -490,7 +488,7 @@ impl P2pNode {
             meta_store: HashMap::new(),
             authored_entry_store: HashMap::new(),
             authored_meta_store: HashMap::new(),
-            logger: Loggy::new("p2pnode"),
+            logger: TweetProxy::new("p2pnode"),
         }
     }
 
@@ -531,7 +529,7 @@ impl P2pNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
-        // Debugging code: Print non-ping messages
+        // logging code: log non-ping messages
          let dbg_msg = match data {
              Protocol::NamedBinary(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
              Protocol::Json(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
@@ -549,7 +547,7 @@ impl P2pNode {
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    self.logger.t(&format!("###### Received parse error: {} {:?}", s, data));
+                    self.logger.e(&format!("###### Received parse error: {} {:?}", s, data));
                 }
                 Err(e)
             }

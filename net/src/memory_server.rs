@@ -117,7 +117,7 @@ pub(crate) struct InMemoryServer {
     request_count: usize,
 
     // Logger
-    log: Loggy,
+    log: TweetProxy,
 }
 
 /// Books handling
@@ -214,7 +214,7 @@ impl InMemoryServer {
             stored_meta_book: HashMap::new(),
             request_count: 0,
             trackdna_book: HashSet::new(),
-            log: Loggy::new("memory_server"),
+            log: TweetProxy::new("memory_server"),
         }
     }
 

@@ -84,13 +84,13 @@ impl LogLevel {
 
 
 #[derive(Debug)]
-pub struct Loggy {
+pub struct TweetProxy {
     tag: String,
 }
 
-impl Loggy {
+impl TweetProxy {
     pub fn new(tag: &str) -> Self {
-        Loggy { tag: tag.to_owned() }
+        TweetProxy { tag: tag.to_owned() }
     }
 
     pub fn t(&self, msg: &str) {

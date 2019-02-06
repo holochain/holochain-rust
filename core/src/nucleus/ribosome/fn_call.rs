@@ -759,7 +759,7 @@ pub mod tests {
     // which just passes the function parameter through to "invoke_call" which expects a
     // ZomeFnCallArgs struct which the test "{}" is not!
     // TODO: fix this bit of crazyness
-    fn SUCCESS_EXPECTED() -> Result<Result<JsonString, HolochainError>, RecvTimeoutError> {
+    fn success_expected() -> Result<Result<JsonString, HolochainError>, RecvTimeoutError> {
         Ok(Err(HolochainError::RibosomeFailed(
             "Argument deserialization failed".to_string(),
         )))
@@ -780,7 +780,7 @@ pub mod tests {
         );
 
         // make the call with public token capability call
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
+        test_reduce_call(&test_setup, cap_call, success_expected());
 
         // make the call with a bogus public token capability call
         let cap_call = CapabilityCall::new(
@@ -808,7 +808,7 @@ pub mod tests {
 
         // make the call with an valid capability call from self
         let cap_call = test_agent_capability_call(test_setup.context.clone(), "test", "{}");
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
+        test_reduce_call(&test_setup, cap_call, success_expected());
 
         // make the call with an invalid valid capability call from self
         let cap_call = test_agent_capability_call(test_setup.context.clone(), "some_fn", "{}");
@@ -830,7 +830,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
+        test_reduce_call(&test_setup, cap_call, success_expected());
     }
 
     #[test]
@@ -854,7 +854,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
+        test_reduce_call(&test_setup, cap_call, success_expected());
 
         // test assigned capability where the caller is someone else
         let someone = Address::from("somoeone");
@@ -883,7 +883,7 @@ pub mod tests {
             "test",
             "{}",
         );
-        test_reduce_call(&test_setup, cap_call, SUCCESS_EXPECTED());
+        test_reduce_call(&test_setup, cap_call, success_expected());
     }
 
     #[test]

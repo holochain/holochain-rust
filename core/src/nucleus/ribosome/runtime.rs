@@ -31,7 +31,7 @@ pub struct ZomeCallData {
 #[derive(Clone)]
 pub enum WasmCallData {
     ZomeCall(ZomeCallData),
-    NullCall,
+    DirectCall(String),
 }
 
 impl WasmCallData {
@@ -46,7 +46,7 @@ impl WasmCallData {
     pub fn fn_name(&self) -> String {
         match self {
             WasmCallData::ZomeCall(data) => data.zome_call.fn_name.clone(),
-            WasmCallData::NullCall => "__hdk_get_json_definition".to_string(),
+            WasmCallData::DirectCall(name) => name.to_string(),
         }
     }
 }
@@ -65,7 +65,7 @@ impl Runtime {
     pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
         match &self.data {
             WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
-            WasmCallData::NullCall => Err(Trap::new(TrapKind::Unreachable)),
+            WasmCallData::DirectCall(_) => Err(Trap::new(TrapKind::Unreachable)),
         }
     }
 

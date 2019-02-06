@@ -117,11 +117,13 @@ impl P2pNode {
             // bookkeep
             if let None = self.authored_meta_store.get_mut(&meta_key) {
                 let mut set = HashSet::new();
+                self.logger.t(&format!("author_meta: first content for '{:?}' = {}", meta_key, content));
                 set.insert(content.clone());
                 self.authored_meta_store.insert(meta_key.clone(), set);
             } else {
                 if let Some(set) = self.authored_meta_store.get_mut(&meta_key) {
                         assert!(set.get(&content).is_none());
+                    self.logger.t(&format!("author_meta: adding content for '{:?}' = {}", meta_key, content));
                         set.insert(content.clone());
                     };
             };
@@ -304,6 +306,7 @@ impl P2pNode {
                 Some(set) => set.clone(),
                 None => HashSet::new(),
             };
+            self.logger.t(&format!("meta_set = {:?}", meta_set));
             msg = FetchMetaResultData {
                 request_id: request.request_id.clone(),
                 requester_agent_id: request.requester_agent_id.clone(),

@@ -715,11 +715,22 @@ impl InMemoryServer {
             Some(list) => list.clone(),
             None => Vec::new(),
         };
+        self.log.t(&format!("known_published_meta_list = {:?}", known_published_meta_list));
+
+        let mut request_meta_key = Vec::new();
         for meta_tuple in msg.meta_list.clone() {
             let meta_address = into_meta_id(&meta_tuple);
+            // dont send request to known meta
             if known_published_meta_list.contains(&meta_address) {
                 continue;
             }
+            // dont send same request twice
+            let meta_key = (meta_tuple.0.clone(), meta_tuple.1.clone());
+            if request_meta_key.contains(&meta_key) {
+                continue;
+            }
+            request_meta_key.push(meta_key);
+            // send request for that meta_key
             let request_id = self.priv_create_request_with_bucket(&bucket_id);
             let fetch_meta = FetchMetaData {
                 requester_agent_id: String::new(),

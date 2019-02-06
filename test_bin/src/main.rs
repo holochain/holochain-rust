@@ -119,7 +119,7 @@ fn main() {
     // Load config
     let config = load_config_file(&config_path);
     let n3h_path = config["N3H_PATH"].as_str().unwrap();
-    println!("n3h_path = {}", n3h_path);
+    log_i!("n3h_path = {}", n3h_path);
 
     // Configure logger
     {
@@ -212,7 +212,6 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
     test_fn(&mut alex, &mut billy, false)?;
     log_i!("==================");
     print_two_nodes_test_name("IN-MEMORY TEST END: ", test_fn);
-    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -247,7 +246,6 @@ fn launch_two_nodes_test_with_ipc_mock(
     test_fn(&mut alex, &mut billy, false)?;
     log_i!("===================");
     print_two_nodes_test_name("IPC-MOCKED TEST END: ", test_fn);
-    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -284,7 +282,6 @@ fn launch_two_nodes_test(
     test_fn(&mut alex, &mut billy, true)?;
     log_i!("============");
     print_two_nodes_test_name("N3H TEST END: ", test_fn);
-    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -322,7 +319,6 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
     test_fn(&mut alex, &mut billy, &mut camille, false)?;
     log_i!("==================");
     print_three_nodes_test_name("IN-MEMORY TEST END: ", test_fn);
-    log_i!("");
 
     // Kill nodes
     alex.stop();
@@ -365,7 +361,6 @@ fn launch_three_nodes_test_with_ipc_mock(
     test_fn(&mut alex, &mut billy, &mut camille, false)?;
     log_i!("===================");
     print_three_nodes_test_name("IPC-MOCKED TEST END: ", test_fn);
-    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -410,7 +405,6 @@ fn launch_three_nodes_test(
     test_fn(&mut alex, &mut billy, &mut camille, true)?;
     log_i!("============");
     print_three_nodes_test_name("N3H TEST END: ", test_fn);
-    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();

@@ -281,9 +281,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
-    // log_i!(&format!("got GetMetaResult: {:?}", result));
     log_i!("got GetMetaResult: {:?}", result);
-    log_ii!("p2pnode", "got GetMetaResult: {:?}", result);
     let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
     assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_3.clone());
     assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());

@@ -281,7 +281,7 @@ pub fn many_meta_test(
     log_d!("META_LINK_CONTENT_1 authored");
     alex.author_meta(
         &ENTRY_ADDRESS_1,
-        META_LINK_ATTRIBUTE.into(),
+        META_CRUD_ATTRIBUTE.into(),
         &META_CRUD_CONTENT,
         true,
     )?;
@@ -320,21 +320,27 @@ pub fn many_meta_test(
     if !has_received {
         billy.wait_HandleFetchMeta_and_reply();
     }
-    log_d!("node has_received HandleFetchMeta 1");
+    log_d!("node has_received HandleFetchMeta 1 = {}", has_received);
 
     // Alex or billy should receive HandleFetchMeta request
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     if !has_received {
         billy.wait_HandleFetchMeta_and_reply();
     }
-    log_d!("node has_received HandleFetchMeta 2");
-
+    log_d!("node has_received HandleFetchMeta 2 = {}", has_received);
 
     // Billy should receive the data
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
-        .unwrap();
-    println!("got result 1: {:?}", result);
+    let mut result = billy.find_recv_msg(0, Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    if result.is_none() {
+        result = billy
+            .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))));
+    }
+    let result = result.unwrap();
+    log_i!("got result 1: {:?}", result);
+    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
+    assert_eq!(meta_data.content_list.len(), 3);
 
     // billy asks for reported published data.
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_CRUD_ATTRIBUTE.into());
@@ -347,8 +353,12 @@ pub fn many_meta_test(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
-    println!("got result 2: {:?}", result);
-
+    log_i!("got result 2: {:?}", result);
+    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(meta_data.attribute, META_CRUD_ATTRIBUTE.clone());
+    assert_eq!(meta_data.content_list.len(), 1);
+    assert_eq!(meta_data.content_list[0], META_CRUD_CONTENT.clone());
     // Done
     Ok(())
 }

@@ -107,18 +107,19 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let mut config_path = String::new();
     if args.len() != 2 {
-        println!("Usage: No config file supplied. Using default config: data/test_config.json");
+        println!("Usage: No config file supplied. Using default config: test_bin/data/test_config.json");
     } else {
         config_path = args[1].clone();
     }
     if config_path == "" {
-        println!("Usage: No config file supplied. Using default config: data/test_config.json");
-        config_path = format!("data{}test_config.json", std::path::MAIN_SEPARATOR).to_string();
+        println!("Usage: No config file supplied. Using default config: test_bin/data/test_config.json");
+        config_path = format!("test_bin{}data{}test_config.json", std::path::MAIN_SEPARATOR, std::path::MAIN_SEPARATOR).to_string();
     }
 
     // Load config
     let config = load_config_file(&config_path);
     let n3h_path = config["N3H_PATH"].clone().to_string();
+    println!("n3h_path = {}", n3h_path);
 
     // Configure logger
     {

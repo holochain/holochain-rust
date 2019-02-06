@@ -842,11 +842,12 @@ fn create_ipc_config(
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
 
-    g_tweetlog.read().unwrap().ii("p2pnode", &format!("create_ipc_config() dir = {}\n", dir));
+   tweet_i!(&format!("create_ipc_config() dir = {}", dir));
 
     // Create config
     let config = match maybe_config_filepath {
         Some(filepath) => {
+            tweet_d!(&format!("filepath = {}", filepath));
             // Get config from file
             let p2p_config = P2pConfig::from_file(filepath);
             assert_eq!(p2p_config.backend_kind, P2pBackendKind::IPC);
@@ -870,7 +871,7 @@ fn create_ipc_config(
                         "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
                     }
                 },
-            }})).unwrap()
+            }})).expect("Failled making valid P2pConfig with filepath")
         }
         None => {
             // use default config
@@ -894,7 +895,7 @@ fn create_ipc_config(
                 }
             },
             }}))
-            .unwrap()
+            .expect("Failled making valid default P2pConfig")
         }
     };
     return (config, dir_ref);

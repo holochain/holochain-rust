@@ -314,12 +314,21 @@ pub fn many_meta_test(
 
     // billy asks for reported published data.
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
+
     // Alex or billy should receive HandleFetchMeta request
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     if !has_received {
         billy.wait_HandleFetchMeta_and_reply();
     }
-    tweet_d!("billy has_received done");
+    tweet_d!("node has_received HandleFetchMeta 1");
+
+    // Alex or billy should receive HandleFetchMeta request
+    let has_received = alex.wait_HandleFetchMeta_and_reply();
+    if !has_received {
+        billy.wait_HandleFetchMeta_and_reply();
+    }
+    tweet_d!("node has_received HandleFetchMeta 2");
+
 
     // Billy should receive the data
     let result = billy

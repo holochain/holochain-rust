@@ -14,7 +14,7 @@
     "default": "d",
     "tags": {
       "p2pnode": "t",
-      "memory_server": "t"
+      "memory_server": "d"
     },
     "listeners": [
     "console"

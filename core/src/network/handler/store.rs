@@ -25,11 +25,13 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
     match dht_meta_data.attribute.as_ref() {
         "link" => {
             context.log("debug/net/handle: HandleStoreMeta: got LINK. processing...");
+            // TODO: do a loop on content once links properly implemented
+            assert_eq!(dht_meta_data.content_list.len(), 1);
             let entry_with_header: EntryWithHeader = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content_list)
-                    .expect("dht_meta_data should be EntryWithHader"),
+                &serde_json::to_string(&dht_meta_data.content_list[0])
+                    .expect("dht_meta_data should be EntryWithHeader"),
             )
-            .expect("dht_meta_data should be EntryWithHader");
+            .expect("dht_meta_data should be EntryWithHeader");
             thread::spawn(move || {
                 match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
                     Err(error) => context.log(format!("err/net/dht: {}", error)),

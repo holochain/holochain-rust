@@ -146,9 +146,10 @@ pub fn zome_setup(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
 pub fn __list_traits(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
     RibosomeEncodedValue::Success.into()
 }
+
 #[no_mangle]
-pub fn __list_functions(_: u32) -> u32 {
-    0
+pub fn __list_functions(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
 
 pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {

@@ -38,13 +38,7 @@ pub enum Attribute {
     EntryHeader,
     Link,
     LinkTag(String),
-<<<<<<< HEAD
     PendingEntry,
-=======
-
-    #[serde(rename = "pending-entry")]
-    PendingEntry(Address),
->>>>>>> New Attribute variant & groundwork
 }
 
 impl fmt::Display for Attribute {
@@ -55,11 +49,7 @@ impl fmt::Display for Attribute {
             Attribute::EntryHeader => write!(f, "entry-header"),
             Attribute::Link => write!(f, "link"),
             Attribute::LinkTag(name) => write!(f, "link__{}", name),
-<<<<<<< HEAD
             Attribute::PendingEntry => write!(f, "pending-entry"),
-=======
-            Attribute::PendingEntry(address) => write!(f, "pending-entry__{}", address),
->>>>>>> New Attribute variant & groundwork
         }
     }
 }

@@ -414,7 +414,7 @@ pub mod tests {
     }
 
     #[test]
-    fn does_not_add_link_for_missing_base() {
+    fn pending_link_for_missing_base() {
         let (context, locked_state) = test_stateful_context("bobbi", None);
         let entry = test_entry();
 
@@ -439,8 +439,19 @@ pub mod tests {
         let hash_set = fetched.unwrap();
         assert_eq!(hash_set.len(), 0);
 
-        let result = new_dht_store.actions().get(&action).unwrap();
+        let eavis = storage
+            .read()
+            .unwrap()
+            .fetch_eavi(
+                Some(link.base().to_owned()),
+                Some(Attribute::PendingEntry),
+                None,
+                Default::default(),
+            )
+            .unwrap();
+        assert_eq!(eavis.len(), 1);
 
+        let result = new_dht_store.actions().get(&action).unwrap();
         assert!(result.is_err());
     }
 

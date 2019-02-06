@@ -1687,7 +1687,7 @@ scenario.run((stop, {alice, bob}) =&gt; {
 <li>exposing APIs to securely make function calls into the Zome functions of DNA instances</li>
 <li>accepting information concerning the cryptographic keys and agent info to be used for identity and signing, and passing it into Holochain</li>
 <li>establishing &quot;bridging&quot; between DNA instances</li>
-<li>serving files for web based user interfaces</li>
+<li>serving files for web based user interfaces that connect to these DNA instances over the interfaces</li>
 </ul>
 <p>Those are the basic functions of a Conductor, but in addition to that, a Conductor also allows for the configuration of the networking module for Holochain, enables logging, and if you choose to, exposes APIs at a special 'admin' level that allows for the dynamic configuration of the Conductor while it runs. By default, configuration of the Conductor is done via a static configuration file, written in <a href="https://github.com/toml-lang/toml">TOML</a>.</p>
 <p>In regards to the Zome functions APIs, Conductors can implement a diversity of interfaces to perform these function calls, creating an abundance of opportunity. Another way to build Holochain into an application is to use language bindings from the Rust built version of the Conductor, to another language, that then allows for the direct use of Holochain in that language.</p>
@@ -1695,7 +1695,7 @@ scenario.run((stop, {alice, bob}) =&gt; {
 <ul>
 <li><a href="https://www.npmjs.com/package/@holochain/holochain-nodejs">Nodejs</a>
 <ul>
-<li>this is built using the language bindings approach, using <a href="">neon</a></li>
+<li>this is built using the language bindings approach, using <a href="https://github.com/neon-bindings/neon">neon</a></li>
 </ul>
 </li>
 <li><a href="./development_conductor.html">hc run</a>
@@ -1710,6 +1710,9 @@ scenario.run((stop, {alice, bob}) =&gt; {
 </li>
 </ul>
 <p>The articles that follow discuss these different Conductors in greater detail.</p>
+<blockquote>
+<p>What is now known as a &quot;Conductor&quot; used to be called a &quot;Container&quot;, so if you see the language of Container from other versions know that these refer to the same thing. Fun fact: because this component has such a variety of functions, there was some difficulty in naming it. The word &quot;Conductor&quot; was finally chosen because it actually implies multiple metaphors, each of which resonates with an aspect of what the Conductor does. Like an orchestra conductor, it helps several parts work together as a whole. Like a train conductor, it oversees and instructs how the engine runs. Like an electricity conductor, it allows information to pass through it.</p>
+</blockquote>
 <a class="header" href="#development-conductor" id="development-conductor"><h1>Development Conductor</h1></a>
 <p>Meant primarily for accelerating the development process, the easiest Conductor to run, with zero configuration required, is the <code>hc run</code> Conductor, which is built right into the <a href="./intro_to_command_line_tools.html">development command line tools</a>. It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory valid DNA source files are contained. The command is simply:</p>
 <pre><code class="language-shell">hc run
@@ -1789,7 +1792,13 @@ To run it as HTTP, run:</p>
 </code></pre>
 <p>This means that the nodes are able to communicate! Watch the logs for gossip, as you take actions (that alter the source chain) in either node.</p>
 <a class="header" href="#production-conductor" id="production-conductor"><h1>Production Conductor</h1></a>
-<p>holochain executable</p>
+<p>In addition to zero config development Conductor, using <code>hc run</code>, there is a highly configurable sophisticated Conductor for running DNA instances long term.</p>
+<p>This Conductor will play an important role in making the use of Holochain truly easy for end users, because it supports all the functionality that those users are likely to want, in terms of managing their Holochain apps, or hApps, just on a low level. On that note, a graphical user interface that exposes all the functionality of this Conductor to users is under development.</p>
+<p>For now, use of this Conductor must happen mostly manually, and by tech-savvy users or developers.</p>
+<p>This Conductor is simply called as <code>holochain</code> from a command line. Its' only function is to boot a Conductor based on a configuration file, and optionally, the ability to write changes back to that file. Within that Conductor many DNA instances can be run for one or more agents, multiple types of interfaces to the APIs can be exposed, UI file bundles can be served, and logs from all of that can be accessed.</p>
+<p>The first step to using <code>holochain</code> is of course installing it. Instructions for installation can be found in its' <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor#install">README</a>. If you wish to attempt any of the things you read in this chapter while going through it, you will need to have installed the executable.</p>
+<p>Like Holochain core, this particular Conductor is written in Rust. View it on GitHub <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor">here</a>.</p>
+<p>To understand how to configure the <code>holochain</code> Conductor, check out the <a href="./intro_to_toml_config.html">next article</a>.</p>
 <a class="header" href="#intro-to-toml-config-files" id="intro-to-toml-config-files"><h1>Intro to TOML Config Files</h1></a>
 <p>WHAT TOML IS</p>
 <p>The conductor requires a configuration file to run.</p>

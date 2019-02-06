@@ -273,9 +273,7 @@ pub mod tests {
                 "zomes": {
                     "test": {
                         "description": "test",
-                        "config": {
-                            "error_handling": "throw-errors"
-                        },
+                        "config": {},
                         "entry_types": {
                             "test": {
                                 "description": "test",

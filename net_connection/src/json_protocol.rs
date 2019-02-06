@@ -12,10 +12,12 @@ use std::convert::TryFrom;
 
 use super::protocol::Protocol;
 
-// Tuple holding all the info required for identifying a metadata:
-// (entry_address, attribute, content which is a HashString)
+/// Tuple holding all the info required for identifying a metadata.
+/// (entry_address, attribute, content)
+/// TODO: Content is supposed to be a HashString but for now its JSON because of how Core is
+/// currently handling Meta.
 pub type MetaTuple = (Address, String, serde_json::Value);
-// (entry_address, attribute)
+/// (entry_address, attribute)
 pub type MetaKey = (Address, String);
 
 fn get_default_state_id() -> String {

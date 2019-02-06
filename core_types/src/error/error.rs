@@ -187,13 +187,19 @@ impl From<std::str::Utf8Error> for HolochainError {
 
 impl From<rustc_serialize::json::DecoderError> for HolochainError {
     fn from(error: rustc_serialize::json::DecoderError) -> Self {
-        HolochainError::ErrorGeneric(format!("rustc_serialize::json::DecoderError error: {}", error.to_string()))
+        HolochainError::ErrorGeneric(format!(
+            "rustc_serialize::json::DecoderError error: {}",
+            error.to_string()
+        ))
     }
 }
 
 impl From<rustc_serialize::json::EncoderError> for HolochainError {
     fn from(error: rustc_serialize::json::EncoderError) -> Self {
-        HolochainError::ErrorGeneric(format!("rustc_serialize::json::EncoderError error: {}", error.to_string()))
+        HolochainError::ErrorGeneric(format!(
+            "rustc_serialize::json::EncoderError error: {}",
+            error.to_string()
+        ))
     }
 }
 

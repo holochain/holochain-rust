@@ -39,24 +39,18 @@ impl Seed {
     /// @return Type FromBundle
     pub fn from_seed_bundle(
         bundle: bundle::KeyBundle,
-        passphrase: String,
+        passphrase: &mut SecBuf,
         config: Option<PwHashConfig>,
     ) -> Result<FromBundle, HolochainError> {
-        let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
+        // let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
 
         let seed_data_decoded = base64::decode(&bundle.data)?;
         let seed_data_string = str::from_utf8(&seed_data_decoded)?;
 
-        let seed_data_deserialized: bundle::ReturnBundleData =
-            json::decode(&seed_data_string)?;
+        let seed_data_deserialized: bundle::ReturnBundleData = json::decode(&seed_data_string)?;
         let mut seed_data = SecBuf::with_secure(32);
 
-        util::pw_dec(
-            &seed_data_deserialized,
-            &mut passphrase,
-            &mut seed_data,
-            config,
-        )?;
+        util::pw_dec(&seed_data_deserialized, passphrase, &mut seed_data, config)?;
 
         match bundle.bundle_type.as_ref() {
             "hcRootSeed" => Ok(FromBundle::Rs(RootSeed::new(seed_data))),
@@ -75,13 +69,13 @@ impl Seed {
     /// @return {KeyBundle} - bundle of the seed
     pub fn get_seed_bundle(
         &mut self,
-        passphrase: String,
+        passphrase: &mut SecBuf,
         hint: String,
         config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
-        let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
+        // let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
         let seed_data: bundle::ReturnBundleData =
-            util::pw_enc(&mut self.seed_buf, &mut passphrase, config)?;
+            util::pw_enc(&mut self.seed_buf, passphrase, config)?;
 
         // convert -> to string -> to base64
         let seed_data_serialized = json::encode(&seed_data)?;
@@ -135,7 +129,7 @@ impl DevicePinSeed {
     /// creates bundle for for the seed
     pub fn get_bundle(
         &mut self,
-        passphrase: String,
+        passphrase: &mut SecBuf,
         hint: String,
         config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
@@ -157,12 +151,7 @@ impl DevicePinSeed {
 
         let mut out_seed = SecBuf::with_secure(32);
         let mut context = SecBuf::with_insecure_from_string("HCAPPLIC".to_string());
-        kdf::derive(
-            &mut out_seed,
-            index,
-            &mut context,
-            &mut self.s.seed_buf,
-        )?;
+        kdf::derive(&mut out_seed, index, &mut context, &mut self.s.seed_buf)?;
 
         Ok(Keypair::new_from_seed(&mut out_seed)?)
     }
@@ -176,7 +165,7 @@ impl DeviceSeed {
     /// creates bundle for for the seed
     pub fn get_bundle(
         &mut self,
-        passphrase: String,
+        passphrase: &mut SecBuf,
         hint: String,
         config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
@@ -220,7 +209,7 @@ impl RootSeed {
     /// creates bundle for for the seed
     pub fn get_bundle(
         &mut self,
-        passphrase: String,
+        passphrase: &mut SecBuf,
         hint: String,
         config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
@@ -240,12 +229,7 @@ impl RootSeed {
 
         let mut out_seed = SecBuf::with_insecure(32);
         let mut context = SecBuf::with_insecure_from_string("HCDEVICE".to_string());
-        kdf::derive(
-            &mut out_seed,
-            index,
-            &mut context,
-            &mut self.s.seed_buf,
-        )?;
+        kdf::derive(&mut out_seed, index, &mut context, &mut self.s.seed_buf)?;
         Ok(DeviceSeed::new(out_seed))
     }
 }
@@ -292,13 +276,11 @@ mod tests {
             seed_type: "hcRootSeed".to_string(),
             seed_buf: seed_buf_in,
         };
+        let mut passphrase = SecBuf::with_insecure(32);
+        random_secbuf(&mut passphrase);
 
         let b: bundle::KeyBundle = s
-            .get_seed_bundle(
-                "PASSWORD!LNFA*".to_string(),
-                "hint".to_string(),
-                TEST_CONFIG,
-            )
+            .get_seed_bundle(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
         println!("Bundle type:{:?}", b.bundle_type);
@@ -389,16 +371,15 @@ mod tests {
             seed_buf: seed_buf_in,
             seed_type: "hcRootSeed".to_string(),
         };
-        let passphrase: String = "PASSWORD!LNFA*".to_string();
+        // let passphrase: String = "PASSWORD!LNFA*".to_string();
+        let mut passphrase = SecBuf::with_insecure(32);
+        random_secbuf(&mut passphrase);
+
         let b: bundle::KeyBundle = initial_seed
-            .get_seed_bundle(
-                "PASSWORD!LNFA*".to_string(),
-                "hint".to_string(),
-                TEST_CONFIG,
-            )
+            .get_seed_bundle(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
-        let s: FromBundle = Seed::from_seed_bundle(b, passphrase, TEST_CONFIG).unwrap();
+        let s: FromBundle = Seed::from_seed_bundle(b, &mut passphrase, TEST_CONFIG).unwrap();
 
         match s {
             FromBundle::Rs(mut rs) => {
@@ -415,16 +396,15 @@ mod tests {
         let mut seed_buf_in = SecBuf::with_insecure(32);
         random_secbuf(&mut seed_buf_in);
         let mut initial_root_seed = RootSeed::new(seed_buf_in);
-        let passphrase: String = "PASSWORD!LNFA*".to_string();
+        // let passphrase: String = "PASSWORD!LNFA*".to_string();
+        let mut passphrase = SecBuf::with_insecure(32);
+        random_secbuf(&mut passphrase);
+
         let b: bundle::KeyBundle = initial_root_seed
-            .get_bundle(
-                "PASSWORD!LNFA*".to_string(),
-                "hint".to_string(),
-                TEST_CONFIG,
-            )
+            .get_bundle(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
-        let s: FromBundle = Seed::from_seed_bundle(b, passphrase, TEST_CONFIG).unwrap();
+        let s: FromBundle = Seed::from_seed_bundle(b, &mut passphrase, TEST_CONFIG).unwrap();
 
         match s {
             FromBundle::Rs(mut rs) => {
@@ -441,17 +421,16 @@ mod tests {
         let mut seed_buf_in = SecBuf::with_insecure(32);
         random_secbuf(&mut seed_buf_in);
         let mut initial_device_seed = DeviceSeed::new(seed_buf_in);
-        let passphrase: String = "PASSWORD!LNFA*".to_string();
+        // let passphrase: String = "PASSWORD!LNFA*".to_string();
+        let mut passphrase = SecBuf::with_insecure(32);
+        random_secbuf(&mut passphrase);
+
         let b: bundle::KeyBundle = initial_device_seed
-            .get_bundle(
-                "PASSWORD!LNFA*".to_string(),
-                "hint".to_string(),
-                TEST_CONFIG,
-            )
+            .get_bundle(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
         println!("TYPE: {}", b.bundle_type);
-        let s: FromBundle = Seed::from_seed_bundle(b, passphrase, TEST_CONFIG).unwrap();
+        let s: FromBundle = Seed::from_seed_bundle(b, &mut passphrase, TEST_CONFIG).unwrap();
 
         match s {
             FromBundle::Ds(mut rs) => {
@@ -471,17 +450,16 @@ mod tests {
         let mut seed_buf_in = SecBuf::with_insecure(32);
         random_secbuf(&mut seed_buf_in);
         let mut initial_device_pin_seed = DevicePinSeed::new(seed_buf_in);
-        let passphrase: String = "PASSWORD!LNFA*".to_string();
+        // let passphrase: String = "PASSWORD!LNFA*".to_string();
+        let mut passphrase = SecBuf::with_insecure(32);
+        random_secbuf(&mut passphrase);
+
         let b: bundle::KeyBundle = initial_device_pin_seed
-            .get_bundle(
-                "PASSWORD!LNFA*".to_string(),
-                "hint".to_string(),
-                TEST_CONFIG,
-            )
+            .get_bundle(&mut passphrase, "hint".to_string(), TEST_CONFIG)
             .unwrap();
 
         println!("TYPE: {}", b.bundle_type);
-        let s: FromBundle = Seed::from_seed_bundle(b, passphrase, TEST_CONFIG).unwrap();
+        let s: FromBundle = Seed::from_seed_bundle(b, &mut passphrase, TEST_CONFIG).unwrap();
 
         match s {
             FromBundle::Dps(mut rs) => {

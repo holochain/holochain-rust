@@ -41,6 +41,7 @@
   - [Testing Functions](./testing_functions.md)
   - [Scenario Testing](./scenario_testing.md)
   - [Handling Networking Asynchronicity](./handling_async.md)
+  - [Configuration Alternatives](./configuration_alternatives.md)
   - [Other Test Harnesses](./other_test_harnesses.md)
 - [Running Holochain Apps: Conductors](./conductors.md)
   - [Development Conductor](./development_conductor.md)

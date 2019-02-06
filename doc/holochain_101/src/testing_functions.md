@@ -26,7 +26,7 @@ const conductor = new Conductor(config)
 conductor.start()
 ```
 
-## Using the conductor
+## Using the Conductor
 
 ```javascript
 const conductor = new Conductor(config)
@@ -49,46 +49,3 @@ const aliceAgentId = conductor.agent_id(aliceInstanceId)
 // stop all running instances
 conductor.stop()
 ```
-
-### Configuration Alternatives
-
-Simply use the same configuration as you would for `holochain_conductor`, and pass it to the constructor for `Conductor`. The configuration may be a string of valid TOML, or a Javascript object with the same structure
-
-#### Using a Javascript Object
-
-```javascript
-const { Conductor } = require('@holochain/holochain-nodejs')
-const conductor = new Conductor({
-    agents: [],
-    dnas: [],
-    instances: [],
-    bridges: [],
-    // etc...
-})
-
-conductor.start()
-// do what you will
-conductor.stop()
-```
-
-#### Using TOML
-
-```javascript
-const { Conductor } = require('@holochain/holochain-nodejs')
-const toml = `
-[[agents]]
-<agent config>
-
-[[dnas]]
-<dna config>
-
-[[instances]]
-...etc...
-`
-const conductor = new Conductor(toml)
-
-conductor.start()
-// do what you will
-conductor.stop()
-```
-

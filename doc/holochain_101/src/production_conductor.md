@@ -6,7 +6,7 @@ This Conductor will play an important role in making the use of Holochain truly 
 
 For now, use of this Conductor must happen mostly manually, and by tech-savvy users or developers.
 
-This Conductor is simply called as `holochain` from a command line. Its' only function is to boot a Conductor based on a configuration file, and optionally, the ability to write changes back to that file. Within that Conductor many DNA instances can be run for one or more agents, multiple types of interfaces to the APIs can be exposed, UI file bundles can be served, and logs from all of that can be accessed.
+This Conductor is simply a command line tool called `holochain`. Its' only function is to boot a Conductor based on a configuration file, and optionally, the ability to write changes back to that file. Within that Conductor many DNA instances can be run for one or more agents, multiple types of interfaces to the APIs can be exposed, UI file bundles can be served, and logs from all of that can be accessed.
 
 The first step to using `holochain` is of course installing it. Instructions for installation can be found in its' [README](https://github.com/holochain/holochain-rust/tree/develop/conductor#install). If you wish to attempt any of the things you read in this chapter while going through it, you will need to have installed the executable.
 

@@ -86,7 +86,7 @@ fn print_test_name(print_str: &str, test_fn: *mut std::os::raw::c_void) {
         let mut full_name = symbol.name().unwrap().as_str().unwrap().to_string();
         let mut test_name = full_name.split_off("holochain_test_bin::".to_string().len());
         test_name.push_str("()");
-        println!("{}{}", print_str, test_name);
+        log_i!("{}{}", print_str, test_name);
     });
 }
 
@@ -206,13 +206,13 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
         None,
     );
 
-    println!("");
+    log_i!("");
     print_two_nodes_test_name("IN-MEMORY TWO NODE TEST: ", test_fn);
-    println!("=======================");
+    log_i!("=======================");
     test_fn(&mut alex, &mut billy, false)?;
-    println!("==================");
+    log_i!("==================");
     print_two_nodes_test_name("IN-MEMORY TEST END: ", test_fn);
-    println!("");
+    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -241,13 +241,13 @@ fn launch_two_nodes_test_with_ipc_mock(
         &alex.endpoint(),
     );
 
-    println!("");
+    log_i!("");
     print_two_nodes_test_name("IPC-MOCK TWO NODE TEST: ", test_fn);
-    println!("======================");
+    log_i!("======================");
     test_fn(&mut alex, &mut billy, false)?;
-    println!("===================");
+    log_i!("===================");
     print_two_nodes_test_name("IPC-MOCKED TEST END: ", test_fn);
-    println!("");
+    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -278,13 +278,13 @@ fn launch_two_nodes_test(
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
 
-    println!("");
+    log_i!("");
     print_two_nodes_test_name("N3H TWO NODE TEST: ", test_fn);
-    println!("=================");
+    log_i!("=================");
     test_fn(&mut alex, &mut billy, true)?;
-    println!("============");
+    log_i!("============");
     print_two_nodes_test_name("N3H TEST END: ", test_fn);
-    println!("");
+    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -316,13 +316,13 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
     );
 
     // Launch test
-    println!("");
+    log_i!("");
     print_three_nodes_test_name("IN-MEMORY THREE NODE TEST: ", test_fn);
-    println!("=========================");
+    log_i!("=========================");
     test_fn(&mut alex, &mut billy, &mut camille, false)?;
-    println!("==================");
+    log_i!("==================");
     print_three_nodes_test_name("IN-MEMORY TEST END: ", test_fn);
-    println!("");
+    log_i!("");
 
     // Kill nodes
     alex.stop();
@@ -359,13 +359,13 @@ fn launch_three_nodes_test_with_ipc_mock(
         &alex.endpoint(),
     );
 
-    println!("");
+    log_i!("");
     print_three_nodes_test_name("IPC-MOCK THREE NODE TEST: ", test_fn);
-    println!("========================");
+    log_i!("========================");
     test_fn(&mut alex, &mut billy, &mut camille, false)?;
-    println!("===================");
+    log_i!("===================");
     print_three_nodes_test_name("IPC-MOCKED TEST END: ", test_fn);
-    println!("");
+    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();
@@ -404,13 +404,13 @@ fn launch_three_nodes_test(
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
 
-    println!("");
+    log_i!("");
     print_three_nodes_test_name("N3H THREE NODE TEST: ", test_fn);
-    println!("===================");
+    log_i!("===================");
     test_fn(&mut alex, &mut billy, &mut camille, true)?;
-    println!("============");
+    log_i!("============");
     print_three_nodes_test_name("N3H TEST END: ", test_fn);
-    println!("");
+    log_i!("");
     // Kill nodes
     alex.stop();
     billy.stop();

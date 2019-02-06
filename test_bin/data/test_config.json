@@ -6,8 +6,8 @@
     "HACK_MODE": false
   },
   "suites": {
-    "BASIC_WORKFLOWS": true,
-    "LIST_WORKFLOWS": false,
+    "BASIC_WORKFLOWS": false,
+    "LIST_WORKFLOWS": true,
     "THREE_WORKFLOWS": false
   },
   "log": {

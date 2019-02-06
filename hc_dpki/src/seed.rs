@@ -3,7 +3,7 @@ use crate::{
     bundle,
     holochain_sodium::{kdf, pwhash, random::random_secbuf, secbuf::SecBuf},
     keypair::Keypair,
-    util,
+    util::{self, PwHashConfig},
 };
 use bip39::{Language, Mnemonic};
 use boolinator::*;
@@ -40,6 +40,7 @@ impl Seed {
     pub fn from_seed_bundle(
         bundle: bundle::KeyBundle,
         passphrase: String,
+        config: Option<PwHashConfig>,
     ) -> Result<FromBundle, HolochainError> {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
 
@@ -50,7 +51,7 @@ impl Seed {
             json::decode(&seed_data_string).unwrap();
         let mut seed_data = SecBuf::with_secure(32);
 
-        util::pw_dec(&seed_data_deserialized, &mut passphrase, &mut seed_data)?;
+        util::pw_dec(&seed_data_deserialized, &mut passphrase, &mut seed_data, config)?;
 
         match bundle.bundle_type.as_ref() {
             "hcRootSeed" => Ok(FromBundle::Rs(RootSeed::new(seed_data))),
@@ -71,10 +72,11 @@ impl Seed {
         &mut self,
         passphrase: String,
         hint: String,
+        config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
         let seed_data: bundle::ReturnBundleData =
-            util::pw_enc(&mut self.seed_buf, &mut passphrase)?;
+            util::pw_enc(&mut self.seed_buf, &mut passphrase,config)?;
 
         // convert -> to string -> to base64
         let seed_data_serialized = json::encode(&seed_data).unwrap();
@@ -130,8 +132,9 @@ impl DevicePinSeed {
         &mut self,
         passphrase: String,
         hint: String,
+        config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
-        Ok(self.s.get_seed_bundle(passphrase, hint)?)
+        Ok(self.s.get_seed_bundle(passphrase, hint,config)?)
     }
 
     /// delegate to base struct
@@ -170,8 +173,9 @@ impl DeviceSeed {
         &mut self,
         passphrase: String,
         hint: String,
+        config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
-        Ok(self.s.get_seed_bundle(passphrase, hint)?)
+        Ok(self.s.get_seed_bundle(passphrase, hint,config)?)
     }
 
     /// delegate to base struct
@@ -184,7 +188,7 @@ impl DeviceSeed {
     /// generate a device pin seed by applying pwhash of pin with this seed as the salt
     /// @param {string} pin - should be >= 4 characters 1-9
     /// @return {DevicePinSeed}
-    pub fn get_device_pin_seed(&mut self, pin: String) -> Result<DevicePinSeed, HolochainError> {
+    pub fn get_device_pin_seed(&mut self, pin: String,config: Option<PwHashConfig>,) -> Result<DevicePinSeed, HolochainError> {
         (pin.len() >= 4).ok_or(HolochainError::ErrorGeneric("Invalid PIN Size".to_string()))?;
 
         // let pin_encoded = base64::encode(&pin);
@@ -192,7 +196,7 @@ impl DeviceSeed {
 
         let mut hash = SecBuf::with_insecure(pwhash::HASHBYTES);
 
-        util::pw_hash(&mut pin_buf, &mut self.s.seed_buf, &mut hash)?;
+        util::pw_hash(&mut pin_buf, &mut self.s.seed_buf, &mut hash,config)?;
 
         Ok(DevicePinSeed::new(hash))
     }
@@ -209,8 +213,9 @@ impl RootSeed {
         &mut self,
         passphrase: String,
         hint: String,
+        config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
-        Ok(self.s.get_seed_bundle(passphrase, hint)?)
+        Ok(self.s.get_seed_bundle(passphrase, hint,config)?)
     }
 
     /// Get a new, completely random root seed
@@ -246,7 +251,13 @@ impl RootSeed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::holochain_sodium::random::random_secbuf;
+    use crate::holochain_sodium::{pwhash, random::random_secbuf};
+
+    const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
+        pwhash::OPSLIMIT_INTERACTIVE,
+        pwhash::MEMLIMIT_INTERACTIVE,
+        pwhash::ALG_ARGON2ID13,
+    ));
 
     #[test]
     fn it_should_creat_a_new_seed() {
@@ -290,7 +301,7 @@ mod tests {
         };
 
         let b: bundle::KeyBundle = s
-            .get_seed_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .get_seed_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string(),TEST_CONFIG)
             .unwrap();
 
         println!("Bundle type:{:?}", b.bundle_type);
@@ -331,7 +342,7 @@ mod tests {
         let mut rs = RootSeed::new_random();
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
-        let seed: HolochainError = ds.get_device_pin_seed("802".to_string()).unwrap_err();
+        let seed: HolochainError = ds.get_device_pin_seed("802".to_string(),TEST_CONFIG).unwrap_err();
         assert_eq!(
             HolochainError::ErrorGeneric("Invalid PIN Size".to_string()),
             seed
@@ -346,7 +357,7 @@ mod tests {
         let mut rs = RootSeed::new_random();
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
-        let dps: DevicePinSeed = ds.get_device_pin_seed("1802".to_string()).unwrap();
+        let dps: DevicePinSeed = ds.get_device_pin_seed("1802".to_string(),TEST_CONFIG).unwrap();
 
         assert_eq!("hcDevicePinSeed".to_string(), dps.s.seed_type);
     }
@@ -359,7 +370,7 @@ mod tests {
         let mut rs = RootSeed::new_random();
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
-        let mut dps: DevicePinSeed = ds.get_device_pin_seed("1802".to_string()).unwrap();
+        let mut dps: DevicePinSeed = ds.get_device_pin_seed("1802".to_string(),TEST_CONFIG).unwrap();
 
         let keys = dps.get_application_keypair(5).unwrap();
 
@@ -377,10 +388,10 @@ mod tests {
         };
         let passphrase: String = "PASSWORD!LNFA*".to_string();
         let b: bundle::KeyBundle = initial_seed
-            .get_seed_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .get_seed_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string(),TEST_CONFIG)
             .unwrap();
 
-        let s: FromBundle = Seed::from_seed_bundle(b, passphrase).unwrap();
+        let s: FromBundle = Seed::from_seed_bundle(b, passphrase,TEST_CONFIG).unwrap();
 
         match s {
             FromBundle::Rs(mut rs) => {
@@ -399,10 +410,10 @@ mod tests {
         let mut initial_root_seed = RootSeed::new(seed_buf_in);
         let passphrase: String = "PASSWORD!LNFA*".to_string();
         let b: bundle::KeyBundle = initial_root_seed
-            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string(),TEST_CONFIG)
             .unwrap();
 
-        let s: FromBundle = Seed::from_seed_bundle(b, passphrase).unwrap();
+        let s: FromBundle = Seed::from_seed_bundle(b, passphrase,TEST_CONFIG).unwrap();
 
         match s {
             FromBundle::Rs(mut rs) => {
@@ -421,11 +432,11 @@ mod tests {
         let mut initial_device_seed = DeviceSeed::new(seed_buf_in);
         let passphrase: String = "PASSWORD!LNFA*".to_string();
         let b: bundle::KeyBundle = initial_device_seed
-            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string(),TEST_CONFIG)
             .unwrap();
 
         println!("TYPE: {}", b.bundle_type);
-        let s: FromBundle = Seed::from_seed_bundle(b, passphrase).unwrap();
+        let s: FromBundle = Seed::from_seed_bundle(b, passphrase,TEST_CONFIG).unwrap();
 
         match s {
             FromBundle::Ds(mut rs) => {
@@ -447,11 +458,11 @@ mod tests {
         let mut initial_device_pin_seed = DevicePinSeed::new(seed_buf_in);
         let passphrase: String = "PASSWORD!LNFA*".to_string();
         let b: bundle::KeyBundle = initial_device_pin_seed
-            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string())
+            .get_bundle("PASSWORD!LNFA*".to_string(), "hint".to_string(),TEST_CONFIG)
             .unwrap();
 
         println!("TYPE: {}", b.bundle_type);
-        let s: FromBundle = Seed::from_seed_bundle(b, passphrase).unwrap();
+        let s: FromBundle = Seed::from_seed_bundle(b, passphrase,TEST_CONFIG).unwrap();
 
         match s {
             FromBundle::Dps(mut rs) => {

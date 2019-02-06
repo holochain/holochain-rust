@@ -44,11 +44,11 @@ impl Seed {
     ) -> Result<FromBundle, HolochainError> {
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
 
-        let seed_data_decoded = base64::decode(&bundle.data).unwrap();
-        let seed_data_string = str::from_utf8(&seed_data_decoded).unwrap();
+        let seed_data_decoded = base64::decode(&bundle.data)?;
+        let seed_data_string = str::from_utf8(&seed_data_decoded)?;
 
         let seed_data_deserialized: bundle::ReturnBundleData =
-            json::decode(&seed_data_string).unwrap();
+            json::decode(&seed_data_string)?;
         let mut seed_data = SecBuf::with_secure(32);
 
         util::pw_dec(
@@ -84,7 +84,7 @@ impl Seed {
             util::pw_enc(&mut self.seed_buf, &mut passphrase, config)?;
 
         // convert -> to string -> to base64
-        let seed_data_serialized = json::encode(&seed_data).unwrap();
+        let seed_data_serialized = json::encode(&seed_data)?;
         let seed_data_encoded = base64::encode(&seed_data_serialized);
 
         Ok(bundle::KeyBundle {

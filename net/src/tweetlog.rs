@@ -201,27 +201,31 @@ impl Tweetlog {
         self.log_by_tag.insert(tag, TweetLogger::with_level(level));
     }
 
-    //    pub fn resetLevels(&mut self) {
-    //        for (_, mut logger) in self.log_by_tag {
-    //            logger.level = LogLevel::Info;
-    //        }
-    //    }
+    /// Clear any registered log levels
+    pub fn reset_levels(self) {
+        for (_, mut logger) in self.log_by_tag {
+            logger.level = LogLevel::Info;
+        }
+    }
 
     pub fn listen(&mut self, cb: listenerCallback) {
         self.listen_to_tag("_", cb);
     }
 
     pub fn listen_to_tag(&mut self, tag: &str, cb: listenerCallback) {
-        let logger = self.log_by_tag.get_mut(tag).unwrap();
+        let logger = self
+            .log_by_tag
+            .get_mut(tag)
+            .expect("TweetLogger for Tag does not exist");
         logger.callbacks.insert(cb);
     }
 
-    //    // Clear any registered log listeners or levels
-    //    pub fn unlistenAll(&mut self) {
-    //        for (_, mut logger) in self.log_by_tag {
-    //            logger.callbacks.clear();
-    //        }
-    //    }
+    /// Clear any registered listener
+    pub fn unlisten_all(self) {
+        for (_, mut logger) in self.log_by_tag {
+            logger.callbacks.clear();
+        }
+    }
 
     /// Clear any registered log listeners or levels
     pub fn unlisten(&mut self, tag: &str) {
@@ -433,25 +437,4 @@ mod tests {
         tweetlog.w("hello warning");
         tweetlog.e("hello error");
     }
-
-    //    #[test]
-    //    fn log_tag_println_hello() {
-    //        let mut tweetlog = Tweetlog::new();
-    //        tweetlog.add("errorlog");
-    //
-    //        // set general logging to error only
-    //        tweetlog.set(LogLevel::Warning, None);
-    //        tweetlog.listen(Tweetlog::console);
-    //
-    //        // set testlogger output to trace level
-    //        tweetlog.add("tracelog");
-    //        tweetlog.set(LogLevel::Trace, Some("tracelog".to_string()));
-    //        tweetlog.listen_to_tag("tracelog", Tweetlog::console);
-    //
-    //        tweetlog.t("hello trace");
-    //        tweetlog.d("hello debug");
-    //        tweetlog.i("hello info");
-    //        tweetlog.w("hello warning");
-    //        tweetlog.e("hello error");
-    //    }
 }

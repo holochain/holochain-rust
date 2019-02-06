@@ -128,7 +128,6 @@ fn main() {
     // Configure logger
     {
         let mut tweetlog = TWEETLOG.write().unwrap();
-        //tweetlog.add("errorlog");
         let default_level = LogLevel::from(
             config["log"]["default"]
                 .as_str()

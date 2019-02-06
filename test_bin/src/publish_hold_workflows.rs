@@ -270,7 +270,7 @@ pub fn many_meta_test(
     setup_two_nodes(alex, billy, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
-    tweet_d!("entry authored");
+    log_d!("entry authored");
 
     alex.author_meta(
         &ENTRY_ADDRESS_1,
@@ -278,28 +278,28 @@ pub fn many_meta_test(
         &META_LINK_CONTENT_1,
         true,
     )?;
-    tweet_d!("META_LINK_CONTENT_1 authored");
+    log_d!("META_LINK_CONTENT_1 authored");
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
         &META_CRUD_CONTENT,
         true,
     )?;
-    tweet_d!("META_CRUD_CONTENT authored");
+    log_d!("META_CRUD_CONTENT authored");
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
         &META_LINK_CONTENT_2,
         false,
     )?;
-    tweet_d!("META_LINK_CONTENT_2 authored");
+    log_d!("META_LINK_CONTENT_2 authored");
     alex.author_meta(
         &ENTRY_ADDRESS_1,
         META_LINK_ATTRIBUTE.into(),
         &META_LINK_CONTENT_3,
         false,
     )?;
-    tweet_d!("META_LINK_CONTENT_3 authored");
+    log_d!("META_LINK_CONTENT_3 authored");
     alex.reply_to_first_HandleGetPublishingMetaList();
 
 
@@ -310,7 +310,7 @@ pub fn many_meta_test(
 
     // billy might receive HandleDhtStore
     let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchMeta(_))), 2000);
-    tweet_d!("alex has_received done");
+    log_d!("alex has_received done");
 
     // billy asks for reported published data.
     billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
@@ -320,14 +320,14 @@ pub fn many_meta_test(
     if !has_received {
         billy.wait_HandleFetchMeta_and_reply();
     }
-    tweet_d!("node has_received HandleFetchMeta 1");
+    log_d!("node has_received HandleFetchMeta 1");
 
     // Alex or billy should receive HandleFetchMeta request
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     if !has_received {
         billy.wait_HandleFetchMeta_and_reply();
     }
-    tweet_d!("node has_received HandleFetchMeta 2");
+    log_d!("node has_received HandleFetchMeta 2");
 
 
     // Billy should receive the data

@@ -372,9 +372,7 @@ impl P2pNode {
     }
     /// Look for the first HandleGetPublishingMetaList request received from network module and reply
     pub fn reply_to_first_HandleGetPublishingMetaList(&mut self) {
-        {
-            g_tweetlog.read().unwrap().tt("p2pnode", &format!("--- HandleGetPublishingMetaList: {}", self.agent_id));
-        }
+        self.logger.t(&format!("--- HandleGetPublishingMetaList: {}", self.agent_id));
         let request = self
             .find_recv_msg(
                 0,
@@ -463,9 +461,7 @@ impl P2pNode {
         let agent_id = agent_id_arg.clone();
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                {
-                    g_tweetlog.read().unwrap().tt("p2pnode", &format!("<<< ({}) handler: {:?}", agent_id_arg, r));
-                }
+                log_tt!("p2pnode", "<<< ({}) handler: {:?}", agent_id_arg, r);
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -840,12 +836,12 @@ fn create_ipc_config(
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
 
-   tweet_i!(&format!("create_ipc_config() dir = {}", dir));
+   log_i!("create_ipc_config() dir = {}", dir);
 
     // Create config
     let config = match maybe_config_filepath {
         Some(filepath) => {
-            tweet_d!(&format!("filepath = {}", filepath));
+            log_d!("filepath = {}", filepath);
             // Get config from file
             let p2p_config = P2pConfig::from_file(filepath);
             assert_eq!(p2p_config.backend_kind, P2pBackendKind::IPC);

@@ -23,26 +23,76 @@ lazy_static! {
 }
 
 #[macro_export]
-macro_rules! tweet_t {
-    ($s:expr) => { { g_tweetlog.read().unwrap().t($s) } };
+macro_rules! log_t {
+    ($($arg:tt)+) => { {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().t(&msg);
+      } };
 }
 #[macro_export]
-macro_rules! tweet_d {
-    ($s:expr) => { { g_tweetlog.read().unwrap().d($s) } };
+macro_rules! log_d {
+    ($($arg:tt)+) => { {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().d(&msg);
+      } };
 }
 #[macro_export]
-macro_rules! tweet_i {
-    ($s:expr) => { { g_tweetlog.read().unwrap().i($s) } };
+macro_rules! log_i {
+    ($($arg:tt)+) => { {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().i(&msg);
+      } };
 }
 #[macro_export]
-macro_rules! tweet_w {
-    ($s:expr) => { { g_tweetlog.read().unwrap().w($s) } };
+macro_rules! log_w {
+    ($($arg:tt)+) => { {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().w(&msg);
+      } };
 }
 #[macro_export]
-macro_rules! tweet_e {
-    ($s:expr) => { { g_tweetlog.read().unwrap().e($s) } };
+macro_rules! log_e {
+    ($($arg:tt)+) => { {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().e(&msg);
+      } };
 }
 
+#[macro_export]
+macro_rules! log_tt {
+    ($tag:expr, $($arg:tt)+) => {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().tt($tag, &msg);
+    };
+}
+#[macro_export]
+macro_rules! log_dd {
+    ($tag:expr, $($arg:tt)+) => {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().dd($tag, &msg);
+    };
+}
+#[macro_export]
+macro_rules! log_ii {
+    ($tag:expr, $($arg:tt)+) => {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().ii($tag, &msg);
+    };
+}
+#[macro_export]
+macro_rules! log_ww {
+    ($tag:expr, $($arg:tt)+) => {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().ww($tag, &msg);
+    };
+}
+#[macro_export]
+macro_rules! log_ee {
+    ($tag:expr, $($arg:tt)+) => {
+        let msg = format!($($arg)+);
+        g_tweetlog.read().unwrap().ee($tag, &msg);
+    };
+}
 
 #[derive(Debug, Clone)]
 pub enum LogLevel {

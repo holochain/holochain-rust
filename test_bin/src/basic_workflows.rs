@@ -6,6 +6,7 @@ use holochain_net_connection::{
     NetResult,
 };
 use p2p_node::P2pNode;
+use holochain_net::tweetlog::g_tweetlog;
 
 // TODO make test: Sending a Message before doing a 'TrackApp' should fail
 //fn no_track_test(
@@ -280,7 +281,14 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
-    println!("got GetMetaResult: {:?}", result);
+    // log_i!(&format!("got GetMetaResult: {:?}", result));
+    log_i!("got GetMetaResult: {:?}", result);
+    log_ii!("p2pnode", "got GetMetaResult: {:?}", result);
+    let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_3.clone());
+    assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
+    assert_eq!(meta_data.content_list.len(), 1);
+    assert_eq!(meta_data.content_list[0], META_LINK_CONTENT_3.clone());
     // Done
     Ok(())
 }

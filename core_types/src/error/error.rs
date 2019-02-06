@@ -4,7 +4,6 @@ use crate::{
     json::*,
 };
 use futures::channel::oneshot::Canceled as FutureCanceled;
-use holochain_sodium::error::SodiumError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -45,11 +44,6 @@ impl CoreError {
             line: String::new(),
         }
     }
-
-    // TODO - get the u32 error code from a CoreError
-    //    pub fn code(&self) -> u32 {
-    //        u32::from(self.kind.code()) << 16 as u32
-    //    }
 }
 
 impl ::std::convert::TryFrom<ZomeApiInternalResult> for CoreError {
@@ -81,7 +75,9 @@ impl fmt::Display for CoreError {
 
 /// TODO rename to CoreErrorKind
 /// Enum holding all Holochain Core errors
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, Serialize, Deserialize, DefaultJson, Hash, PartialOrd, Ord,
+)]
 pub enum HolochainError {
     ErrorGeneric(String),
     NotImplemented(String),
@@ -126,15 +122,6 @@ impl fmt::Display for HolochainError {
             RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
-        }
-    }
-}
-
-impl From<SodiumError> for HolochainError {
-    fn from(error: SodiumError) -> Self {
-        match error {
-            SodiumError::Generic(s) => HolochainError::new(&s),
-            SodiumError::OutputLength(s) => HolochainError::new(&s),
         }
     }
 }

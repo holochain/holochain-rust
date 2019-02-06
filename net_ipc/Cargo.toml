@@ -6,7 +6,7 @@ authors = ["neonphog <neonphog@gmail.com>"]
 [dependencies]
 failure = "0.1.1"
 holochain_net_connection = { path = "../net_connection" }
-lazy_static = "1.0"
+lazy_static = "1.2"
 regex = "1"
 rmp-serde = "0.13.7"
 serde = "1.0"

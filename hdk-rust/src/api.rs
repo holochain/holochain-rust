@@ -33,7 +33,10 @@ use holochain_wasm_utils::{
 };
 use init_globals::hc_init_globals;
 use serde_json;
-use std::convert::{TryFrom, TryInto};
+use std::{
+    convert::{TryFrom, TryInto},
+    time::Duration,
+};
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
@@ -196,6 +199,7 @@ pub enum Dispatch {
     RemoveEntry,
     Query,
     Send,
+    Sleep,
 }
 
 impl Dispatch {
@@ -231,6 +235,7 @@ impl Dispatch {
                 Dispatch::RemoveEntry => hc_remove_entry,
                 Dispatch::Query => hc_query,
                 Dispatch::Send => hc_send,
+                Dispatch::Sleep => hc_sleep,
             })(encoded_input)
         };
 
@@ -260,7 +265,7 @@ impl Dispatch {
 }
 
 /// Call an exposed function from another zome or another (bridged) instance running
-/// on the same agent in the same container.
+/// on the same agent in the same conductor.
 /// Arguments for the called function are passed as `JsonString`.
 /// Returns the value that's returned by the given function as a json str.
 /// # Examples
@@ -302,6 +307,8 @@ impl Dispatch {
 /// # #[no_mangle]
 /// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -322,14 +329,16 @@ impl Dispatch {
 ///         Ok(())
 ///     }
 ///
-///     functions: {
-///         main (Public) {
+///     functions: [
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
 ///                 outputs: |sum: JsonString|,
 ///                 handler: handle_sum
 ///             }
-///         }
+///     ]
+///
+///     capabilities: {
+///         public (Public) [sum]
 ///     }
 /// }
 ///
@@ -377,6 +386,8 @@ impl Dispatch {
 /// # #[no_mangle]
 /// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -395,7 +406,7 @@ impl Dispatch {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call(hdk::THIS_INSTANCE, "summer", "main", "test_token", "sum", call_input.into())
+///     hdk::call(hdk::THIS_INSTANCE, "summer", "test_token", "sum", call_input.into())
 /// }
 ///
 /// define_zome! {
@@ -405,14 +416,16 @@ impl Dispatch {
 ///         Ok(())
 ///     }
 ///
-///     functions: {
-///         main (Public) {
+///     functions: [
 ///             check_sum: {
 ///                 inputs: |num1: u32, num2: u32|,
 ///                 outputs: |sum: ZomeApiResult<JsonString>|,
 ///                 handler: handle_check_sum
 ///             }
-///         }
+///     ]
+///
+///     capabilities: {
+///         public (Public) [sum]
 ///     }
 /// }
 ///
@@ -421,7 +434,6 @@ impl Dispatch {
 pub fn call<S: Into<String>>(
     instance_handle: S,
     zome_name: S,
-    cap_name: S, //temporary...
     cap_token: S,
     fn_name: S,
     fn_args: JsonString,
@@ -429,11 +441,7 @@ pub fn call<S: Into<String>>(
     Dispatch::Call.with_input(ZomeFnCallArgs {
         instance_handle: instance_handle.into(),
         zome_name: zome_name.into(),
-        cap: Some(CapabilityCall::new(
-            cap_name.into(),
-            Address::from(cap_token.into()),
-            None,
-        )),
+        cap: Some(CapabilityCall::new(Address::from(cap_token.into()), None)),
         fn_name: fn_name.into(),
         fn_args: String::from(fn_args),
     })
@@ -555,13 +563,7 @@ pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(
-            StatusRequestKind::Initial,
-            true,
-            false,
-            false,
-            Default::default(),
-        ),
+        GetEntryOptions::new(StatusRequestKind::Initial, true, false, Default::default()),
     )?;
     Ok(entry_result.latest())
 }
@@ -572,13 +574,7 @@ pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_history(address: &Address) -> ZomeApiResult<Option<EntryHistory>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(
-            StatusRequestKind::All,
-            true,
-            false,
-            false,
-            Default::default(),
-        ),
+        GetEntryOptions::new(StatusRequestKind::All, true, false, Default::default()),
     )?;
     if !entry_result.found() {
         return Ok(None);
@@ -649,7 +645,7 @@ pub fn get_entry_result(
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false, timeout: Default::default() })?;
+///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///
@@ -1000,6 +996,8 @@ pub fn query_result(
 /// # #[no_mangle]
 /// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -1023,15 +1021,17 @@ pub fn query_result(
 ///        format!("Received: {}", payload)
 ///    }
 ///
-///    functions: {
-///        main (Public) {
+///    functions: [
 ///            send_message: {
 ///                inputs: |to_agent: Address, message: String|,
 ///                outputs: |response: ZomeApiResult<String>|,
 ///                handler: handle_send_message
 ///            }
-///        }
-///    }
+///    ]
+///
+///     capabilities: {
+///         public (Public) [send_message]
+///     }
 ///}
 /// # }
 /// ```
@@ -1051,4 +1051,29 @@ pub fn start_bundle(_timeout: usize, _user_param: serde_json::Value) -> ZomeApiR
 /// NOT YET AVAILABLE
 pub fn close_bundle(_action: BundleOnClose) -> ZomeApiResult<()> {
     Err(ZomeApiError::FunctionNotImplemented)
+}
+
+/// Lets the DNA runtime sleep for the given duration.
+/// # Examples
+/// ```rust
+/// # #[macro_use]
+/// # extern crate hdk;
+/// # use hdk::error::ZomeApiResult;
+/// # use std::time::Duration;
+///
+/// # fn main() {
+/// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
+///     // ...
+///     hdk::sleep(Duration::from_millis(100));
+///     // ...
+///     Ok(())
+/// }
+///
+/// # }
+/// ```
+pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
+    let _: ZomeApiResult<()> = Dispatch::Sleep.with_input(JsonString::from(duration.as_nanos()));
+    // internally returns RibosomeEncodedValue::Success which is a zero length allocation
+    // return Ok(()) unconditionally instead of the "error" from success
+    Ok(())
 }

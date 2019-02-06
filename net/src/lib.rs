@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![feature(vec_remove_item)]
 
 //! holochain_net is a library that defines an abstract networking layer for
 //! different network transports, providing a configurable interface

@@ -41,6 +41,8 @@ pub struct IpcNetWorker {
 impl IpcNetWorker {
     // Constructor with config as a json string
     pub fn new(handler: NetHandler, config: &JsonString) -> NetResult<Self> {
+        let opaque_net_config = String::from("{}");
+
         // Load config
         let config: serde_json::Value = serde_json::from_str(config.into())?;
         // Only zmq protocol is handled for now
@@ -85,6 +87,7 @@ impl IpcNetWorker {
                     .map(|i| i.as_str().unwrap_or_default().to_string())
                     .collect(),
                 spawn_config["workDir"].as_str().unwrap().to_string(),
+                opaque_net_config,
                 env,
                 block_connect,
                 bootstrap_nodes,
@@ -133,12 +136,13 @@ impl IpcNetWorker {
         cmd: String,
         args: Vec<String>,
         work_dir: String,
+        config: String,
         env: HashMap<String, String>,
         block_connect: bool,
         bootstrap_nodes: Vec<String>,
     ) -> NetResult<Self> {
         // Spawn a process with given `cmd` that we will have an IPC connection with
-        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, env, block_connect)?;
+        let spawn_result = spawn::ipc_spawn(cmd, args, work_dir, config, env, block_connect)?;
         // Get spawn result info
         let ipc_binding = spawn_result.ipc_binding;
         let kill = spawn_result.kill;
@@ -267,7 +271,7 @@ impl IpcNetWorker {
         for bs_node in &self.bootstrap_nodes {
             self.ipc_relay.send(
                 JsonProtocol::Connect(ConnectData {
-                    address: bs_node.clone().into(),
+                    peer_address: bs_node.clone().into(),
                 })
                 .into(),
             )?;

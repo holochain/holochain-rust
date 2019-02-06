@@ -7,7 +7,7 @@ use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
-        zome::{ZomeCapabilities, ZomeEntryTypes},
+        zome::{ZomeCapabilities, ZomeEntryTypes, ZomeFnDeclarations},
     },
     entry::entry_type::{AppEntryType, EntryType},
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
@@ -35,6 +35,7 @@ struct PartialZome {
     #[serde(deserialize_with = "deserialize_entry_types")]
     entry_types: ZomeEntryTypes,
     capabilities: ZomeCapabilities,
+    fn_declarations: ZomeFnDeclarations,
 }
 
 #[allow(improper_ctypes)]
@@ -59,6 +60,7 @@ impl ZomeDefinition {
 extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
     fn __list_capabilities() -> ZomeCapabilities;
+    fn __list_functions() -> ZomeFnDeclarations;
 }
 
 #[no_mangle]
@@ -247,10 +249,12 @@ pub extern "C" fn __hdk_get_json_definition(
     }
 
     let capabilities = unsafe { __list_capabilities() };
+    let fn_declarations = unsafe { __list_functions() };
 
     let partial_zome = PartialZome {
         entry_types,
         capabilities,
+        fn_declarations,
     };
 
     let json_string = JsonString::from(partial_zome);
@@ -272,7 +276,10 @@ pub mod tests {
     use crate as hdk;
     use crate::ValidationPackageDefinition;
     use holochain_core_types::{
-        dna::{entry_types::Sharing, zome::ZomeCapabilities},
+        dna::{
+            entry_types::Sharing,
+            zome::{ZomeCapabilities, ZomeFnDeclarations},
+        },
         error::HolochainError,
         json::JsonString,
     };
@@ -285,6 +292,10 @@ pub mod tests {
     #[no_mangle]
     pub fn __list_capabilities() -> ZomeCapabilities {
         BTreeMap::new()
+    }
+    #[no_mangle]
+    pub fn __list_functions() -> ZomeFnDeclarations {
+        Vec::new()
     }
 
     #[test]
@@ -307,7 +318,7 @@ pub mod tests {
                 ValidationPackageDefinition::Entry
             },
 
-            validation: |_post: Post, _ctx: hdk::ValidationData| {
+            validation: |_post: Post, _validation_data: hdk::ValidationData| {
                 Ok(())
             }
 
@@ -324,7 +335,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{}}"),
+            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"fn_declarations\":[]}"),
         );
     }
 }

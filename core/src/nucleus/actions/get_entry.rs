@@ -3,13 +3,13 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::EntityAttributeValue,
+    eav::{EntityAttributeValueIndex, IndexQuery},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
 
 use std::{
-    collections::HashSet,
+    collections::BTreeSet,
     convert::TryInto,
     str::FromStr,
     sync::{Arc, RwLock},
@@ -30,7 +30,12 @@ pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let cas = context.state().unwrap().agent().chain().content_storage();
+    let cas = context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .content_storage();
     get_entry_from_cas(&cas.clone(), address)
 }
 
@@ -49,10 +54,11 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let dht = context.state().unwrap().dht().meta_storage();
     let storage = &dht.clone();
     // Get crud-status
-    let status_eavs = (*storage.read().unwrap()).fetch_eav(
+    let status_eavs = (*storage.read().unwrap()).fetch_eavi(
         Some(address.clone()),
         Some(STATUS_NAME.to_string()),
         None,
+        IndexQuery::default(),
     )?;
     if status_eavs.len() == 0 {
         return Ok(None);
@@ -61,22 +67,23 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     // TODO waiting for update/remove_eav() assert!(status_eavs.len() <= 1);
     // For now look for crud-status by life-cycle order: Deleted, Modified, Live
     let has_deleted = status_eavs
-        .iter()
+        .clone()
+        .into_iter()
         .filter(|e| {
             CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Deleted)
         })
-        .collect::<HashSet<&EntityAttributeValue>>()
+        .collect::<BTreeSet<EntityAttributeValueIndex>>()
         .len()
         > 0;
     if has_deleted {
         crud_status = CrudStatus::Deleted;
     } else {
         let has_modified = status_eavs
-            .iter()
+            .into_iter()
             .filter(|e| {
                 CrudStatus::from_str(String::from(e.value()).as_ref()) == Ok(CrudStatus::Modified)
             })
-            .collect::<HashSet<&EntityAttributeValue>>()
+            .collect::<BTreeSet<EntityAttributeValueIndex>>()
             .len()
             > 0;
         if has_modified {
@@ -85,8 +92,12 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     }
     // Get crud-link
     let mut maybe_crud_link = None;
-    let link_eavs =
-        (*storage.read().unwrap()).fetch_eav(Some(address), Some(LINK_NAME.to_string()), None)?;
+    let link_eavs = (*storage.read().unwrap()).fetch_eavi(
+        Some(address),
+        Some(LINK_NAME.to_string()),
+        None,
+        IndexQuery::default(),
+    )?;
     assert!(
         link_eavs.len() <= 1,
         "link_eavs.len() = {}",
@@ -99,7 +110,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     Ok(Some((crud_status, maybe_crud_link)))
 }
 
-/// GetEntry Action Creator
+/// FetchEntry Action Creator
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn get_entry_with_meta<'a>(

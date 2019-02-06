@@ -1,6 +1,6 @@
 //! This logger is the logger that's attached to each Holochain application
 //! which is separate from standard logging via the log crate warn! info! debug! logging that
-//! gets emitted globaly from the container.
+//! gets emitted globaly from the conductor.
 use chrono::Local;
 use std::sync::{mpsc, Arc, Mutex};
 

@@ -9,9 +9,9 @@ use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 use wasmi::RuntimeArgs;
 
 /// ZomeApiFunction::InitGlobals secret function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Not expecting any complex input
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     // Create the ZomeApiGlobals struct with some default values
     let mut globals = ZomeApiGlobals {
@@ -35,7 +35,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
             let mut found_entries: Vec<Address> = vec![];
             for chain_header in state
                 .agent()
-                .chain()
+                .chain_store()
                 .iter_type(&maybe_top, &EntryType::AgentId)
             {
                 found_entries.push(chain_header.entry_address().to_owned());

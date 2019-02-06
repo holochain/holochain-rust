@@ -96,6 +96,8 @@ macro_rules! load_string {
 /// # #[no_mangle]
 /// # pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
+/// # pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
 /// # pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
@@ -132,7 +134,7 @@ macro_rules! load_string {
 ///                 hdk::ValidationPackageDefinition::ChainFull
 ///             },
 ///
-///             validation: |post: Post, _ctx: hdk::ValidationData| {
+///             validation: |post: Post, _validation_data: hdk::ValidationData| {
 ///                 (post.content.len() < 280)
 ///                     .ok_or_else(|| String::from("Content too long"))
 ///             }
@@ -148,10 +150,7 @@ macro_rules! load_string {
 ///       format!("Received: {}", payload)
 ///     }
 ///
-///     functions: {
-///         // "main" is the name of the capability
-///         // "Public" is the access setting of the capability
-///         main (Public) {
+///     functions: [
 ///             // the name of this function, "post_address" is the
 ///             // one to give while performing a `call` method to this function.
 ///             // the name of the handler function must be different than the
@@ -161,7 +160,12 @@ macro_rules! load_string {
 ///                 outputs: |post: ZomeApiResult<Address>|,
 ///                 handler: handle_post_address
 ///             }
-///         }
+///     ]
+///
+///     // by convention "public" is the name of the capability for functions
+///     // that can be called by anyone
+///     capabilities: {
+///         public (Public) [post_address]
 ///     }
 /// }
 ///
@@ -184,19 +188,24 @@ macro_rules! define_zome {
             }
         )*
 
-        functions : {
+        functions : [
             $(
-                $cap:ident ( $vis:ident ) {
-                    $(
                         $zome_function_name:ident : {
                             inputs: | $( $input_param_name:ident : $input_param_type:ty ),* |,
                             outputs: | $( $output_param_name:ident : $output_param_type:ty ),* |,
                             handler: $handler_path:path
                         }
-                    )+
-                }
-            )*
-        }
+            )+
+        ]
+
+        capabilities : {
+                $(
+                    $cap:ident ( $vis:ident ) [
+                        $($cap_fn:ident),*
+                    ]
+                )*
+            }
+
 
     ) => {
         #[no_mangle]
@@ -273,7 +282,8 @@ macro_rules! define_zome {
         #[allow(unused_imports)]
         pub fn __list_capabilities() -> $crate::holochain_core_types::dna::zome::ZomeCapabilities {
 
-            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType, FnParameter, FnDeclaration};
+            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType};
+            use $crate::holochain_core_types::dna::fn_declarations::{FnParameter, FnDeclaration};
             use std::collections::BTreeMap;
 
             let return_value: $crate::holochain_core_types::dna::zome::ZomeCapabilities = {
@@ -284,20 +294,7 @@ macro_rules! define_zome {
                         let mut capability = Capability::new(CapabilityType::$vis);
                         capability.functions = vec![
                             $(
-                                FnDeclaration {
-                                    name: stringify!($zome_function_name).into(),
-                                    inputs: vec![
-                                        $(
-                                            FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
-                                        ),*
-                                    ],
-                                    outputs: vec![
-                                        $(
-                                            FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
-                                        ),*
-                                    ]
-                                }
-
+                                stringify!($cap_fn).into()
                             ),+
                         ];
 
@@ -311,8 +308,39 @@ macro_rules! define_zome {
             return_value
         }
 
+        #[no_mangle]
+        #[allow(unused_imports)]
+        pub fn __list_functions() -> $crate::holochain_core_types::dna::zome::ZomeFnDeclarations {
+
+            use $crate::holochain_core_types::dna::capabilities::{Capability, CapabilityType};
+            use $crate::holochain_core_types::dna::fn_declarations::{FnParameter, FnDeclaration};
+
+            let return_value: $crate::holochain_core_types::dna::zome::ZomeFnDeclarations = {
+                vec![
+
+                    $(
+                         FnDeclaration {
+                                    name: stringify!($zome_function_name).into(),
+                                    inputs: vec![
+                                        $(
+                                            FnParameter::new(stringify!($input_param_name), stringify!($input_param_type))
+                                        ),*
+                                    ],
+                                    outputs: vec![
+                                        $(
+                                            FnParameter::new(stringify!($output_param_name), stringify!($output_param_type))
+                                        ),*
+                                    ]
+                                }
+                    ),+
+
+                ]
+            };
+
+            return_value
+        }
+
         $(
-            $(
                 #[no_mangle]
                 pub extern "C" fn $zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
                     let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
@@ -347,7 +375,6 @@ macro_rules! define_zome {
                         $crate::global_fns::write_json(execute(input))
                     ).into()
                 }
-            )+
-        )*
+        )+
     };
 }

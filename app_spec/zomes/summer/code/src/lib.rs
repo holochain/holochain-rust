@@ -20,15 +20,18 @@ define_zome! {
         Ok(())
     }
 
-    functions: {
-        main (Public) {
-            sum: {
-                inputs: |num1: u32, num2: u32|,
-                outputs: |sum: u32|,
-                handler: handle_sum
-            }
+    functions: [
+        sum: {
+            inputs: |num1: u32, num2: u32|,
+            outputs: |sum: u32|,
+            handler: handle_sum
         }
+    ]
+
+    capabilities: {
+        public (Public) [sum]
     }
+
 }
 
 #[cfg(test)]

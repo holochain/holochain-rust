@@ -12,7 +12,7 @@ Please see the [Contribute section](https://github.com/holochain/holochain-rust/
 
 ### Dependencies
 
-The primary dependency is on the Holochain command line tools which should be installed automatically by the build script but can also be installed manually with `make install_cmd`.
+The primary dependency is on the Holochain command line tools which should be installed automatically by the build script but can also be installed manually with `make install_cli`.
 
 Nodejs and NPM, for compiling Javascript tests, Version 8 or higher
 * https://nodejs.org/en/download/

@@ -46,6 +46,7 @@ use holochain_wasm_utils::memory::allocation::WasmAllocation;
 use hdk::global_fns::init_global_memory;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeEncodedValue;
 use std::convert::TryFrom;
+use std::time::Duration;
 use hdk::globals::G_MEM_STACK;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -152,6 +153,10 @@ fn handle_link_two_entries() -> ZomeApiResult<()> {
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test-tag")
 }
 
+/// Commit 3 entries
+/// Commit a "test-tag" link from entry1 to entry2
+/// Commit a "test-tag" link from entry1 to entry3
+/// return entry1 address
 fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     let entry_1 = Entry::App(
         "testEntryType".into(),
@@ -343,7 +348,6 @@ fn handle_check_call() -> ZomeApiResult<JsonString> {
     let maybe_hash = hdk::call(
         hdk::THIS_INSTANCE,
         "test_zome",
-        "test_cap",
         "test_token",
         "check_app_entry_address",
         empty_dumpty,
@@ -362,7 +366,6 @@ fn handle_check_call_with_args() -> ZomeApiResult<JsonString> {
     hdk::call(
         hdk::THIS_INSTANCE,
         "test_zome",
-        "test_cap",
         "test_token",
         "check_commit_entry_macro",
         JsonString::from(CommitEntryInput {
@@ -420,6 +423,10 @@ fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<Stri
     hdk::send(to_agent, message, 60000.into())
 }
 
+fn handle_sleep() -> ZomeApiResult<()> {
+    hdk::sleep(Duration::from_millis(10))
+}
+
 define_zome! {
     entries: [
         entry!(
@@ -432,7 +439,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |entry: TestEntryType, _ctx: hdk::ValidationData| {
+            validation: |entry: TestEntryType, _validation_data: hdk::ValidationData| {
                 (entry.stuff != "FAIL")
                     .ok_or_else(|| "FAIL content is not allowed".to_string())
             },
@@ -444,7 +451,7 @@ define_zome! {
                     validation_package: || {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
-                    validation: |source: Address, target: Address, ctx: hdk::ValidationData | {
+                    validation: |source: Address, target: Address, validation_data: hdk::ValidationData | {
                         Ok(())
                     }
                 )
@@ -461,8 +468,8 @@ define_zome! {
                 hdk::ValidationPackageDefinition::ChainFull
             },
 
-            validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
-                Err(serde_json::to_string(&ctx).unwrap())
+            validation: |_entry: TestEntryType, validation_data: hdk::ValidationData| {
+                Err(serde_json::to_string(&validation_data).unwrap())
             }
         ),
 
@@ -476,7 +483,7 @@ define_zome! {
                 hdk::ValidationPackageDefinition::Entry
             },
 
-            validation: |_entry: TestEntryType, ctx: hdk::ValidationData| {
+            validation: |_entry: TestEntryType, validation_data: hdk::ValidationData| {
                 Ok(())
             },
 
@@ -487,7 +494,7 @@ define_zome! {
                     validation_package: || {
                         hdk::ValidationPackageDefinition::Entry
                     },
-                    validation: |base: Address, target: Address, ctx: hdk::ValidationData | {
+                    validation: |base: Address, target: Address, validation_data: hdk::ValidationData | {
                         let base = match hdk::get_entry(&base)? {
                             Some(entry) => match entry {
                                 Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
@@ -516,129 +523,148 @@ define_zome! {
     genesis: || { Ok(()) }
 
     receive: |payload| {
-        format!("Received: {}", payload)
-    }
-
-    functions: {
-        test (Public) {
-            check_global: {
-                inputs: | |,
-                outputs: |agent_latest_hash: Address|,
-                handler: handle_check_global
-            }
-
-            check_commit_entry_macro: {
-                inputs: |entry: Entry|,
-                outputs: |result: ZomeApiResult<Address>|,
-                handler: handle_check_commit_entry_macro
-            }
-
-            check_get_entry: {
-                inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<Option<Entry>>|,
-                handler: handle_check_get_entry
-            }
-
-            check_get_entry_result: {
-                inputs: |entry_address: Address|,
-                outputs: |result: ZomeApiResult<GetEntryResult>|,
-                handler: handle_check_get_entry_result
-            }
-
-            commit_validation_package_tester: {
-                inputs: | |,
-                outputs: |result: ZomeApiResult<Address>|,
-                handler: handle_commit_validation_package_tester
-            }
-
-            link_two_entries: {
-                inputs: | |,
-                outputs: |result: ZomeApiResult<()>|,
-                handler: handle_link_two_entries
-            }
-
-            links_roundtrip_create: {
-                inputs: | |,
-                outputs: |result: ZomeApiResult<Address>|,
-                handler: handle_links_roundtrip_create
-            }
-
-            links_roundtrip_get: {
-                inputs: |address: Address|,
-                outputs: |result: ZomeApiResult<GetLinksResult>|,
-                handler: handle_links_roundtrip_get
-            }
-
-            links_roundtrip_get_and_load: {
-                inputs: |address: Address|,
-                outputs: |result: ZomeApiResult<Vec<ZomeApiResult<Entry>>>|,
-                handler: handle_links_roundtrip_get_and_load
-            }
-
-            link_validation: {
-                inputs: |stuff1: String, stuff2: String|,
-                outputs: |result: JsonString|,
-                handler: handle_link_validation
-            }
-
-            check_call: {
-                inputs: | |,
-                outputs: |result: ZomeApiResult<JsonString>|,
-                handler: handle_check_call
-            }
-
-            check_call_with_args: {
-                inputs: | |,
-                outputs: |result: ZomeApiResult<JsonString>|,
-                handler: handle_check_call_with_args
-            }
-
-            check_app_entry_address: {
-                inputs: | |,
-                outputs: |result: ZomeApiResult<Address>|,
-                handler: handle_check_app_entry_address
-            }
-
-            check_query: {
-                inputs: | |,
-                outputs: |result: ZomeApiResult<Vec<Address>>|,
-                handler: handle_check_query
-            }
-
-            // check_sys_entry_address: {
-            //     inputs: | |,
-            //     outputs: |result: JsonString|,
-            //     handler: handle_check_sys_entry_address
-            // }
-
-            update_entry_ok: {
-                inputs: | |,
-                outputs: |result: JsonString|,
-                handler: handle_update_entry_ok
-            }
-
-            remove_entry_ok: {
-                inputs: | |,
-                outputs: |result: JsonString|,
-                handler: handle_remove_entry_ok
-            }
-
-            remove_modified_entry_ok: {
-                inputs: | |,
-                outputs: |result: JsonString|,
-                handler: handle_remove_modified_entry_ok
-            }
-
-            send_tweet: {
-                inputs: |author: String, content: String|,
-                outputs: |response: TweetResponse|,
-                handler: handle_send_tweet
-            }
-            send_message: {
-                inputs: |to_agent: Address, message: String|,
-                outputs: |response: ZomeApiResult<String>|,
-                handler: handle_send_message
+        {
+            let entry = Entry::App(
+                "testEntryType".into(),
+                EntryStruct {
+                    stuff: payload.clone(),
+                }
+                .into(),
+            );
+            match hdk::commit_entry(&entry) {
+                Ok(address) => format!("Committed: '{}' / address: {}", payload, address.to_string()),
+                Err(error) => format!("Error committing in receive: '{}'", error.to_string()),
             }
         }
     }
+
+    functions: [
+        check_global: {
+            inputs: | |,
+            outputs: |agent_latest_hash: Address|,
+            handler: handle_check_global
+        }
+
+        check_commit_entry_macro: {
+            inputs: |entry: Entry|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_check_commit_entry_macro
+        }
+
+        check_get_entry: {
+            inputs: |entry_address: Address|,
+            outputs: |result: ZomeApiResult<Option<Entry>>|,
+            handler: handle_check_get_entry
+        }
+
+        check_get_entry_result: {
+            inputs: |entry_address: Address|,
+            outputs: |result: ZomeApiResult<GetEntryResult>|,
+            handler: handle_check_get_entry_result
+        }
+
+        commit_validation_package_tester: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_commit_validation_package_tester
+        }
+
+        link_two_entries: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_link_two_entries
+        }
+
+        links_roundtrip_create: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_links_roundtrip_create
+        }
+
+        links_roundtrip_get: {
+            inputs: |address: Address|,
+            outputs: |result: ZomeApiResult<GetLinksResult>|,
+            handler: handle_links_roundtrip_get
+        }
+
+        links_roundtrip_get_and_load: {
+            inputs: |address: Address|,
+            outputs: |result: ZomeApiResult<Vec<ZomeApiResult<Entry>>>|,
+            handler: handle_links_roundtrip_get_and_load
+        }
+
+        link_validation: {
+            inputs: |stuff1: String, stuff2: String|,
+            outputs: |result: JsonString|,
+            handler: handle_link_validation
+        }
+
+        check_call: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<JsonString>|,
+            handler: handle_check_call
+        }
+
+        check_call_with_args: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<JsonString>|,
+            handler: handle_check_call_with_args
+        }
+
+        check_app_entry_address: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: handle_check_app_entry_address
+        }
+
+        check_query: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<Vec<Address>>|,
+            handler: handle_check_query
+        }
+
+        // check_sys_entry_address: {
+        //     inputs: | |,
+        //     outputs: |result: JsonString|,
+        //     handler: handle_check_sys_entry_address
+        // }
+
+        update_entry_ok: {
+            inputs: | |,
+            outputs: |result: JsonString|,
+            handler: handle_update_entry_ok
+        }
+
+        remove_entry_ok: {
+            inputs: | |,
+            outputs: |result: JsonString|,
+            handler: handle_remove_entry_ok
+        }
+
+        remove_modified_entry_ok: {
+            inputs: | |,
+            outputs: |result: JsonString|,
+            handler: handle_remove_modified_entry_ok
+        }
+
+        send_tweet: {
+            inputs: |author: String, content: String|,
+            outputs: |response: TweetResponse|,
+            handler: handle_send_tweet
+        }
+
+        send_message: {
+            inputs: |to_agent: Address, message: String|,
+            outputs: |response: ZomeApiResult<String>|,
+            handler: handle_send_message
+        }
+
+        sleep: {
+            inputs: | |,
+            outputs: |response: ZomeApiResult<()>|,
+            handler: handle_sleep
+        }
+    ]
+
+    capabilities: {}
 }

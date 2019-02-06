@@ -42,20 +42,10 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         }
         STATUS_NAME => {
             context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
-            let _crud_status: CrudStatus = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content_list)
-                    .expect("dht_meta_data should be crud_status"),
-            )
-            .expect("dht_meta_data should be crud_status");
             // FIXME: block_on hold crud_status metadata in DHT?
         }
         LINK_NAME => {
             context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");
-            let _crud_link: Address = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content_list)
-                    .expect("dht_meta_data should be crud_link"),
-            )
-            .expect("dht_meta_data should be crud_link");
             // FIXME: block_on hold crud_link metadata in DHT?
         }
         _ => {}

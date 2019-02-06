@@ -36,11 +36,11 @@ fn confirm_published_data(
     let result_a = alex
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))))
         .unwrap();
-    println!("got store result A: {:?}\n", result_a);
+    log_i!("got store result A: {:?}\n", result_a);
     let result_b = billy
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))))
         .unwrap();
-    println!("got store result B: {:?}\n", result_b);
+    log_i!("got store result B: {:?}\n", result_b);
     assert!(billy.entry_store.contains_key(address));
 
     let fetch_data = billy.request_entry(address.clone());
@@ -52,7 +52,7 @@ fn confirm_published_data(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
-    println!("got dht data result: {:?}", result);
+    log_i!("got dht data result: {:?}", result);
 
     Ok(())
 }
@@ -64,20 +64,20 @@ fn confirm_published_metadata(
     billy: &mut P2pNode,
     address: &Address,
     attribute: &str,
-    content: &Address,
+    link_entry_address: &serde_json::Value,
 ) -> NetResult<()> {
     // Alex publishs metadata on the network
-    let meta_tuple = alex.author_meta(address, attribute, content, true)?;
+    let meta_key = alex.author_meta(address, attribute, link_entry_address, true)?;
     // Check if both nodes received a HandleStore command.
     let result_a = alex
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))))
         .unwrap();
-    println!("got store meta result 1: {:?}", result_a);
+    log_i!("got store meta result 1: {:?}", result_a);
     let result_b = billy
         .wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))))
         .unwrap();
-    println!("got store meta result 2: {:?}", result_b);
-    assert!(billy.meta_store.contains_key(&meta_tuple));
+    log_i!("got store meta result 2: {:?}", result_b);
+    assert!(billy.meta_store.has(meta_key, link_entry_address));
 
     // Billy asks for that metadata on the network.
     let fetch_meta = billy.request_meta(address.clone(), META_LINK_ATTRIBUTE.to_string());
@@ -89,7 +89,7 @@ fn confirm_published_metadata(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
-    println!("got dht meta result: {:?}", result);
+    log_i!("got dht meta result: {:?}", result);
     // Done
     Ok(())
 }
@@ -239,6 +239,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
     // Setup
     println!("Testing: meta_test()");
     setup_two_nodes(alex, billy, can_connect)?;
+    log_i!("setup_two_nodes COMPLETE");
 
     // Send data & metadata on same address
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_1, &ENTRY_CONTENT_1)?;
@@ -249,6 +250,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         META_LINK_ATTRIBUTE,
         &META_LINK_CONTENT_1,
     )?;
+    log_i!("confirm_published_metadata(ENTRY_ADDRESS_1) COMPLETE");
 
     // Again but now send metadata first
     confirm_published_metadata(
@@ -259,6 +261,7 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
         &META_LINK_CONTENT_2,
     )?;
     confirm_published_data(alex, billy, &ENTRY_ADDRESS_2, &ENTRY_CONTENT_2)?;
+    log_i!("confirm_published_metadata(ENTRY_ADDRESS_2) COMPLETE");
 
     // Again but 'wait' at the end
     // Alex publishs data & meta on the network

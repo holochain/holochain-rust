@@ -13,8 +13,9 @@
   "log": {
     "default": "d",
     "tags": {
-      "p2pnode": "d",
-      "memory_server": "d"
+      "p2pnode": "e",
+      "metastore": "t",
+      "memory_server": "e"
     },
     "listeners": [
     "console"

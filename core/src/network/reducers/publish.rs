@@ -54,8 +54,8 @@ fn publish_crud_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: entry_address.clone(),
             attribute: STATUS_NAME.to_string(),
-            content_list: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap())
-                .unwrap(),
+            content_list: vec![serde_json::from_str(&serde_json::to_string(&crud_status).unwrap())
+                .unwrap()],
         }),
     )?;
 
@@ -70,10 +70,10 @@ fn publish_crud_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: entry_address.clone(),
             attribute: LINK_NAME.to_string(),
-            content_list: serde_json::from_str(
+            content_list: vec![serde_json::from_str(
                 &serde_json::to_string(&crud_link.unwrap()).unwrap(),
             )
-            .unwrap(),
+            .unwrap()],
         }),
     )?;
     Ok(())
@@ -108,8 +108,8 @@ fn publish_link_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: link.base().clone(),
             attribute: String::from("link"),
-            content_list: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
-                .unwrap(),
+            content_list: vec![serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
+                .unwrap()],
         }),
     )
 }

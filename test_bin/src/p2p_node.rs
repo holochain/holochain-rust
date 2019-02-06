@@ -17,12 +17,84 @@ use holochain_net_connection::{
     NetResult,
 };
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap},
     convert::TryFrom,
     sync::mpsc,
 };
+use multihash::{Hash};
 
 static TIMEOUT_MS: usize = 5000;
+
+pub type MetaStoreValue = serde_json::Value;
+
+pub struct MetaStore {
+    // TODO: Changed once meta is only Addresses
+    // pub meta_store: HashMap<MetaKey, HashSet<Address>>,
+    store: HashMap<MetaKey, HashMap<Address, serde_json::Value>>,
+}
+
+impl MetaStore {
+
+    pub fn new() -> Self {
+        MetaStore { store: HashMap::new() }
+    }
+
+    /// Check if this value is already stored
+    pub fn has(&self, meta_key: MetaKey, v: &MetaStoreValue) -> bool {
+        let hash = HashString::encode_from_str(&v.to_string(), Hash::SHA2256);
+        let maybe_map = self.store.get(&meta_key);
+        if maybe_map.is_none() {
+            return false;
+        }
+        maybe_map.unwrap().get(&hash).is_some()
+    }
+
+    ///
+    pub fn insert(&mut self, meta_key: MetaKey, v: MetaStoreValue) {
+        let hash = HashString::encode_from_str(&v.to_string(), Hash::SHA2256);
+        if let None = self.store.get_mut(&meta_key) {
+            let mut map = HashMap::new();
+            log_tt!("metastore",
+                "MetaStore: first content for '{:?}' = {} | {}",
+                meta_key, v, hash,
+            );
+            map.insert(hash, v);
+            self.store.insert(meta_key, map);
+        } else {
+            if let Some(map) = self.store.get_mut(&meta_key) {
+                assert!(map.get(&hash).is_none());
+                log_tt!("metastore",
+                    "MetaStore: adding content for '{:?}' = {} | {}",
+                    meta_key, v, hash,
+                );
+                map.insert(hash, v);
+            };
+        };
+    }
+
+    /// Get all values for a meta_key as a vec
+    pub fn get(&self, meta_key: MetaKey) -> Vec<serde_json::Value> {
+        let maybe_metas = self.store.get(&meta_key);
+        let metas = match maybe_metas.clone() {
+            Some(map) => map.clone(),
+            // if meta not found return empty list (will make the aggregation easier)
+            None => HashMap::new(),
+        };
+        let res = metas.iter().map(|(_, v)| v.clone()).collect();
+        res
+    }
+
+    /// Get all values stored
+    pub fn get_all(&self) -> Vec<MetaTuple> {
+        let mut meta_list: Vec<MetaTuple> = Vec::new();
+        for (meta_key, meta_map) in self.store.clone() {
+            for (_, v) in meta_map {
+                meta_list.push((meta_key.0.clone(), meta_key.1.clone(), v));
+            }
+        }
+        meta_list
+    }
+}
 
 /// Core Mock
 pub struct P2pNode {
@@ -46,9 +118,10 @@ pub struct P2pNode {
     // TODO: Have a datastore per dna ; perhaps in a CoreMock struct
     pub dna_address: Address,
     pub entry_store: HashMap<Address, serde_json::Value>,
-    pub meta_store: HashMap<MetaKey, HashSet<Address>>,
+
+    pub meta_store: MetaStore,
     pub authored_entry_store: HashMap<Address, serde_json::Value>,
-    pub authored_meta_store: HashMap<MetaKey, HashSet<Address>>,
+    pub authored_meta_store: MetaStore,
 
     pub logger: TweetProxy,
 }
@@ -107,42 +180,16 @@ impl P2pNode {
         &mut self,
         entry_address: &Address,
         attribute: &str,
-        content: &Address,
+        link_entry_address: &serde_json::Value,
         can_publish: bool,
     ) -> NetResult<MetaKey> {
         let meta_key = (entry_address.clone(), attribute.to_string());
 
-        // Must not already have meta
+        // bookkeep
         {
-            {
-                let maybe_stored_map = self.meta_store.get(&meta_key);
-                assert!(
-                    maybe_stored_map.is_none()
-                        || maybe_stored_map
-                            .expect("meta shoud exist")
-                            .get(&content)
-                            .is_none()
-                );
-            }
-            // bookkeep
-            if let None = self.authored_meta_store.get_mut(&meta_key) {
-                let mut set = HashSet::new();
-                self.logger.t(&format!(
-                    "author_meta: first content for '{:?}' = {}",
-                    meta_key, content
-                ));
-                set.insert(content.clone());
-                self.authored_meta_store.insert(meta_key.clone(), set);
-            } else {
-                if let Some(set) = self.authored_meta_store.get_mut(&meta_key) {
-                    assert!(set.get(&content).is_none());
-                    self.logger.t(&format!(
-                        "author_meta: adding content for '{:?}' = {}",
-                        meta_key, content
-                    ));
-                    set.insert(content.clone());
-                };
-            };
+            // Must not already have meta
+            assert!(!self.meta_store.has(meta_key.clone(), link_entry_address));
+            self.authored_meta_store.insert(meta_key.clone(), link_entry_address.clone());
         }
         // publish it
         if can_publish {
@@ -151,7 +198,7 @@ impl P2pNode {
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: entry_address.clone(),
                 attribute: attribute.to_string(),
-                content_list: vec![content.clone()],
+                content_list: vec![link_entry_address.clone()],
             };
             let res = self.send(JsonProtocol::PublishMeta(msg_data).into());
             return res.map(|_| meta_key);
@@ -167,26 +214,11 @@ impl P2pNode {
             .insert(entry_address.clone(), entry_content.clone());
     }
 
-    pub fn hold_meta(&mut self, entry_address: &Address, attribute: &str, content: &Address) {
+    pub fn hold_meta(&mut self, entry_address: &Address, attribute: &str, link_entry_address: &serde_json::Value) {
         let meta_key = (entry_address.clone(), attribute.to_string());
         // Must not already have meta
-        {
-            let maybe_authored_map = self.authored_meta_store.get(&meta_key);
-            assert!(
-                maybe_authored_map.is_none() || maybe_authored_map.unwrap().get(&content).is_none()
-            );
-        }
-        // create or update hashmap
-        if let None = self.meta_store.get(&meta_key) {
-            let mut set = HashSet::new();
-            set.insert(content.clone());
-            self.meta_store.insert(meta_key, set);
-        } else {
-            if let Some(set) = self.meta_store.get_mut(&meta_key) {
-                assert!(set.get(&content).is_none());
-                set.insert(content.clone());
-            };
-        };
+        assert!(!self.authored_meta_store.has(meta_key.clone(), link_entry_address));
+        self.meta_store.insert(meta_key, link_entry_address.clone());
     }
 }
 
@@ -309,17 +341,12 @@ impl P2pNode {
         let msg;
         {
             // Get meta from local datastores
-            let meta_key = &(request.entry_address.clone(), request.attribute.clone());
-            let mut maybe_meta_set = self.authored_meta_store.get(meta_key);
-            if maybe_meta_set.is_none() {
-                maybe_meta_set = self.meta_store.get(meta_key);
+            let meta_key = (request.entry_address.clone(), request.attribute.clone());
+            let mut metas = self.authored_meta_store.get(meta_key.clone());
+            if metas.is_empty() {
+                metas = self.meta_store.get(meta_key);
             }
-            // if meta not found send empty content (will make the aggregation easier)
-            let meta_set = match maybe_meta_set.clone() {
-                Some(set) => set.clone(),
-                None => HashSet::new(),
-            };
-            self.logger.t(&format!("meta_set = {:?}", meta_set));
+            self.logger.t(&format!("metas = {:?}", metas));
             msg = FetchMetaResultData {
                 request_id: request.request_id.clone(),
                 requester_agent_id: request.requester_agent_id.clone(),
@@ -327,7 +354,7 @@ impl P2pNode {
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: request.entry_address.clone(),
                 attribute: request.attribute.clone(),
-                content_list: meta_set.iter().map(|v| v.clone()).collect(),
+                content_list: metas
             };
         }
         self.send(JsonProtocol::HandleFetchMetaResult(msg).into())
@@ -369,23 +396,10 @@ impl P2pNode {
     /// Reply to a HandleGetPublishingMetaList request
     pub fn reply_to_HandleGetPublishingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
-        let meta_sets: Vec<(HashString, String, HashSet<Address>)> = self
-            .authored_meta_store
-            .iter()
-            .map(|((k1, k2), v)| (k1.clone(), k2.clone(), v.clone()))
-            .collect();
-        let mut meta_list: Vec<MetaTuple> = Vec::new();
-        for (k1, k2, set) in meta_sets {
-            let mut vec: Vec<MetaTuple> = set
-                .iter()
-                .map(|v| (k1.clone(), k2.clone(), v.clone()))
-                .collect();
-            meta_list.append(&mut vec);
-        }
         let msg = MetaListData {
-            meta_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
+            meta_list: self.authored_meta_store.get_all(),
         };
         self.send(JsonProtocol::HandleGetPublishingMetaListResult(msg).into())
     }
@@ -411,9 +425,9 @@ impl P2pNode {
         assert_eq!(request.dna_address, self.dna_address);
         let entry_address_list = self.entry_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = EntryListData {
-            entry_address_list: entry_address_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
+            entry_address_list: entry_address_list,
         };
         self.send(JsonProtocol::HandleGetHoldingEntryListResult(msg).into())
     }
@@ -435,23 +449,10 @@ impl P2pNode {
     /// Reply to a HandleGetHoldingMetaList request
     pub fn reply_to_HandleGetHoldingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
-        let meta_sets: Vec<(HashString, String, HashSet<Address>)> = self
-            .meta_store
-            .iter()
-            .map(|((k1, k2), v)| (k1.clone(), k2.clone(), v.clone()))
-            .collect();
-        let mut meta_list: Vec<MetaTuple> = Vec::new();
-        for (k1, k2, set) in meta_sets {
-            let mut vec: Vec<MetaTuple> = set
-                .iter()
-                .map(|v| (k1.clone(), k2.clone(), v.clone()))
-                .collect();
-            meta_list.append(&mut vec);
-        }
         let msg = MetaListData {
-            meta_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
+            meta_list: self.meta_store.get_all(),
         };
         self.send(JsonProtocol::HandleGetHoldingMetaListResult(msg).into())
     }
@@ -506,9 +507,9 @@ impl P2pNode {
             recv_dm_log: Vec::new(),
             dna_address,
             entry_store: HashMap::new(),
-            meta_store: HashMap::new(),
+            meta_store: MetaStore::new(),
             authored_entry_store: HashMap::new(),
-            authored_meta_store: HashMap::new(),
+            authored_meta_store: MetaStore::new(),
             logger: TweetProxy::new("p2pnode"),
         }
     }
@@ -782,29 +783,18 @@ impl P2pNode {
             }
             JsonProtocol::HandleStoreMeta(msg) => {
                 assert_eq!(msg.dna_address, self.dna_address);
-                // Change vec to set
-                let meta_set = msg.content_list.iter().map(|v| v.clone()).collect();
-
-                //                for content in msg.content_list {
-                //                    self.meta_store
-                //                        .insert(, msg.content_list);
-                //                }
-
                 // Store data in local datastore
-                let meta_key = &(msg.entry_address, msg.attribute);
-                if let None = self.meta_store.get(meta_key) {
-                    self.meta_store.insert(meta_key.clone(), meta_set);
-                } else {
-                    if let Some(set) = self.meta_store.get_mut(meta_key) {
-                        set.extend(meta_set);
-                    };
-                };
+                let meta_key = (msg.entry_address, msg.attribute);
+                for content in msg.content_list {
+                    self.meta_store.insert(meta_key.clone(), content);
+                }
             }
-            JsonProtocol::HandleDropMeta(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
-                // Remove data in local datastore
-                self.meta_store.remove(&(msg.entry_address, msg.attribute));
-            }
+            // TODO
+//            JsonProtocol::HandleDropMeta(msg) => {
+//                assert_eq!(msg.dna_address, self.dna_address);
+//                // Remove data in local datastore
+//                self.meta_store.remove(&(msg.entry_address, msg.attribute));
+//            }
 
             // -- Publish & Hold data -- //
             JsonProtocol::HandleGetPublishingEntryList(msg) => {

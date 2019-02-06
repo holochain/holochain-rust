@@ -14,7 +14,7 @@ use super::protocol::Protocol;
 
 // Tuple holding all the info required for identifying a metadata:
 // (entry_address, attribute, content which is a HashString)
-pub type MetaTuple = (Address, String, Address);
+pub type MetaTuple = (Address, String, serde_json::Value);
 // (entry_address, attribute)
 pub type MetaKey = (Address, String);
 
@@ -214,7 +214,7 @@ pub struct DhtMetaData {
     pub attribute: String,
     // single string or list of hashs
     #[serde(rename = "contentList")]
-    pub content_list: Vec<Address>,
+    pub content_list: Vec<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
@@ -233,7 +233,7 @@ pub struct FetchMetaResultData {
     // // List of (hash, content) pairs.
     // single string or list of hashs
     #[serde(rename = "contentList")]
-    pub content_list: Vec<Address>,
+    pub content_list: Vec<serde_json::Value>,
 }
 
 /// Drop some data request from own p2p-module

@@ -327,11 +327,6 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
         return false;
     }
 
-    let cap_type = grant.cap_type();
-    if cap_type == CapabilityType::Public {
-        return true;
-    }
-
     if grant.token() != fn_call.cap_token() {
         return false;
     }
@@ -1121,7 +1116,7 @@ pub mod tests {
             &grant,
             &zome_call_valid(context.clone(), &token, &test_address1)
         ));
-        assert!(verify_grant(
+        assert!(!verify_grant(
             context.clone(),
             &grant,
             &zome_call_from_addr1_bad_token

@@ -196,7 +196,7 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
 }
 
 fn republish_all_public_chain_entries(context: &Arc<Context>) {
-    let chain = context.state().unwrap().agent().chain();
+    let chain = context.state().unwrap().agent().chain_store();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
         .iter(&top_header)

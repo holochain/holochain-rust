@@ -13,15 +13,3 @@ impl From<&'static str> for Signature {
         Signature(s.to_owned())
     }
 }
-
-pub fn test_signatures() -> Vec<Signature> {
-    vec![Signature::from("fake-signature")]
-}
-
-pub fn test_signature_b() -> Signature {
-    Signature::from("another-fake-signature")
-}
-
-pub fn test_signature_c() -> Signature {
-    Signature::from("sig-c")
-}

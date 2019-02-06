@@ -1,5 +1,5 @@
 extern crate holochain_cas_implementations;
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
@@ -7,7 +7,7 @@ extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
 
-use holochain_container_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
+use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
     action::Action,
     context::Context,
@@ -215,7 +215,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 
 // Function called at start of all unit tests:
 //   Startup holochain and do a call on the specified wasm function.
-pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainResult<JsonString> {
+pub fn hc_setup_and_call_zome_fn<J: Into<JsonString>>(wasm_path: &str, fn_name: &str, params: J) -> HolochainResult<JsonString> {
     // Setup the holochain instance
     let wasm = create_wasm_from_file(wasm_path);
     let defs = create_test_defs_with_fn_name(fn_name);
@@ -234,7 +234,7 @@ pub fn hc_setup_and_call_zome_fn(wasm_path: &str, fn_name: &str) -> HolochainRes
             None,
         )),
         fn_name,
-        r#"{}"#,
+        &String::from(params.into()),
     );
 }
 

@@ -30,7 +30,12 @@ pub(crate) fn get_entry_from_agent(
     context: &Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
-    let cas = context.state().unwrap().agent().chain().content_storage();
+    let cas = context
+        .state()
+        .unwrap()
+        .agent()
+        .chain_store()
+        .content_storage();
     get_entry_from_cas(&cas.clone(), address)
 }
 
@@ -105,7 +110,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     Ok(Some((crud_status, maybe_crud_link)))
 }
 
-/// GetEntry Action Creator
+/// FetchEntry Action Creator
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub fn get_entry_with_meta<'a>(

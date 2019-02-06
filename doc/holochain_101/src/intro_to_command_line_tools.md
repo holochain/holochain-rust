@@ -4,5 +4,4 @@ There are a set of custom-designed tools for working with Holochain that can be 
 
 To install the command line tools, use the [quick start installation guide](https://developer.holochain.org/start.html).
 
-In addition to the installation instructions, [the README](https://github.com/holochain/holochain-rust/tree/v0.0.3/cmd#usage) has an overview of the different functions of the command line tools. You will also learn these organically just by proceeding through the other articles in this chapter and the ones that follow. 
-
+In addition to the installation instructions, [the README](https://github.com/holochain/holochain-rust/tree/v0.0.4/cli#usage) has an overview of the different functions of the command line tools. You will also learn these organically just by proceeding through the other articles in this chapter and the ones that follow.

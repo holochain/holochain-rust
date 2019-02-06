@@ -10,8 +10,8 @@ use std::{
 };
 
 use holochain_conductor_api::{
-    config::{load_configuration, Configuration},
     conductor::Conductor as RustConductor,
+    config::{load_configuration, Configuration},
 };
 use holochain_core::{
     action::Action,
@@ -126,9 +126,11 @@ declare_types! {
                 let guard = cx.lock();
                 let tc = &mut *this.borrow_mut(&guard);
 
-                let mut is_running = tc.is_running.lock().unwrap();
-                // This causes MainBackgroundTask to eventually terminate
-                *is_running = false;
+                {
+                    let mut is_running = tc.is_running.lock().unwrap();
+                    // This causes MainBackgroundTask to eventually terminate
+                    *is_running = false;
+                }
 
                 // TODO are we sure shutdown should not return a Result?
                 let result = tc.conductor.shutdown();

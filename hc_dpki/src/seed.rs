@@ -42,7 +42,6 @@ impl Seed {
         passphrase: &mut SecBuf,
         config: Option<PwHashConfig>,
     ) -> Result<FromBundle, HolochainError> {
-
         let seed_data_decoded = base64::decode(&bundle.data)?;
         let seed_data_string = str::from_utf8(&seed_data_decoded)?;
 
@@ -97,6 +96,8 @@ impl Seed {
                 seed_type: stype.clone(),
                 seed_buf: s,
             },
+
+            // TODO: We need some way of zeroing the internal memory used by mnemonic
             MnemonicInit(phrase) => {
                 let mnemonic = Mnemonic::from_phrase(phrase, Language::English).unwrap();
                 let entropy: &[u8] = mnemonic.entropy();
@@ -111,6 +112,7 @@ impl Seed {
     }
 
     /// Generated a mnemonic for the seed.
+    // TODO: We need some way of zeroing the internal memory used by mnemonic
     pub fn get_mnemonic(&mut self) -> Result<String, HolochainError> {
         let entropy = self.seed_buf.read_lock();
         let e = &*entropy;
@@ -316,9 +318,7 @@ mod tests {
         let mut pin = SecBuf::with_secure(16);
         random_secbuf(&mut pin);
 
-        let dps: DevicePinSeed = ds
-            .get_device_pin_seed(&mut pin, TEST_CONFIG)
-            .unwrap();
+        let dps: DevicePinSeed = ds.get_device_pin_seed(&mut pin, TEST_CONFIG).unwrap();
 
         assert_eq!("hcDevicePinSeed".to_string(), dps.s.seed_type);
     }
@@ -334,9 +334,7 @@ mod tests {
         let mut pin = SecBuf::with_secure(16);
         random_secbuf(&mut pin);
 
-        let mut dps: DevicePinSeed = ds
-            .get_device_pin_seed(&mut pin, TEST_CONFIG)
-            .unwrap();
+        let mut dps: DevicePinSeed = ds.get_device_pin_seed(&mut pin, TEST_CONFIG).unwrap();
 
         let keys = dps.get_application_keypair(5).unwrap();
 

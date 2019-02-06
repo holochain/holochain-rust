@@ -460,6 +460,7 @@ impl From<JsonProtocol> for Protocol {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use holochain_core_types::hash::HashString;
 
     macro_rules! test_convert {
         ($e:expr) => {
@@ -674,7 +675,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content: json!("hello-meta"),
+            content_list: vec![HashString::from("hello-meta")],
         }));
     }
     #[test]
@@ -686,7 +687,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content: json!("hello-meta"),
+            content_list: vec![HashString::from("hello-meta")],
         }));
     }
     #[test]
@@ -696,7 +697,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content: json!("hello-meta"),
+            content_list: vec![HashString::from("hello-meta")],
         }));
     }
     #[test]
@@ -706,7 +707,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content: json!("hello-meta"),
+            content_list: vec![HashString::from("hello-meta")],
         }));
     }
     #[test]
@@ -771,12 +772,12 @@ mod tests {
                     (
                         "data1".into(),
                         "meta_attribute".to_string(),
-                        "hashed_content".to_string()
+                        "entry_address".into()
                     ),
                     (
                         "data2".into(),
                         "meta_attribute".to_string(),
-                        "hashed_content".to_string()
+                        "other_entry_address".into()
                     )
                 ],
             }
@@ -798,12 +799,12 @@ mod tests {
                 (
                     "data1".into(),
                     "meta_attribute".to_string(),
-                    "hashed_content".to_string()
+                    "entry_address".into()
                 ),
                 (
                     "data2".into(),
                     "meta_attribute".to_string(),
-                    "hashed_content".to_string()
+                    "other_entry_address".into()
                 )
             ],
         }));

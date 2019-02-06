@@ -25,7 +25,9 @@ fn reduce_respond_get_links_inner(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: get_dht_meta_data.entry_address.clone().into(),
             attribute: get_dht_meta_data.attribute.clone(),
-            content_list: vec![serde_json::from_str(&serde_json::to_string(&links).unwrap()).unwrap()],
+            content_list: vec![
+                serde_json::from_str(&serde_json::to_string(&links).unwrap()).unwrap(),
+            ],
         }),
     )
 }

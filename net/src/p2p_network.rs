@@ -24,7 +24,6 @@ impl P2pNetwork {
     /// `config` is the configuration of the p2p module
     /// `handler` is the closure for handling Protocol messages received from the network.
     pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
-        println!("config = {:?}", config);
         // Create Config struct
         let network_config = config.backend_config.to_string().into();
         // Provide worker factory depending on backend kind

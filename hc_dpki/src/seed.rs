@@ -42,7 +42,6 @@ impl Seed {
         passphrase: &mut SecBuf,
         config: Option<PwHashConfig>,
     ) -> Result<FromBundle, HolochainError> {
-        // let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
 
         let seed_data_decoded = base64::decode(&bundle.data)?;
         let seed_data_string = str::from_utf8(&seed_data_decoded)?;
@@ -73,7 +72,6 @@ impl Seed {
         hint: String,
         config: Option<PwHashConfig>,
     ) -> Result<bundle::KeyBundle, HolochainError> {
-        // let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
         let seed_data: bundle::ReturnBundleData =
             util::pw_enc(&mut self.seed_buf, passphrase, config)?;
 
@@ -184,18 +182,11 @@ impl DeviceSeed {
     /// @return {DevicePinSeed}
     pub fn get_device_pin_seed(
         &mut self,
-        pin: String,
+        pin: &mut SecBuf,
         config: Option<PwHashConfig>,
     ) -> Result<DevicePinSeed, HolochainError> {
-        (pin.len() >= 4).ok_or(HolochainError::ErrorGeneric("Invalid PIN Size".to_string()))?;
-
-        // let pin_encoded = base64::encode(&pin);
-        let mut pin_buf = SecBuf::with_insecure_from_string(pin);
-
         let mut hash = SecBuf::with_insecure(pwhash::HASHBYTES);
-
-        util::pw_hash(&mut pin_buf, &mut self.s.seed_buf, &mut hash, config)?;
-
+        util::pw_hash(pin, &mut self.s.seed_buf, &mut hash, config)?;
         Ok(DevicePinSeed::new(hash))
     }
 }
@@ -313,22 +304,6 @@ mod tests {
         let ds: DeviceSeed = rs.get_device_seed(3).unwrap();
         assert_eq!("hcDeviceSeed".to_string(), ds.s.seed_type);
     }
-    #[test]
-    fn it_should_error_with_invalid_device_pin_seed_from_root_seed() {
-        let mut seed_buf_in = SecBuf::with_insecure(16);
-        random_secbuf(&mut seed_buf_in);
-
-        let mut rs = RootSeed::new(seed_buf_in);
-
-        let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
-        let seed: HolochainError = ds
-            .get_device_pin_seed("802".to_string(), TEST_CONFIG)
-            .unwrap_err();
-        assert_eq!(
-            HolochainError::ErrorGeneric("Invalid PIN Size".to_string()),
-            seed
-        );
-    }
 
     #[test]
     fn it_should_create_a_device_pin_seed_from_root_seed() {
@@ -338,8 +313,11 @@ mod tests {
         let mut rs = RootSeed::new(seed_buf_in);
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
+        let mut pin = SecBuf::with_secure(16);
+        random_secbuf(&mut pin);
+
         let dps: DevicePinSeed = ds
-            .get_device_pin_seed("1802".to_string(), TEST_CONFIG)
+            .get_device_pin_seed(&mut pin, TEST_CONFIG)
             .unwrap();
 
         assert_eq!("hcDevicePinSeed".to_string(), dps.s.seed_type);
@@ -353,8 +331,11 @@ mod tests {
         let mut rs = RootSeed::new(seed_buf_in);
 
         let mut ds: DeviceSeed = rs.get_device_seed(3).unwrap();
+        let mut pin = SecBuf::with_secure(16);
+        random_secbuf(&mut pin);
+
         let mut dps: DevicePinSeed = ds
-            .get_device_pin_seed("1802".to_string(), TEST_CONFIG)
+            .get_device_pin_seed(&mut pin, TEST_CONFIG)
             .unwrap();
 
         let keys = dps.get_application_keypair(5).unwrap();

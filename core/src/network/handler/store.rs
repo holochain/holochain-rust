@@ -3,10 +3,7 @@ use crate::{
     network::entry_with_header::EntryWithHeader,
     workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
 };
-use holochain_core_types::{
-    cas::content::Address,
-    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-};
+use holochain_core_types::crud_status::{LINK_NAME, STATUS_NAME};
 use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 

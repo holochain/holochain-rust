@@ -118,7 +118,7 @@ fn main() {
 
     // Load config
     let config = load_config_file(&config_path);
-    let n3h_path = config["N3H_PATH"].clone().to_string();
+    let n3h_path = config["N3H_PATH"].as_str().unwrap();
     println!("n3h_path = {}", n3h_path);
 
     // Configure logger

@@ -227,13 +227,6 @@ impl RootSeed {
         Ok(self.s.get_seed_bundle(passphrase, hint, config)?)
     }
 
-    /// Get a new, completely random root seed
-    pub fn new_random() -> Self {
-        let mut s = SecBuf::with_insecure(32);
-        random_secbuf(&mut s);
-        RootSeed::new(s)
-    }
-
     /// delegate to base struct
     pub fn new(s: SecBuf) -> Self {
         RootSeed {

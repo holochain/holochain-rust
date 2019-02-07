@@ -1,6 +1,6 @@
 # Instances
 
-`instances` is an array of configurations for "instances", meaning there can be multiple within one Conductor. An "instance" is a running copy of a [DNA](./conductor_dnas.md), by a particular [agent](./conductor_agents.md). Based on these configurations, the Conductor will attempt to start up these instances, initializing (or resuming) a local source chain and DHT. It is possible to use the same DNA with multiple different [agents](./conductor_agents.md), but it is **not** recommended to run two instances with the same DNA and same agent. An instance has a configurable `storage` property, which can be set to save to disk, or just store temporarily in memory.
+`instances` is an array of configurations of DNA instances, each of which is a running copy of a [DNA](./conductor_dnas.md), by a particular [agent](./conductor_agents.md). Based on these configurations, the Conductor will attempt to start up these instances, initializing (or resuming) a local source chain and DHT. It is possible to use the same DNA with multiple different [agents](./conductor_agents.md), but it is **not** recommended to run two instances with the same DNA and same agent. An instance has a configurable `storage` property, which can be set to save to disk, or just store temporarily in memory, which is useful for testing purposes.
 
 **Optional**
 

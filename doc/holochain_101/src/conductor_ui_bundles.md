@@ -1,6 +1,6 @@
 # UI Bundles
 
-`ui_bundles` is an array of configurations for "UI Bundles", meaning there can be multiple within one Conductor. A UI Bundle is a folder containing static assets, like HTML, CSS, and Javascript files, that will be accessed through the browser and used as a user interface for one or more DNA instances. These are served via [UI Interfaces](./conductor_ui_interfaces.md), which is covered next.
+`ui_bundles` is an array of configurations of folders containing static assets, like HTML, CSS, and Javascript files, that will be accessed through a browser and used as a user interface for one or more DNA instances. These are served via [UI Interfaces](./conductor_ui_interfaces.md), which is covered next.
 
 **Optional**
 

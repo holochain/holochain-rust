@@ -1,6 +1,6 @@
 # DNAs
 
-`dnas` is an array of configurations for "DNAs", meaning there can be multiple within one Conductor. A DNA is a packaged JSON file containing a valid DNA configuration including the WASM code for the Zomes. How to package DNA from source files can be read about [here](./packaging.md).
+`dnas` is an array of configurations for "DNAs" that are available to be instantiated in the Conductor. A DNA is a packaged JSON file containing a valid DNA configuration including the WASM code for the Zomes. How to package DNA from source files can be read about [here](./packaging.md).
 
 **Optional**
 

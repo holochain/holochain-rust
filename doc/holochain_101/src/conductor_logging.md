@@ -18,7 +18,7 @@ A table for optionally adding a set of rules to the logger
 An array of tables containing the rules for the logger
 
 #### `LogRule.pattern`: `Regex string`
-A Regex pattern as a string to match log messages against, to see whether this rule should affect them.
+A Regex pattern as a string to match a log message against, to see whether this rule should apply to it.
 
 #### `LogRule.exclude`: `bool` Optional
 Whether to use this pattern to exclude things that match from the logs. Defaults to `false`. This option is useful for when the logs seem noisy.

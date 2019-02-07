@@ -1,11 +1,11 @@
 # Development Conductor
 
-Meant primarily for accelerating the development process, the easiest Conductor to run, with zero configuration required, is the `hc run` Conductor, which is built right into the [development command line tools](./intro_to_command_line_tools.md). It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory valid DNA source files are contained. The command is simply:
+The easiest Conductor to run is built right into the [development command line tools](./intro_to_command_line_tools.md). It has no required configuration and is launched via the `hc run` command. Meant primarily for accelerating the development process it is useful for testing APIs or prototyping user interfaces.  The `hc run` command expects to be executed from inside a directory with valid DNA source files: The command is simply:
 ```shell
 hc run
 ```
 
-This will start the DNA instance in a Conductor and open, by default, a WebSocket JSON-RPC server on port `8888`. How to use the API for this is covered in more depth in the [JSON-RPC interfaces article](./json_rpc_interfaces.md).
+This will start the DNA instance in a Conductor and open, by default, a WebSocket JSON-RPC server on port `8888`. You can find more details on how to use the API in your UI in the [JSON-RPC interfaces article](./json_rpc_interfaces.md).
 
 The following are the options for configuring `hc run`, should you need something besides the defaults.
 

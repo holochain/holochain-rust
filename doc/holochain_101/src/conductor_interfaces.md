@@ -1,5 +1,5 @@
 # Interfaces
-`interfaces` is an array of configurations for "interfaces", meaning there can be multiple within one Conductor. Interfaces are user facing and make Zome functions, info, and optionally admin functions available to GUIs, browser based web UIs, local native UIs, and other local applications and scripts.
+`interfaces` is an array of configurations of the channels (e.g. http or websockets) that the Conductor will use to send information to and from instances and users. Interfaces are user facing and make Zome functions, info, and optionally admin functions available to GUIs, browser based web UIs, local native UIs, and other local applications and scripts.
 The following implementations are already developed:
 * WebSockets
 * HTTP

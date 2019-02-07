@@ -4,7 +4,7 @@
 
 ## Querying Running DNA Instances
 
-Holochain Conductors expose a method `info/instances`. What it does is return a list of the running DNA instances in the Conductor. For each running instance, it provides the instance "ID", the name of the DNA, and the agent "id". The instance IDs will be particularly useful in other circumstances.
+Holochain Conductors expose a method `info/instances`. This method returns a list of the running DNA instances in the Conductor. For each running instance, it provides the instance "ID", the name of the DNA, and the agent "id". The instance IDs will be particularly useful in other circumstances.
 
 The method `info/instances` doesn't require any input parameters, so `params` can be left off the request.
 

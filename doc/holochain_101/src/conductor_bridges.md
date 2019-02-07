@@ -1,5 +1,5 @@
 # Bridges
-`bridges` is an array of configuration instances that are configured to be able to make calls to Zome functions of another instance. You can think of this of as configuring an internal direct interface between DNA instances.  The [section on bridging](bridging.md) provides more information on how this ability is used to to compose complex applications out of many DNA instances.
+`bridges` is an array of configuration instances that are configured to be able to make calls to Zome functions of another instance. You can think of this of as configuring an internal direct interface between DNA instances.  The [section on bridging](./bridging.md) provides more information on how this ability is used to to compose complex applications out of many DNA instances.
 
 **Optional**
 

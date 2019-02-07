@@ -80,7 +80,7 @@ fn publish_crud_meta(
     Ok(())
 }
 
-/// Send to network a PublishDhtMeta message holding a link metadata to `entry_with_header`
+/// Send to network a PublishMeta message holding a link metadata to `entry_with_header`
 fn publish_link_meta(
     context: &Arc<Context>,
     network_state: &mut NetworkState,

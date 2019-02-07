@@ -33,7 +33,7 @@ pub fn empty_publish_entry_list_test(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
-    println!("got result: {:?}", result);
+    log_i!("got result: {:?}", result);
     // Done
     Ok(())
 }
@@ -68,7 +68,7 @@ pub fn publish_entry_list_test(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
-    println!("got result: {:?}", result);
+    log_i!("got result: {:?}", result);
     // Done
     Ok(())
 }
@@ -108,7 +108,7 @@ pub fn publish_meta_list_test(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
-    println!("got result: {:?}", result);
+    log_i!("got result: {:?}", result);
     // Done
     Ok(())
 }
@@ -145,7 +145,7 @@ pub fn hold_entry_list_test(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
-    println!("\t got result: {:?}", result);
+    log_i!("got result: {:?}", result);
     // Done
     Ok(())
 }
@@ -182,7 +182,7 @@ pub fn hold_meta_list_test(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
-    println!("got result: {:?}", result);
+    log_i!("got result: {:?}", result);
     // Done
     Ok(())
 }
@@ -213,7 +213,7 @@ pub fn double_publish_entry_list_test(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
-    println!("got result: {:?}", result);
+    log_i!("got result: {:?}", result);
     // Done
     Ok(())
 }
@@ -228,6 +228,8 @@ pub fn double_publish_meta_list_test(
     // Setup
     println!("Testing: double_publish_meta_list_test()");
     setup_two_nodes(alex, billy, can_connect)?;
+    log_i!("setup_two_nodes() COMPLETE");
+
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     alex.author_meta(
@@ -237,7 +239,7 @@ pub fn double_publish_meta_list_test(
         true,
     )?;
     alex.reply_to_first_HandleGetPublishingMetaList();
-    // Should NOT receive a HandleFetchEntry request from network module
+    // Should NOT receive a HandleFetchMeta request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     assert!(!has_received);
     // billy might receive HandleDhtStore
@@ -253,7 +255,7 @@ pub fn double_publish_meta_list_test(
     let result = billy
         .wait(Box::new(one_is!(JsonProtocol::FetchMetaResult(_))))
         .unwrap();
-    println!("got result: {:?}", result);
+    log_i!("got result: {:?}", result);
     // Done
     Ok(())
 }

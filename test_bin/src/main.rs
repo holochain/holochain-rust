@@ -45,7 +45,7 @@ lazy_static! {
     pub static ref TWO_NODES_BASIC_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         basic_workflows::setup_two_nodes,
         basic_workflows::send_test,
-        basic_workflows::dht_test,
+         basic_workflows::dht_test,
         basic_workflows::meta_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
@@ -101,11 +101,7 @@ fn main() {
     // Check args ; get config filepath
     let args: Vec<String> = std::env::args().collect();
     let mut config_path = String::new();
-    if args.len() != 2 {
-        println!(
-            "Usage: No config file supplied. Using default config: test_bin/data/test_config.json"
-        );
-    } else {
+    if args.len() == 2 {
         config_path = args[1].clone();
     }
     if config_path == "" {
@@ -113,8 +109,7 @@ fn main() {
             "Usage: No config file supplied. Using default config: test_bin/data/test_config.json"
         );
         config_path = format!(
-            "test_bin{}data{}test_config.json",
-            std::path::MAIN_SEPARATOR,
+            "test_bin{0}data{0}test_config.json",
             std::path::MAIN_SEPARATOR
         )
         .to_string();

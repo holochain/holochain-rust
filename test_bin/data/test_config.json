@@ -1,8 +1,8 @@
 {
   "N3H_PATH": "C:\\github\\n3h",
   "modes": {
-    "IN_MEMORY": false,
-    "IPC_MOCK": false,
+    "IN_MEMORY": true,
+    "IPC_MOCK": true,
     "HACK_MODE": true
   },
   "suites": {
@@ -14,8 +14,8 @@
     "default": "d",
     "tags": {
       "p2pnode": "d",
-      "metastore": "i",
-      "memory_server": "i"
+      "metastore": "d",
+      "memory_server": "d"
     },
     "listeners": [
     "console"

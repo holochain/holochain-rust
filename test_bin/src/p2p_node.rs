@@ -343,6 +343,10 @@ impl P2pNode {
                 }
             };
         }
+        self.logger.t(&format!(
+            "> ({}) reply_to_HandleFetchEntry() sending",
+            self.agent_id,
+        ));
         self.send(msg)
     }
 
@@ -762,8 +766,7 @@ impl P2pNode {
             }
             JsonProtocol::HandleFetchEntry(msg) => {
                 assert_eq!(msg.dna_address, self.dna_address);
-                self.reply_to_HandleFetchEntry(&msg)
-                    .expect("Should reply to a HandleFetchEntry");
+                // n/a
             }
             JsonProtocol::HandleFetchEntryResult(_msg) => {
                 // n/a
@@ -792,8 +795,7 @@ impl P2pNode {
             }
             JsonProtocol::HandleFetchMeta(msg) => {
                 assert_eq!(msg.dna_address, self.dna_address);
-                self.reply_to_HandleFetchMeta(&msg)
-                    .expect("Should reply to a HandleFetchMeta");
+                // n/a
             }
             JsonProtocol::HandleFetchMetaResult(_msg) => {
                 // n/a

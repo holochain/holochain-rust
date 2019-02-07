@@ -5,6 +5,7 @@ use holochain_net_connection::{
     NetResult,
 };
 use p2p_node::P2pNode;
+use holochain_net::tweetlog::*;
 
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
@@ -171,10 +172,13 @@ pub fn hold_and_publish_test(
     // Setup
     println!("Testing: hold_entry_list_test()");
     setup_three_nodes(alex, billy, camille, can_connect)?;
+    log_i!("setup_three_nodes() COMPLETE");
+
     // Have alex hold some data
     alex.hold_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1);
     // Alex: Look for the hold_list request received from network module and reply
     alex.reply_to_first_HandleGetHoldingEntryList();
+
     // Might receive a HandleFetchEntry request from network module:
     // hackmode would want the data right away
     let has_received = alex.wait_HandleFetchEntry_and_reply();
@@ -183,7 +187,7 @@ pub fn hold_and_publish_test(
         let _ = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleFetchEntry(_))), 2000);
     }
     // Have billy author the same data
-    billy.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
+    billy.author_entry(&ENTRY_ADDRESS_2, &ENTRY_CONTENT_2, true)?;
 
     //    // Should NOT receive a HandleStoreEntry request from network module?
     //    let maybe_request = alex
@@ -195,8 +199,9 @@ pub fn hold_and_publish_test(
     //    let maybe_request = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))), 2000);
     //    assert!(maybe_request.is_none());
 
+
     // Camille requests that entry
-    camille.request_entry(ENTRY_ADDRESS_1.clone());
+    let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());
     // Alex or billy or Camille might receive HandleFetchEntry request as this moment
     let has_received = alex.wait_HandleFetchEntry_and_reply();
     if !has_received {
@@ -210,7 +215,33 @@ pub fn hold_and_publish_test(
     let result = camille
         .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
         .unwrap();
-    println!("\t got result: {:?}", result);
+    log_i!("got result 1: {:?}", result);
+    let entry_data = unwrap_to!(result => JsonProtocol::FetchEntryResult);
+    assert_eq!(entry_data.request_id, fetch_entry.request_id);
+    assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_1.clone());
+    assert_eq!(entry_data.entry_content, ENTRY_CONTENT_1.clone());
+
+    // Camille requests that entry
+    let fetch_entry = camille.request_entry(ENTRY_ADDRESS_2.clone());
+    // Alex or billy or Camille might receive HandleFetchEntry request as this moment
+    let has_received = alex.wait_HandleFetchEntry_and_reply();
+    if !has_received {
+        let has_received = billy.wait_HandleFetchEntry_and_reply();
+        if !has_received {
+            let _has_received = camille.wait_HandleFetchEntry_and_reply();
+        }
+    }
+
+    // Camille should receive the data
+    let result = camille
+        .wait(Box::new(one_is!(JsonProtocol::FetchEntryResult(_))))
+        .unwrap();
+    log_i!("got result 2: {:?}", result);
+    let entry_data = unwrap_to!(result => JsonProtocol::FetchEntryResult);
+    assert_eq!(entry_data.request_id, fetch_entry.request_id);
+    assert_eq!(entry_data.entry_address, ENTRY_ADDRESS_2.clone());
+    assert_eq!(entry_data.entry_content, ENTRY_CONTENT_2.clone());
+
     // Done
     Ok(())
 }

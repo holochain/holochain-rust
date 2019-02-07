@@ -1,11 +1,11 @@
 use constants::*;
+use holochain_net::tweetlog::*;
 use holochain_net_connection::{
     json_protocol::{ConnectData, JsonProtocol, TrackDnaData},
     net_connection::NetSend,
     NetResult,
 };
 use p2p_node::P2pNode;
-use holochain_net::tweetlog::*;
 
 /// Do normal setup: 'TrackDna' & 'Connect',
 /// and check that we received 'PeerConnected'
@@ -198,7 +198,6 @@ pub fn hold_and_publish_test(
     //    assert!(maybe_request.is_none());
     //    let maybe_request = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))), 2000);
     //    assert!(maybe_request.is_none());
-
 
     // Camille requests that entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());

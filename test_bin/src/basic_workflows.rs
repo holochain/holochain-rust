@@ -33,13 +33,11 @@ fn confirm_published_data(
     alex.author_entry(address.into(), content, true)?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex
-        .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     if result_a.is_some() {
         log_i!("got HandleStoreEntry on node A: {:?}", result_a);
     }
-    let result_b = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     if result_a.is_some() {
         log_i!("got HandleStoreEntry on node B: {:?}", result_b);
     }
@@ -71,13 +69,11 @@ fn confirm_published_metadata(
     let _meta_key = alex.author_meta(address, attribute, link_entry_address, true)?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex
-        .wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
+    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
     if result_a.is_some() {
         log_i!("got HandleStoreMeta on node A: {:?}", result_a);
     }
-    let result_b = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
+    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
     if result_a.is_some() {
         log_i!("got HandleStoreMeta on node B: {:?}", result_b);
     }
@@ -278,13 +274,11 @@ pub fn meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> 
 
     // wait for gossip
     // Check if billy is asked to store it
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     if result.is_some() {
         log_i!("Billy got HandleStoreEntry: {:?}", result);
     }
-    let result = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
+    let result = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreMeta(_))));
     if result.is_some() {
         log_i!("Billy got HandleStoreEntry: {:?}", result);
     }
@@ -323,13 +317,11 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
 
     // Check if both nodes are asked to store it
-    let result_a = alex
-        .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result_a = alex.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     if result_a.is_some() {
         log_i!("got HandleStoreEntry on node A: {:?}", result_a);
     }
-    let result_b = billy
-        .wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
+    let result_b = billy.wait(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))));
     if result_a.is_some() {
         log_i!("got HandleStoreEntry on node B: {:?}", result_b);
     }

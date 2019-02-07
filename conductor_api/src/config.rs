@@ -361,7 +361,7 @@ pub enum StorageConfiguration {
 /// We currently have:
 /// * websockets
 /// * HTTP
-/// 
+///
 /// We will also soon develop
 /// * Unix domain sockets
 ///

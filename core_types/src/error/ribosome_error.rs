@@ -214,7 +214,6 @@ impl From<RibosomeErrorCode> for String {
 
 impl RibosomeErrorCode {
     pub fn from_code_int(code: RibosomeCodeBits) -> Self {
-        println!("{:?}", code);
         match code {
             0 => unreachable!(),
             2 => ArgumentDeserializationFailed,
@@ -290,7 +289,6 @@ pub mod tests {
     #[test]
     fn ribosome_error_code_round_trip() {
         let code_int = RibosomeErrorCode::OutOfMemory as u64;
-        println!("zz {:?}", code_int);
         let oom = RibosomeErrorCode::from_code_int(
             ((RibosomeErrorCode::OutOfMemory as u64) >> 32) as RibosomeCodeBits,
         );

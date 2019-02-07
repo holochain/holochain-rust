@@ -148,7 +148,7 @@ pub fn setup_three_nodes(
             .unwrap();
         println!("got connect result C: {:?}", result_c);
         one_let!(JsonProtocol::PeerConnected(d) = result_c {
-            assert_eq!(d.agent_id, ALEX_AGENT_ID);
+            assert!(d.agent_id == BILLY_AGENT_ID || d.agent_id == ALEX_AGENT_ID);
         });
     }
 
@@ -188,16 +188,6 @@ pub fn hold_and_publish_test(
     }
     // Have billy author the same data
     billy.author_entry(&ENTRY_ADDRESS_2, &ENTRY_CONTENT_2, true)?;
-
-    //    // Should NOT receive a HandleStoreEntry request from network module?
-    //    let maybe_request = alex
-    //        .find_recv_msg(
-    //            0,
-    //            Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))),
-    //        );
-    //    assert!(maybe_request.is_none());
-    //    let maybe_request = alex.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleStoreEntry(_))), 2000);
-    //    assert!(maybe_request.is_none());
 
     // Camille requests that entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());

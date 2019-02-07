@@ -60,18 +60,18 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 
 scenario1.runTape('delete_post', async (t, { alice }) => {
 
-await alice.callSync("blog", "create_post",
-  { "content": "Posty", "in_reply_to": "" }
-)
-const result = alice.call("blog", "my_posts", {})
-t.equal(result.Ok.addresses.length, 1)
-await alice.callSync("blog", "delete_post",
-  { "content": "Posty"}
-)
-const result = alice.call("blog", "my_posts", {})
-t.equal(result.Ok.addresses.length, 0)
-
-})
+  await alice.callSync("blog", "create_post",
+    { "content": "Posty", "in_reply_to": "" }
+  )
+  const result_create_post = alice.call("blog", "my_posts", {})
+  t.equal(result_create_post.Ok.addresses.length, 1)
+  await alice.callSync("blog", "delete_post",
+    { "content": "Posty"}
+  )
+  const result_delete_post = alice.call("blog", "my_posts", {})
+  t.equal(result_delete_post.Ok.addresses.length, 0)
+  
+  })
 
 /*scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
 

@@ -140,10 +140,20 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#dnas" id="dnas"><h1>DNAs</h1></a>
+<p><code>dnas</code> is an array of configurations for &quot;DNAs&quot;, meaning there can be multiple within one Conductor. A DNA is a packaged JSON file containing a valid DNA configuration including the WASM code for the Zomes. How to package DNA from source files can be read about <a href="./packaging.html">here</a>.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
+<a class="header" href="#id-string" id="id-string"><h4><code>id</code>: <code>string</code></h4></a>
+<p>Give an ID of your choice to this DNA</p>
+<a class="header" href="#file-string" id="file-string"><h4><code>file</code>: <code>string</code></h4></a>
+<p>Path to the packaged DNA file</p>
+<a class="header" href="#hash-string" id="hash-string"><h4><code>hash</code>: <code>string</code></h4></a>
+<p>A hash has to be provided for <strong>FIXME &quot;sanity check&quot;??</strong></p>
+<a class="header" href="#example" id="example"><h3>Example</h3></a>
 <pre><code class="language-toml">[[dnas]]
+id = &quot;app spec rust&quot;
 file = &quot;example-config/app_spec.hcpkg&quot;
 hash = &quot;Qm328wyq38924y&quot;
-id = &quot;app spec rust&quot;
 </code></pre>
 
                         <hr />

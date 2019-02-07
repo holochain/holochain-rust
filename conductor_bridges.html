@@ -140,7 +140,20 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#bridges" id="bridges"><h1>Bridges</h1></a>
-<pre><code class="language-toml">bridges = []
+<p><code>bridges</code> is an array of configurations for &quot;bridges&quot;, meaning there can be multiple within one Conductor. A bridge enables an instance to call Zome functions of another instance. It could be thought of as an internal interface.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
+<a class="header" href="#caller_id-string" id="caller_id-string"><h4><code>caller_id</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_instances.html">instance</a> that calls the other one. This instance depends on the callee.</p>
+<a class="header" href="#callee_id-string" id="callee_id-string"><h4><code>callee_id</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_instances.html">instance</a> that exposes capabilities through this bridge. This instance is used by the caller.</p>
+<a class="header" href="#handle-string" id="handle-string"><h4><code>handle</code>: <code>string</code></h4></a>
+<p>The caller's local handle for this bridge and the callee. A caller can have many bridges to other DNAs and those DNAs could by bound dynamically. Callers reference callees by this arbitrary but unique local name.</p>
+<a class="header" href="#example" id="example"><h3>Example</h3></a>
+<pre><code class="language-toml">[[bridges]]
+caller_id = &quot;app1&quot;
+callee_id = &quot;app2&quot;
+handle = &quot;happ-store&quot;
 </code></pre>
 
                         <hr />

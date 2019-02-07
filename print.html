@@ -1845,29 +1845,73 @@ $HOME/.holochain/conductor/conductor-config.toml
 <p>The <a href="./configuration_alternatives.html">holochain-nodejs Conductor</a> also accepts the same TOML based configuration.</p>
 </blockquote>
 <a class="header" href="#agents" id="agents"><h1>Agents</h1></a>
+<p><code>agents</code> is an array of configurations for &quot;agents&quot;. This means that you can define, and later reference, multiple distinct agents in this single config file. An &quot;agent&quot; has a name, ID, public address and is defined by a private key that resides in a file on their device.</p>
+<p><strong>Required</strong>: <code>agents</code> is a required property in the config file. It is the ONLY required property.</p>
+<p><strong>FIXME How does someone know what their 'public_address' is?</strong></p>
+<a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
+<a class="header" href="#id-string" id="id-string"><h4><code>id</code>: <code>string</code></h4></a>
+<p>Give an ID of your choice to the agent</p>
+<a class="header" href="#name-string" id="name-string"><h4><code>name</code>: <code>string</code></h4></a>
+<p>Give a name of your choice to the agent</p>
+<a class="header" href="#public_address-string" id="public_address-string"><h4><code>public_address</code>: <code>string</code></h4></a>
+<p>FIXME ??</p>
+<a class="header" href="#key_file-string" id="key_file-string"><h4><code>key_file</code>: <code>string</code></h4></a>
+<p>Path to the private key file for this agent. This property is not yet in use, so put any value here for the time being.</p>
+<a class="header" href="#example" id="example"><h3>Example</h3></a>
 <pre><code class="language-toml">[[agents]]
 id = &quot;test agent 1&quot;
-key_file = &quot;holo_tester.key&quot;
 name = &quot;Holo Tester 1&quot;
 public_address = &quot;HoloTester1-----------------------------------------------------------------------AAACZp4xHB&quot;
+key_file = &quot;holo_tester.key&quot;
 </code></pre>
 <a class="header" href="#dnas" id="dnas"><h1>DNAs</h1></a>
+<p><code>dnas</code> is an array of configurations for &quot;DNAs&quot;, meaning there can be multiple within one Conductor. A DNA is a packaged JSON file containing a valid DNA configuration including the WASM code for the Zomes. How to package DNA from source files can be read about <a href="./packaging.html">here</a>.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties-1" id="properties-1"><h3>Properties</h3></a>
+<a class="header" href="#id-string-1" id="id-string-1"><h4><code>id</code>: <code>string</code></h4></a>
+<p>Give an ID of your choice to this DNA</p>
+<a class="header" href="#file-string" id="file-string"><h4><code>file</code>: <code>string</code></h4></a>
+<p>Path to the packaged DNA file</p>
+<a class="header" href="#hash-string" id="hash-string"><h4><code>hash</code>: <code>string</code></h4></a>
+<p>A hash has to be provided for <strong>FIXME &quot;sanity check&quot;??</strong></p>
+<a class="header" href="#example-1" id="example-1"><h3>Example</h3></a>
 <pre><code class="language-toml">[[dnas]]
+id = &quot;app spec rust&quot;
 file = &quot;example-config/app_spec.hcpkg&quot;
 hash = &quot;Qm328wyq38924y&quot;
-id = &quot;app spec rust&quot;
 </code></pre>
 <a class="header" href="#instances" id="instances"><h1>Instances</h1></a>
+<p><code>instances</code> is an array of configurations for &quot;instances&quot;, meaning there can be multiple within one Conductor. An &quot;instance&quot; is a running copy of a <a href="./conductor_dnas.html">DNA</a>, by a particular <a href="./conductor_agents.html">agent</a>. Based on these configurations, the Conductor will attempt to start up these instances, initializing (or resuming) a local source chain and DHT. It is possible to use the same DNA with multiple different <a href="./conductor_agents.html">agents</a>, but it is <strong>not</strong> recommended to run two instances with the same DNA and same agent. An instance has a configurable <code>storage</code> property, which can be set to save to disk, or just store temporarily in memory.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties-2" id="properties-2"><h3>Properties</h3></a>
+<a class="header" href="#id-string-2" id="id-string-2"><h4><code>id</code>: <code>string</code></h4></a>
+<p>Give an ID of your choice to this instance</p>
+<a class="header" href="#agent-string" id="agent-string"><h4><code>agent</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_agents.html">agent</a></p>
+<a class="header" href="#dna-string" id="dna-string"><h4><code>dna</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_dnas.html">DNA</a></p>
+<a class="header" href="#storage-storageconfiguration" id="storage-storageconfiguration"><h4><code>storage</code>: <code>StorageConfiguration</code></h4></a>
+<p>A table for configuring the approach to storage of the local source chain and DHT for this instance</p>
+<a class="header" href="#storageconfigurationtype-enum" id="storageconfigurationtype-enum"><h4><code>StorageConfiguration.type</code>: <code>enum</code></h4></a>
+<p>Select between different storage implementations that exist. There are two so far:</p>
+<ul>
+<li><code>memory</code>: Persist actions taken in this instance only to memory. Everything will disappear when the Conductor process stops.</li>
+<li><code>file</code>: Persist actions taken in this instance to the disk of the device the Conductor is running on. If the Conductor process stops and then restarts, the actions taken will resume at the place in the local source chain they last were at.</li>
+</ul>
+<a class="header" href="#storageconfigurationpath-string" id="storageconfigurationpath-string"><h4><code>StorageConfiguration.path</code>: <code>string</code></h4></a>
+<p>Path to the folder in which to store the data for this instance.</p>
+<a class="header" href="#example-2" id="example-2"><h3>Example</h3></a>
 <pre><code class="language-toml">[[instances]]
+id = &quot;app spec instance 1&quot;
 agent = &quot;test agent 1&quot;
 dna = &quot;app spec rust&quot;
-id = &quot;app spec instance 1&quot;
 
 [instances.storage]
-path = &quot;example-config/tmp-storage&quot;
 type = &quot;file&quot;
+path = &quot;example-config/tmp-storage&quot;
 </code></pre>
 <a class="header" href="#interfaces-1" id="interfaces-1"><h1>Interfaces</h1></a>
+<a class="header" href="#example-3" id="example-3"><h3>Example</h3></a>
 <pre><code class="language-toml">[[interfaces]]
 admin = true
 id = &quot;http interface&quot;
@@ -1880,15 +1924,30 @@ port = 4000
 type = &quot;http&quot;
 </code></pre>
 <a class="header" href="#bridges" id="bridges"><h1>Bridges</h1></a>
-<pre><code class="language-toml">bridges = []
+<p><code>bridges</code> is an array of configurations for &quot;bridges&quot;, meaning there can be multiple within one Conductor. A bridge enables an instance to call Zome functions of another instance. It could be thought of as an internal interface.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties-3" id="properties-3"><h3>Properties</h3></a>
+<a class="header" href="#caller_id-string" id="caller_id-string"><h4><code>caller_id</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_instances.html">instance</a> that calls the other one. This instance depends on the callee.</p>
+<a class="header" href="#callee_id-string" id="callee_id-string"><h4><code>callee_id</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_instances.html">instance</a> that exposes capabilities through this bridge. This instance is used by the caller.</p>
+<a class="header" href="#handle-string" id="handle-string"><h4><code>handle</code>: <code>string</code></h4></a>
+<p>The caller's local handle for this bridge and the callee. A caller can have many bridges to other DNAs and those DNAs could by bound dynamically. Callers reference callees by this arbitrary but unique local name.</p>
+<a class="header" href="#example-4" id="example-4"><h3>Example</h3></a>
+<pre><code class="language-toml">[[bridges]]
+caller_id = &quot;app1&quot;
+callee_id = &quot;app2&quot;
+handle = &quot;happ-store&quot;
 </code></pre>
 <a class="header" href="#ui-bundles" id="ui-bundles"><h1>UI Bundles</h1></a>
+<a class="header" href="#example-5" id="example-5"><h3>Example</h3></a>
 <pre><code class="language-toml">[[ui_bundles]]
 id = &quot;bundle1&quot;
 root_dir = &quot;ui&quot;
 hash = &quot;Qm000&quot;
 </code></pre>
 <a class="header" href="#ui-interfaces" id="ui-interfaces"><h1>UI Interfaces</h1></a>
+<a class="header" href="#example-6" id="example-6"><h3>Example</h3></a>
 <pre><code class="language-toml">[[ui_interfaces]]
 id = &quot;ui-interface-1&quot;
 bundle = &quot;bundle1&quot;
@@ -1896,6 +1955,7 @@ port = 3000
 dna_interface = &quot;websocket interface&quot;
 </code></pre>
 <a class="header" href="#logging" id="logging"><h1>Logging</h1></a>
+<a class="header" href="#example-7" id="example-7"><h3>Example</h3></a>
 <pre><code class="language-toml">[logger]
 type = &quot;debug&quot;
 [[logger.rules.rules]]
@@ -1913,7 +1973,8 @@ exclude = false
 pattern = &quot;.*&quot;
 </code></pre>
 <a class="header" href="#networking-1" id="networking-1"><h1>Networking</h1></a>
-<p>The Conductor currently uses mock networking by default. To use real networking you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the Conductor where it can find n3h.  It should look something like this:</p>
+<p>The Conductor currently uses mock networking by default. To use real networking you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the Conductor where it can find n3h.</p>
+<a class="header" href="#example-8" id="example-8"><h3>Example</h3></a>
 <pre><code class="language-toml">[network]
 n3h_path = &quot;/home/eric/holochain/n3h&quot;
 n3h_persistence_path = &quot;/tmp&quot;
@@ -1933,7 +1994,7 @@ bootstrap_nodes = []
 <a class="header" href="#querying-running-dna-instances" id="querying-running-dna-instances"><h2>Querying Running DNA Instances</h2></a>
 <p>Holochain Conductors expose a method <code>info/instances</code>. What it does is return a list of the running DNA instances in the Conductor. For each running instance, it provides the instance &quot;ID&quot;, the name of the DNA, and the agent &quot;id&quot;. The instance IDs will be particularly useful in other circumstances.</p>
 <p>The method <code>info/instances</code> doesn't require any input parameters, so <code>params</code> can be left off the request.</p>
-<a class="header" href="#example" id="example"><h3>Example</h3></a>
+<a class="header" href="#example-9" id="example-9"><h3>Example</h3></a>
 <p><strong>example request</strong></p>
 <pre><code class="language-json">{
     &quot;jsonrpc&quot;: &quot;2.0&quot;,
@@ -1970,7 +2031,7 @@ bootstrap_nodes = []
 <p><strong>example params</strong></p>
 <pre><code class="language-json">{ &quot;blog&quot;: { &quot;content&quot;: &quot;sample content&quot; }}
 </code></pre>
-<a class="header" href="#example-1" id="example-1"><h3>Example</h3></a>
+<a class="header" href="#example-10" id="example-10"><h3>Example</h3></a>
 <p><strong>example request</strong></p>
 <pre><code class="language-json">{
     &quot;jsonrpc&quot;: &quot;2.0&quot;,

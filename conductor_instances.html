@@ -140,14 +140,34 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#instances" id="instances"><h1>Instances</h1></a>
+<p><code>instances</code> is an array of configurations for &quot;instances&quot;, meaning there can be multiple within one Conductor. An &quot;instance&quot; is a running copy of a <a href="./conductor_dnas.html">DNA</a>, by a particular <a href="./conductor_agents.html">agent</a>. Based on these configurations, the Conductor will attempt to start up these instances, initializing (or resuming) a local source chain and DHT. It is possible to use the same DNA with multiple different <a href="./conductor_agents.html">agents</a>, but it is <strong>not</strong> recommended to run two instances with the same DNA and same agent. An instance has a configurable <code>storage</code> property, which can be set to save to disk, or just store temporarily in memory.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
+<a class="header" href="#id-string" id="id-string"><h4><code>id</code>: <code>string</code></h4></a>
+<p>Give an ID of your choice to this instance</p>
+<a class="header" href="#agent-string" id="agent-string"><h4><code>agent</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_agents.html">agent</a></p>
+<a class="header" href="#dna-string" id="dna-string"><h4><code>dna</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_dnas.html">DNA</a></p>
+<a class="header" href="#storage-storageconfiguration" id="storage-storageconfiguration"><h4><code>storage</code>: <code>StorageConfiguration</code></h4></a>
+<p>A table for configuring the approach to storage of the local source chain and DHT for this instance</p>
+<a class="header" href="#storageconfigurationtype-enum" id="storageconfigurationtype-enum"><h4><code>StorageConfiguration.type</code>: <code>enum</code></h4></a>
+<p>Select between different storage implementations that exist. There are two so far:</p>
+<ul>
+<li><code>memory</code>: Persist actions taken in this instance only to memory. Everything will disappear when the Conductor process stops.</li>
+<li><code>file</code>: Persist actions taken in this instance to the disk of the device the Conductor is running on. If the Conductor process stops and then restarts, the actions taken will resume at the place in the local source chain they last were at.</li>
+</ul>
+<a class="header" href="#storageconfigurationpath-string" id="storageconfigurationpath-string"><h4><code>StorageConfiguration.path</code>: <code>string</code></h4></a>
+<p>Path to the folder in which to store the data for this instance.</p>
+<a class="header" href="#example" id="example"><h3>Example</h3></a>
 <pre><code class="language-toml">[[instances]]
+id = &quot;app spec instance 1&quot;
 agent = &quot;test agent 1&quot;
 dna = &quot;app spec rust&quot;
-id = &quot;app spec instance 1&quot;
 
 [instances.storage]
-path = &quot;example-config/tmp-storage&quot;
 type = &quot;file&quot;
+path = &quot;example-config/tmp-storage&quot;
 </code></pre>
 
                         <hr />

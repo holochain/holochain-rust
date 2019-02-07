@@ -1,6 +1,6 @@
 # Production Conductor
 
-In addition to zero config development Conductor, using `hc run`, there is a highly configurable sophisticated Conductor for running DNA instances long term.
+In addition to the zero config development Conductor using `hc run`, there is a highly configurable sophisticated Conductor for running DNA instances long term.
 
 This Conductor will play an important role in making the use of Holochain truly easy for end users, because it supports all the functionality that those users are likely to want, in terms of managing their Holochain apps, or hApps, just on a low level. On that note, a graphical user interface that exposes all the functionality of this Conductor to users is under development.
 

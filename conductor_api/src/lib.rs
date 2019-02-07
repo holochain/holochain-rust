@@ -98,6 +98,7 @@ extern crate holochain_net_connection;
 extern crate holochain_net_ipc;
 extern crate holochain_sodium;
 
+extern crate base64;
 extern crate chrono;
 extern crate serde;
 extern crate tempfile;

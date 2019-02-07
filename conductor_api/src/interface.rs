@@ -1,3 +1,4 @@
+use base64;
 use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use holochain_dpki::keypair::{Keypair, SEEDSIZE};
@@ -757,7 +758,7 @@ impl ConductorApiBuilder {
 
             keypair.sign(&mut message, &mut message_signed).unwrap();
             let message_signed = message_signed.read_lock();
-            Ok(json!({"payload": payload, "signature": format!("{:?}",*message_signed)}))
+            Ok(json!({"payload": payload, "signature": base64::encode(&**message_signed)}))
         });
     }
 }

@@ -178,7 +178,7 @@ pub fn create_new_chain_header(
     let signature = Signature::from(
         context
             .sign(entry.address().to_string())
-            .expect("Must be able to create signatures!")
+            .expect("Must be able to create signatures!"),
     );
     ChainHeader::new(
         &entry.entry_type(),

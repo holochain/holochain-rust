@@ -91,11 +91,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let conductor_api =
-        runtime
-            .context
-            .conductor_api
-            .clone();
+    let conductor_api = runtime.context.conductor_api.clone();
 
     let method = format!(
         "{}/{}/{}",

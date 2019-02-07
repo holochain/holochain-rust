@@ -1,8 +1,8 @@
 use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
-use Holochain;
 use holochain_dpki::keypair::{Keypair, SEEDSIZE};
-use holochain_sodium::{secbuf::SecBuf, random::random_secbuf};
+use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
+use Holochain;
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use serde_json;

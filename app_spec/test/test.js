@@ -60,15 +60,17 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 
 scenario1.runTape('delete_post', async (t, { alice }) => {
 
-  const content = "Holo world"
-  const params = { content}
-  const result =  alice.call("blog", "create_post", params)
-  const result_delete = await alice.callSync("blog", "delete_post", params)
-  t.ok(result_delete.Ok)
-  const alice_agent = "Bob"
-  const params_posts_by_agent = { alice_agent }
-  const result_list = alice.call("blog", "posts_by_agent", params_posts_by_agent)
-  t.deepEqual(result_list.Ok, { "addresses": [] })
+await alice.callSync("blog", "create_post",
+  { "content": "Posty", "in_reply_to": "" }
+)
+const result = alice.call("blog", "my_posts", {})
+t.equal(result.Ok.addresses.length, 1)
+await alice.callSync("blog", "delete_post",
+  { "content": "Posty"}
+)
+const result = alice.call("blog", "my_posts", {})
+t.equal(result.Ok.addresses.length, 0)
+
 })
 
 /*scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {

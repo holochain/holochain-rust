@@ -321,7 +321,7 @@ pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
     #[serde(default)]
-    pub hash: String,
+    pub hash: Option<String>,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {

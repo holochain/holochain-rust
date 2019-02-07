@@ -190,7 +190,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.read()?;
-        let prefixes = if index_query.prefixes().len() > 0 {
+        let prefixes = if !index_query.prefixes().is_empty() {
             index_query.prefixes().clone()
         } else {
             vec![""]

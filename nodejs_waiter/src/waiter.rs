@@ -237,7 +237,7 @@ impl Waiter {
                                 *aw.action()
                                     == Action::RemoveLink(link_remove.clone().link().clone())
                             });
-                            }
+                            }}
                             _ => (),
                         }
                     }

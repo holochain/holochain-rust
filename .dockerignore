@@ -3,5 +3,5 @@
 **/.cargo
 **/.git
 **/node_modules
-**/docker
+# **/docker
 **/bin-package

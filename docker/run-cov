@@ -1,18 +1,5 @@
 #!/usr/bin/env bash
 
-# Detect whether we are on a OSX host, determine host user ID
-# This gives a warning on linux that must be ignored.
-if [ "$(uname)" = "Linux" ]; then
-  # linux detected
-  HOST_UID=$UID
-else
-  # There is nothing we need to do in this case. For the holochain user, everything below app/
-  # appears to belong to him. This is a quirk of Docker for Mac.
-  HOST_UID=
-fi
-
-export HOST_UID
-
 docker run -h holochain \
   -e HOST_UID \
   -v `pwd`:/holochain \

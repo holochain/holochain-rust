@@ -175,11 +175,15 @@ pub fn create_new_chain_header(
     let agent_address = agent_state
         .get_agent_address()
         .unwrap_or(context.agent_id.address());
+    let signature = Signature::from(
+        context
+            .sign(entry.address().to_string())
+            .expect("Must be able to create signatures!")
+    );
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
-        // @TODO signatures
-        &vec![(agent_address, Signature::from("TODO"))],
+        &vec![(agent_address, signature)],
         &agent_state
             .top_chain_header
             .clone()

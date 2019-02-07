@@ -26,7 +26,9 @@ use holochain_dpki::keypair::{Keypair, SEEDSIZE};
 use holochain_sodium::{secbuf::SecBuf, random::random_secbuf};
 
 use holochain_net::p2p_config::P2pConfig;
+use jsonrpc_lite::JsonRpc;
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
+use snowflake::ProcessUniqueId;
 use std::{
     sync::{
         mpsc::{channel, Receiver, SyncSender},
@@ -261,6 +263,32 @@ impl Context {
                 Poll::Ready(result) => return result,
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),
             };
+        }
+    }
+
+    pub fn sign(&self, payload: String) -> Result<String, HolochainError> {
+        let handler = self.conductor_api.write().unwrap();
+        let request = format!(
+            r#"{{"jsonrpc": "2.0", "method": "agent/sign", "params": {{"payload": "{}"}}, "id": "{}"}}"#,
+            payload, ProcessUniqueId::new()
+        );
+
+        let response = handler
+            .handle_request_sync(&request)
+            .ok_or("Conductor sign call failed".to_string())?;
+
+        let response = JsonRpc::parse(&response)?;
+
+        match response {
+            JsonRpc::Success(_) => Ok(
+                serde_json::to_string(&response.get_result().unwrap()).unwrap(),
+            ),
+            JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
+                serde_json::to_string(&response.get_error().unwrap()).unwrap(),
+            )),
+            _ => Err(HolochainError::ErrorGeneric(
+                "Bridge call failed".to_string(),
+            )),
         }
     }
 }

@@ -70,7 +70,8 @@ fn mock_conductor_api() -> IoHandler {
         let mut message_signed = SecBuf::with_insecure(64);
 
         keypair.sign(&mut message, &mut message_signed).unwrap();
-        Ok(json!({"payload": payload, "signature": true}))
+        let message_signed = message_signed.read_lock();
+        Ok(json!({"payload": payload, "signature": format!("{:?}",*message_signed)}))
     });
     handler
 }

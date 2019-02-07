@@ -21,8 +21,10 @@ pub struct SimpleLogger {
 #[cfg_attr(tarpaulin, skip)]
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {
-        let date = Local::now();
-        println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
+        if std::env::var("HC_SIMPLE_LOGGER_MUTE").is_err() {
+            let date = Local::now();
+            println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
+        }
     }
 }
 

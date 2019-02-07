@@ -1778,14 +1778,12 @@ To run it as HTTP, run:</p>
 </code></pre>
 <a class="header" href="#starting-a-second-node" id="starting-a-second-node"><h3>Starting A Second Node</h3></a>
 <p>Starting up a second node is a little bit more work:</p>
-<ol>
-<li>Provide the address of the first node as a bootstrap node, by setting the <code>HC_N3H_BOOTSTRAP_NODE</code> environment variable</li>
-<li>Specify a different agent id, by setting the <code>HC_AGENT</code> environment variable</li>
-<li>Specify a different port than the first node to run on</li>
-</ol>
-<p>For <code>1</code>, grab the string from the terminal log of the first node, the one that starts with &quot;/ip4/192.168&quot;.</p>
-<p>For <code>2</code>, since the first agent by default will be <code>testAgent</code>, <code>testAgent2</code> is suitable.</p>
-<p>For <code>3</code>, since the port for the first node by default will be <code>8888</code>, <code>8889</code> is suitable.</p>
+<a class="header" href="#step-1" id="step-1"><h4>Step 1</h4></a>
+<p>Set the <code>HC_N3H_BOOTSTRAP_NODE</code> environment variable to the external p2p bound address listed by the first node. Copy-paste it from the string from the terminal log of the first node, the one that starts with &quot;/ip4/192.168&quot;.</p>
+<a class="header" href="#step-2" id="step-2"><h4>Step 2</h4></a>
+<p>Specify a different agent id than the first node, by setting the <code>HC_AGENT</code> environment variable. Since the first agent by default will be <code>testAgent</code>, <code>testAgent2</code> is suitable.</p>
+<a class="header" href="#step-3" id="step-3"><h4>Step 3</h4></a>
+<p>Specify a different port than the first node to run on. Since the port for the first node by default will be <code>8888</code>, <code>8889</code> is suitable.</p>
 <p>Running the command could look like this:</p>
 <pre><code class="language-shell">HC_AGENT=testAgent2 HC_N3H_BOOTSTRAP_NODE=/ip4/192.168.1.5/tcp/43919/ipfs/QmUhYXbBKcfL8KWx8DMpmhcHeWmmyyLHUe7jFnP5PdLdr4 HC_N3H_PATH=/home/eric/holochain/n3h hc run --port 8889
 </code></pre>

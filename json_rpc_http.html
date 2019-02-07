@@ -146,11 +146,23 @@
 <a class="header" href="#starting-an-http-server-with-hc-run" id="starting-an-http-server-with-hc-run"><h2>Starting an HTTP Server with <code>hc run</code></h2></a>
 <p><code>hc run --interface http</code></p>
 <a class="header" href="#starting-an-http-server-with-holochain" id="starting-an-http-server-with-holochain"><h2>Starting an HTTP Server with <code>holochain</code></h2></a>
+<p>To review how to start an HTTP Server with <code>holochain</code>, review the <a href="./conductor_interfaces.html#interfacedrivertype-enum">interfaces</a> article.</p>
 <a class="header" href="#http-example" id="http-example"><h2>HTTP Example</h2></a>
 <p>This whole example assumes that one of the methods listed above has been used to start an HTTP server on port 8888 with a valid DNA instance running in it.</p>
+<a class="header" href="#infoinstances" id="infoinstances"><h3>info/instances</h3></a>
+<p>The following is a starter example, where a special utility function of Holochain is called, which accepts no parameters, and returns an array of the instances which are available on the HTTP server.</p>
+<p>In another terminal besides the server, we could run the following cURL command:
+<code>curl -X POST -H &quot;Content-Type: application/json&quot; -d '{&quot;jsonrpc&quot;: &quot;2.0&quot;,&quot;id&quot;: &quot;0&quot;,&quot;method&quot;: &quot;info/instances&quot;}' http://localhost:8888</code></p>
+<p>A response something like the following might be returned:</p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;result&quot;: [{&quot;id&quot;:&quot;test-instance&quot;,&quot;dna&quot;:&quot;hc-run-dna&quot;,&quot;agent&quot;:&quot;hc-run-agent&quot;}],
+    &quot;id&quot;: &quot;0&quot;
+}
+</code></pre>
 <a class="header" href="#calling-zome-functions" id="calling-zome-functions"><h3>Calling Zome Functions</h3></a>
 <p>The following discusses how to use cURL (and thus HTTP generally) to make calls to Zome functions.</p>
-<p>To use as the JSON-RPC &quot;method&quot; the instance ID, the Zome name, and the function name are combined into a single string, separated by forward slash (<code>/</code>) characters. It could look like the following:
+<p>To use as the JSON-RPC &quot;method&quot; the instance ID (as seen in the <code>info/instances</code> example), the Zome name, and the function name are combined into a single string, separated by forward slash (<code>/</code>) characters. It could look like the following:
 <code>&quot;method&quot;: &quot;test-instance/blogs/create_blog&quot;</code></p>
 <p>Unlike <code>info/instances</code>, Zome functions usually expect arguments. To give arguments, a JSON object should be constructed. It may look like the following:
 <code>&quot;params&quot;: {&quot;blog&quot;: {&quot;content&quot;: &quot;sample content&quot;}}</code></p>
@@ -164,16 +176,7 @@
 }
 </code></pre>
 <p>This response suggests that the function call was successful (&quot;Ok&quot;) and provides the DHT address of the freshly committed blog entry (&quot;QmU...&quot;).</p>
-<a class="header" href="#infoinstances" id="infoinstances"><h3>info/instances</h3></a>
-<p>In another terminal, we could run the following cURL command:
-<code>curl -X POST -H &quot;Content-Type: application/json&quot; -d '{&quot;jsonrpc&quot;: &quot;2.0&quot;,&quot;id&quot;: &quot;0&quot;,&quot;method&quot;: &quot;info/instances&quot;}' http://localhost:8888</code></p>
-<p>A response something like the following might be returned:</p>
-<pre><code class="language-json">{
-    &quot;jsonrpc&quot;: &quot;2.0&quot;,
-    &quot;result&quot;: [{&quot;id&quot;:&quot;test-instance&quot;,&quot;dna&quot;:&quot;hc-run-dna&quot;,&quot;agent&quot;:&quot;hc-run-agent&quot;}],
-    &quot;id&quot;: &quot;0&quot;
-}
-</code></pre>
+<p>This demonstrates how easy it is to call into Zome function from clients and user interfaces!</p>
 
                         <hr />
                         <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/json_rpc_http.md">suggest an edit</a>

@@ -2168,11 +2168,23 @@ bootstrap_nodes = []
 <a class="header" href="#starting-an-http-server-with-hc-run" id="starting-an-http-server-with-hc-run"><h2>Starting an HTTP Server with <code>hc run</code></h2></a>
 <p><code>hc run --interface http</code></p>
 <a class="header" href="#starting-an-http-server-with-holochain" id="starting-an-http-server-with-holochain"><h2>Starting an HTTP Server with <code>holochain</code></h2></a>
+<p>To review how to start an HTTP Server with <code>holochain</code>, review the <a href="./conductor_interfaces.html#interfacedrivertype-enum">interfaces</a> article.</p>
 <a class="header" href="#http-example" id="http-example"><h2>HTTP Example</h2></a>
 <p>This whole example assumes that one of the methods listed above has been used to start an HTTP server on port 8888 with a valid DNA instance running in it.</p>
+<a class="header" href="#infoinstances" id="infoinstances"><h3>info/instances</h3></a>
+<p>The following is a starter example, where a special utility function of Holochain is called, which accepts no parameters, and returns an array of the instances which are available on the HTTP server.</p>
+<p>In another terminal besides the server, we could run the following cURL command:
+<code>curl -X POST -H &quot;Content-Type: application/json&quot; -d '{&quot;jsonrpc&quot;: &quot;2.0&quot;,&quot;id&quot;: &quot;0&quot;,&quot;method&quot;: &quot;info/instances&quot;}' http://localhost:8888</code></p>
+<p>A response something like the following might be returned:</p>
+<pre><code class="language-json">{
+    &quot;jsonrpc&quot;: &quot;2.0&quot;,
+    &quot;result&quot;: [{&quot;id&quot;:&quot;test-instance&quot;,&quot;dna&quot;:&quot;hc-run-dna&quot;,&quot;agent&quot;:&quot;hc-run-agent&quot;}],
+    &quot;id&quot;: &quot;0&quot;
+}
+</code></pre>
 <a class="header" href="#calling-zome-functions-1" id="calling-zome-functions-1"><h3>Calling Zome Functions</h3></a>
 <p>The following discusses how to use cURL (and thus HTTP generally) to make calls to Zome functions.</p>
-<p>To use as the JSON-RPC &quot;method&quot; the instance ID, the Zome name, and the function name are combined into a single string, separated by forward slash (<code>/</code>) characters. It could look like the following:
+<p>To use as the JSON-RPC &quot;method&quot; the instance ID (as seen in the <code>info/instances</code> example), the Zome name, and the function name are combined into a single string, separated by forward slash (<code>/</code>) characters. It could look like the following:
 <code>&quot;method&quot;: &quot;test-instance/blogs/create_blog&quot;</code></p>
 <p>Unlike <code>info/instances</code>, Zome functions usually expect arguments. To give arguments, a JSON object should be constructed. It may look like the following:
 <code>&quot;params&quot;: {&quot;blog&quot;: {&quot;content&quot;: &quot;sample content&quot;}}</code></p>
@@ -2186,22 +2198,14 @@ bootstrap_nodes = []
 }
 </code></pre>
 <p>This response suggests that the function call was successful (&quot;Ok&quot;) and provides the DHT address of the freshly committed blog entry (&quot;QmU...&quot;).</p>
-<a class="header" href="#infoinstances" id="infoinstances"><h3>info/instances</h3></a>
-<p>In another terminal, we could run the following cURL command:
-<code>curl -X POST -H &quot;Content-Type: application/json&quot; -d '{&quot;jsonrpc&quot;: &quot;2.0&quot;,&quot;id&quot;: &quot;0&quot;,&quot;method&quot;: &quot;info/instances&quot;}' http://localhost:8888</code></p>
-<p>A response something like the following might be returned:</p>
-<pre><code class="language-json">{
-    &quot;jsonrpc&quot;: &quot;2.0&quot;,
-    &quot;result&quot;: [{&quot;id&quot;:&quot;test-instance&quot;,&quot;dna&quot;:&quot;hc-run-dna&quot;,&quot;agent&quot;:&quot;hc-run-agent&quot;}],
-    &quot;id&quot;: &quot;0&quot;
-}
-</code></pre>
+<p>This demonstrates how easy it is to call into Zome function from clients and user interfaces!</p>
 <a class="header" href="#websockets" id="websockets"><h1>WebSockets</h1></a>
 <p>Any coding language which has WebSockets support can communicate with the WebSocket server interface for Holochain. Based on the API exposed by Holochain, the messages must follow the JSON-RPC standard.</p>
 <p>We recommend searching for a JSON-RPC Websockets library for the language of your choice. In this example, we will use a Javascript based JSON-RPC library.</p>
 <a class="header" href="#starting-a-websocket-server-with-hc-run" id="starting-a-websocket-server-with-hc-run"><h2>Starting a WebSocket Server with <code>hc run</code></h2></a>
 <p><code>hc run</code></p>
 <a class="header" href="#starting-a-websocket-server-with-holochain" id="starting-a-websocket-server-with-holochain"><h2>Starting a WebSocket Server with <code>holochain</code></h2></a>
+<p>To review how to start a WebSocket Server with <code>holochain</code>, check out the <a href="./conductor_interfaces.html#interfacedrivertype-enum">interfaces</a> article.</p>
 <a class="header" href="#websocket-example" id="websocket-example"><h2>WebSocket Example</h2></a>
 <p>This whole example assumes that one of the methods listed above has been used to start a WebSocket server on port 8888 with a valid DNA instance running in it.</p>
 <p>The JavaScript JSON-RPC library this example will use is <a href="https://www.npmjs.com/package/rpc-websockets">rpc-websockets</a>.</p>
@@ -2221,9 +2225,26 @@ ws.on('open', function() {
   // do stuff in here
 })
 </code></pre>
+<a class="header" href="#infoinstances-1" id="infoinstances-1"><h3>info/instances</h3></a>
+<p>The following is a starter example, where a special utility function of Holochain is called, which accepts no parameters, and returns an array of the instances which are available on the WebSocket server.</p>
+<p>The name of this special method is <code>info/instances</code>. The following code shows how to use <code>rpc-websockets</code> to call it. (Note the previous code is collapsed in the ellipsis for brevity)</p>
+<pre><code class="language-js">...
+ws.on('open', function() {
+  
+  let method = 'info/instances'
+  let params = {}
+  // call an RPC method with parameters
+  ws.call(method, params).then(result =&gt; {
+      console.log(result)
+  })
+})
+</code></pre>
+<p>If this code was run in nodejs, the output should be:</p>
+<pre><code class="language-shell">[ { id: 'test-instance', dna: 'hc-run-dna', agent: 'hc-run-agent' } ]
+</code></pre>
 <a class="header" href="#calling-zome-functions-2" id="calling-zome-functions-2"><h3>Calling Zome Functions</h3></a>
 <p>The following discusses how to use <code>rpc-websockets</code> to make calls to Zome functions.</p>
-<p>To use as the JSON-RPC &quot;method&quot; the instance ID, the Zome name, and the function name are combined into a single string, separated by forward slash (<code>/</code>) characters. It could look like the following:
+<p>To use as the JSON-RPC &quot;method&quot; the instance ID (as seen in the <code>info/instances</code> example), the Zome name, and the function name are combined into a single string, separated by forward slash (<code>/</code>) characters. It could look like the following:
 <code>'test-instance/blogs/create_blog'</code></p>
 <p>A JSON object is constructed to give arguments. It could look like the following:
 <code>{ blog: { content: 'sample content' }}</code></p>
@@ -2241,23 +2262,6 @@ ws.on('open', function() {
 <pre><code class="language-shell">{ &quot;Ok&quot;: &quot;QmRjDTc8ZfnH9jucQJx3bzK5Jjcg21wm5ZNYAro9N4P7Bg&quot; }
 </code></pre>
 <p>This response suggests that the function call was successful (&quot;Ok&quot;) and provides the DHT address of the freshly committed blog entry (&quot;QmR...&quot;).</p>
-<a class="header" href="#infoinstances-1" id="infoinstances-1"><h3>info/instances</h3></a>
-<p>The following is a starter example, where a special utility function of Holochain is called, which accepts no parameters, and returns an array of the instances which are running behind the WebSocket server.</p>
-<p>The name of this special method is <code>info/instances</code>. The following code shows how to use <code>rpc-websockets</code> to call it. (Note the previous code is collapsed in the ellipsis for brevity)</p>
-<pre><code class="language-js">...
-ws.on('open', function() {
-  
-  let method = 'info/instances'
-  let params = {}
-  // call an RPC method with parameters
-  ws.call(method, params).then(result =&gt; {
-      console.log(result)
-  })
-})
-</code></pre>
-<p>If this code was run in nodejs, the output should be:</p>
-<pre><code class="language-shell">[ { id: 'test-instance', dna: 'hc-run-dna', agent: 'hc-run-agent' } ]
-</code></pre>
 <a class="header" href="#closing-the-websocket-connection" id="closing-the-websocket-connection"><h3>Closing the WebSocket Connection</h3></a>
 <p>When you are done permanently with the connection, it can be closed.</p>
 <pre><code>...

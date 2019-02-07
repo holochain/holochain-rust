@@ -421,7 +421,7 @@ pub struct UiBundleConfiguration {
     pub id: String,
     pub root_dir: String,
     #[serde(default)]
-    pub hash: String,
+    pub hash: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]

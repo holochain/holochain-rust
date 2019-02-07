@@ -140,6 +140,27 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#logging" id="logging"><h1>Logging</h1></a>
+<p><code>logger</code> is a table for the configuration of how logging should behave in the Conductor. Select between types of loggers and setup rules for nicer display of the logs. There is only one logger per Conductor.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
+<a class="header" href="#type-enum-optional" id="type-enum-optional"><h4><code>type</code>: <code>enum</code> Optional</h4></a>
+<p>Select which type of logger to use for the Conductor. If you leave this off, &quot;simple&quot; logging is the default</p>
+<ul>
+<li><code>debug</code>: enables more sophisticated logging with color coding and filters</li>
+<li><code>simple</code>: a most minimal logger, no color coding or filtering</li>
+</ul>
+<a class="header" href="#rules-logrules-optional" id="rules-logrules-optional"><h4><code>rules</code>: <code>LogRules</code> Optional</h4></a>
+<p>A table for optionally adding a set of rules to the logger</p>
+<a class="header" href="#logrulesrules-logrule" id="logrulesrules-logrule"><h4><code>LogRules.rules</code>: <code>LogRule</code></h4></a>
+<p>An array of tables containing the rules for the logger</p>
+<a class="header" href="#logrulepattern-regex-string" id="logrulepattern-regex-string"><h4><code>LogRule.pattern</code>: <code>Regex string</code></h4></a>
+<p>A Regex pattern as a string to match log messages against, to see whether this rule should affect them.</p>
+<a class="header" href="#logruleexclude-bool-optional" id="logruleexclude-bool-optional"><h4><code>LogRule.exclude</code>: <code>bool</code> Optional</h4></a>
+<p>Whether to use this pattern to exclude things that match from the logs. Defaults to <code>false</code>. This option is useful for when the logs seem noisy.</p>
+<a class="header" href="#logrulecolor-enum-optional" id="logrulecolor-enum-optional"><h4><code>LogRule.color</code>: <code>enum</code> Optional</h4></a>
+<p>What color to use in the terminal output for logs that match this pattern. Options:</p>
+<pre><code>black, red, green, yellow, blue, magenta, cyan, white
+</code></pre>
 <a class="header" href="#example" id="example"><h3>Example</h3></a>
 <pre><code class="language-toml">[logger]
 type = &quot;debug&quot;
@@ -152,6 +173,10 @@ pattern = &quot;^err/&quot;
 color = &quot;white&quot;
 exclude = false
 pattern = &quot;^debug/dna&quot;
+
+[[logger.rules.rules]]
+exclude = true
+pattern = &quot;^debug/reduce&quot;
 
 [[logger.rules.rules]]
 exclude = false

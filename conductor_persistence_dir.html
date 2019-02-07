@@ -140,6 +140,17 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#persistence-directory" id="persistence-directory"><h1>Persistence Directory</h1></a>
+<p>This is a simple key/value pair specifying a directory on the device to persist the config file, DNAs, and UI bundles, if changes are made dynamically over the JSON-RPC admin API. This is only relevant if you are running one of the <a href="./conductor_interfaces.html">interfaces</a> with <code>admin = true</code>. The default value is in a subdirectory of the $HOME directory, <code>$HOME/.holochain/conductor</code>.</p>
+<p><strong>Optional</strong></p>
+<p>If you start a Conductor that has this value set, but then make no changes via the JSON-RPC admin interface, the persistence directory will not be utilized and the Conductor config file you started with will not be moved into that directory. On the other hand, if you do make any changes to the configuration by calling one of the <a href="./conductor_admin.html">dynamic admin functions</a> then whatever the value of the <code>persistence_dir</code> is for that Conductor config, it will create that directory, and then persist the modified Conductor configuration file there. It would then be wise to utilize <strong>that</strong> Conductor config in the future, instead of the original.</p>
+<p>Within this <code>persistence_dir</code> that is now on the device, there are a number of possible files and folders.</p>
+<p><code>conductor-config.toml</code> is the new configuration file, which will be repeatedly written to with any further dynamic updates. This is useful so that when the Conductor is stopped, or if it dies for some reason, when you restart it will behave the same as before.</p>
+<p><code>storage</code> is a directory used for persisting the data for <a href="./conductor_instances.html">instances</a>, in particular when new instances are added via the <code>admin/instance/add</code> admin function.</p>
+<p><code>dna</code> is a directory used for copying <a href="./conductor_dnas.html">DNA</a> package files into if the <code>admin/dna/install_from_file</code> admin function is called.</p>
+<p><code>static</code> is a directory used for copying <a href="./conductor_ui_bundles.html">UI Bundle</a> files into if the <code>admin/ui/install</code> admin function is called.</p>
+<a class="header" href="#example" id="example"><h3>Example</h3></a>
+<pre><code class="language-toml">persistence_dir = &quot;/home/user/my_holochain&quot;
+</code></pre>
 
                         <hr />
                         <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_persistence_dir.md">suggest an edit</a>

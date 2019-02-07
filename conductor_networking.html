@@ -140,7 +140,18 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#networking" id="networking"><h1>Networking</h1></a>
-<p>The Conductor currently uses mock networking by default. To use real networking you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the Conductor where it can find n3h.</p>
+<p><code>logger</code> is a table for the configuration of how networking should behave in the Conductor. The Conductor currently uses mock networking by default. To network with other nodes you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the Conductor where it can find n3h.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
+<a class="header" href="#bootstrap_nodes-array-of-string-optional" id="bootstrap_nodes-array-of-string-optional"><h4><code>bootstrap_nodes</code>: <code>array of string</code> Optional</h4></a>
+<p>List of URIs that point to other nodes to bootstrap p2p connections.</p>
+<a class="header" href="#n3h_path-string" id="n3h_path-string"><h4><code>n3h_path</code>: <code>string</code></h4></a>
+<p>Absolute path to the local installation/repository of n3h. Default is to a subdirectory of the $HOME directory on the device: <code>$HOME/.hc/net/n3h</code></p>
+<a class="header" href="#n3h_persistence_path-string-optional" id="n3h_persistence_path-string-optional"><h4><code>n3h_persistence_path</code>: <code>string</code> Optional</h4></a>
+<p>Absolute path to the directory that n3h uses to store persisted data. The default is that a temporary self-demolishing directory for this transient data will be used.</p>
+<a class="header" href="#n3h_ipc_uri-string-optional" id="n3h_ipc_uri-string-optional"><h4><code>n3h_ipc_uri</code>: <code>string</code> Optional</h4></a>
+<p>URI pointing to an n3h process that is already running and not managed by this
+Conductor. If this is set the Conductor does not spawn n3h itself and ignores the path configs above. Default is this value is empty.</p>
 <a class="header" href="#example" id="example"><h3>Example</h3></a>
 <pre><code class="language-toml">[network]
 n3h_path = &quot;/home/eric/holochain/n3h&quot;

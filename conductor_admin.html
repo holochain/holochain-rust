@@ -140,6 +140,10 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#administering-conductors" id="administering-conductors"><h1>Administering Conductors</h1></a>
+<p>It is possible to dynamically configure a Conductor via a JSON-RPC interface connection. There is a powerful API that is exposed for doing so.</p>
+<p>To do this, first, recall that the <code>admin = true</code> <a href="./conductor_interfaces.html#admin-bool-optional">property needs to be set</a> for the interface via which this is being attempted. Second, it is helpful to review and understand the behaviours around the <a href="./conductor_persistence_dir.html"><code>persistence_dir</code> property</a> for the Conductor.</p>
+<p>Finally, to view the API for this functionality, check out the full <a href="https://developer.holochain.org/api/latest/holochain_container_api/interface/struct.ContainerApiBuilder.html">API reference material</a> for it and scroll to view the <code>with_admin_dna_functions</code> comment block and the <code>with_admin_ui_functions</code> comment block. Calling these functions works exactly the same way as the other <a href="./conductor_json_rpc_api.html">JSON-RPC API calls that were discussed</a>.</p>
+<p>As mentioned in <a href="./production_conductor.html">production Conductor</a>, there is a GUI in development that will cover all this functionality, so that it does not have to be done programmatically, but can be done by any user simply point and click.</p>
 
                         <hr />
                         <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_admin.md">suggest an edit</a>

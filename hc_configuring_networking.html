@@ -140,10 +140,11 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#configuring-networking-for-hc-run" id="configuring-networking-for-hc-run"><h1>Configuring Networking for <code>hc run</code></h1></a>
-<p><code>hc run</code> uses mock networking by default and therefore doesn't talk to any other nodes.  If you wish to test multiple nodes you will need to install the <a href="https://github.com/holochain/n3h">n3h</a> networking component (following the instructions on the readme).</p>
+<p><code>hc run</code> uses mock networking by default and therefore doesn't talk to any other nodes.  If you wish to test multiple nodes you will need to install the <a href="https://github.com/holochain/n3h">n3h</a> networking component (following the instructions on the README).</p>
 <p>If you set the HC_N3H_PATH environment variable to the path where you installed it, <code>hc run</code> will automatically default to using real networking.</p>
-<p>Set the HC_N3H_PATH environment variable, and start the server by running (make sure to change the path to where you actually installed n3h):
-<code>HC_N3H_PATH=/home/eric/holochain/n3h hc run</code></p>
+<p>Set the HC_N3H_PATH environment variable, and start the server by running (make sure to change the path to where you actually installed n3h):</p>
+<pre><code class="language-shell">HC_N3H_PATH=/home/eric/holochain/n3h hc run
+</code></pre>
 <p>Assuming n3h was installed properly you should see something like this:</p>
 <pre><code class="language-shell">SPAWN (&quot;node&quot; &quot;/home/eric/holochain/n3h/packages/n3h/bin/n3h&quot;)
 (@hackmode@) [t] bound to tcp://127.0.0.1:42341

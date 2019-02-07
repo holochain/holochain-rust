@@ -140,12 +140,23 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#ui-interfaces" id="ui-interfaces"><h1>UI Interfaces</h1></a>
+<p><code>ui_interfaces</code> is an array of configurations for &quot;UI Interfaces&quot;, meaning there can be multiple within one Conductor. UI Interfaces serve <a href="./conductor_ui_bundles.html">UI Bundles</a> over HTTP.</p>
+<p><strong>Optional</strong></p>
+<a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
+<a class="header" href="#id-string" id="id-string"><h4><code>id</code>: <code>string</code></h4></a>
+<p>Give an ID of your choice to this UI Interface</p>
+<a class="header" href="#bundle-string" id="bundle-string"><h4><code>bundle</code>: <code>string</code></h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_ui_bundles.html">ui_bundle</a> to serve over this interface</p>
+<a class="header" href="#port-u16" id="port-u16"><h4><code>port</code>: <code>u16</code></h4></a>
+<p>An integer value representing the port on the device to run this interface over. Must not conflict with any of the <a href="./conductor_interfaces.html">interface</a> ports, nor another UI Interface port.</p>
+<a class="header" href="#dna_interface-string-optional" id="dna_interface-string-optional"><h4><code>dna_interface</code>: <code>string</code> Optional</h4></a>
+<p>A reference to the given ID of a defined <a href="./conductor_interfaces.html">interface</a> this UI is allowed to make calls to. This is used to set the CORS headers and also to provide an extra virtual file endpoint at /_dna_config/ that allows <a href="https://github.com/holochain/hc-web-client">hc-web-client</a> or another solution to redirect Holochain calls to the correct ip/port/protocol</p>
 <a class="header" href="#example" id="example"><h3>Example</h3></a>
 <pre><code class="language-toml">[[ui_interfaces]]
 id = &quot;ui-interface-1&quot;
 bundle = &quot;bundle1&quot;
 port = 3000
-dna_interface = &quot;websocket interface&quot;
+dna_interface = &quot;websocket_interface&quot;
 </code></pre>
 
                         <hr />

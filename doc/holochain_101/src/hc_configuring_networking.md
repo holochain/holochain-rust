@@ -1,11 +1,13 @@
 # Configuring Networking for `hc run`
 
-`hc run` uses mock networking by default and therefore doesn't talk to any other nodes.  If you wish to test multiple nodes you will need to install the [n3h](https://github.com/holochain/n3h) networking component (following the instructions on the readme).  
+`hc run` uses mock networking by default and therefore doesn't talk to any other nodes.  If you wish to test multiple nodes you will need to install the [n3h](https://github.com/holochain/n3h) networking component (following the instructions on the README).  
 
 If you set the HC_N3H_PATH environment variable to the path where you installed it, `hc run` will automatically default to using real networking.
 
 Set the HC_N3H_PATH environment variable, and start the server by running (make sure to change the path to where you actually installed n3h):
-`HC_N3H_PATH=/home/eric/holochain/n3h hc run`
+```shell
+HC_N3H_PATH=/home/eric/holochain/n3h hc run
+```
 
 Assuming n3h was installed properly you should see something like this:
 ```shell

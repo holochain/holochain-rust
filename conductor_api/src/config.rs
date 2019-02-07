@@ -449,7 +449,7 @@ pub struct NetworkConfig {
     /// Absolute path to the directory that n3h uses to store persisted data.
     #[serde(default)]
     pub n3h_persistence_path: String,
-    /// URI pointing a n3h process that is already running and not managed by this
+    /// URI pointing to an n3h process that is already running and not managed by this
     /// conductor.
     /// If this is set the conductor does not spawn n3h itself and ignores the path
     /// configs above. Default is None.

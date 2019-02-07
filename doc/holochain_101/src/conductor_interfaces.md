@@ -40,13 +40,13 @@ A reference to the given ID of a defined [instance](./conductor_instances.md)
 ### Example Without Admin
 ```toml
 [[interfaces]]
-id = "http interface"
+id = "websocket interface"
 
 [[interfaces.instances]]
 id = "app spec instance 1"
 
 [interfaces.driver]
-type = "http"
+type = "websocket"
 port = 4000
 ```
 

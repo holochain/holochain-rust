@@ -65,7 +65,7 @@ scenario1.runTape('delete_post', async (t, { alice }) => {
   const result =  alice.call("blog", "create_post", params)
   const result_delete = await alice.callSync("blog", "delete_post", params)
   t.ok(result_delete.Ok)
-  const alice_agent = "alice"
+  const alice_agent = "Bob"
   const params_posts_by_agent = { alice_agent }
   const result_list = alice.call("blog", "posts_by_agent", params_posts_by_agent)
   t.deepEqual(result_list.Ok, { "addresses": [] })

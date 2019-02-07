@@ -13,7 +13,7 @@ const instanceBob = Config.instance(agentBob, dna)
 const scenario1 = new Scenario([instanceAlice])
 const scenario2 = new Scenario([instanceAlice, instanceBob])
 
-scenario2.runTape('agentId', async (t, { alice, bob }) => {
+/*scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
@@ -55,7 +55,7 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.ok(result.Ok)
   t.notOk(result.Err)
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-})
+})*/
 
 
 scenario1.runTape('delete_post', async (t, { alice }) => {
@@ -69,7 +69,7 @@ scenario1.runTape('delete_post', async (t, { alice }) => {
   t.deepEqual(result_list.Ok, { "addresses": [] })
 })
 
-scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
+/*scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
 
   const content = "Holo world"
   const in_reply_to = "bad"
@@ -191,4 +191,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})
+})*/

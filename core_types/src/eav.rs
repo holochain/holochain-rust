@@ -305,10 +305,6 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                 )
             })
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
-            .collect();
-        let filtered_dates = filtered
-            .clone()
-            .into_iter()
             .filter(|e| {
                 index_query
                     .start()
@@ -331,7 +327,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
             })
             .collect::<BTreeSet<EntityAttributeValueIndex>>();
 
-        Ok(filtered_dates)
+        Ok(filtered)
     }
 }
 

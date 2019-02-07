@@ -32,7 +32,7 @@ These dependencies need to be installed in order to compile, and use `hc`:
   - `rustup default nightly-2019-01-24`
   - (the specific nightly build we use will change over time)
   - Also, if you are going to be developing Zomes in Rust, install the WASM build target for Rust, by running:
-  - `rustup target add wasm32-unknown-unknown --toolchain nightly-2018-12-26`
+  - `rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24`
 - [Node.js](https://nodejs.org) version 8 or higher
   - Tests for Holochain apps are now written in Javascript and executed in Nodejs
   - To read further, check out [the holochain-nodejs module](https://www.npmjs.com/package/@holochain/holochain-nodejs)

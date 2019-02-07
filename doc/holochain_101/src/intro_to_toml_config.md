@@ -2,7 +2,7 @@
 
 To configure the `holochain` Conductor, a configuration file format called TOML is used. It stands for "Tom's Obvious Minimal Language" and was created by Tom Preston-Werner, one of the original founders of GitHub. The [documentation on GitHub](https://github.com/toml-lang/toml) for it is very good.
 
-`holochain` configuration files make heave use of [tables](https://github.com/toml-lang/toml#table) and [arrays of tables](https://github.com/toml-lang/toml#array-of-tables).
+`holochain` configuration files make heavy use of [tables](https://github.com/toml-lang/toml#table) and [arrays of tables](https://github.com/toml-lang/toml#array-of-tables).
 
 A table is actually a collection of key/value pairs, and it looks like this:
 ```toml

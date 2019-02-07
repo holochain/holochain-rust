@@ -224,8 +224,8 @@ impl Waiter {
                                     *aw.action() == Action::AddLink(link_add.clone().link().clone())
                                 });
                             }
-                        Entry::LinkRemove(link_remove) => {
-                            // Pair every `LinkRemove` with N `Hold`s
+                            Entry::LinkRemove(link_remove) => {
+                                // Pair every `LinkRemove` with N `Hold`s
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
                                         *entry == committed_entry
@@ -233,9 +233,9 @@ impl Waiter {
                                     _ => false,
                                 });
                                 checker.add(num_instances, move |aw| {
-                                *aw.action()
-                                    == Action::RemoveLink(link_remove.clone().link().clone())
-                            });
+                                    *aw.action()
+                                        == Action::RemoveLink(link_remove.clone().link().clone())
+                                });
                             }
                             _ => (),
                         }

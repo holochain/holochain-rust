@@ -196,18 +196,19 @@ impl EntityAttributeValueStorage for EavFileStorage {
             vec![""]
         };
         let union_set: BTreeSet<String> = BTreeSet::new();
-        let entity_attribute_value_union =
-            prefixes.iter().fold(Ok(union_set.clone()), |set : Result<BTreeSet<String>, HolochainError>, prefix:&&str| {
-                let entity_set = self
-                    .read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
+        let entity_attribute_value_union = prefixes.iter().fold(
+            Ok(union_set.clone()),
+            |set: Result<BTreeSet<String>, HolochainError>, prefix: &&str| {
+                let entity_set =
+                    self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
                 let attribute_with_prefix = attribute
                     .clone()
                     .map(|attri| prefix.to_string() + &attri.clone());
                 let attribute_set = self
                     .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute_with_prefix)
                     .clone()?;
-                let value_set = self
-                    .read_from_dir::<Value>(VALUE_DIR.to_string(), value.clone())?;
+                let value_set =
+                    self.read_from_dir::<Value>(VALUE_DIR.to_string(), value.clone())?;
 
                 let attribute_value_inter: BTreeSet<String> = value_set
                     .intersection(&attribute_set.clone())
@@ -218,10 +219,13 @@ impl EntityAttributeValueStorage for EavFileStorage {
                     .cloned()
                     .collect();
                 let to_union = set?;
-                Ok(to_union.union(&entity_attribute_value_inter).cloned().collect())
-            });
-        
-    
+                Ok(to_union
+                    .union(&entity_attribute_value_inter)
+                    .cloned()
+                    .collect())
+            },
+        );
+
         let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_union?
             .clone()
             .into_iter()

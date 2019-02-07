@@ -86,7 +86,7 @@ fn validate_link_entry(
 ) -> Result<CallbackResult, HolochainError> {
     let link_add = match entry {
         Entry::LinkAdd(link_add) => link_add,
-        Entry::LinkRemove(link_remove)=>link_remove,
+        Entry::LinkRemove(link_remove) => link_remove,
         _ => {
             return Err(HolochainError::ValidationFailed(
                 "Could not extract link_add from entry".into(),

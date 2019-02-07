@@ -20,7 +20,7 @@ use holochain_core::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    entry::{Entry, cap_entry::CapabilityType},
+    entry::Entry,
     signature::Signature,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};

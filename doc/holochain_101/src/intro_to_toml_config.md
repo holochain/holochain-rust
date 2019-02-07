@@ -51,6 +51,7 @@ $HOME/.holochain/conductor/conductor-config.toml
 %HOME%\.holochain\conductor\conductor-config.toml
  ```
 
-To jump ahead into what these configuration files can look like, you can check out [this folder on GitHub](https://github.com/holochain/holochain-rust/tree/develop/conductor/example-config) which has a number of examples. Otherwise, read on to understand each part.
+ > The [holochain-nodejs Conductor](./configuration_alternatives.md) also accepts the same TOML based configuration.
 
-> The [holochain-nodejs Conductor](./configuration_alternatives.md) also accepts the same TOML based configuration.
+## Examples
+To jump ahead into what these configuration files can look like, you can check out [this folder on GitHub](https://github.com/holochain/holochain-rust/tree/develop/conductor/example-config) which has a number of examples. Otherwise, read on to understand each part.

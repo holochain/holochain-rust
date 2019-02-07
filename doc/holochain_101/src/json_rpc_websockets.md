@@ -10,7 +10,7 @@ We recommend searching for a JSON-RPC Websockets library for the language of you
 
 ## Starting a WebSocket Server with `holochain`
 
-
+To review how to start a WebSocket Server with `holochain`, check out the [interfaces](./conductor_interfaces.md#interfacedrivertype-enum) article.
 
 ## WebSocket Example
 
@@ -38,10 +38,33 @@ ws.on('open', function() {
 })
 ```
 
+### info/instances
+
+The following is a starter example, where a special utility function of Holochain is called, which accepts no parameters, and returns an array of the instances which are available on the WebSocket server.
+
+The name of this special method is `info/instances`. The following code shows how to use `rpc-websockets` to call it. (Note the previous code is collapsed in the ellipsis for brevity)
+```js
+...
+ws.on('open', function() {
+  
+  let method = 'info/instances'
+  let params = {}
+  // call an RPC method with parameters
+  ws.call(method, params).then(result => {
+      console.log(result)
+  })
+})
+```
+
+If this code was run in nodejs, the output should be:
+```shell
+[ { id: 'test-instance', dna: 'hc-run-dna', agent: 'hc-run-agent' } ]
+```
+
 ### Calling Zome Functions
 The following discusses how to use `rpc-websockets` to make calls to Zome functions.
 
-To use as the JSON-RPC "method" the instance ID, the Zome name, and the function name are combined into a single string, separated by forward slash (`/`) characters. It could look like the following:
+To use as the JSON-RPC "method" the instance ID (as seen in the `info/instances` example), the Zome name, and the function name are combined into a single string, separated by forward slash (`/`) characters. It could look like the following:
 `'test-instance/blogs/create_blog'`
 
 A JSON object is constructed to give arguments. It could look like the following:
@@ -65,29 +88,6 @@ If this code was run in nodejs, the output should be:
 ```
 
 This response suggests that the function call was successful ("Ok") and provides the DHT address of the freshly committed blog entry ("QmR...").
-
-### info/instances
-
-The following is a starter example, where a special utility function of Holochain is called, which accepts no parameters, and returns an array of the instances which are running behind the WebSocket server.
-
-The name of this special method is `info/instances`. The following code shows how to use `rpc-websockets` to call it. (Note the previous code is collapsed in the ellipsis for brevity)
-```js
-...
-ws.on('open', function() {
-  
-  let method = 'info/instances'
-  let params = {}
-  // call an RPC method with parameters
-  ws.call(method, params).then(result => {
-      console.log(result)
-  })
-})
-```
-
-If this code was run in nodejs, the output should be:
-```shell
-[ { id: 'test-instance', dna: 'hc-run-dna', agent: 'hc-run-agent' } ]
-```
 
 ### Closing the WebSocket Connection
 

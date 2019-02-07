@@ -12,17 +12,32 @@ Any of these methods could be similarly called from whatever client you are usin
 
 ## Starting an HTTP Server with `holochain`
 
+To review how to start an HTTP Server with `holochain`, review the [interfaces](./conductor_interfaces.md#interfacedrivertype-enum) article.
 
 ## HTTP Example
 
 This whole example assumes that one of the methods listed above has been used to start an HTTP server on port 8888 with a valid DNA instance running in it.
 
+### info/instances
+The following is a starter example, where a special utility function of Holochain is called, which accepts no parameters, and returns an array of the instances which are available on the HTTP server.
+
+In another terminal besides the server, we could run the following cURL command:
+`curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0","id": "0","method": "info/instances"}' http://localhost:8888`
+
+A response something like the following might be returned:
+```json
+{
+    "jsonrpc": "2.0",
+    "result": [{"id":"test-instance","dna":"hc-run-dna","agent":"hc-run-agent"}],
+    "id": "0"
+}
+```
 
 ### Calling Zome Functions
 
 The following discusses how to use cURL (and thus HTTP generally) to make calls to Zome functions.
 
-To use as the JSON-RPC "method" the instance ID, the Zome name, and the function name are combined into a single string, separated by forward slash (`/`) characters. It could look like the following:
+To use as the JSON-RPC "method" the instance ID (as seen in the `info/instances` example), the Zome name, and the function name are combined into a single string, separated by forward slash (`/`) characters. It could look like the following:
 `"method": "test-instance/blogs/create_blog"`
 
 Unlike `info/instances`, Zome functions usually expect arguments. To give arguments, a JSON object should be constructed. It may look like the following:
@@ -42,15 +57,4 @@ A response like the following might be returned:
 
 This response suggests that the function call was successful ("Ok") and provides the DHT address of the freshly committed blog entry ("QmU...").
 
-### info/instances
-In another terminal, we could run the following cURL command:
-`curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0","id": "0","method": "info/instances"}' http://localhost:8888`
-
-A response something like the following might be returned:
-```json
-{
-    "jsonrpc": "2.0",
-    "result": [{"id":"test-instance","dna":"hc-run-dna","agent":"hc-run-agent"}],
-    "id": "0"
-}
-```
+This demonstrates how easy it is to call into Zome function from clients and user interfaces!

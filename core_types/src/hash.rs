@@ -8,7 +8,7 @@ use crate::{
 };
 use multihash::{encode, Hash};
 use rust_base58::ToBase58;
-use std::{convert::TryFrom, fmt, ops::Add};
+use std::{convert::TryFrom, fmt};
 
 // HashString newtype for String
 #[derive(
@@ -37,19 +37,6 @@ impl From<HashString> for String {
 impl<'a> From<&'a str> for HashString {
     fn from(s: &str) -> HashString {
         HashString::from(s.to_string())
-    }
-}
-
-impl<'a> Add<&'a str> for HashString {
-    type Output = HashString;
-    fn add(self, other: &'a str) -> HashString {
-        HashString::from(self.0 + &other)
-    }
-}
-
-impl<'a> PartialEq<&'a str> for HashString {
-    fn eq(&self, other: &&'a str) -> bool {
-        &&*self.0 == other
     }
 }
 

@@ -49,16 +49,16 @@ pub struct Configuration {
     /// List of ui bundles (static web dirs) to host on a static interface. Optional.
     #[serde(default)]
     pub ui_bundles: Vec<UiBundleConfiguration>,
-    /// List of ui interfaces, includes references ui bundle and dna interfaces it can call. Optional.
+    /// List of ui interfaces, includes references to ui bundles and dna interfaces it can call. Optional.
     #[serde(default)]
     pub ui_interfaces: Vec<UiInterfaceConfiguration>,
-    /// Configures how logging should behave
+    /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
-    /// Configuration options for the network module n3h
+    /// Configuration options for the network module n3h. Optional.
     #[serde(default)]
     pub network: Option<NetworkConfig>,
-    /// where to persist the config file and DNAs
+    /// where to persist the config file and DNAs. Optional.
     #[serde(default = "default_persistence_dir")]
     pub persistence_dir: PathBuf,
 }

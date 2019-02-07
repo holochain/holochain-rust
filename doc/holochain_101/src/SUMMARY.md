@@ -57,7 +57,7 @@
     - [UI Bundles](./conductor_ui_bundles.md)
     - [UI Interfaces](./conductor_ui_interfaces.md)
     - [Logging](./conductor_logging.md)
-    - [Networking](./conductor_networking)
+    - [Networking](./conductor_networking.md)
     - [Persistence Directory](./conductor_persistence_dir.md)
   - [Intro to JSON-RPC Interfaces](./json_rpc_interfaces.md)
   - [Conductor JSON-RPC API](./conductor_json_rpc_api.md)

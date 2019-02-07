@@ -1,6 +1,7 @@
 # Logging
 
 
+### Example
 ```toml
 [logger]
 type = "debug"

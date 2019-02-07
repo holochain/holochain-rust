@@ -1,5 +1,6 @@
 # Interfaces
 
+### Example
 ```toml
 [[interfaces]]
 admin = true

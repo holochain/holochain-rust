@@ -1,5 +1,6 @@
 # UI Bundles
 
+### Example
 ```toml
 [[ui_bundles]]
 id = "bundle1"

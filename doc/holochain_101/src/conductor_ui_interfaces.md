@@ -1,5 +1,7 @@
 # UI Interfaces
 
+
+### Example
 ```toml
 [[ui_interfaces]]
 id = "ui-interface-1"

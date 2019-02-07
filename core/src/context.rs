@@ -68,8 +68,6 @@ impl Context {
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
     ) -> Self {
-
-        println!("SELF CONSTRUCTOR!");
         Context {
             agent_id,
             logger,
@@ -97,7 +95,6 @@ impl Context {
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         network_config: JsonString,
     ) -> Result<Context, HolochainError> {
-        println!("SELF CONSTRUCTOR!");
         Ok(Context {
             agent_id,
             logger,

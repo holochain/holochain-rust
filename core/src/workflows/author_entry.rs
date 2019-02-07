@@ -29,7 +29,6 @@ pub async fn author_entry<'a>(
     let validation_package = await!(build_validation_package(&entry, &context))?;
     let validation_data = ValidationData {
         package: validation_package,
-        sources: vec![Address::from("<insert your agent key here>")],
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
     };

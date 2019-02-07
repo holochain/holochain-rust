@@ -57,7 +57,7 @@ impl ConductorUiAdmin for Conductor {
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
             root_dir: path_string.into(),
-            hash: "<not-used>".to_string(),
+            hash: None,
         };
 
         let mut new_config = self.config.clone();

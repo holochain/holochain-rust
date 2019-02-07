@@ -567,15 +567,15 @@ impl P2pNode {
             Protocol::NamedBinary(_) => {
                 let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
                 self.logger.d(&dbg_msg);
-            },
+            }
             Protocol::Json(_) => {
                 let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
                 self.logger.d(&dbg_msg);
-            },
+            }
             _ => {
                 format!("<< ({}) recv <other>", self.agent_id, data);
                 self.logger.t(&dbg_msg);
-            },
+            }
         };
 
         self.recv_msg_log.push(data.clone());
@@ -588,8 +588,10 @@ impl P2pNode {
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    self.logger
-                        .e(&format!("({}) ###### Received parse error: {} {:?}", self.agent_id, s, data));
+                    self.logger.e(&format!(
+                        "({}) ###### Received parse error: {} {:?}",
+                        self.agent_id, s, data
+                    ));
                 }
                 Err(e)
             }

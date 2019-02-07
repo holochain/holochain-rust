@@ -270,7 +270,9 @@ pub fn reduce(
 #[cfg(test)]
 pub mod tests {
     extern crate tempfile;
-    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
+    use super::{
+        create_new_chain_header, reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot
+    };
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         instance::tests::test_context, state::State,
@@ -405,5 +407,21 @@ pub mod tests {
                 "some error"
             )))),
         );
+    }
+
+    #[test]
+    fn test_create_new_chain_header() {
+        let mut agent_state = test_agent_state();
+        let netname = Some("test_create_new_chain_header");
+        let context = test_context("bob", netname);
+        let state = State::new_with_agent(context, Arc::new(agent_state.clone()));
+        let mut context = test_context("bob", netname);
+        Arc::get_mut(&mut context)
+            .unwrap()
+            .set_state(Arc::new(RwLock::new(state)));
+
+        let header = create_new_chain_header(&test_entry(), context, &None);
+        println!("{:?}", header);
+        assert!(false);
     }
 }

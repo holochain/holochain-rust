@@ -411,7 +411,7 @@ pub mod tests {
 
     #[test]
     fn test_create_new_chain_header() {
-        let mut agent_state = test_agent_state();
+        let agent_state = test_agent_state();
         let netname = Some("test_create_new_chain_header");
         let context = test_context("bob", netname);
         let state = State::new_with_agent(context, Arc::new(agent_state.clone()));

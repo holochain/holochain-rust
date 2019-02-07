@@ -26,13 +26,13 @@ pub async fn author_entry<'a>(
         address, entry
     ));
     // 1. Build the context needed for validation of the entry
-    /*let validation_package = await!(build_validation_package(&entry, &context))?;
+    let validation_package = await!(build_validation_package(&entry, &context))?;
     let validation_data = ValidationData {
         package: validation_package,
         sources: vec![Address::from("<insert your agent key here>")],
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
-    };*/
+    };
 
     // 2. Validate the entry
     context.log(format!(

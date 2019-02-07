@@ -559,7 +559,9 @@ pub mod tests {
             "link__tagalog".try_into(),
             Ok(Attribute::LinkTag("tagalog".into()))
         );
-        assert_eq!(r"unknown \\and// invalid / attribute".try_into(), Err(()));
+        assert!(
+            (r"unknown \\and// invalid / attribute".try_into() as Result<Attribute, _>).is_err(),
+        );
     }
 
     #[test]

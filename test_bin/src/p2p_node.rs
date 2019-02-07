@@ -573,7 +573,7 @@ impl P2pNode {
                 self.logger.d(&dbg_msg);
             }
             _ => {
-                format!("<< ({}) recv <other>", self.agent_id, data);
+                let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
                 self.logger.t(&dbg_msg);
             }
         };
@@ -590,7 +590,7 @@ impl P2pNode {
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
                     self.logger.e(&format!(
                         "({}) ###### Received parse error: {} {:?}",
-                        self.agent_id, s, data
+                        self.agent_id, s, data,
                     ));
                 }
                 Err(e)

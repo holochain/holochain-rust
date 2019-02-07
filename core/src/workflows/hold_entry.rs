@@ -15,8 +15,8 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(
-    entry_with_header: &'a EntryWithHeader,
-    context: &'a Arc<Context>,
+    entry_with_header: EntryWithHeader,
+    context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
 
@@ -28,7 +28,6 @@ pub async fn hold_entry_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        sources: header.sources().clone(),
         lifecycle: EntryLifecycle::Dht,
         action: EntryAction::Create,
     };
@@ -37,7 +36,7 @@ pub async fn hold_entry_workflow<'a>(
     await!(validate_entry(entry.clone(), validation_data, &context))?;
 
     // 3. If valid store the entry in the local DHT shard
-    await!(hold_entry(entry, &context))
+    await!(hold_entry(entry_with_header, context))
 }
 
 #[cfg(test)]
@@ -77,17 +76,19 @@ pub mod tests {
 
         // Commit entry on attackers node
         let entry = test_entry();
-        let _entry_address = block_on(author_entry(&entry, None, &context1)).unwrap();
+        let _entry_address = context1
+            .block_on(author_entry(&entry, None, &context1))
+            .unwrap();
 
         // Get header which we need to trigger hold_entry_workflow
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state
-            .get_header_for_entry(&entry)
+            .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
         let entry_with_header = EntryWithHeader { entry, header };
 
         // Call hold_entry_workflow on victim DHT node
-        let result = block_on(hold_entry_workflow(&entry_with_header, &context2));
+        let result = context2.block_on(hold_entry_workflow(&entry_with_header, &context2));
 
         // ... and expect validation to fail with message defined in test WAT:
         assert!(result.is_err());

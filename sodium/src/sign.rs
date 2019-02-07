@@ -1,6 +1,9 @@
 //! This module provides access to libsodium
 use super::{check_init, secbuf::SecBuf};
-use crate::error::SodiumResult;
+use crate::error::SodiumError;
+
+pub const PUBLICKEYBYTES: usize = rust_sodium_sys::crypto_sign_PUBLICKEYBYTES as usize;
+pub const SECRETKEYBYTES: usize = rust_sodium_sys::crypto_sign_SECRETKEYBYTES as usize;
 
 /// Generate a signing keypair from a seed buffer
 ///
@@ -15,7 +18,7 @@ pub fn seed_keypair(
     public_key: &mut SecBuf,
     secret_key: &mut SecBuf,
     seed: &mut SecBuf,
-) -> SodiumResult<()> {
+) -> Result<(), SodiumError> {
     check_init();
     let seed = seed.read_lock();
     let mut secret_key = secret_key.write_lock();
@@ -43,7 +46,7 @@ pub fn sign(
     message: &mut SecBuf,
     secret_key: &mut SecBuf,
     signature: &mut SecBuf,
-) -> SodiumResult<()> {
+) -> Result<(), SodiumError> {
     check_init();
     let message = message.read_lock();
     let secret_key = secret_key.read_lock();

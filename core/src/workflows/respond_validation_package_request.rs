@@ -14,7 +14,7 @@ fn get_entry(address: &Address, context: &Arc<Context>) -> Result<Entry, Holocha
         .state()
         .unwrap()
         .agent()
-        .chain()
+        .chain_store()
         .content_storage()
         .read()
         .unwrap()

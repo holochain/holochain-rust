@@ -1,4 +1,4 @@
-use basic_workflows::setup_normal;
+use basic_workflows::setup_two_nodes;
 use constants::*;
 use holochain_net_connection::{json_protocol::JsonProtocol, NetResult};
 use p2p_node::P2pNode;
@@ -21,7 +21,7 @@ pub fn empty_publish_entry_list_test(
 ) -> NetResult<()> {
     // Setup
     println!("Testing: empty_publish_entry_list_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
     // Alex replies an empty list to the initial HandleGetPublishingEntryList
     alex.reply_to_first_HandleGetPublishingEntryList();
     // Billy asks for unpublished data.
@@ -46,7 +46,7 @@ pub fn publish_entry_list_test(
 ) -> NetResult<()> {
     // Setup
     println!("Testing: publish_entry_list_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
     // author an entry without publishing it
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, false)?;
     // Reply to the publish_list request received from network module
@@ -81,7 +81,7 @@ pub fn publish_meta_list_test(
 ) -> NetResult<()> {
     // Setup
     println!("Testing: publish_meta_list_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     alex.author_meta(
@@ -121,7 +121,7 @@ pub fn hold_entry_list_test(
 ) -> NetResult<()> {
     // Setup
     println!("Testing: hold_entry_list_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
     // Have alex hold some data
     alex.hold_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1);
     // Alex: Look for the hold_list request received from network module and reply
@@ -158,7 +158,7 @@ pub fn hold_meta_list_test(
 ) -> NetResult<()> {
     // Setup
     println!("Testing: hold_meta_list_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
     // Have alex hold some data
     alex.hold_meta(&ENTRY_ADDRESS_1, META_ATTRIBUTE, &META_CONTENT_1);
     // Alex: Look for the hold_list request received from network module and reply
@@ -194,7 +194,7 @@ pub fn double_publish_entry_list_test(
     can_connect: bool,
 ) -> NetResult<()> {
     println!("Testing: double_publish_entry_list_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     alex.reply_to_first_HandleGetPublishingEntryList();
     // Should NOT receive a HandleFetchEntry request from network module
@@ -226,7 +226,7 @@ pub fn double_publish_meta_list_test(
 ) -> NetResult<()> {
     // Setup
     println!("Testing: double_publish_meta_list_test()");
-    setup_normal(alex, billy, can_connect)?;
+    setup_two_nodes(alex, billy, can_connect)?;
     // Author meta and reply to HandleGetPublishingMetaList
     alex.author_entry(&ENTRY_ADDRESS_1, &ENTRY_CONTENT_1, true)?;
     alex.author_meta(
@@ -236,7 +236,7 @@ pub fn double_publish_meta_list_test(
         true,
     )?;
     alex.reply_to_first_HandleGetPublishingMetaList();
-    // Should receive a HandleFetchEntry request from network module
+    // Should NOT receive a HandleFetchEntry request from network module
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     assert!(!has_received);
     // billy might receive HandleDhtStore

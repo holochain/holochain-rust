@@ -4,6 +4,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- core now depends on `pretty_assertions` crate
+- `ChainHeader::sources()` is now `ChainHeader::provenances()`
+- Headers from other agents are stored in the EAV
+- `hdk::get_entry_results` supports return of ChainHeaders for all agents who have committed the same entry
+- Rename the term Container and all references to it to Conductor
+- The `holochain_container` executable has been renamed to simply `holochain`
 - `cmd` crate (which implements the `hc` command line tool) renamed to `cli`
 - Encoded values in ribosome function's input/output are u64 (up from u32)
 - Capabilities now separated from function declarations in `define_zome!` and calling zome functions no longer uses capability name parameter [#791](https://github.com/holochain/holochain-rust/pull/779)
@@ -12,11 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * futures to `0.3.0-alpha.12`
 - Adjusted so that all chain headers are sent in the validation package, not just those for public entry types
 ### Added
+- Adds an environment variable HC_SIMPLE_LOGGER_MUTE for use in testing which silences logging output so CI logs won't be too big.
 - Added Zome API function `hdk::sleep(std::time::Duration)` which works the same as `std::thread::sleep`.
 - All structs/values to all HDK functions must implement `Into<JsonString>` and `TryFrom<JsonString>` (derive `DefaultJson` to do this automatically)
 - HDK globals `AGENT_ADDRESS`, `AGENT_ID_STR`, `DNA_NAME` and `DNA_ADDRESS` are now set to real, correct values.
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)
-- Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Container README](nodejs_container/README.md) for details.
+- Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Conductor README](nodejs_conductor/README.md) for details.
 - `hdk::query_result` API supports return of ChainHeader and/or Entry data for the matched EntryType(s)
 - `hdk::holochain_core_types::time::Iso8601` now supports validation and conversion to DateTime, and is sortable.
 - Admin RPC functions added to container interface. Any (websocket) container interface that is configured with
@@ -43,8 +50,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * `admin/bridge/remove`
   * `admin/bridge/list`
 
-  See rustdoc of `container_api::interface::ContainerApiBuilder` for a full description of these functions.
-- Container can serve static directories called ui_bundles over HTTP that can be configured in the container config toml file. This HTTP server also implements a virtual json file at "/_dna_connections.json" that returns the DNA interface (if any) the UI is configured to connect to. Hc-web-client will use this to automatically connect to the correct DNA interface on page load.
+- Hosting of static files over HTTP to allow for container hosted web UIs
+- UI bundle admin RPC functions
+   Adds a further set of functions to the container RPC for managing
+   static UI bundles and HTTP interfaces to these.
+   This adds the following RPC endpoints:
+
+   * `admin/ui/install`
+   * `admin/ui/uninstall`
+   * `admin/ui/list`
+   * `admin/ui_interface/add`
+   * `admin/ui_interface/remove`
+   * `admin/ui_interface/list`
+   * `admin/ui_interface/start`
+   * `admin/ui_interface/stop`
+
+  See rustdoc of `conductor_api::interface::ConductorApiBuilder` for a full description of these functions.
+- Conductor can serve static directories called ui_bundles over HTTP that can be configured in the container config toml file. This HTTP server also implements a virtual json file at "/_dna_connections.json" that returns the DNA interface (if any) the UI is configured to connect to. Hc-web-client will use this to automatically connect to the correct DNA interface on page load.
 
 ### Removed
 
@@ -65,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - meta data: sources
     - GetLinks helpers: get_links_and_load
     - Query: return multiple entry types with glob matching [#781](https://github.com/holochain/holochain-rust/pull/781)
-- Container:
+- Conductor:
     - configuration builder and config files
     - http interface [#823](https://github.com/holochain/holochain-rust/pull/823)
 - hc command-line tool:

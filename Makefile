@@ -148,7 +148,7 @@ ${C_BINDING_DIRS}:
 	qmake -o $@Makefile $@qmake.pro
 	cd $@; $(MAKE)
 
-# execute all tests: holochain, command-line tools, app spec, nodejs container, and "C" bindings
+# execute all tests: holochain, command-line tools, app spec, nodejs conductor, and "C" bindings
 test: test_holochain test_cli test_app_spec c_binding_tests ${C_BINDING_TESTS}
 
 test_holochain: build_holochain
@@ -164,14 +164,14 @@ test_cli: build_cli
 	cd cli && RUSTFLAGS="-D warnings" $(CARGO) test
 
 test_app_spec: RUST_VERSION=$(CORE_RUST_VERSION)
-test_app_spec: version_rustup ensure_wasm_target install_cli build_nodejs_container
+test_app_spec: version_rustup ensure_wasm_target install_cli build_nodejs_conductor
 	@echo -e "\033[0;93m## Testing app_spec... ##\033[0m"
 	cd app_spec && ./build_and_test.sh
 
-build_nodejs_container: RUST_VERSION=$(CORE_RUST_VERSION)
-build_nodejs_container: version_rustup core_toolchain
-	@echo -e "\033[0;93m## Building nodejs_container... ##\033[0m"
-	./scripts/build_nodejs_container.sh
+build_nodejs_conductor: RUST_VERSION=$(CORE_RUST_VERSION)
+build_nodejs_conductor: version_rustup core_toolchain
+	@echo -e "\033[0;93m## Building nodejs_conductor... ##\033[0m"
+	./scripts/build_nodejs_conductor.sh
 
 c_build: core_toolchain
 	cd dna_c_binding && $(CARGO) build
@@ -182,8 +182,8 @@ test_c_ci: c_build c_binding_tests ${C_BINDING_TESTS}
 wasm_build: ensure_wasm_target
 	@echo -e "\033[0;93m## Building wasm targets... ##\033[0m"
 	cd core/src/nucleus/actions/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd container_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd container_api/test-bridge-caller && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd conductor_api/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd conductor_api/test-bridge-caller && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd hdk-rust/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
@@ -200,7 +200,7 @@ build_cli: core_toolchain ensure_wasm_target
 .PHONY: build_nodejs
 build_nodejs:
 	@echo -e "\033[0;93m## Building nodejs interface... ##\033[0m"
-	cd nodejs_container && npm run compile && mkdir -p bin-package && cp native/index.node bin-package
+	cd nodejs_conductor && npm run compile && mkdir -p bin-package && cp native/index.node bin-package
 
 .PHONY: install_cli
 install_cli: build_cli
@@ -234,7 +234,7 @@ clean: ${C_BINDING_CLEAN}
 	    echo -e "\033[0;93m## Removing $${target} ##\033[0m"; \
 	    $(RM) -rf $${target}; \
         done
-	@$(RM) -rf nodejs_container/dist
+	@$(RM) -rf nodejs_conductor/dist
 	@$(RM) -rf app_spec/dist
 	@for cargo in $$( find . -name 'Cargo.toml' ); do \
 	    echo -e "\033[0;93m## 'cargo update' in $${cargo%/*} ##\033[0m"; \

@@ -3,16 +3,12 @@ use serde_json::json;
 use holochain_core_types::{cas::content::Address, hash::HashString};
 
 // CONSTS
+// TODO: make an array of agent_ids instead?
 pub static ALEX_AGENT_ID: &'static str = "alex";
 pub static BILLY_AGENT_ID: &'static str = "billy";
+pub static CAMILLE_AGENT_ID: &'static str = "camille";
 
 pub static META_ATTRIBUTE: &'static str = "link__yay";
-
-pub static FETCH_ENTRY_1_ID: &'static str = "fetch_entry_1_id";
-pub static FETCH_ENTRY_2_ID: &'static str = "fetch_entry_2_id";
-pub static FETCH_ENTRY_3_ID: &'static str = "fetch_entry_3_id";
-
-pub static FETCH_META_1_ID: &'static str = "fetch_meta_1_id";
 
 lazy_static! {
     pub static ref ENTRY_ADDRESS_1: Address = HashString::from("entry_addr_1");

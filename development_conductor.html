@@ -53,7 +53,7 @@
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script type="text/javascript">
             var theme;
-            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = 'light'; }
             document.body.className = theme;
             document.querySelector('html').className = theme + ' js';
@@ -100,12 +100,12 @@
                                 <i class="fa fa-search"></i>
                             </button>
                             
-                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
-                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/development_conductor.md"><i class="fa fa-edit"></i></a>
-                            </button>
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/development_conductor.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </div>
 
-                        <h1 class="menu-title">The Holochain Guidebook</h1> 
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
 
                         <div class="right-buttons">
                             <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -140,10 +140,10 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#development-conductor" id="development-conductor"><h1>Development Conductor</h1></a>
-<p>Meant primarily for accelerating the development process, the easiest Conductor to run, with zero configuration required, is the <code>hc run</code> Conductor, which is built right into the <a href="./intro_to_command_line_tools.html">development command line tools</a>. It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory valid DNA source files are contained. The command is simply:</p>
+<p>The easiest Conductor to run is built right into the <a href="./intro_to_command_line_tools.html">development command line tools</a>. It has no required configuration and is launched via the <code>hc run</code> command. Meant primarily for accelerating the development process it is useful for testing APIs or prototyping user interfaces.  The <code>hc run</code> command expects to be executed from inside a directory with valid DNA source files: The command is simply:</p>
 <pre><code class="language-shell">hc run
 </code></pre>
-<p>This will start the DNA instance in a Conductor and open, by default, a WebSocket JSON-RPC server on port <code>8888</code>. How to use the API for this is covered in more depth in the <a href="./json_rpc_interfaces.html">JSON-RPC interfaces article</a>.</p>
+<p>This will start the DNA instance in a Conductor and open, by default, a WebSocket JSON-RPC server on port <code>8888</code>. You can find more details on how to use the API in your UI in the <a href="./json_rpc_interfaces.html">JSON-RPC interfaces article</a>.</p>
 <p>The following are the options for configuring <code>hc run</code>, should you need something besides the defaults.</p>
 <a class="header" href="#packaging" id="packaging"><h3>Packaging</h3></a>
 <p><code>-b</code>/<code>--package</code></p>

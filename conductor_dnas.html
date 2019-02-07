@@ -53,7 +53,7 @@
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script type="text/javascript">
             var theme;
-            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = 'light'; }
             document.body.className = theme;
             document.querySelector('html').className = theme + ' js';
@@ -100,12 +100,12 @@
                                 <i class="fa fa-search"></i>
                             </button>
                             
-                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
-                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_dnas.md"><i class="fa fa-edit"></i></a>
-                            </button>
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_dnas.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </div>
 
-                        <h1 class="menu-title">The Holochain Guidebook</h1> 
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
 
                         <div class="right-buttons">
                             <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -140,7 +140,7 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#dnas" id="dnas"><h1>DNAs</h1></a>
-<p><code>dnas</code> is an array of configurations for &quot;DNAs&quot;, meaning there can be multiple within one Conductor. A DNA is a packaged JSON file containing a valid DNA configuration including the WASM code for the Zomes. How to package DNA from source files can be read about <a href="./packaging.html">here</a>.</p>
+<p><code>dnas</code> is an array of configurations for &quot;DNAs&quot; that are available to be instantiated in the Conductor. A DNA is a packaged JSON file containing a valid DNA configuration including the WASM code for the Zomes. How to package DNA from source files can be read about <a href="./packaging.html">here</a>.</p>
 <p><strong>Optional</strong></p>
 <a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
 <a class="header" href="#id-string" id="id-string"><h4><code>id</code>: <code>string</code></h4></a>

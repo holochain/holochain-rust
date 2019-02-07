@@ -53,7 +53,7 @@
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script type="text/javascript">
             var theme;
-            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = 'light'; }
             document.body.className = theme;
             document.querySelector('html').className = theme + ' js';
@@ -100,12 +100,12 @@
                                 <i class="fa fa-search"></i>
                             </button>
                             
-                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
-                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/print.md"><i class="fa fa-edit"></i></a>
-                            </button>
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/print.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </div>
 
-                        <h1 class="menu-title">The Holochain Guidebook</h1> 
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
 
                         <div class="right-buttons">
                             <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -1416,7 +1416,7 @@ according to its new 'deleted' status. It can still be retrieved, but only if sp
 <p>The <code>hc package</code> command will automate the process of compiling your Zome code, encoding it, and inserting into the <code>.dna.json</code> file. In order to get these benefits, you just need to make sure that you have the right compilation tools installed on the machine you are using the command line tools from, and that you have the proper configuration files in your Zome folders.</p>
 <p><code>hc package</code> works with two special files called <a href="./hcignore_files.html"><code>.hcignore</code> files</a> and <a href="./build_files.html"><code>.build</code> files</a>.</p>
 <a class="header" href="#build-files" id="build-files"><h1>.build Files</h1></a>
-<p>In the process of building a <code>.dna.json</code> file during packaging, here is what Holochain does.</p>
+<p>In the process of building a <code>.dna.json</code> file during packaging, here is what Holochain does:</p>
 <ul>
 <li>It iterates Zome by Zome adding them to the JSON</li>
 <li>For each Zome, it looks for any folders containing a <code>.build</code> file</li>
@@ -1684,7 +1684,7 @@ scenario.run((stop, {alice, bob}) =&gt; {
 <p>The previous example used <code>tape</code> to show how it compares to using <code>runTape</code>, though you could have used any test harness, like Jest or Mocha. In fact, <code>runTape</code> simply calls <code>run</code> under the hood.</p>
 <a class="header" href="#running-holochain-apps-conductors" id="running-holochain-apps-conductors"><h1>Running Holochain Apps: Conductors</h1></a>
 <p>To introduce Conductors, it is useful to zoom out for a moment to the level of how Holochain runs on devices.</p>
-<p>Because Holochain is intended to be highly platform and system compatible, the core logic is written in such a way that it can be included into many different codebases. Think of MacOSX, Linux, Windows, Android, iOS, and more. Thus, the core of Holochain was made to be simply a library that gets included in another wrapper which mounts, executes and manages it. Because filling this new need is such a foundational aspect of Holochain, it has its' own name: <em>Conductor</em>.</p>
+<p>Holochain was designed to be highly platform and system compatible.  The core logic that runs a DNA instance was written in such a way that it could be included into many different codebases as a library, thus making it easier to build different implementations on the same platform as well as across platforms (MacOSX, Linux, Windows, Android, iOS, and more). Architecturally, Holochain DNAs are intended to be small composable units that provide bits of distributed data integrity functionality.  Thus most Holochain based applications will actually be assemblages of many &quot;bridged&quot; DNA instances.  For this to work we needed a distinct layer that orchestrates the data flow (i.e. zome function call requests and responses), between the transport layer (i.e. HTTP, Websockets, Unix domain sockets, etc) and the DNA instances.  We call the layer that performs these two crucial functions, the <em>Conductor</em>, and we have written a <code>conductor_api</code> library to make it easy to build actual Conductor implementations.</p>
 <p>Conductors play quite a number of important roles:</p>
 <ul>
 <li>installing, uninstalling, configuring, starting and stopping instances of DNA</li>
@@ -1718,10 +1718,10 @@ scenario.run((stop, {alice, bob}) =&gt; {
 <p>What is now known as a &quot;Conductor&quot; used to be called a &quot;Container&quot;, so if you see the language of Container from other versions know that these refer to the same thing. Fun fact: because this component has such a variety of functions, there was some difficulty in naming it. The word &quot;Conductor&quot; was finally chosen because it actually implies multiple metaphors, each of which resonates with an aspect of what the Conductor does. Like an orchestra conductor, it helps several parts work together as a whole. Like a train conductor, it oversees and instructs how the engine runs. Like an electricity conductor, it allows information to pass through it.</p>
 </blockquote>
 <a class="header" href="#development-conductor" id="development-conductor"><h1>Development Conductor</h1></a>
-<p>Meant primarily for accelerating the development process, the easiest Conductor to run, with zero configuration required, is the <code>hc run</code> Conductor, which is built right into the <a href="./intro_to_command_line_tools.html">development command line tools</a>. It is useful for testing APIs or prototyping user interfaces, and it expects that you run the command from the directory valid DNA source files are contained. The command is simply:</p>
+<p>The easiest Conductor to run is built right into the <a href="./intro_to_command_line_tools.html">development command line tools</a>. It has no required configuration and is launched via the <code>hc run</code> command. Meant primarily for accelerating the development process it is useful for testing APIs or prototyping user interfaces.  The <code>hc run</code> command expects to be executed from inside a directory with valid DNA source files: The command is simply:</p>
 <pre><code class="language-shell">hc run
 </code></pre>
-<p>This will start the DNA instance in a Conductor and open, by default, a WebSocket JSON-RPC server on port <code>8888</code>. How to use the API for this is covered in more depth in the <a href="./json_rpc_interfaces.html">JSON-RPC interfaces article</a>.</p>
+<p>This will start the DNA instance in a Conductor and open, by default, a WebSocket JSON-RPC server on port <code>8888</code>. You can find more details on how to use the API in your UI in the <a href="./json_rpc_interfaces.html">JSON-RPC interfaces article</a>.</p>
 <p>The following are the options for configuring <code>hc run</code>, should you need something besides the defaults.</p>
 <a class="header" href="#packaging" id="packaging"><h3>Packaging</h3></a>
 <p><code>-b</code>/<code>--package</code></p>
@@ -1797,16 +1797,16 @@ To run it as HTTP, run:</p>
 </code></pre>
 <p>This means that the nodes are able to communicate! Watch the logs for gossip, as you take actions (that alter the source chain) in either node.</p>
 <a class="header" href="#production-conductor" id="production-conductor"><h1>Production Conductor</h1></a>
-<p>In addition to zero config development Conductor, using <code>hc run</code>, there is a highly configurable sophisticated Conductor for running DNA instances long term.</p>
+<p>In addition to the zero config development Conductor using <code>hc run</code>, there is a highly configurable sophisticated Conductor for running DNA instances long term.</p>
 <p>This Conductor will play an important role in making the use of Holochain truly easy for end users, because it supports all the functionality that those users are likely to want, in terms of managing their Holochain apps, or hApps, just on a low level. On that note, a graphical user interface that exposes all the functionality of this Conductor to users is under development.</p>
 <p>For now, use of this Conductor must happen mostly manually, and by tech-savvy users or developers.</p>
-<p>This Conductor is simply a command line tool called <code>holochain</code>. Its' only function is to boot a Conductor based on a configuration file, and optionally, the ability to write changes back to that file. Within that Conductor many DNA instances can be run for one or more agents, multiple types of interfaces to the APIs can be exposed, UI file bundles can be served, and logs from all of that can be accessed.</p>
-<p>The first step to using <code>holochain</code> is of course installing it. Instructions for installation can be found in its' <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor#install">README</a>. If you wish to attempt any of the things you read in this chapter while going through it, you will need to have installed the executable.</p>
+<p>This Conductor is simply a command line tool called <code>holochain</code>. Its only function is to boot a Conductor based on a configuration file, and optionally, the ability to write changes back to that file. Within that Conductor many DNA instances can be run for one or more agents, multiple types of interfaces to the APIs can be exposed, UI file bundles can be served, and logs from all of that can be accessed.</p>
+<p>The first step to using <code>holochain</code> is of course installing it. Instructions for installation can be found in its <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor#install">README</a>. If you wish to attempt any of the things you read in this chapter while going through it, you will need to have installed the executable.</p>
 <p>Like Holochain core, this particular Conductor is written in Rust. View it on GitHub <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor">here</a>.</p>
 <p>To understand how to configure the <code>holochain</code> Conductor, check out the <a href="./intro_to_toml_config.html">next article</a>.</p>
 <a class="header" href="#intro-to-toml-config-files" id="intro-to-toml-config-files"><h1>Intro to TOML Config Files</h1></a>
 <p>To configure the <code>holochain</code> Conductor, a configuration file format called TOML is used. It stands for &quot;Tom's Obvious Minimal Language&quot; and was created by Tom Preston-Werner, one of the original founders of GitHub. The <a href="https://github.com/toml-lang/toml">documentation on GitHub</a> for it is very good.</p>
-<p>For the configuration of <code>holochain</code>, what is required are the use <a href="https://github.com/toml-lang/toml#table">tables</a> and <a href="https://github.com/toml-lang/toml#array-of-tables">arrays of tables</a>.</p>
+<p><code>holochain</code> configuration files make heavy use of <a href="https://github.com/toml-lang/toml#table">tables</a> and <a href="https://github.com/toml-lang/toml#array-of-tables">arrays of tables</a>.</p>
 <p>A table is actually a collection of key/value pairs, and it looks like this:</p>
 <pre><code class="language-toml">[table-1]
 key1 = &quot;some string&quot;
@@ -1825,6 +1825,13 @@ color = &quot;gray&quot;
 <p>This represents two &quot;product&quot; items in an array.</p>
 <p>In the following articles, how to configure the various properties of the <code>holochain</code> Conductor using these will be expanded on. First, knowing how to reference the configuration file for use by <code>holochain</code> will be covered below.</p>
 <a class="header" href="#holochain-config-files" id="holochain-config-files"><h2><code>holochain</code> Config Files</h2></a>
+<p><code>holochain</code> requires a configuration file to run, which must exist in the default location, or be provided as an explicit argument. <code>holochain</code> will return an error if neither is given. The default location for the configuration file is in a subdirectory of the HOME directory on a device, at the path:</p>
+<pre><code class="language-toml"># Unix (Mac &amp; Linux)
+$HOME/.holochain/conductor/conductor-config.toml
+
+# Windows
+%HOME%\.holochain\conductor\conductor-config.toml
+</code></pre>
 <p>When executing <code>holochain</code> in a terminal, a path to a configuration file can be given. This can be done with the following option:</p>
 <pre><code>--config
 </code></pre>
@@ -1833,13 +1840,6 @@ color = &quot;gray&quot;
 </code></pre>
 <p>This could look like:</p>
 <pre><code class="language-shell">holochain -c ./conductor-config.toml
-</code></pre>
-<p><code>holochain</code> does require a configuration file to run. One should be given as an explicit argument, or exist in the default location. <code>holochain</code> will return an error if neither is given. The default location for the configuration file is in a subdirectory of the HOME directory on a device, at the path:</p>
-<pre><code class="language-toml"># Unix (Mac &amp; Linux)
-$HOME/.holochain/conductor/conductor-config.toml
-
-# Windows
-%HOME%\.holochain\conductor\conductor-config.toml
 </code></pre>
 <blockquote>
 <p>The <a href="./configuration_alternatives.html">holochain-nodejs Conductor</a> also accepts the same TOML based configuration.</p>
@@ -1867,7 +1867,7 @@ public_address = &quot;HoloTester1----------------------------------------------
 key_file = &quot;holo_tester.key&quot;
 </code></pre>
 <a class="header" href="#dnas" id="dnas"><h1>DNAs</h1></a>
-<p><code>dnas</code> is an array of configurations for &quot;DNAs&quot;, meaning there can be multiple within one Conductor. A DNA is a packaged JSON file containing a valid DNA configuration including the WASM code for the Zomes. How to package DNA from source files can be read about <a href="./packaging.html">here</a>.</p>
+<p><code>dnas</code> is an array of configurations for &quot;DNAs&quot; that are available to be instantiated in the Conductor. A DNA is a packaged JSON file containing a valid DNA configuration including the WASM code for the Zomes. How to package DNA from source files can be read about <a href="./packaging.html">here</a>.</p>
 <p><strong>Optional</strong></p>
 <a class="header" href="#properties-1" id="properties-1"><h3>Properties</h3></a>
 <a class="header" href="#id-string-1" id="id-string-1"><h4><code>id</code>: <code>string</code></h4></a>
@@ -1883,7 +1883,7 @@ file = &quot;example-config/app_spec.hcpkg&quot;
 hash = &quot;Qm328wyq38924y&quot;
 </code></pre>
 <a class="header" href="#instances" id="instances"><h1>Instances</h1></a>
-<p><code>instances</code> is an array of configurations for &quot;instances&quot;, meaning there can be multiple within one Conductor. An &quot;instance&quot; is a running copy of a <a href="./conductor_dnas.html">DNA</a>, by a particular <a href="./conductor_agents.html">agent</a>. Based on these configurations, the Conductor will attempt to start up these instances, initializing (or resuming) a local source chain and DHT. It is possible to use the same DNA with multiple different <a href="./conductor_agents.html">agents</a>, but it is <strong>not</strong> recommended to run two instances with the same DNA and same agent. An instance has a configurable <code>storage</code> property, which can be set to save to disk, or just store temporarily in memory.</p>
+<p><code>instances</code> is an array of configurations of DNA instances, each of which is a running copy of a <a href="./conductor_dnas.html">DNA</a>, by a particular <a href="./conductor_agents.html">agent</a>. Based on these configurations, the Conductor will attempt to start up these instances, initializing (or resuming) a local source chain and DHT. It is possible to use the same DNA with multiple different <a href="./conductor_agents.html">agents</a>, but it is <strong>not</strong> recommended to run two instances with the same DNA and same agent. An instance has a configurable <code>storage</code> property, which can be set to save to disk, or just store temporarily in memory, which is useful for testing purposes.</p>
 <p><strong>Optional</strong></p>
 <a class="header" href="#properties-2" id="properties-2"><h3>Properties</h3></a>
 <a class="header" href="#id-string-2" id="id-string-2"><h4><code>id</code>: <code>string</code></h4></a>
@@ -1913,7 +1913,7 @@ type = &quot;file&quot;
 path = &quot;example-config/tmp-storage&quot;
 </code></pre>
 <a class="header" href="#interfaces-1" id="interfaces-1"><h1>Interfaces</h1></a>
-<p><code>interfaces</code> is an array of configurations for &quot;interfaces&quot;, meaning there can be multiple within one Conductor. Interfaces are user facing and make Zome functions, info, and optionally admin functions available to GUIs, browser based web UIs, local native UIs, and other local applications and scripts.
+<p><code>interfaces</code> is an array of configurations of the channels (e.g. http or websockets) that the Conductor will use to send information to and from instances and users. Interfaces are user facing and make Zome functions, info, and optionally admin functions available to GUIs, browser based web UIs, local native UIs, and other local applications and scripts.
 The following implementations are already developed:</p>
 <ul>
 <li>WebSockets</li>
@@ -1967,7 +1967,7 @@ type = &quot;http&quot;
 port = 4000
 </code></pre>
 <a class="header" href="#bridges" id="bridges"><h1>Bridges</h1></a>
-<p><code>bridges</code> is an array of configurations for &quot;bridges&quot;, meaning there can be multiple within one Conductor. A bridge enables an instance to call Zome functions of another instance. It could be thought of as an internal interface.</p>
+<p><code>bridges</code> is an array of configuration instances that are configured to be able to make calls to Zome functions of another instance. You can think of this of as configuring an internal direct interface between DNA instances.  The <a href="./bridging.html">section on bridging</a> provides more information on how this ability is used to to compose complex applications out of many DNA instances.</p>
 <p><strong>Optional</strong></p>
 <a class="header" href="#properties-4" id="properties-4"><h3>Properties</h3></a>
 <a class="header" href="#caller_id-string" id="caller_id-string"><h4><code>caller_id</code>: <code>string</code></h4></a>
@@ -1983,7 +1983,7 @@ callee_id = &quot;app2&quot;
 handle = &quot;happ-store&quot;
 </code></pre>
 <a class="header" href="#ui-bundles" id="ui-bundles"><h1>UI Bundles</h1></a>
-<p><code>ui_bundles</code> is an array of configurations for &quot;UI Bundles&quot;, meaning there can be multiple within one Conductor. A UI Bundle is a folder containing static assets, like HTML, CSS, and Javascript files, that will be accessed through the browser and used as a user interface for one or more DNA instances. These are served via <a href="./conductor_ui_interfaces.html">UI Interfaces</a>, which is covered next.</p>
+<p><code>ui_bundles</code> is an array of configurations of folders containing static assets, like HTML, CSS, and Javascript files, that will be accessed through a browser and used as a user interface for one or more DNA instances. These are served via <a href="./conductor_ui_interfaces.html">UI Interfaces</a>, which is covered next.</p>
 <p><strong>Optional</strong></p>
 <a class="header" href="#properties-5" id="properties-5"><h3>Properties</h3></a>
 <a class="header" href="#id-string-4" id="id-string-4"><h4><code>id</code>: <code>string</code></h4></a>
@@ -2032,7 +2032,7 @@ dna_interface = &quot;websocket_interface&quot;
 <a class="header" href="#logrulesrules-logrule" id="logrulesrules-logrule"><h4><code>LogRules.rules</code>: <code>LogRule</code></h4></a>
 <p>An array of tables containing the rules for the logger</p>
 <a class="header" href="#logrulepattern-regex-string" id="logrulepattern-regex-string"><h4><code>LogRule.pattern</code>: <code>Regex string</code></h4></a>
-<p>A Regex pattern as a string to match log messages against, to see whether this rule should affect them.</p>
+<p>A Regex pattern as a string to match a log message against, to see whether this rule should apply to it.</p>
 <a class="header" href="#logruleexclude-bool-optional" id="logruleexclude-bool-optional"><h4><code>LogRule.exclude</code>: <code>bool</code> Optional</h4></a>
 <p>Whether to use this pattern to exclude things that match from the logs. Defaults to <code>false</code>. This option is useful for when the logs seem noisy.</p>
 <a class="header" href="#logrulecolor-enum-optional" id="logrulecolor-enum-optional"><h4><code>LogRule.color</code>: <code>enum</code> Optional</h4></a>
@@ -2061,7 +2061,7 @@ exclude = false
 pattern = &quot;.*&quot;
 </code></pre>
 <a class="header" href="#networking-1" id="networking-1"><h1>Networking</h1></a>
-<p><code>logger</code> is a table for the configuration of how networking should behave in the Conductor. The Conductor currently uses mock networking by default. To network with other nodes you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the Conductor where it can find n3h.</p>
+<p><code>network</code> is a table for the configuration of how networking should behave in the Conductor. The Conductor currently uses mock networking by default. To network with other nodes you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the Conductor where it can find n3h.</p>
 <p><strong>Optional</strong></p>
 <a class="header" href="#properties-8" id="properties-8"><h3>Properties</h3></a>
 <a class="header" href="#bootstrap_nodes-array-of-string-optional" id="bootstrap_nodes-array-of-string-optional"><h4><code>bootstrap_nodes</code>: <code>array of string</code> Optional</h4></a>
@@ -2069,7 +2069,7 @@ pattern = &quot;.*&quot;
 <a class="header" href="#n3h_path-string" id="n3h_path-string"><h4><code>n3h_path</code>: <code>string</code></h4></a>
 <p>Absolute path to the local installation/repository of n3h. Default is to a subdirectory of the $HOME directory on the device: <code>$HOME/.hc/net/n3h</code></p>
 <a class="header" href="#n3h_persistence_path-string-optional" id="n3h_persistence_path-string-optional"><h4><code>n3h_persistence_path</code>: <code>string</code> Optional</h4></a>
-<p>Absolute path to the directory that n3h uses to store persisted data. The default is that a temporary self-demolishing directory for this transient data will be used.</p>
+<p>Absolute path to the directory that n3h uses to store persisted data. The default is that a temporary self-removing directory for this transient data will be used.</p>
 <a class="header" href="#n3h_ipc_uri-string-optional" id="n3h_ipc_uri-string-optional"><h4><code>n3h_ipc_uri</code>: <code>string</code> Optional</h4></a>
 <p>URI pointing to an n3h process that is already running and not managed by this
 Conductor. If this is set the Conductor does not spawn n3h itself and ignores the path configs above. Default is this value is empty.</p>
@@ -2102,7 +2102,7 @@ bootstrap_nodes = []
 <p><code>params</code>: (optional) contains a JSON object which holds the data to be given as arguments to the method being called, if the method expects them.</p>
 <a class="header" href="#conductor-json-rpc-api" id="conductor-json-rpc-api"><h1>Conductor JSON-RPC API</h1></a>
 <a class="header" href="#querying-running-dna-instances" id="querying-running-dna-instances"><h2>Querying Running DNA Instances</h2></a>
-<p>Holochain Conductors expose a method <code>info/instances</code>. What it does is return a list of the running DNA instances in the Conductor. For each running instance, it provides the instance &quot;ID&quot;, the name of the DNA, and the agent &quot;id&quot;. The instance IDs will be particularly useful in other circumstances.</p>
+<p>Holochain Conductors expose a method <code>info/instances</code>. This method returns a list of the running DNA instances in the Conductor. For each running instance, it provides the instance &quot;ID&quot;, the name of the DNA, and the agent &quot;id&quot;. The instance IDs will be particularly useful in other circumstances.</p>
 <p>The method <code>info/instances</code> doesn't require any input parameters, so <code>params</code> can be left off the request.</p>
 <a class="header" href="#example-9" id="example-9"><h3>Example</h3></a>
 <p><strong>example request</strong></p>
@@ -2275,8 +2275,8 @@ ws.close()
 <a href="https://github.com/holochain/hc-web-client">hc-web-client</a></p>
 <a class="header" href="#administering-conductors" id="administering-conductors"><h1>Administering Conductors</h1></a>
 <p>It is possible to dynamically configure a Conductor via a JSON-RPC interface connection. There is a powerful API that is exposed for doing so.</p>
-<p>To do this, first, recall that the <code>admin = true</code> <a href="./conductor_interfaces.html#admin-bool-optional">property needs to be set</a> for the interface via which this is being attempted. Second, it is helpful to review and understand the behaviours around the <a href="./conductor_persistence_dir.html"><code>persistence_dir</code> property</a> for the Conductor.</p>
-<p>Finally, to view the API for this functionality, check out the full <a href="https://developer.holochain.org/api/latest/holochain_container_api/interface/struct.ContainerApiBuilder.html">API reference material</a> for it and scroll to view the <code>with_admin_dna_functions</code> comment block and the <code>with_admin_ui_functions</code> comment block. Calling these functions works exactly the same way as the other <a href="./conductor_json_rpc_api.html">JSON-RPC API calls that were discussed</a>.</p>
+<p>To do this, first, recall that the <code>admin = true</code> <a href="./conductor_interfaces.html#admin-bool-optional">property needs to be set</a> for the interface that should allow admin access. Second, it is helpful to review and understand the behaviours around the <a href="./conductor_persistence_dir.html"><code>persistence_dir</code> property</a> for the Conductor.</p>
+<p>You can find details of the API for this functionality in the full <a href="https://developer.holochain.org/api/latest/holochain_container_api/interface/struct.ContainerApiBuilder.html">API reference material</a>. Scroll to view the <code>with_admin_dna_functions</code> comment block and the <code>with_admin_ui_functions</code> comment block. Calling these functions works exactly the same way as the other <a href="./conductor_json_rpc_api.html">JSON-RPC API calls</a>.</p>
 <p>As mentioned in <a href="./production_conductor.html">production Conductor</a>, there is a GUI in development that will cover all this functionality, so that it does not have to be done programmatically, but can be done by any user simply point and click.</p>
 <a class="header" href="#building-holochain-apps-user-interfaces" id="building-holochain-apps-user-interfaces"><h1>Building Holochain Apps: User Interfaces</h1></a>
 <p>Holochain is designed to be flexible and accomodating when it comes to building user interfaces. There is not a single approach to developing user interfaces that is enforced by Holochain, though there are some approaches that have extra tooling, support and focus. First and foremost, Holochain supports APIs that make building UIs with the technologies of the web (HTML, CSS, JS, etc) easy.</p>

@@ -53,7 +53,7 @@
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script type="text/javascript">
             var theme;
-            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = 'light'; }
             document.body.className = theme;
             document.querySelector('html').className = theme + ' js';
@@ -100,12 +100,12 @@
                                 <i class="fa fa-search"></i>
                             </button>
                             
-                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
-                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_logging.md"><i class="fa fa-edit"></i></a>
-                            </button>
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_logging.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </div>
 
-                        <h1 class="menu-title">The Holochain Guidebook</h1> 
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
 
                         <div class="right-buttons">
                             <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -154,7 +154,7 @@
 <a class="header" href="#logrulesrules-logrule" id="logrulesrules-logrule"><h4><code>LogRules.rules</code>: <code>LogRule</code></h4></a>
 <p>An array of tables containing the rules for the logger</p>
 <a class="header" href="#logrulepattern-regex-string" id="logrulepattern-regex-string"><h4><code>LogRule.pattern</code>: <code>Regex string</code></h4></a>
-<p>A Regex pattern as a string to match log messages against, to see whether this rule should affect them.</p>
+<p>A Regex pattern as a string to match a log message against, to see whether this rule should apply to it.</p>
 <a class="header" href="#logruleexclude-bool-optional" id="logruleexclude-bool-optional"><h4><code>LogRule.exclude</code>: <code>bool</code> Optional</h4></a>
 <p>Whether to use this pattern to exclude things that match from the logs. Defaults to <code>false</code>. This option is useful for when the logs seem noisy.</p>
 <a class="header" href="#logrulecolor-enum-optional" id="logrulecolor-enum-optional"><h4><code>LogRule.color</code>: <code>enum</code> Optional</h4></a>

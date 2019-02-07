@@ -53,7 +53,7 @@
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script type="text/javascript">
             var theme;
-            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = 'light'; }
             document.body.className = theme;
             document.querySelector('html').className = theme + ' js';
@@ -100,12 +100,12 @@
                                 <i class="fa fa-search"></i>
                             </button>
                             
-                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
-                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductors.md"><i class="fa fa-edit"></i></a>
-                            </button>
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductors.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </div>
 
-                        <h1 class="menu-title">The Holochain Guidebook</h1> 
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
 
                         <div class="right-buttons">
                             <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -141,7 +141,7 @@
                     <main>
                         <a class="header" href="#running-holochain-apps-conductors" id="running-holochain-apps-conductors"><h1>Running Holochain Apps: Conductors</h1></a>
 <p>To introduce Conductors, it is useful to zoom out for a moment to the level of how Holochain runs on devices.</p>
-<p>Because Holochain is intended to be highly platform and system compatible, the core logic is written in such a way that it can be included into many different codebases. Think of MacOSX, Linux, Windows, Android, iOS, and more. Thus, the core of Holochain was made to be simply a library that gets included in another wrapper which mounts, executes and manages it. Because filling this new need is such a foundational aspect of Holochain, it has its' own name: <em>Conductor</em>.</p>
+<p>Holochain was designed to be highly platform and system compatible.  The core logic that runs a DNA instance was written in such a way that it could be included into many different codebases as a library, thus making it easier to build different implementations on the same platform as well as across platforms (MacOSX, Linux, Windows, Android, iOS, and more). Architecturally, Holochain DNAs are intended to be small composable units that provide bits of distributed data integrity functionality.  Thus most Holochain based applications will actually be assemblages of many &quot;bridged&quot; DNA instances.  For this to work we needed a distinct layer that orchestrates the data flow (i.e. zome function call requests and responses), between the transport layer (i.e. HTTP, Websockets, Unix domain sockets, etc) and the DNA instances.  We call the layer that performs these two crucial functions, the <em>Conductor</em>, and we have written a <code>conductor_api</code> library to make it easy to build actual Conductor implementations.</p>
 <p>Conductors play quite a number of important roles:</p>
 <ul>
 <li>installing, uninstalling, configuring, starting and stopping instances of DNA</li>

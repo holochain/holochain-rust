@@ -53,7 +53,7 @@
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script type="text/javascript">
             var theme;
-            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = 'light'; }
             document.body.className = theme;
             document.querySelector('html').className = theme + ' js';
@@ -100,12 +100,12 @@
                                 <i class="fa fa-search"></i>
                             </button>
                             
-                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
-                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_networking.md"><i class="fa fa-edit"></i></a>
-                            </button>
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/conductor_networking.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </div>
 
-                        <h1 class="menu-title">The Holochain Guidebook</h1> 
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
 
                         <div class="right-buttons">
                             <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -140,7 +140,7 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#networking" id="networking"><h1>Networking</h1></a>
-<p><code>logger</code> is a table for the configuration of how networking should behave in the Conductor. The Conductor currently uses mock networking by default. To network with other nodes you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the Conductor where it can find n3h.</p>
+<p><code>network</code> is a table for the configuration of how networking should behave in the Conductor. The Conductor currently uses mock networking by default. To network with other nodes you have to install the <a href="https://github.com/holochain/n3h">n3h networking component</a> and add a configuration block into the config file to tell the Conductor where it can find n3h.</p>
 <p><strong>Optional</strong></p>
 <a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
 <a class="header" href="#bootstrap_nodes-array-of-string-optional" id="bootstrap_nodes-array-of-string-optional"><h4><code>bootstrap_nodes</code>: <code>array of string</code> Optional</h4></a>
@@ -148,7 +148,7 @@
 <a class="header" href="#n3h_path-string" id="n3h_path-string"><h4><code>n3h_path</code>: <code>string</code></h4></a>
 <p>Absolute path to the local installation/repository of n3h. Default is to a subdirectory of the $HOME directory on the device: <code>$HOME/.hc/net/n3h</code></p>
 <a class="header" href="#n3h_persistence_path-string-optional" id="n3h_persistence_path-string-optional"><h4><code>n3h_persistence_path</code>: <code>string</code> Optional</h4></a>
-<p>Absolute path to the directory that n3h uses to store persisted data. The default is that a temporary self-demolishing directory for this transient data will be used.</p>
+<p>Absolute path to the directory that n3h uses to store persisted data. The default is that a temporary self-removing directory for this transient data will be used.</p>
 <a class="header" href="#n3h_ipc_uri-string-optional" id="n3h_ipc_uri-string-optional"><h4><code>n3h_ipc_uri</code>: <code>string</code> Optional</h4></a>
 <p>URI pointing to an n3h process that is already running and not managed by this
 Conductor. If this is set the Conductor does not spawn n3h itself and ignores the path configs above. Default is this value is empty.</p>

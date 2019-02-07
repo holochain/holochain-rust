@@ -53,7 +53,7 @@
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script type="text/javascript">
             var theme;
-            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = 'light'; }
             document.body.className = theme;
             document.querySelector('html').className = theme + ' js';
@@ -100,12 +100,12 @@
                                 <i class="fa fa-search"></i>
                             </button>
                             
-                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
-                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/production_conductor.md"><i class="fa fa-edit"></i></a>
-                            </button>
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/production_conductor.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </div>
 
-                        <h1 class="menu-title">The Holochain Guidebook</h1> 
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
 
                         <div class="right-buttons">
                             <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -140,11 +140,11 @@
                 <div id="content" class="content">
                     <main>
                         <a class="header" href="#production-conductor" id="production-conductor"><h1>Production Conductor</h1></a>
-<p>In addition to zero config development Conductor, using <code>hc run</code>, there is a highly configurable sophisticated Conductor for running DNA instances long term.</p>
+<p>In addition to the zero config development Conductor using <code>hc run</code>, there is a highly configurable sophisticated Conductor for running DNA instances long term.</p>
 <p>This Conductor will play an important role in making the use of Holochain truly easy for end users, because it supports all the functionality that those users are likely to want, in terms of managing their Holochain apps, or hApps, just on a low level. On that note, a graphical user interface that exposes all the functionality of this Conductor to users is under development.</p>
 <p>For now, use of this Conductor must happen mostly manually, and by tech-savvy users or developers.</p>
-<p>This Conductor is simply a command line tool called <code>holochain</code>. Its' only function is to boot a Conductor based on a configuration file, and optionally, the ability to write changes back to that file. Within that Conductor many DNA instances can be run for one or more agents, multiple types of interfaces to the APIs can be exposed, UI file bundles can be served, and logs from all of that can be accessed.</p>
-<p>The first step to using <code>holochain</code> is of course installing it. Instructions for installation can be found in its' <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor#install">README</a>. If you wish to attempt any of the things you read in this chapter while going through it, you will need to have installed the executable.</p>
+<p>This Conductor is simply a command line tool called <code>holochain</code>. Its only function is to boot a Conductor based on a configuration file, and optionally, the ability to write changes back to that file. Within that Conductor many DNA instances can be run for one or more agents, multiple types of interfaces to the APIs can be exposed, UI file bundles can be served, and logs from all of that can be accessed.</p>
+<p>The first step to using <code>holochain</code> is of course installing it. Instructions for installation can be found in its <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor#install">README</a>. If you wish to attempt any of the things you read in this chapter while going through it, you will need to have installed the executable.</p>
 <p>Like Holochain core, this particular Conductor is written in Rust. View it on GitHub <a href="https://github.com/holochain/holochain-rust/tree/develop/conductor">here</a>.</p>
 <p>To understand how to configure the <code>holochain</code> Conductor, check out the <a href="./intro_to_toml_config.html">next article</a>.</p>
 

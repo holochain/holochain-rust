@@ -53,7 +53,7 @@
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script type="text/javascript">
             var theme;
-            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = 'light'; }
             document.body.className = theme;
             document.querySelector('html').className = theme + ' js';
@@ -100,12 +100,12 @@
                                 <i class="fa fa-search"></i>
                             </button>
                             
-                            <button id="edit-button" class="icon-button" type="button" title="Suggest an edit" aria-label="Suggest an edit" aria-haspopup="true" aria-expanded="false">
-                                <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/intro_to_toml_config.md"><i class="fa fa-edit"></i></a>
-                            </button>
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/intro_to_toml_config.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
                         </div>
 
-                        <h1 class="menu-title">The Holochain Guidebook</h1> 
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
 
                         <div class="right-buttons">
                             <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -141,7 +141,7 @@
                     <main>
                         <a class="header" href="#intro-to-toml-config-files" id="intro-to-toml-config-files"><h1>Intro to TOML Config Files</h1></a>
 <p>To configure the <code>holochain</code> Conductor, a configuration file format called TOML is used. It stands for &quot;Tom's Obvious Minimal Language&quot; and was created by Tom Preston-Werner, one of the original founders of GitHub. The <a href="https://github.com/toml-lang/toml">documentation on GitHub</a> for it is very good.</p>
-<p>For the configuration of <code>holochain</code>, what is required are the use <a href="https://github.com/toml-lang/toml#table">tables</a> and <a href="https://github.com/toml-lang/toml#array-of-tables">arrays of tables</a>.</p>
+<p><code>holochain</code> configuration files make heavy use of <a href="https://github.com/toml-lang/toml#table">tables</a> and <a href="https://github.com/toml-lang/toml#array-of-tables">arrays of tables</a>.</p>
 <p>A table is actually a collection of key/value pairs, and it looks like this:</p>
 <pre><code class="language-toml">[table-1]
 key1 = &quot;some string&quot;
@@ -160,6 +160,13 @@ color = &quot;gray&quot;
 <p>This represents two &quot;product&quot; items in an array.</p>
 <p>In the following articles, how to configure the various properties of the <code>holochain</code> Conductor using these will be expanded on. First, knowing how to reference the configuration file for use by <code>holochain</code> will be covered below.</p>
 <a class="header" href="#holochain-config-files" id="holochain-config-files"><h2><code>holochain</code> Config Files</h2></a>
+<p><code>holochain</code> requires a configuration file to run, which must exist in the default location, or be provided as an explicit argument. <code>holochain</code> will return an error if neither is given. The default location for the configuration file is in a subdirectory of the HOME directory on a device, at the path:</p>
+<pre><code class="language-toml"># Unix (Mac &amp; Linux)
+$HOME/.holochain/conductor/conductor-config.toml
+
+# Windows
+%HOME%\.holochain\conductor\conductor-config.toml
+</code></pre>
 <p>When executing <code>holochain</code> in a terminal, a path to a configuration file can be given. This can be done with the following option:</p>
 <pre><code>--config
 </code></pre>
@@ -168,13 +175,6 @@ color = &quot;gray&quot;
 </code></pre>
 <p>This could look like:</p>
 <pre><code class="language-shell">holochain -c ./conductor-config.toml
-</code></pre>
-<p><code>holochain</code> does require a configuration file to run. One should be given as an explicit argument, or exist in the default location. <code>holochain</code> will return an error if neither is given. The default location for the configuration file is in a subdirectory of the HOME directory on a device, at the path:</p>
-<pre><code class="language-toml"># Unix (Mac &amp; Linux)
-$HOME/.holochain/conductor/conductor-config.toml
-
-# Windows
-%HOME%\.holochain\conductor\conductor-config.toml
 </code></pre>
 <blockquote>
 <p>The <a href="./configuration_alternatives.html">holochain-nodejs Conductor</a> also accepts the same TOML based configuration.</p>

@@ -15,7 +15,9 @@ pub mod post;
 
 use hdk::{
     error::ZomeApiResult,
-    holochain_core_types::{cas::content::Address, entry::Entry, json::JsonString, error::HolochainError},
+    holochain_core_types::{
+        cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
+    },
     holochain_wasm_utils::api_serialization::get_links::GetLinksResult,
 };
 
@@ -36,6 +38,12 @@ define_zome! {
             inputs: | |,
             outputs: |env: ZomeApiResult<Env>|,
             handler: blog::handle_show_env
+        }
+
+        get_sources: {
+            inputs: |address: Address|,
+            outputs: |sources: ZomeApiResult<Vec<Address>>|,
+            handler: blog::handle_get_sources
         }
 
         check_sum: {
@@ -106,7 +114,7 @@ define_zome! {
     ]
 
     capabilities: {
-        public (Public) [show_env, check_sum, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,delete_post]
+        public (Public) [show_env, check_sum, get_sources, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,delete_post]
     }
 
 }

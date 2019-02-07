@@ -4,6 +4,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     dht::dht_store::DhtStore,
+    network::entry_with_header::EntryWithHeader,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -13,6 +14,8 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use std::{collections::BTreeSet, convert::TryFrom, str::FromStr, sync::Arc};
+
+pub const ENTRY_HEADER_ATTRIBUTE: &'static str = "entry-headers";
 
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(Arc<Context>, &DhtStore, &ActionWrapper) -> Option<DhtStore>;
@@ -52,20 +55,28 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
-//
 pub(crate) fn reduce_hold_entry(
     context: Arc<Context>,
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let action = action_wrapper.action();
-
-    let entry = match &action {
-        &Action::Hold(entry) => entry,
-        &Action::Commit((entry, _)) => entry,
+    match action_wrapper.action().clone() {
+        Action::Commit((entry, _)) => reduce_store_entry_common(context, old_store, &entry),
+        Action::Hold(EntryWithHeader { entry, header }) => {
+            reduce_store_entry_common(context.clone(), old_store, &entry).and_then(|state| {
+                state.add_header_for_entry(&entry, &header).ok()?;
+                Some(state)
+            })
+        }
         _ => unreachable!(),
-    };
+    }
+}
 
+fn reduce_store_entry_common(
+    context: Arc<Context>,
+    old_store: &DhtStore,
+    entry: &Entry,
+) -> Option<DhtStore> {
     // Add it to local storage
     let new_store = (*old_store).clone();
     let content_storage = &new_store.content_storage().clone();
@@ -340,10 +351,12 @@ pub mod tests {
             dht_store::DhtStore,
         },
         instance::tests::test_context,
+        network::entry_with_header::EntryWithHeader,
         state::test_store,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
+        chain_header::test_chain_header,
         eav::IndexQuery,
         entry::{test_entry, test_sys_entry, Entry},
         link::Link,
@@ -362,11 +375,15 @@ pub mod tests {
         let storage = &store.dht().content_storage().clone();
 
         let sys_entry = test_sys_entry();
+        let entry_wh = EntryWithHeader {
+            entry: sys_entry.clone(),
+            header: test_chain_header(),
+        };
 
         let new_dht_store = reduce_hold_entry(
             Arc::clone(&context),
             &store.dht(),
-            &ActionWrapper::new(Action::Hold(sys_entry.clone())),
+            &ActionWrapper::new(Action::Hold(entry_wh)),
         )
         .expect("there should be a new store for committing a sys entry");
 
@@ -522,7 +539,11 @@ pub mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let action_wrapper = ActionWrapper::new(Action::Hold(entry.clone()));
+        let entry_wh = EntryWithHeader {
+            entry: entry.clone(),
+            header: test_chain_header(),
+        };
+        let action_wrapper = ActionWrapper::new(Action::Hold(entry_wh.clone()));
 
         store.reduce(context.clone(), action_wrapper);
 

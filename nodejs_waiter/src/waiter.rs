@@ -1,6 +1,7 @@
 use colored::*;
 use holochain_core::{
     action::{Action, ActionWrapper},
+    network::entry_with_header::EntryWithHeader,
     nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
@@ -198,36 +199,48 @@ impl Waiter {
                         }
                     },
 
-                    (Some(checker), Action::Commit((entry, _))) => match entry.clone() {
-                        // Pair every `Commit` with N `Hold`s
-                        Entry::App(_, _) => {
-                            // TODO: is there a possiblity that this can get messed up if the same
-                            // entry is committed multiple times?
-                            checker.add(num_instances, move |aw| {
-                                *aw.action() == Action::Hold(entry.clone())
-                            });
-                        }
-                        // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s
-                        Entry::LinkAdd(link_add) => {
-                            checker.add(num_instances, move |aw| {
-                                *aw.action() == Action::Hold(entry.clone())
-                            });
-                            checker.add(num_instances, move |aw| {
-                                *aw.action() == Action::AddLink(link_add.clone().link().clone())
-                            });
-                        }
+                    (Some(checker), Action::Commit((committed_entry, _))) => {
+                        match committed_entry.clone() {
+                            // Pair every `Commit` with N `Hold`s
+                            Entry::App(_, _) => {
+                                // TODO: is there a possiblity that this can get messed up if the same
+                                // entry is committed multiple times?
+                                checker.add(num_instances, move |aw| match aw.action() {
+                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
+                                        *entry == committed_entry
+                                    }
+                                    _ => false,
+                                });
+                            }
+                            // Pair every `LinkAdd` with N `Hold`s and N `AddLink`s
+                            Entry::LinkAdd(link_add) => {
+                                checker.add(num_instances, move |aw| match aw.action() {
+                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
+                                        *entry == committed_entry
+                                    }
+                                    _ => false,
+                                });
+                                checker.add(num_instances, move |aw| {
+                                    *aw.action() == Action::AddLink(link_add.clone().link().clone())
+                                });
+                            }
                         Entry::LinkRemove(link_remove) => {
                             // Pair every `LinkRemove` with N `Hold`s
-                            checker.add(num_instances, move |aw| {
-                                *aw.action() == Action::Hold(entry.clone())
-                            });
-                            checker.add(num_instances, move |aw| {
+                            Entry::LinkRemove(link_remove) => {
+                                checker.add(num_instances, move |aw| match aw.action() {
+                                    Action::Hold(EntryWithHeader { entry, header: _ }) => {
+                                        *entry == committed_entry
+                                    }
+                                    _ => false,
+                                });
+                                checker.add(num_instances, move |aw| {
                                 *aw.action()
                                     == Action::RemoveLink(link_remove.clone().link().clone())
                             });
+                            }
+                            _ => (),
                         }
-                        _ => (),
-                    },
+                    }
 
                     // Don't need to check for message stuff since hdk::send is blocking
 
@@ -360,7 +373,9 @@ impl Task for MainBackgroundTask {
 mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::ExecuteZomeFnResponse;
-    use holochain_core_types::{entry::Entry, json::JsonString, link::link_add::LinkAdd};
+    use holochain_core_types::{
+        chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_add::LinkAdd,
+    };
     use std::sync::mpsc::sync_channel;
 
     fn sig(a: Action) -> Signal {
@@ -369,6 +384,13 @@ mod tests {
 
     fn mk_entry(ty: &'static str, content: &'static str) -> Entry {
         Entry::App(ty.into(), JsonString::from(content))
+    }
+
+    fn mk_entry_wh(entry: Entry) -> EntryWithHeader {
+        EntryWithHeader {
+            entry,
+            header: test_chain_header(),
+        }
     }
 
     // not needed as long as hdk::send is blocking
@@ -435,6 +457,7 @@ mod tests {
     fn can_await_commit_simple_ordering() {
         let (mut waiter, sender_tx) = test_waiter();
         let entry = mk_entry("t1", "x");
+        let entry_wh = mk_entry_wh(entry.clone());
         let call = zf_call("c1");
 
         let control_rx = test_register(&sender_tx);
@@ -447,7 +470,7 @@ mod tests {
         waiter.process_signal(sig(Commit((entry.clone(), None))));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
-        waiter.process_signal(sig(Hold(entry)));
+        waiter.process_signal(sig(Hold(entry_wh)));
         assert_eq!(num_conditions(&waiter, &call), 1);
         assert_eq!(waiter.checkers.len(), 1);
 
@@ -462,6 +485,8 @@ mod tests {
         let (mut waiter, sender_tx) = test_waiter();
         let entry_1 = mk_entry("t1", "x");
         let entry_2 = mk_entry("t2", "y");
+        let entry_1_wh = mk_entry_wh(entry_1.clone());
+        let entry_2_wh = mk_entry_wh(entry_2.clone());
         let call = zf_call("c1");
 
         let control_rx = test_register(&sender_tx);
@@ -480,12 +505,12 @@ mod tests {
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call.clone()))));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
-        waiter.process_signal(sig(Hold(entry_2.clone())));
+        waiter.process_signal(sig(Hold(entry_2_wh.clone())));
         assert_eq!(num_conditions(&waiter, &call), 1);
         assert_eq!(waiter.checkers.len(), 1);
 
         expect_final(control_rx, || {
-            waiter.process_signal(sig(Hold(entry_1.clone())));
+            waiter.process_signal(sig(Hold(entry_1_wh.clone())));
         });
         assert_eq!(waiter.checkers.len(), 0);
     }
@@ -497,6 +522,9 @@ mod tests {
         let entry_2 = mk_entry("t2", "y");
         let entry_3 = mk_entry("t3", "z");
         let entry_4 = mk_entry("t4", "w");
+        let entry_1_wh = mk_entry_wh(entry_1.clone());
+        let entry_2_wh = mk_entry_wh(entry_2.clone());
+        let entry_3_wh = mk_entry_wh(entry_3.clone());
         let call_1 = zf_call("c1");
         let call_2 = zf_call("c2");
         let call_3 = zf_call("c3");
@@ -526,7 +554,7 @@ mod tests {
         assert_eq!(num_conditions(&waiter, &call_2), 3);
 
         // a Hold left over from that first unregistered function: should do nothing
-        waiter.process_signal(sig(Hold(entry_1)));
+        waiter.process_signal(sig(Hold(entry_1_wh)));
 
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_2.clone()))));
         assert_eq!(num_conditions(&waiter, &call_2), 2);
@@ -540,10 +568,12 @@ mod tests {
         assert_eq!(waiter.checkers.len(), 1);
         // again, shouldn't change things at all
 
-        waiter.process_signal(sig(Hold(entry_2)));
+        waiter.process_signal(sig(Hold(entry_2_wh)));
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 
-        expect_final(control_rx_2, || waiter.process_signal(sig(Hold(entry_3))));
+        expect_final(control_rx_2, || {
+            waiter.process_signal(sig(Hold(entry_3_wh)))
+        });
         assert_eq!(waiter.checkers.len(), 0);
 
         // we don't even care that Hold(entry_4) was not seen,
@@ -560,6 +590,7 @@ mod tests {
             "tag",
         );
         let entry = Entry::LinkAdd(link_add.clone());
+        let entry_wh = mk_entry_wh(entry.clone());
 
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
@@ -572,7 +603,7 @@ mod tests {
         waiter.process_signal(sig(Commit((entry.clone(), None))));
         assert_eq!(num_conditions(&waiter, &call), 3);
 
-        waiter.process_signal(sig(Hold(entry.clone())));
+        waiter.process_signal(sig(Hold(entry_wh)));
         assert_eq!(num_conditions(&waiter, &call), 2);
 
         waiter.process_signal(sig(AddLink(link_add.link().clone())));
@@ -591,6 +622,9 @@ mod tests {
         let entry_1 = mk_entry("t1", "x");
         let entry_2 = mk_entry("t2", "y");
         let entry_3 = mk_entry("t3", "z");
+        let entry_1_wh = mk_entry_wh(entry_1.clone());
+        let entry_2_wh = mk_entry_wh(entry_2.clone());
+        let entry_3_wh = mk_entry_wh(entry_3.clone());
         let call_1 = zf_call("c1");
         let call_2 = zf_call("c2");
 
@@ -623,16 +657,18 @@ mod tests {
         assert_eq!(num_conditions(&waiter, &call_2), 3);
 
         expect_final(control_rx_1, || {
-            waiter.process_signal(sig(Hold(entry_1)));
+            waiter.process_signal(sig(Hold(entry_1_wh)));
         });
 
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_2.clone()))));
         assert_eq!(num_conditions(&waiter, &call_2), 2);
 
-        waiter.process_signal(sig(Hold(entry_2)));
+        waiter.process_signal(sig(Hold(entry_2_wh)));
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 
-        expect_final(control_rx_2, || waiter.process_signal(sig(Hold(entry_3))));
+        expect_final(control_rx_2, || {
+            waiter.process_signal(sig(Hold(entry_3_wh)))
+        });
         assert_eq!(waiter.checkers.len(), 0);
     }
 

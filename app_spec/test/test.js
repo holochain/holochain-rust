@@ -6,12 +6,15 @@ const dnaPath = path.join(__dirname, "../dist/app_spec.hcpkg")
 const dna = Config.dna(dnaPath, 'app-spec')
 const agentAlice = Config.agent("alice")
 const agentBob = Config.agent("bob")
+const agentCarol = Config.agent("carol")
 
 const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
+const instanceCarol = Config.instance(agentCarol, dna)
 
 const scenario1 = new Scenario([instanceAlice])
 const scenario2 = new Scenario([instanceAlice, instanceBob])
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol])
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
@@ -25,6 +28,25 @@ scenario1.runTape('show_env', async (t, { alice }) => {
     t.equal(result.Ok.dna_name, "HDK-spec-rust")
     t.equal(result.Ok.agent_address, alice.agentId)
     t.equal(result.Ok.agent_id, '{"nick":"alice","key":"'+alice.agentId+'"}')
+})
+
+scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
+  const params = {content: 'whatever', in_reply_to: null}
+  const address = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
+  const address1 = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
+  const address2 = await bob.callSync('blog', 'create_post', params).then(x => x.Ok)
+  const address3 = await carol.callSync('blog', 'create_post', params).then(x => x.Ok)
+  t.equal(address, address1)
+  t.equal(address, address2)
+  t.equal(address, address3)
+  const sources1 = alice.call('blog', 'get_sources', {address}).Ok.sort()
+  const sources2 = bob.call('blog', 'get_sources', {address}).Ok.sort()
+  const sources3 = carol.call('blog', 'get_sources', {address}).Ok.sort()
+  // NB: alice shows up twice because she published the same entry twice
+  const expected = [alice.agentId, alice.agentId, bob.agentId, carol.agentId].sort()
+  t.deepEqual(sources1, expected)
+  t.deepEqual(sources2, expected)
+  t.deepEqual(sources3, expected)
 })
 
 scenario1.runTape('call', async (t, { alice }) => {

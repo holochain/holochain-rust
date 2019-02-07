@@ -1,3 +1,4 @@
+use holochain_core::network::entry_with_header::EntryWithHeader;
 use neon::{context::Context, prelude::*};
 use std::{
     collections::HashSet,
@@ -36,7 +37,11 @@ fn await_held_agent_ids(config: Configuration, signal_rx: &SignalReceiver) {
         println!("await_held_agent_ids");
         if let Ok(Signal::Internal(aw)) = signal_rx.recv_timeout(Duration::from_millis(10)) {
             let action = aw.action();
-            if let Action::Hold(Entry::AgentId(id)) = action {
+            if let Action::Hold(EntryWithHeader {
+                entry: Entry::AgentId(id),
+                header: _,
+            }) = action
+            {
                 agent_addresses.remove(&id.key);
             }
             if agent_addresses.is_empty() {

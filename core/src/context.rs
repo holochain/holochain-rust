@@ -212,7 +212,6 @@ impl Context {
         pin_utils::pin_mut!(future);
 
         loop {
-            println!("loop here");
             let _ = match future.as_mut().poll(noop_local_waker_ref()) {
                 Poll::Ready(result) => return result,
                 _ => tick_rx.recv_timeout(Duration::from_millis(10)),

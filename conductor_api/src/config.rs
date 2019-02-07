@@ -314,11 +314,13 @@ impl From<AgentConfiguration> for AgentId {
 }
 
 /// A DNA is represented by a DNA file.
-/// A hash has to be provided for sanity check.
+/// A hash can optionally be provided, which could be used to validate that the DNA being installed
+/// is the DNA that was intended to be installed.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
+    #[serde(default)]
     pub hash: String,
 }
 
@@ -411,10 +413,14 @@ pub struct Bridge {
     pub handle: String,
 }
 
+/// A UI Bundle is a folder containing static assets which can be served as a UI
+/// A hash can optionally be provided, which could be used to validate that the UI being installed
+/// is the UI bundle that was intended to be installed.
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct UiBundleConfiguration {
     pub id: String,
     pub root_dir: String,
+    #[serde(default)]
     pub hash: String,
 }
 

@@ -28,6 +28,15 @@ In the following articles, how to configure the various properties of the `holoc
 
 ## `holochain` Config Files
 
+`holochain` requires a configuration file to run, which must exist in the default location, or be provided as an explicit argument. `holochain` will return an error if neither is given. The default location for the configuration file is in a subdirectory of the HOME directory on a device, at the path:
+ ```toml
+# Unix (Mac & Linux)
+$HOME/.holochain/conductor/conductor-config.toml
+
+# Windows
+%HOME%\.holochain\conductor\conductor-config.toml
+ ```
+
 When executing `holochain` in a terminal, a path to a configuration file can be given. This can be done with the following option:
 ```
 --config
@@ -41,15 +50,6 @@ This could look like:
 ```shell
 holochain -c ./conductor-config.toml
 ```
-
-`holochain` requires a configuration file to run, which must be provided as an explicit argument, or exist in the default location. `holochain` will return an error if neither is given. The default location for the configuration file is in a subdirectory of the HOME directory on a device, at the path:
- ```toml
-# Unix (Mac & Linux)
-$HOME/.holochain/conductor/conductor-config.toml
-
-# Windows
-%HOME%\.holochain\conductor\conductor-config.toml
- ```
 
  > The [holochain-nodejs Conductor](./configuration_alternatives.md) also accepts the same TOML based configuration.
 

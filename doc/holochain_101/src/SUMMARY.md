@@ -64,7 +64,6 @@
     - [HTTP](./json_rpc_http.md)
     - [WebSockets](./json_rpc_websockets.md)
   - [Conductor Admin](./conductor_admin.md)
-    - [Admin JSON-RPC API](./conductor_admin_api.md)
 - [Building Holochain Apps: User Interfaces](./apps_user_interfaces.md)
 - [(E) Going Live with Holochain Apps](./live_hc_apps.md)
   - [(E) Creating Versioned Releases](./creating_versioned_releases.md)

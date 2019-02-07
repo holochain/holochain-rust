@@ -19,7 +19,7 @@ A reference to the given ID of a defined [DNA](./conductor_dnas.md)
 A table for configuring the approach to storage of the local source chain and DHT for this instance
 
 #### `StorageConfiguration.type`: `enum`
-Select between different storage implementations that exist. There are two so far:
+Select between different storage implementations. There are two so far:
 - `memory`: Persist actions taken in this instance only to memory. Everything will disappear when the Conductor process stops.
 - `file`: Persist actions taken in this instance to the disk of the device the Conductor is running on. If the Conductor process stops and then restarts, the actions taken will resume at the place in the local source chain they last were at.
 

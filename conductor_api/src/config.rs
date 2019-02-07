@@ -358,15 +358,16 @@ pub enum StorageConfiguration {
 
 /// Here, interfaces are user facing and make available zome functions to
 /// GUIs, browser based web UIs, local native UIs, other local applications and scripts.
-/// None is implemented yet, but we will have:
+/// We currently have:
 /// * websockets
-/// * HTTP REST
+/// * HTTP
+/// 
+/// We will also soon develop
 /// * Unix domain sockets
-/// very soon.
 ///
-/// Every interface lists the instances that are made available here.
-/// An admin flag will enable conductor functions for programmatically changing the configuration
-/// (i.e. installing apps)
+/// The instances (referenced by ID) that are to be made available via that interface should be listed.
+/// An admin flag will enable conductor functions for programatically changing the configuration
+/// (e.g. installing apps)
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct InterfaceConfiguration {
     pub id: String,

@@ -37,7 +37,7 @@ hc run --persist
 
 Select a particular JSON-RPC interface to serve your DNA instance over.
 
-The JSON-RPC interface will expose, via a port on your device, a WebSocket or an HTTP server. It can be used to make function calls to the Zomes of a DNA instance.
+The JSON-RPC interface will expose, via a port on your device, a WebSocket or an HTTP server. It can be used to make function calls to the Zomes of a DNA instance. These are covered in depth in the [JSON-RPC interfaces article](./json_rpc_interfaces.md).
 
 The default interface is `websocket`.
 

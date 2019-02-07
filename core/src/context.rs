@@ -281,7 +281,7 @@ impl Context {
 
         match response {
             JsonRpc::Success(_) => {
-                Ok(response.get_result().unwrap()["signature"].to_string())
+                Ok(String::from(response.get_result().unwrap()["signature"].as_str().unwrap()))
             }
             JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
                 serde_json::to_string(&response.get_error().unwrap()).unwrap(),

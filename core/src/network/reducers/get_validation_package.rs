@@ -9,12 +9,13 @@ use std::sync::Arc;
 fn inner(network_state: &mut NetworkState, header: &ChainHeader) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
-    let source_address = header
-        .sources()
+    let source_address = &header
+        .provenances()
         .first()
         .ok_or(HolochainError::ErrorGeneric(
             "No source found in ChainHeader".to_string(),
-        ))?;
+        ))?
+        .0;
     let direct_message = DirectMessage::RequestValidationPackage(header.entry_address().clone());
 
     send_message(network_state, source_address, direct_message)

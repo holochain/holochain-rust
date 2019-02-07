@@ -15,8 +15,8 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn hold_entry_workflow<'a>(
-    entry_with_header: &'a EntryWithHeader,
-    context: &'a Arc<Context>,
+    entry_with_header: EntryWithHeader,
+    context: Arc<Context>,
 ) -> Result<Address, HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
 
@@ -28,7 +28,6 @@ pub async fn hold_entry_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        sources: header.sources().clone(),
         lifecycle: EntryLifecycle::Dht,
         action: EntryAction::Create,
     };
@@ -37,7 +36,7 @@ pub async fn hold_entry_workflow<'a>(
     await!(validate_entry(entry.clone(), validation_data, &context))?;
 
     // 3. If valid store the entry in the local DHT shard
-    await!(hold_entry(entry, &context))
+    await!(hold_entry(entry_with_header, context))
 }
 
 #[cfg(test)]
@@ -84,7 +83,7 @@ pub mod tests {
         // Get header which we need to trigger hold_entry_workflow
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state
-            .get_header_for_entry(&entry)
+            .get_most_recent_header_for_entry(&entry)
             .expect("There must be a header in the author's source chain after commit");
         let entry_with_header = EntryWithHeader { entry, header };
 

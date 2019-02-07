@@ -1,5 +1,5 @@
 extern crate holochain_cas_implementations;
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_net;
@@ -91,7 +91,7 @@ enum Cli {
     #[structopt(
         name = "run",
         alias = "r",
-        about = "Starts a development container with a websocket or http interface"
+        about = "Starts a development conductor with a websocket or http interface"
     )]
     Run {
         #[structopt(

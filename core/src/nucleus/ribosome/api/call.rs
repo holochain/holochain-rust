@@ -91,13 +91,13 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let container_api =
+    let conductor_api =
         runtime
             .context
-            .container_api
+            .conductor_api
             .clone()
             .ok_or(HolochainError::ConfigError(
-                "No container API in context".to_string(),
+                "No conductor API in context".to_string(),
             ))?;
 
     let method = format!(
@@ -105,7 +105,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
         input.instance_handle, input.zome_name, input.fn_name
     );
 
-    let handler = container_api.write().unwrap();
+    let handler = conductor_api.write().unwrap();
 
     let id = ProcessUniqueId::new();
     let request = format!(

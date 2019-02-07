@@ -24,15 +24,15 @@ SPAWN ("node" "/home/eric/holochain/n3h/packages/n3h/bin/n3h")
 ### Starting A Second Node
 
 Starting up a second node is a little bit more work:
-1. Provide the address of the first node as a bootstrap node, by setting the `HC_N3H_BOOTSTRAP_NODE` environment variable
-2. Specify a different agent id, by setting the `HC_AGENT` environment variable
-3. Specify a different port than the first node to run on
 
-For `1`, grab the string from the terminal log of the first node, the one that starts with "/ip4/192.168".
+#### Step 1
+Set the `HC_N3H_BOOTSTRAP_NODE` environment variable to the external p2p bound address listed by the first node. Copy-paste it from the string from the terminal log of the first node, the one that starts with "/ip4/192.168".
 
-For `2`, since the first agent by default will be `testAgent`, `testAgent2` is suitable.
+#### Step 2
+Specify a different agent id than the first node, by setting the `HC_AGENT` environment variable. Since the first agent by default will be `testAgent`, `testAgent2` is suitable.
 
-For `3`, since the port for the first node by default will be `8888`, `8889` is suitable.
+#### Step 3
+Specify a different port than the first node to run on. Since the port for the first node by default will be `8888`, `8889` is suitable.
 
 Running the command could look like this:
 ``` shell

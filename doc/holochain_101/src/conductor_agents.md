@@ -4,8 +4,6 @@
 
 **Required**: `agents` is a required property in the config file. It is the ONLY required property.
 
-__FIXME How does someone know what their 'public_address' is?__
-
 ### Properties
 
 #### `id`: `string`
@@ -15,7 +13,7 @@ Give an ID of your choice to the agent
 Give a name of your choice to the agent
 
 #### `public_address`: `string`
-FIXME ??
+A public address for the agent
 
 #### `key_file`: `string`
 Path to the private key file for this agent. This property is not yet in use, so put any value here for the time being.

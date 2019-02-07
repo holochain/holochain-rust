@@ -34,8 +34,6 @@ extern crate base64;
 extern crate globset;
 extern crate holochain_net_connection;
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate pretty_assertions;
 
 pub mod action;

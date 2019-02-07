@@ -8,6 +8,7 @@
 //! out into their separate crate as well since those are generic and not
 //! necessarily bound to Holochain.
 #![feature(try_from)]
+#![feature(try_trait)]
 #![feature(never_type)]
 
 #[macro_use]
@@ -30,6 +31,8 @@ extern crate regex;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
+#[macro_use]
+extern crate lazy_static;
 
 extern crate uuid;
 

@@ -11,6 +11,7 @@ use crate::{
 };
 use chrono::offset::Utc;
 use objekt;
+use regex::Regex;
 use std::{
     cmp::Ordering,
     collections::BTreeSet,
@@ -19,7 +20,10 @@ use std::{
 };
 
 use regex::RegexBuilder;
-use std::fmt::{self, Debug};
+use std::{
+    convert::TryFrom,
+    fmt::{self, Debug},
+};
 
 /// Address of AddressableContent representing the EAV entity
 pub type Entity = Address;
@@ -34,6 +38,7 @@ pub enum Attribute {
     EntryHeader,
     Link,
     LinkTag(String),
+    PendingEntry,
 }
 
 impl fmt::Display for Attribute {
@@ -44,7 +49,43 @@ impl fmt::Display for Attribute {
             Attribute::EntryHeader => write!(f, "entry-header"),
             Attribute::Link => write!(f, "link"),
             Attribute::LinkTag(name) => write!(f, "link__{}", name),
+            Attribute::PendingEntry => write!(f, "pending-entry"),
         }
+    }
+}
+
+lazy_static! {
+    static ref LINK_REGEX: Regex =
+        Regex::new(r"^link__(.*)$").expect("This string literal is a valid regex");
+}
+
+impl TryFrom<&str> for Attribute {
+    type Error = HolochainError;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        use self::Attribute::*;
+        if LINK_REGEX.is_match(s) {
+            let tag = LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
+            Ok(LinkTag(tag))
+        } else {
+            match s {
+                "crud-status" => Ok(CrudStatus),
+                "crud-link" => Ok(CrudLink),
+                "entry-header" => Ok(EntryHeader),
+                "link" => Ok(Link),
+                "pending-entry" => Ok(PendingEntry),
+                a => Err(HolochainError::ErrorGeneric(format!(
+                    "Unknown attribute: {}",
+                    a
+                ))),
+            }
+        }
+    }
+}
+
+impl TryFrom<String> for Attribute {
+    type Error = HolochainError;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.as_str().try_into()
     }
 }
 
@@ -509,6 +550,16 @@ pub mod tests {
             EntityAttributeValueIndex,
             ExampleContentAddressableStorage,
         >(addressable_contents, test_content_addressable_storage());
+    }
+
+    #[test]
+    fn attribute_try_from_string() {
+        assert_eq!("crud-status".try_into(), Ok(Attribute::CrudStatus));
+        assert_eq!(
+            "link__tagalog".try_into(),
+            Ok(Attribute::LinkTag("tagalog".into()))
+        );
+        assert_eq!(r"unknown \\and// invalid / attribute".try_into(), Err(()));
     }
 
     #[test]

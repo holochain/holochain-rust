@@ -1,6 +1,6 @@
 # .build Files
 
-In the process of building a `.dna.json` file during packaging, here is what Holochain does.
+In the process of building a `.dna.json` file during packaging, here is what Holochain does:
 - It iterates Zome by Zome adding them to the JSON
 - For each Zome, it looks for any folders containing a `.build` file
 - For any folder with a `.build` file, it __executes one or more commands from the `.build` file to create a WASM file__

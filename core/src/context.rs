@@ -36,7 +36,7 @@ use std::{
     time::Duration,
 };
 
-fn mock_container_api() -> IoHandler {
+fn mock_conductor_api() -> IoHandler {
     let mut handler = IoHandler::new();
     handler.add_method("agent/sign", move |params| {
         let params_map = match params {
@@ -123,7 +123,7 @@ impl Context {
             network_config,
             conductor_api: conductor_api
                 .or(Some(
-                    Arc::new(RwLock::new(mock_container_api()))
+                    Arc::new(RwLock::new(mock_conductor_api()))
                 ))
                 .unwrap(),
         }
@@ -152,7 +152,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             network_config,
-            conductor_api: Arc::new(RwLock::new(mock_container_api())),
+            conductor_api: Arc::new(RwLock::new(mock_conductor_api())),
         })
     }
 

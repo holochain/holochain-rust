@@ -15,5 +15,7 @@ If Rust is new to you, don't worry. With lots of Holochain app development happe
 
 While there are lots of other materials available for learning Rust, the base materials for the language are always a good resource to go back to: [Rust Docs](https://doc.rust-lang.org/).
 
+In many articles in the following chapters, you will find that there is a dedicated section at the bottom of the article called "Building in Rust". This typically follows after a general discussion of a concept, and is done this way because implementation details may differ based on the language developers are writing Zomes in.
+
 
 

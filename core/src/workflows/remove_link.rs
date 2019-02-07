@@ -7,7 +7,6 @@ use crate::{
 };
 
 use holochain_core_types::{
-    cas::content::Address,
     entry::Entry,
     error::HolochainError,
     validation::{EntryAction, EntryLifecycle, ValidationData},
@@ -37,7 +36,6 @@ pub async fn remove_link_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        sources: vec![Address::from("<insert your agent key here>")],
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
     };

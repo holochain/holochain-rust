@@ -385,6 +385,26 @@ mod tests {
         assert_eq!(0, check);
     }
 
+    #[test]
+    fn it_should_invalidate_altered_message() {
+        let mut seed = SecBuf::with_insecure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+
+        let mut message = SecBuf::with_insecure(16);
+        random_secbuf(&mut message);
+
+        let mut message_signed = SecBuf::with_insecure(64);
+
+        keypair.sign(&mut message, &mut message_signed).unwrap();
+
+        random_secbuf(&mut message);
+
+        let check: i32 =
+            Keypair::verify(keypair.pub_keys, &mut message_signed, &mut message).unwrap();
+        assert_ne!(0, check);
+    }
+
     // #[test]
     // fn it_should_encode_n_decode_data() {
     //     let mut seed = SecBuf::with_insecure(SEEDSIZE);

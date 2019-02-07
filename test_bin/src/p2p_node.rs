@@ -562,13 +562,21 @@ impl P2pNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
-        // logging code: log non-ping messages
-        let dbg_msg = match data {
-            Protocol::NamedBinary(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
-            Protocol::Json(_) => format!("<< ({}) recv: {:?}", self.agent_id, data),
-            _ => "".to_string(),
+        // logging depending on received type
+        match data {
+            Protocol::NamedBinary(_) => {
+                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
+                self.logger.d(&dbg_msg);
+            },
+            Protocol::Json(_) => {
+                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
+                self.logger.d(&dbg_msg);
+            },
+            _ => {
+                format!("<< ({}) recv <other>", self.agent_id, data);
+                self.logger.t(&dbg_msg);
+            },
         };
-        self.logger.t(&dbg_msg);
 
         self.recv_msg_log.push(data.clone());
 
@@ -581,7 +589,7 @@ impl P2pNode {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
                     self.logger
-                        .e(&format!("###### Received parse error: {} {:?}", s, data));
+                        .e(&format!("({}) ###### Received parse error: {} {:?}", self.agent_id, s, data));
                 }
                 Err(e)
             }
@@ -850,7 +858,7 @@ impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
         self.logger
-            .i(&format!(">> ({}) send: {:?}", self.agent_id, data));
+            .d(&format!(">> ({}) send: {:?}", self.agent_id, data));
         self.p2p_connection.send(data)
     }
 }

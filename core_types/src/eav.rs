@@ -202,7 +202,7 @@ impl EntityAttributeValueIndex {
         e: Option<&'a String>,
         index_query: &'a IndexQuery<'a>,
     ) -> bool {
-        let prefixes = if index_query.prefixes().len() > 0 {
+        let prefixes = if !index_query.prefixes().is_empty() {
             index_query.prefixes().clone()
         } else {
             vec![""]

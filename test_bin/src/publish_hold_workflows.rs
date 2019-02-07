@@ -307,7 +307,7 @@ pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
     log_d!("alex has_received done");
 
     // billy asks for reported published data.
-    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
+    let request_meta_1 = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_LINK_ATTRIBUTE.into());
 
     // Alex or billy should receive HandleFetchMeta request
     let has_received = alex.wait_HandleFetchMeta_and_reply();
@@ -331,12 +331,13 @@ pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
     let result = result.unwrap();
     log_i!("got result 1: {:?}", result);
     let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.request_id, request_meta_1.request_id);
     assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(meta_data.attribute, META_LINK_ATTRIBUTE.clone());
     assert_eq!(meta_data.content_list.len(), 3);
 
     // billy asks for reported published data.
-    billy.request_meta(ENTRY_ADDRESS_1.clone(), META_CRUD_ATTRIBUTE.into());
+    let request_meta_2 = billy.request_meta(ENTRY_ADDRESS_1.clone(), META_CRUD_ATTRIBUTE.into());
     // Alex or billy should receive HandleFetchMeta request
     let has_received = alex.wait_HandleFetchMeta_and_reply();
     if !has_received {
@@ -348,6 +349,7 @@ pub fn many_meta_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool
         .unwrap();
     log_i!("got result 2: {:?}", result);
     let meta_data = unwrap_to!(result => JsonProtocol::FetchMetaResult);
+    assert_eq!(meta_data.request_id, request_meta_2.request_id);
     assert_eq!(meta_data.entry_address, ENTRY_ADDRESS_1.clone());
     assert_eq!(meta_data.attribute, META_CRUD_ATTRIBUTE.clone());
     assert_eq!(meta_data.content_list.len(), 1);

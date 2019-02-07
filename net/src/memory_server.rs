@@ -41,7 +41,6 @@ fn into_bucket_id(dna_address: &Address, agent_id: &str) -> BucketId {
 }
 
 /// return a unique identifier out of a entry_address and attribute
-// fn into_meta_address(entry_address: &Address, attribute: &str) -> Address {
 pub fn into_meta_id(meta_tuple: &MetaTuple) -> Address {
     HashString::from(format!(
         "{}||{}||{}",
@@ -545,14 +544,11 @@ impl InMemoryServer {
                 &msg.provider_agent_id,
                 &meta_id,
             );
-            let mut store_msg = msg.clone();
-            store_msg.content_list = vec![content];
-            self.priv_send_all(
-                &msg.dna_address,
-                JsonProtocol::HandleStoreMeta(store_msg.clone()).into(),
-            )?;
         }
-        Ok(())
+        self.priv_send_all(
+            &msg.dna_address,
+            JsonProtocol::HandleStoreMeta(msg.clone()).into(),
+        )
     }
 
     /// when someone makes a dht meta data request,
@@ -595,12 +591,12 @@ impl InMemoryServer {
                 None => Vec::new(),
             };
             for content in msg.content_list.clone() {
-                let meta_address = into_meta_id(&(
+                let meta_id = into_meta_id(&(
                     msg.entry_address.clone(),
                     msg.attribute.clone(),
                     content.clone(),
                 ));
-                if known_published_meta_list.contains(&meta_address) {
+                if known_published_meta_list.contains(&meta_id) {
                     continue;
                 }
                 let meta_data = DhtMetaData {
@@ -736,9 +732,9 @@ impl InMemoryServer {
 
         let mut request_meta_key = Vec::new();
         for meta_tuple in msg.meta_list.clone() {
-            let meta_address = into_meta_id(&meta_tuple);
+            let meta_id = into_meta_id(&meta_tuple);
             // dont send request for a known meta
-            if known_published_meta_list.contains(&meta_address) {
+            if known_published_meta_list.contains(&meta_id) {
                 continue;
             }
             // dont send same request twice

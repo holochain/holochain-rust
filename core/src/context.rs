@@ -21,8 +21,12 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     json::JsonString,
 };
+
+use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+use holochain_sodium::{secbuf::SecBuf, random::random_secbuf};
+
 use holochain_net::p2p_config::P2pConfig;
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
 use std::{
     sync::{
         mpsc::{channel, Receiver, SyncSender},
@@ -31,6 +35,43 @@ use std::{
     thread::sleep,
     time::Duration,
 };
+
+fn mock_container_api() -> IoHandler {
+    let mut handler = IoHandler::new();
+    handler.add_method("agent/sign", move |params| {
+        let params_map = match params {
+            Params::Map(map) => Ok(map),
+            _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
+        }?;
+
+        let key = "payload";
+        let payload = Ok(params_map
+            .get(key)
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` param not provided",
+                key
+            )))?
+            .as_str()
+            .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                "`{}` is not a valid json string",
+                key
+            )))?
+            .to_string())?;
+
+        let mut seed = SecBuf::with_insecure(SEEDSIZE);
+        random_secbuf(&mut seed);
+        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+
+        let mut message = SecBuf::with_insecure(16);
+        random_secbuf(&mut message);
+
+        let mut message_signed = SecBuf::with_insecure(64);
+
+        keypair.sign(&mut message, &mut message_signed).unwrap();
+        Ok(json!({"payload": payload, "signature": true}))
+    });
+    handler
+}
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -48,7 +89,7 @@ pub struct Context {
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
-    pub conductor_api: Option<Arc<RwLock<IoHandler>>>,
+    pub conductor_api: Arc<RwLock<IoHandler>>,
     pub signal_tx: Option<SyncSender<Signal>>,
 }
 
@@ -80,7 +121,11 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             network_config,
-            conductor_api,
+            conductor_api: conductor_api
+                .or(Some(
+                    Arc::new(RwLock::new(mock_container_api()))
+                ))
+                .unwrap(),
         }
     }
 
@@ -107,7 +152,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             network_config,
-            conductor_api: None,
+            conductor_api: Arc::new(RwLock::new(mock_container_api())),
         })
     }
 

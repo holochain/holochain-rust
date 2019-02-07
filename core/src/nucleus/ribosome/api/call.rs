@@ -95,10 +95,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
         runtime
             .context
             .conductor_api
-            .clone()
-            .ok_or(HolochainError::ConfigError(
-                "No conductor API in context".to_string(),
-            ))?;
+            .clone();
 
     let method = format!(
         "{}/{}/{}",

@@ -1,6 +1,8 @@
 use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
+use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+use holochain_sodium::{secbuf::SecBuf, random::random_secbuf};
 
 use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use serde_json;
@@ -85,6 +87,7 @@ impl ConductorApiBuilder {
 
     /// Finish the building and retrieve the populated handler
     pub fn spawn(mut self) -> IoHandler {
+        self.with_mock_signing_callback();
         self.setup_info_api();
         *self.io
     }
@@ -737,6 +740,24 @@ impl ConductorApiBuilder {
         });
 
         self
+    }
+
+    pub fn with_mock_signing_callback(&mut self) {
+        self.io.add_method("agent/sign", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let payload = Self::get_as_string("payload", &params_map)?;
+            let mut seed = SecBuf::with_insecure(SEEDSIZE);
+            random_secbuf(&mut seed);
+            let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+
+            let mut message = SecBuf::with_insecure(16);
+            random_secbuf(&mut message);
+
+            let mut message_signed = SecBuf::with_insecure(64);
+
+            keypair.sign(&mut message, &mut message_signed).unwrap();
+            Ok(json!({"payload": payload, "signature": true}))
+        });
     }
 }
 

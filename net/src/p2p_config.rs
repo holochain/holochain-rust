@@ -132,7 +132,7 @@ impl P2pConfig {
                 P2pConfig::new(
                     P2pBackendKind::IPC,
                     &backend_config,
-                    Some(P2pConfig::default_n3h_end_user_config()),
+                    Some(P2pConfig::default_end_user_config()),
                 )
             }
         }
@@ -170,8 +170,9 @@ impl P2pConfig {
     }
 }
 
+/// end_user config
 impl P2pConfig {
-    pub fn default_n3h_end_user_config() -> serde_json::Value {
+    pub fn default_end_user_config() -> serde_json::Value {
         json!({
           "webproxy": {
             "connection": {
@@ -190,16 +191,16 @@ impl P2pConfig {
         maybe_end_user_config_filepath: Option<String>,
     ) -> serde_json::Value {
         match maybe_end_user_config_filepath {
-            None => P2pConfig::default_n3h_end_user_config(),
+            None => P2pConfig::default_end_user_config(),
             Some(filepath) => {
                 let mut file = File::open(filepath);
                 if let Err(_) = file {
-                    return P2pConfig::default_n3h_end_user_config();
+                    return P2pConfig::default_end_user_config();
                 }
                 let mut contents = String::new();
                 let res = file.unwrap().read_to_string(&mut contents);
                 if let Err(_) = res {
-                    return P2pConfig::default_n3h_end_user_config();
+                    return P2pConfig::default_end_user_config();
                 }
                 json!(&contents)
             }
@@ -207,7 +208,7 @@ impl P2pConfig {
     }
 }
 
-// statics
+/// statics
 impl P2pConfig {
     pub const DEFAULT_IPC_SPAWN_CONFIG: &'static str = r#"
     {

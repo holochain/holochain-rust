@@ -4,6 +4,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Added command `hc keygen` which creates a new key pair, asks for a passphrase and writes an encrypted key bundle file to `~/.holochain/keys`.
 - core now depends on `pretty_assertions` crate
 - `ChainHeader::sources()` is now `ChainHeader::provenances()`
 - Headers from other agents are stored in the EAV

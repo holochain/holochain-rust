@@ -41,7 +41,7 @@ impl LinkAdd {
 
     pub fn from_link(link: &Link,action_kind:LinkActionKind) -> Self {
         LinkAdd {
-            action_kind: LinkActionKind::ADD,
+            action_kind,
             link: link.clone(),
         }
     }

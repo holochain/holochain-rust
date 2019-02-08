@@ -1,6 +1,6 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use snowflake;
-use std::{fs::File, str::FromStr};
+use std::{fs::File, str::FromStr, io::prelude::*};
 
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
@@ -52,6 +52,7 @@ impl From<&'static str> for P2pBackendKind {
 pub struct P2pConfig {
     pub backend_kind: P2pBackendKind,
     pub backend_config: serde_json::Value,
+    pub maybe_end_user_config: Option<serde_json::Value>
 }
 
 // Conversions
@@ -71,11 +72,16 @@ impl P2pConfig {
 
 // Constructors
 impl P2pConfig {
-    pub fn new(backend_kind: P2pBackendKind, backend_config: &str) -> Self {
+    pub fn new(
+        backend_kind: P2pBackendKind,
+        backend_config: &str,
+        maybe_end_user_config: Option<serde_json::Value>,
+    ) -> Self {
         P2pConfig {
             backend_kind,
             backend_config: serde_json::from_str(backend_config)
                 .expect("Invalid backend_config json on P2pConfig creation."),
+            maybe_end_user_config,
         }
     }
 
@@ -91,22 +97,42 @@ impl P2pConfig {
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
+    pub fn new_ipc_uri(
+        maybe_ipc_binding: Option<String>,
+        bootstrap_nodes: &Vec<String>,
+        maybe_end_user_config_filepath: Option<String>,
+
+    ) -> Self {
+        let backend_config = json!({
+            "socketType": "zmq",
+            "blockConnect": false,
+            "bootstrapNodes": bootstrap_nodes,
+            "ipcUri": maybe_ipc_binding
+        })
+            .to_string();
+        P2pConfig::new(
+            P2pBackendKind::IPC,
+            &backend_config,
+            Some(P2pConfig::load_end_user_config(maybe_end_user_config_filepath)),
+        )
+    }
+
     pub fn default_ipc_uri(maybe_ipc_binding: Option<&str>) -> Self {
         match maybe_ipc_binding {
             None => P2pConfig::from_str(P2pConfig::DEFAULT_IPC_URI_CONFIG)
                 .expect("Invalid backend_config json on P2pConfig creation."),
             Some(ipc_binding) => {
                 let backend_config = json!({
-                "backend_kind": "IPC",
-                "backend_config": {
                     "socketType": "zmq",
                     "blockConnect": false,
                     "ipcUri": ipc_binding
-                }})
+                })
                 .to_string();
-                println!("config_str = {}", backend_config);
-                P2pConfig::from_str(&backend_config)
-                    .expect("Invalid backend_config json on P2pConfig creation.")
+                P2pConfig::new(
+                    P2pBackendKind::IPC,
+                    &backend_config,
+                    Some(P2pConfig::default_n3h_end_user_config()),
+                )
             }
         }
     }
@@ -115,6 +141,7 @@ impl P2pConfig {
         P2pConfig::new(
             P2pBackendKind::MEMORY,
             &Self::memory_backend_string(server_name),
+            None,
         )
     }
 
@@ -139,6 +166,41 @@ impl P2pConfig {
             }}"#,
             server_name
         )
+    }
+}
+
+impl P2pConfig {
+    pub fn default_n3h_end_user_config() -> serde_json::Value {
+        json!({
+          "webproxy": {
+            "connection": {
+              "rsaBits": 1024,
+              "bind": [
+                "wss://0.0.0.0:0/"
+              ]
+            },
+            "wssAdvertise": "auto",
+            "wssRelayPeers": null
+          }
+        })
+    }
+
+    pub fn load_end_user_config(maybe_end_user_config_filepath: Option<String>) -> serde_json::Value {
+        match maybe_end_user_config_filepath {
+            None => P2pConfig::default_n3h_end_user_config(),
+            Some(filepath) => {
+                let mut file = File::open(filepath);
+                if let Err(_) = file {
+                    return P2pConfig::default_n3h_end_user_config();
+                }
+                let mut contents = String::new();
+                let res = file.unwrap().read_to_string(&mut contents);
+                if let Err(_) = res {
+                    return P2pConfig::default_n3h_end_user_config();
+                }
+                json!(&contents)
+            },
+        }
     }
 }
 

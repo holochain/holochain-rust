@@ -12,7 +12,7 @@ use holochain_core::{
 };
 use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
-    error::HolochainError, json::JsonString,
+    error::HolochainError,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -38,7 +38,7 @@ pub struct ContextBuilder {
     chain_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     dht_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
-    network_config: Option<JsonString>,
+    p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
 }
@@ -51,7 +51,7 @@ impl ContextBuilder {
             chain_storage: None,
             dht_storage: None,
             eav_storage: None,
-            network_config: None,
+            p2p_config: None,
             conductor_api: None,
             signal_tx: None,
         }
@@ -93,8 +93,8 @@ impl ContextBuilder {
     }
 
     /// Sets the network config.
-    pub fn with_network_config(mut self, network_config: JsonString) -> Self {
-        self.network_config = Some(network_config);
+    pub fn with_p2p_config(mut self, p2p_config: P2pConfig) -> Self {
+        self.p2p_config = Some(p2p_config);
         self
     }
 
@@ -134,9 +134,7 @@ impl ContextBuilder {
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config.unwrap_or(JsonString::from(
-                P2pConfig::new_with_unique_memory_backend().as_str(),
-            )),
+            self.p2p_config.unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
         )
@@ -153,7 +151,7 @@ mod tests {
         let context = ContextBuilder::new().spawn();
         assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
         assert!(context
-            .network_config
+            .p2p_config
             .to_string()
             .contains(r#""backend_kind":"MEMORY""#));
     }
@@ -167,11 +165,11 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str());
+        let net = P2pConfig::new_with_unique_memory_backend();
         let context = ContextBuilder::new()
-            .with_network_config(net.clone())
+            .with_p2p_config(net.clone())
             .spawn();
-        assert_eq!(context.network_config, net);
+        assert_eq!(context.p2p_config, net);
     }
 
     #[test]

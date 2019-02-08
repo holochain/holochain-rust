@@ -20,9 +20,7 @@ pub fn reduce_init(
 ) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
-    let p2p_config = P2pConfig::from_str(&network_settings.config.to_string())
-        .expect("network settings failed to deserialize");
-    let mut network = P2pNetwork::new(create_handler(&context), &p2p_config).unwrap();
+    let mut network = P2pNetwork::new(create_handler(&context), &network_settings.p2p_config).unwrap();
 
     let _ = network
         .send(

@@ -6,27 +6,27 @@ use crate::{
 };
 
 //-------------------------------------------------------------------------------------------------
-// LinkAdd
+// LinkData
 //-------------------------------------------------------------------------------------------------
 
-//Todo should rename this from LinkAdd to general Link
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
-pub struct LinkAdd {
+pub struct LinkData {
     action_kind: LinkActionKind,
     link: Link,
 }
 
-impl LinkAdd {
+impl LinkData {
     pub fn new_add(base: &Address, target: &Address, tag: &str) -> Self {
-        LinkAdd {
-            action_kind: LinkActionKind::REMOVE,
+        LinkData {
+            action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, tag),
         }
     }
 
     pub fn new_delete(base: &Address, target: &Address, tag: &str) -> Self {
-        LinkAdd {
-            action_kind: LinkActionKind::ADD,
+        LinkData {
+            action_kind: LinkActionKind::REMOVE,
             link: Link::new(base, target, tag),
         }
     }
@@ -40,7 +40,7 @@ impl LinkAdd {
     }
 
     pub fn from_link(link: &Link,action_kind:LinkActionKind) -> Self {
-        LinkAdd {
+        LinkData {
             action_kind,
             link: link.clone(),
         }
@@ -55,15 +55,15 @@ pub mod tests {
         entry::{test_entry_a, test_entry_b, Entry},
         json::JsonString,
         link::{
-            link_add::LinkAdd,
+            link_data::LinkData,
             tests::{example_link, example_link_action_kind, example_link_tag},
         },
     };
     use std::convert::TryFrom;
 
-    pub fn example_link_add() -> LinkAdd {
+    pub fn example_link_add() -> LinkData {
         let link = example_link();
-        LinkAdd::new(link.base(), link.target(), link.tag())
+        LinkData::new_add(link.base(), link.target(), link.tag())
     }
 
     pub fn test_link_entry() -> Entry {

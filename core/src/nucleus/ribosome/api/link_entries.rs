@@ -2,7 +2,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use holochain_core_types::{entry::Entry, error::HolochainError, link::{link_add::LinkAdd,LinkActionKind}};
+use holochain_core_types::{entry::Entry, error::HolochainError, link::{link_data::LinkData,LinkActionKind}};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -26,7 +26,7 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
     };
 
     let link = input.to_link();
-    let link_add = LinkAdd::from_link(&link,LinkActionKind::REMOVE);
+    let link_add = LinkData::from_link(&link,LinkActionKind::ADD);
     let entry = Entry::LinkAdd(link_add);
 
     // Wait for future to be resolved

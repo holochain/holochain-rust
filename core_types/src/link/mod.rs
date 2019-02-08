@@ -2,7 +2,7 @@
 //! structs relating to the adding and removing of links between entries
 //! and lists of links.
 
-pub mod link_add;
+pub mod link_data;
 pub mod link_list;
 
 use crate::{cas::content::Address, error::HolochainError, json::JsonString};

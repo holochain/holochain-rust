@@ -68,7 +68,7 @@ pub mod tests {
         network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
-    use holochain_core_types::{entry::test_entry, link::link_add::LinkAdd};
+    use holochain_core_types::{entry::test_entry, link::link__data::LinkData};
     use test_utils::*;
 
     #[test]
@@ -100,7 +100,7 @@ pub mod tests {
             .block_on(author_entry(&entry, None, &context1))
             .unwrap();
 
-        let link_add = LinkAdd::new(&entry_address, &entry_address, "test-tag");
+        let link_add = LinkData::new_add(&entry_address, &entry_address, "test-tag");
         let link_entry = Entry::LinkAdd(link_add);
 
         let _ = context1

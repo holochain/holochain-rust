@@ -40,6 +40,20 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
                 }
             });
         }
+        "link_remove" =>{
+            context.log("debug/net/handle: HandleStoreMeta: got LINK. processing...");
+            let entry_with_header: EntryWithHeader = serde_json::from_str(
+                &serde_json::to_string(&dht_meta_data.content)
+                    .expect("dht_meta_data should be EntryWithHader"),
+            )
+            .expect("dht_meta_data should be EntryWithHader");
+            thread::spawn(move || {
+                match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
+                    Err(error) => context.log(format!("err/net/dht: {}", error)),
+                    _ => (),
+                }
+            });
+        }
         STATUS_NAME => {
             context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
             let _crud_status: CrudStatus = serde_json::from_str(

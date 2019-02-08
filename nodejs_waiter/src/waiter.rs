@@ -77,12 +77,6 @@ impl CallFxChecker {
     {
         self.conditions
             .push(CallFxCondition::new(count, Box::new(f)));
-        println!(
-            "\n*** Condition {}: {} -> {}",
-            "ADDED".green(),
-            self.conditions.len() - 1,
-            self.conditions.len()
-        );
     }
 
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
@@ -92,14 +86,6 @@ impl CallFxChecker {
             condition.run(aw)
         }
         self.conditions.retain(|condition| !condition.satisfied());
-        if size != self.conditions.len() {
-            println!(
-                "\n*** Condition {}: {} -> {}",
-                "REMOVED".red(),
-                size,
-                size - 1
-            );
-        }
         if self.conditions.is_empty() && !was_empty {
             self.stop();
             return false;
@@ -147,10 +133,6 @@ impl Task for CallBlockingTask {
     }
 }
 
-fn log(msg: &str) {
-    println!("{}:\n{}\n", "(((LOG)))".bold(), msg);
-}
-
 /// A singleton which runs in a Task and is the receiver for the Signal channel.
 /// - handles incoming `ZomeFnCall`s, attaching and activating a new `CallFxChecker`
 /// - handles incoming Signals, running all `CallFxChecker` closures
@@ -195,7 +177,6 @@ impl Waiter {
                         }
                         Err(_) => {
                             self.deactivate_current();
-                            log("Waiter: deactivate_current");
                         }
                     },
 
@@ -232,7 +213,6 @@ impl Waiter {
                                     }
                                     _ => false,
                                 });
-                                println!("warn/waiter: LinkRemove not implemented!");
                             }
                             _ => (),
                         }
@@ -273,14 +253,6 @@ impl Waiter {
     fn run_checks(&mut self, aw: &ActionWrapper) {
         let size = self.checkers.len();
         self.checkers.retain(|_, checker| checker.run_checks(aw));
-        if size != self.checkers.len() {
-            println!(
-                "\n{}: {} -> {}",
-                "Num checkers".italic(),
-                size,
-                self.checkers.len()
-            );
-        }
     }
 
     fn current_checker(&mut self) -> Option<&mut CallFxChecker> {
@@ -291,8 +263,6 @@ impl Waiter {
 
     fn add_call(&mut self, call: ZomeFnCall, tx: ControlSender) {
         let checker = CallFxChecker::new(tx);
-
-        log("Waiter: add_call...");
         self.checkers.insert(call.clone(), checker);
         self.current = Some(call);
     }
@@ -348,10 +318,8 @@ impl Task for MainBackgroundTask {
         }
 
         for (_, checker) in self.waiter.borrow_mut().checkers.iter_mut() {
-            println!("{}", "Shutting down lingering checker...".magenta().bold());
             checker.shutdown();
         }
-        println!("Terminating MainBackgroundTask::perform() loop");
         Ok(())
     }
 
@@ -360,7 +328,6 @@ impl Task for MainBackgroundTask {
             let error_string = cx.string(format!("unable to shut down background task: {}", e));
             cx.throw(error_string)
         })?;
-        println!("MainBackgroundTask shut down");
         Ok(cx.undefined())
     }
 }

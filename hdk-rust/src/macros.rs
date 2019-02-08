@@ -295,7 +295,7 @@ macro_rules! define_zome {
                         capability.functions = vec![
                             $(
                                 stringify!($cap_fn).into()
-                            ),+
+                            ),*
                         ];
 
                         cap_map.insert(stringify!($cap).into(), capability);

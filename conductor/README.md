@@ -4,7 +4,7 @@
 [![PM](https://img.shields.io/badge/pm-waffle-blue.svg?style=flat-square)](https://waffle.io/holochain/org)
 [![Chat](https://img.shields.io/badge/chat-chat%2eholochain%2enet-blue.svg?style=flat-square)](https://chat.holochain.net)
 
-This crate implements a reference conductor for serving Holochain DNAs.
+This crate implements a reference Conductor for serving Holochain DNAs.
 
 ## Install
 
@@ -44,36 +44,14 @@ To install the latest version of the Holochain conductor, run the following comm
 $ cargo install holochain --force --git https://github.com/holochain/holochain-rust.git --branch develop
 ```
 
-The conductor should then be available from your command line using the `holochain` command.
+The Conductor should then be available from your command line using the `holochain` command.
 
 Run `holochain --version` to confirm that it built.
 
 ## Usage
+To learn about `holochain` and how to use it, check out the chapter in the guidebook all about it.
 
-The conductor requires a configuration file to run, you can see a [sample here](https://github.com/holochain/holochain-rust/blob/develop/conductor/example-config/basic.toml)
-
-You can put your configuration file in `~/.holochain/conductor/conductor_config.toml` or run `holochain` explicitly with the `-c` to specify where to find it.
-
-### Using real networking
-The conductor currently uses mock networking by default. To use real networking you have to install the [n3h networking component](https://github.com/holochain/n3h) and add a configuration block into the config file to tell the conductor where it can find n3h.  It should look something like this:
-
-```
-[network]
-n3h_path = "/home/eric/holochain/n3h"
-n3h_persistence_path = "/tmp"
-bootstrap_nodes = []
-```
-
-## Configuration File Spec
-
-TBD (for now you just have infer from the [example]((https://github.com/holochain/holochain-rust/blob/develop/conductor/example-config/basic.toml))!)
-
-## Testing HTTP interface using cURL
-
-Currently the conductor supports the `websocket` and `http` interfaces.
-Assuming the conductor http interface is running on port 4000 it can be tested by running:
-`curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":"0","method":"info/instances"}' http://localhost:4000`
-
+[https://developer.holochain.org/guide/latest/production_conductor.html](https://developer.holochain.org/guide/latest/production_conductor.html)
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](../CONTRIBUTING.md) for our general practices and protocols on participating in the community.

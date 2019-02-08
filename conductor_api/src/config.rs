@@ -49,16 +49,16 @@ pub struct Configuration {
     /// List of ui bundles (static web dirs) to host on a static interface. Optional.
     #[serde(default)]
     pub ui_bundles: Vec<UiBundleConfiguration>,
-    /// List of ui interfaces, includes references ui bundle and dna interfaces it can call. Optional.
+    /// List of ui interfaces, includes references to ui bundles and dna interfaces it can call. Optional.
     #[serde(default)]
     pub ui_interfaces: Vec<UiInterfaceConfiguration>,
-    /// Configures how logging should behave
+    /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
-    /// Configuration options for the network module n3h
+    /// Configuration options for the network module n3h. Optional.
     #[serde(default)]
     pub network: Option<NetworkConfig>,
-    /// where to persist the config file and DNAs
+    /// where to persist the config file and DNAs. Optional.
     #[serde(default = "default_persistence_dir")]
     pub persistence_dir: PathBuf,
 }
@@ -358,15 +358,16 @@ pub enum StorageConfiguration {
 
 /// Here, interfaces are user facing and make available zome functions to
 /// GUIs, browser based web UIs, local native UIs, other local applications and scripts.
-/// None is implemented yet, but we will have:
+/// We currently have:
 /// * websockets
-/// * HTTP REST
-/// * Unix domain sockets
-/// very soon.
+/// * HTTP
 ///
-/// Every interface lists the instances that are made available here.
-/// An admin flag will enable conductor functions for programmatically changing the configuration
-/// (i.e. installing apps)
+/// We will also soon develop
+/// * Unix domain sockets
+///
+/// The instances (referenced by ID) that are to be made available via that interface should be listed.
+/// An admin flag will enable conductor functions for programatically changing the configuration
+/// (e.g. installing apps)
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct InterfaceConfiguration {
     pub id: String,
@@ -448,7 +449,7 @@ pub struct NetworkConfig {
     /// Absolute path to the directory that n3h uses to store persisted data.
     #[serde(default)]
     pub n3h_persistence_path: String,
-    /// URI pointing a n3h process that is already running and not managed by this
+    /// URI pointing to an n3h process that is already running and not managed by this
     /// conductor.
     /// If this is set the conductor does not spawn n3h itself and ignores the path
     /// configs above. Default is None.

@@ -3,7 +3,11 @@ use crate::{
     workflows::author_entry::author_entry,
 };
 
-use holochain_core_types::{entry::Entry, error::HolochainError, link::{link_data::LinkData,LinkActionKind}};
+use holochain_core_types::{
+    entry::Entry,
+    error::HolochainError,
+    link::{link_data::LinkData, LinkActionKind},
+};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -28,7 +32,7 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     };
 
     let link = input.to_link();
-    let link_remove = LinkData::from_link(&link,LinkActionKind::REMOVE);
+    let link_remove = LinkData::from_link(&link, LinkActionKind::REMOVE);
     let entry = Entry::LinkRemove(link_remove);
 
     // Wait for future to be resolved

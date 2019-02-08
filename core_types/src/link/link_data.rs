@@ -9,7 +9,6 @@ use crate::{
 // LinkData
 //-------------------------------------------------------------------------------------------------
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct LinkData {
     action_kind: LinkActionKind,
@@ -39,7 +38,7 @@ impl LinkData {
         &self.link
     }
 
-    pub fn from_link(link: &Link,action_kind:LinkActionKind) -> Self {
+    pub fn from_link(link: &Link, action_kind: LinkActionKind) -> Self {
         LinkData {
             action_kind,
             link: link.clone(),

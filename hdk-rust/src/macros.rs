@@ -375,6 +375,6 @@ macro_rules! define_zome {
                         $crate::global_fns::write_json(execute(input))
                     ).into()
                 }
-        )+
+        )*
     };
 }

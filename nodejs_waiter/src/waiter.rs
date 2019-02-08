@@ -373,7 +373,7 @@ mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_add::LinkAdd,
+        chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_data::LinkData,
     };
     use std::sync::mpsc::sync_channel;
 
@@ -583,7 +583,7 @@ mod tests {
     fn can_await_links() {
         let (mut waiter, sender_tx) = test_waiter();
         let call = zf_call("c1");
-        let link_add = LinkAdd::new(
+        let link_add = LinkData::new(
             &"base".to_string().into(),
             &"target".to_string().into(),
             "tag",

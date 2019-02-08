@@ -98,11 +98,11 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
         );
 
         thread::spawn(move || {
-            let maybe_callback_result = _definition(&entry, context.clone());
+            let maybe_callback_result = get_validation_package_definition(&entry, context.clone());
             let maybe_validation_package = maybe_callback_result
                 .and_then(|callback_result| match callback_result {
                     CallbackResult::Fail(error_string) => {
-                        Err(HolochainError::ErrorGeneriget_validation_packagec(error_string))
+                        Err(HolochainError::ErrorGeneric(error_string))
                     }
                     CallbackResult::ValidationPackageDefinition(def) => Ok(def),
                     CallbackResult::NotImplemented(reason) => {

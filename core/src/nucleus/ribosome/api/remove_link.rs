@@ -2,7 +2,7 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
 };
-use futures::executor::block_on;
+
 use holochain_core_types::{entry::Entry, error::HolochainError, link::link_add::LinkAdd};
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 use std::convert::TryFrom;

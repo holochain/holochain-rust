@@ -40,7 +40,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
                 }
             });
         }
-        "link_remove" =>{
+        "link_remove" => {
             context.log("debug/net/handle: HandleStoreMeta: got LINK. processing...");
             let entry_with_header: EntryWithHeader = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content)

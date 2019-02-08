@@ -84,7 +84,7 @@ fn validate_link_entry(
     validation_data: ValidationData,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
-    let link_add = match entry {
+    let link = match entry {
         Entry::LinkAdd(link_add) => link_add,
         Entry::LinkRemove(link_remove) => link_remove,
         _ => {
@@ -93,7 +93,7 @@ fn validate_link_entry(
             ));
         }
     };
-    let link = link_add.link().clone();
+    let link = link.link().clone();
     let (base, target) = links_utils::get_link_entries(&link, &context)?;
     let link_definition_path = links_utils::find_link_definition_in_dna(
         &base.entry_type(),

@@ -58,9 +58,7 @@ pub fn mock_signer(payload: String) -> String {
     let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
 
     // Convert payload string into a SecBuf
-    let payload = payload.as_bytes();
-    let mut message = SecBuf::with_insecure(payload.len());
-    message.write(0, payload).expect("SecBuf must be writeable");
+    let mut message = SecBuf::with_insecure_from_string(payload);
 
     // Create signature
     let mut message_signed = SecBuf::with_insecure(64);

@@ -84,6 +84,7 @@ mod tests {
         let p2p_config = P2pConfig::new(
             P2pBackendKind::IPC,
             crate::ipc_net_worker::IpcNetWorker::ZMQ_URI_CONFIG,
+            None,
         );
         let mut res = P2pNetwork::new(Box::new(|_r| Ok(())), &p2p_config).unwrap();
         res.send(Protocol::P2pReady).unwrap();

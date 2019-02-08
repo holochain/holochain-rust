@@ -56,6 +56,7 @@ pub async fn author_entry<'a>(
     //TODO: missing a general public/private sharing check here, for now just
     // using the entry_type can_publish() function which isn't enough
     if entry.entry_type().can_publish() {
+        println!("publishing");
         context.log(format!(
             "debug/workflow/authoring_entry/{}: publishing...",
             address
@@ -66,6 +67,7 @@ pub async fn author_entry<'a>(
             address
         ));
     } else {
+        println!("cannot publishing");
         context.log(format!(
             "debug/workflow/authoring_entry/{}: entry is private, no publishing",
             address

@@ -42,7 +42,7 @@ pub async fn remove_link_workflow<'a>(
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Meta,
-        action: EntryAction::Remove,
+        action: EntryAction::Delete,
     };
 
     // 3. Validate the entry

@@ -80,7 +80,7 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 })*/
 
 
-scenario1.runTape('delete_post', async (t, { alice }) => {
+scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   await alice.callSync("blog", "create_post",
     { "content": "Posty", "in_reply_to": "" }
@@ -92,6 +92,9 @@ scenario1.runTape('delete_post', async (t, { alice }) => {
   )
   const result_delete_post = alice.call("blog", "my_posts", {})
   t.equal(result_delete_post.Ok.addresses.length, 0)
+
+  const result_delete_post_bob = bob.call("blog", "my_posts", {})
+  t.equal(result_delete_post_bob.Ok.addresses.length, 0)
   
   })
 

@@ -107,7 +107,6 @@ pub enum EntryAction {
     Create,
     Modify,
     Delete,
-    Remove,
 }
 
 impl Default for EntryAction {

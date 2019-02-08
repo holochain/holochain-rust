@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 links = "sodium"
 name = "rust_sodium-sys"
 repository = "https://github.com/maidsafe/rust_sodium"
-version = "0.10.2"
+version = "0.10.3"
 
 [dependencies]
 lazy_static = "~1.2.0"

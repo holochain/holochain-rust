@@ -53,7 +53,7 @@ pub async fn remove_link_workflow<'a>(
     })?;
     context.log(format!("debug/workflow/remove_link: is valid!"));
 
-    // 3. If valid store the entry in the local DHT shard
+    // 3. If valid store remove the entry in the local DHT shard
     await!(remove_link(&link, &context))?;
     context.log(format!("debug/workflow/remove_link: added! {:?}", link));
     Ok(())

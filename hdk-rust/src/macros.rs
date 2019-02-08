@@ -332,7 +332,7 @@ macro_rules! define_zome {
                                         ),*
                                     ]
                                 }
-                    ),+
+                    ),*
 
                 ]
             };

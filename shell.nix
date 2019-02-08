@@ -81,7 +81,7 @@ let
   hc-test = nixpkgs.writeShellScriptBin "hc-test"
   ''
    hc-build-wasm
-   HC_SIMPLE_LOGGER_MUTE=0 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
+   HC_SIMPLE_LOGGER_MUTE=1 cargo test --all --release --target-dir "$HC_TARGET_PREFIX"target;
   '';
 
 in

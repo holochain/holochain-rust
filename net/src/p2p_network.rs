@@ -23,18 +23,26 @@ impl P2pNetwork {
     /// Constructor
     /// `config` is the configuration of the p2p module
     /// `handler` is the closure for handling Protocol messages received from the network.
-    pub fn new(handler: NetHandler, config: &P2pConfig) -> NetResult<Self> {
+    pub fn new(handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
-        let network_config = config.backend_config.to_string().into();
+        let backend_config = p2p_config.backend_config.to_string().into();
+        let enduser_config = p2p_config
+            .maybe_end_user_config
+            .clone()
+            .expect("P2pConfig for IPC networking is missing an end-user config")
+            .to_string();
         // Provide worker factory depending on backend kind
-        let worker_factory: NetWorkerFactory = match config.backend_kind {
+        let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
             // Create an IpcNetWorker with the passed backend config
             P2pBackendKind::IPC => Box::new(move |h| {
-                Ok(Box::new(IpcNetWorker::new(h, &network_config)?) as Box<NetWorker>)
+                Ok(
+                    Box::new(IpcNetWorker::new(h, &backend_config, enduser_config)?)
+                        as Box<NetWorker>,
+                )
             }),
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
-                Ok(Box::new(InMemoryWorker::new(h, &network_config)?) as Box<NetWorker>)
+                Ok(Box::new(InMemoryWorker::new(h, &backend_config)?) as Box<NetWorker>)
             }),
         };
         // Create NetConnectionThread with appropriate worker factory

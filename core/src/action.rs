@@ -15,7 +15,6 @@ use holochain_core_types::{
     dna::Dna,
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
-    json::JsonString,
     link::Link,
     validation::ValidationPackage,
 };

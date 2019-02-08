@@ -54,7 +54,9 @@ fn publish_crud_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: entry_address.clone(),
             attribute: STATUS_NAME.to_string(),
-            content: serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
+            content_list: vec![
+                serde_json::from_str(&serde_json::to_string(&crud_status).unwrap()).unwrap(),
+            ],
         }),
     )?;
 
@@ -69,14 +71,16 @@ fn publish_crud_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: entry_address.clone(),
             attribute: LINK_NAME.to_string(),
-            content: serde_json::from_str(&serde_json::to_string(&crud_link.unwrap()).unwrap())
-                .unwrap(),
+            content_list: vec![serde_json::from_str(
+                &serde_json::to_string(&crud_link.unwrap()).unwrap(),
+            )
+            .unwrap()],
         }),
     )?;
     Ok(())
 }
 
-/// Send to network a PublishDhtMeta message holding a link metadata to `entry_with_header`
+/// Send to network a PublishMeta message holding a link metadata to `entry_with_header`
 fn publish_link_meta(
     context: &Arc<Context>,
     network_state: &mut NetworkState,
@@ -106,8 +110,10 @@ fn publish_link_meta(
             provider_agent_id: network_state.agent_id.clone().unwrap(),
             entry_address: link.base().clone(),
             attribute: String::from(link_attribute),
-            content: serde_json::from_str(&serde_json::to_string(&entry_with_header).unwrap())
-                .unwrap(),
+            content_list: vec![serde_json::from_str(
+                &serde_json::to_string(&entry_with_header).unwrap(),
+            )
+            .unwrap()],
         }),
     )
 }

@@ -1,6 +1,6 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use snowflake;
-use std::{fs::File, str::FromStr, io::prelude::*};
+use std::{fs::File, io::prelude::*, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
@@ -52,7 +52,7 @@ impl From<&'static str> for P2pBackendKind {
 pub struct P2pConfig {
     pub backend_kind: P2pBackendKind,
     pub backend_config: serde_json::Value,
-    pub maybe_end_user_config: Option<serde_json::Value>
+    pub maybe_end_user_config: Option<serde_json::Value>,
 }
 
 // Conversions
@@ -101,7 +101,6 @@ impl P2pConfig {
         maybe_ipc_binding: Option<String>,
         bootstrap_nodes: &Vec<String>,
         maybe_end_user_config_filepath: Option<String>,
-
     ) -> Self {
         let backend_config = json!({
             "socketType": "zmq",
@@ -109,11 +108,13 @@ impl P2pConfig {
             "bootstrapNodes": bootstrap_nodes,
             "ipcUri": maybe_ipc_binding
         })
-            .to_string();
+        .to_string();
         P2pConfig::new(
             P2pBackendKind::IPC,
             &backend_config,
-            Some(P2pConfig::load_end_user_config(maybe_end_user_config_filepath)),
+            Some(P2pConfig::load_end_user_config(
+                maybe_end_user_config_filepath,
+            )),
         )
     }
 
@@ -185,7 +186,9 @@ impl P2pConfig {
         })
     }
 
-    pub fn load_end_user_config(maybe_end_user_config_filepath: Option<String>) -> serde_json::Value {
+    pub fn load_end_user_config(
+        maybe_end_user_config_filepath: Option<String>,
+    ) -> serde_json::Value {
         match maybe_end_user_config_filepath {
             None => P2pConfig::default_n3h_end_user_config(),
             Some(filepath) => {
@@ -199,7 +202,7 @@ impl P2pConfig {
                     return P2pConfig::default_n3h_end_user_config();
                 }
                 json!(&contents)
-            },
+            }
         }
     }
 }

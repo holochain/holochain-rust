@@ -134,7 +134,8 @@ impl ContextBuilder {
             chain_storage,
             dht_storage,
             eav_storage,
-            self.p2p_config.unwrap_or(P2pConfig::new_with_unique_memory_backend()),
+            self.p2p_config
+                .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
         )
@@ -166,9 +167,7 @@ mod tests {
     #[test]
     fn with_network_config() {
         let net = P2pConfig::new_with_unique_memory_backend();
-        let context = ContextBuilder::new()
-            .with_p2p_config(net.clone())
-            .spawn();
+        let context = ContextBuilder::new().with_p2p_config(net.clone()).spawn();
         assert_eq!(context.p2p_config, net);
     }
 

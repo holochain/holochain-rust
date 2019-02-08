@@ -20,7 +20,8 @@ pub fn reduce_init(
 ) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
-    let mut network = P2pNetwork::new(create_handler(&context), &network_settings.p2p_config).unwrap();
+    let mut network =
+        P2pNetwork::new(create_handler(&context), &network_settings.p2p_config).unwrap();
 
     let _ = network
         .send(

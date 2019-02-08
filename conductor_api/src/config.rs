@@ -649,7 +649,9 @@ pub mod tests {
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
-                n3h_end_user_config_filepath: Some(String::from("/Users/cnorris/.holochain/n3h_end_user_config.json")),
+                n3h_end_user_config_filepath: Some(String::from(
+                    "/Users/cnorris/.holochain/n3h_end_user_config.json"
+                )),
             }
         );
     }

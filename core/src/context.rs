@@ -24,7 +24,7 @@ use holochain_core_types::{
 };
 
 use holochain_dpki::keypair::{Keypair, SEEDSIZE};
-use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
+use holochain_sodium::secbuf::SecBuf;
 
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_lite::JsonRpc;
@@ -39,6 +39,40 @@ use std::{
     time::Duration,
 };
 
+/// This is a local mock for the `agent/sign` conductor API function.
+/// It creates a syntactically equivalent signature using dpki::Keypair
+/// but with key generated from a static/deterministic mock seed.
+/// This enables unit testing of core code that creates signatures without
+/// depending on the conductor or actual key files.
+pub fn mock_signer(payload: String) -> String {
+    // Create deterministic seed:
+    let mut seed = SecBuf::with_insecure(SEEDSIZE);
+    let mut mock_seed : Vec<u8> = Vec::new();
+    for i in 1 .. SEEDSIZE {
+        mock_seed.push(i as u8);
+    }
+    seed.write(0, mock_seed.as_slice()).expect("SecBuf must be writeable");
+
+    // Create keypair from seed:
+    let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
+
+    // Convert payload string into a SecBuf
+    let payload = payload.as_bytes();
+    let mut message = SecBuf::with_insecure(payload.len());
+    message.write(0, payload).expect("SecBuf must be writeable");
+
+    // Create signature
+    let mut message_signed = SecBuf::with_insecure(64);
+    keypair.sign(&mut message, &mut message_signed).unwrap();
+    let message_signed = message_signed.read_lock();
+
+    // Return as base64 encoded string
+    base64::encode(&**message_signed)
+}
+
+/// Wraps `fn mock_signer(String) -> String` in an `IoHandler` to mock the conductor API
+/// in a way that core can safely assume the conductor API to be present with at least
+/// the `agent/sign` method.
 fn mock_conductor_api() -> IoHandler {
     let mut handler = IoHandler::new();
     handler.add_method("agent/sign", move |params| {
@@ -61,18 +95,7 @@ fn mock_conductor_api() -> IoHandler {
             )))?
             .to_string())?;
 
-        let mut seed = SecBuf::with_insecure(SEEDSIZE);
-        random_secbuf(&mut seed);
-        let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
-
-        let mut message = SecBuf::with_insecure(16);
-        random_secbuf(&mut message);
-
-        let mut message_signed = SecBuf::with_insecure(64);
-
-        keypair.sign(&mut message, &mut message_signed).unwrap();
-        let message_signed = message_signed.read_lock();
-        Ok(json!({"payload": payload, "signature": base64::encode(&**message_signed)}))
+        Ok(json!({"payload": payload, "signature": mock_signer(payload)}))
     });
     handler
 }

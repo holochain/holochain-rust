@@ -195,7 +195,7 @@ macro_rules! define_zome {
                             outputs: | $( $output_param_name:ident : $output_param_type:ty ),* |,
                             handler: $handler_path:path
                         }
-            )+
+            )*
         ]
 
         capabilities : {

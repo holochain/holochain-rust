@@ -2,20 +2,20 @@
   "N3H_PATH": "C:\\github\\n3h",
   "modes": {
     "IN_MEMORY": true,
-    "IPC_MOCK": false,
-    "HACK_MODE": false
+    "IPC_MOCK": true,
+    "HACK_MODE": true
   },
   "suites": {
     "BASIC_WORKFLOWS": true,
-    "LIST_WORKFLOWS": false,
-    "THREE_WORKFLOWS": false
+    "LIST_WORKFLOWS": true,
+    "THREE_WORKFLOWS": true
   },
   "log": {
-    "default": "i",
+    "default": "d",
     "tags": {
-      "p2pnode": "e",
-      "metastore": "e",
-      "memory_server": "e"
+      "p2pnode": "d",
+      "metastore": "d",
+      "memory_server": "d"
     },
     "listeners": [
     "console"

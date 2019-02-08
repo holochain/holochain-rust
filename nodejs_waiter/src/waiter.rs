@@ -583,7 +583,7 @@ mod tests {
     fn can_await_links() {
         let (mut waiter, sender_tx) = test_waiter();
         let call = zf_call("c1");
-        let link_add = LinkData::new(
+        let link_add = LinkData::new_add(
             &"base".to_string().into(),
             &"target".to_string().into(),
             "tag",

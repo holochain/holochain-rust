@@ -450,6 +450,14 @@ pub mod tests {
             )
             .unwrap();
         assert_eq!(eavis.len(), 1);
+        assert_eq!(
+            eavis
+                .into_iter()
+                .map(|x| x.value().to_owned())
+                .collect::<Vec<_>>()
+                .first(),
+            Some(&"TODO".to_string().into())
+        );
 
         let result = new_dht_store.actions().get(&action).unwrap();
         assert!(result.is_err());

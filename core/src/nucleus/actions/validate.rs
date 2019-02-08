@@ -54,6 +54,7 @@ pub fn validate_entry<'a>(
 
         EntryType::LinkAdd => {
             // LinkAdd can always be validated
+            // ...or can it? Is it really valid if the base does not exist? (TODO)
         }
 
         EntryType::Deletion => {

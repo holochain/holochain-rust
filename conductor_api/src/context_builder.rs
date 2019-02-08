@@ -16,7 +16,10 @@ use holochain_core_types::{
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use std::sync::{Arc, Mutex, RwLock};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex, RwLock},
+};
 
 /// This type helps building [context objects](struct.Context.html) that need to be
 /// passed in to Holochain intances.
@@ -74,10 +77,10 @@ impl ContextBuilder {
     /// Sets all three storages, chain, DHT and EAV storage, to persistent file based implementations.
     /// Chain and DHT storages get set to the same file CAS.
     /// Returns an error if no file storage could be spawned on the given path.
-    pub fn with_file_storage<T: Into<String>>(mut self, path: T) -> Result<Self, HolochainError> {
-        let path: String = path.into();
-        let cas_path = format!("{}/cas", path);
-        let eav_path = format!("{}/eav", path);
+    pub fn with_file_storage<P: AsRef<Path>>(mut self, path: P) -> Result<Self, HolochainError> {
+        let base_path: PathBuf = path.as_ref().into();
+        let cas_path = base_path.join("cas");
+        let eav_path = base_path.join("eav");
         create_path_if_not_exists(&cas_path)?;
         create_path_if_not_exists(&eav_path)?;
 

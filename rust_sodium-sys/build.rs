@@ -258,7 +258,7 @@ fn get_libsodium() {
     let build = cc::Build::new();
     let mut compiler = unwrap!(build.get_compiler().path().to_str()).to_string();
     let mut cflags = env::var("CFLAGS").unwrap_or(String::default());
-    cflags += " -O2";
+    cflags += " -O2 -fPIC";
     let host_arg;
     let cross_compiling;
     let help;

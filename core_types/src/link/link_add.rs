@@ -9,6 +9,7 @@ use crate::{
 // LinkAdd
 //-------------------------------------------------------------------------------------------------
 
+//Todo should rename this from LinkAdd to general Link
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct LinkAdd {
     action_kind: LinkActionKind,
@@ -16,7 +17,14 @@ pub struct LinkAdd {
 }
 
 impl LinkAdd {
-    pub fn new(base: &Address, target: &Address, tag: &str) -> Self {
+    pub fn new_add(base: &Address, target: &Address, tag: &str) -> Self {
+        LinkAdd {
+            action_kind: LinkActionKind::REMOVE,
+            link: Link::new(base, target, tag),
+        }
+    }
+
+    pub fn new_delete(base: &Address, target: &Address, tag: &str) -> Self {
         LinkAdd {
             action_kind: LinkActionKind::ADD,
             link: Link::new(base, target, tag),
@@ -31,7 +39,7 @@ impl LinkAdd {
         &self.link
     }
 
-    pub fn from_link(link: &Link) -> Self {
+    pub fn from_link(link: &Link,action_kind:LinkActionKind) -> Self {
         LinkAdd {
             action_kind: LinkActionKind::ADD,
             link: link.clone(),

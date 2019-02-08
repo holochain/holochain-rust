@@ -156,7 +156,6 @@ pub(crate) fn reduce_remove_link(
     // Get Action's input data
     let action = action_wrapper.action();
     let link = unwrap_to!(action => Action::RemoveLink);
-    println!("link {:?}", link.clone());
     let mut new_store = (*old_store).clone();
     let storage = &old_store.content_storage().clone();
     if !(*storage.read().unwrap()).contains(link.base()).unwrap() {

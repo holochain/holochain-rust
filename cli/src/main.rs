@@ -21,10 +21,10 @@ extern crate toml;
 #[macro_use]
 extern crate serde_json;
 extern crate ignore;
+extern crate rpassword;
 extern crate rustyline;
 extern crate tempfile;
 extern crate uuid;
-extern crate rpassword;
 
 mod cli;
 mod config_files;
@@ -146,9 +146,9 @@ enum Cli {
         skip_build: bool,
     },
     #[structopt(
-    name = "keygen",
-    alias = "k",
-    about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to ~/.holochain/keys",
+        name = "keygen",
+        alias = "k",
+        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to ~/.holochain/keys"
     )]
     KeyGen,
 }
@@ -192,8 +192,7 @@ fn run() -> HolochainResult<()> {
             cli::test(&current_path, &dir, &testfile, skip_build)
         }
         .map_err(HolochainError::Default)?,
-        Cli::KeyGen => cli::keygen()
-            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
+        Cli::KeyGen => cli::keygen().map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
     }
 
     Ok(())

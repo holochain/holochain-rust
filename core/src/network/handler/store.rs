@@ -1,7 +1,10 @@
 use crate::{
     context::Context,
     network::entry_with_header::EntryWithHeader,
-    workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
+    workflows::{
+        hold_entry::hold_entry_workflow, hold_link::hold_link_workflow,
+        remove_link::remove_link_workflow,
+    },
 };
 use holochain_core_types::{
     cas::content::Address,
@@ -47,8 +50,9 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
                     .expect("dht_meta_data should be EntryWithHader"),
             )
             .expect("dht_meta_data should be EntryWithHader");
+            println!("start remove_link workflow");
             thread::spawn(move || {
-                match context.block_on(hold_link_workflow(&entry_with_header, &context.clone())) {
+                match context.block_on(remove_link_workflow(&entry_with_header, &context.clone())) {
                     Err(error) => context.log(format!("err/net/dht: {}", error)),
                     _ => (),
                 }

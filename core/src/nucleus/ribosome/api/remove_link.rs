@@ -31,6 +31,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     let link_remove = LinkAdd::from_link(&link);
     let entry = Entry::LinkRemove(link_remove);
 
+    println!("author entry on remove_link");
+
     // Wait for future to be resolved
     let result: Result<(), HolochainError> = runtime
         .context

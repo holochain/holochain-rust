@@ -146,15 +146,13 @@ impl ContextBuilder {
 mod tests {
     use super::*;
     use tempfile::tempdir;
+    use holochain_net::p2p_config::P2pBackendKind;
 
     #[test]
     fn vanilla() {
         let context = ContextBuilder::new().spawn();
         assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
-        assert!(context
-            .p2p_config
-            .to_string()
-            .contains(r#""backend_kind":"MEMORY""#));
+        assert_eq!(P2pBackendKind::MEMORY, context.p2p_config.backend_kind);
     }
 
     #[test]

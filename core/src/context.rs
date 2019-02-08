@@ -47,11 +47,12 @@ use std::{
 pub fn mock_signer(payload: String) -> String {
     // Create deterministic seed:
     let mut seed = SecBuf::with_insecure(SEEDSIZE);
-    let mut mock_seed : Vec<u8> = Vec::new();
-    for i in 1 .. SEEDSIZE {
+    let mut mock_seed: Vec<u8> = Vec::new();
+    for i in 1..SEEDSIZE {
         mock_seed.push(i as u8);
     }
-    seed.write(0, mock_seed.as_slice()).expect("SecBuf must be writeable");
+    seed.write(0, mock_seed.as_slice())
+        .expect("SecBuf must be writeable");
 
     // Create keypair from seed:
     let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();

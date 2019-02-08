@@ -276,12 +276,11 @@ pub mod tests {
     };
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
-        context::mock_signer,
-        instance::tests::test_context, state::State,
+        context::mock_signer, instance::tests::test_context, state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
-        chain_header::{ChainHeader, test_chain_header},
+        chain_header::{test_chain_header, ChainHeader},
         entry::{expected_entry_address, test_entry, Entry},
         error::HolochainError,
         json::JsonString,
@@ -426,19 +425,21 @@ pub mod tests {
 
         let header = create_new_chain_header(&test_entry(), context.clone(), &None);
         println!("{:?}", header);
-        assert_eq!(header, ChainHeader::new(
-            &test_entry().entry_type(),
-            &test_entry().address(),
-            &[(
-                context.agent_id.address(),
-                Signature::from(
-                    mock_signer(test_entry().address().to_string())
-                )
-            )].to_vec(),
-            &None,
-            &None,
-            &None,
-            &Iso8601::from(""),
-        ));
+        assert_eq!(
+            header,
+            ChainHeader::new(
+                &test_entry().entry_type(),
+                &test_entry().address(),
+                &[(
+                    context.agent_id.address(),
+                    Signature::from(mock_signer(test_entry().address().to_string()))
+                )]
+                .to_vec(),
+                &None,
+                &None,
+                &None,
+                &Iso8601::from(""),
+            )
+        );
     }
 }

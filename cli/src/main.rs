@@ -2,7 +2,9 @@ extern crate holochain_cas_implementations;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_dpki;
 extern crate holochain_net;
+extern crate holochain_sodium;
 extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
@@ -22,6 +24,7 @@ extern crate ignore;
 extern crate rustyline;
 extern crate tempfile;
 extern crate uuid;
+extern crate rpassword;
 
 mod cli;
 mod config_files;
@@ -142,6 +145,12 @@ enum Cli {
         #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
     },
+    #[structopt(
+    name = "keygen",
+    alias = "k",
+    about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to ~/.holochain/keys",
+    )]
+    KeyGen,
 }
 
 fn main() {
@@ -183,6 +192,8 @@ fn run() -> HolochainResult<()> {
             cli::test(&current_path, &dir, &testfile, skip_build)
         }
         .map_err(HolochainError::Default)?,
+        Cli::KeyGen => cli::keygen()
+            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
     }
 
     Ok(())

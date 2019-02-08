@@ -8,3 +8,4 @@ edition = "2018"
 lazy_static = "1.2.0"
 libc = "~0.2.40"
 rust_sodium-sys = "0.10.2"
+holochain_core_types = { path = "../core_types" }

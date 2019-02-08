@@ -34,7 +34,9 @@ define_zome! {
         Ok(())
     }
 
-    functions: {}
+    functions: []
+
+    capabilitites: {}
 }
 ```
 
@@ -47,6 +49,8 @@ define_zome! {
         Err("the error string".to_string())
     }
 
-    functions: {}
+    functions: []
+
+    capabilitites: {}
 }
 ```

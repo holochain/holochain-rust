@@ -1,3 +1,4 @@
+extern crate holochain_core_types;
 extern crate rust_sodium_sys;
 #[macro_use]
 extern crate lazy_static;

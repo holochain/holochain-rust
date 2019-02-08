@@ -12,6 +12,7 @@ pub mod link_entries;
 pub mod query;
 pub mod remove_entry;
 pub mod send;
+pub mod sleep;
 pub mod update_entry;
 
 use crate::nucleus::ribosome::{
@@ -20,7 +21,7 @@ use crate::nucleus::ribosome::{
         entry_address::invoke_entry_address, get_entry::invoke_get_entry,
         get_links::invoke_get_links, init_globals::invoke_init_globals,
         link_entries::invoke_link_entries, query::invoke_query, remove_entry::invoke_remove_entry,
-        send::invoke_send, update_entry::invoke_update_entry,
+        send::invoke_send, sleep::invoke_sleep, update_entry::invoke_update_entry,
     },
     runtime::Runtime,
     Defn,
@@ -88,6 +89,7 @@ pub enum ZomeApiFunction {
     EntryAddress,
 
     Send,
+    Sleep,
 }
 
 impl Defn for ZomeApiFunction {
@@ -107,6 +109,7 @@ impl Defn for ZomeApiFunction {
             ZomeApiFunction::Query => "hc_query",
             ZomeApiFunction::EntryAddress => "hc_entry_address",
             ZomeApiFunction::Send => "hc_send",
+            ZomeApiFunction::Sleep => "hc_sleep",
         }
     }
 
@@ -145,6 +148,7 @@ impl FromStr for ZomeApiFunction {
             "hc_query" => Ok(ZomeApiFunction::Query),
             "hc_entry_address" => Ok(ZomeApiFunction::EntryAddress),
             "hc_send" => Ok(ZomeApiFunction::Send),
+            "hc_sleep" => Ok(ZomeApiFunction::Sleep),
             _ => Err("Cannot convert string to ZomeApiFunction"),
         }
     }
@@ -177,6 +181,7 @@ impl ZomeApiFunction {
             ZomeApiFunction::Query => invoke_query,
             ZomeApiFunction::EntryAddress => invoke_entry_address,
             ZomeApiFunction::Send => invoke_send,
+            ZomeApiFunction::Sleep => invoke_sleep,
         }
     }
 }
@@ -220,8 +225,8 @@ pub mod tests {
                 // define the signature as 1 input, 1 output
                 // (import "env" "<canonical name>"
                 //      (func $zome_api_function
-                //          (param i32)
-                //          (result i32)
+                //          (param i64)
+                //          (result i64)
                 //      )
                 // )
                 //
@@ -238,10 +243,10 @@ pub mod tests {
                 // (func (export "test") ...)
                 //
                 // define the memory allocation for the memory manager that the serialized input
-                // struct can be found across as an i32 to the exported function, also the function
-                // return type is i32
-                // (param $allocation i32)
-                // (result i32)
+                // struct can be found across as an i64 to the exported function, also the function
+                // return type is i64
+                // (param $allocation i64)
+                // (result i64)
                 //
                 // call the imported function and pass the exported function arguments straight
                 // through, let the return also fall straight through
@@ -255,8 +260,8 @@ pub mod tests {
 (module
     (import "env" "{}"
         (func $zome_api_function
-            (param i32)
-            (result i32)
+            (param i64)
+            (result i64)
         )
     )
 
@@ -265,8 +270,8 @@ pub mod tests {
 
     (func
         (export "test")
-            (param $allocation i32)
-            (result i32)
+            (param $allocation i64)
+            (result i64)
 
         (call
             $zome_api_function
@@ -276,57 +281,65 @@ pub mod tests {
 
     (func
         (export "__hdk_validate_app_entry")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 
     (func
         (export "__hdk_validate_link")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 
 
     (func
         (export "__hdk_get_validation_package_for_entry_type")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
         ;; This writes "Entry" into memory
-        (i32.store (i32.const 0) (i32.const 34))
-        (i32.store (i32.const 1) (i32.const 69))
-        (i32.store (i32.const 2) (i32.const 110))
-        (i32.store (i32.const 3) (i32.const 116))
-        (i32.store (i32.const 4) (i32.const 114))
-        (i32.store (i32.const 5) (i32.const 121))
-        (i32.store (i32.const 6) (i32.const 34))
+        (i64.store (i32.const 0) (i64.const 34))
+        (i64.store (i32.const 1) (i64.const 69))
+        (i64.store (i32.const 2) (i64.const 110))
+        (i64.store (i32.const 3) (i64.const 116))
+        (i64.store (i32.const 4) (i64.const 114))
+        (i64.store (i32.const 5) (i64.const 121))
+        (i64.store (i32.const 6) (i64.const 34))
 
-        (i32.const 7)
+        (i64.const 7)
     )
 
     (func
         (export "__hdk_get_validation_package_for_link")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
         ;; This writes "Entry" into memory
-        (i32.store (i32.const 0) (i32.const 34))
-        (i32.store (i32.const 1) (i32.const 69))
-        (i32.store (i32.const 2) (i32.const 110))
-        (i32.store (i32.const 3) (i32.const 116))
-        (i32.store (i32.const 4) (i32.const 114))
-        (i32.store (i32.const 5) (i32.const 121))
-        (i32.store (i32.const 6) (i32.const 34))
+        (i64.store (i32.const 0) (i64.const 34))
+        (i64.store (i32.const 1) (i64.const 69))
+        (i64.store (i32.const 2) (i64.const 110))
+        (i64.store (i32.const 3) (i64.const 116))
+        (i64.store (i32.const 4) (i64.const 114))
+        (i64.store (i32.const 5) (i64.const 121))
+        (i64.store (i32.const 6) (i64.const 34))
 
-        (i32.const 7)
+        (i64.const 7)
     )
 
     (func
         (export "__list_capabilities")
+        (param $allocation i64)
+        (result i64)
+
+        (i64.const 0)
+    )
+
+    (func
+        (export "__list_functions")
         (param $allocation i32)
         (result i32)
 
@@ -424,6 +437,7 @@ pub mod tests {
             ("hc_query", ZomeApiFunction::Query),
             ("hc_entry_address", ZomeApiFunction::EntryAddress),
             ("hc_send", ZomeApiFunction::Send),
+            ("hc_sleep", ZomeApiFunction::Sleep),
         ] {
             assert_eq!(ZomeApiFunction::from_str(input).unwrap(), output);
         }
@@ -453,6 +467,7 @@ pub mod tests {
             (ZomeApiFunction::Query, "hc_query"),
             (ZomeApiFunction::EntryAddress, "hc_entry_address"),
             (ZomeApiFunction::Send, "hc_send"),
+            (ZomeApiFunction::Sleep, "hc_sleep"),
         ] {
             assert_eq!(output, input.as_str());
         }
@@ -473,6 +488,7 @@ pub mod tests {
             ("hc_query", 11),
             ("hc_entry_address", 12),
             ("hc_send", 13),
+            ("hc_sleep", 14),
         ] {
             assert_eq!(output, ZomeApiFunction::str_to_index(input));
         }
@@ -493,6 +509,7 @@ pub mod tests {
             (11, ZomeApiFunction::Query),
             (12, ZomeApiFunction::EntryAddress),
             (13, ZomeApiFunction::Send),
+            (14, ZomeApiFunction::Sleep),
         ] {
             assert_eq!(output, ZomeApiFunction::from_index(input));
         }

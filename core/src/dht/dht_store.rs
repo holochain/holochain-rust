@@ -1,11 +1,17 @@
-use crate::action::ActionWrapper;
+use crate::{action::ActionWrapper, dht::dht_reducers::ENTRY_HEADER_ATTRIBUTE};
 use holochain_core_types::{
-    cas::{content::Address, storage::ContentAddressableStorage},
-    eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    chain_header::ChainHeader,
+    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage, IndexQuery},
+    entry::Entry,
     error::HolochainError,
 };
+
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap},
     sync::{Arc, RwLock},
 };
 
@@ -51,10 +57,58 @@ impl DhtStore {
         &self,
         address: Address,
         tag: String,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
-        self.meta_storage
-            .read()?
-            .fetch_eav(Some(address), Some(format!("link__{}", tag)), None)
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
+        self.meta_storage.read()?.fetch_eavi(
+            Some(address),
+            Some(format!("link__{}", tag)),
+            None,
+            IndexQuery::default(),
+        )
+    }
+
+    /// Get all headers for an entry by first looking in the DHT meta store
+    /// for header addresses, then resolving them with the DHT CAS
+    pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
+        self.meta_storage()
+            .read()
+            .unwrap()
+            // fetch all EAV references to chain headers for this entry
+            .fetch_eavi(
+                Some(entry_address),
+                Some(ENTRY_HEADER_ATTRIBUTE.to_string()),
+                None,
+                Default::default(),
+            )?
+            .into_iter()
+            // get the header addresses
+            .map(|eavi| eavi.value())
+            // fetch the header content from CAS
+            .map(|a| self.content_storage().read().unwrap().fetch(&a))
+            // rearrange
+            .collect::<Result<Vec<Option<_>>, _>>()
+            .map(|r| {
+                r.into_iter()
+                    // ignore None values
+                    .flatten()
+                    .map(|content| ChainHeader::try_from_content(&content))
+                    .collect::<Result<Vec<_>, _>>()
+            })?
+    }
+
+    /// Add an entry and header to the CAS and EAV, respectively
+    pub fn add_header_for_entry(
+        &self,
+        entry: &Entry,
+        header: &ChainHeader,
+    ) -> Result<(), HolochainError> {
+        let eavi = EntityAttributeValueIndex::new(
+            &entry.address(),
+            &ENTRY_HEADER_ATTRIBUTE.to_string(),
+            &header.address(),
+        )?;
+        self.content_storage().write().unwrap().add(header)?;
+        self.meta_storage().write().unwrap().add_eavi(&eavi)?;
+        Ok(())
     }
 
     // Getters (for reducers)
@@ -72,5 +126,31 @@ impl DhtStore {
         &mut self,
     ) -> &mut HashMap<ActionWrapper, Result<Address, HolochainError>> {
         &mut self.actions
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    use holochain_core_types::{
+        cas::storage::ExampleContentAddressableStorage, chain_header::test_chain_header_with_sig,
+        eav::ExampleEntityAttributeValueStorage, entry::test_entry,
+    };
+
+    #[test]
+    fn get_headers_roundtrip() {
+        let store = DhtStore::new(
+            Arc::new(RwLock::new(
+                ExampleContentAddressableStorage::new().unwrap(),
+            )),
+            Arc::new(RwLock::new(ExampleEntityAttributeValueStorage::new())),
+        );
+        let entry = test_entry();
+        let header1 = test_chain_header_with_sig("sig1");
+        let header2 = test_chain_header_with_sig("sig2");
+        store.add_header_for_entry(&entry, &header1).unwrap();
+        store.add_header_for_entry(&entry, &header2).unwrap();
+        let headers = store.get_headers(entry.address()).unwrap();
+        assert_eq!(headers, vec![header1, header2]);
     }
 }

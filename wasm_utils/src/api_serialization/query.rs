@@ -1,5 +1,9 @@
 use holochain_core_types::{
-    cas::content::Address, entry::entry_type::EntryType, error::HolochainError, json::*,
+    cas::content::Address,
+    chain_header::ChainHeader,
+    entry::{entry_type::EntryType, Entry},
+    error::HolochainError,
+    json::*,
 };
 
 // QueryArgsNames -- support querying single/multiple EntryType names
@@ -16,7 +20,7 @@ impl Default for QueryArgsNames {
     }
 }
 
-// Handle automatic convertions from various types into the appropriate QueryArgsNames enum type
+// Handle automatic conversions from various types into the appropriate QueryArgsNames enum type
 impl From<EntryType> for QueryArgsNames {
     fn from(e: EntryType) -> QueryArgsNames {
         QueryArgsNames::QueryName(e.to_string())
@@ -47,12 +51,27 @@ impl<'a> From<Vec<&'a str>> for QueryArgsNames {
     }
 }
 
-// Query{Args,Result} -- the query API parameters and return type
+// All version of the hdk::query...() API vector to these Args
 #[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
 pub struct QueryArgs {
     pub entry_type_names: QueryArgsNames,
-    pub start: u32,
-    pub limit: u32,
+    pub options: QueryArgsOptions,
 }
 
-pub type QueryResult = Vec<Address>;
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson)]
+pub struct QueryArgsOptions {
+    pub start: usize,
+    pub limit: usize,
+    // pub ordering: bool,  // forward or reverse (requires doubly-linked chain perhaps)
+    // pub filter_by: ???,
+    pub headers: bool,
+    pub entries: bool,
+}
+
+#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq)]
+pub enum QueryResult {
+    Addresses(Vec<Address>),
+    Headers(Vec<ChainHeader>),
+    Entries(Vec<(Address, Entry)>),
+    HeadersWithEntries(Vec<(ChainHeader, Entry)>),
+}

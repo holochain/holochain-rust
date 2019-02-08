@@ -13,7 +13,7 @@
 
 This is the home of the Holochain Rust libraries, being rewritten from [Go](https://github.com/holochain/holochain-proto) into Rust, and extended.
 
-**Code Status:** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 released October 2017.  Alpha 1 was released May 2018.  
+**Code Status:** Rust version is currently Pre-Alpha. Not for production use. The code has not yet undergone a security audit. We expect to destructively restructure code APIs and data chains until Beta. Prototype go version was unveiled at our first hackathon (March 2017), with go version Alpha 0 released October 2017.  Alpha 1 was released May 2018.
 
 There are [3 developer preview releases](https://github.com/holochain/holochain-rust/releases) of the Rust version. 0.0.3 is the first with a working networking implementation.
 <br/>
@@ -27,9 +27,9 @@ This `holochain-rust` repository implements a number of distinct yet overlapping
 
 1. A library for the core Holochain functionality for defining and running DNA instances: [*core*](#core)
 1. A library and syntax for use in Rust based development of Zomes within DNAs, called Holochain Development Kit: [*hdk-rust*](#hdk-rust)
-1. A library for managing instances and connecting them to interfaces: [*container-api*](#container-api)
-1. A Rust based container that uses the container_api: [*container*](#rust-container)
-1. A nodejs based container for running tests: [*nodejs-container*](#nodejs-container)
+1. A library for managing instances and connecting them to interfaces: [*conductor-api*](#conductor-api)
+1. A Rust based Conductor that uses the conductor_api: [*conductor*](#rust-conductor)
+1. A nodejs based Conductor for running tests: [*nodejs-conductor*](#nodejs-conductor)
 1. A command line developer tool: [*hc*](#hc-command-line-developer-tool)
 1. A sample application that we use to demonstrate the current functionality and drive development: [*app-spec*](#app-spec-driven-development)
 
@@ -50,23 +50,23 @@ An HDK for [Assemblyscript](https://github.com/Assemblyscript/assemblyscript) is
 
 We expect many more languages to be added by the community, and there is even an article on how to [write a kit for a new language](https://developer.holochain.org/guide/latest/writing_development_kit.html).
 
-### Container API
-*Core* only implements the logic for the execution of a single application. Because the Holochain app ecosystem relies on DNA composibility, we need to be able to load and instantiate multiple DNAs.  We call an executable that can do this an *container*.  The first such containers we implemented were the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) container which we used for running javascript based tests.
+### Conductor API
+*Core* only implements the logic for the execution of a single application. Because the Holochain app ecosystem relies on DNA composibility, we need to be able to load and instantiate multiple DNAs.  We call an executable that can do this a *Conductor*.  The first such Conductors we implemented were the GUI driven [holosqape](https://github.com/holochain/holosqape) and the CLI driven [hcshell](https://github.com/holochain/holosqape#hcshell) Conductor which we used for running javascript based tests.
 
-These gave us the experience from which we abstracted the [container_api](container_api) crate which specifies and implements a standard way for building containers, including specifying the various interfaces that might be available for executing calls on a particular DNA, i.e. websockets, HTTP, Unix domain sockets, carrier pigeon network, etc...
+These gave us the experience from which we abstracted the [conductor_api](conductor_api) crate which specifies and implements a standard way for building conductors, including specifying the various interfaces that might be available for executing calls on a particular DNA, i.e. websockets, HTTP, Unix domain sockets, carrier pigeon network, etc...
 
-If you need to implement your own container, [container_api](container_api) should provide you with the needed types and functions to do so easily.
+If you need to implement your own conductor, [conductor_api](conductor_api) should provide you with the needed types and functions to do so easily.
 
-To implement a container in a C based language, the [core_api_c_binding](./core_api_c_binding) [NEEDS UPDATING] code could be used, such as HoloSqape does.
+To implement a conductor in a C based language, the [core_api_c_binding](./core_api_c_binding) [NEEDS UPDATING] code could be used, such as HoloSqape does.
 
-### Rust Container
-The [container crate](container) uses the [container_api](container_api) to implement an executable which is intended to become the main, highly configurable and GUI less container implementation that can be run as a background system service.
+### Rust Conductor
+The [conductor crate](conductor) uses the [conductor_api](conductor_api) to implement an executable which is intended to become the main, highly configurable and GUI less conductor implementation that can be run as a background system service.
 
-### Nodejs Container
-The [nodejs_container](nodejs_container) directory implements a node package that creates a container that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
+### Nodejs Conductor
+The [nodejs_conductor](nodejs_conductor) directory implements a node package that creates a conductor that wraps the Holochain core Rust implementation so we can access it from node.  This is crucial especially for creating a test-driven development environment for developing Holochain DNA.  The `hc` command-line tool relies on it to run tests.
 
 ### HC Command-line developer tool.
-The [cmd crate](cmd) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a containter.  For more details see the [crate README](cmd/README.md).
+The [cli crate](cli) implements our command line developer tool which allows you to create DNA scaffold, run tests, and finally package your DNA for running in a Conductor.  For more details see the [crate README](cli/README.md).
 
 ## App Spec Driven Development
 We use a practice for coordinating additions and features that starts with adding a feature to a sample application so that we know we have a working example all the times.  You can read about [the details here](/CONTRIBUTING.md#app-spec-driven-development)
@@ -80,7 +80,7 @@ There is a work-in-progress book of documentation being written about `holochain
 
 **The following instructions are for developing Holochain Core or the HDK itself**
 
-There are two components needed currently to run Holochain applications, the core (what's in this repo) and also [the networking engine](https://github.com/holochain/n3h).  You can install and work on core using the built-in mock network following the instructions below, but if you want to actually test out your apps using the real networking, you will have to install [the networking component](https://github.com/holochain/n3h) following the instructions in the readme there.  (Note: please see the instructions in the [`hc` command-line tool readme](./cmd/README.md#using-real-networking) or the [container readme](./container/README.md#using-real-networking) for how to configure the tools to use and activate the networking component.
+There are two components needed currently to run Holochain applications, the core (what's in this repo) and also [the networking engine](https://github.com/holochain/n3h).  You can install and work on core using the built-in mock network following the instructions below, but if you want to actually test out your apps using the real networking, you will have to install [the networking component](https://github.com/holochain/n3h) following the instructions in the readme there.  (Note: please see the instructions in the [`hc` command-line tool readme](./cli/README.md#using-real-networking) or the [contuctor readme](./conductor/README.md#using-real-networking) for how to configure the tools to use and activate the networking component.
 
 There are three approaches to building and testing Holochain: using `make`, `docker` or `nix`:
 
@@ -103,6 +103,8 @@ Running the `make` command will:
 2. build all the rust libraries from the source code in this repository.
 3. build and install the command-line tools.
 
+**Note**: it's very important to use the rust version specified in the Makefile! Since we are using nightly rust builds, the language is changing rapidly and sometimes introduces breaking changes that we haven't adapted to yet. Don't just use the latest nightly.
+
 ### Docker
 
 We also use [docker](https://www.docker.com/).  The `docker` folder contains scripts to build and run docker images.
@@ -119,7 +121,7 @@ It is very important to be using the correct nightly version.
 
 Currently this is:
 
-`nightly-2018-12-26-x86_64-pc-windows-msvc`
+`nightly-2019-01-24-x86_64-pc-windows-msvc`
 
 The nightly version we test/develop against can always be found in the .travis.yml file.
 
@@ -155,10 +157,10 @@ nix-shell --run hc-test
 Note that there are also make commands for running the tests of just core, or the command-line line tools or app_spec separately:
 
 ``` shell
-make test_cmd
+make test_cli
 make test_holochain
 make test_app_spec
-make build_nodejs_container
+make build_nodejs_conductor
 ```
 
 ### Building for Android

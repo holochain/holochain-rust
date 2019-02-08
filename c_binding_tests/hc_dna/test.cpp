@@ -73,34 +73,21 @@ void TestHcDna::canGetCapabilityNames() {
     Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
                                               "\"zomes\":{"
                                               "\"zome1\":{\"description\":\"lorem\",\"config\":{},\"capabilities\":{"
-                                              "\"test_cap\":{"
-                                              "    \"type\": \"public\","
-                                              "    \"functions\": ["
-                                              "    {"
-                                              "        \"name\": \"main\","
-                                              "        \"inputs\": [],"
-                                              "        \"outputs\": []"
+                                              "    \"test_cap\":{"
+                                              "        \"type\": \"public\","
+                                              "        \"functions\": [\"main\"]"
+                                              "    },"
+                                              "    \"test_cap2\": {"
+                                              "        \"type\": \"public\","
+                                              "        \"functions\": [\"main\"]"
                                               "    }"
-                                              "    ],"
+                                              "    }," //capabilities
                                               "    \"code\": {"
                                               "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
                                               "    }"
-                                              "},"
-                                              "\"test_cap2\": {"
-                                              "    \"type\": \"public\","
-                                              "    \"functions\": ["
-                                              "    {"
-                                              "        \"name\": \"main\","
-                                              "        \"inputs\": [],"
-                                              "        \"outputs\": []"
-                                              "    }"
-                                              "    ],"
-                                              "    \"code\": {"
-                                              "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
-                                              "    }"
-                                              "}"
-                                              "}}"
-                                              "}}");
+                                              "    }" //zome1
+                                              "   }" //zomes
+                                              "}"); //root
     QVERIFY(dna != 0);
 
     CStringVec names;
@@ -124,11 +111,15 @@ void TestHcDna::canGetFunctionNames() {
     Dna *dna = holochain_dna_create_from_json("{\"name\":\"test\","
                                               "\"zomes\":{"
                                               "\"zome1\": {\"description\":\"lorem\",\"config\":{},\"capabilities\":{"
-                                              "\"test_cap\": {"
-                                              "    \"type\": \"public\","
-                                              "    \"functions\": ["
+                                              "    \"test_cap\": {"
+                                              "        \"type\": \"public\","
+                                              "        \"functions\": [\"public_test_fn\"]"
+                                              "        }"
+                                              "    }," //capabilities
+                                              "    \"fn_declarations\":"
+                                              "    ["
                                               "    {"
-                                              "        \"name\": \"main\","
+                                              "        \"name\": \"public_test_fn\","
                                               "        \"inputs\": ["
                                               "                {"
                                               "                    \"name\": \"param1\","
@@ -142,23 +133,23 @@ void TestHcDna::canGetFunctionNames() {
                                               "        \"inputs\": [],"
                                               "        \"outputs\": []"
                                               "    }"
-                                              "    ],"
+                                              "    ]," //fn_declarations
                                               "    \"code\": {"
                                               "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
                                               "    }"
-                                              "}"
-                                              "}}"
-                                              "}}");
+                                              "   }" //zomes1
+                                              "   }" //zomes
+                                              "}"); //root
     QVERIFY(dna != 0);
 
     CStringVec names;
-    holochain_dna_get_function_names(dna, "zome1", "test_cap", &names);
+    holochain_dna_get_function_names(dna, "zome1", &names);
     QCOMPARE(names.len, (size_t) 2);
 
     QString name1 = QString("%1").arg(names.ptr[0]);
     QString name2 = QString("%1").arg(names.ptr[1]);
 
-    QCOMPARE(name1, QString("main"));
+    QCOMPARE(name1, QString("public_test_fn"));
     QCOMPARE(name2, QString("test"));
 
     holochain_dna_free_zome_names(&names);
@@ -174,9 +165,12 @@ void TestHcDna::canGetFunctionParameters() {
                                               "    \"capabilities\":{"
                                               "      \"test_cap\": {"
                                               "        \"type\": \"public\","
-                                              "        \"functions\": ["
+                                              "        \"functions\": [\"public_test_fn\"]"
+                                              "      }"
+                                              "    }," //capbilities
+                                              "    \"fn_declarations\":["
                                               "          {"
-                                              "            \"name\": \"main\","
+                                              "            \"name\": \"public_test_fn\","
                                               "            \"inputs\": ["
                                               "                {"
                                               "                    \"name\": \"param1\","
@@ -190,12 +184,10 @@ void TestHcDna::canGetFunctionParameters() {
                                               "            \"inputs\": [],"
                                               "            \"outputs\": []"
                                               "          }"
-                                              "        ],"
-                                              "        \"code\": {"
-                                              "          \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
-                                              "        }"
-                                              "      }"  //test cap
-                                              "    }"  //capabilities
+                                              "    ]," // fn_declarations
+                                              "    \"code\": {"
+                                              "        \"code\": \"AGFzbQEAAAABBQFgAAF/AwIBAAUDAQARBxECBG1haW4AAAZtZW1vcnkCAAoHAQUAQbkKCw==\""
+                                              "    }"
                                               "  }"  //zome1
                                               "}"  //zomes
                                               "}"  //root
@@ -203,7 +195,7 @@ void TestHcDna::canGetFunctionParameters() {
     QVERIFY(dna != 0);
 
     CStringVec names;
-    holochain_dna_get_function_parameters(dna, "zome1", "test_cap", "main", &names);
+    holochain_dna_get_function_parameters(dna, "zome1", "public_test_fn", &names);
     QCOMPARE(names.len, (size_t) 1);
 
     QString name1 = QString("%1").arg(names.ptr[0]);
@@ -211,7 +203,7 @@ void TestHcDna::canGetFunctionParameters() {
 
     holochain_dna_free_zome_names(&names);
 
-    holochain_dna_get_function_parameters(dna, "zome1", "test_cap", "test", &names);
+    holochain_dna_get_function_parameters(dna, "zome1","test", &names);
     QCOMPARE(names.len, (size_t) 0);
 
     holochain_dna_free_zome_names(&names);

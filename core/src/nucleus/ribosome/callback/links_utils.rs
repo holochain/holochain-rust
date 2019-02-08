@@ -1,5 +1,4 @@
 use crate::{context::Context, workflows::get_entry_result::get_entry_result_workflow};
-use futures::executor::block_on;
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
@@ -17,9 +16,10 @@ pub fn get_link_entries(
     let target_address = link.target();
     let entry_args = &GetEntryArgs {
         address: base_address.clone(),
-        options: GetEntryOptions::default(),
+        options: Default::default(),
     };
-    let base_entry_get_result = block_on(get_entry_result_workflow(&context, entry_args))?;
+    let base_entry_get_result =
+        context.block_on(get_entry_result_workflow(&context, entry_args))?;
     if !base_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Base for link not found",
@@ -28,9 +28,10 @@ pub fn get_link_entries(
     let base_entry = base_entry_get_result.latest().unwrap();
     let entry_args = &GetEntryArgs {
         address: target_address.clone(),
-        options: GetEntryOptions::default(),
+        options: Default::default(),
     };
-    let target_entry_get_result = block_on(get_entry_result_workflow(&context, entry_args))?;
+    let target_entry_get_result =
+        context.block_on(get_entry_result_workflow(&context, entry_args))?;
     if !target_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Target for link not found",

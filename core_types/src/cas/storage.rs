@@ -5,14 +5,14 @@
 
 use crate::{
     cas::content::{Address, AddressableContent, Content},
-    eav::{EntityAttributeValue, EntityAttributeValueStorage},
+    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage, IndexQuery},
     entry::{test_entry_unique, Entry},
     error::HolochainError,
     json::RawString,
 };
 use objekt;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap},
     convert::TryFrom,
     fmt::Debug,
     sync::{mpsc::channel, Arc, RwLock},
@@ -247,7 +247,7 @@ impl EavTestSuite {
         attribute: String,
         value_content: impl AddressableContent,
     ) {
-        let eav = EntityAttributeValue::new(
+        let eav = EntityAttributeValueIndex::new(
             &entity_content.address(),
             &"favourite-color".to_string(),
             &value_content.address(),
@@ -256,24 +256,24 @@ impl EavTestSuite {
 
         let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
 
-        for eav_storage in two_stores.iter() {
+        for store in two_stores.iter() {
             assert_eq!(
-                HashSet::new(),
-                eav_storage
-                    .fetch_eav(
+                BTreeSet::new(),
+                store
+                    .fetch_eavi(
                         Some(entity_content.address()),
                         Some(attribute.clone()),
-                        Some(value_content.address())
+                        Some(value_content.address()),
+                        IndexQuery::default()
                     )
                     .expect("could not fetch eav"),
             );
         }
 
-        eav_storage.add_eav(&eav).expect("could not add eav");
-
-        let mut expected = HashSet::new();
+        eav_storage.add_eavi(&eav).expect("could not add eav");
+        let two_stores = vec![eav_storage.clone(), eav_storage.clone()];
+        let mut expected = BTreeSet::new();
         expected.insert(eav.clone());
-
         for eav_storage in two_stores.iter() {
             // some examples of constraints that should all return the eav
             for (e, a, v) in vec![
@@ -302,7 +302,9 @@ impl EavTestSuite {
             ] {
                 assert_eq!(
                     expected,
-                    eav_storage.fetch_eav(e, a, v).expect("could not fetch eav"),
+                    eav_storage
+                        .fetch_eavi(e, a, v, IndexQuery::default())
+                        .expect("could not fetch eav")
                 );
             }
         }
@@ -327,48 +329,164 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "one_to_many".to_string();
 
-        let mut expected = HashSet::new();
+        let mut expected = BTreeSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let eav = EntityAttributeValue::new(&one.address(), &attribute, &many.address())
+            let eav = EntityAttributeValueIndex::new(&one.address(), &attribute, &many.address())
                 .expect("could not create EAV");
-            eav_storage.add_eav(&eav).expect("could not add eav");
-            expected.insert(eav);
+            eav_storage
+                .add_eavi(&eav)
+                .expect("could not add eav")
+                .expect("could not add eav");
         }
 
         // throw an extra thing referencing many to show fetch ignores it
         let two = A::try_from_content(&foo_content)
             .expect("could not create AddressableContent from Content");
-        for many in vec![many_one.clone(), many_three.clone()] {
-            eav_storage
-                .add_eav(
-                    &EntityAttributeValue::new(&two.address(), &attribute, &many.address())
+        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
+            let eavi = eav_storage
+                .add_eavi(
+                    &EntityAttributeValueIndex::new(&two.address(), &attribute, &many.address())
                         .expect("Could not create eav"),
                 )
+                .expect("could not add eav")
                 .expect("could not add eav");
+            expected.insert(eavi);
         }
+
+        println!("expected {:?}", expected.clone());
 
         // show the many results for one
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eav(Some(one.address()), Some(attribute.clone()), None)
-                .expect("could not fetch eav"),
+                .fetch_eavi(
+                    Some(one.address()),
+                    Some(attribute.clone()),
+                    None,
+                    IndexQuery::default()
+                )
+                .expect("could not fetch eav")
         );
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = HashSet::new();
-            expected_one.insert(
-                EntityAttributeValue::new(&one.address(), &attribute.clone(), &many.address())
-                    .expect("Could not create eav"),
-            );
-            assert_eq!(
-                expected_one,
-                eav_storage
-                    .fetch_eav(None, Some(attribute.clone()), Some(many.address()))
-                    .expect("could not fetch eav"),
-            );
+            let mut expected_one = BTreeSet::new();
+            let eav =
+                EntityAttributeValueIndex::new(&one.address(), &attribute.clone(), &many.address())
+                    .expect("Could not create eav");
+            expected_one.insert(eav);
+            let fetch_set = eav_storage
+                .fetch_eavi(
+                    None,
+                    Some(attribute.clone()),
+                    Some(many.address()),
+                    IndexQuery::default(),
+                )
+                .expect("could not fetch eav");
+            assert_eq!(fetch_set.clone().len(), expected_one.clone().len());
+            fetch_set.iter().zip(&expected_one).for_each(|(a, b)| {
+                assert_eq!(a.entity(), b.entity());
+                assert_eq!(a.attribute(), b.attribute());
+                assert_eq!(a.value(), a.value());
+            });
         }
+    }
+
+    pub fn test_range<A, S>(mut eav_storage: S)
+    where
+        A: AddressableContent + Clone,
+        S: EntityAttributeValueStorage,
+    {
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+
+        let one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        // it can reference itself, why not?
+        let many_one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        let many_two = A::try_from_content(&bar_content)
+            .expect("could not create AddressableContent from Content");
+        let attribute = "one_to_many".to_string();
+        let mut expected_many_one = BTreeSet::new();
+        let mut expected_many_two = BTreeSet::new();
+        let mut expected_all_range = BTreeSet::new();
+        let addresses = vec![many_one.address(), many_two.address()];
+
+        //iterate 5 times
+        (0..5).into_iter().for_each(|s| {
+            let alter_index = s % 2;
+            let eav =
+                EntityAttributeValueIndex::new(&addresses[alter_index], &attribute, &one.address())
+                    .expect("could not create EAV");
+            let eavi = eav_storage
+                .add_eavi(&eav)
+                .expect("could not add eav")
+                .expect("Could not get eavi option");
+            if s.clone() % 2 == 0 {
+                //insert many ones
+                expected_many_one.insert(eavi.clone());
+            } else {
+                //insert many twos
+                expected_many_two.insert(eavi.clone());
+            }
+            //insert every range
+            if s.clone() > 1 {
+                expected_all_range.insert(eavi.clone());
+            } else {
+            };
+        });
+
+        // get only many one values per specified range
+        let index_query_many_one = IndexQuery::new(
+            expected_many_one.iter().next().unwrap().index(),
+            expected_many_one.iter().last().unwrap().index(),
+        );
+        assert_eq!(
+            expected_many_one,
+            eav_storage
+                .fetch_eavi(
+                    Some(many_one.address()),
+                    Some(attribute.clone()),
+                    Some(one.address()),
+                    index_query_many_one
+                )
+                .unwrap()
+        );
+
+        // get only many two values per specified range
+        let index_query_many_two = IndexQuery::new(
+            expected_many_two.iter().next().unwrap().index(),
+            expected_many_two.iter().last().unwrap().index(),
+        );
+        assert_eq!(
+            expected_many_two,
+            eav_storage
+                .fetch_eavi(
+                    Some(many_two.address()),
+                    Some(attribute.clone()),
+                    Some(one.address()),
+                    index_query_many_two
+                )
+                .unwrap()
+        );
+
+        // get all values per specified range
+        let index_query_all = IndexQuery::new(
+            expected_all_range.iter().next().unwrap().index(),
+            expected_all_range.iter().last().unwrap().index(),
+        );
+        assert_eq!(
+            expected_all_range,
+            eav_storage
+                .fetch_eavi(
+                    None,
+                    Some(attribute.clone()),
+                    Some(one.address()),
+                    index_query_all
+                )
+                .unwrap()
+        );
     }
 
     pub fn test_many_to_one<A, S>(mut eav_storage: S)
@@ -392,47 +510,66 @@ impl EavTestSuite {
             .expect("could not create AddressableContent from Content");
         let attribute = "many_to_one".to_string();
 
-        let mut expected = HashSet::new();
+        let mut expected = BTreeSet::new();
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let eav = EntityAttributeValue::new(&many.address(), &attribute, &one.address())
+            let eav = EntityAttributeValueIndex::new(&many.address(), &attribute, &one.address())
                 .expect("could not create EAV");
-            eav_storage.add_eav(&eav).expect("could not add eav");
-            expected.insert(eav);
+            eav_storage
+                .add_eavi(&eav)
+                .expect("could not add eav")
+                .expect("Could not get eavi option");
         }
 
         // throw an extra thing referenced by many to show fetch ignores it
         let two = A::try_from_content(&foo_content)
             .expect("could not create AddressableContent from Content");
-        for many in vec![many_one.clone(), many_three.clone()] {
-            eav_storage
-                .add_eav(
-                    &EntityAttributeValue::new(&many.address(), &attribute, &two.address())
+        for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
+            let eavi = eav_storage
+                .add_eavi(
+                    &EntityAttributeValueIndex::new(&many.address(), &attribute, &two.address())
                         .expect("Could not create eav"),
                 )
+                .expect("could not add eav")
                 .expect("could not add eav");
+            expected.insert(eavi);
         }
+
+        println!("expected {:?}", expected.clone());
 
         // show the many referencing one
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eav(None, Some(attribute.clone()), Some(one.address()))
+                .fetch_eavi(
+                    None,
+                    Some(attribute.clone()),
+                    Some(one.address()),
+                    IndexQuery::default()
+                )
                 .expect("could not fetch eav"),
         );
 
         // show one for the many results
         for many in vec![many_one.clone(), many_two.clone(), many_three.clone()] {
-            let mut expected_one = HashSet::new();
-            expected_one.insert(
-                EntityAttributeValue::new(&many.address(), &attribute.clone(), &one.address())
-                    .expect("Could not create eav"),
-            );
-            assert_eq!(
-                expected_one,
-                eav_storage
-                    .fetch_eav(Some(many.address()), Some(attribute.clone()), None)
-                    .expect("could not fetch eav"),
-            );
+            let mut expected_one = BTreeSet::new();
+            let eav =
+                EntityAttributeValueIndex::new(&many.address(), &attribute.clone(), &one.address())
+                    .expect("Could not create eav");
+            expected_one.insert(eav);
+            let fetch_set = eav_storage
+                .fetch_eavi(
+                    Some(many.address()),
+                    Some(attribute.clone()),
+                    None,
+                    IndexQuery::default(),
+                )
+                .expect("could not fetch eav");
+            assert_eq!(fetch_set.clone().len(), expected_one.clone().len());
+            fetch_set.iter().zip(&expected_one).for_each(|(a, b)| {
+                assert_eq!(a.entity(), b.entity());
+                assert_eq!(a.attribute(), b.attribute());
+                assert_eq!(a.value(), a.value());
+            });
         }
     }
 }

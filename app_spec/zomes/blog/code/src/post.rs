@@ -53,7 +53,7 @@ pub fn definition() -> ValidatingEntryType {
             hdk::ValidationPackageDefinition::ChainFull
         },
 
-        validation: |post: crate::post::Post, _ctx: hdk::ValidationData| {
+        validation: |post: crate::post::Post, _validation_data: hdk::ValidationData| {
             (post.content.len() < 280)
                 .ok_or_else(|| String::from("Content too long"))
         },
@@ -65,7 +65,7 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
+                validation: |_source: Address, _target: Address, _validation_data: hdk::ValidationData | {
                     Ok(())
                 }
             ),
@@ -75,7 +75,7 @@ pub fn definition() -> ValidatingEntryType {
                 validation_package: || {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
-                validation: |_source: Address, _target: Address, _ctx: hdk::ValidationData | {
+                validation: |_source: Address, _target: Address, _validation_data: hdk::ValidationData | {
                     Ok(())
                 }
             )
@@ -121,6 +121,10 @@ mod tests {
             linked_from: vec![LinkedFrom {
                 base_type: "%agent_id".to_string(),
                 tag: "authored_posts".to_string(),
+            },
+            LinkedFrom {
+                base_type: "%agent_id".to_string(),
+                tag: "recommended_posts".to_string(),
             }],
             ..Default::default()
         };

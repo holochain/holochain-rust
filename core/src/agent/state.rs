@@ -271,7 +271,8 @@ pub fn reduce(
 pub mod tests {
     extern crate tempfile;
     use super::{
-        create_new_chain_header, reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot
+        create_new_chain_header, reduce_commit_entry, ActionResponse, AgentState,
+        AgentStateSnapshot,
     };
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,

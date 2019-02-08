@@ -1,4 +1,3 @@
-use base64;
 use crate::{
     action::ActionWrapper,
     instance::Observer,
@@ -7,6 +6,7 @@ use crate::{
     signal::{Signal, SignalSender},
     state::State,
 };
+use base64;
 use futures::{
     task::{noop_local_waker_ref, Poll},
     Future,
@@ -280,9 +280,11 @@ impl Context {
         let response = JsonRpc::parse(&response)?;
 
         match response {
-            JsonRpc::Success(_) => {
-                Ok(String::from(response.get_result().unwrap()["signature"].as_str().unwrap()))
-            }
+            JsonRpc::Success(_) => Ok(String::from(
+                response.get_result().unwrap()["signature"]
+                    .as_str()
+                    .unwrap(),
+            )),
             JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
                 serde_json::to_string(&response.get_error().unwrap()).unwrap(),
             )),

@@ -1,5 +1,6 @@
 #![feature(try_from)]
 #![feature(await_macro)]
+#![warn(unused_extern_crates)]
 #[macro_use]
 extern crate neon;
 extern crate neon_serde;

@@ -83,9 +83,7 @@ hc_end_bundle_mode(FINISH_BUNDLE); // or CANCEL_BUNDLE
       "description": "zome that implements micro-blogging",
       // Ribosome or HDK level config that might need to be set
       // to indicate how to handle this Zome. Not used yet, but anticipating.
-      "config": {
-        "error_handling": "throw-errors"
-      },
+      "config": {},
       // Zome code
       "code": "..", // an s-expression encoded wasm or an Base64 encoded wasm bytecode
       // Zome entry types
@@ -93,7 +91,6 @@ hc_end_bundle_mode(FINISH_BUNDLE); // or CANCEL_BUNDLE
         {
           "entry_type_name": "post",
           "description": "A blog post entry which has an author.",
-          "data_format": "string",
           "sharing": "public",  // or private, encrypted
           "links_to": [
             {
@@ -105,7 +102,6 @@ hc_end_bundle_mode(FINISH_BUNDLE); // or CANCEL_BUNDLE
         {
           "entry_type_name": "handle",
           "description": "An agent's handle on the network. The DNA indexes all the handles.",
-          "data_format": "string",
           "sharing": "public",
           "links_to": [
             {

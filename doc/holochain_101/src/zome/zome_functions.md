@@ -90,22 +90,15 @@ Here is an example of what a trait definition using the public reserved trait na
 }
 ```
 
-## Introducing "Conductors"
+## How Zome Functions Are Called
 
-To fully understand the functions developers will build within Zomes, it is useful to zoom out for a moment, to the level of how Holochain actually runs on devices. Holochain was designed to be highly platform and system compatible.  The core logic that runs a DNA instance was written in such a way that it could be included into many different codebases as a library, thus making it easier to build different implementations on the same platform as well as across platforms (MacOSX, Linux, Windows, Android, iOS, and more). Architecturally Holochain DNAs are intended to be small composible units that provide bits of distributed data integrity functionality.  Thus most Holochain based applications will actually be assemblages of many "bridged" DNA instances.  Furthermore there is always the need to connect data, i.e. zome fuction call request and responses, from some transport (i.e. HTTP, Websockets, Unix domain sockets, etc) to and from the zomes.  We call the layer that performs these two crucial functions, the *Conductor*, and we have written a `conductor_api` library to make it easy to build actual Conductor implementations.
-
-Using this library Conductors can install and uninstall, start and stop instances of DNA on devices, start and stop http and websocket interfaces for making zome calls, as well as serve UI's over HTTP.
-
-Imagine that there are many DNA instances running within one Conductor, and each DNA can have multiple Zomes. Clearly, function calls will need to include a complete enough set of arguments to know the following:
-- which instance?
+Function calls are received by Holochain from client requests (which there are a variety of implementations of, discussed later).  When function calls are being made, they will need to include a complete enough set of arguments to know the following:
 - which Zome?
 - which Capability token?
 - which function?
-- what arguments?
+- what values should the function be called with?
 
-Conductors can implement whatever interfaces to perform these function calls they wish to, opening a wealth of opportunity. Holochain provides two reference Conductors, one for [Nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs), and the other a [Rust built binary executable](https://github.com/holochain/holochain-rust/tree/develop/conductor). With the Rust built binary Conductor, interfaces for making function calls already includes HTTP and WebSockets. More details about Conductors can be found in [another chapter](../conductors.md), it is simply important context for proceeding.
-
-When a call to a Zome function is being made from the Conductor, it first passes the arguments to Holochain. Before making the function call, Holochain will check the validity of the request, and fail if necessary. If the request is deemed valid, Holochain will mount the WASM code for a Zome using its' WASM interpreter, and then make a function call into it, giving it the arguments given to it in the request. When it receives the response from the WASM, it will then pass that return value as the response to the request. This may sound complex, but that's just what's going on internally, actually using it with an HDK and a Conductor is easy.
+Before making the function call, Holochain will check the validity of the request, and fail if necessary. If the request is deemed valid, Holochain will mount the WASM code for a Zome using its' WASM interpreter, and then make a function call into it, giving it the arguments given to it in the request. When it receives the response from the WASM, it will then pass that return value as the response to the request. This may sound complex, but that's just what's going on internally, actually using it with an HDK and a [Conductor](../conductors.md) (which is discussed later) is easy.
 
 
 ## Building in Rust: Zome Functions
@@ -159,7 +152,6 @@ define_zome! {
     traits: {
         hc_public [read_post]
         authoring [create_post, update_post]
-        }
     }
 }
 ```

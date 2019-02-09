@@ -1,4 +1,5 @@
 #![feature(try_from)]
+#![warn(unused_extern_crates)]
 /// Holochain Conductor executable
 ///
 /// This is (the beginnings) of the main conductor implementation maintained by the
@@ -14,7 +15,6 @@
 /// If called without arguments, this executable tries to load a configuration from
 /// ~/.holochain/conductor/conductor_config.toml.
 /// A custom config can be provided with the --config, -c flag.
-extern crate clap;
 extern crate holochain_conductor_api;
 extern crate holochain_core_types;
 extern crate holochain_sodium;

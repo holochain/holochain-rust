@@ -111,7 +111,7 @@ pub fn run_dna(
             Err(AllocationError::ZeroLength) => RibosomeEncodedValue::Success.into(),
             // Any other error is memory related
             Err(err) => {
-                return Err(HolochainError::RibosomeFailed(String::from(err)));
+                return Err(HolochainError::RibosomeFailed(format!("WASM Memory issue: {:?}", err)));
             }
             // Write successful, encode allocation
             Ok(allocation) => RibosomeEncodedValue::from(allocation).into(),
@@ -134,7 +134,7 @@ pub fn run_dna(
                 )],
                 mut_runtime,
             )
-            .map_err(|err| HolochainError::RibosomeFailed(err.to_string()))?
+            .map_err(|err| HolochainError::RibosomeFailed(format!("WASM Invocation failed: {:?}", err)))?
             .unwrap()
             .try_into()
             .unwrap();
@@ -154,7 +154,7 @@ pub fn run_dna(
 
         RibosomeEncodedValue::Failure(err_code) => {
             return_log_msg = return_code.to_string();
-            return_result = Err(HolochainError::RibosomeFailed(err_code.to_string()));
+            return_result = Err(HolochainError::RibosomeFailed(format!("Zome function failure: {:?}", err_code)));
         }
 
         RibosomeEncodedValue::Allocation(ribosome_allocation) => {
@@ -168,14 +168,14 @@ pub fn run_dna(
                         }
                         Err(err) => {
                             return_log_msg = err.to_string();
-                            return_result = Err(HolochainError::RibosomeFailed(err.to_string()));
+                            return_result = Err(HolochainError::RibosomeFailed(format!("WASM failed to return value: {:?}", err )));
                         }
                     }
                 }
                 Err(allocation_error) => {
                     return_log_msg = String::from(allocation_error.clone());
-                    return_result = Err(HolochainError::RibosomeFailed(String::from(
-                        allocation_error,
+                    return_result = Err(HolochainError::RibosomeFailed(format!("WAMS return value allocation failed: {:?}",
+                                                                               allocation_error,
                     )));
                 }
             }

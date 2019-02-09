@@ -508,10 +508,10 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
 pub mod tests {
     use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
-    use holochain_core::context::unique_memory_network_config;
+    use holochain_net::p2p_config::P2pConfig;
 
     pub fn example_serialized_network_config() -> String {
-        String::from(unique_memory_network_config())
+        String::from(JsonString::from(P2pConfig::new_with_unique_memory_backend()))
     }
 
     #[test]

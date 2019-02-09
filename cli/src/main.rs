@@ -1,8 +1,9 @@
+#![warn(unused_extern_crates)]
 extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_conductor_api;
-extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_core;
 extern crate holochain_dpki;
 extern crate holochain_net;
 extern crate holochain_sodium;
@@ -10,13 +11,10 @@ extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate assert_cmd;
 extern crate base64;
 extern crate colored;
-extern crate dir_diff;
 extern crate semver;
 extern crate toml;
 #[macro_use]

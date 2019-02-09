@@ -3,6 +3,7 @@
 //!     file_system.clone(),
 
 #![feature(try_from, try_trait, async_await, await_macro)]
+#![warn(unused_extern_crates)]
 /// Holochain Conductor API
 ///
 /// This crate is a library that provides types and functions that help with building
@@ -89,7 +90,6 @@
 ///     Ok(load_configuration::<Configuration>(&contents)?)
 /// }
 /// ```
-extern crate futures;
 extern crate holochain_cas_implementations;
 extern crate holochain_core;
 extern crate holochain_core_types;
@@ -102,7 +102,6 @@ extern crate holochain_sodium;
 extern crate base64;
 extern crate chrono;
 extern crate serde;
-extern crate tempfile;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
@@ -115,14 +114,11 @@ extern crate petgraph;
 extern crate regex;
 #[macro_use]
 extern crate serde_json;
-extern crate serde_regex;
 #[cfg(test)]
 extern crate test_utils;
-extern crate tiny_http;
 extern crate toml;
 #[macro_use]
 extern crate maplit;
-extern crate dirs;
 #[macro_use]
 extern crate lazy_static;
 extern crate directories;

@@ -87,7 +87,7 @@ To read about `hc test`, used for running tests over your source code, see [http
 
 ### hc run: Running your application
 
-To read about `hc run`, used for spinning up a quick developement version of your app with an HTTP or Websocket interface, that you can connect to from a UI, or any client, see [https://developer.holochain.org/guide/latest/running_an_app.html](https://developer.holochain.org/guide/latest/running_an_app.html).
+To read about `hc run`, used for spinning up a quick developement version of your app with an HTTP or Websocket interface, that you can connect to from a UI, or any client, see [https://developer.holochain.org/guide/latest/development_conductor.html](https://developer.holochain.org/guide/latest/development_conductor.html).
 
 
 ## Contribute

@@ -26,20 +26,22 @@ impl P2pNetwork {
     pub fn new(handler: NetHandler, p2p_config: &P2pConfig) -> NetResult<Self> {
         // Create Config struct
         let backend_config = p2p_config.backend_config.to_string().into();
-        let enduser_config = p2p_config
-            .maybe_end_user_config
-            .clone()
-            .expect("P2pConfig for IPC networking is missing an end-user config")
-            .to_string();
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match p2p_config.backend_kind {
             // Create an IpcNetWorker with the passed backend config
-            P2pBackendKind::IPC => Box::new(move |h| {
-                Ok(
-                    Box::new(IpcNetWorker::new(h, &backend_config, enduser_config)?)
-                        as Box<NetWorker>,
-                )
-            }),
+            P2pBackendKind::IPC => {
+                let enduser_config = p2p_config
+                    .maybe_end_user_config
+                    .clone()
+                    .expect("P2pConfig for IPC networking is missing an end-user config")
+                    .to_string();
+                Box::new(move |h| {
+                    Ok(
+                        Box::new(IpcNetWorker::new(h, &backend_config, enduser_config)?)
+                            as Box<NetWorker>,
+                    )
+                })
+            }
             // Create an InMemoryWorker
             P2pBackendKind::MEMORY => Box::new(move |h| {
                 Ok(Box::new(InMemoryWorker::new(h, &backend_config)?) as Box<NetWorker>)

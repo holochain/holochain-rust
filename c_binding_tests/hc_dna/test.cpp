@@ -96,8 +96,8 @@ void TestHcDna::canGetTraitNames() {
     QString name2 = QString("%1").arg(names.ptr[1]);
 
     QVERIFY(name1 != name2);
-    QVERIFY(name1 == QString("test_trait") || name1 == QString("test_trait2"));
-    QVERIFY(name2 == QString("test_trait") || name2 == QString("test_trait2"));
+    QVERIFY(name1 == QString("hc_public") || name1 == QString("test_trait2"));
+    QVERIFY(name2 == QString("hc_public") || name2 == QString("test_trait2"));
 
     holochain_dna_free_zome_names(&names);
     holochain_dna_free(dna);

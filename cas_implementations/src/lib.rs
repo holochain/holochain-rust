@@ -4,16 +4,10 @@
 //!
 //! This crate contains implementations for the CAS and EAV traits
 //! which are defined but not implemented in the core_types crate.
-
+#![warn(unused_extern_crates)]
 extern crate holochain_core_types;
-extern crate snowflake;
 
 extern crate uuid;
-
-extern crate serde;
-extern crate serde_json;
-
-extern crate chrono;
 extern crate glob;
 
 pub mod cas;

@@ -3,6 +3,7 @@ extern crate holochain_sodium;
 use crate::keypair::holochain_sodium::secbuf::SecBuf;
 use crate::keypair::holochain_sodium::kx;
 use crate::keypair::holochain_sodium::sign;
+use holochain_sodium::random::random_secbuf;
 
 use crate::{
     bundle,
@@ -341,7 +342,7 @@ impl Keypair {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::holochain_sodium::{pwhash, random::random_secbuf};
+    use holochain_sodium::{pwhash, random::random_secbuf};
 
     const TEST_CONFIG: Option<PwHashConfig> = Some(PwHashConfig(
         pwhash::OPSLIMIT_INTERACTIVE,

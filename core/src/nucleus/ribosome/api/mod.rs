@@ -187,10 +187,10 @@ impl ZomeApiFunction {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate wabt;
+    use wabt;
     use self::wabt::Wat2Wasm;
     use holochain_core_types::json::JsonString;
-    extern crate test_utils;
+    use test_utils;
     use super::ZomeApiFunction;
     use crate::{
         context::Context,

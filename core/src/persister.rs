@@ -65,7 +65,7 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
 
-    extern crate tempfile;
+    use tempfile;
     use self::tempfile::tempdir;
     use crate::{
         instance::tests::test_context_with_agent_state,

@@ -61,7 +61,7 @@ pub type ZomeFnResult = HcResult<JsonString>;
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
+    use test_utils;
     use super::*;
     use crate::{
         instance::{

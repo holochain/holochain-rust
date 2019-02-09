@@ -298,7 +298,7 @@ impl Iterator for ChainStoreTypeIterator {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
+    use tempfile;
     use self::tempfile::tempdir;
     use crate::agent::chain_store::{ChainStore, ChainStoreQueryOptions, ChainStoreQueryResult};
     use holochain_cas_implementations::cas::file::FilesystemStorage;

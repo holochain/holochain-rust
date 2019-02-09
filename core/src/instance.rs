@@ -281,8 +281,8 @@ pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrappe
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    extern crate test_utils;
+    use tempfile;
+    use test_utils;
     use self::tempfile::tempdir;
     use super::*;
     use crate::{

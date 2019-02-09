@@ -223,8 +223,8 @@ pub fn call(
 
 #[cfg(test)]
 pub mod tests {
-    extern crate test_utils;
-    extern crate wabt;
+    use test_utils;
+    use wabt;
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::{tests::test_instance, Instance},

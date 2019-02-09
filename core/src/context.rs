@@ -346,8 +346,7 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 
 #[cfg(test)]
 pub mod tests {
-    extern crate tempfile;
-    extern crate test_utils;
+    use tempfile;
     use self::tempfile::tempdir;
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};

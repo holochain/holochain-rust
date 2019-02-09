@@ -312,7 +312,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_memory_network_config(),
+            P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
         );

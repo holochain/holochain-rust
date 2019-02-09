@@ -1,4 +1,3 @@
-use colored::*;
 use holochain_core::{
     action::{Action, ActionWrapper},
     network::entry_with_header::EntryWithHeader,
@@ -81,7 +80,6 @@ impl CallFxChecker {
 
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
         let was_empty = self.conditions.is_empty();
-        let size = self.conditions.len();
         for condition in &mut self.conditions {
             condition.run(aw)
         }
@@ -251,7 +249,6 @@ impl Waiter {
     }
 
     fn run_checks(&mut self, aw: &ActionWrapper) {
-        let size = self.checkers.len();
         self.checkers.retain(|_, checker| checker.run_checks(aw));
     }
 

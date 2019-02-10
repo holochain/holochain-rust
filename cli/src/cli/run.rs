@@ -40,7 +40,7 @@ pub fn run(
     let dna_config = DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: package::DEFAULT_BUNDLE_FILE_NAME.into(),
-        hash: "Qm328wyq38924ybogus".into(),
+        hash: None,
     };
 
     let storage = if persist {

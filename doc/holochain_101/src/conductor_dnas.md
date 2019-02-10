@@ -12,13 +12,12 @@ Give an ID of your choice to this DNA
 #### `file`: `string`
 Path to the packaged DNA file
 
-#### `hash`: `string`
-A hash has to be provided for __FIXME "sanity check"??__
+#### `hash`: `string` Optional
+A hash can optionally be provided, which could be used to validate that the DNA being installed is the DNA that was intended to be installed.
 
 ### Example
 ```toml
 [[dnas]]
 id = "app spec rust"
 file = "example-config/app_spec.hcpkg"
-hash = "Qm328wyq38924y"
 ```

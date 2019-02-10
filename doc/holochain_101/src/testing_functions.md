@@ -2,6 +2,8 @@
 
 The purpose of the `holochain-nodejs` module is to make integration tests and scenario tests able to be written as simply and with as little boilerplate as possible. However, the module also provides even more basic functionality, making it possible to build tests with whatever tradeoff between convenience and customization is right for your project.
 
+## Setting up the Conductor
+
 ```javascript
 const { Config, Conductor } = require('@holochain/holochain-nodejs')
 
@@ -20,8 +22,8 @@ const instanceBob = Config.instance(agentBob, dna)
 // ...and finally throw them all together 
 const config = Config.conductor([instanceAlice, instanceBob])
 
-// The produced `config` is a fully valid conductor configuration and can be
-// passed directly to the conductor constructor
+// The produced `config` is a fully valid Conductor configuration and can be
+// passed directly to the Conductor constructor
 const conductor = new Conductor(config)
 conductor.start()
 ```
@@ -38,10 +40,11 @@ conductor.start()
 const aliceInstanceId = aliceName + '::' + dnaPath
 
 // zome functions can be called using the following, assuming the vars are defined with valid values
-const callResult = conductor.call(aliceInstanceId, zome, capability, fnName, paramsAsObject)
+const callResult = conductor.call(aliceInstanceId, 'zome', 'function', {params: 'go here'})
+
 // the same could be accomplished using the following, makeCaller is for convenience
-const alice = conductor.makeCaller(aliceName, dnaPath)
-const altCallResult = alice.call(zome, capability, fnName, paramsAsObject)
+const alice = conductor.makeCaller(aliceName)
+const altCallResult = alice.call('zome', 'function', {params: 'go here'})
 
 // get the actual agent_id for an instance, by passing an instance id
 const aliceAgentId = conductor.agent_id(aliceInstanceId)

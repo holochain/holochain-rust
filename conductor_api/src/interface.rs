@@ -1,8 +1,9 @@
+use conductor::base::Broadcaster;
 use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;
 
-use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler, Value};
+use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use serde_json;
 use std::{
     collections::HashMap,
@@ -741,7 +742,7 @@ impl ConductorApiBuilder {
 }
 
 pub trait Interface {
-    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<(), String>;
+    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<Broadcaster, String>;
 }
 
 #[cfg(test)]

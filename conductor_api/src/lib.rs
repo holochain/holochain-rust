@@ -105,6 +105,7 @@ extern crate boolinator;
 extern crate colored;
 #[cfg(test)]
 extern crate holochain_wasm_utils;
+extern crate jsonrpc_core;
 extern crate jsonrpc_http_server;
 extern crate jsonrpc_ws_server;
 extern crate petgraph;

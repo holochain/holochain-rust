@@ -19,7 +19,8 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use jsonrpc_ws_server::jsonrpc_core::IoHandler;
+use jsonrpc_core::IoHandler;
+use jsonrpc_ws_server::ws;
 
 use std::{
     clone::Clone,
@@ -65,6 +66,30 @@ pub fn mount_conductor_from_config(config: Configuration) {
     CONDUCTOR.lock().unwrap().replace(conductor);
 }
 
+/// An abstraction which represents the ability to (maybe) send a message to the client
+/// over the existing connection
+pub enum Broadcaster {
+    Ws(ws::Sender),
+    Noop,
+}
+
+impl Broadcaster {
+    pub fn send<J>(&self, msg: J) -> Result<(), HolochainError>
+    where
+        J: Into<JsonString>,
+    {
+        match self {
+            Broadcaster::Ws(sender) => sender
+                .send(ws::Message::Text(msg.into().to_string()))
+                .map_err(|e| {
+                    HolochainError::ErrorGeneric(format!("Broadcaster::Ws -- {}", e.to_string()))
+                })?,
+            Broadcaster::Noop => (),
+        }
+        Ok(())
+    }
+}
+
 /// Main representation of the conductor.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
 /// A primary point in this struct is
@@ -79,8 +104,10 @@ pub struct Conductor {
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
+    pub(in crate::conductor) broadcasters: Arc<RwLock<HashMap<String, Broadcaster>>>,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
+
     signal_tx: Option<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<JsonString>,
@@ -113,6 +140,7 @@ impl Conductor {
             instances: HashMap::new(),
             interface_threads: HashMap::new(),
             static_servers: HashMap::new(),
+            broadcasters: Arc::new(RwLock::new(HashMap::new())),
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
@@ -528,22 +556,30 @@ impl Conductor {
     fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
         let log_sender = self.logger.get_sender();
-        let (tx, rx) = channel();
+        let (kill_switch_tx, kill_switch_rx) = channel();
+        let broadcasters = self.broadcasters.clone();
         thread::Builder::new()
             .name(format!("conductor-interface: {}", interface_config.id))
             .spawn(move || {
                 let iface = make_interface(&interface_config);
-                iface.run(dispatcher, rx).map_err(|error| {
-                    let message = format!(
-                        "err/conductor: Error running interface '{}': {}",
-                        interface_config.id, error
-                    );
-                    let _ = log_sender.send((String::from("conductor"), message));
-                    error
-                })
+                let broadcaster = iface
+                    .run(dispatcher, kill_switch_rx)
+                    .map_err(|error| {
+                        let message = format!(
+                            "err/conductor: Error running interface '{}': {}",
+                            interface_config.id, error
+                        );
+                        let _ = log_sender.send((String::from("conductor"), message));
+                        error
+                    })
+                    .unwrap();
+                broadcasters
+                    .write()
+                    .unwrap()
+                    .insert(interface_config.id.clone(), broadcaster);
             })
             .expect("Could not spawn thread for interface");
-        tx
+        kill_switch_tx
     }
 
     pub fn dna_dir_path(&self) -> PathBuf {

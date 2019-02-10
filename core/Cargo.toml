@@ -37,7 +37,7 @@ holochain_cas_implementations = { path = "../cas_implementations" }
 holochain_net_connection = { path = "../net_connection" }
 base64 = "0.10"
 boolinator = "2.4.0"
-jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-lite = "0.5.0"
 globset = "0.4.2"
 pretty_assertions = "0.5.1"

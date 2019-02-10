@@ -1,4 +1,5 @@
 use crate::action::ActionWrapper;
+use holochain_core_types::json::JsonString;
 use std::{
     sync::mpsc::{channel, sync_channel, Receiver, SyncSender},
     thread,
@@ -7,7 +8,7 @@ use std::{
 #[derive(Debug)]
 pub enum Signal {
     Internal(ActionWrapper),
-    User,
+    User(JsonString),
 }
 
 pub type SignalSender = SyncSender<Signal>;

@@ -15,7 +15,7 @@ extern crate test_utils;
 use holochain_conductor_api::error::{HolochainInstanceError, HolochainResult};
 use holochain_core_types::{
     bits_n_pieces::U16_MAX,
-    error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeErrorCode},
+    error::{CoreError, HolochainError},
     json::{JsonString, RawString},
 };
 use holochain_wasm_utils::{memory::MemoryInt, wasm_target_dir};
@@ -69,9 +69,7 @@ fn store_string_test() {
 fn store_string_err_test() {
     assert_eq!(
         Err(HolochainInstanceError::from(
-            HolochainError::RibosomeFailed(
-                RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory).into()
-            )
+            HolochainError::RibosomeFailed("Zome function failure: OutOfMemory".into())
         )),
         call_zome_function_with_hc("store_string_err", RawString::from("")),
     );
@@ -186,7 +184,7 @@ fn stacked_json_test() {
 fn call_store_as_json_err() {
     assert_eq!(
         Err(HolochainInstanceError::from(
-            HolochainError::RibosomeFailed(RibosomeErrorCode::OutOfMemory.into())
+            HolochainError::RibosomeFailed("Zome function failure: OutOfMemory".into())
         )),
         call_zome_function_with_hc("store_json_err", RawString::from("")),
     );
@@ -196,7 +194,7 @@ fn call_store_as_json_err() {
 fn load_json_err_test() {
     assert_eq!(
         Err(HolochainInstanceError::from(
-            HolochainError::RibosomeFailed(RibosomeErrorCode::Unspecified.into())
+            HolochainError::RibosomeFailed("Zome function failure: Unspecified".into())
         )),
         call_zome_function_with_hc("load_json_err", RawString::from("")),
     );

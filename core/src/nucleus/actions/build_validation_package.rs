@@ -155,7 +155,7 @@ pub fn build_validation_package(entry: &Entry, context: &Arc<Context>) -> Valida
 }
 
 fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
-    let chain = context.state().unwrap().agent().chain();
+    let chain = context.state().unwrap().agent().chain_store();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain
         .iter(&top_header)
@@ -173,7 +173,7 @@ fn all_public_chain_entries(context: &Arc<Context>) -> Vec<Entry> {
 }
 
 fn all_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
-    let chain = context.state().unwrap().agent().chain();
+    let chain = context.state().unwrap().agent().chain_store();
     let top_header = context.state().unwrap().agent().top_chain_header();
     chain.iter(&top_header).collect()
 }
@@ -214,7 +214,6 @@ mod tests {
     use super::*;
     use crate::nucleus::actions::tests::*;
 
-    use futures::executor::block_on;
     use holochain_core_types::validation::ValidationPackage;
 
     #[test]
@@ -228,7 +227,7 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_entry(), &context);
 
-        let maybe_validation_package = block_on(build_validation_package(
+        let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_entry(),
             &context.clone(),
         ));
@@ -236,7 +235,7 @@ mod tests {
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {
-            chain_header: Some(chain_header),
+            chain_header: chain_header,
             source_chain_entries: None,
             source_chain_headers: None,
             custom: None,
@@ -256,14 +255,14 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_entries(), &context);
 
-        let maybe_validation_package = block_on(build_validation_package(
+        let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_entries(),
             &context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {
-            chain_header: Some(chain_header),
+            chain_header: chain_header,
             source_chain_entries: Some(all_public_chain_entries(&context)),
             source_chain_headers: None,
             custom: None,
@@ -283,14 +282,14 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_headers(), &context);
 
-        let maybe_validation_package = block_on(build_validation_package(
+        let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_headers(),
             &context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {
-            chain_header: Some(chain_header),
+            chain_header: chain_header,
             source_chain_entries: None,
             source_chain_headers: Some(all_chain_headers(&context)),
             custom: None,
@@ -310,14 +309,14 @@ mod tests {
         // commit entry to build validation package for
         let chain_header = commit(test_entry_package_chain_full(), &context);
 
-        let maybe_validation_package = block_on(build_validation_package(
+        let maybe_validation_package = context.block_on(build_validation_package(
             &test_entry_package_chain_full(),
             &context.clone(),
         ));
         assert!(maybe_validation_package.is_ok());
 
         let expected = ValidationPackage {
-            chain_header: Some(chain_header),
+            chain_header: chain_header,
             source_chain_entries: Some(all_public_chain_entries(&context)),
             source_chain_headers: Some(all_chain_headers(&context)),
             custom: None,

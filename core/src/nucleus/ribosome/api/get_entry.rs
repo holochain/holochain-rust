@@ -2,7 +2,6 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::get_entry_result::get_entry_result_workflow,
 };
-use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
@@ -26,7 +25,9 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    let result = block_on(get_entry_result_workflow(&runtime.context, &input));
+    let result = runtime
+        .context
+        .block_on(get_entry_result_workflow(&runtime.context, &input));
     // Store result in wasm memory
     runtime.store_result(result)
 }
@@ -69,7 +70,6 @@ pub mod tests {
                 StatusRequestKind::Latest,
                 true,
                 false,
-                false,
                 Default::default(),
             ),
         };
@@ -83,7 +83,6 @@ pub mod tests {
             options: GetEntryOptions::new(
                 StatusRequestKind::Latest,
                 true,
-                false,
                 false,
                 Default::default(),
             ),
@@ -251,14 +250,15 @@ pub mod tests {
         )
         .expect("test should be callable");
 
-        let entry_result = GetEntryResult::new(
-            StatusRequestKind::Latest,
-            Some(&EntryWithMeta {
-                entry: test_entry(),
-                crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
-            }),
-        );
+        let entry = test_entry();
+        let entry_with_meta = EntryWithMeta {
+            entry: entry.clone(),
+            crud_status: CrudStatus::Live,
+            maybe_crud_link: None,
+        };
+        // let header = create_new_chain_header(&entry, context.clone(), &None);
+        let entry_result =
+            GetEntryResult::new(StatusRequestKind::Latest, Some((&entry_with_meta, vec![])));
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
                 ZomeApiInternalResult::success(entry_result)

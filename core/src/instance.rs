@@ -1,7 +1,17 @@
-use crate::{action::ActionWrapper, context::Context, signal::Signal, state::State};
+use crate::{
+    action::ActionWrapper, context::Context, signal::Signal, state::State, workflows::application,
+};
+#[cfg(test)]
+use crate::{
+    network::actions::initialize_network::initialize_network_with_spoofed_dna,
+    nucleus::actions::initialize::initialize_application,
+};
+#[cfg(test)]
+use holochain_core_types::cas::content::Address;
+use holochain_core_types::{dna::Dna, error::HcResult};
 use std::{
     sync::{
-        mpsc::{sync_channel, Receiver, SyncSender},
+        mpsc::{sync_channel, Receiver, Sender, SyncSender},
         Arc, RwLock, RwLockReadGuard,
     },
     thread,
@@ -20,11 +30,9 @@ pub struct Instance {
     observer_channel: Option<SyncSender<Observer>>,
 }
 
-type ClosureType = Box<FnMut(&State) -> bool + Send>;
-
 /// State Observer that executes a closure everytime the State changes.
 pub struct Observer {
-    pub sensor: ClosureType,
+    pub ticker: Sender<()>,
 }
 
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
@@ -34,12 +42,64 @@ impl Instance {
         100
     }
 
+    /// This is initializing and starting the redux action loop and adding channels to dispatch
+    /// actions and observers to the context
+    pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
+        let (rx_action, rx_observer) = self.initialize_channels();
+        let context = self.initialize_context(context);
+        self.start_action_loop(context.clone(), rx_action, rx_observer);
+        context
+    }
+
+    /// This is calling inner_setup and running the initialization workflow which makes sure that
+    /// the chain gets initialized if dna is Some.
+    /// If dna is None it is assumed the chain is already initialized, i.e. we are loading a chain.
+    pub fn initialize(
+        &mut self,
+        dna: Option<Dna>,
+        context: Arc<Context>,
+    ) -> HcResult<Arc<Context>> {
+        let context = self.inner_setup(context);
+        context.block_on(application::initialize(self, dna, context.clone()))
+    }
+
+    /// This function is only needed in tests to create integration tests in which an instance
+    /// tries to publish invalid entries.
+    /// The DNA needs to be spoofed then so that we can emulate a hacked node that does not
+    /// run the right validation checks locally but actually commits and publishes invalid data.
+    #[cfg(test)]
+    pub fn initialize_with_spoofed_dna(
+        &mut self,
+        dna: Dna,
+        spoofed_dna_address: Address,
+        context: Arc<Context>,
+    ) -> HcResult<Arc<Context>> {
+        let context = self.inner_setup(context);
+        context.block_on(
+            async {
+                await!(initialize_application(dna.clone(), &context))?;
+                await!(initialize_network_with_spoofed_dna(
+                    spoofed_dna_address,
+                    &context
+                ))
+            },
+        )?;
+        Ok(context)
+    }
+
+    /// Only needed in tests to check that the initialization (and other workflows) fail
+    /// with the right error message if no DNA is present.
+    #[cfg(test)]
+    pub fn initialize_without_dna(&mut self, context: Arc<Context>) -> Arc<Context> {
+        self.inner_setup(context)
+    }
+
     // @NB: these three getters smell bad because previously Instance and Context had SyncSenders
     // rather than Option<SyncSenders>, but these would be initialized by default to broken channels
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    pub fn action_channel(&self) -> &SyncSender<ActionWrapper> {
+    fn action_channel(&self) -> &SyncSender<ActionWrapper> {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
@@ -58,36 +118,6 @@ impl Instance {
     /// Panics if called before `start_action_loop`.
     pub fn dispatch(&mut self, action_wrapper: ActionWrapper) {
         dispatch_action(self.action_channel(), action_wrapper)
-    }
-
-    /// Stack an Action in the Event Queue and block until is has been processed.
-    ///
-    /// # Panics
-    ///
-    /// Panics if called before `start_action_loop`.
-    pub fn dispatch_and_wait(&mut self, action_wrapper: ActionWrapper) {
-        dispatch_action_and_wait(
-            self.action_channel(),
-            self.observer_channel(),
-            action_wrapper,
-        );
-    }
-
-    /// Stack an action in the Event Queue and create an Observer on it with the specified closure
-    ///
-    /// # Panics
-    ///
-    /// Panics if called before `start_action_loop`.
-    pub fn dispatch_with_observer<F>(&mut self, action_wrapper: ActionWrapper, closure: F)
-    where
-        F: 'static + FnMut(&State) -> bool + Send,
-    {
-        dispatch_action_with_observer(
-            self.action_channel(),
-            self.observer_channel(),
-            action_wrapper,
-            closure,
-        )
     }
 
     /// Returns recievers for actions and observers that get added to this instance
@@ -111,9 +141,12 @@ impl Instance {
     }
 
     /// Start the Event Loop on a separate thread
-    pub fn start_action_loop(&mut self, context: Arc<Context>) {
-        let (rx_action, rx_observer) = self.initialize_channels();
-
+    pub fn start_action_loop(
+        &mut self,
+        context: Arc<Context>,
+        rx_action: Receiver<ActionWrapper>,
+        rx_observer: Receiver<Observer>,
+    ) {
         let sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
@@ -164,28 +197,16 @@ impl Instance {
             *state = new_state;
         }
 
-        // @TODO: add a big fat debug logger here
+        // context.log(format!("trace/reduce: {:?}", action_wrapper.action()));
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
         state_observers.extend(rx_observer.try_iter());
-
-        // Run all observer closures
-        {
-            let state = self
-                .state
-                .read()
-                .expect("owners of the state RwLock shouldn't panic");
-            let mut i = 0;
-            while i != state_observers.len() {
-                if (&mut state_observers[i].sensor)(&state) {
-                    state_observers.remove(i);
-                } else {
-                    i += 1;
-                }
-            }
-        }
+        // Tick all observers and remove those that have lost their receiving part
         state_observers
+            .into_iter()
+            .filter(|observer| observer.ticker.send(()).is_ok())
+            .collect()
     }
 
     /// Given an `Action` that is being processed, decide whether or not it should be
@@ -235,56 +256,17 @@ impl Instance {
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action_and_wait(
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
-    action_wrapper: ActionWrapper,
-) {
-    // Create blocking channel
-    let (sender, receiver) = sync_channel::<()>(1);
+pub fn dispatch_action_and_wait(context: Arc<Context>, action_wrapper: ActionWrapper) {
+    let tick_rx = context.create_observer();
+    dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    // Create blocking observer
-    let observer_action_wrapper = action_wrapper.clone();
-    let closure = move |state: &State| {
-        if state.history.contains(&observer_action_wrapper) {
-            sender
-                .send(())
-                // the channel stays connected until the first message has been sent
-                // if this fails that means that it was called after having returned done=true
-                .expect("observer called after done");
-            true
+    loop {
+        if context.state().unwrap().history.contains(&action_wrapper) {
+            return;
         } else {
-            false
+            let _ = tick_rx.recv_timeout(Duration::from_millis(10));
         }
-    };
-
-    dispatch_action_with_observer(&action_channel, &observer_channel, action_wrapper, closure);
-
-    // Block until Observer has sensed the completion of the Action
-    receiver.recv().expect(DISPATCH_WITHOUT_CHANNELS);
-}
-
-/// Send Action to the Event Queue and create an Observer for it with the specified closure
-///
-/// # Panics
-///
-/// Panics if the channels passed are disconnected.
-pub fn dispatch_action_with_observer<F>(
-    action_channel: &SyncSender<ActionWrapper>,
-    observer_channel: &SyncSender<Observer>,
-    action_wrapper: ActionWrapper,
-    closure: F,
-) where
-    F: 'static + FnMut(&State) -> bool + Send,
-{
-    let observer = Observer {
-        sensor: Box::new(closure),
-    };
-
-    observer_channel
-        .send(observer)
-        .expect(DISPATCH_WITHOUT_CHANNELS);
-    dispatch_action(action_channel, action_wrapper);
+    }
 }
 
 /// Send Action to the Event Queue
@@ -313,7 +295,6 @@ pub mod tests {
         context::{test_memory_network_config, Context},
         logger::{test_logger, TestLogger},
     };
-    use futures::executor::block_on;
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::{
         agent::AgentId,
@@ -325,20 +306,13 @@ pub mod tests {
     };
 
     use crate::{
-        network::actions::initialize_network::initialize_network,
-        nucleus::{
-            actions::initialize::initialize_application,
-            ribosome::{callback::Callback, Defn},
-        },
+        nucleus::ribosome::{callback::Callback, Defn},
         persister::SimplePersister,
         state::State,
     };
 
     use std::{
-        sync::{
-            mpsc::{channel, sync_channel},
-            Arc, Mutex,
-        },
+        sync::{mpsc::channel, Arc, Mutex},
         thread::sleep,
         time::Duration,
     };
@@ -495,14 +469,7 @@ pub mod tests {
         // Create instance and plug in our DNA
         let context = test_context(name, network_name);
         let mut instance = Instance::new(context.clone());
-        instance.start_action_loop(context.clone());
-        let context = instance.initialize_context(context);
-        block_on(
-            async {
-                await!(initialize_application(dna.clone(), &context))?;
-                await!(initialize_network(&context))
-            },
-        )?;
+        let context = instance.initialize(Some(dna.clone()), context.clone())?;
 
         assert_eq!(instance.state().nucleus().dna(), Some(dna.clone()));
         assert!(instance.state().nucleus().has_initialized());
@@ -624,43 +591,6 @@ pub mod tests {
     }
 
     #[test]
-    /// This test shows how to call dispatch with a closure that should run
-    /// when the action results in a state change.  Note that the observer closure
-    /// needs to return a boolean to indicate that it has successfully observed what
-    /// it intends to observe.  It will keep getting called as the state changes until
-    /// it returns true.
-    /// Note also that for this test we create a channel to send something (in this case
-    /// the dna) back over, just so that the test will block until the closure is successfully
-    /// run and the assert will actually run.  If we put the assert inside the closure
-    /// the test thread could complete before the closure was called.
-    fn can_dispatch_with_observer() {
-        let netname = Some("can_dispatch_with_observer");
-        let mut instance = Instance::new(test_context("jason", netname));
-        instance.start_action_loop(test_context("jane", netname));
-
-        let dna = Dna::new();
-        let (sender, receiver) = sync_channel(1);
-        instance.dispatch_with_observer(
-            ActionWrapper::new(Action::InitApplication(dna.clone())),
-            move |state: &State| match state.nucleus().dna() {
-                Some(dna) => {
-                    sender
-                        .send(dna)
-                        // the channel stays connected until the first message has been sent
-                        // if this fails that means that it was called after having returned done=true
-                        .expect("observer called after done");
-                    true
-                }
-                None => false,
-            },
-        );
-
-        let stored_dna = receiver.recv().expect("observer dropped before done");
-
-        assert_eq!(dna, stored_dna);
-    }
-
-    #[test]
     /// tests that we can dispatch an action and block until it completes
     fn can_dispatch_and_wait() {
         let netname = Some("can_dispatch_and_wait");
@@ -674,7 +604,7 @@ pub mod tests {
         let dna = Dna::new();
 
         let action = ActionWrapper::new(Action::InitApplication(dna.clone()));
-        instance.start_action_loop(test_context("jane", netname));
+        let context = instance.inner_setup(test_context("jane", netname));
 
         // the initial state is not intialized
         assert_eq!(
@@ -682,7 +612,7 @@ pub mod tests {
             crate::nucleus::state::NucleusStatus::New
         );
 
-        instance.dispatch_and_wait(action);
+        dispatch_action_and_wait(context, action);
         assert_eq!(instance.state().nucleus().dna(), Some(dna));
         assert_eq!(
             instance.state().nucleus().status(),

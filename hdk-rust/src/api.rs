@@ -265,7 +265,7 @@ impl Dispatch {
 }
 
 /// Call an exposed function from another zome or another (bridged) instance running
-/// on the same agent in the same container.
+/// on the same agent in the same conductor.
 /// Arguments for the called function are passed as `JsonString`.
 /// Returns the value that's returned by the given function as a json str.
 /// # Examples
@@ -563,13 +563,7 @@ pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(
-            StatusRequestKind::Initial,
-            true,
-            false,
-            false,
-            Default::default(),
-        ),
+        GetEntryOptions::new(StatusRequestKind::Initial, true, false, Default::default()),
     )?;
     Ok(entry_result.latest())
 }
@@ -580,13 +574,7 @@ pub fn get_entry_initial(address: &Address) -> ZomeApiResult<Option<Entry>> {
 pub fn get_entry_history(address: &Address) -> ZomeApiResult<Option<EntryHistory>> {
     let entry_result = get_entry_result(
         address,
-        GetEntryOptions::new(
-            StatusRequestKind::All,
-            true,
-            false,
-            false,
-            Default::default(),
-        ),
+        GetEntryOptions::new(StatusRequestKind::All, true, false, Default::default()),
     )?;
     if !entry_result.found() {
         return Ok(None);
@@ -657,7 +645,7 @@ pub fn get_entry_result(
 ///
 ///     if let Some(in_reply_to_address) = in_reply_to {
 ///         // return with Err if in_reply_to_address points to missing entry
-///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, header: false, sources: false, timeout: Default::default() })?;
+///         hdk::get_entry_result(&in_reply_to_address, GetEntryOptions { status_request: StatusRequestKind::All, entry: false, headers: false, timeout: Default::default() })?;
 ///         hdk::link_entries(&in_reply_to_address, &address, "comments")?;
 ///     }
 ///

@@ -101,24 +101,17 @@ The `name` is the most important thing here, because when a function call to an 
 
 In order to maintain compabitility with a variety of languages, it was decided to use a language agnostic data interchange format for inputs and ouputs. JSON, the modern web format was selected. Other formats may be supported in the future.
 
-Put simply, this has two big implications: Holochain Container implementations must handle JSON serialization and deserialization on the "outside", and HDKs and Zomes must handle JSON serialization and deserialization on the "inside". Holochain agrees only to mediate between the two by passing a string (which should represent valid JSON data).
+Put simply, this has two big implications: Holochain Conductor implementations must handle JSON serialization and deserialization on the "outside", and HDKs and Zomes must handle JSON serialization and deserialization on the "inside". Holochain agrees only to mediate between the two by passing a string (which should represent valid JSON data).
 
-## Introducing "Containers"
+## How Zome Functions Are Called
 
-To discuss the functions developers will build within Zomes, it is useful to zoom out for a moment, to the level of how Holochain runs on devices. Because there was an intention to make Holochain highly platform and system compatible, the core logic was written in such a way that it could be included into many different codebases. Think MacOSX, Linux, Windows, Android, iOS, and more. Thus Holochain core is actually simply a library that needs to be included in another project which mounts, executes and manages it. Because filling this new need is becoming such a foundational aspect of Holochain, it has its' own name: *Container*.
-
-Containers install and uninstall, start and stop instances of DNA on devices. There is one more important function of Containers: *they create a channel to securely make function calls into the Zome functions of DNA instances*.
-
-Imagine that there are many DNA instances running within one Container, and each DNA can have multiple Zomes. Clearly, function calls will need to include a complete enough set of arguments to know the following:
-- which instance?
+Function calls are received by Holochain from client requests (which there are a variety of implementations of, discussed later).  When function calls are being made, they will need to include a complete enough set of arguments to know the following:
 - which Zome?
 - which Capability token?
 - which function?
-- what arguments?
+- what values should the function be called with?
 
-Containers can implement whatever interfaces to perform these function calls they wish to, opening a wealth of opportunity. Holochain provides two reference Containers, one for [Nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs), and the other a [Rust built binary executable](https://github.com/holochain/holochain-rust/tree/develop/container). With the Rust built binary Container, interfaces for making function calls already includes HTTP and WebSockets. More details about Containers can be found in [another chapter](../containers.md), it is simply important context for proceeding.
-
-When a call to a Zome function is being made from the Container, it first passes the arguments to Holochain. Before making the function call, Holochain will check the validity of the request, and fail if necessary. If the request is deemed valid, Holochain will mount the WASM code for a Zome using its' WASM interpreter, and then make a function call into it, giving it the arguments given to it in the request. When it receives the response from the WASM, it will then pass that return value as the response to the request. This may sound complex, but that's just what's going on internally, actually using it with an HDK and a Container is easy.
+Before making the function call, Holochain will check the validity of the request, and fail if necessary. If the request is deemed valid, Holochain will mount the WASM code for a Zome using its' WASM interpreter, and then make a function call into it, giving it the arguments given to it in the request. When it receives the response from the WASM, it will then pass that return value as the response to the request. This may sound complex, but that's just what's going on internally, actually using it with an HDK and a [Conductor](../conductors.md) (which is discussed later) is easy.
 
 
 ## Building in Rust: Zome Functions
@@ -172,7 +165,6 @@ define_zome! {
     capabilities: {
         public (Public) [read_post]
         authoring (Assigned) [create_post, update_post]
-        }
     }
 }
 ```

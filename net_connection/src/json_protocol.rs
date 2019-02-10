@@ -12,6 +12,14 @@ use std::convert::TryFrom;
 
 use super::protocol::Protocol;
 
+/// Tuple holding all the info required for identifying a metadata.
+/// (entry_address, attribute, content)
+/// TODO: Content is supposed to be a HashString but for now its JSON because of how Core is
+/// currently handling Meta.
+pub type MetaTuple = (Address, String, serde_json::Value);
+/// (entry_address, attribute)
+pub type MetaKey = (Address, String);
+
 fn get_default_state_id() -> String {
     "undefined".to_string()
 }
@@ -206,7 +214,9 @@ pub struct DhtMetaData {
     pub entry_address: Address,
 
     pub attribute: String,
-    pub content: serde_json::Value,
+    // single string or list of hashs
+    #[serde(rename = "contentList")]
+    pub content_list: Vec<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
@@ -222,7 +232,10 @@ pub struct FetchMetaResultData {
     #[serde(rename = "entryAddress")]
     pub entry_address: Address,
     pub attribute: String,
-    pub content: serde_json::Value,
+    // // List of (hash, content) pairs.
+    // single string or list of hashs
+    #[serde(rename = "contentList")]
+    pub content_list: Vec<serde_json::Value>,
 }
 
 /// Drop some data request from own p2p-module
@@ -269,9 +282,9 @@ pub struct MetaListData {
     #[serde(rename = "_id")]
     pub request_id: String,
 
-    // List of meta identifiers, a pair: (entry_address, attribute)
+    // List of meta identifiers, a pair: (entry_address, attribute, hashed_content)
     #[serde(rename = "metaList")]
-    pub meta_list: Vec<(Address, String)>,
+    pub meta_list: Vec<MetaTuple>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -663,7 +676,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content: json!("hello-meta"),
+            content_list: vec![json!("hello-meta")],
         }));
     }
     #[test]
@@ -675,7 +688,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content: json!("hello-meta"),
+            content_list: vec![json!("hello-meta")],
         }));
     }
     #[test]
@@ -685,7 +698,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content: json!("hello-meta"),
+            content_list: vec![json!("hello-meta")],
         }));
     }
     #[test]
@@ -695,7 +708,7 @@ mod tests {
             provider_agent_id: "test_from".to_string(),
             entry_address: "Hk42".into(),
             attribute: "meta_attribute".to_string(),
-            content: json!("hello-meta"),
+            content_list: vec![json!("hello-meta")],
         }));
     }
     #[test]
@@ -757,8 +770,16 @@ mod tests {
                 dna_address: "test_dna".into(),
                 request_id: "test_id".to_string(),
                 meta_list: vec![
-                    ("data1".into(), "meta_attribute".to_string()),
-                    ("data2".into(), "meta_attribute".to_string())
+                    (
+                        "data1".into(),
+                        "meta_attribute".to_string(),
+                        "entry_address".into()
+                    ),
+                    (
+                        "data2".into(),
+                        "meta_attribute".to_string(),
+                        "other_entry_address".into()
+                    )
                 ],
             }
         ));
@@ -776,8 +797,16 @@ mod tests {
             request_id: "test_id".to_string(),
             dna_address: "test_dna".into(),
             meta_list: vec![
-                ("data1".into(), "meta_attribute".to_string()),
-                ("data2".into(), "meta_attribute".to_string())
+                (
+                    "data1".into(),
+                    "meta_attribute".to_string(),
+                    "entry_address".into()
+                ),
+                (
+                    "data2".into(),
+                    "meta_attribute".to_string(),
+                    "other_entry_address".into()
+                )
             ],
         }));
     }

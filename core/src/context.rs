@@ -49,7 +49,7 @@ pub struct Context {
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub network_config: JsonString,
     pub conductor_api: Option<Arc<RwLock<IoHandler>>>,
-    pub signal_tx: Option<SyncSender<Signal>>,
+    signal_tx: Option<SyncSender<Signal>>,
 }
 
 impl Context {
@@ -180,10 +180,8 @@ impl Context {
             .expect("Action channel not initialized")
     }
 
-    pub fn signal_tx(&self) -> &SyncSender<Signal> {
-        self.signal_tx
-            .as_ref()
-            .expect("Signal channel not initialized")
+    pub fn signal_tx(&self) -> Option<&SyncSender<Signal>> {
+        self.signal_tx.as_ref()
     }
 
     pub fn observer_channel(&self) -> &SyncSender<Observer> {

@@ -50,4 +50,5 @@ pub mod json;
 pub mod link;
 pub mod signature;
 pub mod time;
+pub mod ugly;
 pub mod validation;

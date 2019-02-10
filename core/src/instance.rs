@@ -212,7 +212,7 @@ impl Instance {
     /// Given an `Action` that is being processed, decide whether or not it should be
     /// emitted as a `Signal::Internal`, and if so, send it
     fn maybe_emit_action_signal(&self, context: &Arc<Context>, action: ActionWrapper) {
-        if let Some(ref tx) = context.signal_tx {
+        if let Some(tx) = context.signal_tx() {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals
             let signal = Signal::Internal(action);

@@ -10,7 +10,7 @@ use crate::{
 };
 use holochain_core::{
     logger::{ChannelLogger, Logger},
-    signal::Signal,
+    signal::{signal_channel, Signal, SignalReceiver},
 };
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
@@ -18,6 +18,7 @@ use holochain_core_types::{
     dna::Dna,
     error::HolochainError,
     json::JsonString,
+    ugly::Initable,
 };
 use jsonrpc_core::IoHandler;
 use jsonrpc_ws_server::ws;
@@ -73,6 +74,15 @@ pub enum Broadcaster {
     Noop,
 }
 
+impl Drop for Broadcaster {
+    fn drop(&mut self) {
+        match self {
+            Broadcaster::Ws(sender) => sender.close(ws::CloseCode::Normal).unwrap_or(()),
+            Broadcaster::Noop => (),
+        }
+    }
+}
+
 impl Broadcaster {
     pub fn send<J>(&self, msg: J) -> Result<(), HolochainError>
     where
@@ -108,7 +118,9 @@ pub struct Conductor {
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
 
-    signal_tx: Option<SignalSender>,
+    // @NB: this really wants to be just `SignalSender`, but can't be because we must initialize the
+    // Conductor in two stages, thus we need `signal_tx` to be able to be uninitialized.
+    signal_tx: Initable<SignalSender>,
     logger: DebugLogger,
     p2p_config: Option<JsonString>,
     network_child_process: NetShutdown,
@@ -144,10 +156,21 @@ impl Conductor {
             config,
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
-            signal_tx: None,
+            signal_tx: Initable::Uninit,
             logger: DebugLogger::new(rules),
             p2p_config: None,
             network_child_process: None,
+        }
+    }
+
+    fn setup_signals(&mut self, maybe_signal_tx: Option<SignalSender>) -> Option<SignalReceiver> {
+        if let Some(signal_tx) = maybe_signal_tx {
+            self.signal_tx = Initable::Init(signal_tx);
+            None
+        } else {
+            let (signal_tx, signal_rx) = signal_channel();
+            self.signal_tx = Initable::Init(signal_tx);
+            Some(signal_rx)
         }
     }
 
@@ -155,12 +178,28 @@ impl Conductor {
         if !self.instances.is_empty() {
             panic!("Cannot set a signal channel after having run load_config()");
         }
-        self.signal_tx = Some(signal_tx);
+        let _ = self.setup_signals(Some(signal_tx));
         self
     }
 
     pub fn config(&self) -> Configuration {
         self.config.clone()
+    }
+
+    pub fn start_signal_broadcast(&mut self, signal_rx: SignalReceiver) -> thread::JoinHandle<()> {
+        let broadcasters = self.broadcasters.clone();
+        thread::spawn(move || {
+            for signal in signal_rx {
+                broadcasters
+                    .read()
+                    .unwrap()
+                    .values()
+                    .for_each(|_broadcaster| {
+                        // _broadcaster.send(signal);
+                        println!("TODO: broadcast signal {:?}", signal);
+                    })
+            }
+        })
     }
 
     pub fn start_all_interfaces(&mut self) {
@@ -250,6 +289,7 @@ impl Conductor {
     }
 
     /// Stop and clear all instances
+    /// @QUESTION: why don't we care about errors on shutdown?
     pub fn shutdown(&mut self) {
         let _ = self
             .stop_all_instances()
@@ -258,7 +298,7 @@ impl Conductor {
         self.instances = HashMap::new();
     }
 
-    pub fn spawn_network(&mut self) -> Result<String, HolochainError> {
+    fn spawn_network(&mut self) -> Result<String, HolochainError> {
         let network_config = self
             .config
             .clone()
@@ -350,10 +390,7 @@ impl Conductor {
     /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.
     ///        (see https://github.com/holochain/holochain-rust/issues/739)
-    pub fn load_config_with_signal(
-        &mut self,
-        signal_tx: Option<SignalSender>,
-    ) -> Result<(), String> {
+    pub fn load_config(&mut self, signal_tx: Option<SignalSender>) -> Result<(), String> {
         let _ = self.config.check_consistency()?;
 
         if self.p2p_config.is_none() {
@@ -404,10 +441,6 @@ impl Conductor {
         Ok(())
     }
 
-    pub fn load_config(&mut self) -> Result<(), String> {
-        self.load_config_with_signal(None)
-    }
-
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
     pub fn instantiate_from_config(
@@ -434,9 +467,13 @@ impl Conductor {
                 context_builder = context_builder.with_network_config(self.instance_p2p_config()?);
 
                 // Signal config:
+                let signal_rx = self.setup_signals(signal_tx.clone());
                 if let Some(tx) = signal_tx {
                     context_builder = context_builder.with_signals(tx)
                 };
+                if let Some(rx) = signal_rx {
+                    self.start_signal_broadcast(rx);
+                }
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
@@ -473,9 +510,6 @@ impl Conductor {
                         .with_named_instance_config(bridge.handle.clone(), callee_config);
                 }
                 context_builder = context_builder.with_conductor_api(api_builder.spawn());
-                if let Some(signal_tx) = self.signal_tx.clone() {
-                    context_builder = context_builder.with_signals(signal_tx);
-                }
 
                 // Spawn context
                 let context = context_builder.spawn();
@@ -644,7 +678,7 @@ impl<'a> TryFrom<&'a Configuration> for Conductor {
     fn try_from(config: &'a Configuration) -> Result<Self, Self::Error> {
         let mut conductor = Conductor::from_config((*config).clone());
         conductor
-            .load_config()
+            .load_config(None)
             .map_err(|string| HolochainError::ConfigError(string))?;
         Ok(conductor)
     }
@@ -792,7 +826,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
-        conductor.load_config().unwrap();
+        conductor.load_config(None).unwrap();
         conductor
     }
 
@@ -800,7 +834,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
-        conductor.load_config().unwrap();
+        conductor.load_config(None).unwrap();
         conductor
     }
 
@@ -1079,7 +1113,9 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
-        conductor.load_config().expect("Test config must be sane");
+        conductor
+            .load_config(None)
+            .expect("Test config must be sane");
         conductor
             .start_all_instances()
             .expect("Instances must be spawnable");

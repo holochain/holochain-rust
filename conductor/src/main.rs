@@ -79,7 +79,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     mount_conductor_from_config(config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
-    conductor.load_config()?;
+    conductor.load_config(None)?;
     Ok(())
 }
 

@@ -8,19 +8,6 @@ use holochain_net_connection::{
 };
 use p2p_node::P2pNode;
 
-// TODO make test: Sending a Message before doing a 'TrackApp' should fail
-//fn no_track_test(
-//    node1: &mut P2pNode,
-//    node2: &mut P2pNode,
-//    can_test_connect: bool,
-//) -> NetResult<()> {
-//    // FIXME: not calling trackApp should make sends or whatever else fail
-//    Ok(())
-//}
-
-// TODO make test: Sending a Message before doing a 'Connect' should fail.
-// fn no_connect_test()
-
 /// Tests if we can get back data published on the network
 #[cfg_attr(tarpaulin, skip)]
 fn confirm_published_data(
@@ -353,3 +340,25 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     // Done
     Ok(())
 }
+
+/// TODO make test: Sending a Message before doing a 'TrackDna' should fail
+pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) -> NetResult<()> {
+    // FIXME: not calling trackApp should make sends or whatever else fail
+
+    // Send a message from alex to billy
+    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+
+    // Check if billy received it
+    let res = billy
+    //.wait(Box::new(|_| true));
+        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .unwrap();
+    log_i!("#### got: {:?}", res);
+    // FIXME should get failureResult with request_id
+
+    Ok(())
+}
+
+// TODO make test: Sending a Message before doing a 'Connect' should fail.
+// fn no_connect_test()
+

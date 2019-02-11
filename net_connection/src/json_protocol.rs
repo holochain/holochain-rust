@@ -28,6 +28,8 @@ fn get_default_state_bindings() -> Vec<String> {
     Vec::new()
 }
 
+
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct StateData {
     pub state: String,
@@ -316,6 +318,10 @@ pub enum JsonProtocol {
     #[serde(rename = "trackDna")]
     TrackDna(TrackDnaData),
 
+    /// Order the p2p module to leave the network of the specified DNA.
+    #[serde(rename = "untrackDna")]
+    UntrackDna(TrackDnaData),
+
     /// Connect to the specified multiaddr
     #[serde(rename = "connect")]
     Connect(ConnectData),
@@ -424,7 +430,12 @@ pub enum JsonProtocol {
     HandleGetHoldingMetaListResult(MetaListData),
 }
 
-// Conversions
+/// helpers
+impl JsonProtocol {
+    pub fn
+}
+
+/// Conversions
 impl<'a> TryFrom<&'a Protocol> for JsonProtocol {
     type Error = Error;
     fn try_from(p: &Protocol) -> Result<Self, Error> {

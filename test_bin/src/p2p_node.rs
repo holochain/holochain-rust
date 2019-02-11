@@ -749,6 +749,9 @@ impl P2pNode {
             JsonProtocol::TrackDna(_) => {
                 panic!("Core should not receive TrackDna message");
             }
+            JsonProtocol::UntrackDna(_) => {
+                panic!("Core should not receive UntrackDna message");
+            }
             JsonProtocol::Connect(_) => {
                 panic!("Core should not receive Connect message");
             }

@@ -96,7 +96,7 @@ pub(crate) struct InMemoryServer {
     // keep track of senders by `dna_address::agent_id`
     senders: HashMap<String, mpsc::Sender<Protocol>>,
     // keep track of senders as arrays by dna_address
-    senders_by_dna: HashMap<Address, Vec<mpsc::Sender<Protocol>>>,
+    senders_by_dna: HashMap<Address, HashMap<String, mpsc::Sender<Protocol>>>,
     // Unique identifier
     name: String,
     // Keep track of connected clients
@@ -253,131 +253,164 @@ impl InMemoryServer {
             .insert(into_bucket_id(dna_address, agent_id), sender.clone());
         match self.senders_by_dna.entry(dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
-                e.get_mut().push(sender.clone());
+                e.get_mut().insert(agent_id.to_string(), sender.clone());
             }
             Entry::Vacant(e) => {
-                e.insert(vec![sender.clone()]);
+                let mut map = HashMap::new();
+                map.insert(agent_id.to_string(), sender.clone());
+                e.insert(map);
             }
         };
         Ok(())
     }
 
+    /// unregister a data handler with the server (for message routing)
+    pub fn unregister(&mut self, dna_address: &Address, agent_id: &str) {
+        let bucket_id = into_bucket_id(dna_address, agent_id);
+        let maybe_sender = self.senders.remove(&bucket_id);
+        if maybe_sender.is_none() {
+            return;
+        }
+        // let sender = maybe_sender.unwrap();
+        match self.senders_by_dna.entry(dna_address.to_owned()) {
+            Entry::Occupied(mut senders) => {
+                senders.get_mut().remove(agent_id.clone());
+            },
+            Entry::Vacant(_) => (),
+        };
+    }
+
+    pub fn check_or_fail(dna_address: &Address, agent_id:&str) -> NetResult<()> {
+
+    }
+
     /// process a message sent by a node to the "network"
     pub fn serve(&mut self, data: Protocol) -> NetResult<()> {
-        self.log
-            .d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
-        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
-            // Note: use same order as the enum
-            match json_msg {
-                JsonProtocol::SuccessResult(msg) => {
-                    // Relay directly the SuccessResult message
-                    self.priv_send_one(
-                        &msg.dna_address,
-                        &msg.to_agent_id,
-                        JsonProtocol::SuccessResult(msg.clone()).into(),
-                    )?;
-                }
-                JsonProtocol::FailureResult(msg) => {
-                    // Check if its a response to our own request
-                    let maybe_bucket_id = self.priv_check_request(&msg.request_id);
-                    if let Some(_) = maybe_bucket_id {
-                        self.log.d(&format!(
-                            "---- '{}' internal request failed: {:?}",
-                            self.name.clone(),
-                            msg.clone(),
-                        ));
-                        return Ok(());
-                    }
-                    // If not, relay the FailureResult message to receipient
-                    self.priv_send_one(
-                        &msg.dna_address,
-                        &msg.to_agent_id,
-                        JsonProtocol::FailureResult(msg.clone()).into(),
-                    )?;
-                }
-                JsonProtocol::TrackDna(msg) => {
-                    // Check if we are already tracking this dna for this agent
-                    let bucket_id = into_bucket_id(&msg.dna_address, &msg.agent_id);
-                    if self.trackdna_book.contains(&bucket_id) {
-                        self.log.e(&format!(
-                            "({}) ##### DNA already tracked: {}",
-                            self.name.clone(),
-                            bucket_id
-                        ));
-                        return Ok(());
-                    }
-                    self.trackdna_book.insert(bucket_id);
-                    // Notify all Peers connected to this DNA of a new Peer connection.
-                    self.priv_send_all(
-                        &msg.dna_address.clone(),
-                        JsonProtocol::PeerConnected(PeerData {
-                            agent_id: msg.agent_id.clone(),
-                        })
-                        .into(),
-                    )?;
-                    // Request all data lists from this agent
-                    self.priv_request_all_lists(&msg.dna_address, &msg.agent_id);
-                }
-
-                JsonProtocol::SendMessage(msg) => {
-                    self.priv_serve_SendMessage(&msg)?;
-                }
-                JsonProtocol::HandleSendMessageResult(msg) => {
-                    self.priv_serve_HandleSendMessageResult(&msg)?;
-                }
-                JsonProtocol::FetchEntry(msg) => {
-                    self.priv_serve_FetchEntry(&msg)?;
-                }
-                JsonProtocol::HandleFetchEntryResult(msg) => {
-                    self.priv_serve_HandleFetchEntryResult(&msg)?;
-                }
-
-                JsonProtocol::PublishEntry(msg) => {
-                    self.priv_serve_PublishEntry(&msg)?;
-                }
-
-                JsonProtocol::FetchMeta(msg) => {
-                    self.priv_serve_FetchMeta(&msg)?;
-                }
-                JsonProtocol::HandleFetchMetaResult(msg) => {
-                    self.priv_serve_HandleFetchMetaResult(&msg)?;
-                }
-
-                JsonProtocol::PublishMeta(msg) => {
-                    self.priv_serve_PublishMeta(&msg)?;
-                }
-
-                // Our request for the publish_list has returned
-                JsonProtocol::HandleGetPublishingEntryListResult(msg) => {
-                    self.priv_serve_HandleGetPublishingEntryListResult(&msg)?;
-                }
-
-                // Our request for the hold_list has returned
-                JsonProtocol::HandleGetHoldingEntryListResult(msg) => {
-                    self.priv_serve_HandleGetHoldingEntryListResult(&msg);
-                }
-
-                // Our request for the publish_meta_list has returned
-                JsonProtocol::HandleGetPublishingMetaListResult(msg) => {
-                    self.priv_serve_HandleGetPublishingMetaListResult(&msg)?;
-                }
-
-                // Our request for the hold_meta_list has returned
-                JsonProtocol::HandleGetHoldingMetaListResult(msg) => {
-                    self.priv_serve_HandleGetHoldingMetaListResult(&msg);
-                }
-
-                _ => (),
+        self.log.d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
+        // serve only JsonProtocol
+        let maybe_json_msg = JsonProtocol::try_from(&data);
+        if let Err(_) = maybe_json_msg {
+            return Ok(())
+        };
+        // Note: use same order as the enum
+        match maybe_json_msg.unwrap() {
+            JsonProtocol::SuccessResult(msg) => {
+                // Relay directly the SuccessResult message
+                self.priv_send_one(
+                    &msg.dna_address,
+                    &msg.to_agent_id,
+                    JsonProtocol::SuccessResult(msg.clone()).into(),
+                )?;
             }
+            JsonProtocol::FailureResult(msg) => {
+                // Check if its a response to our own request
+                let maybe_bucket_id = self.priv_check_request(&msg.request_id);
+                if let Some(_) = maybe_bucket_id {
+                    self.log.d(&format!(
+                        "---- '{}' internal request failed: {:?}",
+                        self.name.clone(),
+                        msg.clone(),
+                    ));
+                    return Ok(());
+                }
+                // If not, relay the FailureResult message to receipient
+                self.priv_send_one(
+                    &msg.dna_address,
+                    &msg.to_agent_id,
+                    JsonProtocol::FailureResult(msg.clone()).into(),
+                )?;
+            }
+            JsonProtocol::TrackDna(msg) => {
+                // Check if we are already tracking this dna for this agent
+                let bucket_id = into_bucket_id(&msg.dna_address, &msg.agent_id);
+                if self.trackdna_book.contains(&bucket_id) {
+                    self.log.e(&format!(
+                        "({}) ##### DNA already tracked: {}",
+                        self.name.clone(),
+                        bucket_id
+                    ));
+                    return Ok(());
+                }
+                self.trackdna_book.insert(bucket_id);
+                // Notify all Peers connected to this DNA of a new Peer connection.
+                self.priv_send_all(
+                    &msg.dna_address.clone(),
+                    JsonProtocol::PeerConnected(PeerData {
+                        agent_id: msg.agent_id.clone(),
+                    })
+                    .into(),
+                )?;
+                // Request all data lists from this agent
+                self.priv_request_all_lists(&msg.dna_address, &msg.agent_id);
+            }
+
+            JsonProtocol::SendMessage(msg) => {
+                self.priv_serve_SendMessage(&msg)?;
+            }
+            JsonProtocol::HandleSendMessageResult(msg) => {
+                self.priv_serve_HandleSendMessageResult(&msg)?;
+            }
+            JsonProtocol::FetchEntry(msg) => {
+                self.priv_serve_FetchEntry(&msg)?;
+            }
+            JsonProtocol::HandleFetchEntryResult(msg) => {
+                self.priv_serve_HandleFetchEntryResult(&msg)?;
+            }
+
+            JsonProtocol::PublishEntry(msg) => {
+                self.priv_serve_PublishEntry(&msg)?;
+            }
+
+            JsonProtocol::FetchMeta(msg) => {
+                self.priv_serve_FetchMeta(&msg)?;
+            }
+            JsonProtocol::HandleFetchMetaResult(msg) => {
+                self.priv_serve_HandleFetchMetaResult(&msg)?;
+            }
+
+            JsonProtocol::PublishMeta(msg) => {
+                self.priv_serve_PublishMeta(&msg)?;
+            }
+
+            // Our request for the publish_list has returned
+            JsonProtocol::HandleGetPublishingEntryListResult(msg) => {
+                self.priv_serve_HandleGetPublishingEntryListResult(&msg)?;
+            }
+
+            // Our request for the hold_list has returned
+            JsonProtocol::HandleGetHoldingEntryListResult(msg) => {
+                self.priv_serve_HandleGetHoldingEntryListResult(&msg);
+            }
+
+            // Our request for the publish_meta_list has returned
+            JsonProtocol::HandleGetPublishingMetaListResult(msg) => {
+                self.priv_serve_HandleGetPublishingMetaListResult(&msg)?;
+            }
+
+            // Our request for the hold_meta_list has returned
+            JsonProtocol::HandleGetHoldingMetaListResult(msg) => {
+                self.priv_serve_HandleGetHoldingMetaListResult(&msg);
+            }
+
+            _ => (),
         }
         Ok(())
     }
 }
 
-// Private sends
+/// Private sends
 impl InMemoryServer {
     /// send a message to the appropriate channel based on dna_address::to_agent_id
-    fn priv_send_one_with_bucket(&mut self, bucket_id: &str, data: Protocol) -> NetResult<()> {
+    /// If bucketId is unknown, send back FailureResult to `maybe_sender_info`
+    fn priv_send_one_with_bucket(
+        &mut self, bucket_id: &str,
+        maybe_sender_info: Option<(&str, Option<&str>)>,
+        data: Protocol,
+    ) -> NetResult<()> {
+        if !self.trackdna_book.contains(&bucket_id) {
+            self.log.w(&format!());
+        }
+
         let maybe_sender = self.senders.get_mut(bucket_id);
         if maybe_sender.is_none() {
             self.log.e(&format!(
@@ -395,15 +428,17 @@ impl InMemoryServer {
         sender.send(data)?;
         Ok(())
     }
-    /// send a message to the appropriate channel based on dna_address::to_agent_id
+    /// send a message to the appropriate channel based on bucketId (dna_address::to_agent_id)
+    /// If bucketId is unknown, send back FailureResult to `maybe_sender_info`
     fn priv_send_one(
         &mut self,
         dna_address: &Address,
         to_agent_id: &str,
+        maybe_sender_info: Option<(&str, Option<&str>)>,
         data: Protocol,
     ) -> NetResult<()> {
         let bucked_id = into_bucket_id(dna_address, to_agent_id);
-        self.priv_send_one_with_bucket(&bucked_id, data)
+        self.priv_send_one_with_bucket(&bucked_id, maybe_sender_info, data)
     }
 
     /// send a message to all nodes connected with this dna address
@@ -415,7 +450,7 @@ impl InMemoryServer {
                 data.clone(),
                 dna_address.clone()
             ));
-            for val in arr.iter_mut() {
+            for (_k, val) in arr.iter_mut() {
                 (*val).send(data.clone())?;
             }
         }
@@ -423,18 +458,31 @@ impl InMemoryServer {
     }
 }
 
-// Private serve fns
+/// Private serve fns
 impl InMemoryServer {
     /// we received a SendMessage message...
     /// normally this would travel over the network, then
     /// show up as a HandleSend message on the receiving agent
     /// Fabricate that message and deliver it to the receiving agent
     fn priv_serve_SendMessage(&mut self, msg: &MessageData) -> NetResult<()> {
-        self.priv_send_one(
+        let res = self.priv_send_one(
             &msg.dna_address,
             &msg.to_agent_id,
             JsonProtocol::HandleSendMessage(msg.clone()).into(),
-        )?;
+        );
+        if res.is_err() {
+            let fail_msg = FailureResultData {
+                dna_address: &msg.dna_address,
+                 request_id: &msg.request_id,
+                to_agent_id:  &msg.from_agent_id,
+                error_info: json!("could not find nodes handling this dnaAddress"),
+            };
+            return self.priv_send_one(
+                &msg.dna_address,
+                &msg.to_agent_id,
+                JsonProtocol::HandleSendMessage(msg.clone()).into(),
+            );
+        }
         Ok(())
     }
 
@@ -477,7 +525,7 @@ impl InMemoryServer {
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
-                    let r = &e.get_mut()[0];
+                    let (_k, r) = &e.get_mut().iter().next().expect("senders_by_dna.entry does not hold any value");
                     self.log.d(&format!(
                         "<<<< '{}' send: {:?}",
                         self.name.clone(),
@@ -558,7 +606,7 @@ impl InMemoryServer {
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
-                    let r = &e.get_mut()[0];
+                    let (_k,  r) = &e.get_mut().iter().next().expect("senders_by_dna.entry does not hold any value");
                     r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
                     return Ok(());
                 }

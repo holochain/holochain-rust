@@ -43,10 +43,11 @@ type MultiNodesTestFn = fn(nodes: &mut Vec<P2pNode>, can_test_connect: bool) -> 
 lazy_static! {
     // List of tests
     pub static ref TWO_NODES_BASIC_TEST_FNS: Vec<TwoNodesTestFn> = vec![
-        basic_workflows::setup_two_nodes,
-        basic_workflows::send_test,
-         basic_workflows::dht_test,
-        basic_workflows::meta_test,
+        // basic_workflows::setup_two_nodes,
+        basic_workflows::no_setup_test,
+//        basic_workflows::send_test,
+//        basic_workflows::dht_test,
+//        basic_workflows::meta_test,
     ];
     pub static ref TWO_NODES_LIST_TEST_FNS: Vec<TwoNodesTestFn> = vec![
         publish_hold_workflows::empty_publish_entry_list_test,

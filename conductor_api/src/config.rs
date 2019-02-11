@@ -462,7 +462,7 @@ pub struct NetworkConfig {
     #[serde(default)]
     pub n3h_ipc_uri: Option<String>,
     #[serde(default)]
-    pub networking_config_filepath: Option<String>,
+    pub networking_config_file: Option<String>,
 }
 
 pub fn default_n3h_mode() -> String {
@@ -655,7 +655,7 @@ pub mod tests {
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
-                networking_config_filepath: Some(String::from(
+                networking_config_file: Some(String::from(
                     "/Users/cnorris/.holochain/network_config.json"
                 )),
             }

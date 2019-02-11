@@ -254,7 +254,7 @@ impl Conductor {
                 network_config.n3h_path.clone()
             )],
             network_config.n3h_persistence_path.clone(),
-            P2pConfig::load_end_user_config(network_config.networking_config_filepath).to_string(),
+            P2pConfig::load_end_user_config(network_config.networking_config_file).to_string(),
             hashmap! {
                 String::from("N3H_MODE") => network_config.n3h_mode.clone(),
                 String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
@@ -297,7 +297,7 @@ impl Conductor {
         P2pConfig::new_ipc_uri(
             uri,
             &net_config.bootstrap_nodes,
-            net_config.networking_config_filepath,
+            net_config.networking_config_file,
         )
     }
 

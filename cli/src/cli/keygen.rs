@@ -38,9 +38,10 @@ pub fn keygen() -> DefaultResult<()> {
 
     let path = keys_directory();
     create_dir_all(path.clone())?;
-    let path = path.join(keypair.pub_keys);
+    let path = path.join(keypair.pub_keys.clone());
     let mut file = File::create(path.clone())?;
     file.write_all(serde_json::to_string(&bundle).unwrap().as_bytes())?;
-    println!("Wrote {}.", path.to_str().unwrap());
+    println!("Agent keys with public address: {}", keypair.pub_keys);
+    println!("written to: {}.", path.to_str().unwrap());
     Ok(())
 }

@@ -11,7 +11,7 @@ pub const KEYS_DIRECTORY: &'static str = "keys";
 /// If it can't get a user directory it will default to "/etc/holochain".
 pub fn config_root() -> PathBuf {
     directories::ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION)
-        .and_then(|dirs| Some(dirs.config_dir().to_owned()))
+        .map(|dirs| dirs.config_dir().to_owned())
         .or(Some(PathBuf::new().join("/etc").join(APPLICATION)))
         .unwrap()
 }

@@ -28,8 +28,6 @@ fn get_default_state_bindings() -> Vec<String> {
     Vec::new()
 }
 
-
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, DefaultJson)]
 pub struct StateData {
     pub state: String,

@@ -350,7 +350,7 @@ pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) ->
 
     // Check if billy received it
     let res = billy
-    //.wait(Box::new(|_| true));
+        //.wait(Box::new(|_| true));
         .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
     log_i!("#### got: {:?}", res);
@@ -361,4 +361,3 @@ pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) ->
 
 // TODO make test: Sending a Message before doing a 'Connect' should fail.
 // fn no_connect_test()
-

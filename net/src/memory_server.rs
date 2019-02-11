@@ -2,7 +2,7 @@
 
 #![allow(non_snake_case)]
 
-use crate::tweetlog::*;
+use crate::{error::NetworkError, tweetlog::*};
 use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net_connection::{
     json_protocol::{
@@ -18,7 +18,6 @@ use std::{
     convert::TryFrom,
     sync::{mpsc, Mutex, RwLock},
 };
-use crate::error::NetworkError;
 
 type BucketId = String;
 type RequestId = String;
@@ -276,24 +275,26 @@ impl InMemoryServer {
         match self.senders_by_dna.entry(dna_address.to_owned()) {
             Entry::Occupied(mut senders) => {
                 senders.get_mut().remove(agent_id.clone());
-            },
+            }
             Entry::Vacant(_) => (),
         };
     }
 
     /// process a message sent by a node to the "network"
     pub fn serve(&mut self, data: Protocol) -> NetResult<()> {
-        self.log.d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
+        self.log
+            .d(&format!(">>>> '{}' recv: {:?}", self.name.clone(), data));
         // serve only JsonProtocol
         let maybe_json_msg = JsonProtocol::try_from(&data);
         if let Err(_) = maybe_json_msg {
-            return Ok(())
+            return Ok(());
         };
         // Note: use same order as the enum
         match maybe_json_msg.unwrap() {
             JsonProtocol::SuccessResult(msg) => {
                 // Check if agent is tracking the dna
-                let is_tracked = self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, None)?;
+                let is_tracked =
+                    self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, None)?;
                 if !is_tracked {
                     return Ok(());
                 }
@@ -306,7 +307,8 @@ impl InMemoryServer {
             }
             JsonProtocol::FailureResult(msg) => {
                 // Check if agent is tracking the dna
-                let is_tracked = self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, None)?;
+                let is_tracked =
+                    self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, None)?;
                 if !is_tracked {
                     return Ok(());
                 }
@@ -407,7 +409,6 @@ impl InMemoryServer {
 
 /// Private sends
 impl InMemoryServer {
-
     /// Check if agent is tracking dna.
     /// If not, will try to send a FailureResult back to sender, if sender info is provided.
     /// Returns true if agent is tracking dna.
@@ -422,11 +423,15 @@ impl InMemoryServer {
             return Ok(true);
         };
         if maybe_sender_info.is_none() {
-            self.log.d(&format!("#### '{}' check failed: {}", self.name.clone(), bucket_id));
+            self.log.d(&format!(
+                "#### '{}' check failed: {}",
+                self.name.clone(),
+                bucket_id
+            ));
             return Err(NetworkError::GenericError {
                 error: "DNA not tracked by agent and no sender info.".to_string(),
             }
-                .into());
+            .into());
         }
         let sender_info = maybe_sender_info.unwrap();
         let sender_agent_id = sender_info.0;
@@ -440,6 +445,12 @@ impl InMemoryServer {
             to_agent_id: sender_agent_id.clone(),
             error_info: json!(format!("DNA not tracked by agent")),
         };
+        self.log.d(&format!(
+            "#### '{}' check failed for {}.\n Sending failure {:?}",
+            self.name.clone(),
+            bucket_id,
+            fail_msg.clone()
+        ));
         self.priv_send_one(
             dna_address,
             &sender_agent_id,
@@ -450,19 +461,18 @@ impl InMemoryServer {
 
     /// send a message to the appropriate channel based on dna_address::to_agent_id
     /// If bucketId is unknown, send back FailureResult to `maybe_sender_info`
-    fn priv_send_one_with_bucket(
-        &mut self, bucket_id: &str,
-        data: Protocol,
-    ) -> NetResult<()> {
+    fn priv_send_one_with_bucket(&mut self, bucket_id: &str, data: Protocol) -> NetResult<()> {
         let maybe_sender = self.senders.get_mut(bucket_id);
         if maybe_sender.is_none() {
             self.log.e(&format!(
-                "#### '{}' error: No sender channel found",
-                self.name.clone()
+                "#### ({}) error: No sender channel found for {}",
+                self.name.clone(),
+                bucket_id,
             ));
             return Err(format_err!(
-                "No sender channel found ({})",
-                self.name.clone()
+                "({}) No sender channel found for {}",
+                self.name.clone(),
+                bucket_id,
             ));
         }
         let sender = maybe_sender.unwrap();
@@ -509,20 +519,14 @@ impl InMemoryServer {
     fn priv_serve_SendMessage(&mut self, msg: &MessageData) -> NetResult<()> {
         // Sender must be tracking
         let sender_info = Some((msg.from_agent_id.clone(), Some(msg.request_id.clone())));
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.from_agent_id,
-            sender_info.clone(),
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.from_agent_id, sender_info.clone())?;
         if !is_tracking {
             return Ok(());
         }
         // Receiver must be tracking
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.to_agent_id,
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -543,20 +547,14 @@ impl InMemoryServer {
     fn priv_serve_HandleSendMessageResult(&mut self, msg: &MessageData) -> NetResult<()> {
         // Sender must be tracking
         let sender_info = Some((msg.from_agent_id.clone(), Some(msg.request_id.clone())));
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.from_agent_id,
-            sender_info.clone(),
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.from_agent_id, sender_info.clone())?;
         if !is_tracking {
             return Ok(());
         }
         // Receiver must be tracking
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.to_agent_id,
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.to_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -575,11 +573,8 @@ impl InMemoryServer {
     fn priv_serve_PublishEntry(&mut self, msg: &EntryData) -> NetResult<()> {
         // Provider must be tracking
         let sender_info = Some((msg.provider_agent_id.clone(), None));
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.provider_agent_id,
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.provider_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -605,11 +600,8 @@ impl InMemoryServer {
     fn priv_serve_FetchEntry(&mut self, msg: &FetchEntryData) -> NetResult<()> {
         // Provider must be tracking
         let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.requester_agent_id,
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -617,7 +609,11 @@ impl InMemoryServer {
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
-                    let (_k, r) = &e.get_mut().iter().next().expect("senders_by_dna.entry does not hold any value");
+                    let (_k, r) = &e
+                        .get_mut()
+                        .iter()
+                        .next()
+                        .expect("senders_by_dna.entry does not hold any value");
                     self.log.d(&format!(
                         "<<<< '{}' send: {:?}",
                         self.name.clone(),
@@ -659,11 +655,8 @@ impl InMemoryServer {
             return Ok(());
         }
         // Requester must be tracking
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.requester_agent_id,
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -693,11 +686,8 @@ impl InMemoryServer {
     fn priv_serve_PublishMeta(&mut self, msg: &DhtMetaData) -> NetResult<()> {
         // Provider must be tracking
         let sender_info = Some((msg.provider_agent_id.clone(), None));
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.provider_agent_id,
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.provider_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -728,11 +718,8 @@ impl InMemoryServer {
     fn priv_serve_FetchMeta(&mut self, msg: &FetchMetaData) -> NetResult<()> {
         // Requester must be tracking
         let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.requester_agent_id,
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -740,7 +727,11 @@ impl InMemoryServer {
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(mut e) => {
                 if !e.get().is_empty() {
-                    let (_k,  r) = &e.get_mut().iter().next().expect("senders_by_dna.entry does not hold any value");
+                    let (_k, r) = &e
+                        .get_mut()
+                        .iter()
+                        .next()
+                        .expect("senders_by_dna.entry does not hold any value");
                     r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
                     return Ok(());
                 }
@@ -776,11 +767,8 @@ impl InMemoryServer {
             return Ok(());
         }
         // Requester must be tracking
-        let is_tracking = self.priv_check_or_fail(
-            &msg.dna_address,
-            &msg.requester_agent_id,
-            sender_info,
-        )?;
+        let is_tracking =
+            self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }

@@ -35,27 +35,29 @@ impl NetWorker for InMemoryWorker {
             match json_msg {
                 JsonProtocol::TrackDna(track_msg) => {
                     match self
-                    .receiver_per_dna
-                    .entry(track_msg.dna_address.to_owned()) {
-                    Entry::Occupied(_) => (),
-                    Entry::Vacant(e) => {
-                        let (tx, rx) = mpsc::channel();
-                        server.register(&track_msg.dna_address, &track_msg.agent_id, tx)?;
-                        e.insert(rx);
-                    }
+                        .receiver_per_dna
+                        .entry(track_msg.dna_address.to_owned())
+                    {
+                        Entry::Occupied(_) => (),
+                        Entry::Vacant(e) => {
+                            let (tx, rx) = mpsc::channel();
+                            server.register(&track_msg.dna_address, &track_msg.agent_id, tx)?;
+                            e.insert(rx);
+                        }
                     };
-                },
+                }
                 JsonProtocol::UntrackDna(untrack_msg) => {
                     match self
                         .receiver_per_dna
-                        .entry(untrack_msg.dna_address.to_owned()) {
-                        Entry::Vacant(_)  => (),
+                        .entry(untrack_msg.dna_address.to_owned())
+                    {
+                        Entry::Vacant(_) => (),
                         Entry::Occupied(e) => {
                             server.unregister(&untrack_msg.dna_address, &untrack_msg.agent_id);
                             e.remove();
-                        },
+                        }
                     };
-                },
+                }
                 _ => (),
             }
         }

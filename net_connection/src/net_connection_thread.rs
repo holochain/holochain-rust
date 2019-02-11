@@ -66,7 +66,9 @@ impl NetConnectionThread {
                         // Received data from parent
                         // Have the worker handle it
                         did_something = true;
-                        worker.receive(data).unwrap_or_else(|e| eprintln!("Error occured in p2p network module: {:?}", e));
+                        worker.receive(data).unwrap_or_else(|e| {
+                            eprintln!("Error occured in p2p network module: {:?}", e)
+                        });
                         Ok(())
                     })
                     .unwrap_or(());

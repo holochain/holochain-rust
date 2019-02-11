@@ -172,7 +172,8 @@ fn main() {
                 "test_bin/data/network_config.json",
                 None,
                 test_fn,
-            ).unwrap();
+            )
+            .unwrap();
         }
     }
 
@@ -196,8 +197,9 @@ fn main() {
                     &n3h_path,
                     "test_bin/data/network_config.json",
                     None,
-                    test_fn)
-                    .unwrap();
+                    test_fn,
+                )
+                .unwrap();
             }
         }
     }

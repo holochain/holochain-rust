@@ -190,7 +190,6 @@ impl P2pConfig {
     pub fn load_end_user_config(
         maybe_end_user_config_filepath: Option<String>,
     ) -> serde_json::Value {
-
         fn load_config_file(filepath: String) -> Result<serde_json::Value, std::io::Error> {
             let mut file = File::open(filepath)?;
             let mut contents = String::new();
@@ -202,10 +201,9 @@ impl P2pConfig {
         match maybe_end_user_config_filepath {
             None => P2pConfig::default_end_user_config(),
             Some(filepath) => match load_config_file(filepath) {
-                    Err(_) => return P2pConfig::default_end_user_config(),
-                    Ok(json) => json,
-                }
-
+                Err(_) => return P2pConfig::default_end_user_config(),
+                Ok(json) => json,
+            },
         }
     }
 }

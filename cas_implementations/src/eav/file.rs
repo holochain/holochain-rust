@@ -323,11 +323,22 @@ pub mod tests {
     }
 
     #[test]
-    fn example_eav_range() {
+    fn file_eav_range() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
         EavTestSuite::test_range::<ExampleAddressableContent, EavFileStorage>(eav_storage);
+    }
+
+    #[test]
+    fn file_eav_prefixes() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavFileStorage::new(temp_path).unwrap();
+        EavTestSuite::test_prefixes::<ExampleAddressableContent, EavFileStorage>(
+            eav_storage,
+            vec!["a_","b_","c_","d_"]
+        );
     }
 
 }

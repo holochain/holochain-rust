@@ -489,6 +489,83 @@ impl EavTestSuite {
         );
     }
 
+
+     pub fn test_prefixes<A, S>(mut eav_storage: S,prefixes : Vec<&str>)
+    where
+        A: AddressableContent + Clone,
+        S: EntityAttributeValueStorage,
+    {
+        let foo_content = Content::from(RawString::from("foo"));
+        let bar_content = Content::from(RawString::from("bar"));
+
+        let one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        // it can reference itself, why not?
+        let many_one = A::try_from_content(&foo_content)
+            .expect("could not create AddressableContent from Content");
+        let attribute = "one_to_many".to_string();
+        let mut expected_prefix = BTreeSet::new();
+       
+        prefixes.iter().for_each(|prefix|{
+            let attribute_with_prefix = prefix.to_string() + &attribute;
+            let eav =
+                EntityAttributeValueIndex::new(&many_one.address(),&attribute_with_prefix, &one.address())
+                    .expect("could not create EAV");
+            let eavi = eav_storage
+                .add_eavi(&eav.clone())
+                .expect("could not add eav")
+                .expect("Could not get eavi option");
+            expected_prefix.insert(eavi.clone());
+        });
+
+
+
+        // get only with a prefix
+        let index_query_prefixes = IndexQuery::new_only_prefixes(prefixes.clone());
+
+        // get only last value in set of prefix query
+        let query = eav_storage
+                .fetch_eavi(
+                    Some(many_one.address()),
+                    Some(attribute.clone()),
+                    None,
+                    index_query_prefixes.clone()
+                )
+                .unwrap();
+        assert_eq!(
+            1,
+            query.len()
+        );
+
+        assert_eq!(
+            expected_prefix.iter().last().unwrap(),
+            query.iter().last().unwrap()
+        );
+
+        //add another value just to prove we get last of prefix
+        let first_eav = expected_prefix.iter().next().unwrap();
+        //timestamp in constructor generates new time
+        let new_eav = EntityAttributeValueIndex::new(&first_eav.entity(),&first_eav.attribute(), &first_eav.value())
+                    .expect("could not create EAV");
+        let new_eavi = eav_storage.add_eavi(&new_eav);
+        // get only last value in set of prefix
+        let query = eav_storage
+                .fetch_eavi(
+                    Some(many_one.address()),
+                    Some(attribute.clone()),
+                    None,
+                    index_query_prefixes
+                )
+                .unwrap();
+        println!("query {:?}",query.clone());
+        assert_eq!(
+            &new_eavi.unwrap().unwrap(),
+            query.iter().last().unwrap()
+        )
+        
+
+    }
+
     pub fn test_many_to_one<A, S>(mut eav_storage: S)
     where
         A: AddressableContent + Clone,

@@ -132,4 +132,13 @@ pub mod tests {
         EavTestSuite::test_range::<ExampleAddressableContent, EavMemoryStorage>(eav_storage);
     }
 
+    #[test]
+    fn file_eav_prefixes() {
+        let eav_storage = EavMemoryStorage::new();
+        EavTestSuite::test_prefixes::<ExampleAddressableContent, EavMemoryStorage>(
+            eav_storage,
+            vec!["a_","b_","c_","d_"]
+        );
+    }
+
 }

@@ -43,7 +43,7 @@ pub fn js_make_config(mut cx: FunctionContext) -> JsResult<JsValue> {
         Default::default()
     } else {
         LoggerConfiguration {
-            logger_type: "debug".into(),
+            logger_type: "simple".into(),
             rules: LogRules::new(),
         }
     };
@@ -108,12 +108,12 @@ fn make_dna_config(dna: DnaData) -> Result<DnaConfiguration, String> {
     let path = dna.path.to_string_lossy().to_string();
     Ok(DnaConfiguration {
         id: dna.name.clone(),
-        hash: String::from("DONTCARE"),
         file: path,
+        hash: None,
     })
     // eventually can get actual file content to calculate hash and stuff,
     // but for now it doesn't matter so don't care...
 
-    // let temp = DnaConfiguration {id: "", hash: "", file: dna_path};
+    // let temp = DnaConfiguration {id: "", hash: None, file: dna_path};
     // let dna = Dna::try_from(temp).map_err(|e| e.to_string())?;
 }

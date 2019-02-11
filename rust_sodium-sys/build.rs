@@ -77,7 +77,7 @@ fn download(url: &str, expected_hash: &str) -> Cursor<Vec<u8>> {
     let response = unwrap!(request::get(url));
 
     // Only accept 2xx status codes
-    if response.status_code() < 200 && response.status_code() >= 300 {
+    if response.status_code() < 200 || response.status_code() >= 300 {
         panic!("Download error: HTTP {}", response.status_code());
     }
     let resp_body = response.body();
@@ -258,7 +258,7 @@ fn get_libsodium() {
     let build = cc::Build::new();
     let mut compiler = unwrap!(build.get_compiler().path().to_str()).to_string();
     let mut cflags = env::var("CFLAGS").unwrap_or(String::default());
-    cflags += " -O2";
+    cflags += " -O2 -fPIC";
     let host_arg;
     let cross_compiling;
     let help;
@@ -354,6 +354,7 @@ fn get_libsodium() {
     if !cflags.is_empty() {
         configure_cmd.env("CFLAGS", &cflags);
     }
+    println!("cargo:warning=libsodium CFLAGS used: {}", cflags);
     println!("cargo:rerun-if-env-changed=RUST_SODIUM_DISABLE_PIE");
     if env::var("RUST_SODIUM_DISABLE_PIE").is_ok() {
         configure_cmd.arg("--disable-pie");

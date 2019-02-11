@@ -57,9 +57,10 @@ impl Future for MainFuture {
 
         response_result.map(|res| {
             res.map(|mut response| {
-                response
-                    .headers_mut()
-                    .insert("Access-Control-Allow-Origin", "*".parse().unwrap());
+                response.headers_mut().insert(
+                    "Access-Control-Allow-Origin",
+                    "http://localhost:*".parse().unwrap(),
+                );
 
                 response
             })

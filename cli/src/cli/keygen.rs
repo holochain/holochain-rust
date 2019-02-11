@@ -53,6 +53,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     Ok(())
 }
 
+#[cfg(test)]
 pub mod test {
     use super::*;
     use holochain_dpki::bundle::KeyBundle;

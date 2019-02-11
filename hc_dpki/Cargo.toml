@@ -14,4 +14,3 @@ holochain_core_types = { path = "../core_types" }
 serde = "1.0.87"
 serde_derive = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }
-rustc-serialize = "0.3.24"

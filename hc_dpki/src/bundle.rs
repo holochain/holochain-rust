@@ -11,7 +11,7 @@ pub struct KeyBundle {
 
 /// This struct type is for the return type for  util::pw_enc
 // #[derive(RustcDecodable, RustcEncodable)]
-#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ReturnBundleData {
     pub salt: Vec<u8>,
     pub nonce: Vec<u8>,

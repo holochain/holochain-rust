@@ -4,7 +4,6 @@ use crate::{
     util::{self, PwHashConfig},
 };
 use holochain_core_types::{agent::KeyBuffer, error::HolochainError};
-use rustc_serialize::json;
 use std::str;
 
 pub struct Keypair {
@@ -84,7 +83,7 @@ impl Keypair {
 
         let password_encrypted: bundle::ReturnBundleData =
             util::pw_enc(&mut key_buf, passphrase, config)?;
-        let bundle_data_serialized = json::encode(&password_encrypted).unwrap();
+        let bundle_data_serialized = serde_json::to_string(&password_encrypted)?;
 
         // conver to base64
         let bundle_data_encoded = base64::encode(&bundle_data_serialized);
@@ -109,7 +108,7 @@ impl Keypair {
         // decoding the bundle.data of type util::ReturnBundledata
         let bundle_decoded = base64::decode(&bundle.data)?;
         let bundle_string = str::from_utf8(&bundle_decoded).unwrap();
-        let data: bundle::ReturnBundleData = json::decode(&bundle_string).unwrap();
+        let data: bundle::ReturnBundleData = serde_json::from_str(&bundle_string)?;
         let mut decrypted_data = SecBuf::with_secure(BUNDLE_DATA_LEN);
         util::pw_dec(&data, passphrase, &mut decrypted_data, config)?;
         let mut sign_priv = SecBuf::with_secure(64);

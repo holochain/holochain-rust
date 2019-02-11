@@ -149,7 +149,7 @@ enum Cli {
     #[structopt(
         name = "keygen",
         alias = "k",
-        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to ~/.holochain/keys"
+        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to ~/.config/holochain/keys"
     )]
     KeyGen,
 }

@@ -165,7 +165,7 @@ pub(crate) fn reduce_call(
     // 1.Checks for correctness of ZomeFnCall
     let fn_call = match action_wrapper.action().clone() {
         Action::Call(call) => call,
-        _ => unreachable!(),
+        other => panic!(format!("Zome call action unrecognized: {:?}", other)),
     };
 
     // 1. Validate the call (a number of things could go wrong)

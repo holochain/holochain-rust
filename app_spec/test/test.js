@@ -159,14 +159,6 @@ scenario1.runTape('update_post', async (t, { alice }) => {
 
 scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
 
-  await alice.callSync("blog", "create_post",
-    { "content": "Posty", "in_reply_to": null }
-  )
-  let result_create_post = alice.call("blog", "my_posts", {})
-
-  t.equal(result_create_post.Ok.addresses.length, 1)
-
-  
   const result_bob_delete = await bob.callSync("blog", "delete_post",
     { "content": "Bad"}
   )

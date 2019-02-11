@@ -385,7 +385,7 @@ pub mod tests {
         let test_setup = setup_test(dna);
         // Expecting error since there is no function in wasm to call
         let expected = Ok(Err(HolochainError::RibosomeFailed(
-            "Argument deserialization failed".to_string(),
+            "Zome function failure: Argument deserialization failed".to_string(),
         )));
         test_reduce_call(&test_setup, "", Address::from("caller"), expected);
     }
@@ -399,7 +399,7 @@ pub mod tests {
 
         // Expecting error since there is no function in wasm to call
         let expected = Ok(Err(HolochainError::RibosomeFailed(
-            "Argument deserialization failed".to_string(),
+            "Zome function failure: Argument deserialization failed".to_string(),
         )));
         let agent_token_str = test_setup.context.agent_id.key.clone();
         test_reduce_call(
@@ -438,7 +438,7 @@ pub mod tests {
 
         // Expecting error since there is no function in wasm to call
         let expected = Ok(Err(HolochainError::RibosomeFailed(
-            "Argument deserialization failed".to_string(),
+            "Zome function failure: Argument deserialization failed".to_string(),
         )));
         let agent_token_str = test_setup.context.agent_id.key.clone();
         test_reduce_call(

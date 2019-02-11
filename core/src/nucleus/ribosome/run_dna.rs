@@ -138,7 +138,7 @@ pub fn run_dna(
                 mut_runtime,
             )
             .map_err(|err| {
-                HolochainError::RibosomeFailed(format!("WASM Invocation failed: {:?}", err))
+                HolochainError::RibosomeFailed(format!("WASM Invocation failed: {}", err))
             })?
             .unwrap()
             .try_into()
@@ -160,8 +160,8 @@ pub fn run_dna(
         RibosomeEncodedValue::Failure(err_code) => {
             return_log_msg = return_code.to_string();
             return_result = Err(HolochainError::RibosomeFailed(format!(
-                "Zome function failure: {:?}",
-                err_code
+                "Zome function failure: {}",
+                err_code.as_str()
             )));
         }
 
@@ -177,7 +177,7 @@ pub fn run_dna(
                         Err(err) => {
                             return_log_msg = err.to_string();
                             return_result = Err(HolochainError::RibosomeFailed(format!(
-                                "WASM failed to return value: {:?}",
+                                "WASM failed to return value: {}",
                                 err
                             )));
                         }

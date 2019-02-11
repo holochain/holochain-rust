@@ -69,7 +69,7 @@ fn store_string_test() {
 fn store_string_err_test() {
     assert_eq!(
         Err(HolochainInstanceError::from(
-            HolochainError::RibosomeFailed("Zome function failure: OutOfMemory".into())
+            HolochainError::RibosomeFailed("Zome function failure: Out of memory".into())
         )),
         call_zome_function_with_hc("store_string_err", RawString::from("")),
     );
@@ -184,7 +184,7 @@ fn stacked_json_test() {
 fn call_store_as_json_err() {
     assert_eq!(
         Err(HolochainInstanceError::from(
-            HolochainError::RibosomeFailed("Zome function failure: OutOfMemory".into())
+            HolochainError::RibosomeFailed("Zome function failure: Out of memory".into())
         )),
         call_zome_function_with_hc("store_json_err", RawString::from("")),
     );

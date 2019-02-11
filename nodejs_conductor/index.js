@@ -5,7 +5,7 @@ const tape = require('tape');
 // deals with ensuring the correct version for the machine/node version
 const binding_path = binary.find(path.resolve(path.join(__dirname, './package.json')));
 
-const { makeInstanceId, makeConfig, TestConductor: Conductor } = require(binding_path);
+const { makeConfig, TestConductor: Conductor } = require(binding_path);
 
 const promiser = (fulfill, reject) => (err, val) => {
     if (err) {
@@ -99,8 +99,7 @@ Conductor.prototype.callSync = function (...args) {
 
 // Convenience function for making an object that can call into the conductor
 // in the context of a particular instance. This may be temporary.
-Conductor.prototype.makeCaller = function (agentId, dnaPath) {
-  const instanceId = dnaPath ? makeInstanceId(agentId, dnaPath) : agentId
+Conductor.prototype.makeCaller = function (instanceId) {
   return {
     call: (zome, fn, params) => this.call(instanceId, zome, fn, params),
     agentId: this.agent_id(instanceId),
@@ -185,7 +184,6 @@ class Scenario {
         return Conductor.run(this.instances, this.opts, (stop, _, conductor) => {
             const callers = {}
             this.instances.forEach(instance => {
-                const id = makeInstanceId(instance.agent.name, instance.dna.name)
                 const name = instance.name
                 if (name in callers) {
                     throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`

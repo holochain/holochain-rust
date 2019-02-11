@@ -69,6 +69,7 @@ If you want to use `hc run` with real (as opposed to mock) networking, you will 
 | unpack    | Unpacks a Holochain bundle into its original file system structure  |
 | test      | Runs tests written in the test folder                               |
 | run       | Starts a websocket server for the current Holochain app             |
+| keygen    | Creates a new passphrase encrypted agent key bundle                 |
 | agent (u) | Starts a Holochain node as an agent                                 |
 
 ### hc init & hc generate: How To Get Started Building An App
@@ -89,6 +90,11 @@ To read about `hc test`, used for running tests over your source code, see [http
 
 To read about `hc run`, used for spinning up a quick developement version of your app with an HTTP or Websocket interface, that you can connect to from a UI, or any client, see [https://developer.holochain.org/guide/latest/development_conductor.html](https://developer.holochain.org/guide/latest/development_conductor.html).
 
+### hc keygen: Create agent key pair
+
+Every agent is represented by a private/public key pair and its source chain.
+This command creates a new key pair, asks for a passphrase and writes a key bundle file that the Holochain Conductor
+can read and when starting up an instance.
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](../CONTRIBUTING.md) for our general practices and protocols on participating in the community.

@@ -512,7 +512,7 @@ impl InMemoryServer {
         let is_tracking = self.priv_check_or_fail(
             &msg.dna_address,
             &msg.from_agent_id,
-            sender_info,
+            sender_info.clone(),
         )?;
         if !is_tracking {
             return Ok(());
@@ -546,7 +546,7 @@ impl InMemoryServer {
         let is_tracking = self.priv_check_or_fail(
             &msg.dna_address,
             &msg.from_agent_id,
-            sender_info,
+            sender_info.clone(),
         )?;
         if !is_tracking {
             return Ok(());
@@ -653,7 +653,7 @@ impl InMemoryServer {
         let is_tracking = self.priv_check_or_fail(
             &msg.dna_address,
             &msg.provider_agent_id,
-            sender_info,
+            sender_info.clone(),
         )?;
         if !is_tracking {
             return Ok(());
@@ -770,7 +770,7 @@ impl InMemoryServer {
         let is_tracking = self.priv_check_or_fail(
             &msg.dna_address,
             &msg.provider_agent_id,
-            sender_info,
+            sender_info.clone(),
         )?;
         if !is_tracking {
             return Ok(());

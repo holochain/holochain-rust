@@ -84,8 +84,8 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
     }
 
     let config = Configuration {
-        agents: agent_configs.into_iter().map(|(_, v)| v).collect(),
-        dnas: dna_configs.into_iter().map(|(_, v)| v).collect(),
+        agents: agent_configs.values().cloned().collect(),
+        dnas: dna_configs.values().cloned().collect(),
         instances: instance_configs,
         logger,
         ..Default::default()

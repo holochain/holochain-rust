@@ -23,6 +23,7 @@ use hdk::{
 use blog::Env;
 
 define_zome! {
+
     entries: [
         post::definition()
     ]
@@ -61,6 +62,18 @@ define_zome! {
             inputs: |content: String, in_reply_to: Option<Address>|,
             outputs: |result: ZomeApiResult<Address>|,
             handler: blog::handle_create_post
+        }
+
+        delete_post: {
+            inputs: |post_address: Address|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: blog::handle_delete_post
+        }
+
+        update_post: {
+            inputs: |post_address: Address, new_content: String|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: blog::handle_update_post
         }
 
         posts_by_agent: {
@@ -107,7 +120,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [show_env, check_sum, get_sources, post_address, create_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
+        hc_public [show_env, check_sum, get_sources, post_address, create_post, delete_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
     }
-
 }

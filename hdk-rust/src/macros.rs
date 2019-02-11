@@ -193,7 +193,7 @@ macro_rules! define_zome {
                             outputs: | $( $output_param_name:ident : $output_param_type:ty ),* |,
                             handler: $handler_path:path
                         }
-            )+
+            )*
         ]
 
         traits : {
@@ -294,7 +294,7 @@ macro_rules! define_zome {
                         traitfns.functions = vec![
                             $(
                                 stringify!($trait_fn).into()
-                            ),+
+                            ),*
                         ];
 
                         traitfns_map.insert(stringify!($trait).into(), traitfns);
@@ -330,7 +330,7 @@ macro_rules! define_zome {
                                         ),*
                                     ]
                                 }
-                    ),+
+                    ),*
 
                 ]
             };
@@ -373,6 +373,6 @@ macro_rules! define_zome {
                         $crate::global_fns::write_json(execute(input))
                     ).into()
                 }
-        )+
+        )*
     };
 }

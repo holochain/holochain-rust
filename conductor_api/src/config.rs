@@ -314,12 +314,14 @@ impl From<AgentConfiguration> for AgentId {
 }
 
 /// A DNA is represented by a DNA file.
-/// A hash has to be provided for sanity check.
+/// A hash can optionally be provided, which could be used to validate that the DNA being installed
+/// is the DNA that was intended to be installed.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
-    pub hash: String,
+    #[serde(default)]
+    pub hash: Option<String>,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {
@@ -411,11 +413,15 @@ pub struct Bridge {
     pub handle: String,
 }
 
+/// A UI Bundle is a folder containing static assets which can be served as a UI
+/// A hash can optionally be provided, which could be used to validate that the UI being installed
+/// is the UI bundle that was intended to be installed.
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct UiBundleConfiguration {
     pub id: String,
     pub root_dir: String,
-    pub hash: String,
+    #[serde(default)]
+    pub hash: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
@@ -568,7 +574,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.hcpkg");
-        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
     }
 
     #[test]
@@ -631,7 +637,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.hcpkg");
-        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
@@ -728,7 +734,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.hcpkg");
-        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();

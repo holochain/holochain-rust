@@ -57,7 +57,7 @@ impl ConductorUiAdmin for Conductor {
         let new_bundle = UiBundleConfiguration {
             id: id.to_string(),
             root_dir: path_string.into(),
-            hash: "<not-used>".to_string(),
+            hash: None,
         };
 
         let mut new_config = self.config.clone();
@@ -214,7 +214,6 @@ pub mod tests {
             toml,
             String::from(
                 r#"[[ui_bundles]]
-hash = '<not-used>'
 id = 'test-bundle-id'
 root_dir = '.'"#,
             ),
@@ -263,7 +262,6 @@ root_dir = '.'"#,
             toml,
             String::from(
                 r#"[[ui_bundles]]
-hash = '<not-used>'
 id = 'test-bundle-id'"#,
             ),
         );
@@ -369,7 +367,6 @@ id = 'test-bundle-id'"#,
             toml,
             String::from(
                 r#"[[ui_bundles]]
-hash = '<not-used>'
 id = 'test-bundle-id'
 root_dir = '.'
 
@@ -441,7 +438,6 @@ port = 4000"#,
             toml,
             String::from(
                 r#"[[ui_bundles]]
-hash = '<not-used>'
 id = 'test-bundle-id'
 root_dir = '.'"#,
             ),

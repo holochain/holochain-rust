@@ -162,18 +162,10 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
   await alice.callSync("blog", "create_post",
     { "content": "Posty", "in_reply_to": null }
   )
-  let result_create_post = bob.call("blog", "my_posts", {})
-  t.equal(result_create_post.Ok.addresses.length, 1)
-
-  let i = 0;
-  while(i<2500 && result_create_post.Ok.addresses.length!=0)
-  {
-    result_create_post = alice.call("blog", "my_posts", {});
-    i++;
-  }
+  let result_create_post = alice.call("blog", "my_posts", {})
 
   t.equal(result_create_post.Ok.addresses.length, 1)
-  
+
   
   const result_bob_delete = await bob.callSync("blog", "delete_post",
     { "content": "Bad"}

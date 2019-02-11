@@ -162,7 +162,7 @@ pub(crate) fn reduce_remove_link(
         new_store.actions_mut().insert(
             action_wrapper.clone(),
             Err(HolochainError::ErrorGeneric(String::from(
-                "Base for link not found for remov",
+                "Base for link not found for remove",
             ))),
         );
         Some(new_store)

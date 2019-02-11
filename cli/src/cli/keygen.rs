@@ -14,9 +14,8 @@ use std::{
 };
 
 pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
-    let passphrase = passphrase.unwrap_or_else(||
-        rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap()
-    );
+    let passphrase = passphrase
+        .unwrap_or_else(|| rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap());
 
     let mut seed = SecBuf::with_secure(SEEDSIZE);
     random_secbuf(&mut seed);
@@ -54,13 +53,12 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
     Ok(())
 }
 
-
 pub mod test {
     use super::*;
     use holochain_dpki::bundle::KeyBundle;
     use std::{
-        fs::{File, remove_file},
-        path::PathBuf
+        fs::{remove_file, File},
+        path::PathBuf,
     };
 
     #[test]
@@ -68,8 +66,7 @@ pub mod test {
         let path = PathBuf::new().join("test.key");
         let passphrase = String::from("secret");
 
-        keygen(Some(path.clone()), Some(passphrase.clone()))
-            .expect("Keygen should work");
+        keygen(Some(path.clone()), Some(passphrase.clone())).expect("Keygen should work");
 
         let mut file = File::open(path.clone()).unwrap();
         let mut contents = String::new();
@@ -77,11 +74,15 @@ pub mod test {
 
         let bundle: KeyBundle = serde_json::from_str(&contents).unwrap();
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let keypair = Keypair::from_bundle(&bundle, &mut passphrase, Some(PwHashConfig(
-            pwhash::OPSLIMIT_INTERACTIVE,
-            pwhash::MEMLIMIT_INTERACTIVE,
-            pwhash::ALG_ARGON2ID13,
-        )));
+        let keypair = Keypair::from_bundle(
+            &bundle,
+            &mut passphrase,
+            Some(PwHashConfig(
+                pwhash::OPSLIMIT_INTERACTIVE,
+                pwhash::MEMLIMIT_INTERACTIVE,
+                pwhash::ALG_ARGON2ID13,
+            )),
+        );
 
         assert!(keypair.is_ok());
 

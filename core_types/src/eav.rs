@@ -294,7 +294,6 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         let new_map = map.clone();
-        println!("map {:?}", new_map.clone());
         let filtered: BTreeSet<EntityAttributeValueIndex> = new_map
             .into_iter()
             .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
@@ -313,7 +312,6 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                     .unwrap_or_else(|| {
                         let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                             .unwrap_or(EntityAttributeValueIndex::default());
-                        println!("latest {:?}", latest.clone());
                         latest.index() == e.index()
                     })
             })

@@ -36,7 +36,7 @@ pub async fn remove_link_workflow<'a>(
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
-    context.log(format!("debug/workflow/hold_link: got validation package!"));
+    context.log(format!("debug/workflow/remove_link: got validation package!"));
 
     // 2. Create validation data struct
     let validation_data = ValidationData {

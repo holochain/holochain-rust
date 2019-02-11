@@ -12,8 +12,7 @@ pub const KEYS_DIRECTORY: &'static str = "keys";
 pub fn config_root() -> PathBuf {
     directories::ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION)
         .map(|dirs| dirs.config_dir().to_owned())
-        .or(Some(PathBuf::new().join("/etc").join(APPLICATION)))
-        .unwrap()
+        .unwrap_or_else(|| PathBuf::new().join("/etc").join(APPLICATION))
 }
 
 /// Returns the path to where agent keys are stored and looked for by default.

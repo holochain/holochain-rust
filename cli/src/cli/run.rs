@@ -101,7 +101,7 @@ pub fn run(
         }
 
         // Load end_user config file
-        let n3h_end_user_config_filepath = env::var("HC_N3H_END_USER_CONFIG_FILEPATH").ok();
+        let n3h_end_user_config_filepath = env::var("HC_N3H_SETTINGS_FILE").ok();
 
         Some(NetworkConfig {
             bootstrap_nodes: n3h_bootstrap,

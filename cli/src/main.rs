@@ -1,4 +1,5 @@
 extern crate holochain_cas_implementations;
+extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;

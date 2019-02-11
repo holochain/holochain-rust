@@ -1,4 +1,5 @@
 use error::DefaultResult;
+use holochain_common::paths::keys_directory;
 use holochain_dpki::{
     bundle::KeyBundle,
     keypair::{Keypair, SEEDSIZE},
@@ -9,7 +10,6 @@ use rpassword;
 use std::{
     fs::{create_dir_all, File},
     io::prelude::*,
-    path::PathBuf,
 };
 
 pub fn keygen() -> DefaultResult<()> {
@@ -36,11 +36,7 @@ pub fn keygen() -> DefaultResult<()> {
         )
         .unwrap();
 
-    let path = match directories::UserDirs::new() {
-        Some(user_dirs) => user_dirs.home_dir().join(".holochain").join("keys"),
-        None => PathBuf::new(),
-    };
-
+    let path = keys_directory();
     create_dir_all(path.clone())?;
     let path = path.join(keypair.pub_keys);
     let mut file = File::create(path.clone())?;

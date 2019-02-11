@@ -5,6 +5,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 holochain_net = { path = "../net" }
+holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_core = { path = "../core" }
 holochain_cas_implementations = { path = "../cas_implementations" }

@@ -491,7 +491,7 @@ mod tests {
         let mut s = Seed::new(&seed_type, SeedInit(seed_buf_in));
 
         let m = s.get_mnemonic().unwrap();
-        println!("Menemenoc: {:?}", m);
+        println!("Mnemonic: {:?}", m);
         assert_eq!("arrange crazy abandon abandon abandon abandon abandon abandon abandon abandon abandon absent".to_string(), m);
     }
 

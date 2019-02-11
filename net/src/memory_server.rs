@@ -417,12 +417,12 @@ impl InMemoryServer {
         agent_id: &str,
         maybe_sender_info: Option<(String, Option<String>)>,
     ) -> NetResult<bool> {
-        let bucked_id = into_bucket_id(dna_address, to_agent_id);
+        let bucket_id = into_bucket_id(dna_address, agent_id);
         if self.trackdna_book.contains(&bucket_id) {
             return Ok(true);
         };
         if maybe_sender_info.is_none() {
-            self.log.d(&format!("#### '{}' check failed: {}", self.name.clone(), bucked_id));
+            self.log.d(&format!("#### '{}' check failed: {}", self.name.clone(), bucket_id));
             return Err(NetworkError::GenericError {
                 error: "DNA not tracked by agent and no sender info.".to_string(),
             }
@@ -441,7 +441,7 @@ impl InMemoryServer {
             error_info: json!(format!("DNA not tracked by agent")),
         };
         self.priv_send_one(
-            &msg.dna_address,
+            dna_address,
             &sender_agent_id,
             JsonProtocol::FailureResult(fail_msg).into(),
         )?;
@@ -454,10 +454,6 @@ impl InMemoryServer {
         &mut self, bucket_id: &str,
         data: Protocol,
     ) -> NetResult<()> {
-        if !self.trackdna_book.contains(&bucket_id) {
-            self.log.w(&format!());
-        }
-
         let maybe_sender = self.senders.get_mut(bucket_id);
         if maybe_sender.is_none() {
             self.log.e(&format!(
@@ -608,7 +604,7 @@ impl InMemoryServer {
     /// If there is no other node for this DNA, send a FailureResult.
     fn priv_serve_FetchEntry(&mut self, msg: &FetchEntryData) -> NetResult<()> {
         // Provider must be tracking
-        let sender_info = Some((msg.from_agent_id.clone(), Some(msg.request_id.clone())));
+        let sender_info = Some((msg.requester_agent_id.clone(), Some(msg.request_id.clone())));
         let is_tracking = self.priv_check_or_fail(
             &msg.dna_address,
             &msg.requester_agent_id,

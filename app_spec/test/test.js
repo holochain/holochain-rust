@@ -22,16 +22,16 @@ scenario2.runTape('agentId', async (t, { alice, bob }) => {
 })
 
 scenario1.runTape('show_env', async (t, { alice }) => {
-    const result = alice.call("blog", "show_env", {})
+  const result = alice.call("blog", "show_env", {})
 
-    t.equal(result.Ok.dna_address, alice.dnaAddress)
-    t.equal(result.Ok.dna_name, "HDK-spec-rust")
-    t.equal(result.Ok.agent_address, alice.agentId)
-    t.equal(result.Ok.agent_id, '{"nick":"alice","key":"'+alice.agentId+'"}')
+  t.equal(result.Ok.dna_address, alice.dnaAddress)
+  t.equal(result.Ok.dna_name, "HDK-spec-rust")
+  t.equal(result.Ok.agent_address, alice.agentId)
+  t.equal(result.Ok.agent_id, '{"nick":"alice","key":"' + alice.agentId + '"}')
 })
 
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
-  const params = {content: 'whatever', in_reply_to: null}
+  const params = { content: 'whatever', in_reply_to: null }
   const address = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
   const address1 = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
   const address2 = await bob.callSync('blog', 'create_post', params).then(x => x.Ok)
@@ -39,9 +39,9 @@ scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
   t.equal(address, address1)
   t.equal(address, address2)
   t.equal(address, address3)
-  const sources1 = alice.call('blog', 'get_sources', {address}).Ok.sort()
-  const sources2 = bob.call('blog', 'get_sources', {address}).Ok.sort()
-  const sources3 = carol.call('blog', 'get_sources', {address}).Ok.sort()
+  const sources1 = alice.call('blog', 'get_sources', { address }).Ok.sort()
+  const sources2 = bob.call('blog', 'get_sources', { address }).Ok.sort()
+  const sources3 = carol.call('blog', 'get_sources', { address }).Ok.sort()
   // NB: alice shows up twice because she published the same entry twice
   const expected = [alice.agentId, alice.agentId, bob.agentId, carol.agentId].sort()
   t.deepEqual(sources1, expected)
@@ -79,7 +79,52 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+
+scenario1.runTape('delete_post', async (t, { alice }) => {
+  t.plan(3)
+
+  const content = "Hello Holo world 321"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const createResult = alice.call("blog", "create_post", params)
+
+  t.ok(createResult.Ok)
+
+  const deletionParams = { post_address: createResult.Ok }
+  const deletionResult = alice.call("blog", "delete_post", deletionParams)
+
+  t.equals(deletionResult.Ok, null)
+
+  const paramsGet = { post_address: createResult.Ok }
+  const result = alice.call("blog", "get_post", paramsGet)
+
+  t.equals(result.Ok, null)
+})
+
+scenario1.runTape('update_post', async (t, { alice }) => {
+  t.plan(4)
+
+  const content = "Hello Holo world 123"
+  const in_reply_to = null
+  const params = { content, in_reply_to }
+  const createResult = alice.call("blog", "create_post", params)
+
+  t.ok(createResult.Ok)
+
+  const updateParams = { post_address: createResult.Ok, new_content: "Hello Holo" }
+  const result = alice.call("blog", "update_post", updateParams)
+
+  t.equals(result.Ok, null)
+
+  const updatedPost = alice.call("blog", "get_post", { post_address: createResult.Ok })
+
+  t.ok(updatedPost.Ok)
+
+  t.deepEqual(JSON.parse(updatedPost.Ok.App[1]), { content: "Hello Holo", date_created: "now" })
+})
+
 scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
+  t.plan(5)
 
   const content = "Holo world"
   const in_reply_to = "bad"

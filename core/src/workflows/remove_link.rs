@@ -60,4 +60,3 @@ pub async fn remove_link_workflow<'a>(
     context.log(format!("debug/workflow/remove_link: added! {:?}", link));
     Ok(())
 }
-

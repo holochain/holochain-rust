@@ -8,9 +8,7 @@ use crate::{
 use bip39::{Language, Mnemonic};
 use boolinator::*;
 use holochain_core_types::error::HolochainError;
-use rustc_serialize::json;
 use std::str;
-
 pub enum InitializeSeed {
     SeedInit(SecBuf),
     MnemonicInit(String),
@@ -45,7 +43,8 @@ impl Seed {
         let seed_data_decoded = base64::decode(&bundle.data)?;
         let seed_data_string = str::from_utf8(&seed_data_decoded)?;
 
-        let seed_data_deserialized: bundle::ReturnBundleData = json::decode(&seed_data_string)?;
+        let seed_data_deserialized: bundle::ReturnBundleData =
+            serde_json::from_str(&seed_data_string)?;
         let mut seed_data = SecBuf::with_secure(32);
 
         util::pw_dec(&seed_data_deserialized, passphrase, &mut seed_data, config)?;
@@ -75,7 +74,7 @@ impl Seed {
             util::pw_enc(&mut self.seed_buf, passphrase, config)?;
 
         // convert -> to string -> to base64
-        let seed_data_serialized = json::encode(&seed_data)?;
+        let seed_data_serialized = serde_json::to_string(&seed_data)?;
         let seed_data_encoded = base64::encode(&seed_data_serialized);
 
         Ok(bundle::KeyBundle {

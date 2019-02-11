@@ -5,6 +5,10 @@ extern crate holochain_sodium;
 extern crate arrayref;
 extern crate base64;
 extern crate rustc_serialize;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 
 extern crate bip39;
 extern crate boolinator;

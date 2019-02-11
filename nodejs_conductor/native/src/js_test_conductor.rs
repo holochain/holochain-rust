@@ -16,12 +16,11 @@ use holochain_conductor_api::{
 use holochain_core::{
     action::Action,
     signal::{signal_channel, Signal, SignalReceiver},
-    nucleus::ribosome::capabilities::CapabilityRequest,
+    nucleus::ribosome::fn_call::make_cap_request_for_call,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     entry::Entry,
-    signature::Signature,
 };
 use holochain_node_test_waiter::waiter::{CallBlockingTask, ControlMsg, MainBackgroundTask};
 
@@ -157,14 +156,23 @@ declare_types! {
                 if !tc.is_started {
                     panic!("TestConductor: cannot use call() before start()");
                 }
-                let cap = CapabilityRequest::new(
-                    Address::from("fake_token"), //FIXME
-                    Address::from("fake_sender"), //FIXME
-                    Signature::fake(),
-                );
                 let instance_arc = tc.conductor.instances().get(&instance_id)
                     .expect(&format!("No instance with id: {}", instance_id));
                 let mut instance = instance_arc.write().unwrap();
+                let cap = {
+                    let context = instance.context();
+                    let state = context.state().unwrap().nucleus();
+                    let init = state.initialization().unwrap();
+                    let token = init.get_public_token(&zome).unwrap();
+                    let caller = Address::from("fake");
+                    make_cap_request_for_call(
+                        context.clone(),
+                        token,
+                        caller,
+                        &fn_name,
+                        params.clone(),
+                    )
+                };
                 instance.call(&zome, cap, &fn_name, &params)
             };
 

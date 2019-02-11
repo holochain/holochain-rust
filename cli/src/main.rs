@@ -193,7 +193,7 @@ fn run() -> HolochainResult<()> {
             cli::test(&current_path, &dir, &testfile, skip_build)
         }
         .map_err(HolochainError::Default)?,
-        Cli::KeyGen => cli::keygen().map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
+        Cli::KeyGen => cli::keygen(None, None).map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
     }
 
     Ok(())

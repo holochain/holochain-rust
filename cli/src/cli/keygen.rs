@@ -10,10 +10,13 @@ use rpassword;
 use std::{
     fs::{create_dir_all, File},
     io::prelude::*,
+    path::PathBuf,
 };
 
-pub fn keygen() -> DefaultResult<()> {
-    let passphrase = rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap();
+pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
+    let passphrase = passphrase.unwrap_or_else(||
+        rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap()
+    );
 
     let mut seed = SecBuf::with_secure(SEEDSIZE);
     random_secbuf(&mut seed);
@@ -36,12 +39,52 @@ pub fn keygen() -> DefaultResult<()> {
         )
         .unwrap();
 
-    let path = keys_directory();
-    create_dir_all(path.clone())?;
-    let path = path.join(keypair.pub_keys.clone());
+    let path = if None == path {
+        let p = keys_directory();
+        create_dir_all(p.clone())?;
+        p.join(keypair.pub_keys.clone())
+    } else {
+        path.unwrap()
+    };
+
     let mut file = File::create(path.clone())?;
     file.write_all(serde_json::to_string(&bundle).unwrap().as_bytes())?;
     println!("Agent keys with public address: {}", keypair.pub_keys);
     println!("written to: {}.", path.to_str().unwrap());
     Ok(())
+}
+
+
+pub mod test {
+    use super::*;
+    use holochain_dpki::bundle::KeyBundle;
+    use std::{
+        fs::{File, remove_file},
+        path::PathBuf
+    };
+
+    #[test]
+    fn keygen_roundtrip() {
+        let path = PathBuf::new().join("test.key");
+        let passphrase = String::from("secret");
+
+        keygen(Some(path.clone()), Some(passphrase.clone()))
+            .expect("Keygen should work");
+
+        let mut file = File::open(path.clone()).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+
+        let bundle: KeyBundle = serde_json::from_str(&contents).unwrap();
+        let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
+        let keypair = Keypair::from_bundle(&bundle, &mut passphrase, Some(PwHashConfig(
+            pwhash::OPSLIMIT_INTERACTIVE,
+            pwhash::MEMLIMIT_INTERACTIVE,
+            pwhash::ALG_ARGON2ID13,
+        )));
+
+        assert!(keypair.is_ok());
+
+        let _ = remove_file(path);
+    }
 }

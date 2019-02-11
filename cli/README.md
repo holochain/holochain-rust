@@ -92,9 +92,9 @@ To read about `hc run`, used for spinning up a quick developement version of you
 
 ### hc keygen: Create agent key pair
 
-Every agent is represented by a private/public key pair and its source chain.
-This command creates a new key pair, asks for a passphrase and writes a key bundle file that the Holochain Conductor
-can read and when starting up an instance.
+Every agent is represented by a private/public key pair, which are used to author source chains.
+This command creates a new key pair by asking for a passphrase and writing a key bundle file that a Holochain Conductor
+can read when starting up an instance.
 
 ## Contribute
 Holochain is an open source project.  We welcome all sorts of participation and are actively working on increasing surface area to accept it.  Please see our [contributing guidelines](../CONTRIBUTING.md) for our general practices and protocols on participating in the community.

@@ -173,7 +173,7 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
    t.ok(result_bob_delete.Err)
    t.notOk(result_bob_delete.Ok)
    const error = JSON.parse(result_bob_delete.Err.Internal)
-   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
+   t.deepEqual(error.kind, { ErrorGeneric: "Target for link not found" })
    t.ok(error.file)
    t.equal(error.line, "94")
   

@@ -1,12 +1,12 @@
 //! The Iso8601 type is defined here. It is used in particular within ChainHeader to enforce that
 //! their timestamps are defined in a useful and consistent way.
 
-use chrono::{offset::FixedOffset, DateTime};
+use chrono::{offset::FixedOffset, DateTime, TimeZone};
 use error::HolochainError;
-use json::{default_to_json, default_try_from_json, JsonString};
+use json::JsonString;
 use regex::Regex;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{cmp::Ordering, convert::TryFrom, fmt, time::Duration};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use std::{convert::TryFrom, fmt, str::FromStr, time::Duration};
 
 /// Represents a timeout for an HDK function
 #[derive(Clone, Deserialize, Debug, Eq, PartialEq, Hash, Serialize, DefaultJson)]
@@ -42,49 +42,44 @@ impl From<usize> for Timeout {
     }
 }
 
-/// This struct represents datetime data stored as a string in the ISO 8601 and RFC 3339 (more
-/// restrictive) format.
+/// This struct represents datetime data recovered from a string in the ISO 8601 and RFC 3339 (more
+/// restrictive) format.  Invalid try_from conversions fails w/ Result<DateTime<FixedOffset>,
+/// HolochainError>.
+///
+/// Iso8601 wraps a DateTime<FixedOffset>, and its Display/Debug formats default to the ISO 8601 /
+/// RFC 3339 format, respectively:
+///
+///    Display: 2018-10-11T03:23:38+00:00
+///    Debug:   Iso8601(2018-10-11T03:23:38+00:00)
 ///
 /// More info on the relevant [wikipedia article](https://en.wikipedia.org/wiki/ISO_8601).
-#[derive(Clone)]
-pub struct Iso8601 {
-    original: String,
-    validated: Result<DateTime<FixedOffset>, HolochainError>,
-}
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, DefaultJson)]
+pub struct Iso8601(DateTime<FixedOffset>);
 
-/// Serialization w/ serde_json to/from String.  This means that a timestamp will be deserialized to
-/// an Iso8601 and validated (non-prejudicially; we allow invalid timestamps to persist).  Upon
-/// serialization, the canonicalized version of the origin timestamp will be used, if valid;
-/// otherwise the original (invalid) timestamp will be used.  Needed for any struct containing
-/// an Iso8601 that defines the serde::Serialize/Deserialize Traits.
-impl Serialize for Iso8601 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
+/// Infallible conversions into and from an Iso8601.  The only infallible way to create an Iso8601
+/// is from a Unix timestamp.  An Iso8601 may be converted infallibly to its underlying DateTime<Fixed>
+
+impl From<&Iso8601> for DateTime<FixedOffset> {
+    fn from(lhs: &Iso8601) -> DateTime<FixedOffset> {
+        lhs.0.to_owned()
     }
 }
 
-impl<'de> Deserialize<'de> for Iso8601 {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        Ok(Iso8601::new(String::deserialize(deserializer)?))
+impl From<Iso8601> for DateTime<FixedOffset> {
+    fn from(lhs: Iso8601) -> DateTime<FixedOffset> {
+        lhs.0
     }
 }
 
-/// Serialization w/ Iso8601::try_from and JsonString::from.  Used to round-trip JSON via JsonString.  
-impl From<Iso8601> for JsonString {
-    fn from(iso_8601: Iso8601) -> Self {
-        default_to_json(iso_8601.to_string())
+impl From<i64> for Iso8601 {
+    fn from(secs: i64) -> Self {
+        Self::new(secs, 0)
     }
 }
-impl TryFrom<JsonString> for Iso8601 {
-    type Error = HolochainError;
-    fn try_from(json_string: JsonString) -> Result<Self, Self::Error> {
-        Ok(Self::new(default_try_from_json(json_string)?))
+
+impl Iso8601 {
+    fn new(secs: i64, nsecs: u32) -> Self {
+        Self(FixedOffset::east(0).timestamp(secs, nsecs))
     }
 }
 
@@ -110,51 +105,32 @@ impl TryFrom<JsonString> for Iso8601 {
  * }
  */
 
-/// Display/Debug for Iso8601.  Outputs the canonicalized ISO 8601 / RFC 3339 form for a valid
-/// timestamp, or just the original String for invalid ones.
+/// Serialization w/ serde_json to/from String.  This means that a timestamp will be deserialized to
+/// an Iso8601 and validated, which may fail, returning a serde::de::Error.  Upon serialization, the
+/// canonicalized ISO 8601 / RFC 3339 version of the timestamp will be used.
+impl Serialize for Iso8601 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'d> Deserialize<'d> for Iso8601 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'d>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Iso8601::from_str(&s).map_err(|e| de::Error::custom(e.to_string()))
+    }
+}
+
+/// Outputs the canonicalized ISO 8601 / RFC 3339 form for a valid timestamp.
 impl fmt::Display for Iso8601 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.validated {
-            Ok(dt) => write!(f, "{}", dt.to_rfc3339()), // Valid; output canonicalized form
-            Err(_) => write!(f, "{}", self.original),   // Invalid; just output the original String
-        }
-    }
-}
-
-impl fmt::Debug for Iso8601 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self.validated {
-            Ok(dt) => {
-                let ts = dt.to_rfc3339();
-                if self.original != ts {
-                    write!(f, "Iso8601 {{ \"{}\" <- \"{}\" }}", ts, self.original)
-                } else {
-                    write!(f, "Iso8601 {{ \"{}\" }}", self.original)
-                }
-            }
-            Err(e) => write!(f, "Iso8601 {{ \"{}\" -> {} }}", self.original, e),
-        }
-    }
-}
-
-/// A static string is considered an infallible conversion; also unchecked infallible String conversion.
-///
-/// Since we receive Iso8601 from many remote, untrusted sources, we don't want to always force
-/// checking at initial creation.  However, later on, we need to validate the timestamp, and we may
-/// want to create a validated Iso8601 that we know will work in comparisons, etc.  For that, we use
-/// the TryFrom method.
-///
-/// In the future, any invalid static-&str errors could (should?) produce a `panic!`.  This is
-/// reasonable, as it would indicate an error in the code of the application, not in the logic.
-impl From<&'static str> for Iso8601 {
-    fn from(s: &str) -> Iso8601 {
-        Iso8601::from(s.to_owned())
-    }
-}
-
-impl From<String> for Iso8601 {
-    fn from(s: String) -> Iso8601 {
-        Iso8601::new(s)
+        write!(f, "{}", self.0.to_rfc3339())
     }
 }
 
@@ -166,15 +142,25 @@ impl From<String> for Iso8601 {
 /// more flexible subset of the ISO 8601 standard from your supplied timestamp, and then use the RFC
 /// 3339 parser again.  We only do this validation once; at the creation of an Iso8601 from a
 /// String; the Result<> is used for future serialization and Eq/ParialEq/Ord/PartialOrd operations.
-impl TryFrom<&Iso8601> for DateTime<FixedOffset> {
+
+impl TryFrom<String> for Iso8601 {
     type Error = HolochainError;
-    fn try_from(lhs: &Iso8601) -> Result<DateTime<FixedOffset>, Self::Error> {
-        lhs.validated.to_owned()
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Iso8601::from_str(&s)
     }
 }
 
-impl Iso8601 {
-    pub fn new(original: String) -> Self {
+impl TryFrom<&str> for Iso8601 {
+    type Error = HolochainError;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Iso8601::from_str(s)
+    }
+}
+
+impl FromStr for Iso8601 {
+    type Err = HolochainError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         lazy_static! {
             static ref ISO8601_RE: Regex = Regex::new(
                 r"(?x)
@@ -243,52 +229,44 @@ impl Iso8601 {
             .unwrap();
         }
 
-        let validated = DateTime::parse_from_rfc3339(&original)
-            .or_else(
-                |_| ISO8601_RE.captures(&original)
-                    .map_or_else(
-                        || Err(HolochainError::ErrorGeneric(
-                            format!("Failed to find ISO 3339 or RFC 8601 timestamp in {:?}", &original))),
-                        |cap| {
-                            let timestamp = &format!(
-                                "{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}{}",
-                                &cap["Y"],
-                                cap.name("M").map_or( "1", |m| m.as_str()),
-                                cap.name("D").map_or( "1", |m| m.as_str()),
-                                cap.name("h").map_or( "0", |m| m.as_str()),
-                                cap.name("m").map_or( "0", |m| m.as_str()),
-                                cap.name("s").map_or( "0", |m| m.as_str()),
-                                cap.name("ss").map_or( "".to_string(), |m| format!(".{}", m.as_str())),
-                                cap.name("Z").map_or( "Z".to_string(), |m| match m.as_str() {
-                                    "Z"|"z" => "Z".to_string(),
-                                    _ => format!(
-                                        "{}{}:{}",
-                                        match &cap["Zsgn"] { "+" => "+", _ => "-" },
-                                        &cap["Zhrs"],
-                                        &cap.name("Zmin").map_or( "00", |m| m.as_str()))
-                                }));
+        Ok(Iso8601(
+            DateTime::parse_from_rfc3339(s)
+                .or_else(
+                    |_| ISO8601_RE.captures(s)
+                        .map_or_else(
+                            || Err(HolochainError::ErrorGeneric(
+                                format!("Failed to find ISO 3339 or RFC 8601 timestamp in {:?}", s))),
+                            |cap| {
+                                let timestamp = &format!(
+                                    "{:0>4}-{:0>2}-{:0>2}T{:0>2}:{:0>2}:{:0>2}{}{}",
+                                    &cap["Y"],
+                                    cap.name("M").map_or( "1", |m| m.as_str()),
+                                    cap.name("D").map_or( "1", |m| m.as_str()),
+                                    cap.name("h").map_or( "0", |m| m.as_str()),
+                                    cap.name("m").map_or( "0", |m| m.as_str()),
+                                    cap.name("s").map_or( "0", |m| m.as_str()),
+                                    cap.name("ss").map_or( "".to_string(), |m| format!(".{}", m.as_str())),
+                                    cap.name("Z").map_or( "Z".to_string(), |m| match m.as_str() {
+                                        "Z"|"z" => "Z".to_string(),
+                                        _ => format!(
+                                            "{}{}:{}",
+                                            match &cap["Zsgn"] { "+" => "+", _ => "-" },
+                                            &cap["Zhrs"],
+                                            &cap.name("Zmin").map_or( "00", |m| m.as_str()))
+                                    }));
 
-                            DateTime::parse_from_rfc3339(timestamp)
-                                .map_err(|_| HolochainError::ErrorGeneric(
-                                    format!("Attempting to convert RFC 3339 timestamp {:?} from ISO 8601 {:?} to a DateTime",
-                                            timestamp, &original)))
-                        }
-                    )
-            );
-
-        Iso8601 {
-            original,
-            validated,
-        }
-    }
-
-    /// Access to the validated timestamp, eg.:
-    ///     `Iso8601::from("20180102 030405").validated().is_ok()`
-    pub fn validated(&self) -> &Result<DateTime<FixedOffset>, HolochainError> {
-        &self.validated
+                                DateTime::parse_from_rfc3339(timestamp)
+                                    .map_err(|_| HolochainError::ErrorGeneric(
+                                        format!("Attempting to convert RFC 3339 timestamp {:?} from ISO 8601 {:?} to a DateTime",
+                                                timestamp, s)))
+                            }
+                        )
+                )?
+        ))
     }
 }
 
+/*
 /// PartialEq and PartialCmp for ISO 8601 / RFC 3339 timestamps w/ timezone specification.  Note
 /// that two timestamps that differ in time specification may be equal, because they are the same
 /// time specified in two different timezones.  Therefore, a String-based Partial{Cmp,Eq} are not
@@ -297,8 +275,8 @@ impl Iso8601 {
 /// orders any invalid Iso8601s as equal, before all valid Iso8601s.
 impl PartialEq for Iso8601 {
     fn eq(&self, rhs: &Iso8601) -> bool {
-        match &self.validated {
-            Ok(dt_lhs) => match &rhs.validated {
+        match &self.0 {
+            Ok(dt_lhs) => match &rhs.0 {
                 Ok(dt_rhs) => (dt_lhs).eq(dt_rhs),
                 Err(_e) => false,
             },
@@ -313,8 +291,8 @@ impl Eq for Iso8601 {}
 
 impl PartialOrd for Iso8601 {
     fn partial_cmp(&self, rhs: &Iso8601) -> Option<Ordering> {
-        match &self.validated {
-            Ok(ts_lhs) => match &rhs.validated {
+        match &self.0 {
+            Ok(ts_lhs) => match &rhs.0 {
                 Ok(ts_rhs) => (ts_lhs).partial_cmp(ts_rhs),
                 Err(_e) => None,
             },
@@ -327,27 +305,37 @@ impl PartialOrd for Iso8601 {
 /// sort, first in a reverse sort.
 impl Ord for Iso8601 {
     fn cmp(&self, rhs: &Iso8601) -> Ordering {
-        match self.validated {
-            Ok(ts_lhs) => match &rhs.validated {
+        match self.0 {
+            Ok(ts_lhs) => match &rhs.0 {
                 Ok(ts_rhs) => ts_lhs.cmp(ts_rhs),
                 Err(_) => Ordering::Greater, // lhs is good, rhs is invalid; lhs is always > rhs (invalid)
             },
-            Err(_) => match &rhs.validated {
+            Err(_) => match &rhs.0 {
                 Ok(_) => Ordering::Less, // lhs is invalid, rhs is valid; lhs (invalid) is always < rhs
                 Err(_) => Ordering::Equal, // lhs and rhs both invalid; always equal-to each-other
             },
         }
     }
 }
+ */
 
+// The only infallible conversions are from an i64 UNIX timestamp.  There are no conversions from
+// String or &str that are infallible.
+//
+//     $ date  --date="2018-10-11T03:23:38+00:00" +%s
+//     1539228218
+//     $ date --date=@1539228218 --rfc-3339=seconds --utc
+//     2018-10-11 03:23:38+00:00
+//
 pub fn test_iso_8601() -> Iso8601 {
-    Iso8601::from("2018-10-11T03:23:38+00:00")
+    Iso8601::from(1539228218) // 2018-10-11T03:23:38+00:00
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
     use serde_json;
+    use std::convert::TryInto;
 
     #[test]
     fn test_iso_8601_basic() {
@@ -364,34 +352,34 @@ pub mod tests {
             // Check that mapping from an Iso8601::(&str) to a DateTime yields the expected RFC 3339
             // / ISO 8601 timestamp, via its DateTime<FixedOffset>, its fmt::Display, to_string()
             // and JSON round-trip.
-            DateTime::<FixedOffset>::try_from(&Iso8601::from(*ts))
-                .and_then(|dt| {
-                    Ok(assert_eq!(
-                        format!("{}", dt.to_rfc3339()),
-                        "2018-10-11T03:23:38+00:00"
-                    ))
+            Iso8601::try_from(*ts)
+                .and_then(|iso| {
+                    assert_eq!(format!("{}", iso), "2018-10-11T03:23:38+00:00");
+                    Ok(iso)
                 })
-                .and_then(|_| {
-                    Ok(assert_eq!(
-                        format!("{}", &Iso8601::from(*ts)),
+                .and_then(|iso| {
+                    assert_eq!(
+                        format!(
+                            "{}",
+                            DateTime::<FixedOffset>::from(iso.clone()).to_rfc3339()
+                        ),
                         "2018-10-11T03:23:38+00:00"
-                    ))
+                    );
+                    Ok(iso)
                 })
-                .and_then(|_| {
-                    Ok(assert_eq!(
-                        Iso8601::from(*ts).to_string(),
-                        "2018-10-11T03:23:38+00:00"
-                    ))
+                .and_then(|iso| {
+                    assert_eq!(iso.to_string(), "2018-10-11T03:23:38+00:00");
+                    Ok(iso)
                 })
-                .and_then(|_| {
+                .and_then(|iso| {
                     // JSON serialization via serde_json
-                    let serialized = serde_json::to_string(&Iso8601::from(*ts))?;
+                    let serialized = serde_json::to_string(&iso)?;
                     assert_eq!(serialized.to_string(), "\"2018-10-11T03:23:38+00:00\"");
                     let deserialized: Iso8601 = serde_json::from_str(&serialized.to_string())?;
                     assert_eq!(deserialized.to_string(), "2018-10-11T03:23:38+00:00");
 
                     // JSON serialization via JsonSring
-                    let iso_8601_ser = JsonString::from(Iso8601::from(*ts));
+                    let iso_8601_ser = JsonString::from(&iso);
                     assert_eq!(iso_8601_ser.to_string(), "\"2018-10-11T03:23:38+00:00\"");
                     let iso_8601_des = Iso8601::try_from(iso_8601_ser);
                     assert!(iso_8601_des.is_ok());
@@ -402,8 +390,8 @@ pub mod tests {
 
                     // JSON round-tripping w/o serde or intermediates
                     assert_eq!(
-                        Iso8601::try_from(JsonString::from(Iso8601::from(*ts))),
-                        Ok(Iso8601::from("2018-10-11T03:23:38+00:00"))
+                        Iso8601::try_from(JsonString::from(iso)),
+                        Iso8601::try_from("2018-10-11T03:23:38+00:00")
                     );
 
                     Ok(())
@@ -432,12 +420,8 @@ pub mod tests {
         ]
         .iter()
         .map(|ts| {
-            DateTime::<FixedOffset>::try_from(&Iso8601::from(*ts)).and_then(|ts| {
-                Ok(assert_eq!(
-                    format!("{}", ts.to_rfc3339()),
-                    "2018-01-01T03:23:00+00:00"
-                ))
-            })
+            Iso8601::try_from(*ts)
+                .and_then(|iso| Ok(assert_eq!(format!("{}", iso), "2018-01-01T03:23:00+00:00")))
         })
         .collect::<Result<(()), HolochainError>>()
         .map_err(|e| {
@@ -461,14 +445,12 @@ pub mod tests {
         ]
         .iter()
         .map(|ts| {
-            let iso_8601 = Iso8601::from(*ts);
-            assert!(iso_8601.validated().is_ok());
-            DateTime::<FixedOffset>::try_from(&iso_8601).and_then(|ts| {
-                Ok(assert_eq!(
-                    format!("{}", ts.to_rfc3339()),
-                    "2015-02-18T23:59:60.234567-05:00"
-                ))
-            })
+            let iso_8601 = Iso8601::try_from(*ts)?;
+            let dt = DateTime::<FixedOffset>::from(&iso_8601); // from &Iso8601
+            Ok(assert_eq!(
+                format!("{}", dt.to_rfc3339()),
+                "2015-02-18T23:59:60.234567-05:00"
+            ))
         })
         .collect::<Result<(()), HolochainError>>()
         .map_err(|e| {
@@ -488,16 +470,12 @@ pub mod tests {
             "2015-2-18 03:59:60+25",
         ]
         .iter()
-        .map(|ts| {
-            let iso_8601 = Iso8601::from(*ts);
-            assert!(!iso_8601.validated().is_ok());
-            match DateTime::<FixedOffset>::try_from(&iso_8601) {
-                Ok(dt) => Err(HolochainError::ErrorGeneric(format!(
-                    "Should not have succeeded in parsing {:?} into {:?}",
-                    ts, dt
-                ))),
-                Err(_) => Ok(()),
-            }
+        .map(|ts| match Iso8601::try_from(*ts) {
+            Ok(iso) => Err(HolochainError::ErrorGeneric(format!(
+                "Should not have succeeded in parsing {:?} into {:?}",
+                ts, iso
+            ))),
+            Err(_) => Ok(()),
         })
         .collect::<Result<(()), HolochainError>>()
         .map_err(|e| {
@@ -510,32 +488,36 @@ pub mod tests {
 
         // PartialEq and PartialOrd Comparison operators
         assert!(
-            Iso8601::from("2018-10-11T03:23:38+00:00") == Iso8601::from("2018-10-11T03:23:38Z")
+            Iso8601::try_from("2018-10-11T03:23:38+00:00").unwrap()
+                == Iso8601::try_from("2018-10-11T03:23:38Z").unwrap()
         );
-        assert!(Iso8601::from("2018-10-11T03:23:38") == Iso8601::from("2018-10-11T03:23:38Z"));
-        assert!(Iso8601::from(" 20181011  0323  Z ") == Iso8601::from("2018-10-11T03:23:00Z"));
+        assert!(
+            Iso8601::try_from("2018-10-11T03:23:38").unwrap()
+                == Iso8601::try_from("2018-10-11T03:23:38Z").unwrap()
+        );
+        assert!(
+            Iso8601::try_from(" 20181011  0323  Z ").unwrap()
+                == Iso8601::try_from("2018-10-11T03:23:00Z").unwrap()
+        );
 
         // Fixed-offset ISO 8601 are comparable to UTC times
         assert!(
-            Iso8601::from("2018-10-11T03:23:38-08:00") == Iso8601::from("2018-10-11T11:23:38Z")
+            Iso8601::try_from("2018-10-11T03:23:38-08:00").unwrap()
+                == Iso8601::try_from("2018-10-11T11:23:38Z").unwrap()
         );
-        assert!(Iso8601::from("2018-10-11T03:23:39-08:00") > Iso8601::from("2018-10-11T11:23:38Z"));
-        assert!(Iso8601::from("2018-10-11T03:23:37-08:00") < Iso8601::from("2018-10-11T11:23:38Z"));
+        assert!(
+            Iso8601::try_from("2018-10-11T03:23:39-08:00").unwrap()
+                > Iso8601::try_from("2018-10-11T11:23:38Z").unwrap()
+        );
+        assert!(
+            Iso8601::try_from("2018-10-11T03:23:37-08:00").unwrap()
+                < Iso8601::try_from("2018-10-11T11:23:38Z").unwrap()
+        );
 
-        // Ensure PartialOrd respects persistent inequality of invalid ISO 8601 DateTime strings
-        // TODO: Since we're potentially validating all Iso8601 w/ DateTime<Utc> upon creation, we
-        // can use Eq/Ord instead of ParialEq/PartialOrd.  For now, we allow invalid Iso8601 data.
-        assert!(Iso8601::from("boo") != Iso8601::from("2018-10-11T03:23:38Z"));
-        assert!(Iso8601::from("2018-10-11T03:23:38Z") != Iso8601::from("boo"));
-        assert!(Iso8601::from("boo") != Iso8601::from("boo"));
-        assert!(!(Iso8601::from("2018-10-11T03:23:38Z") < Iso8601::from("boo")));
-        assert!(!(Iso8601::from("boo") < Iso8601::from("2018-10-11T03:23:38Z")));
-        assert!(!(Iso8601::from("boo") < Iso8601::from("boo")));
-
-        match DateTime::<FixedOffset>::try_from(&Iso8601::from("boo")) {
-            Ok(ts) => panic!(
+        match Iso8601::try_from("boo") {
+            Ok(iso) => panic!(
                 "Unexpected success of checked DateTime<FixedOffset> try_from: {:?}",
-                &ts
+                iso
             ),
             Err(e) => assert_eq!(
                 format!("{}", e),
@@ -548,18 +530,15 @@ pub mod tests {
     fn test_iso_8601_sorting() {
         // Different ways of specifying UTC "Zulu".  A bare timestamp will be defaulted to "Zulu".
         let mut v: Vec<Iso8601> = vec![
-            "2018-10-11T03:23:39-08:00".into(),
-            "2018-10-11T03:23:39-07:00".into(),
-            "2018-10-11 03:23:39+03:00".into(),
-            "baz".into(),
-            "2018-10-11T03:23:39-06:00".into(),
-            "20181011 032339 +04:00".into(),
-            "2018-10-11T03:23:39−09:00".into(), // note the UTF8 minus instead of ASCII hyphen
-            "2018-10-11T03:23:39+11:00".into(),
-            "2018-10-11 03:23:39Z".into(),
-            "2018-10-11 03:23:40".into(),
-            "boo".into(),
-            "bar".into(),
+            "2018-10-11T03:23:39-08:00".try_into().unwrap(),
+            "2018-10-11T03:23:39-07:00".try_into().unwrap(),
+            "2018-10-11 03:23:39+03:00".try_into().unwrap(),
+            "2018-10-11T03:23:39-06:00".try_into().unwrap(),
+            "20181011 032339 +04:00".try_into().unwrap(),
+            "2018-10-11T03:23:39−09:00".try_into().unwrap(), // note the UTF8 minus instead of ASCII hyphen
+            "2018-10-11T03:23:39+11:00".try_into().unwrap(),
+            "2018-10-11 03:23:39Z".try_into().unwrap(),
+            "2018-10-11 03:23:40".try_into().unwrap(),
         ];
         v.sort_by(|a, b| {
             let cmp = a.cmp(b);
@@ -572,18 +551,15 @@ pub mod tests {
                 .collect::<Vec<String>>()
                 .join(", "),
             concat!(
-                "Iso8601 { \"baz\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"baz\" }, ",
-                "Iso8601 { \"boo\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\" }, ",
-                "Iso8601 { \"bar\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"bar\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39+11:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39+04:00\" <- \"20181011 032339 +04:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39+03:00\" <- \"2018-10-11 03:23:39+03:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39+00:00\" <- \"2018-10-11 03:23:39Z\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:40+00:00\" <- \"2018-10-11 03:23:40\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39-06:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39-07:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39-08:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39-09:00\" <- \"2018-10-11T03:23:39−09:00\" }"
+                "Iso8601(2018-10-11T03:23:39+11:00), ",
+                "Iso8601(2018-10-11T03:23:39+04:00), ",
+                "Iso8601(2018-10-11T03:23:39+03:00), ",
+                "Iso8601(2018-10-11T03:23:39+00:00), ",
+                "Iso8601(2018-10-11T03:23:40+00:00), ",
+                "Iso8601(2018-10-11T03:23:39-06:00), ",
+                "Iso8601(2018-10-11T03:23:39-07:00), ",
+                "Iso8601(2018-10-11T03:23:39-08:00), ",
+                "Iso8601(2018-10-11T03:23:39-09:00)"
             )
         );
 
@@ -594,18 +570,15 @@ pub mod tests {
                 .collect::<Vec<String>>()
                 .join(", "),
             concat!(
-                "Iso8601 { \"2018-10-11T03:23:39-09:00\" <- \"2018-10-11T03:23:39−09:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39-08:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39-07:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39-06:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:40+00:00\" <- \"2018-10-11 03:23:40\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39+00:00\" <- \"2018-10-11 03:23:39Z\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39+03:00\" <- \"2018-10-11 03:23:39+03:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39+04:00\" <- \"20181011 032339 +04:00\" }, ",
-                "Iso8601 { \"2018-10-11T03:23:39+11:00\" }, ",
-                "Iso8601 { \"baz\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"baz\" }, ",
-                "Iso8601 { \"boo\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"boo\" }, ",
-                "Iso8601 { \"bar\" -> Failed to find ISO 3339 or RFC 8601 timestamp in \"bar\" }"
+                "Iso8601(2018-10-11T03:23:39-09:00), ",
+                "Iso8601(2018-10-11T03:23:39-08:00), ",
+                "Iso8601(2018-10-11T03:23:39-07:00), ",
+                "Iso8601(2018-10-11T03:23:39-06:00), ",
+                "Iso8601(2018-10-11T03:23:40+00:00), ",
+                "Iso8601(2018-10-11T03:23:39+00:00), ",
+                "Iso8601(2018-10-11T03:23:39+03:00), ",
+                "Iso8601(2018-10-11T03:23:39+04:00), ",
+                "Iso8601(2018-10-11T03:23:39+11:00)"
             )
         );
     }

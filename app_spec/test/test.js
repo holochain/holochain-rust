@@ -97,6 +97,27 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   
   })
 
+  scenario1.runTape('delete_entry_post', async (t, { alice }) => {
+    t.plan(3)
+  
+    const content = "Hello Holo world 321"
+    const in_reply_to = null
+    const params = { content, in_reply_to }
+    const createResult = alice.call("blog", "create_post", params)
+  
+    t.ok(createResult.Ok)
+  
+    const deletionParams = { post_address: createResult.Ok }
+    const deletionResult = alice.call("blog", "delete_entry_post", deletionParams)
+  
+    t.equals(deletionResult.Ok, null)
+  
+    const paramsGet = { post_address: createResult.Ok }
+    const result = alice.call("blog", "get_post", paramsGet)
+  
+    t.equals(result.Ok, null)
+  })
+
 scenario1.runTape('update_post', async (t, { alice }) => {
   t.plan(4)
 

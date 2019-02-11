@@ -71,6 +71,12 @@ define_zome! {
             handler: blog::handle_delete_post
         }
 
+        delete_entry_post: {
+            inputs: |postAddress: Address|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: blog::handle_entry_delete_post
+        }
+
         update_post: {
             inputs: |post_address: Address, new_content: String|,
             outputs: |result: ZomeApiResult<()>|,

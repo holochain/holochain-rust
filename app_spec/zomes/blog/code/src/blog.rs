@@ -144,7 +144,7 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     hdk::get_entry(&post_address)
 }
 
-pub fn handle_delete_post(post_address: Address) -> ZomeApiResult<()> {
+pub fn handle_entry_delete_post(post_address: Address) -> ZomeApiResult<()> {
     hdk::get_entry(&post_address)?;
 
     hdk::remove_entry(&post_address)?;

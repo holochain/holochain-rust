@@ -27,11 +27,12 @@ fn redirect_request_to_root<T>(req: &mut Request<T>) {
     *req.uri_mut() = uri::Uri::from_parts(original_parts).unwrap();
 }
 
-fn dna_connections_response(config: &Option<InterfaceConfiguration>) -> Response<Body> {
-    let interface = match config {
-        Some(config) => json!(config),
-        None => serde_json::Value::Null,
-    };
+fn dna_connections_response(config: Option<&InterfaceConfiguration>) -> Response<Body> {
+    let interface = config
+        .cloned()
+        .map(|config| json!(config))
+        .unwrap_or(serde_json::Value::Null);
+
     Builder::new()
         .body(json!({ "dna_interface": interface }).to_string().into())
         .expect("unable to build response")
@@ -47,10 +48,22 @@ impl Future for MainFuture {
     type Error = Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match *self {
-            MainFuture::Config(ref config) => Ok(Async::Ready(dna_connections_response(config))),
+        let response_result = match self {
+            MainFuture::Config(config) => {
+                Ok(Async::Ready(dna_connections_response(config.as_ref())))
+            }
             MainFuture::Static(ref mut future) => future.poll(),
-        }
+        };
+
+        response_result.map(|res| {
+            res.map(|mut response| {
+                response
+                    .headers_mut()
+                    .insert("Access-Control-Allow-Origin", "*".parse().unwrap());
+
+                response
+            })
+        })
     }
 }
 

@@ -43,7 +43,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
             });
         }
         "link_remove" => {
-            context.log("debug/net/handle: HandleStoreMeta: got LINK. processing...");
+            context.log("debug/net/handle: HandleStoreMeta: got LINK REMOVAL. processing...");
             // TODO: do a loop on content once links properly implemented
             assert_eq!(dht_meta_data.content_list.len(), 1);
             let entry_with_header: EntryWithHeader = serde_json::from_str(

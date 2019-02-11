@@ -166,7 +166,7 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
   t.equal(result_create_post.Ok.addresses.length, 1)
 
   let i = 0;
-  while(i<10 && result_create_post.Ok.addresses.length!=0)
+  while(i<2500 && result_create_post.Ok.addresses.length!=0)
   {
     result_create_post = alice.call("blog", "my_posts", {});
     i++;

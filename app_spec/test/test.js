@@ -84,7 +84,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   await alice.callSync("blog", "create_post",
     { "content": "Posty", "in_reply_to": "" }
   )
-  const result_create_post = alice.call("blog", "my_posts", {})
+  const result_create_post = bob.call("blog", "my_posts", {})
   t.equal(result_create_post.Ok.addresses.length, 1)
   await alice.callSync("blog", "delete_post",
     { "content": "Posty"}

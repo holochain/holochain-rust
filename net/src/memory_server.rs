@@ -353,6 +353,16 @@ impl InMemoryServer {
                 self.priv_request_all_lists(&msg.dna_address, &msg.agent_id);
             }
 
+            JsonProtocol::UntrackDna(msg) => {
+                // Make sure we are already tracking this dna for this agent
+                let bucket_id = into_bucket_id(&msg.dna_address, &msg.agent_id);
+                if !self.trackdna_book.contains(&bucket_id) {
+                    self.log.w(&format!("Trying to untrack an already untracked DNA: {}", bucket_id));
+                    return Ok(());
+                }
+                self.trackdna_book.remove(&bucket_id);
+            }
+
             JsonProtocol::SendMessage(msg) => {
                 self.priv_serve_SendMessage(&msg)?;
             }

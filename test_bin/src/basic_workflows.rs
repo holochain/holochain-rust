@@ -341,23 +341,68 @@ pub fn dht_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> N
     Ok(())
 }
 
-/// TODO make test: Sending a Message before doing a 'TrackDna' should fail
+/// Sending a Message before doing a 'TrackDna' should fail
 pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) -> NetResult<()> {
-    // FIXME: not calling trackApp should make sends or whatever else fail
+    // Send a message from alex to billy
+    let before_count = alex.count_recv_json_messages();
+    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+
+    // Billy should not receive it.
+    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
+    assert!(res.is_none());
+    // Alex should also not receive anything back
+    assert_eq!(before_count, alex.count_recv_json_messages());
+    Ok(())
+}
+
+/// Sending a Message before doing a 'TrackDna' should fail
+pub fn untrack_alex_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    println!("Testing: untrack_alex_test()");
+    setup_two_nodes(alex, billy, can_connect)?;
+    log_i!("setup_two_nodes COMPLETE");
+
+    // Send Untrack
+    alex.send(
+        JsonProtocol::UntrackDna(TrackDnaData {
+            dna_address: DNA_ADDRESS.clone(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+        })
+            .into(),
+    )
+        .expect("Failed sending UntrackDna message on alex");
 
     // Send a message from alex to billy
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
-    // Check if billy received it
-    let res = billy
-        //.wait(Box::new(|_| true));
+    // Alex should receive FailureResult
+    let result = alex
         .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
         .unwrap();
-    log_i!("#### got: {:?}", res);
-    // FIXME should get failureResult with request_id
 
+    // Billy should not receive it.
+    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
+    assert!(res.is_none());
+
+    // Done
     Ok(())
 }
 
-// TODO make test: Sending a Message before doing a 'Connect' should fail.
-// fn no_connect_test()
+/// Sending a Message before doing a 'TrackDna' should fail
+pub fn untrack_billy_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    println!("Testing: untrack_billy_test()");
+    setup_two_nodes(alex, billy, can_connect)?;
+    log_i!("setup_two_nodes COMPLETE");
+
+    // Send a message from alex to billy
+    let before_count = alex.count_recv_json_messages();
+    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+
+    // Billy should not receive it.
+    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
+    assert!(res.is_none());
+    // Alex should also not receive anything back
+    assert_eq!(before_count, alex.count_recv_json_messages());
+    Ok(())
+}

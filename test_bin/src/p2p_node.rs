@@ -129,9 +129,21 @@ pub struct P2pNode {
     pub logger: TweetProxy,
 }
 
-// Search logs
-// return the ith message that fullfills the predicate
+/// Query logs
 impl P2pNode {
+
+    /// Return number of JsonProtocol message this node has received
+    pub fn count_recv_json_messages(&self) -> usize {
+        let mut count = 0;
+        for msg in self.recv_msg_log.clone() {
+            if JsonProtocol::try_from(&msg).is_ok() {
+                count += 1;
+            };
+        }
+        count
+    }
+
+    /// Return the ith JSON message that this node has received and fullfills predicate
     pub fn find_recv_msg(
         &self,
         ith: usize,

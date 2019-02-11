@@ -101,7 +101,7 @@ pub fn run(
         }
 
         // Load end_user config file
-        let n3h_end_user_config_filepath = env::var("HC_N3H_SETTINGS_FILE").ok();
+        let networking_config_filepath = env::var("NETWORKING_CONFIG_FILE").ok();
 
         Some(NetworkConfig {
             bootstrap_nodes: n3h_bootstrap,
@@ -110,7 +110,7 @@ pub fn run(
             n3h_persistence_path: n3h_persistence_path
                 .unwrap_or_else(|| default_n3h_persistence_path()),
             n3h_ipc_uri: Default::default(),
-            n3h_end_user_config_filepath,
+            networking_config_filepath,
         })
     } else {
         None

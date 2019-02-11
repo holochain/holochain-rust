@@ -68,7 +68,7 @@ pub mod tests {
         network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
-    use holochain_core_types::{entry::test_entry, link::link__data::LinkData};
+    use holochain_core_types::{entry::test_entry, link::link_data::LinkData,cas::content::AddressableContent};
     use test_utils::*;
 
     #[test]
@@ -92,7 +92,8 @@ pub mod tests {
 
         let (_, context1) =
             test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
-        let (_instance2, context2) = instance_by_name("jack", dna);
+        let netname = Some("test_reject_invalid_link_on_remove_workflow");
+        let (_instance2, context2) = instance_by_name("jack", dna,netname);
 
         // Commit entry on attackers node
         let entry = test_entry();

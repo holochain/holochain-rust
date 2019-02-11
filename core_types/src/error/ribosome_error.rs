@@ -229,7 +229,10 @@ impl RibosomeErrorCode {
     pub fn from_return_code(ret_code: RibosomeEncodedValue) -> Self {
         match ret_code {
             Failure(rib_err) => rib_err,
-            _ => panic!(format!("RibosomeEncodedValue == {:?} encountered", ret_code)),
+            _ => panic!(format!(
+                "RibosomeEncodedValue == {:?} encountered",
+                ret_code
+            )),
         }
     }
 }

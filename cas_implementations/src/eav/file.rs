@@ -337,7 +337,7 @@ pub mod tests {
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
         EavTestSuite::test_prefixes::<ExampleAddressableContent, EavFileStorage>(
             eav_storage,
-            vec!["a_","b_","c_","d_"]
+            vec!["a_", "b_", "c_", "d_"],
         );
     }
 

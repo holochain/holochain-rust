@@ -137,7 +137,7 @@ pub mod tests {
         let eav_storage = EavMemoryStorage::new();
         EavTestSuite::test_prefixes::<ExampleAddressableContent, EavMemoryStorage>(
             eav_storage,
-            vec!["a_","b_","c_","d_"]
+            vec!["a_", "b_", "c_", "d_"],
         );
     }
 

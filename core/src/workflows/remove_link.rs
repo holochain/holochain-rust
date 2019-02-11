@@ -36,7 +36,9 @@ pub async fn remove_link_workflow<'a>(
     let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
     let validation_package = maybe_validation_package
         .ok_or("Could not get validation package from source".to_string())?;
-    context.log(format!("debug/workflow/remove_link: got validation package!"));
+    context.log(format!(
+        "debug/workflow/remove_link: got validation package!"
+    ));
 
     // 2. Create validation data struct
     let validation_data = ValidationData {
@@ -59,7 +61,6 @@ pub async fn remove_link_workflow<'a>(
     Ok(())
 }
 
-
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -67,7 +68,9 @@ pub mod tests {
         network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
-    use holochain_core_types::{entry::test_entry, link::link_data::LinkData,cas::content::AddressableContent};
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::test_entry, link::link_data::LinkData,
+    };
     use test_utils::*;
 
     #[test]
@@ -92,7 +95,7 @@ pub mod tests {
         let (_, context1) =
             test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
         let netname = Some("test_reject_invalid_link_on_remove_workflow");
-        let (_instance2, context2) = instance_by_name("jack", dna,netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         // Commit entry on attackers node
         let entry = test_entry();

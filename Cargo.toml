@@ -2,6 +2,7 @@
 
 members = [
   "cli",
+  "common",
   "conductor",
   "conductor_api",
   "core_api_c_binding",

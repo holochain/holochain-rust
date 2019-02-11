@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   * futures to `0.3.0-alpha.12`
 - Adjusted so that all chain headers are sent in the validation package, not just those for public entry types
 ### Added
+- Adds an environment variable HC_N3H_SETTINGS_FILE for passing an end-user specified network settings used by N3H.
 - Adds an environment variable HC_SIMPLE_LOGGER_MUTE for use in testing which silences logging output so CI logs won't be too big.
 - Added Zome API function `hdk::sleep(std::time::Duration)` which works the same as `std::thread::sleep`.
 - All structs/values to all HDK functions must implement `Into<JsonString>` and `TryFrom<JsonString>` (derive `DefaultJson` to do this automatically)

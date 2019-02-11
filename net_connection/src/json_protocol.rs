@@ -430,11 +430,6 @@ pub enum JsonProtocol {
     HandleGetHoldingMetaListResult(MetaListData),
 }
 
-/// helpers
-impl JsonProtocol {
-    pub fn
-}
-
 /// Conversions
 impl<'a> TryFrom<&'a Protocol> for JsonProtocol {
     type Error = Error;

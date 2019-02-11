@@ -7,8 +7,8 @@
   },
   "suites": {
     "BASIC_WORKFLOWS": true,
-    "LIST_WORKFLOWS": true,
-    "THREE_WORKFLOWS": true
+    "LIST_WORKFLOWS": false,
+    "THREE_WORKFLOWS": false
   },
   "log": {
     "default": "d",

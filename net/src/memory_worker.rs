@@ -46,22 +46,30 @@ impl NetWorker for InMemoryWorker {
                         }
                     };
                 }
+                _ => (),
+            }
+        }
+        // Serve
+        server.serve(data.clone())?;
+        // After serve
+        if let Ok(json_msg) = JsonProtocol::try_from(&data) {
+            match json_msg {
                 JsonProtocol::UntrackDna(untrack_msg) => {
                     match self
                         .receiver_per_dna
                         .entry(untrack_msg.dna_address.to_owned())
-                    {
-                        Entry::Vacant(_) => (),
-                        Entry::Occupied(e) => {
-                            server.unregister(&untrack_msg.dna_address, &untrack_msg.agent_id);
-                            e.remove();
-                        }
-                    };
+                        {
+                            Entry::Vacant(_) => (),
+                            Entry::Occupied(e) => {
+                                server.unregister(&untrack_msg.dna_address, &untrack_msg.agent_id);
+                                e.remove();
+                            }
+                        };
                 }
                 _ => (),
             }
         }
-        server.serve(data)?;
+        // Done
         Ok(())
     }
 

@@ -461,6 +461,7 @@ pub struct NetworkConfig {
     /// configs above. Default is None.
     #[serde(default)]
     pub n3h_ipc_uri: Option<String>,
+    /// filepath to the json file holding the network settings for n3h
     #[serde(default)]
     pub networking_config_file: Option<String>,
 }

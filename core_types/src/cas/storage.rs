@@ -495,7 +495,6 @@ impl EavTestSuite {
         S: EntityAttributeValueStorage,
     {
         let foo_content = Content::from(RawString::from("foo"));
-        let bar_content = Content::from(RawString::from("bar"));
 
         let one = A::try_from_content(&foo_content)
             .expect("could not create AddressableContent from Content");

@@ -34,13 +34,8 @@ conductor.start()
 const conductor = new Conductor(config)
 conductor.start()
 
-// When building up a config using `Config`, the instance ID is automatically assigned
-// as the given agent ID plus a double colon plus the given dnaPath.
-// We'll need this to call the instance later.
-const aliceInstanceId = aliceName + '::' + dnaPath
-
 // zome functions can be called using the following, assuming the vars are defined with valid values
-const callResult = conductor.call(aliceInstanceId, 'zome', 'function', {params: 'go here'})
+const callResult = conductor.call(aliceName, 'zome', 'function', {params: 'go here'})
 
 // the same could be accomplished using the following, makeCaller is for convenience
 const alice = conductor.makeCaller(aliceName)

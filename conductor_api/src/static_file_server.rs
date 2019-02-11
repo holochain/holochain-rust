@@ -178,7 +178,7 @@ pub mod tests {
         let test_bundle_config = UiBundleConfiguration {
             id: "bundle id".to_string(),
             root_dir: "".to_string(),
-            hash: "Qmsdasdasd".to_string(),
+            hash: None,
         };
 
         let test_config = UiInterfaceConfiguration {

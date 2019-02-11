@@ -1,6 +1,6 @@
 use hdk::{
     self,
-    error::ZomeApiResult,
+    error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
         cas::content::Address, entry::Entry, error::HolochainError, json::JsonString,
     },
@@ -11,6 +11,7 @@ use hdk::{
     AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME,
 };
 use post::Post;
+use std::convert::TryFrom;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, PartialEq)]
 struct SumInput {
@@ -141,6 +142,32 @@ pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
     // It's a ZomeApiError if something went wrong (i.e. wrong type in deserialization)
     // Otherwise its a Some(T) or a None
     hdk::get_entry(&post_address)
+}
+
+pub fn handle_delete_post(post_address: Address) -> ZomeApiResult<()> {
+    hdk::get_entry(&post_address)?;
+
+    hdk::remove_entry(&post_address)?;
+
+    Ok(())
+}
+
+pub fn handle_update_post(post_address: Address, new_content: String) -> ZomeApiResult<()> {
+    let old_entry = hdk::get_entry(&post_address)?;
+
+    if let Some(Entry::App(_, json_string)) = old_entry {
+        let post = Post::try_from(json_string)?;
+        let updated_post_entry = Entry::App(
+            "post".into(),
+            Post::new(&new_content, &post.date_created).into(),
+        );
+
+        hdk::update_entry(updated_post_entry, &post_address)?;
+
+        Ok(())
+    } else {
+        Err(ZomeApiError::Internal("failed to update post".into()))
+    }
 }
 
 pub fn handle_recommend_post(post_address: Address, agent_address: Address) -> ZomeApiResult<()> {

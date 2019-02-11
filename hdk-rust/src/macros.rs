@@ -197,7 +197,7 @@ macro_rules! define_zome {
                             outputs: | $( $output_param_name:ident : $output_param_type:ty ),* |,
                             handler: $handler_path:path
                         }
-            )+
+            )*
         ]
 
         capabilities : {
@@ -297,7 +297,7 @@ macro_rules! define_zome {
                         capability.functions = vec![
                             $(
                                 stringify!($cap_fn).into()
-                            ),+
+                            ),*
                         ];
 
                         cap_map.insert(stringify!($cap).into(), capability);
@@ -334,7 +334,7 @@ macro_rules! define_zome {
                                         ),*
                                     ]
                                 }
-                    ),+
+                    ),*
 
                 ]
             };
@@ -377,6 +377,6 @@ macro_rules! define_zome {
                         $crate::global_fns::write_json(execute(input))
                     ).into()
                 }
-        )+
+        )*
     };
 }

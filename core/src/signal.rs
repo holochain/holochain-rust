@@ -1,14 +1,47 @@
 use crate::action::ActionWrapper;
-use holochain_core_types::json::JsonString;
+use holochain_core_types::{error::HolochainError, json::JsonString};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     sync::mpsc::{channel, sync_channel, Receiver, SyncSender},
     thread,
 };
 
-#[derive(Debug)]
+#[derive(Clone, Debug, DefaultJson)]
 pub enum Signal {
     Internal(ActionWrapper),
     User(JsonString),
+    Holo(JsonString),
+}
+
+impl Serialize for Signal {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Signal::Internal(_) => serializer.serialize_newtype_variant(
+                "Signal",
+                0,
+                "Internal",
+                "(Internal signal serialization not yet implemented)",
+            ),
+            Signal::User(msg) => {
+                serializer.serialize_newtype_variant("Signal", 1, "User", &msg.to_string())
+            }
+            Signal::Holo(msg) => {
+                serializer.serialize_newtype_variant("Signal", 2, "Holo", &msg.to_string())
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Signal {
+    fn deserialize<D>(_deserializer: D) -> Result<Signal, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        unimplemented!()
+    }
 }
 
 pub type SignalSender = SyncSender<Signal>;

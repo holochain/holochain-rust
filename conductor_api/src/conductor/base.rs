@@ -194,8 +194,8 @@ impl Conductor {
                     .read()
                     .unwrap()
                     .values()
-                    .for_each(|_broadcaster| {
-                        // _broadcaster.send(signal);
+                    .for_each(|broadcaster| {
+                        broadcaster.send(signal.clone()).expect("TODO: result");
                         println!("TODO: broadcast signal {:?}", signal);
                     })
             }

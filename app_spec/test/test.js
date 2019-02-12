@@ -77,7 +77,7 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.ok(result.Ok)
   t.notOk(result.Err)
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-})*/
+})
 
 scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 

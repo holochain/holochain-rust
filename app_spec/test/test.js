@@ -94,13 +94,13 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   t.ok(bob_result_create_post.Ok)
 
   //get replies for bob
-  const result_bob_replies = await bob.callSync("blog", "replies", 
+  const result_bob_replies = await bob.call("blog", "replies", 
     { "address": result_create_post.Ok }
   );
   t.equal(result_bob_replies.Ok.addresses.length, 1)
 
   //get replies for alice
-  const result_alice_replies = await alice.callSync("blog", "replies", 
+  const result_alice_replies = await alice.call("blog", "replies", 
   { "address": result_create_post.Ok });
   
  t.equal(result_alice_replies.Ok.addresses.length, 1)
@@ -114,7 +114,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
    
  
  //get replies for alice
-const result_empty_alice_replies = await alice.callSync("blog", "replies", 
+const result_empty_alice_replies = await alice.call("blog", "replies", 
   { "address": result_create_post.Ok }
 );
   

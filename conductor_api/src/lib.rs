@@ -99,7 +99,6 @@ extern crate holochain_net_connection;
 extern crate holochain_net_ipc;
 extern crate holochain_sodium;
 
-extern crate base64;
 extern crate chrono;
 extern crate serde;
 #[macro_use]
@@ -131,7 +130,6 @@ extern crate tokio;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
-extern crate fs_extra;
 extern crate rpassword;
 
 pub mod conductor;

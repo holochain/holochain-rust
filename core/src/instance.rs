@@ -281,8 +281,6 @@ pub fn dispatch_action(action_channel: &SyncSender<ActionWrapper>, action_wrappe
 
 #[cfg(test)]
 pub mod tests {
-    use tempfile;
-    use test_utils;
     use self::tempfile::tempdir;
     use super::*;
     use crate::{
@@ -303,6 +301,8 @@ pub mod tests {
         entry::{entry_type::EntryType, test_entry},
         json::{JsonString, RawString},
     };
+    use tempfile;
+    use test_utils;
 
     use crate::{persister::SimplePersister, state::State};
 

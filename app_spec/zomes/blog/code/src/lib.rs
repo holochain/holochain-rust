@@ -2,7 +2,6 @@
 #![warn(unused_extern_crates)]
 #[macro_use]
 extern crate hdk;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate boolinator;

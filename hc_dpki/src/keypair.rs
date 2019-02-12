@@ -1,8 +1,6 @@
 #![allow(warnings)]
 extern crate holochain_sodium;
-use crate::keypair::holochain_sodium::secbuf::SecBuf;
-use crate::keypair::holochain_sodium::kx;
-use crate::keypair::holochain_sodium::sign;
+use crate::keypair::holochain_sodium::{kx, secbuf::SecBuf, sign};
 use holochain_sodium::random::random_secbuf;
 
 use crate::{

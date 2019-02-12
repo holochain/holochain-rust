@@ -298,7 +298,6 @@ impl Iterator for ChainStoreTypeIterator {
 
 #[cfg(test)]
 pub mod tests {
-    use tempfile;
     use self::tempfile::tempdir;
     use crate::agent::chain_store::{ChainStore, ChainStoreQueryOptions, ChainStoreQueryResult};
     use holochain_cas_implementations::cas::file::FilesystemStorage;
@@ -312,6 +311,7 @@ pub mod tests {
         json::JsonString,
         time::test_iso_8601,
     };
+    use tempfile;
 
     pub fn test_chain_store() -> ChainStore {
         ChainStore::new(std::sync::Arc::new(std::sync::RwLock::new(

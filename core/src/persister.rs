@@ -65,13 +65,13 @@ impl SimplePersister {
 #[cfg(test)]
 mod tests {
 
-    use tempfile;
     use self::tempfile::tempdir;
     use crate::{
         instance::tests::test_context_with_agent_state,
         persister::{Persister, SimplePersister},
     };
     use std::fs::File;
+    use tempfile;
 
     #[test]
     fn persistence_round_trip() {

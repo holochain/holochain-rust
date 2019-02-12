@@ -1,11 +1,9 @@
 #![warn(unused_extern_crates)]
-extern crate holochain_cas_implementations;
 extern crate holochain_common;
 extern crate holochain_conductor_api;
-extern crate holochain_core_types;
 extern crate holochain_core;
+extern crate holochain_core_types;
 extern crate holochain_dpki;
-extern crate holochain_net;
 extern crate holochain_sodium;
 extern crate holochain_wasm_utils;
 extern crate structopt;
@@ -21,9 +19,6 @@ extern crate toml;
 extern crate serde_json;
 extern crate ignore;
 extern crate rpassword;
-extern crate rustyline;
-extern crate tempfile;
-extern crate uuid;
 
 mod cli;
 mod config_files;

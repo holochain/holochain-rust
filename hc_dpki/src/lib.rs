@@ -2,8 +2,6 @@
 
 #[macro_use]
 extern crate arrayref;
-#[macro_use]
-extern crate serde;
 
 pub mod bundle;
 pub mod error;

@@ -12,10 +12,9 @@ extern crate test_utils;
 extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
+#[macro_use]
+extern crate serde_json;
 
-extern crate config;
-extern crate holochain_common;
-extern crate holochain_net;
 #[macro_use]
 extern crate holochain_wasm_utils;
 #[macro_use]

@@ -271,7 +271,7 @@ pub fn reduce(
 
 #[cfg(test)]
 pub mod tests {
-    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot};
+    use super::{reduce_commit_entry, ActionResponse, AgentState, AgentStateSnapshot, *};
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
         context::mock_signer, instance::tests::test_context, state::State,

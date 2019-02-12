@@ -7,8 +7,8 @@
 #![warn(unused_extern_crates)]
 extern crate holochain_core_types;
 
-extern crate uuid;
 extern crate glob;
+extern crate uuid;
 
 pub mod cas;
 pub mod eav;

@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{
-        is_fn_public, launch_zome_fn_call,
+        is_fn_public, reducers::execute_zome_function::launch_zome_fn_call,
         ribosome::{api::ZomeApiResult, Runtime},
         state::NucleusState,
         ZomeFnCall,

@@ -106,7 +106,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
  t.equal(result_alice_replies.Ok.addresses.length, 1)
   
  //delete reply using bob
-  const result_bob_delete_reply = await bob.callsync("blog", "delete_reply_to", 
+  const result_bob_delete_reply = await bob.callSync("blog", "delete_reply_to", 
     { "content": "reply", "in_reply_to": result_create_post.Ok }
   )
 

@@ -13,7 +13,7 @@ pub enum Initable<T> {
 }
 
 impl<T> Initable<T> {
-    pub fn to_option(val: Initable<T>) -> Option<T> {
+    pub fn into_option(self) -> Option<T> {
         match val {
             Initable::Init(v) => Some(v),
             Initable::Uninit => None,

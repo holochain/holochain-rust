@@ -1,4 +1,5 @@
 use crate::{
+    conductor::broadcaster::Broadcaster,
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
         StorageConfiguration,
@@ -21,7 +22,6 @@ use holochain_core_types::{
     ugly::Initable,
 };
 use jsonrpc_core::IoHandler;
-use jsonrpc_ws_server::ws;
 
 use std::{
     clone::Clone,
@@ -65,40 +65,6 @@ lazy_static! {
 pub fn mount_conductor_from_config(config: Configuration) {
     let conductor = Conductor::from_config(config);
     CONDUCTOR.lock().unwrap().replace(conductor);
-}
-
-/// An abstraction which represents the ability to (maybe) send a message to the client
-/// over the existing connection
-#[derive(Debug)]
-pub enum Broadcaster {
-    Ws(ws::Sender),
-    Noop,
-}
-
-impl Drop for Broadcaster {
-    fn drop(&mut self) {
-        match self {
-            Broadcaster::Ws(sender) => sender.close(ws::CloseCode::Normal).unwrap_or(()),
-            Broadcaster::Noop => (),
-        }
-    }
-}
-
-impl Broadcaster {
-    pub fn send<J>(&self, msg: J) -> Result<(), HolochainError>
-    where
-        J: Into<JsonString>,
-    {
-        match self {
-            Broadcaster::Ws(sender) => sender
-                .send(ws::Message::Text(msg.into().to_string()))
-                .map_err(|e| {
-                    HolochainError::ErrorGeneric(format!("Broadcaster::Ws -- {}", e.to_string()))
-                })?,
-            Broadcaster::Noop => (),
-        }
-        Ok(())
-    }
 }
 
 /// Main representation of the conductor.
@@ -392,6 +358,11 @@ impl Conductor {
     /// Calls `Configuration::check_consistency()` first and clears `self.instances`.
     /// The first time we call this, we also initialize the conductor-wide config
     /// for use with all instances
+    ///
+    /// Note that the `signal_tx` parameter represents an important bifurcation of signal handling functionality.
+    /// if None, then the signal channel will be instantiated and the receive will be owned by the `Conductor`,
+    /// allowing it to automatically handle signals and push them out across the Interfaces via Broadcasters.
+    /// if it is Some, then the signal receiver is externally owned, and signals will not be sent over Interfaces.
     ///
     /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.

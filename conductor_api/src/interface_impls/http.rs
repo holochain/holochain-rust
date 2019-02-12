@@ -1,4 +1,4 @@
-use conductor::base::Broadcaster;
+use conductor::broadcaster::Broadcaster;
 use interface::Interface;
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
@@ -27,7 +27,7 @@ impl Interface for HttpInterface {
             .map_err(|e| e.to_string())?;
         let broadcaster = Broadcaster::Noop;
         let handle = thread::spawn(move || {
-            let _ = server;
+            let _ = server; // move `server` into this thread
             let _ = kill_switch.recv();
         });
         Ok((broadcaster, handle))

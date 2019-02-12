@@ -1,4 +1,4 @@
-use conductor::base::Broadcaster;
+use conductor::broadcaster::Broadcaster;
 use holochain_core::state::State;
 use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 use Holochain;

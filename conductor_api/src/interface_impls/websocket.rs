@@ -1,4 +1,4 @@
-use crate::conductor::base::Broadcaster;
+use conductor::broadcaster::Broadcaster;
 use interface::Interface;
 use jsonrpc_core::IoHandler;
 use jsonrpc_ws_server::ServerBuilder;
@@ -26,7 +26,7 @@ impl Interface for WebsocketInterface {
             .map_err(|e| e.to_string())?;
         let broadcaster = Broadcaster::Ws(server.broadcaster());
         let handle = thread::spawn(move || {
-            let _ = server;
+            let _ = server; // move `server` into this thread
             let _ = kill_switch.recv();
         });
         Ok((broadcaster, handle))

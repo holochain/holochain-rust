@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod base;
+pub mod broadcaster;
 pub mod ui_admin;
 
 pub use self::{

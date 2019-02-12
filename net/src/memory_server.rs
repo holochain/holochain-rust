@@ -96,7 +96,7 @@ pub(crate) struct InMemoryServer {
     // keep track of senders by `dna_address::agent_id`
     senders: HashMap<BucketId, mpsc::Sender<Protocol>>,
     // keep track of agents by dna_address 
-    senders_by_dna: HashMap<Address, HashSet<String>, mpsc::Sender<Protocol>>>,
+    senders_by_dna: HashMap<Address, HashMap<String, mpsc::Sender<Protocol>>>,
     // Unique identifier
     name: String,
     // Keep track of connected clients

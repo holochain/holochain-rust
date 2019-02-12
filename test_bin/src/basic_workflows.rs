@@ -348,7 +348,7 @@ pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) ->
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
     // Billy should not receive it.
-    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
+    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
     // Alex should also not receive anything back
     assert_eq!(before_count, alex.count_recv_json_messages());
@@ -373,16 +373,14 @@ pub fn untrack_alex_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: b
         .expect("Failed sending UntrackDna message on alex");
 
     // Send a message from alex to billy
+    let before_count = alex.count_recv_json_messages();
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
-    // Alex should receive FailureResult
-    let result = alex
-        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
-        .unwrap();
-
     // Billy should not receive it.
-    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
+    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
+    // Alex should also not receive anything back
+    assert_eq!(before_count, alex.count_recv_json_messages());
 
     // Done
     Ok(())
@@ -395,14 +393,29 @@ pub fn untrack_billy_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: 
     setup_two_nodes(alex, billy, can_connect)?;
     log_i!("setup_two_nodes COMPLETE");
 
+    // Send Untrack
+    billy.send(
+        JsonProtocol::UntrackDna(TrackDnaData {
+            dna_address: DNA_ADDRESS.clone(),
+            agent_id: BILLY_AGENT_ID.to_string(),
+        })
+            .into(),
+    )
+        .expect("Failed sending UntrackDna message on alex");
+
     // Send a message from alex to billy
-    let before_count = alex.count_recv_json_messages();
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
+    // Alex should receive FailureResult
+    let result = alex
+        .wait(Box::new(one_is!(JsonProtocol::FailureResult(_))))
+        .unwrap();
+    log_i!("got FailureResult: {:?}", result);
+
     // Billy should not receive it.
-    let res = billy.wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))));
+    let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
-    // Alex should also not receive anything back
-    assert_eq!(before_count, alex.count_recv_json_messages());
+
+    // Done
     Ok(())
 }

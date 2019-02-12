@@ -29,6 +29,9 @@ pub fn run(
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
     let agent_name = EnvVar::value(&EnvVar::Agent).ok();
     let agent = AgentId::generate_fake(&agent_name.unwrap_or_else(|| String::from("testAgent")));
     let agent_config = AgentConfiguration {
@@ -61,6 +64,9 @@ pub fn run(
         storage,
     };
 
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
     let interface_type = EnvVar::value(&EnvVar::Interface)
         .ok()
         .unwrap_or_else(|| interface);
@@ -88,12 +94,18 @@ pub fn run(
         rules,
     };
 
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
     let n3h_path = EnvVar::value(&EnvVar::N3hPath).ok();
 
     // create an n3h network config if the --networked flag is set
     // or if a value where to find n3h has been put into the
     // HC_N3H_PATH environment variable
     let network_config = if networked || n3h_path.is_some() {
+        // note that this behaviour is documented within
+        // holochain_common::env_vars module and should be updated
+        // if this logic changes
         let n3h_mode = EnvVar::value(&EnvVar::N3hMode).ok();
         let n3h_persistence_path = EnvVar::value(&EnvVar::N3hWorkDir).ok();
         let n3h_bootstrap_node = EnvVar::value(&EnvVar::N3hBootstrapNode).ok();
@@ -104,6 +116,9 @@ pub fn run(
         }
 
         // Load end_user config file
+        // note that this behaviour is documented within
+        // holochain_common::env_vars module and should be updated
+        // if this logic changes
         let networking_config_filepath = EnvVar::value(&EnvVar::NetworkingConfigFile).ok();
 
         Some(NetworkConfig {

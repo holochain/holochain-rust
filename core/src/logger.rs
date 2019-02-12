@@ -22,6 +22,9 @@ pub struct SimpleLogger {
 #[cfg_attr(tarpaulin, skip)]
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {
+        // note that this behaviour is documented within
+        // holochain_common::env_vars module and should be updated
+        // if this logic changes
         if EnvVar::value(&EnvVar::SimpleLoggerMute).is_err() {
             let date = Local::now();
             println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);

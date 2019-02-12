@@ -1077,3 +1077,110 @@ pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
 }
+
+/// Add stubs for all core API functions when compiled in test mode.
+/// This makes it possible to actually build test executable from zome projects to run unit tests
+/// on zome functions (though: without being able to actually test integration with core - that is
+/// what we need holochain-nodejs for).
+///
+/// Without these stubs we would have unresolved references since the API functions are
+/// provided by the Ribosome runtime.
+///
+/// Attention:
+/// We need to make sure to only add these function stubs when compiling tests
+/// BUT NOT when building to a WASM binary to be run in a Holochain instance.
+/// Hence the `#[cfg(test)]` which is really important!
+#[cfg(test)]
+mod tests {
+    use crate::holochain_core_types::error::{RibosomeEncodedValue, RibosomeEncodingBits};
+
+    #[no_mangle]
+    pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+
+    #[no_mangle]
+    pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+        RibosomeEncodedValue::Success.into()
+    }
+}

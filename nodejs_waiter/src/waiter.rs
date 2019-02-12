@@ -161,6 +161,23 @@ impl Waiter {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
+                    // Pair every `ExecuteZomeFunction` with one `ReturnZomeFunctionResult`
+                    (_, Action::SignalZomeFunctionCall(call)) => match self.sender_rx.try_recv() {
+                        Ok(sender) => {
+                            self.add_call(call.clone(), sender);
+                            self.current_checker().unwrap().add(1, move |aw| {
+                                if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
+                                    r.call() == call
+                                } else {
+                                    false
+                                }
+                            });
+                        }
+                        Err(_) => {
+                            self.deactivate_current();
+                        }
+                    },
+
                     (Some(checker), Action::Commit((committed_entry, _))) => {
                         match committed_entry.clone() {
                             // Pair every `Commit` with N `Hold`s
@@ -406,7 +423,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -435,7 +452,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -474,7 +491,7 @@ mod tests {
 
         // an "unregistered" zome call (not using `callSync` or `callWithPromise`)
         assert_eq!(waiter.checkers.len(), 0);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_1.clone())));
         assert_eq!(waiter.checkers.len(), 0);
         waiter.process_signal(sig(Commit((entry_1.clone(), None))));
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
@@ -486,7 +503,7 @@ mod tests {
         // which shouldn't change the checkers count yet
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_2.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 
@@ -504,7 +521,7 @@ mod tests {
 
         // one more unregistered function call
         assert_eq!(waiter.checkers.len(), 1);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_3.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_3.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         waiter.process_signal(sig(Commit((entry_4.clone(), None))));
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_3.clone()))));
@@ -538,7 +555,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -574,7 +591,7 @@ mod tests {
         let control_rx_1 = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_1.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call_1), 1);
 
@@ -589,7 +606,7 @@ mod tests {
         // which shouldn't change the checkers count yet
         assert_eq!(waiter.checkers.len(), 1);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_2.clone())));
         assert_eq!(waiter.checkers.len(), 2);
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 

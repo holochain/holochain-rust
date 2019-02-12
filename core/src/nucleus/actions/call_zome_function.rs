@@ -87,6 +87,11 @@ pub async fn call_zome_function(
     let context_clone = context.clone();
     let zome_call_clone = zome_call.clone();
 
+    context
+        .action_channel()
+        .send(ActionWrapper::new(Action::SignalZomeFunctionCall(zome_call.clone())))
+        .expect("action channel to be open");
+
     let _ = thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(

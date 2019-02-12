@@ -6,7 +6,7 @@ use crate::{
     },
     nucleus::{
         state::{NucleusState, ValidationResult},
-        ExecuteZomeFnResponse,
+        ExecuteZomeFnResponse, ZomeFnCall,
     },
 };
 use holochain_core_types::{
@@ -175,6 +175,12 @@ pub enum Action {
     /// return the result of an InitApplication action
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
+
+    /// Gets dispatched when a zome function call starts.
+    /// There is no reducer for this action so this does not change state
+    /// (hence "Signal").
+    /// Is received as signal in the nodejs waiter to attach wait conditions.
+    SignalZomeFunctionCall(ZomeFnCall),
 
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),

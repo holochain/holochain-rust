@@ -66,7 +66,7 @@ pub async fn call_zome_function(
         // 1.a make sure the zome and function exists
         let _ = dna
             .get_function_with_zome_name(&zome_call.zome_name, &zome_call.fn_name)
-            .map_err(|e| HolochainError::Dna(e))?;
+            .map_err(HolochainError::Dna)?;
 
         // 1.b make sure caller is allowed to call the function
         let public = is_fn_public(&dna, &zome_call)?;

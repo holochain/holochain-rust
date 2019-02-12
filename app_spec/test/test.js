@@ -79,27 +79,56 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
 })
 
+scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
-scenario1.runTape('delete_post', async (t, { alice }) => {
-  t.plan(3)
+  //create post
+ const alice_create_post_result = await alice.callSync("blog", "create_post",
+    { "content": "Posty", "in_reply_to": "" }
+  )
 
-  const content = "Hello Holo world 321"
-  const in_reply_to = null
-  const params = { content, in_reply_to }
-  const createResult = alice.call("blog", "create_post", params)
+  
+  const bob_create_post_result = await bob.callSync("blog", "posts_by_agent",
+    { "agent": alice.agentId }
+  )
 
-  t.ok(createResult.Ok)
+ 
 
-  const deletionParams = { post_address: createResult.Ok }
-  const deletionResult = alice.call("blog", "delete_post", deletionParams)
+   t.ok(bob_create_post_result.Ok)
+   t.equal(bob_create_post_result.Ok.addresses.length, 1);
 
-  t.equals(deletionResult.Ok, null)
+  //remove link by alicce
+    await alice.callSync("blog", "delete_post",
+    { "content": "Posty", "in_reply_to": "" }
+  )
+ 
+  // get posts by bob
+  const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent":alice.agentId })
 
-  const paramsGet = { post_address: createResult.Ok }
-  const result = alice.call("blog", "get_post", paramsGet)
+  t.ok(bob_agent_posts_expect_empty.Ok)
+  t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
+  
+  })
 
-  t.equals(result.Ok, null)
-})
+  scenario1.runTape('delete_entry_post', async (t, { alice }) => {
+    t.plan(3)
+  
+    const content = "Hello Holo world 321"
+    const in_reply_to = null
+    const params = { content, in_reply_to }
+    const createResult = alice.call("blog", "create_post", params)
+  
+    t.ok(createResult.Ok)
+  
+    const deletionParams = { post_address: createResult.Ok }
+    const deletionResult = alice.call("blog", "delete_entry_post", deletionParams)
+  
+    t.equals(deletionResult.Ok, null)
+  
+    const paramsGet = { post_address: createResult.Ok }
+    const result = alice.call("blog", "get_post", paramsGet)
+  
+    t.equals(result.Ok, null)
+  })
 
 scenario1.runTape('update_post', async (t, { alice }) => {
   t.plan(4)
@@ -123,7 +152,7 @@ scenario1.runTape('update_post', async (t, { alice }) => {
   t.deepEqual(JSON.parse(updatedPost.Ok.App[1]), { content: "Hello Holo", date_created: "now" })
 })
 
-scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
+ scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   t.plan(5)
 
   const content = "Holo world"
@@ -139,6 +168,22 @@ scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
   t.ok(error.file)
   t.equal(error.line, "94")
 })
+
+scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
+
+  const result_bob_delete = await bob.callSync("blog", "delete_post",
+    { "content": "Bad"}
+  )
+  
+   // bad in_reply_to is an error condition
+   t.ok(result_bob_delete.Err)
+   t.notOk(result_bob_delete.Ok)
+   const error = JSON.parse(result_bob_delete.Err.Internal)
+   t.deepEqual(error.kind, { ErrorGeneric: "Target for link not found" })
+   t.ok(error.file)
+   t.equal(error.line, "94")
+  
+  })
 
 scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
 

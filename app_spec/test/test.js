@@ -90,7 +90,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   // get posts by bob
   const bob_agent_posts = bob.call("blog", "my_posts", {})
 
-   t.Ok(bob_agent_posts.Ok)
+   t.ok(bob_agent_posts.Ok)
    t.equal(bob_agent_posts.Ok.addresses.length, 1);
 
   //remove link by alicce

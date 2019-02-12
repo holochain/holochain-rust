@@ -311,7 +311,7 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
                     .map(|start| start <= e.index())
                     .unwrap_or_else(|| {
                         let latest = get_latest(e.clone(), map.clone(), index_query.clone())
-                            .unwrap_or(EntityAttributeValueIndex::default());
+                            .unwrap_or_default()
                         latest.index() == e.index()
                     })
             })

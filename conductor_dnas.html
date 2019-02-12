@@ -147,13 +147,12 @@
 <p>Give an ID of your choice to this DNA</p>
 <a class="header" href="#file-string" id="file-string"><h4><code>file</code>: <code>string</code></h4></a>
 <p>Path to the packaged DNA file</p>
-<a class="header" href="#hash-string" id="hash-string"><h4><code>hash</code>: <code>string</code></h4></a>
-<p>A hash has to be provided for <strong>FIXME &quot;sanity check&quot;??</strong></p>
+<a class="header" href="#hash-string-optional" id="hash-string-optional"><h4><code>hash</code>: <code>string</code> Optional</h4></a>
+<p>A hash can optionally be provided, which could be used to validate that the DNA being installed is the DNA that was intended to be installed.</p>
 <a class="header" href="#example" id="example"><h3>Example</h3></a>
 <pre><code class="language-toml">[[dnas]]
 id = &quot;app spec rust&quot;
 file = &quot;example-config/app_spec.hcpkg&quot;
-hash = &quot;Qm328wyq38924y&quot;
 </code></pre>
 
                         <hr />

@@ -1847,14 +1847,13 @@ $HOME/.holochain/conductor/conductor-config.toml
 <a class="header" href="#agents" id="agents"><h1>Agents</h1></a>
 <p><code>agents</code> is an array of configurations for &quot;agents&quot;. This means that you can define, and later reference, multiple distinct agents in this single config file. An &quot;agent&quot; has a name, ID, public address and is defined by a private key that resides in a file on their device.</p>
 <p><strong>Required</strong>: <code>agents</code> is a required property in the config file. It is the ONLY required property.</p>
-<p><strong>FIXME How does someone know what their 'public_address' is?</strong></p>
 <a class="header" href="#properties" id="properties"><h3>Properties</h3></a>
 <a class="header" href="#id-string" id="id-string"><h4><code>id</code>: <code>string</code></h4></a>
 <p>Give an ID of your choice to the agent</p>
 <a class="header" href="#name-string" id="name-string"><h4><code>name</code>: <code>string</code></h4></a>
 <p>Give a name of your choice to the agent</p>
 <a class="header" href="#public_address-string" id="public_address-string"><h4><code>public_address</code>: <code>string</code></h4></a>
-<p>FIXME ??</p>
+<p>A public address for the agent</p>
 <a class="header" href="#key_file-string" id="key_file-string"><h4><code>key_file</code>: <code>string</code></h4></a>
 <p>Path to the private key file for this agent. This property is not yet in use, so put any value here for the time being.</p>
 <a class="header" href="#example" id="example"><h3>Example</h3></a>
@@ -1872,13 +1871,12 @@ key_file = &quot;holo_tester.key&quot;
 <p>Give an ID of your choice to this DNA</p>
 <a class="header" href="#file-string" id="file-string"><h4><code>file</code>: <code>string</code></h4></a>
 <p>Path to the packaged DNA file</p>
-<a class="header" href="#hash-string" id="hash-string"><h4><code>hash</code>: <code>string</code></h4></a>
-<p>A hash has to be provided for <strong>FIXME &quot;sanity check&quot;??</strong></p>
+<a class="header" href="#hash-string-optional" id="hash-string-optional"><h4><code>hash</code>: <code>string</code> Optional</h4></a>
+<p>A hash can optionally be provided, which could be used to validate that the DNA being installed is the DNA that was intended to be installed.</p>
 <a class="header" href="#example-1" id="example-1"><h3>Example</h3></a>
 <pre><code class="language-toml">[[dnas]]
 id = &quot;app spec rust&quot;
 file = &quot;example-config/app_spec.hcpkg&quot;
-hash = &quot;Qm328wyq38924y&quot;
 </code></pre>
 <a class="header" href="#instances" id="instances"><h1>Instances</h1></a>
 <p><code>instances</code> is an array of configurations of DNA instances, each of which is a running copy of a <a href="./conductor_dnas.html">DNA</a>, by a particular <a href="./conductor_agents.html">agent</a>. Based on these configurations, the Conductor will attempt to start up these instances, initializing (or resuming) a local source chain and DHT. It is possible to use the same DNA with multiple different <a href="./conductor_agents.html">agents</a>, but it is <strong>not</strong> recommended to run two instances with the same DNA and same agent. An instance has a configurable <code>storage</code> property, which can be set to save to disk, or just store temporarily in memory, which is useful for testing purposes.</p>
@@ -1988,13 +1986,12 @@ handle = &quot;happ-store&quot;
 <p>Give an ID of your choice to this UI Bundle</p>
 <a class="header" href="#root_dir-string" id="root_dir-string"><h4><code>root_dir</code>: <code>string</code></h4></a>
 <p>Path to the folder containing the static files to serve</p>
-<a class="header" href="#hash-string-1" id="hash-string-1"><h4><code>hash</code>: <code>string</code></h4></a>
-<p>A hash has to be provided for <strong>FIXME &quot;sanity check&quot;??</strong></p>
+<a class="header" href="#hash-string-optional-1" id="hash-string-optional-1"><h4><code>hash</code>: <code>string</code> Optional</h4></a>
+<p>A hash can optionally be provided, which could be used to validate that the UI being installed is the UI bundle that was intended to be installed.</p>
 <a class="header" href="#example-4" id="example-4"><h3>Example</h3></a>
 <pre><code class="language-toml">[[ui_bundles]]
 id = &quot;bundle1&quot;
 root_dir = &quot;ui&quot;
-hash = &quot;Qm000&quot;
 </code></pre>
 <a class="header" href="#ui-interfaces" id="ui-interfaces"><h1>UI Interfaces</h1></a>
 <p><code>ui_interfaces</code> is an array of configurations for &quot;UI Interfaces&quot;, meaning there can be multiple within one Conductor. UI Interfaces serve <a href="./conductor_ui_bundles.html">UI Bundles</a> over HTTP.</p>

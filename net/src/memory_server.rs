@@ -94,9 +94,9 @@ fn _unbookkeep_address(
 /// a global server for routing messages between agents in-memory
 pub(crate) struct InMemoryServer {
     // keep track of senders by `dna_address::agent_id`
-    senders: HashMap<String, mpsc::Sender<Protocol>>,
-    // keep track of senders as arrays by dna_address
-    senders_by_dna: HashMap<Address, HashMap<String, mpsc::Sender<Protocol>>>,
+    senders: HashMap<BucketId, mpsc::Sender<Protocol>>,
+    // keep track of agents by dna_address 
+    senders_by_dna: HashMap<Address, HashSet<String>, mpsc::Sender<Protocol>>>,
     // Unique identifier
     name: String,
     // Keep track of connected clients
@@ -267,6 +267,7 @@ impl InMemoryServer {
     /// unregister a data handler with the server (for message routing)
     pub fn unregister(&mut self, dna_address: &Address, agent_id: &str) {
         let bucket_id = into_bucket_id(dna_address, agent_id);
+        self.log.d(&format!("unregistering '{}'", bucket_id));
         let maybe_sender = self.senders.remove(&bucket_id);
         if maybe_sender.is_none() {
             return;
@@ -278,6 +279,7 @@ impl InMemoryServer {
             }
             Entry::Vacant(_) => (),
         };
+        self.log.d(&format!("unregistering '{}' DONE", bucket_id));
     }
 
     /// process a message sent by a node to the "network"
@@ -429,7 +431,17 @@ impl InMemoryServer {
         maybe_sender_info: Option<(String, Option<String>)>,
     ) -> NetResult<bool> {
         let bucket_id = into_bucket_id(dna_address, agent_id);
+//        self.log.d(&format!(
+//            "---- '{}' checking '{}' ...",
+//            self.name.clone(),
+//            bucket_id,
+//        ));
         if self.trackdna_book.contains(&bucket_id) {
+            self.log.d(&format!(
+                "---- '{}' check OK: {}",
+                self.name.clone(),
+                bucket_id,
+            ));
             return Ok(true);
         };
         if maybe_sender_info.is_none() {

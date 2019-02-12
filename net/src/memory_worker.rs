@@ -62,7 +62,7 @@ impl NetWorker for InMemoryWorker {
                             Entry::Vacant(_) => (),
                             Entry::Occupied(e) => {
                                 server.unregister(&untrack_msg.dna_address, &untrack_msg.agent_id);
-                                e.remove();
+                                // e.remove();
                             }
                         };
                 }

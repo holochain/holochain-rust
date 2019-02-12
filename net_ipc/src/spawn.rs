@@ -20,7 +20,7 @@ pub fn ipc_spawn(
     cmd: String,
     args: Vec<String>,
     work_dir: String,
-    config: String,
+    end_user_config: String,
     env: HashMap<String, String>,
     block_connect: bool,
 ) -> NetResult<SpawnResult> {
@@ -36,7 +36,7 @@ pub fn ipc_spawn(
     let mut child = child.spawn()?;
 
     if let Some(ref mut child_stdin) = child.stdin {
-        child_stdin.write(&config.into_bytes())?;
+        child_stdin.write(&end_user_config.into_bytes())?;
     }
 
     // close the pipe so the process can proceed

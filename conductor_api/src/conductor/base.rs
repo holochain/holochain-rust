@@ -130,23 +130,14 @@ impl Conductor {
         }
     }
 
-    fn setup_signals(&mut self, maybe_signal_tx: Option<SignalSender>) -> Option<SignalReceiver> {
+    fn setup_signals(&mut self, maybe_signal_tx: Option<SignalSender>) {
         if let Some(signal_tx) = maybe_signal_tx {
             self.signal_tx = Initable::Init(signal_tx);
-            None
         } else {
             let (signal_tx, signal_rx) = signal_channel();
             self.signal_tx = Initable::Init(signal_tx);
-            Some(signal_rx)
+            self.start_signal_broadcast(signal_rx);
         }
-    }
-
-    pub fn with_signal_channel(mut self, signal_tx: SyncSender<Signal>) -> Self {
-        if !self.instances.is_empty() {
-            panic!("Cannot set a signal channel after having run load_config()");
-        }
-        let _ = self.setup_signals(Some(signal_tx));
-        self
     }
 
     pub fn config(&self) -> Configuration {
@@ -444,12 +435,9 @@ impl Conductor {
                 context_builder = context_builder.with_network_config(self.instance_p2p_config()?);
 
                 // Signal config:
-                let signal_rx = self.setup_signals(signal_tx.clone());
+                self.setup_signals(signal_tx.clone());
                 context_builder = context_builder
                     .with_signals(self.signal_tx.clone().expect("Signal sender not set up"));
-                if let Some(rx) = signal_rx {
-                    self.start_signal_broadcast(rx);
-                }
 
                 // Storage:
                 if let StorageConfiguration::File { path } = instance_config.storage {
@@ -817,9 +805,9 @@ pub mod tests {
 
     fn test_conductor_with_signals(signal_tx: SignalSender) -> Conductor {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-        let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
+        let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
-        conductor.load_config(None).unwrap();
+        conductor.load_config(Some(signal_tx)).unwrap();
         conductor
     }
 

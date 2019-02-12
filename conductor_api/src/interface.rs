@@ -740,6 +740,17 @@ impl ConductorApiBuilder {
 
         self
     }
+
+    pub fn with_holo_notifications(mut self) -> Self {
+        self.io
+            .add_notification("holo/authoring-signature", move |params| {
+                let params_map = Self::unwrap_params_map(params).unwrap();
+                let root_dir = Self::get_as_string("TODO", &params_map).unwrap();
+                conductor_call!(|c| Ok(()) as Result<_, String>).unwrap();
+            });
+
+        self
+    }
 }
 
 pub trait Interface {

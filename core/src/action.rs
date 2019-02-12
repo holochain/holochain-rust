@@ -6,7 +6,7 @@ use crate::{
     },
     nucleus::{
         state::{NucleusState, ValidationResult},
-        ExecuteZomeFnResponse, ZomeFnCall,
+        ExecuteZomeFnResponse,
     },
 };
 use holochain_core_types::{

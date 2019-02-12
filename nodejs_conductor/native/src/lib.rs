@@ -18,14 +18,10 @@ extern crate tempfile;
 mod config;
 pub mod js_test_conductor;
 
-use crate::{
-    config::{js_instance_id, js_make_config},
-    js_test_conductor::JsTestConductor,
-};
+use crate::{config::js_make_config, js_test_conductor::JsTestConductor};
 
 register_module!(mut m, {
     m.export_function("makeConfig", js_make_config)?;
-    m.export_function("makeInstanceId", js_instance_id)?;
     m.export_class::<JsTestConductor>("TestConductor")?;
     Ok(())
 });

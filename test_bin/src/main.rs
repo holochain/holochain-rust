@@ -161,12 +161,19 @@ fn main() {
             launch_two_nodes_test_with_ipc_mock(
                 &n3h_path,
                 "test_bin/data/mock_ipc_network_config.json",
+                None,
                 test_fn,
             )
             .unwrap();
         }
         if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-            launch_two_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn).unwrap();
+            launch_two_nodes_test(
+                &n3h_path,
+                "test_bin/data/network_config.json",
+                None,
+                test_fn,
+            )
+            .unwrap();
         }
     }
 
@@ -180,13 +187,19 @@ fn main() {
                 launch_three_nodes_test_with_ipc_mock(
                     &n3h_path,
                     "test_bin/data/mock_ipc_network_config.json",
+                    None,
                     test_fn,
                 )
                 .unwrap();
             }
             if config["modes"]["HACK_MODE"].as_bool().unwrap() {
-                launch_three_nodes_test(&n3h_path, "test_bin/data/network_config.json", test_fn)
-                    .unwrap();
+                launch_three_nodes_test(
+                    &n3h_path,
+                    "test_bin/data/network_config.json",
+                    None,
+                    test_fn,
+                )
+                .unwrap();
             }
         }
     }
@@ -232,6 +245,7 @@ fn launch_two_nodes_test_with_memory_network(test_fn: TwoNodesTestFn) -> NetResu
 fn launch_two_nodes_test_with_ipc_mock(
     n3h_path: &str,
     config_filepath: &str,
+    maybe_end_user_config_filepath: Option<String>,
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -240,6 +254,7 @@ fn launch_two_nodes_test_with_ipc_mock(
         DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
+        maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
     let mut billy = P2pNode::new_with_uri_ipc_network(
@@ -266,6 +281,7 @@ fn launch_two_nodes_test_with_ipc_mock(
 fn launch_two_nodes_test(
     n3h_path: &str,
     config_filepath: &str,
+    maybe_end_user_config_filepath: Option<String>,
     test_fn: TwoNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -274,6 +290,7 @@ fn launch_two_nodes_test(
         DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
@@ -281,6 +298,7 @@ fn launch_two_nodes_test(
         DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
+        maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
 
@@ -342,6 +360,7 @@ fn launch_three_nodes_test_with_memory_network(test_fn: ThreeNodesTestFn) -> Net
 fn launch_three_nodes_test_with_ipc_mock(
     n3h_path: &str,
     config_filepath: &str,
+    maybe_end_user_config_filepath: Option<String>,
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -350,6 +369,7 @@ fn launch_three_nodes_test_with_ipc_mock(
         DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
+        maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
     let mut billy = P2pNode::new_with_uri_ipc_network(
@@ -382,6 +402,7 @@ fn launch_three_nodes_test_with_ipc_mock(
 fn launch_three_nodes_test(
     n3h_path: &str,
     config_filepath: &str,
+    maybe_end_user_config_filepath: Option<String>,
     test_fn: ThreeNodesTestFn,
 ) -> NetResult<()> {
     // Create two nodes
@@ -390,6 +411,7 @@ fn launch_three_nodes_test(
         DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
     let mut billy = P2pNode::new_with_spawn_ipc_network(
@@ -397,6 +419,7 @@ fn launch_three_nodes_test(
         DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
+        maybe_end_user_config_filepath.clone(),
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
     let mut camille = P2pNode::new_with_spawn_ipc_network(
@@ -404,6 +427,7 @@ fn launch_three_nodes_test(
         DNA_ADDRESS.clone(),
         n3h_path,
         Some(config_filepath),
+        maybe_end_user_config_filepath,
         vec!["/ip4/127.0.0.1/tcp/12345/ipfs/blabla".to_string()],
     );
 

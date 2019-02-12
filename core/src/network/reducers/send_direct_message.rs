@@ -91,7 +91,7 @@ mod tests {
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: test_memory_network_config(netname),
+            p2p_config: test_memory_network_config(netname),
             dna_address: "reduce_send_direct_message_timeout_test".into(),
             agent_id: String::from("alice"),
         }));

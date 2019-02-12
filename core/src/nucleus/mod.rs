@@ -7,6 +7,7 @@ pub mod state;
 
 use crate::{
     action::{Action, ActionWrapper},
+    context::Context,
     instance::Observer,
 };
 use holochain_core_types::{
@@ -20,11 +21,11 @@ use holochain_core_types::{
 };
 use snowflake;
 use std::{
-    sync::mpsc::channel,
+    sync::{Arc, mpsc::channel},
     time::Duration,
 };
 
-pub use crate::nucleus::reducers::execute_zome_function::ExecuteZomeFnResponse;
+pub use crate::nucleus::actions::call_zome_function::{call_zome_function, ExecuteZomeFnResponse};
 pub use crate::nucleus::reducers::reduce;
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
@@ -75,25 +76,9 @@ pub type ZomeFnResult = HcResult<JsonString>;
 /// for test only?? <-- (apparently not, since it's used in Holochain::call)
 pub fn call_and_wait_for_result(
     call: ZomeFnCall,
-    instance: &mut super::instance::Instance,
+    context: Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
-    let call_action = ActionWrapper::new(Action::ExecuteZomeFunction(call.clone()));
-
-    // Dispatch action with observer closure that waits for a result in the state
-    let (tick_tx, tick_rx) = channel();
-    instance
-        .observer_channel()
-        .send(Observer { ticker: tick_tx })
-        .expect("Observer channel not initialized");
-    instance.dispatch(call_action);
-
-    loop {
-        if let Some(result) = instance.state().nucleus().zome_call_result(&call) {
-            return result;
-        } else {
-            let _ = tick_rx.recv_timeout(Duration::from_millis(100));
-        }
-    }
+    context.block_on(call_zome_function(call, &context))
 }
 
 // Helper function for finding out if a given function call is public
@@ -122,10 +107,10 @@ pub mod tests {
     use super::*;
     use crate::{
         instance::{
-            tests::{test_context, test_instance},
+            tests::{test_context, test_instance, test_instance_and_context},
             Instance,
         },
-        nucleus::state::{NucleusState, NucleusStatus},
+        nucleus::{call_zome_function, state::{NucleusState, NucleusStatus}},
     };
     use holochain_core_types::dna::capabilities::CapabilityCall;
 
@@ -221,9 +206,11 @@ pub mod tests {
 
     #[test]
     /// tests that calling a valid zome function returns a valid result
-    fn call_zome_function() {
+    fn test_call_zome_function() {
+        let netname = Some("test_call_zome_function");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
+        let (_, context) = test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        //let context = instance.initialize_context(test_context("janet", netname));
 
         // Create zome function call
         let zome_call = ZomeFnCall::new(
@@ -233,7 +220,7 @@ pub mod tests {
             "",
         );
 
-        let result = super::call_and_wait_for_result(zome_call, &mut instance);
+        let result = context.block_on(call_zome_function(zome_call, &context));
 
         assert!(result.is_ok());
         assert_eq!(JsonString::from(RawString::from(1337)), result.unwrap());
@@ -244,7 +231,7 @@ pub mod tests {
     fn call_ribosome_wrong_dna() {
         let netname = Some("call_ribosome_wrong_dna");
         let mut instance = Instance::new(test_context("janet", netname));
-        let _ = instance.initialize_without_dna(test_context("jane", netname));
+        let context = instance.initialize_without_dna(test_context("jane", netname));
 
         let call = ZomeFnCall::new(
             "test_zome",
@@ -252,7 +239,7 @@ pub mod tests {
             "public_test_fn",
             "{}",
         );
-        let result = super::call_and_wait_for_result(call, &mut instance);
+        let result = context.block_on(call_zome_function(call, &context));
 
         match result {
             Err(HolochainError::DnaMissing) => {}
@@ -264,12 +251,12 @@ pub mod tests {
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
+        let (_, context) = test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call:
         let call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "xxx", "{}");
 
-        let result = super::call_and_wait_for_result(call, &mut instance);
+        let result = context.block_on(call_zome_function(call, &context));
 
         match result {
             Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(err))) => {
@@ -283,12 +270,12 @@ pub mod tests {
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let mut instance = test_instance(dna, None).expect("Could not initialize test instance");
+        let (_, context) = test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create bad zome function call
         let call = ZomeFnCall::new("xxx", Some(test_capability_call()), "public_test_fn", "{}");
 
-        let result = super::call_and_wait_for_result(call, &mut instance);
+        let result = context.block_on(call_zome_function(call, &context));
 
         match result {
             Err(HolochainError::Dna(err)) => assert_eq!(err.to_string(), "Zome 'xxx' not found"),

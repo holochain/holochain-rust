@@ -196,7 +196,7 @@ fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bo
 
 /// checks to see if a given function call is allowable according to the capabilities
 /// that have been registered to callers in the chain.
-fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
+pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     // the agent can always do everything
     if is_token_the_agent(context.clone(), &fn_call.cap) {
         return true;

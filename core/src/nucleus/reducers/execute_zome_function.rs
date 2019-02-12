@@ -2,9 +2,10 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{
+        ExecuteZomeFnResponse,
         ribosome::{self, api::call::validate_call},
         state::NucleusState,
-        ZomeFnCall, ZomeFnResult,
+        ZomeFnCall,
     },
 };
 use holochain_core_types::{
@@ -12,7 +13,7 @@ use holochain_core_types::{
         wasm::DnaWasm,
     },
     error::{HolochainError},
-    json::JsonString,
+
 };
 use std::{
     sync::{
@@ -72,27 +73,7 @@ pub fn reduce_execute_zome_function(
     launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }
 
-#[derive(Clone, Debug, PartialEq, Hash)]
-pub struct ExecuteZomeFnResponse {
-    call: ZomeFnCall,
-    result: ZomeFnResult,
-}
 
-impl ExecuteZomeFnResponse {
-    pub fn new(call: ZomeFnCall, result: Result<JsonString, HolochainError>) -> Self {
-        ExecuteZomeFnResponse { call, result }
-    }
-
-    /// read only access to call
-    pub fn call(&self) -> ZomeFnCall {
-        self.call.clone()
-    }
-
-    /// read only access to result
-    pub fn result(&self) -> Result<JsonString, HolochainError> {
-        self.result.clone()
-    }
-}
 
 pub(crate) fn launch_zome_fn_call(
     context: Arc<Context>,

@@ -40,12 +40,6 @@ use structopt::StructOpt;
 #[structopt(about = "A command line for Holochain")]
 enum Cli {
     #[structopt(
-        name = "agent",
-        alias = "a",
-        about = "Starts a Holochain node as an agent"
-    )]
-    Agent,
-    #[structopt(
         name = "package",
         alias = "p",
         about = "Builds the current Holochain app into a .hcpkg file"
@@ -166,7 +160,6 @@ fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
     match args {
-        Cli::Agent => cli::agent().map_err(HolochainError::Default)?,
         Cli::Package { strip_meta, output } => {
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }

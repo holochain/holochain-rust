@@ -3,6 +3,7 @@ use holochain_cas_implementations::{
     eav::{file::EavFileStorage, memory::EavMemoryStorage},
     path::create_path_if_not_exists,
 };
+use holochain_core_types::conductor::RpcHandler;
 
 use holochain_core::{
     context::Context,
@@ -15,7 +16,6 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_net::p2p_config::P2pConfig;
-use jsonrpc_core::IoHandler;
 use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex, RwLock},
@@ -39,7 +39,7 @@ pub struct ContextBuilder {
     dht_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
     p2p_config: Option<P2pConfig>,
-    conductor_api: Option<Arc<RwLock<IoHandler>>>,
+    conductor_api: Option<Arc<RwLock<RpcHandler>>>,
     signal_tx: Option<SignalSender>,
 }
 
@@ -98,7 +98,7 @@ impl ContextBuilder {
         self
     }
 
-    pub fn with_conductor_api(mut self, api_handler: IoHandler) -> Self {
+    pub fn with_conductor_api(mut self, api_handler: RpcHandler) -> Self {
         self.conductor_api = Some(Arc::new(RwLock::new(api_handler)));
         self
     }

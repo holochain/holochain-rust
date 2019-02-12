@@ -24,8 +24,9 @@ toml = "0.4.8"
 boolinator = "2.4"
 tiny_http = "0.6.0"
 jsonrpc-core = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
-jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 jsonrpc-http-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+jsonrpc-pubsub = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
+jsonrpc-ws-server = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 petgraph = "0.4.13"
 colored = "1.6"
 regex = "1"

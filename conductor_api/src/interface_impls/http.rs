@@ -1,6 +1,6 @@
 use conductor::broadcaster::Broadcaster;
+use holochain_core_types::conductor::RpcHandler;
 use interface::Interface;
-use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
 use std::{sync::mpsc::Receiver, thread};
 
@@ -17,7 +17,7 @@ impl HttpInterface {
 impl Interface for HttpInterface {
     fn run(
         &self,
-        handler: IoHandler,
+        handler: RpcHandler,
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
         let url = format!("0.0.0.0:{}", self.port);

@@ -1,9 +1,12 @@
 use conductor::broadcaster::Broadcaster;
 use holochain_core::state::State;
-use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
+use holochain_core_types::{
+    cas::content::Address, conductor::RpcHandler, dna::capabilities::CapabilityCall,
+};
 use Holochain;
 
-use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
+use jsonrpc_core::{self, types::params::Params, MetaIoHandler, Value};
+use jsonrpc_pubsub::PubSubHandler;
 use serde_json;
 use std::{
     collections::HashMap,
@@ -22,10 +25,6 @@ use serde_json::map::Map;
 
 pub type InterfaceError = String;
 pub type InstanceMap = HashMap<String, Arc<RwLock<Holochain>>>;
-
-pub trait DispatchRpc {
-    fn handler(self) -> IoHandler;
-}
 
 macro_rules! conductor_call {
     ( |$conductor:ident| $call_expr:expr ) => {
@@ -69,11 +68,11 @@ macro_rules! conductor_call {
 /// This builder makes it convenient to create handlers with different configurations.
 ///
 /// Call any sequence of with_* functions on a ConductorApiBuilder object and finalize
-/// with spawn() to retrieve the IoHandler.
+/// with spawn() to retrieve the RpcHandler.
 pub struct ConductorApiBuilder {
     instances: InstanceMap,
     instance_configs: HashMap<String, InstanceConfiguration>,
-    io: Box<IoHandler>,
+    io: Box<RpcHandler>,
 }
 
 impl ConductorApiBuilder {
@@ -81,12 +80,12 @@ impl ConductorApiBuilder {
         ConductorApiBuilder {
             instances: HashMap::new(),
             instance_configs: HashMap::new(),
-            io: Box::new(IoHandler::new()),
+            io: Box::new(PubSubHandler::new(MetaIoHandler::default())),
         }
     }
 
     /// Finish the building and retrieve the populated handler
-    pub fn spawn(mut self) -> IoHandler {
+    pub fn spawn(mut self) -> RpcHandler {
         self.setup_info_api();
         *self.io
     }
@@ -745,7 +744,7 @@ impl ConductorApiBuilder {
 pub trait Interface {
     fn run(
         &self,
-        handler: IoHandler,
+        handler: RpcHandler,
         kill_switch: Receiver<()>,
     ) -> Result<(Broadcaster, thread::JoinHandle<()>), String>;
 }
@@ -826,7 +825,7 @@ pub mod tests {
             .spawn();
 
         let response_str = handler
-            .handle_request_sync(&create_call_str("info/instances", None))
+            .handle_request_sync(&create_call_str("info/instances", None), Default::default())
             .expect("Invalid call to handler");
         println!("{}", response_str);
         let result = unwrap_response_if_valid(&response_str);

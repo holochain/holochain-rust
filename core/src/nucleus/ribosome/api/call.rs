@@ -114,7 +114,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
     );
 
     let response = handler
-        .handle_request_sync(&request)
+        .handle_request_sync(&request, Default::default())
         .ok_or("Bridge call failed".to_string())?;
 
     let response = JsonRpc::parse(&response)?;

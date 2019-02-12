@@ -16,12 +16,12 @@ use holochain_core_types::{
         content::{Address, AddressableContent},
         storage::ContentAddressableStorage,
     },
+    conductor::RpcHandler,
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     error::{HcResult, HolochainError},
 };
 use holochain_net::p2p_config::P2pConfig;
-use jsonrpc_core::IoHandler;
 use std::{
     sync::{
         mpsc::{channel, Receiver, SyncSender},
@@ -47,7 +47,7 @@ pub struct Context {
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
     pub p2p_config: P2pConfig,
-    pub conductor_api: Option<Arc<RwLock<IoHandler>>>,
+    pub conductor_api: Option<Arc<RwLock<RpcHandler>>>,
     signal_tx: Option<SyncSender<Signal>>,
 }
 
@@ -64,7 +64,7 @@ impl Context {
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
         p2p_config: P2pConfig,
-        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        conductor_api: Option<Arc<RwLock<RpcHandler>>>,
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {

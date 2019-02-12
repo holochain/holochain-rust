@@ -26,6 +26,7 @@ objekt="0.1.1"
 holochain_core_types_derive = { path = "../core_types_derive" }
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "^1.1"
+jsonrpc-pubsub = { git = "https://github.com/holochain/jsonrpc", branch = "broadcaster-getter" }
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

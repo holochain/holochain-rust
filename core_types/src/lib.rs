@@ -30,11 +30,13 @@ extern crate regex;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
+extern crate jsonrpc_pubsub;
 
 extern crate uuid;
 
 pub mod cas;
 pub mod chain_header;
+pub mod conductor;
 pub mod crud_status;
 pub mod eav;
 pub mod entry;

@@ -16,12 +16,12 @@ use holochain_core::{
 use holochain_core_types::{
     agent::{AgentId, KeyBuffer},
     cas::content::AddressableContent,
+    conductor::RpcHandler,
     dna::Dna,
     error::HolochainError,
     json::JsonString,
     ugly::Initable,
 };
-use jsonrpc_core::IoHandler;
 
 use std::{
     clone::Clone,
@@ -512,7 +512,7 @@ impl Conductor {
         Ok(())
     }
 
-    fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> IoHandler {
+    fn make_interface_handler(&self, interface_config: &InterfaceConfiguration) -> RpcHandler {
         let instance_ids: Vec<String> = interface_config
             .instances
             .iter()

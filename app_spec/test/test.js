@@ -77,27 +77,46 @@ scenario1.runTape('create_post', async (t, { alice }) => {
   t.ok(result.Ok)
   t.notOk(result.Err)
   t.equal(result.Ok, "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk")
-})
+})*/
 
 scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
-  await alice.callSync("blog", "create_post",
+  const result_create_post = await alice.callSync("blog", "create_post",
     { "content": "Posty", "in_reply_to": "" }
   )
-  const result_create_post = bob.call("blog", "my_posts", {})
-  t.equal(result_create_post.Ok.addresses.length, 1)
-  await alice.callSync("blog", "delete_post",
-    { "content": "Posty"}
+  const bob_result_create_post = bob.call("blog", "post_reply_to", 
+    { "content": "reply", "in_reply_to": result_create_post.Ok }
+  );
+
+  t.ok(bob_result_create_post.Ok)
+
+  const result_bob_replies = bob.call("blog", "replies", 
+    { "address": result_create_post.Ok }
+  );
+  t.equal(result_bob_replies.Ok.addresses.length, 1)
+
+  const result_bob_replies = bob.call("blog", "replies", 
+  { "address": result_create_post.Ok }
+);
+  
+ t.equal(result_bob_replies.Ok.addresses.length, 1)
+  
+  const result_bob_delete_reply = bob.call("blog", "delete_reply_to", 
+    { "content": "reply", "in_reply_to": result_create_post.Ok }
   )
-  const result_delete_post = alice.call("blog", "my_posts", {})
+
+  t.ok(result_bob_delete_reply.Ok)
   t.equal(result_delete_post.Ok.addresses.length, 0)
 
-  const result_delete_post_bob = bob.call("blog", "my_posts", {})
-  t.equal(result_delete_post_bob.Ok.addresses.length, 0)
+const result_empty_bob_replies = bob.call("blog", "replies", 
+  { "address": result_create_post.Ok }
+);
+  
+ t.equal(result_empty_bob_replies.Ok.addresses.length, 0)
   
   })
 
-  scenario1.runTape('delete_entry_post', async (t, { alice }) => {
+  /*scenario1.runTape('delete_entry_post', async (t, { alice }) => {
     t.plan(3)
   
     const content = "Hello Holo world 321"
@@ -157,7 +176,7 @@ scenario1.runTape('update_post', async (t, { alice }) => {
   t.equal(error.line, "94")
 })*/
 
-scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
+/*scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
 
   const result_bob_delete = await bob.callSync("blog", "delete_post",
     { "content": "Bad"}
@@ -171,7 +190,7 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
    t.ok(error.file)
    t.equal(error.line, "94")
   
-  })
+  })*/
 
 /*scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
 

@@ -10,6 +10,7 @@ use std::{
     convert::TryFrom,
     path::PathBuf,
     sync::{mpsc::Receiver, Arc, RwLock},
+    thread,
 };
 
 use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
@@ -742,7 +743,11 @@ impl ConductorApiBuilder {
 }
 
 pub trait Interface {
-    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<Broadcaster, String>;
+    fn run(
+        &self,
+        handler: IoHandler,
+        kill_switch: Receiver<()>,
+    ) -> Result<(Broadcaster, thread::JoinHandle<()>), String>;
 }
 
 #[cfg(test)]

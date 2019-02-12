@@ -15,16 +15,20 @@ impl WebsocketInterface {
 }
 
 impl Interface for WebsocketInterface {
-    fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<Broadcaster, String> {
+    fn run(
+        &self,
+        handler: IoHandler,
+        kill_switch: Receiver<()>,
+    ) -> Result<(Broadcaster, thread::JoinHandle<()>), String> {
         let url = format!("0.0.0.0:{}", self.port);
         let server = ServerBuilder::new(handler)
             .start(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
         let broadcaster = Broadcaster::Ws(server.broadcaster());
-        thread::spawn(move || {
+        let handle = thread::spawn(move || {
             let _ = server;
             let _ = kill_switch.recv();
         });
-        Ok(broadcaster)
+        Ok((broadcaster, handle))
     }
 }

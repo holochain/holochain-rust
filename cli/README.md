@@ -70,7 +70,6 @@ If you want to use `hc run` with real (as opposed to mock) networking, you will 
 | test      | Runs tests written in the test folder                               |
 | run       | Starts a websocket server for the current Holochain app             |
 | keygen    | Creates a new passphrase encrypted agent key bundle                 |
-| agent (u) | Starts a Holochain node as an agent                                 |
 
 ### hc init & hc generate: How To Get Started Building An App
 

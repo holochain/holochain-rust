@@ -100,7 +100,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   t.ok(result_bob_replies.Ok)
   t.equal(result_bob_replies.Ok,1)
-  t.equal(result_bob_replies.Ok.addresses.length, 1)
+  //t.equal(result_bob_replies.Ok.addresses.length, 1)
 
   //get replies for alice
   const result_alice_replies = alice.call("blog", "replies", 

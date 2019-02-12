@@ -91,7 +91,7 @@ define_zome! {
 
         replies : {
             inputs: |address:Address|,
-            outputs: |result: ZomeApiResult<GetLinksResult>|,
+            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
             handler: blog::handle_my_replies
         }
 

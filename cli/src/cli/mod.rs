@@ -1,4 +1,3 @@
-mod agent;
 mod generate;
 mod init;
 mod keygen;
@@ -9,7 +8,6 @@ pub mod test;
 mod test_context;
 
 pub use self::{
-    agent::agent,
     generate::generate,
     init::init,
     keygen::keygen,

@@ -94,7 +94,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   );
 
  
-  t.equal(bob_agent_posts, "test")
+  t.equal(bob_agent_posts.Ok.addresses.length, 1)
 
   //remove link by alicce
     await alice.callSync("blog", "delete_post",
@@ -105,8 +105,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   const bob_result_posts_by_agents = await bob.callSync("blog", "posts_by_agent", params
   );
 
-  t.ok(bob_result_posts_by_agents.Ok)
-  t.equal(bob_result_posts_by_agents.Ok.length, 0)
+  t.equal(bob_result_posts_by_agents.Ok.addresses.length, 0)
   
   })
 

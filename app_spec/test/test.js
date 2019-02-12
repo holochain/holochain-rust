@@ -99,10 +99,10 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   )
  
   // get posts by bob
-  const bob_agent_posts = bob.call("blog", "my_posts", {})
+  const bob_agent_posts_expect_empty = bob.call("blog", "my_posts", {})
 
-  t.Ok(bob_agent_posts.Ok)
-  t.equal(bob_agent_posts.Ok.addresses.length, 0);
+  t.Ok(bob_agent_posts_expect_empty.Ok)
+  t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);
   
   })
 

@@ -4,7 +4,7 @@ use crate::{
     context::Context,
     nucleus::{
         is_fn_public,
-        ribosome::{self, api::call::check_capability},
+        ribosome,
         ZomeFnCall, ZomeFnResult,
     },
 };
@@ -16,7 +16,11 @@ use holochain_core_types::error::HolochainError;
 use std::{pin::Pin, sync::Arc};
 
 use holochain_core_types::json::JsonString;
-use std::thread;
+use holochain_core_types::{
+    dna::{capabilities::CapabilityCall},
+    entry::cap_entries::CapTokenGrant,
+};
+use std::{convert::TryFrom, thread};
 
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct ExecuteZomeFnResponse {
@@ -115,6 +119,37 @@ pub async fn call_zome_function(
     })
 }
 
+
+// TODO: check the signature too
+fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bool {
+    match cap {
+        None => false,
+        Some(call) => context.agent_id.key == call.cap_token.to_string(),
+    }
+}
+
+/// checks to see if a given function call is allowable according to the capabilities
+/// that have been registered to callers in the chain.
+fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
+    // the agent can always do everything
+    if is_token_the_agent(context.clone(), &fn_call.cap) {
+        return true;
+    }
+
+    match fn_call.cap.clone() {
+        None => false,
+        Some(call) => {
+            let chain = &context.chain_storage;
+            let maybe_json = chain.read().unwrap().fetch(&call.cap_token).unwrap();
+            let grant = match maybe_json {
+                Some(content) => CapTokenGrant::try_from(content).unwrap(),
+                None => return false,
+            };
+            grant.verify(call.cap_token.clone(), call.caller, &call.signature)
+        }
+    }
+}
+
 /// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).
 /// Tracks the nucleus status.
 pub struct CallResultFuture {
@@ -140,5 +175,26 @@ impl Future for CallResultFuture {
         } else {
             Poll::Pending
         }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::{is_token_the_agent};
+    use crate::instance::tests::test_instance_and_context;
+    use holochain_core_types::{
+        cas::content::Address,
+        dna::capabilities::{CapabilityCall}
+    };
+
+    #[test]
+    fn test_agent_as_token() {
+        let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
+        let (_, context) = test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        let agent_token = Address::from(context.agent_id.key.clone());
+        let cap_call = CapabilityCall::new(agent_token, None);
+        assert!(is_token_the_agent(context.clone(), &Some(cap_call)));
+        let cap_call = CapabilityCall::new(Address::from(""), None);
+        assert!(!is_token_the_agent(context, &Some(cap_call)));
     }
 }

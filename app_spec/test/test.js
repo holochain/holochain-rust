@@ -86,8 +86,8 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     { "content": "Posty", "in_reply_to": "" }
   )
 
-  const agent = result_create_post.Ok;
-  const params = { agent }
+  const agent= result_create_post.Ok;
+  const params = { "agent" : agent }
  
   // get posts by bob
   const bob_agent_posts = await bob.callSync("blog", "posts_by_agent", params

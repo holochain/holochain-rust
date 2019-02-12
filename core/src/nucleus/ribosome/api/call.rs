@@ -112,7 +112,6 @@ pub mod tests {
     extern crate wabt;
 
     use crate::{
-        action::{Action, ActionWrapper},
         context::Context,
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
@@ -180,6 +179,7 @@ pub mod tests {
             .into_bytes()
     }
 
+    #[allow(dead_code)]
     struct TestSetup {
         context: Arc<Context>,
         instance: Instance,

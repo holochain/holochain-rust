@@ -31,7 +31,7 @@ pub async fn crud_workflow<'a>(
             store_entry(context,&old_store,&entry)
         },
         CrudStatus::Modified => {
-            unimplemented!("MODIFIED NOT IMPLEMENTED")
+            modify_entry(context,&old_store,&entry)
         },
         CrudStatus::Deleted => {
             unimplemented!("DELETED NOT IMPLEMENTED")
@@ -44,10 +44,28 @@ pub async fn crud_workflow<'a>(
 
 }
 
+pub fn modify_entry(context: Arc<Context>,
+    old_store: &DhtStore,
+    entry: &Entry) ->Result<Option<DhtStore>,HolochainError>
+{
+    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::Modified)?;
+    Ok((*meta_storage.write().unwrap()).add_eavi(&new_status_eav)
+              .map(|_| None)
+                .map_err(|err| {
+                    closure_store
+                        .clone()
+                        .actions_mut()
+                        .insert(action_wrapper.clone(), Err(err));
+                    Some(closure_store.clone())
+                })
+                .ok()
+                .unwrap_or(Some(closure_store.clone())))
+              
 
+}
 pub fn store_entry(context: Arc<Context>,
     old_store: &DhtStore,
-    entry: &Entry,) ->Result<Option<DhtStore>,HolochainError>
+    entry: &Entry) ->Result<Option<DhtStore>,HolochainError>
 {
     // Add it to local storage
     let new_store = (*old_store).clone();

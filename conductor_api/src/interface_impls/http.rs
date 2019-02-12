@@ -2,7 +2,7 @@ use conductor::base::Broadcaster;
 use interface::Interface;
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;
-use std::sync::mpsc::Receiver;
+use std::{sync::mpsc::Receiver, thread};
 
 pub struct HttpInterface {
     port: u16,
@@ -17,10 +17,14 @@ impl HttpInterface {
 impl Interface for HttpInterface {
     fn run(&self, handler: IoHandler, kill_switch: Receiver<()>) -> Result<Broadcaster, String> {
         let url = format!("0.0.0.0:{}", self.port);
-        let _server = ServerBuilder::new(handler)
+
+        let server = ServerBuilder::new(handler)
             .start_http(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
-        let _ = kill_switch.recv();
+        let _ = thread::spawn(move || {
+            let _ = server;
+            let _ = kill_switch.recv();
+        });
         Ok(Broadcaster::Noop)
     }
 }

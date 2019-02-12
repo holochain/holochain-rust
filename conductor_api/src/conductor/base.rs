@@ -69,6 +69,7 @@ pub fn mount_conductor_from_config(config: Configuration) {
 
 /// An abstraction which represents the ability to (maybe) send a message to the client
 /// over the existing connection
+#[derive(Debug)]
 pub enum Broadcaster {
     Ws(ws::Sender),
     Noop,
@@ -188,6 +189,7 @@ impl Conductor {
 
     pub fn start_signal_broadcast(&mut self, signal_rx: SignalReceiver) -> thread::JoinHandle<()> {
         let broadcasters = self.broadcasters.clone();
+        println!("starting broadcast loop");
         thread::spawn(move || {
             for signal in signal_rx {
                 broadcasters
@@ -195,8 +197,8 @@ impl Conductor {
                     .unwrap()
                     .values()
                     .for_each(|broadcaster| {
+                        println!("broadcasting signal {:?}", signal);
                         broadcaster.send(signal.clone()).expect("TODO: result");
-                        println!("TODO: broadcast signal {:?}", signal);
                     })
             }
         })
@@ -468,9 +470,8 @@ impl Conductor {
 
                 // Signal config:
                 let signal_rx = self.setup_signals(signal_tx.clone());
-                if let Some(tx) = signal_tx {
-                    context_builder = context_builder.with_signals(tx)
-                };
+                context_builder = context_builder
+                    .with_signals(self.signal_tx.clone().expect("Signal sender not set up"));
                 if let Some(rx) = signal_rx {
                     self.start_signal_broadcast(rx);
                 }
@@ -592,27 +593,41 @@ impl Conductor {
         let log_sender = self.logger.get_sender();
         let (kill_switch_tx, kill_switch_rx) = channel();
         let broadcasters = self.broadcasters.clone();
-        thread::Builder::new()
-            .name(format!("conductor-interface: {}", interface_config.id))
-            .spawn(move || {
-                let iface = make_interface(&interface_config);
-                let broadcaster = iface
-                    .run(dispatcher, kill_switch_rx)
-                    .map_err(|error| {
-                        let message = format!(
-                            "err/conductor: Error running interface '{}': {}",
-                            interface_config.id, error
-                        );
-                        let _ = log_sender.send((String::from("conductor"), message));
-                        error
-                    })
-                    .unwrap();
-                broadcasters
-                    .write()
-                    .unwrap()
-                    .insert(interface_config.id.clone(), broadcaster);
-            })
-            .expect("Could not spawn thread for interface");
+        {
+            println!("GOGOGO");
+            let iface = make_interface(&interface_config);
+            println!("HOHOHO");
+            let broadcaster = iface
+                .run(dispatcher, kill_switch_rx)
+                .map_err(|error| {
+                    println!("OH snap there was atually an error {:?}", error);
+                    let message = format!(
+                        "err/conductor: Error running interface '{}': {}",
+                        interface_config.id, error
+                    );
+                    let _ = log_sender.send((String::from("conductor"), message));
+                    error
+                })
+                .unwrap();
+            println!("IOIOIO");
+            println!(
+                "(TODO real log): debug/conductor: adding broadcaster to map {:?}",
+                broadcaster
+            );
+            // log_sender
+            //     .send((
+            //         "conductor".into(),
+            //         format!(
+            //             "debug/conductor: adding broadcaster to map {:?}",
+            //             broadcaster
+            //         ),
+            //     ))
+            //     .unwrap();
+            broadcasters
+                .write()
+                .unwrap()
+                .insert(interface_config.id.clone(), broadcaster);
+        }
         kill_switch_tx
     }
 

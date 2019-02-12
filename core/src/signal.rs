@@ -10,6 +10,8 @@ use std::{
 pub enum Signal {
     Internal(ActionWrapper),
     User(JsonString),
+    // NB: this is part of a temporary hack that will be removed
+    // as soon as a browser light client is implemented!
     Holo(JsonString),
 }
 

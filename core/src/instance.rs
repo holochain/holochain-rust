@@ -197,7 +197,7 @@ impl Instance {
             *state = new_state;
         }
 
-        // context.log(format!("trace/reduce: {:?}", action_wrapper.action()));
+        context.log(format!("trace/reduce: {:?}", action_wrapper.action()));
         self.maybe_emit_action_signal(context, action_wrapper.clone());
 
         // Add new observers
@@ -216,8 +216,11 @@ impl Instance {
             // @TODO: if needed for performance, could add a filter predicate here
             // to prevent emitting too many unneeded signals
             let signal = Signal::Internal(action);
-            tx.send(signal).unwrap_or(())
-            // @TODO: once logging is implemented, kick out a warning for SendErrors
+            tx.send(signal).unwrap_or_else(|_e| {
+                context.log(format!(
+                    "warn/reduce: Signal channel is closed! No signals can be sent."
+                ))
+            })
         }
     }
 

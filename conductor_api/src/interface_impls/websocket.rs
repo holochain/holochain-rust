@@ -2,7 +2,7 @@ use crate::conductor::base::Broadcaster;
 use interface::Interface;
 use jsonrpc_core::IoHandler;
 use jsonrpc_ws_server::ServerBuilder;
-use std::sync::mpsc::Receiver;
+use std::{sync::mpsc::Receiver, thread};
 
 pub struct WebsocketInterface {
     port: u16,
@@ -20,7 +20,11 @@ impl Interface for WebsocketInterface {
         let server = ServerBuilder::new(handler)
             .start(&url.parse().expect("Invalid URL!"))
             .map_err(|e| e.to_string())?;
-        let _ = kill_switch.recv();
-        Ok(Broadcaster::Ws(server.broadcaster()))
+        let broadcaster = Broadcaster::Ws(server.broadcaster());
+        thread::spawn(move || {
+            let _ = server;
+            let _ = kill_switch.recv();
+        });
+        Ok(broadcaster)
     }
 }

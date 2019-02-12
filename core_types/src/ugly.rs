@@ -6,6 +6,7 @@
 
 /// Represents a value which may not have been initialized.
 /// Isomorphic to `Option`, but semantically different.
+#[derive(Clone)]
 pub enum Initable<T> {
     Init(T),
     Uninit,

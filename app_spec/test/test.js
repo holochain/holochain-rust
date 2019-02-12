@@ -82,31 +82,27 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
   //create post
-  const result_create_post = await alice.callSync("blog", "create_post",
+ await alice.callSync("blog", "create_post",
     { "content": "Posty", "in_reply_to": "" }
   )
 
-  const agent= result_create_post.Ok;
-  const params = { "agent" : agent }
  
   // get posts by bob
-  const bob_agent_posts = bob.callSync("blog", "posts_by_agent", params
-  );
+  const bob_agent_posts = bob.call("blog", "my_posts", {})
 
    t.Ok(bob_agent_posts.Ok)
-   t.equal(bob_agent_posts.Ok, "{}")
+   t.equal(bob_agent_posts.Ok.addresses.length, 1);
 
   //remove link by alicce
     await alice.callSync("blog", "delete_post",
     { "content": "Posty", "in_reply_to": "" }
   )
  
-  //get posts by alice
-  const bob_result_posts_by_agents = bob.callSync("blog", "posts_by_agent", params
-  );
+  // get posts by bob
+  const bob_agent_posts = bob.call("blog", "my_posts", {})
 
-  t.Ok(bob_result_posts_by_agents.Ok)
-   t.equal(bob_result_posts_by_agents.Ok.addresses.length, 0)
+  t.Ok(bob_agent_posts.Ok)
+  t.equal(bob_agent_posts.Ok.addresses.length, 0);
   
   })
 

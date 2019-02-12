@@ -86,42 +86,26 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     { "content": "Posty", "in_reply_to": "" }
   )
 
-  // reply to post
-  const bob_result_create_post = await bob.callSync("blog", "post_reply_to", 
-    { "content": "reply", "in_reply_to": result_create_post.Ok }
+  // get posts by bob
+  const bob_result_create_post = await bob.callSync("blog", "posts_by_agent", 
+    { "agent": result_create_post.Ok }
   );
 
   t.ok(bob_result_create_post.Ok)
+  t.equal(bob_result_create_post.Ok.addresses.length, 1)
 
-  //get replies for bob
-  const result_bob_replies = bob.call("blog", "replies", 
-    { "address": result_create_post.Ok }
+  //remove link
+    await alice.callSync("blog", "remove_link",
+    { "content": "Posty", "in_reply_to": "" }
+  )
+ 
+  //get posts by bob
+  const bob_result_posts_by_agents = await bob.callSync("blog", "posts_by_agent", 
+    { "agent": result_create_post.Ok }
   );
 
-  t.ok(result_bob_replies.Ok)
-  t.equal(result_bob_replies.Ok,1)
-  //t.equal(result_bob_replies.Ok.addresses.length, 1)
-
-  //get replies for alice
-  const result_alice_replies = alice.call("blog", "replies", 
-  { "address": result_create_post.Ok });
-  
-  t.equal(result_alice_replies.Ok.addresses.length, 1)
-  
- //delete reply using bob
-  const result_bob_delete_reply = await bob.callSync("blog", "delete_reply_to", 
-    { "content": "reply", "in_reply_to": result_create_post.Ok }
-  )
-
-  t.ok(result_bob_delete_reply.Ok)
-   
- 
- //get replies for alice
-const result_empty_alice_replies = alice.call("blog", "replies", 
-  { "address": result_create_post.Ok }
-);
-  
- t.equal(result_empty_alice_replies.Ok.addresses.length, 0)
+  t.ok(bob_result_posts_by_agents.Ok)
+  t.equal(bob_result_posts_by_agents.Ok.addresses.length, 0)
   
   })
 

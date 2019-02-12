@@ -87,7 +87,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   )
 
   
-  const bob_create_post_result = await alice.callSync("blog", "posts_by_agent",
+  const bob_create_post_result = await bob.callSync("blog", "posts_by_agent",
     { "agent": alice.agentId }
   )
 

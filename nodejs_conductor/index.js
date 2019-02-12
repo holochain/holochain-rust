@@ -5,7 +5,7 @@ const tape = require('tape');
 // deals with ensuring the correct version for the machine/node version
 const binding_path = binary.find(path.resolve(path.join(__dirname, './package.json')));
 
-const { makeInstanceId, makeConfig, TestConductor: Conductor } = require(binding_path);
+const { makeConfig, TestConductor: Conductor } = require(binding_path);
 
 const promiser = (fulfill, reject) => (err, val) => {
     if (err) {
@@ -23,18 +23,8 @@ const defaultOpts = {
 
 const Config = {
     agent: name => ({ name }),
-    dna: (path, name) => {
-        if (!name) {
-            name = path
-        }
-        return { path, name }
-    },
-    instance: (agent, dna, name) => {
-        if (!name) {
-            name = agent.name
-        }
-        return { agent, dna, name }
-    },
+    dna: (path, name = `${path}`) => ({ path, name }),
+    instance: (agent, dna, name = `${agent.name}`) => ({ agent, dna, name }),
     conductor: (instances, opts=defaultOpts) => makeConfig(instances, opts)
 }
 
@@ -99,8 +89,7 @@ Conductor.prototype.callSync = function (...args) {
 
 // Convenience function for making an object that can call into the conductor
 // in the context of a particular instance. This may be temporary.
-Conductor.prototype.makeCaller = function (agentId, dnaPath) {
-  const instanceId = dnaPath ? makeInstanceId(agentId, dnaPath) : agentId
+Conductor.prototype.makeCaller = function (instanceId) {
   return {
     call: (zome, fn, params) => this.call(instanceId, zome, fn, params),
     agentId: this.agent_id(instanceId),
@@ -137,7 +126,7 @@ Conductor.withInstances = function (instances, opts=defaultOpts) {
 Conductor.run = function (instances, opts, fn) {
     if (typeof opts === 'function') {
         fn = opts
-        opts = {}
+        opts = undefined
     }
     const conductor = Conductor.withInstances(instances, opts)
     return new Promise((fulfill, reject) => {
@@ -185,7 +174,6 @@ class Scenario {
         return Conductor.run(this.instances, this.opts, (stop, _, conductor) => {
             const callers = {}
             this.instances.forEach(instance => {
-                const id = makeInstanceId(instance.agent.name, instance.dna.name)
                 const name = instance.name
                 if (name in callers) {
                     throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`

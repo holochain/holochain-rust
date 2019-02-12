@@ -99,7 +99,7 @@ impl ConductorAdmin for Conductor {
         let new_dna = DnaConfiguration {
             id: id.clone(),
             file: config_path_str.into(),
-            hash: dna.address().to_string(),
+            hash: Some(dna.address().to_string()),
         };
 
         let mut new_config = self.config.clone();
@@ -695,12 +695,12 @@ pattern = '.*'"#
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.hcpkg"),
-                    hash: String::from("Qm328wyq38924y"),
+                    hash: Some(String::from("Qm328wyq38924y")),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: String::from("new-dna.hcpkg"),
-                    hash: String::from(new_dna.address()),
+                    hash: Some(String::from(new_dna.address())),
                 },
             ]
         );
@@ -771,12 +771,12 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.hcpkg"),
-                    hash: String::from("Qm328wyq38924y"),
+                    hash: Some(String::from("Qm328wyq38924y")),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna"),
                     file: output_dna_file.to_str().unwrap().to_string(),
-                    hash: String::from(new_dna.address()),
+                    hash: Some(String::from(new_dna.address())),
                 },
             ]
         );
@@ -837,12 +837,12 @@ id = 'new-dna'"#,
                 DnaConfiguration {
                     id: String::from("test-dna"),
                     file: String::from("app_spec.hcpkg"),
-                    hash: String::from("Qm328wyq38924y"),
+                    hash: Some(String::from("Qm328wyq38924y")),
                 },
                 DnaConfiguration {
                     id: String::from("new-dna-with-props"),
                     file: output_dna_file.to_str().unwrap().to_string(),
-                    hash: String::from(new_dna.address()),
+                    hash: Some(String::from(new_dna.address())),
                 },
             ]
         );

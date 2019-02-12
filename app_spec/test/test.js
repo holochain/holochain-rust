@@ -16,7 +16,7 @@ const scenario1 = new Scenario([instanceAlice])
 const scenario2 = new Scenario([instanceAlice, instanceBob])
 const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol])
 
-/*scenario2.runTape('agentId', async (t, { alice, bob }) => {
+scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)
   t.notEqual(alice.agentId, bob.agentId)
 })
@@ -109,7 +109,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   
   })
 
-  /*scenario1.runTape('delete_entry_post', async (t, { alice }) => {
+  scenario1.runTape('delete_entry_post', async (t, { alice }) => {
     t.plan(3)
   
     const content = "Hello Holo world 321"
@@ -167,9 +167,9 @@ scenario1.runTape('update_post', async (t, { alice }) => {
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)
   t.equal(error.line, "94")
-})*/
+})
 
-/*scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
+scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
 
   const result_bob_delete = await bob.callSync("blog", "delete_post",
     { "content": "Bad"}
@@ -183,9 +183,9 @@ scenario1.runTape('update_post', async (t, { alice }) => {
    t.ok(error.file)
    t.equal(error.line, "94")
   
-  })*/
+  })
 
-/*scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
+scenario1.runTape('post max content size 280 characters', async (t, { alice }) => {
 
   const content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
   const in_reply_to = null
@@ -291,4 +291,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})*/
+})

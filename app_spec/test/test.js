@@ -86,12 +86,13 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     { "content": "Posty", "in_reply_to": "" }
   )
 
-  const agent = "alice"
-  const params = { agent }
+ 
   // get posts by bob
   const bob_agent_posts = await bob.callSync("blog", "posts_by_agent", params
   );
 
+  const agent = bob_agent_posts.Ok;
+  const params = { agent }
   t.equal(bob_agent_posts.Ok.addresses.length, 1)
 
   //remove link by alicce

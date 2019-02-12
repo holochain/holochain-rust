@@ -1,10 +1,7 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
-use holochain_common::env_vars::{
-    get_env_var_value,
-    EnvVar,
-};
+use holochain_common::env_vars::{get_env_var_value, EnvVar};
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
@@ -64,7 +61,9 @@ pub fn run(
         storage,
     };
 
-    let interface_type = get_env_var_value(EnvVar::Interface).ok().unwrap_or_else(|| interface);
+    let interface_type = get_env_var_value(EnvVar::Interface)
+        .ok()
+        .unwrap_or_else(|| interface);
     let driver = if interface_type == String::from("websocket") {
         InterfaceDriver::Websocket { port }
     } else if interface_type == String::from("http") {

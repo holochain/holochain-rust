@@ -1,7 +1,4 @@
-use std::{
-    ffi::OsStr,
-    env::VarError
-};
+use std::{env::VarError, ffi::OsStr};
 
 pub enum EnvVar {
     Agent,

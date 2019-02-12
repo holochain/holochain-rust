@@ -314,12 +314,14 @@ impl From<AgentConfiguration> for AgentId {
 }
 
 /// A DNA is represented by a DNA file.
-/// A hash has to be provided for sanity check.
+/// A hash can optionally be provided, which could be used to validate that the DNA being installed
+/// is the DNA that was intended to be installed.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 pub struct DnaConfiguration {
     pub id: String,
     pub file: String,
-    pub hash: String,
+    #[serde(default)]
+    pub hash: Option<String>,
 }
 
 impl TryFrom<DnaConfiguration> for Dna {
@@ -411,11 +413,15 @@ pub struct Bridge {
     pub handle: String,
 }
 
+/// A UI Bundle is a folder containing static assets which can be served as a UI
+/// A hash can optionally be provided, which could be used to validate that the UI being installed
+/// is the UI bundle that was intended to be installed.
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct UiBundleConfiguration {
     pub id: String,
     pub root_dir: String,
-    pub hash: String,
+    #[serde(default)]
+    pub hash: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
@@ -455,6 +461,9 @@ pub struct NetworkConfig {
     /// configs above. Default is None.
     #[serde(default)]
     pub n3h_ipc_uri: Option<String>,
+    /// filepath to the json file holding the network settings for n3h
+    #[serde(default)]
+    pub networking_config_file: Option<String>,
 }
 
 pub fn default_n3h_mode() -> String {
@@ -506,10 +515,10 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
 pub mod tests {
     use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
-    use holochain_core::context::unique_memory_network_config;
+    use holochain_net::p2p_config::P2pConfig;
 
     pub fn example_serialized_network_config() -> String {
-        String::from(unique_memory_network_config())
+        String::from(JsonString::from(P2pConfig::new_with_unique_memory_backend()))
     }
 
     #[test]
@@ -566,7 +575,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.hcpkg");
-        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
     }
 
     #[test]
@@ -619,6 +628,7 @@ pub mod tests {
     bootstrap_nodes = ["/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"]
     n3h_path = "/Users/cnorris/.holochain/n3h"
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
+    networking_config_file = "/Users/cnorris/.holochain/network_config.json"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -628,7 +638,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.hcpkg");
-        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();
@@ -646,6 +656,9 @@ pub mod tests {
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
+                networking_config_file: Some(String::from(
+                    "/Users/cnorris/.holochain/network_config.json"
+                )),
             }
         );
     }
@@ -722,7 +735,7 @@ pub mod tests {
         let dna_config = dnas.get(0).expect("expected at least 1 DNA");
         assert_eq!(dna_config.id, "app spec rust");
         assert_eq!(dna_config.file, "app_spec.hcpkg");
-        assert_eq!(dna_config.hash, "Qm328wyq38924y");
+        assert_eq!(dna_config.hash, Some("Qm328wyq38924y".to_string()));
 
         let instances = config.instances;
         let instance_config = instances.get(0).unwrap();

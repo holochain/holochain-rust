@@ -3,6 +3,7 @@
 /// The bundle_type tells if the bundle is a RootSeed bundle | DeviceSeed bundle | DevicePINSeed Bundle | ApplicationKeys Bundle
 ///
 /// the data includes a base64 encoded string of the ReturnBundleData Struct that was created by combining all the keys in one SecBuf
+#[derive(Serialize, Deserialize)]
 pub struct KeyBundle {
     pub bundle_type: String,
     pub hint: String,

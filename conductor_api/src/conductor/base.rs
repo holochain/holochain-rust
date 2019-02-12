@@ -89,7 +89,7 @@ pub struct Conductor {
     // Conductor in two stages, thus we need `signal_tx` to be able to be uninitialized.
     signal_tx: Initable<SignalSender>,
     logger: DebugLogger,
-    p2p_config: Option<JsonString>,
+    p2p_config: Option<P2pConfig>,
     network_child_process: NetShutdown,
 }
 
@@ -270,8 +270,6 @@ impl Conductor {
                 "attempt to spawn network when not configured".to_string(),
             ))?;
 
-        let opaque_net_config = String::from("{}");
-
         println!(
             "Spawning network with working directory: {}",
             network_config.n3h_persistence_path
@@ -287,7 +285,7 @@ impl Conductor {
                 network_config.n3h_path.clone()
             )],
             network_config.n3h_persistence_path.clone(),
-            opaque_net_config,
+            P2pConfig::load_end_user_config(network_config.networking_config_file).to_string(),
             hashmap! {
                 String::from("N3H_MODE") => network_config.n3h_mode.clone(),
                 String::from("N3H_WORK_DIR") => network_config.n3h_persistence_path.clone(),
@@ -304,45 +302,34 @@ impl Conductor {
         Ok(ipc_binding)
     }
 
-    fn instance_p2p_config(&self) -> Result<JsonString, HolochainError> {
-        let config = self.p2p_config.clone().unwrap_or_else(|| {
+    fn instance_p2p_config(&self) -> P2pConfig {
+        self.p2p_config.clone().unwrap_or_else(|| {
             // This should never happen, but we'll throw out an in-memory server config rather than crashing,
             // just to be nice (TODO make proper logging statement)
             println!("warn: instance_network_config called before p2p_config initialized! Using default in-memory network name.");
-            JsonString::from(P2pConfig::new_with_memory_backend("conductor-default-mock").as_str())
-        });
-        Ok(config)
+            P2pConfig::new_with_memory_backend("conductor-default-mock")
+        })
     }
 
-    fn initialize_p2p_config(&mut self) -> JsonString {
-        match self.config.network.clone() {
-            // if there is a config then either we need to spawn a process and get the
-            // ipc_uri for it and save it for future calls to `load_config`
-            // or we use that uri value that was created from previous calls!
-            Some(ref net_config) => {
-                let uri = self
-                    .config
-                    .clone()
-                    .network
-                    .unwrap() // unwrap safe because of check above
-                    .n3h_ipc_uri
-                    .clone()
-                    .or_else(|| self.spawn_network().ok());
-                JsonString::from(json!(
-                {
-                    "backend_kind": "IPC",
-                    "backend_config": {
-                        "socketType": "zmq",
-                        "bootstrapNodes": net_config.bootstrap_nodes,
-                            "ipcUri": uri
-                    }
-                }
-                ))
-            }
-            // if there's no NetworkConfig we won't spawn a network process
-            // and instead configure instances to use a unique in-memory network
-            None => JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str()),
+    fn initialize_p2p_config(&mut self) -> P2pConfig {
+        // if there's no NetworkConfig we won't spawn a network process
+        // and instead configure instances to use a unique in-memory network
+        if let None = self.config.network {
+            return P2pConfig::new_with_unique_memory_backend();
         }
+        // if there is a config then either we need to spawn a process and get the
+        // ipc_uri for it and save it for future calls to `load_config`
+        // or we use that uri value that was created from previous calls!
+        let net_config = self.config.network.clone().unwrap();
+        let uri = net_config
+            .n3h_ipc_uri
+            .clone()
+            .or_else(|| self.spawn_network().ok());
+        P2pConfig::new_ipc_uri(
+            uri,
+            &net_config.bootstrap_nodes,
+            net_config.networking_config_file,
+        )
     }
 
     /// Tries to create all instances configured in the given Configuration object.
@@ -432,7 +419,7 @@ impl Conductor {
                 context_builder =
                     context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
 
-                context_builder = context_builder.with_network_config(self.instance_p2p_config()?);
+                context_builder = context_builder.with_p2p_config(self.instance_p2p_config());
 
                 // Signal config:
                 self.setup_signals(signal_tx.clone());

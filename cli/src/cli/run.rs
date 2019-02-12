@@ -40,7 +40,7 @@ pub fn run(
     let dna_config = DnaConfiguration {
         id: DNA_CONFIG_ID.into(),
         file: package::DEFAULT_BUNDLE_FILE_NAME.into(),
-        hash: "Qm328wyq38924ybogus".into(),
+        hash: None,
     };
 
     let storage = if persist {
@@ -100,6 +100,9 @@ pub fn run(
             n3h_bootstrap.push(n3h_bootstrap_node.unwrap())
         }
 
+        // Load end_user config file
+        let networking_config_filepath = env::var("NETWORKING_CONFIG_FILE").ok();
+
         Some(NetworkConfig {
             bootstrap_nodes: n3h_bootstrap,
             n3h_path: n3h_path.unwrap_or_else(|| default_n3h_path()),
@@ -107,6 +110,7 @@ pub fn run(
             n3h_persistence_path: n3h_persistence_path
                 .unwrap_or_else(|| default_n3h_persistence_path()),
             n3h_ipc_uri: Default::default(),
+            networking_config_file: networking_config_filepath,
         })
     } else {
         None

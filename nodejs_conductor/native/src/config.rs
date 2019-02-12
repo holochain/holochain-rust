@@ -84,8 +84,8 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
     }
 
     let config = Configuration {
-        agents: agent_configs.into_iter().map(|(_, v)| v).collect(),
-        dnas: dna_configs.into_iter().map(|(_, v)| v).collect(),
+        agents: agent_configs.values().cloned().collect(),
+        dnas: dna_configs.values().cloned().collect(),
         instances: instance_configs,
         logger,
         ..Default::default()
@@ -93,27 +93,16 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
     config
 }
 
-fn instance_id(agent_id: &str, dna_id: &str) -> String {
-    format!("{}::{}", agent_id, dna_id)
-}
-
-pub fn js_instance_id(mut cx: FunctionContext) -> JsResult<JsString> {
-    let agent_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
-    let dna_id = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
-    let id = instance_id(&agent_id, &dna_id);
-    Ok(cx.string(id))
-}
-
 fn make_dna_config(dna: DnaData) -> Result<DnaConfiguration, String> {
     let path = dna.path.to_string_lossy().to_string();
     Ok(DnaConfiguration {
         id: dna.name.clone(),
-        hash: String::from("DONTCARE"),
         file: path,
+        hash: None,
     })
     // eventually can get actual file content to calculate hash and stuff,
     // but for now it doesn't matter so don't care...
 
-    // let temp = DnaConfiguration {id: "", hash: "", file: dna_path};
+    // let temp = DnaConfiguration {id: "", hash: None, file: dna_path};
     // let dna = Dna::try_from(temp).map_err(|e| e.to_string())?;
 }

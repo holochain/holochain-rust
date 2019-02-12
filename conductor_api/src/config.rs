@@ -461,8 +461,9 @@ pub struct NetworkConfig {
     /// configs above. Default is None.
     #[serde(default)]
     pub n3h_ipc_uri: Option<String>,
+    /// filepath to the json file holding the network settings for n3h
     #[serde(default)]
-    pub n3h_end_user_config_filepath: Option<String>,
+    pub networking_config_file: Option<String>,
 }
 
 pub fn default_n3h_mode() -> String {
@@ -627,7 +628,7 @@ pub mod tests {
     bootstrap_nodes = ["/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"]
     n3h_path = "/Users/cnorris/.holochain/n3h"
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
-    n3h_end_user_config_filepath = "/Users/cnorris/.holochain/n3h_end_user_config.json"
+    networking_config_file = "/Users/cnorris/.holochain/network_config.json"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -655,8 +656,8 @@ pub mod tests {
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
-                n3h_end_user_config_filepath: Some(String::from(
-                    "/Users/cnorris/.holochain/n3h_end_user_config.json"
+                networking_config_file: Some(String::from(
+                    "/Users/cnorris/.holochain/network_config.json"
                 )),
             }
         );

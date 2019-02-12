@@ -15,10 +15,10 @@ use holochain_core_types::{
     dna::Dna,
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
-    json::JsonString,
     link::Link,
     validation::ValidationPackage,
 };
+use holochain_net::p2p_config::P2pConfig;
 use holochain_net_connection::json_protocol::{
     FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
@@ -99,6 +99,9 @@ pub enum Action {
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
     AddLink(Link),
+
+    //Removes a link for the local DHT
+    RemoveLink(Link),
 
     // ----------------
     // Network actions:
@@ -255,9 +258,9 @@ pub struct DirectMessageData {
 /// Everything the network needs to initialize
 #[derive(Clone, PartialEq, Debug)]
 pub struct NetworkSettings {
-    /// JSON config that gets passed to [P2pNetwork](struct.P2pNetwork.html)
+    /// P2pConfig that gets passed to [P2pNetwork](struct.P2pNetwork.html)
     /// determines how to connect to the network module.
-    pub config: JsonString,
+    pub p2p_config: P2pConfig,
 
     /// DNA address is needed so the network module knows which network to
     /// connect us to.

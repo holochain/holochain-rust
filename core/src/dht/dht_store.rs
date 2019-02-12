@@ -58,12 +58,16 @@ impl DhtStore {
         address: Address,
         tag: String,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        self.meta_storage.read()?.fetch_eavi(
-            Some(address),
-            Some(format!("link__{}", tag)),
-            None,
-            IndexQuery::default(),
-        )
+        let index_query = IndexQuery::new_only_prefixes(vec!["link__", "removed_link__"]);
+        let filtered =
+            self.meta_storage
+                .read()?
+                .fetch_eavi(Some(address), Some(tag), None, index_query)?;
+
+        Ok(filtered
+            .into_iter()
+            .filter(|eav| eav.attribute().starts_with("link__"))
+            .collect())
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store

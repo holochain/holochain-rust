@@ -134,15 +134,14 @@ impl fmt::Display for Iso8601 {
     }
 }
 
-/// Conversion try_from on a &Iso8601 are fallible conversions, which may produce a HolochainError
-/// if the timestamp is not valid ISO 8601 / RFC 3339.  We will allow some flexibilty; strip
-/// surrounding whitespace, a bare timestamp missing any timezone specifier will be assumed to be
-/// UTC "Zulu", make internal separators optional if unambiguous.  If you keep to straight RFC 3339
-/// timestamps, then parsing will be quick, otherwise we'll employ a regular expression to parse a
-/// more flexible subset of the ISO 8601 standard from your supplied timestamp, and then use the RFC
-/// 3339 parser again.  We only do this validation once; at the creation of an Iso8601 from a
-/// String; the Result<> is used for future serialization and Eq/ParialEq/Ord/PartialOrd operations.
-
+/// Conversions try_from on String/&str on an Iso8601 are fallible conversions, which may produce a
+/// HolochainError if the timestamp is not valid ISO 8601 / RFC 3339.  We will allow some
+/// flexibilty; strip surrounding whitespace, a bare timestamp missing any timezone specifier will
+/// be assumed to be UTC "Zulu", make internal separators optional if unambiguous.  If you keep to
+/// straight RFC 3339 timestamps, then parsing will be quick, otherwise we'll employ a regular
+/// expression to parse a more flexible subset of the ISO 8601 standard from your supplied
+/// timestamp, and then use the RFC 3339 parser again.  We only do this validation once; at the
+/// creation of an Iso8601 from a String/&str.
 impl TryFrom<String> for Iso8601 {
     type Error = HolochainError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
@@ -265,59 +264,6 @@ impl FromStr for Iso8601 {
         ))
     }
 }
-
-/*
-/// PartialEq and PartialCmp for ISO 8601 / RFC 3339 timestamps w/ timezone specification.  Note
-/// that two timestamps that differ in time specification may be equal, because they are the same
-/// time specified in two different timezones.  Therefore, a String-based Partial{Cmp,Eq} are not
-/// correct.  If conversion of any Iso8601 String fails, returns false for every test; similarly to
-/// how float NaN != NaN.  However, to ease sorting, we'll also provide an Ord implementation that
-/// orders any invalid Iso8601s as equal, before all valid Iso8601s.
-impl PartialEq for Iso8601 {
-    fn eq(&self, rhs: &Iso8601) -> bool {
-        match &self.0 {
-            Ok(dt_lhs) => match &rhs.0 {
-                Ok(dt_rhs) => (dt_lhs).eq(dt_rhs),
-                Err(_e) => false,
-            },
-            Err(_e) => false,
-        }
-    }
-}
-
-/// The PartialEq implements a total order, where all invalid Iso8601 are considered equal to
-/// each-other; equally invalid.  Needed to implement Ord.
-impl Eq for Iso8601 {}
-
-impl PartialOrd for Iso8601 {
-    fn partial_cmp(&self, rhs: &Iso8601) -> Option<Ordering> {
-        match &self.0 {
-            Ok(ts_lhs) => match &rhs.0 {
-                Ok(ts_rhs) => (ts_lhs).partial_cmp(ts_rhs),
-                Err(_e) => None,
-            },
-            Err(_e) => None,
-        }
-    }
-}
-
-/// Invalid timestamps are "greater-than" any valid timestamp.  This puts them last in an in-order
-/// sort, first in a reverse sort.
-impl Ord for Iso8601 {
-    fn cmp(&self, rhs: &Iso8601) -> Ordering {
-        match self.0 {
-            Ok(ts_lhs) => match &rhs.0 {
-                Ok(ts_rhs) => ts_lhs.cmp(ts_rhs),
-                Err(_) => Ordering::Greater, // lhs is good, rhs is invalid; lhs is always > rhs (invalid)
-            },
-            Err(_) => match &rhs.0 {
-                Ok(_) => Ordering::Less, // lhs is invalid, rhs is valid; lhs (invalid) is always < rhs
-                Err(_) => Ordering::Equal, // lhs and rhs both invalid; always equal-to each-other
-            },
-        }
-    }
-}
- */
 
 // The only infallible conversions are from an i64 UNIX timestamp.  There are no conversions from
 // String or &str that are infallible.

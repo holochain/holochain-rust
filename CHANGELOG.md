@@ -4,6 +4,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Future handling and zome function execution refactored which enables using complex API functions like `commit_entry` in callbacks such as `receive`.
 - Added command `hc keygen` which creates a new key pair, asks for a passphrase and writes an encrypted key bundle file to `~/.holochain/keys`.
 - `hash` properties for `UiBundleConfiguration` and `DnaConfiguration` in Conductor config files is now optional
 - core now depends on `pretty_assertions` crate

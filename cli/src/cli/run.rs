@@ -17,7 +17,7 @@ const DNA_CONFIG_ID: &str = "hc-run-dna";
 const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
-/// Starts a small conductor with the current application running
+/// Starts a minimal configuration Conductor with the current application running
 pub fn run(
     package: bool,
     port: u16,

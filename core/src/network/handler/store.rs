@@ -53,9 +53,10 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
             )
             .expect("dht_meta_data should be EntryWithHader");
             thread::spawn(move || {
-                match context.block_on(remove_link_workflow(&entry_with_header, &context.clone())) {
-                    Err(error) => context.log(format!("err/net/dht: {}", error)),
-                    _ => (),
+                if let Err(error) =
+                    context.block_on(remove_link_workflow(&entry_with_header, &context.clone()))
+                {
+                    context.log(format!("err/net/dht: {}", error))
                 }
             });
         }

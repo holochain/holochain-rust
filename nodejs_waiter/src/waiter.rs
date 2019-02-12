@@ -161,22 +161,6 @@ impl Waiter {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
-                    // Pair every `ExecuteZomeFunction` with one `ReturnZomeFunctionResult`
-                    (_, Action::ExecuteZomeFunction(call)) => match self.sender_rx.try_recv() {
-                        Ok(sender) => {
-                            self.add_call(call.clone(), sender);
-                            self.current_checker().unwrap().add(1, move |aw| {
-                                if let Action::ReturnZomeFunctionResult(ref r) = *aw.action() {
-                                    r.call() == call
-                                } else {
-                                    false
-                                }
-                            });
-                        }
-                        Err(_) => {
-                            self.deactivate_current();
-                        }
-                    },
 
                     (Some(checker), Action::Commit((committed_entry, _))) => {
                         match committed_entry.clone() {

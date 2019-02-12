@@ -176,9 +176,6 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
-    /// execute a function in a zome WASM
-    ExecuteZomeFunction(ZomeFnCall),
-
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 

@@ -1,4 +1,3 @@
-pub mod execute_zome_function;
 pub mod init_application;
 pub mod return_initialization_result;
 pub mod return_validation_package;
@@ -10,7 +9,6 @@ use crate::{
     context::Context,
     nucleus::{
         reducers::{
-            execute_zome_function::reduce_execute_zome_function,
             init_application::reduce_init_application,
             return_initialization_result::reduce_return_initialization_result,
             return_validation_package::reduce_return_validation_package,
@@ -29,7 +27,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
     match action_wrapper.action() {
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
         Action::InitApplication(_) => Some(reduce_init_application),
-        Action::ExecuteZomeFunction(_) => Some(reduce_execute_zome_function),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
         Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),

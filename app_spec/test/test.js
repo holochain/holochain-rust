@@ -87,7 +87,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   )
 
   // reply to post
-  const bob_result_create_post = await bob.callsync("blog", "post_reply_to", 
+  const bob_result_create_post = await bob.callSync("blog", "post_reply_to", 
     { "content": "reply", "in_reply_to": result_create_post.Ok }
   );
 

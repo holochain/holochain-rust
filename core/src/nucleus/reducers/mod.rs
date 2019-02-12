@@ -15,7 +15,6 @@ use crate::{
             return_validation_result::reduce_return_validation_result,
             return_zome_function_result::reduce_return_zome_function_result,
         },
-        ribosome::api::call::reduce_call,
         state::NucleusState,
     },
 };
@@ -28,7 +27,6 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NucleusReduceFn> {
         Action::ReturnInitializationResult(_) => Some(reduce_return_initialization_result),
         Action::InitApplication(_) => Some(reduce_init_application),
         Action::ReturnZomeFunctionResult(_) => Some(reduce_return_zome_function_result),
-        Action::Call(_) => Some(reduce_call),
         Action::ReturnValidationResult(_) => Some(reduce_return_validation_result),
         Action::ReturnValidationPackage(_) => Some(reduce_return_validation_package),
         _ => None,

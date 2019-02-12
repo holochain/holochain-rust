@@ -179,9 +179,6 @@ pub enum Action {
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 
-    /// Execute a zome function call called by another zome function
-    Call(ZomeFnCall),
-
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context
     /// and the hash of the entry that was validated

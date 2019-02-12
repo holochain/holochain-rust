@@ -77,24 +77,6 @@ define_zome! {
             handler: blog::handle_delete_entry_post
         }
 
-        delete_reply_to : {
-            inputs: |content: String, in_reply_to: Option<Address>|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: blog::handle_delete_reply_to
-        }
-
-        post_reply_to : {
-            inputs: |content: String, in_reply_to: Option<Address>|,
-            outputs: |result: ZomeApiResult<Address>|,
-            handler: blog::handle_post_reply_to
-        }
-
-        replies : {
-            inputs: |address:Address|,
-            outputs: |post_hashes: ZomeApiResult<GetLinksResult>|,
-            handler: blog::handle_my_replies
-        }
-
         update_post: {
             inputs: |post_address: Address, new_content: String|,
             outputs: |result: ZomeApiResult<()>|,
@@ -131,6 +113,7 @@ define_zome! {
             handler: blog::handle_my_posts_as_commited
         }
 
+
         recommend_post: {
             inputs: |post_address: Address, agent_address: Address|,
             outputs: |result: ZomeApiResult<()>|,
@@ -145,7 +128,7 @@ define_zome! {
     ]
 
     capabilities: {
-        public (Public) [show_env, check_sum, get_sources, post_address, create_post, delete_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts,delete_reply_to,post_reply_to,replies]
+        public (Public) [show_env, check_sum, get_sources, post_address, create_post, delete_post, update_post, posts_by_agent, get_post, my_posts, my_posts_as_committed, my_posts_immediate_timeout, recommend_post, my_recommended_posts]
     }
 
 }

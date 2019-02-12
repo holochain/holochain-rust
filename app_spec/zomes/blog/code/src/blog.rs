@@ -100,27 +100,7 @@ pub fn handle_create_post(content: String, in_reply_to: Option<Address>) -> Zome
     Ok(address)
 }
 
-pub fn handle_post_reply_to(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address>
-{
-    let address = hdk::entry_address(&post_entry(content))?;
-    if let Some(in_reply_to_address) = in_reply_to {
-        hdk::link_entries(&in_reply_to_address, &address, "comments")?;
-    }
-    Ok(address)
-}
 
-pub fn handle_delete_reply_to(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<Address>
-{
-    let address = hdk::entry_address(&post_entry(content))?;
-    if let Some(in_reply_to_address) = in_reply_to {
-        hdk::remove_link(&in_reply_to_address, &address, "comments")?;
-    }
-    Ok(address)
-}
-
-pub fn handle_my_replies(address : Address) -> ZomeApiResult<GetLinksResult> {
-    hdk::get_links(&address, "comments")
-}
 
 pub fn handle_delete_post(content:String) -> ZomeApiResult<Address>
 {

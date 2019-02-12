@@ -86,10 +86,9 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
     { "content": "Posty", "in_reply_to": "" }
   )
 
-  t.ok(alice_create_post_result.Ok)
-
+  
   const bob_create_post_result = await alice.callSync("blog", "posts_by_agent",
-    { "agent":"Alice" }
+    { "agent": alice.agentId }
   )
 
  
@@ -103,7 +102,7 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   )
  
   // get posts by bob
-  const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent":"Alice" })
+  const bob_agent_posts_expect_empty = bob.call("blog", "posts_by_agent", { "agent":alice.agentId })
 
   t.ok(bob_agent_posts_expect_empty.Ok)
   t.equal(bob_agent_posts_expect_empty.Ok.addresses.length, 0);

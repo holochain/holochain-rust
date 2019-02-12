@@ -89,7 +89,9 @@ pub async fn call_zome_function(
 
     context
         .action_channel()
-        .send(ActionWrapper::new(Action::SignalZomeFunctionCall(zome_call.clone())))
+        .send(ActionWrapper::new(Action::SignalZomeFunctionCall(
+            zome_call.clone(),
+        )))
         .expect("action channel to be open");
 
     let _ = thread::spawn(move || {

@@ -17,9 +17,9 @@ use crate::{
             return_validation_result::reduce_return_validation_result,
             return_zome_function_result::reduce_return_zome_function_result,
         },
-        ribosome::api::call::{reduce_call},
+        ribosome::api::call::reduce_call,
         state::NucleusState,
-    }
+    },
 };
 
 use std::sync::Arc;

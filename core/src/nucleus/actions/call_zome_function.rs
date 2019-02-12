@@ -3,11 +3,9 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{
-        ribosome::{
-            self,
-            api::call::check_capability,
-        },
-        ZomeFnCall, ZomeFnResult, is_fn_public,
+        is_fn_public,
+        ribosome::{self, api::call::check_capability},
+        ZomeFnCall, ZomeFnResult,
     },
 };
 use futures::{
@@ -17,12 +15,8 @@ use futures::{
 use holochain_core_types::error::HolochainError;
 use std::{pin::Pin, sync::Arc};
 
-use holochain_core_types::{
-    json::JsonString,
-};
-use std::{
-    thread,
-};
+use holochain_core_types::json::JsonString;
+use std::thread;
 
 #[derive(Clone, Debug, PartialEq, Hash)]
 pub struct ExecuteZomeFnResponse {
@@ -46,7 +40,6 @@ impl ExecuteZomeFnResponse {
     }
 }
 
-
 /// Initialize Application, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
 /// instance. It creates both InitApplication and ReturnInitializationResult actions asynchronously.
@@ -60,10 +53,14 @@ pub async fn call_zome_function(
     context: &Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
     let (dna_name, code) = {
-        let state = context.state()
-            .ok_or(HolochainError::ErrorGeneric("Context not initialized".to_string()))?;
+        let state = context.state().ok_or(HolochainError::ErrorGeneric(
+            "Context not initialized".to_string(),
+        ))?;
         let nucleus_state = state.nucleus();
-        let dna = nucleus_state.dna.as_ref().ok_or(HolochainError::DnaMissing)?;
+        let dna = nucleus_state
+            .dna
+            .as_ref()
+            .ok_or(HolochainError::DnaMissing)?;
 
         // 1. Validate the call (a number of things could go wrong)
         // 1.a make sure the zome and function exists
@@ -78,14 +75,14 @@ pub async fn call_zome_function(
         }
 
         let dna_name = dna.name.clone();
-        let code = dna.get_wasm_from_zome_name(zome_call.zome_name.clone())
+        let code = dna
+            .get_wasm_from_zome_name(zome_call.zome_name.clone())
             .expect("zome not found, Should have failed before when getting capability.")
             .code
             .clone();
 
         (dna_name, code)
     };
-
 
     // 2. function WASM and execute it in a separate thread
 

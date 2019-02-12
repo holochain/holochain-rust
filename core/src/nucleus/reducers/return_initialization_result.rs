@@ -36,11 +36,11 @@ pub mod tests {
     use super::*;
     use crate::{
         action::ActionWrapper,
-        instance::{
-            tests::test_context_with_channels,
-            Observer,
+        instance::{tests::test_context_with_channels, Observer},
+        nucleus::{
+            reduce,
+            state::{NucleusState, NucleusStatus},
         },
-        nucleus::{reduce, state::{NucleusState, NucleusStatus}},
     };
     use holochain_core_types::dna::Dna;
     use std::sync::{mpsc::sync_channel, Arc};

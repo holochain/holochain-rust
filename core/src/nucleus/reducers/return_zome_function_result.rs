@@ -27,8 +27,7 @@ pub mod tests {
 
     use super::*;
     use crate::{
-        action::{tests::test_action_wrapper_rzfr},
-        instance::tests::test_context,
+        action::tests::test_action_wrapper_rzfr, instance::tests::test_context,
         nucleus::state::tests::test_nucleus_state,
     };
 

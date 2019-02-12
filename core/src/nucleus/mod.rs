@@ -21,12 +21,14 @@ use holochain_core_types::{
 };
 use snowflake;
 use std::{
-    sync::{Arc, mpsc::channel},
+    sync::{mpsc::channel, Arc},
     time::Duration,
 };
 
-pub use crate::nucleus::actions::call_zome_function::{call_zome_function, ExecuteZomeFnResponse};
-pub use crate::nucleus::reducers::reduce;
+pub use crate::nucleus::{
+    actions::call_zome_function::{call_zome_function, ExecuteZomeFnResponse},
+    reducers::reduce,
+};
 
 /// Struct holding data for requesting the execution of a Zome function (ExecutionZomeFunction Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -110,7 +112,10 @@ pub mod tests {
             tests::{test_context, test_instance, test_instance_and_context},
             Instance,
         },
-        nucleus::{call_zome_function, state::{NucleusState, NucleusStatus}},
+        nucleus::{
+            call_zome_function,
+            state::{NucleusState, NucleusStatus},
+        },
     };
     use holochain_core_types::dna::capabilities::CapabilityCall;
 
@@ -209,7 +214,8 @@ pub mod tests {
     fn test_call_zome_function() {
         let netname = Some("test_call_zome_function");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (_, context) = test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        let (_, context) =
+            test_instance_and_context(dna, None).expect("Could not initialize test instance");
         //let context = instance.initialize_context(test_context("janet", netname));
 
         // Create zome function call
@@ -251,7 +257,8 @@ pub mod tests {
     /// tests that calling a valid zome with invalid function returns the correct error
     fn call_ribosome_wrong_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (_, context) = test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        let (_, context) =
+            test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create zome function call:
         let call = ZomeFnCall::new("test_zome", Some(test_capability_call()), "xxx", "{}");
@@ -270,7 +277,8 @@ pub mod tests {
     /// tests that calling the wrong zome/capability returns the correct errors
     fn call_wrong_zome_function() {
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
-        let (_, context) = test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        let (_, context) =
+            test_instance_and_context(dna, None).expect("Could not initialize test instance");
 
         // Create bad zome function call
         let call = ZomeFnCall::new("xxx", Some(test_capability_call()), "public_test_fn", "{}");

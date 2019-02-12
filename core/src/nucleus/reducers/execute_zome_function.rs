@@ -2,24 +2,14 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{
-        ExecuteZomeFnResponse,
         ribosome::{self, api::call::validate_call},
         state::NucleusState,
-        ZomeFnCall,
+        ExecuteZomeFnResponse, ZomeFnCall,
     },
 };
-use holochain_core_types::{
-    dna::{
-        wasm::DnaWasm,
-    },
-    error::{HolochainError},
-
-};
+use holochain_core_types::{dna::wasm::DnaWasm, error::HolochainError};
 use std::{
-    sync::{
-        mpsc::{SyncSender},
-        Arc,
-    },
+    sync::{mpsc::SyncSender, Arc},
     thread,
 };
 
@@ -73,8 +63,6 @@ pub fn reduce_execute_zome_function(
     launch_zome_fn_call(context, fn_call, &code, state.dna.clone().unwrap().name);
 }
 
-
-
 pub(crate) fn launch_zome_fn_call(
     context: Arc<Context>,
     zome_call: ZomeFnCall,
@@ -104,28 +92,16 @@ pub(crate) fn launch_zome_fn_call(
     });
 }
 
-
-
-
-
 #[cfg(test)]
 pub mod tests {
     extern crate test_utils;
     use super::*;
     use crate::{
         action::ActionWrapper,
-        instance::{
-            tests::test_context_with_channels,
-            Observer,
-        },
-        nucleus::{
-            reduce,
-            state::NucleusState,
-            tests::test_capability_call,
-        },
+        instance::{tests::test_context_with_channels, Observer},
+        nucleus::{reduce, state::NucleusState, tests::test_capability_call},
     };
     use std::sync::{mpsc::sync_channel, Arc};
-
 
     #[test]
     /// smoke test reducing over a nucleus

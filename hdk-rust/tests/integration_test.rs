@@ -152,6 +152,11 @@ pub fn __list_functions(_: u32) -> u32 {
     0
 }
 
+#[no_mangle]
+pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
 pub fn create_test_defs_with_fn_names(
     fn_names: Vec<&str>,
 ) -> (ZomeFnDeclarations, ZomeCapabilities) {
@@ -238,6 +243,7 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_modified_entry_ok",
         "send_message",
         "sleep",
+        "remove_link",
     ]);
     let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
@@ -516,6 +522,14 @@ fn can_link_entries() {
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
 
+#[test]
+fn can_remove_link() {
+    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
+
+    let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
+}
 #[test]
 #[cfg(not(windows))]
 fn can_roundtrip_links() {

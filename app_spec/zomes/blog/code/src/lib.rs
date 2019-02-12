@@ -66,9 +66,15 @@ define_zome! {
         }
 
         delete_post: {
+            inputs: |content: String|,
+            outputs: |result: ZomeApiResult<Address>|,
+            handler: blog::handle_delete_post
+        }
+
+        delete_entry_post: {
             inputs: |post_address: Address|,
             outputs: |result: ZomeApiResult<()>|,
-            handler: blog::handle_delete_post
+            handler: blog::handle_delete_entry_post
         }
 
         update_post: {
@@ -106,6 +112,7 @@ define_zome! {
             outputs: |post_hashes: ZomeApiResult<Vec<Address>>|,
             handler: blog::handle_my_posts_as_commited
         }
+
 
         recommend_post: {
             inputs: |post_address: Address, agent_address: Address|,

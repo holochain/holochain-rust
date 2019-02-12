@@ -127,7 +127,7 @@ Conductor.withInstances = function (instances, opts=defaultOpts) {
 Conductor.run = function (instances, opts, fn) {
     if (typeof opts === 'function') {
         fn = opts
-        opts = {}
+        opts = undefined
     }
     const conductor = Conductor.withInstances(instances, opts)
     return new Promise((fulfill, reject) => {

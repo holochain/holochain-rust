@@ -1,18 +1,13 @@
-use crate::{
-    nucleus::{
-        actions::call_zome_function::call_zome_function,
-        ribosome::{api::ZomeApiResult, Runtime},
-        ZomeFnCall,
-    },
+use crate::nucleus::{
+    actions::call_zome_function::call_zome_function,
+    ribosome::{api::ZomeApiResult, Runtime},
+    ZomeFnCall,
 };
-use holochain_core_types::{
-    error::HolochainError,
-    json::JsonString,
-};
+use holochain_core_types::{error::HolochainError, json::JsonString};
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use std::{convert::TryFrom};
+use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 // ZomeFnCallArgs to ZomeFnCall
@@ -143,7 +138,7 @@ pub mod tests {
             fn_declarations::FnDeclaration,
             Dna,
         },
-        entry::{Entry, cap_entries::CapTokenGrant},
+        entry::{cap_entries::CapTokenGrant, Entry},
         error::{DnaError, HolochainError},
         json::JsonString,
     };
@@ -152,10 +147,7 @@ pub mod tests {
     use serde_json;
     use std::{
         collections::BTreeMap,
-        sync::{
-            mpsc::RecvTimeoutError,
-            Arc,
-        },
+        sync::{mpsc::RecvTimeoutError, Arc},
     };
     use test_utils::create_test_dna_with_defs;
 

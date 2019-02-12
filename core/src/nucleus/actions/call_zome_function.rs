@@ -2,11 +2,7 @@ extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::{
-        is_fn_public,
-        ribosome,
-        ZomeFnCall, ZomeFnResult,
-    },
+    nucleus::{is_fn_public, ribosome, ZomeFnCall, ZomeFnResult},
 };
 use futures::{
     future::Future,
@@ -15,10 +11,8 @@ use futures::{
 use holochain_core_types::error::HolochainError;
 use std::{pin::Pin, sync::Arc};
 
-use holochain_core_types::json::JsonString;
 use holochain_core_types::{
-    dna::{capabilities::CapabilityCall},
-    entry::cap_entries::CapTokenGrant,
+    dna::capabilities::CapabilityCall, entry::cap_entries::CapTokenGrant, json::JsonString,
 };
 use std::{convert::TryFrom, thread};
 
@@ -119,7 +113,6 @@ pub async fn call_zome_function(
     })
 }
 
-
 // TODO: check the signature too
 fn is_token_the_agent(context: Arc<Context>, cap: &Option<CapabilityCall>) -> bool {
     match cap {
@@ -180,17 +173,15 @@ impl Future for CallResultFuture {
 
 #[cfg(test)]
 pub mod tests {
-    use super::{is_token_the_agent};
+    use super::is_token_the_agent;
     use crate::instance::tests::test_instance_and_context;
-    use holochain_core_types::{
-        cas::content::Address,
-        dna::capabilities::{CapabilityCall}
-    };
+    use holochain_core_types::{cas::content::Address, dna::capabilities::CapabilityCall};
 
     #[test]
     fn test_agent_as_token() {
         let dna = test_utils::create_test_dna_with_wat("bad_zome", "test_cap", None);
-        let (_, context) = test_instance_and_context(dna, None).expect("Could not initialize test instance");
+        let (_, context) =
+            test_instance_and_context(dna, None).expect("Could not initialize test instance");
         let agent_token = Address::from(context.agent_id.key.clone());
         let cap_call = CapabilityCall::new(agent_token, None);
         assert!(is_token_the_agent(context.clone(), &Some(cap_call)));

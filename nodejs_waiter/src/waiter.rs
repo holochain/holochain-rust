@@ -161,7 +161,6 @@ impl Waiter {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
-
                     (Some(checker), Action::Commit((committed_entry, _))) => {
                         match committed_entry.clone() {
                             // Pair every `Commit` with N `Hold`s

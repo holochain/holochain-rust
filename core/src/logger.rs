@@ -3,6 +3,10 @@
 //! gets emitted globaly from the conductor.
 use chrono::Local;
 use std::sync::{mpsc, Arc, Mutex};
+use holochain_common::env_vars::{
+    get_env_var_value,
+    EnvVar,
+};
 
 /// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {
@@ -21,7 +25,7 @@ pub struct SimpleLogger {
 #[cfg_attr(tarpaulin, skip)]
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {
-        if std::env::var("HC_SIMPLE_LOGGER_MUTE").is_err() {
+        if get_env_var_value(EnvVar::SimpleLoggerMute).is_err() {
             let date = Local::now();
             println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
         }

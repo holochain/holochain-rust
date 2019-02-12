@@ -6,9 +6,15 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
+extern crate holochain_common;
 pub extern crate holochain_core_types;
 #[macro_use]
 pub extern crate holochain_core_types_derive;
+
+use holochain_common::env_vars::{
+    get_env_var_value,
+    EnvVar,
+};
 
 /// ignore api_serialization because it is nothing but structs to hold serialization
 #[cfg_attr(tarpaulin, skip)]
@@ -18,7 +24,7 @@ pub mod macros;
 pub mod memory;
 
 pub fn wasm_target_dir(test_path: &str, wasm_path: &str) -> String {
-    match std::env::var("HC_TARGET_PREFIX") {
+    match get_env_var_value(EnvVar::TargetPrefix) {
         Ok(prefix) => format!("{}{}{}target", prefix, test_path, wasm_path),
         Err(_) => format!("{}target", wasm_path),
     }

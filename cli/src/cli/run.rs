@@ -1,6 +1,10 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
+use holochain_common::env_vars::{
+    get_env_var_value,
+    EnvVar,
+};
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
@@ -28,7 +32,7 @@ pub fn run(
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
-    let agent_name = env::var("HC_AGENT").ok();
+    let agent_name = get_env_var_value(EnvVar::Agent).ok();
     let agent = AgentId::generate_fake(&agent_name.unwrap_or_else(|| String::from("testAgent")));
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
@@ -60,7 +64,7 @@ pub fn run(
         storage,
     };
 
-    let interface_type = env::var("HC_INTERFACE").ok().unwrap_or_else(|| interface);
+    let interface_type = get_env_var_value(EnvVar::Interface).ok().unwrap_or_else(|| interface);
     let driver = if interface_type == String::from("websocket") {
         InterfaceDriver::Websocket { port }
     } else if interface_type == String::from("http") {
@@ -85,15 +89,15 @@ pub fn run(
         rules,
     };
 
-    let n3h_path = env::var("HC_N3H_PATH").ok();
+    let n3h_path = get_env_var_value(EnvVar::N3hPath).ok();
 
     // create an n3h network config if the --networked flag is set
     // or if a value where to find n3h has been put into the
     // HC_N3H_PATH environment variable
     let network_config = if networked || n3h_path.is_some() {
-        let n3h_mode = env::var("HC_N3H_MODE").ok();
-        let n3h_persistence_path = env::var("HC_N3H_WORK_DIR").ok();
-        let n3h_bootstrap_node = env::var("HC_N3H_BOOTSTRAP_NODE").ok();
+        let n3h_mode = get_env_var_value(EnvVar::N3hMode).ok();
+        let n3h_persistence_path = get_env_var_value(EnvVar::N3hWorkDir).ok();
+        let n3h_bootstrap_node = get_env_var_value(EnvVar::N3hBootstrapNode).ok();
         let mut n3h_bootstrap = Vec::new();
 
         if n3h_bootstrap_node.is_some() {

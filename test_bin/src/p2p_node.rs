@@ -496,6 +496,13 @@ impl P2pNode {
         config: &P2pConfig,
         _maybe_temp_dir: Option<tempfile::TempDir>,
     ) -> Self {
+        log_dd!(
+            "p2pnode",
+            "new P2pNode '{}' with config: {:?}",
+            agent_id_arg,
+            config
+        );
+
         // use a mpsc channel for messaging between p2p connection and main thread
         let (sender, receiver) = mpsc::channel::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
@@ -554,10 +561,15 @@ impl P2pNode {
         dna_address: Address,
         n3h_path: &str,
         maybe_config_filepath: Option<&str>,
+        maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
     ) -> Self {
-        let (p2p_config, temp_dir) =
-            create_ipc_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
+        let (p2p_config, temp_dir) = create_ipc_config(
+            n3h_path,
+            maybe_config_filepath,
+            maybe_end_user_config_filepath,
+            bootstrap_nodes,
+        );
         return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, Some(temp_dir));
     }
 
@@ -876,6 +888,7 @@ impl NetSend for P2pNode {
 fn create_ipc_config(
     n3h_path: &str,
     maybe_config_filepath: Option<&str>,
+    maybe_end_user_config_filepath: Option<String>,
     bootstrap_nodes: Vec<String>,
 ) -> (P2pConfig, tempfile::TempDir) {
     // Create temp directory
@@ -885,7 +898,7 @@ fn create_ipc_config(
     log_i!("create_ipc_config() dir = {}", dir);
 
     // Create config
-    let config = match maybe_config_filepath {
+    let mut config: P2pConfig = match maybe_config_filepath {
         Some(filepath) => {
             log_d!("filepath = {}", filepath);
             // Get config from file
@@ -938,5 +951,8 @@ fn create_ipc_config(
             .expect("Failled making valid default P2pConfig")
         }
     };
+    config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
+        maybe_end_user_config_filepath,
+    ));
     return (config, dir_ref);
 }

@@ -84,24 +84,13 @@ fn make_config(instance_data: Vec<InstanceData>, logger: LoggerConfiguration) ->
     }
 
     let config = Configuration {
-        agents: agent_configs.into_iter().map(|(_, v)| v).collect(),
-        dnas: dna_configs.into_iter().map(|(_, v)| v).collect(),
+        agents: agent_configs.values().cloned().collect(),
+        dnas: dna_configs.values().cloned().collect(),
         instances: instance_configs,
         logger,
         ..Default::default()
     };
     config
-}
-
-fn instance_id(agent_id: &str, dna_id: &str) -> String {
-    format!("{}::{}", agent_id, dna_id)
-}
-
-pub fn js_instance_id(mut cx: FunctionContext) -> JsResult<JsString> {
-    let agent_id = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
-    let dna_id = cx.argument::<JsString>(1)?.to_string(&mut cx)?.value();
-    let id = instance_id(&agent_id, &dna_id);
-    Ok(cx.string(id))
 }
 
 fn make_dna_config(dna: DnaData) -> Result<DnaConfiguration, String> {

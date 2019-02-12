@@ -21,7 +21,6 @@
 //!
 //! ### Other
 //! - **HC_SIMPLE_LOGGER_MUTE** *int* Setting this value to 1 will silence the log output of a SimpleLogger. Use with any Conductor.
-//! - **HC_TARGET_PREFIX** *string* used exclusively for the purposes of automated testing on CI
 
 // TODO, add this back in once the only option isn't "HACK"
 // - **HC_N3H_MODE** *string* **HACK**
@@ -35,9 +34,8 @@ pub enum EnvVar {
     N3hMode,
     N3hWorkDir,
     N3hBootstrapNode,
-    SimpleLoggerMute,
     NetworkingConfigFile,
-    TargetPrefix,
+    SimpleLoggerMute,
 }
 
 impl EnvVar {
@@ -51,7 +49,6 @@ impl EnvVar {
             EnvVar::N3hBootstrapNode => "HC_N3H_BOOTSTRAP_NODE",
             EnvVar::NetworkingConfigFile => "NETWORKING_CONFIG_FILE",
             EnvVar::SimpleLoggerMute => "HC_SIMPLE_LOGGER_MUTE",
-            EnvVar::TargetPrefix => "HC_TARGET_PREFIX",
         }
     }
     pub fn value(&self) -> Result<String, VarError> {

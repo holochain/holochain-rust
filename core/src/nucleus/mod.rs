@@ -5,11 +5,7 @@ pub mod reducers;
 pub mod ribosome;
 pub mod state;
 
-use crate::{
-    action::{Action, ActionWrapper},
-    context::Context,
-    instance::Observer,
-};
+use crate::context::Context;
 use holochain_core_types::{
     cas::content::Address,
     dna::{
@@ -20,10 +16,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use snowflake;
-use std::{
-    sync::{mpsc::channel, Arc},
-    time::Duration,
-};
+use std::sync::Arc;
 
 pub use crate::nucleus::{
     actions::call_zome_function::{call_zome_function, ExecuteZomeFnResponse},
@@ -109,7 +102,7 @@ pub mod tests {
     use super::*;
     use crate::{
         instance::{
-            tests::{test_context, test_instance, test_instance_and_context},
+            tests::{test_context, test_instance_and_context},
             Instance,
         },
         nucleus::{
@@ -212,7 +205,7 @@ pub mod tests {
     #[test]
     /// tests that calling a valid zome function returns a valid result
     fn test_call_zome_function() {
-        let netname = Some("test_call_zome_function");
+        let _netname = Some("test_call_zome_function");
         let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
         let (_, context) =
             test_instance_and_context(dna, None).expect("Could not initialize test instance");

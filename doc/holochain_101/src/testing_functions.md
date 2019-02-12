@@ -1,34 +1,11 @@
 # Testing Functions
 
-The purpose of the `holochain-nodejs` module is to make integration tests and scenario tests able to be written as simply and with as little boilerplate as possible. However, the module also provides even more basic functionality, making it possible to build tests with whatever tradeoff between convenience and customization is right for your project.
+??
 
-## Setting up the Conductor
-
+Start the Conductor and the instances
 ```javascript
-const { Config, Conductor } = require('@holochain/holochain-nodejs')
-
-
-// specify two agents...
-const aliceName = "alice"
-const bobName = "bob"
-const agentAlice = Config.agent(aliceName)
-const agentBob = Config.agent(bobName)
-// ...and one DNA...
-const dnaPath = "path/to/happ.hcpkg"
-const dna = Config.dna(dnaPath)
-// ...then make instances out of them...
-const instanceAlice = Config.instance(agentAlice, dna)
-const instanceBob = Config.instance(agentBob, dna)
-// ...and finally throw them all together 
-const config = Config.conductor([instanceAlice, instanceBob])
-
-// The produced `config` is a fully valid Conductor configuration and can be
-// passed directly to the Conductor constructor
-const conductor = new Conductor(config)
 conductor.start()
 ```
-
-## Using the Conductor
 
 ```javascript
 const conductor = new Conductor(config)

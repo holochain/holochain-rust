@@ -23,18 +23,8 @@ const defaultOpts = {
 
 const Config = {
     agent: name => ({ name }),
-    dna: (path, name) => {
-        if (!name) {
-            name = path
-        }
-        return { path, name }
-    },
-    instance: (agent, dna, name) => {
-        if (!name) {
-            name = agent.name
-        }
-        return { agent, dna, name }
-    },
+    dna: (path, name = `${path}`) => ({ path, name }),
+    instance: (agent, dna, name = `${agent.name}`) => ({ agent, dna, name }),
     conductor: (instances, opts=defaultOpts) => makeConfig(instances, opts)
 }
 

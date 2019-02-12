@@ -192,13 +192,18 @@ impl Conductor {
         self.log("starting broadcast loop".into());
         thread::spawn(move || {
             for signal in signal_rx {
-                broadcasters
-                    .read()
-                    .unwrap()
-                    .values()
-                    .for_each(|broadcaster| {
-                        broadcaster.send(signal.clone()).expect("TODO: result");
-                    })
+                match signal {
+                    // Ignore internal signals for now
+                    Signal::Internal(_) => (),
+                    // Only pass through user-defined and the temporary Holo signals
+                    Signal::User(_) | Signal::Holo(_) => broadcasters
+                        .read()
+                        .unwrap()
+                        .values()
+                        .for_each(|broadcaster| {
+                            broadcaster.send(signal.clone()).expect("TODO: result");
+                        }),
+                }
             }
         })
     }

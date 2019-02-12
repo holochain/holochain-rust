@@ -5,7 +5,6 @@ pub mod reducers;
 pub mod ribosome;
 pub mod state;
 
-use crate::context::Context;
 use holochain_core_types::{
     cas::content::Address,
     dna::{
@@ -16,7 +15,6 @@ use holochain_core_types::{
     json::JsonString,
 };
 use snowflake;
-use std::sync::Arc;
 
 pub use crate::nucleus::{
     actions::call_zome_function::{call_zome_function, ExecuteZomeFnResponse},
@@ -66,15 +64,6 @@ impl ZomeFnCall {
 }
 
 pub type ZomeFnResult = HcResult<JsonString>;
-
-/// Dispatch ExecuteZoneFunction to Instance and block until call has finished.
-/// for test only?? <-- (apparently not, since it's used in Holochain::call)
-pub fn call_and_wait_for_result(
-    call: ZomeFnCall,
-    context: Arc<Context>,
-) -> Result<JsonString, HolochainError> {
-    context.block_on(call_zome_function(call, &context))
-}
 
 // Helper function for finding out if a given function call is public
 fn is_fn_public(dna: &Dna, zome_call: &ZomeFnCall) -> Result<bool, HolochainError> {

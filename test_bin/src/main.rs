@@ -48,6 +48,7 @@ lazy_static! {
         basic_workflows::send_test,
         basic_workflows::untrack_alex_test,
         basic_workflows::untrack_billy_test,
+        basic_workflows::retrack_test,
         basic_workflows::dht_test,
         basic_workflows::meta_test,
     ];

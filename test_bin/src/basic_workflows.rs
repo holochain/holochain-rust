@@ -97,6 +97,7 @@ pub fn setup_two_nodes(
         .into(),
     )
     .expect("Failed sending TrackDnaData on alex");
+    // Check if PeerConnected is received
     let connect_result_1 = alex
         .wait(Box::new(one_is!(JsonProtocol::PeerConnected(_))))
         .unwrap();
@@ -403,6 +404,10 @@ pub fn untrack_billy_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: 
     )
         .expect("Failed sending UntrackDna message on alex");
 
+    // Making sure Untrack has been received
+    // TODO: Have server reply with successResult
+    alex.listen(100);
+
     // Send a message from alex to billy
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
 
@@ -415,6 +420,101 @@ pub fn untrack_billy_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: 
     // Billy should not receive it.
     let res = billy.wait_with_timeout(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))), 2000);
     assert!(res.is_none());
+
+    // Done
+    Ok(())
+}
+
+/// Sending a Message before doing a 'TrackDna' should fail
+pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+    // Setup
+    println!("Testing: untrack_billy_test()");
+    setup_two_nodes(alex, billy, can_connect)?;
+    log_i!("setup_two_nodes COMPLETE");
+
+    // Billy untracks DNA
+    billy.send(
+        JsonProtocol::UntrackDna(TrackDnaData {
+            dna_address: DNA_ADDRESS.clone(),
+            agent_id: BILLY_AGENT_ID.to_string(),
+        })
+            .into(),
+    )
+         .expect("Failed sending UntrackDna message on billy");
+
+    // Alex untracks DNA
+    alex.send(
+        JsonProtocol::UntrackDna(TrackDnaData {
+            dna_address: DNA_ADDRESS.clone(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+        })
+            .into(),
+    )
+         .expect("Failed sending UntrackDna message on alex");
+
+    // Making sure Untrack has been received
+    // TODO: Have server reply with successResult
+    alex.listen(100);
+    billy.listen(100);
+
+    // Billy re-tracks DNA
+    billy.send(
+        JsonProtocol::TrackDna(TrackDnaData {
+            dna_address: DNA_ADDRESS.clone(),
+            agent_id: BILLY_AGENT_ID.to_string(),
+        })
+            .into(),
+    )
+        .expect("Failed sending TrackDnaData on billy");
+    // alex re-tracks DNA
+    alex.send(
+        JsonProtocol::TrackDna(TrackDnaData {
+            dna_address: DNA_ADDRESS.clone(),
+            agent_id: ALEX_AGENT_ID.to_string(),
+        })
+            .into(),
+    )
+         .expect("Failed sending TrackDnaData on alex");
+
+    // Making sure Track has been received
+    // TODO: Have server reply with successResult
+    alex.listen(100);
+    billy.listen(100);
+
+    log_i!("Alternate setup COMPLETE");
+
+    // Send a message from alex to billy
+    alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());
+
+    // Check if billy received it
+    let res = billy
+        .wait(Box::new(one_is!(JsonProtocol::HandleSendMessage(_))))
+        .unwrap();
+    log_i!("#### got: {:?}", res);
+    let msg = match res {
+        JsonProtocol::HandleSendMessage(msg) => msg,
+        _ => unreachable!(),
+    };
+    assert_eq!("\"hello\"".to_string(), msg.content.to_string());
+
+    // Send a message back from billy to alex
+    billy.send_reponse(
+        msg.clone(),
+        json!(format!("echo: {}", msg.content.to_string())),
+    );
+    // Check if alex received it
+    let res = alex
+        .wait(Box::new(one_is!(JsonProtocol::SendMessageResult(_))))
+        .unwrap();
+    log_i!("#### got: {:?}", res);
+    let msg = match res {
+        JsonProtocol::SendMessageResult(msg) => msg,
+        _ => unreachable!(),
+    };
+    assert_eq!(
+        "\"echo: \\\"hello\\\"\"".to_string(),
+        msg.content.to_string()
+    );
 
     // Done
     Ok(())

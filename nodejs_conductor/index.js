@@ -23,18 +23,8 @@ const defaultOpts = {
 
 const Config = {
     agent: name => ({ name }),
-    dna: (path, name) => {
-        if (!name) {
-            name = path
-        }
-        return { path, name }
-    },
-    instance: (agent, dna, name) => {
-        if (!name) {
-            name = agent.name
-        }
-        return { agent, dna, name }
-    },
+    dna: (path, name = `${path}`) => ({ path, name }),
+    instance: (agent, dna, name = `${agent.name}`) => ({ agent, dna, name }),
     conductor: (instances, opts=defaultOpts) => makeConfig(instances, opts)
 }
 
@@ -136,7 +126,7 @@ Conductor.withInstances = function (instances, opts=defaultOpts) {
 Conductor.run = function (instances, opts, fn) {
     if (typeof opts === 'function') {
         fn = opts
-        opts = {}
+        opts = undefined
     }
     const conductor = Conductor.withInstances(instances, opts)
     return new Promise((fulfill, reject) => {

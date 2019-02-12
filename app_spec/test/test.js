@@ -81,34 +81,44 @@ scenario1.runTape('create_post', async (t, { alice }) => {
 
 scenario2.runTape('delete_post', async (t, { alice, bob }) => {
 
+  //create post
   const result_create_post = await alice.callSync("blog", "create_post",
     { "content": "Posty", "in_reply_to": "" }
   )
-  const bob_result_create_post = bob.call("blog", "post_reply_to", 
+
+  // reply to post
+  const bob_result_create_post = await bob.callsync("blog", "post_reply_to", 
     { "content": "reply", "in_reply_to": result_create_post.Ok }
   );
 
   t.ok(bob_result_create_post.Ok)
 
-  const result_bob_replies = bob.call("blog", "replies", 
+  //get replies for bob
+  const result_bob_replies = await bob.callSync("blog", "replies", 
     { "address": result_create_post.Ok }
   );
   t.equal(result_bob_replies.Ok.addresses.length, 1)
 
-  const result_bob_replies = bob.call("blog", "replies", 
-  { "address": result_create_post.Ok }
-);
+  //get replies for alice
+  const result_alice_replies = await alice.callSync("blog", "replies", 
+  { "address": result_create_post.Ok });
   
- t.equal(result_bob_replies.Ok.addresses.length, 1)
+ t.equal(result_alice_replies.Ok.addresses.length, 1)
   
-  const result_bob_delete_reply = bob.call("blog", "delete_reply_to", 
+ //delete reply using bob
+  const result_bob_delete_reply = await bob.callsync("blog", "delete_reply_to", 
     { "content": "reply", "in_reply_to": result_create_post.Ok }
   )
 
   t.ok(result_bob_delete_reply.Ok)
-  t.equal(result_delete_post.Ok.addresses.length, 0)
+   
+  //get replies for alice
+  const result_alice_replies = await alice.callSync("blog", "replies", 
+  { "address": result_create_post.Ok });
+  t.equal(result_alice_replies.Ok.addresses.length, 0)
 
-const result_empty_bob_replies = bob.call("blog", "replies", 
+ //get replies for bob
+const result_empty_bob_replies = await bob.callSync("blog", "replies", 
   { "address": result_create_post.Ok }
 );
   

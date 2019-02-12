@@ -11,7 +11,7 @@ pub extern crate holochain_core_types;
 #[macro_use]
 pub extern crate holochain_core_types_derive;
 
-use holochain_common::env_vars::{get_env_var_value, EnvVar};
+use holochain_common::env_vars::EnvVar;
 
 /// ignore api_serialization because it is nothing but structs to hold serialization
 #[cfg_attr(tarpaulin, skip)]
@@ -21,7 +21,7 @@ pub mod macros;
 pub mod memory;
 
 pub fn wasm_target_dir(test_path: &str, wasm_path: &str) -> String {
-    match get_env_var_value(EnvVar::TargetPrefix) {
+    match EnvVar::value(&EnvVar::TargetPrefix) {
         Ok(prefix) => format!("{}{}{}target", prefix, test_path, wasm_path),
         Err(_) => format!("{}target", wasm_path),
     }

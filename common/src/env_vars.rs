@@ -1,4 +1,4 @@
-use std::{env::VarError, ffi::OsStr};
+use std::env::VarError;
 
 pub enum EnvVar {
     Agent,
@@ -8,24 +8,25 @@ pub enum EnvVar {
     N3hWorkDir,
     N3hBootstrapNode,
     SimpleLoggerMute,
+    NetworkingConfigFile,
     TargetPrefix,
 }
 
-impl AsRef<OsStr> for EnvVar {
-    fn as_ref(&self) -> &OsStr {
-        match &self {
-            EnvVar::Agent => &OsStr::new("HC_AGENT"),
-            EnvVar::Interface => &OsStr::new("HC_INTERFACE"),
-            EnvVar::N3hPath => &OsStr::new("HC_N3H_PATH"),
-            EnvVar::N3hMode => &OsStr::new("HC_N3H_MODE"),
-            EnvVar::N3hWorkDir => &OsStr::new("HC_N3H_WORK_DIR"),
-            EnvVar::N3hBootstrapNode => &OsStr::new("HC_N3H_BOOTSTRAP_NODE"),
-            EnvVar::SimpleLoggerMute => &OsStr::new("HC_SIMPLE_LOGGER_MUTE"),
-            EnvVar::TargetPrefix => &OsStr::new("HC_TARGET_PREFIX"),
+impl EnvVar {
+    pub fn as_str(&self) -> &str {
+        match self {
+            EnvVar::Agent => "HC_AGENT",
+            EnvVar::Interface => "HC_INTERFACE",
+            EnvVar::N3hPath => "HC_N3H_PATH",
+            EnvVar::N3hMode => "HC_N3H_MODE",
+            EnvVar::N3hWorkDir => "HC_N3H_WORK_DIR",
+            EnvVar::N3hBootstrapNode => "HC_N3H_BOOTSTRAP_NODE",
+            EnvVar::NetworkingConfigFile => "NETWORKING_CONFIG_FILE",
+            EnvVar::SimpleLoggerMute => "HC_SIMPLE_LOGGER_MUTE",
+            EnvVar::TargetPrefix => "HC_TARGET_PREFIX",
         }
     }
-}
-
-pub fn get_env_var_value(env_var: EnvVar) -> Result<String, VarError> {
-    std::env::var(env_var)
+    pub fn value(&self) -> Result<String, VarError> {
+        std::env::var(self.as_str())
+    }
 }

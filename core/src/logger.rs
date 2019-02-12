@@ -2,7 +2,7 @@
 //! which is separate from standard logging via the log crate warn! info! debug! logging that
 //! gets emitted globaly from the conductor.
 use chrono::Local;
-use holochain_common::env_vars::{get_env_var_value, EnvVar};
+use holochain_common::env_vars::EnvVar;
 use std::sync::{mpsc, Arc, Mutex};
 
 /// trait that defines the logging functionality that holochain_core requires
@@ -22,7 +22,7 @@ pub struct SimpleLogger {
 #[cfg_attr(tarpaulin, skip)]
 impl Logger for SimpleLogger {
     fn log(&mut self, msg: String) {
-        if get_env_var_value(EnvVar::SimpleLoggerMute).is_err() {
+        if EnvVar::value(&EnvVar::SimpleLoggerMute).is_err() {
             let date = Local::now();
             println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
         }

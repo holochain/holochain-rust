@@ -1,14 +1,14 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
-use holochain_common::env_vars::{get_env_var_value, EnvVar};
+use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
-use std::{env, fs};
+use std::fs;
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
@@ -29,7 +29,7 @@ pub fn run(
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
-    let agent_name = get_env_var_value(EnvVar::Agent).ok();
+    let agent_name = EnvVar::value(&EnvVar::Agent).ok();
     let agent = AgentId::generate_fake(&agent_name.unwrap_or_else(|| String::from("testAgent")));
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
@@ -61,7 +61,7 @@ pub fn run(
         storage,
     };
 
-    let interface_type = get_env_var_value(EnvVar::Interface)
+    let interface_type = EnvVar::value(&EnvVar::Interface)
         .ok()
         .unwrap_or_else(|| interface);
     let driver = if interface_type == String::from("websocket") {
@@ -88,15 +88,15 @@ pub fn run(
         rules,
     };
 
-    let n3h_path = get_env_var_value(EnvVar::N3hPath).ok();
+    let n3h_path = EnvVar::value(&EnvVar::N3hPath).ok();
 
     // create an n3h network config if the --networked flag is set
     // or if a value where to find n3h has been put into the
     // HC_N3H_PATH environment variable
     let network_config = if networked || n3h_path.is_some() {
-        let n3h_mode = get_env_var_value(EnvVar::N3hMode).ok();
-        let n3h_persistence_path = get_env_var_value(EnvVar::N3hWorkDir).ok();
-        let n3h_bootstrap_node = get_env_var_value(EnvVar::N3hBootstrapNode).ok();
+        let n3h_mode = EnvVar::value(&EnvVar::N3hMode).ok();
+        let n3h_persistence_path = EnvVar::value(&EnvVar::N3hWorkDir).ok();
+        let n3h_bootstrap_node = EnvVar::value(&EnvVar::N3hBootstrapNode).ok();
         let mut n3h_bootstrap = Vec::new();
 
         if n3h_bootstrap_node.is_some() {
@@ -104,7 +104,7 @@ pub fn run(
         }
 
         // Load end_user config file
-        let networking_config_filepath = env::var("NETWORKING_CONFIG_FILE").ok();
+        let networking_config_filepath = EnvVar::value(&EnvVar::NetworkingConfigFile).ok();
 
         Some(NetworkConfig {
             bootstrap_nodes: n3h_bootstrap,

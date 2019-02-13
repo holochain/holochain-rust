@@ -51,6 +51,8 @@ fn definition() -> ValidatingEntryType {
         }
     )
 }
+// we don't have anything that tests this file!
+// this needs to be updated
 define_zome! {
     entries: [
        definition()

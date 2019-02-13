@@ -27,6 +27,7 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
 
     let authors_default = Value::from("[\"TODO\"]");
     let edition_default = Value::from("\"TODO\"");
+    // does this need changing? maybe a tag instead?
     let version_default = String::from("branch = \"develop\"");
     let maybe_package = config.get("package");
 

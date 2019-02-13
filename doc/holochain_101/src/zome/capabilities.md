@@ -1,3 +1,11 @@
 # Capabilities
 
-Holochain uses a modified version of the [capabilities](https://en.wikipedia.org/wiki/Capability-based_security) security model. Instead of the more familiar access control list (ACL) security model, Holochain DNA instances grant revokable capability tokens which can then be given out as a credential to be provided back when access to some function is desired.  These capability grants are recorded as private entries on an agent's chain, and are checked for every access.  We currently have implemented three different levels of capability grants:  Public, Transferable, and Assigned.  Public grants are meant to be used by the Conductor for functions which are available for anyone to call.  Transferable grants provide tokens that are valid from any source.  Assigned grants generate tokens that are only valid for specific set of agents.
+Holochain uses a modified version of the [capabilities](https://en.wikipedia.org/wiki/Capability-based_security) security model. Instead of the more familiar access control list (ACL) security model, Holochain DNA instances grant revokable capability tokens which can then be given out as a credential to be provided back when access to some function is desired. 
+
+These capability grants are recorded as private entries on an agent's chain, and are checked for every access.  We currently have implemented three different levels of capability grants:  `Public`, `Transferable`, and `Assigned`.  
+
+`Public` grants are meant to be used by the Conductor for functions which are available for anyone to call.
+
+`Transferable` grants provide tokens that are valid from any source.
+
+`Assigned` grants generate tokens that are only valid for specific set of agents.

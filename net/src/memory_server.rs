@@ -158,7 +158,7 @@ impl InMemoryServer {
             })
             .into(),
         )
-        .expect("Sending HandleGetPublishingDataList failed");
+        .expect("Sending HandleGetPublishingEntryList failed");
         // Request this agent's holding entries
         let request_id = self.priv_create_request(dna_address, agent_id);
         self.priv_send_one(
@@ -170,7 +170,7 @@ impl InMemoryServer {
             })
             .into(),
         )
-        .expect("Sending HandleGetHoldingDataList failed");
+        .expect("Sending HandleGetHoldingEntryList failed");
 
         // Metadata
         // Request this agent's published metadata
@@ -437,7 +437,7 @@ impl InMemoryServer {
 //            bucket_id,
 //        ));
         if self.trackdna_book.contains(&bucket_id) {
-            self.log.d(&format!(
+            self.log.t(&format!(
                 "---- '{}' check OK: {}",
                 self.name.clone(),
                 bucket_id,
@@ -445,7 +445,7 @@ impl InMemoryServer {
             return Ok(true);
         };
         if maybe_sender_info.is_none() {
-            self.log.d(&format!(
+            self.log.e(&format!(
                 "#### '{}' check failed: {}",
                 self.name.clone(),
                 bucket_id
@@ -467,7 +467,7 @@ impl InMemoryServer {
             to_agent_id: sender_agent_id.clone(),
             error_info: json!(format!("DNA not tracked by agent")),
         };
-        self.log.d(&format!(
+        self.log.e(&format!(
             "#### '{}' check failed for {}.\n Sending failure {:?}",
             self.name.clone(),
             bucket_id,
@@ -629,23 +629,27 @@ impl InMemoryServer {
         }
         // Find other node and forward request
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
-            Entry::Occupied(mut e) => {
-                if !e.get().is_empty() {
-                    let (_k, r) = &e
-                        .get_mut()
-                        .iter()
-                        .next()
-                        .expect("senders_by_dna.entry does not hold any value");
-                    self.log.d(&format!(
-                        "<<<< '{}' send: {:?}",
-                        self.name.clone(),
-                        msg.clone()
-                    ));
-                    let msg: Protocol = JsonProtocol::HandleFetchEntry(msg.clone()).into();
-                    r.send(msg)?;
-                    return Ok(());
+            Entry::Occupied(e) => {
+                for (agent_id, sender) in e.get() {
+                    let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
+                    let published = self.published_entry_book.get(&bucket_id);
+                    let stored = self.stored_entry_book.get(&bucket_id);
+                    let has_entry =
+                        (published.is_some() && published.unwrap().contains(&msg.entry_address))
+                    || (stored.is_some() && stored.unwrap().contains(&msg.entry_address));
+                    if has_entry {
+                        self.log.d(&format!(
+                            "<<<< '{}' sending to ({}): {:?}",
+                            self.name.clone(),
+                            agent_id,
+                            msg.clone()
+                        ));
+                        let msg: Protocol = JsonProtocol::HandleFetchEntry(msg.clone()).into();
+                        sender.send(msg)?;
+                        return Ok(());
+                    }
                 }
-            }
+            },
             _ => (),
         };
         // no other node found, send a FailureResult.
@@ -656,7 +660,7 @@ impl InMemoryServer {
                 request_id: msg.request_id.clone(),
                 dna_address: msg.dna_address.clone(),
                 to_agent_id: msg.requester_agent_id.clone(),
-                error_info: json!("could not find nodes handling this dnaAddress"),
+                error_info: json!("could not find an agent holding this Entry"),
             })
             .into(),
         )?;
@@ -677,7 +681,7 @@ impl InMemoryServer {
             return Ok(());
         }
         // Requester must be tracking
-        let is_tracking =
+        let is_tracking = msg.requester_agent_id == "" ||
             self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
@@ -755,9 +759,10 @@ impl InMemoryServer {
                         .next()
                         .expect("senders_by_dna.entry does not hold any value");
                     r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
-                    return Ok(());
+                        return Ok(());
+                    }
                 }
-            }
+            },
             _ => (),
         };
         // no other node found, send a FailureResult.
@@ -789,7 +794,7 @@ impl InMemoryServer {
             return Ok(());
         }
         // Requester must be tracking
-        let is_tracking =
+        let is_tracking = msg.requester_agent_id == "" ||
             self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
@@ -810,6 +815,7 @@ impl InMemoryServer {
                 if known_published_meta_list.contains(&meta_id) {
                     continue;
                 }
+                self.log.t(&format!("Asking for Meta: {}", content.clone()));
                 let meta_data = DhtMetaData {
                     dna_address: msg.dna_address.clone(),
                     provider_agent_id: msg.provider_agent_id.clone(),
@@ -835,7 +841,7 @@ impl InMemoryServer {
         // Get bucket_id and make sure its our request
         let bucket_id;
         {
-            self.log.d(&format!(
+            self.log.t(&format!(
                 "---- priv_check_request('{}') in {:?} ?",
                 request_id,
                 self.request_book.clone(),

@@ -13,7 +13,7 @@ A Zome has
 - validating entry types: definition may vary based on the language
 - a `genesis` function: a callback that Holochain expects and requires, defined in the code itself
 - `fn_declarations`: a collection of custom functions declarations,
-- `traits`: sets of named function groups used for composibility
+- `traits`: sets of named function groups used for composability
 - `code`: the core application logic of a Zome, written in a language that compiles to WASM, which Holochain interprets through that compiled WASM
 
 To develop a Zome, you will have to become familiar with these different aspects, the most complex of which are the validating entry types, and the traits and function definition. Implementation details will differ depending on the language that you are developing a Zome in.

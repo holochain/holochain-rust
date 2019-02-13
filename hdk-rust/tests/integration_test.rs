@@ -13,7 +13,9 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-use hdk::error::{ZomeApiError, ZomeApiResult};
+#[cfg(not(windows))]
+use hdk::error::ZomeApiError;
+use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
 use holochain_core_types::{
@@ -29,13 +31,17 @@ use holochain_core_types::{
         entry_type::{test_app_entry_type, EntryType},
         Entry, EntryWithMeta,
     },
-    error::{CoreError, HolochainError},
+    error::HolochainError,
     hash::HashString,
     json::JsonString,
 };
+#[cfg(not(windows))]
+use holochain_core_types::error::CoreError;
+#[cfg(not(windows))]
+use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
 use holochain_wasm_utils::{
     api_serialization::{
-        get_entry::{GetEntryResult, StatusRequestKind},
+        get_entry::StatusRequestKind,
         get_links::GetLinksResult,
     },
     wasm_target_dir,
@@ -43,6 +49,9 @@ use holochain_wasm_utils::{
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
+};
+#[cfg(not(windows))]
+use std::{
     thread,
     time::Duration,
 };
@@ -81,6 +90,7 @@ fn example_valid_entry() -> Entry {
     )
 }
 
+#[cfg(not(windows))]
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
     let entry_with_meta = &EntryWithMeta {

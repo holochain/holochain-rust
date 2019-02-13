@@ -89,7 +89,7 @@ void TestHcDna::canGetCapabilityNames() {
     QVERIFY(dna != 0);
 
     CStringVec names;
-    holochain_dna_get_capabilities_names(dna, "zome1", &names);
+    holochain_dna_get_trait_names(dna, "zome1", &names);
     QCOMPARE(names.len, (size_t) 2);
 
     QString name1 = QString("%1").arg(names.ptr[0]);

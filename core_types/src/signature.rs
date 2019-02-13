@@ -5,7 +5,7 @@
 /// Signature is meant in the classic cryptographic sense,
 /// as a string which can be validated as having been signed
 /// by the private key associated with a given public key
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Signature(String);
 
 impl From<&'static str> for Signature {

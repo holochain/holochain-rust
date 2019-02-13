@@ -1,16 +1,20 @@
 use holochain_core_types::{
-    eav::{Attribute, Entity, EntityAttributeValue, EntityAttributeValueStorage, Value},
+    eav::{
+        get_latest, increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
+        EntityAttributeValueStorage, IndexQuery, Value,
+    },
     error::HolochainError,
 };
 use std::{
-    collections::HashSet,
+    collections::BTreeSet,
     sync::{Arc, RwLock},
 };
+
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct EavMemoryStorage {
-    storage: Arc<RwLock<HashSet<EntityAttributeValue>>>,
+    storage: Arc<RwLock<BTreeSet<EntityAttributeValueIndex>>>,
     id: Uuid,
 }
 
@@ -23,33 +27,64 @@ impl PartialEq for EavMemoryStorage {
 impl EavMemoryStorage {
     pub fn new() -> EavMemoryStorage {
         EavMemoryStorage {
-            storage: Arc::new(RwLock::new(HashSet::new())),
+            storage: Arc::new(RwLock::new(BTreeSet::new())),
             id: Uuid::new_v4(),
         }
     }
 }
 
 impl EntityAttributeValueStorage for EavMemoryStorage {
-    fn add_eav(&mut self, eav: &EntityAttributeValue) -> Result<(), HolochainError> {
+    fn add_eavi(
+        &mut self,
+        eav: &EntityAttributeValueIndex,
+    ) -> Result<Option<EntityAttributeValueIndex>, HolochainError> {
         let mut map = self.storage.write()?;
-        map.insert(eav.clone());
-        Ok(())
+        let new_eav = increment_key_till_no_collision(eav.clone(), map.clone())?;
+        map.insert(new_eav.clone());
+        Ok(Some(new_eav.clone()))
     }
 
-    fn fetch_eav(
+    fn fetch_eavi(
         &self,
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-    ) -> Result<HashSet<EntityAttributeValue>, HolochainError> {
+        index_query: IndexQuery,
+    ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         Ok(map
-            .iter()
-            .cloned()
-            .filter(|e| EntityAttributeValue::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|e| EntityAttributeValue::filter_on_eav(&e.attribute(), attribute.as_ref()))
-            .filter(|e| EntityAttributeValue::filter_on_eav(&e.value(), value.as_ref()))
-            .collect())
+            .clone()
+            .into_iter()
+            .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
+            .filter(|e| {
+                EntityAttributeValueIndex::filter_on_eav_with_prefix(
+                    &e.attribute(),
+                    attribute.as_ref(),
+                    &index_query,
+                )
+            })
+            .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
+            .filter(|e| {
+                index_query
+                    .start()
+                    .map(|start| start <= e.index())
+                    .unwrap_or_else(|| {
+                        let latest = get_latest(e.clone(), map.clone(), index_query.clone())
+                            .unwrap_or(EntityAttributeValueIndex::default());
+                        latest.index() == e.index()
+                    })
+            })
+            .filter(|e| {
+                index_query
+                    .end()
+                    .map(|end| end >= e.index())
+                    .unwrap_or_else(|| {
+                        let latest = get_latest(e.clone(), map.clone(), index_query.clone())
+                            .unwrap_or(EntityAttributeValueIndex::default());
+                        latest.index() == e.index()
+                    })
+            })
+            .collect::<BTreeSet<EntityAttributeValueIndex>>())
     }
 }
 
@@ -89,6 +124,21 @@ pub mod tests {
     fn memory_eav_many_to_one() {
         let eav_storage = EavMemoryStorage::new();
         EavTestSuite::test_many_to_one::<ExampleAddressableContent, EavMemoryStorage>(eav_storage)
+    }
+
+    #[test]
+    fn example_eav_range() {
+        let eav_storage = EavMemoryStorage::new();
+        EavTestSuite::test_range::<ExampleAddressableContent, EavMemoryStorage>(eav_storage);
+    }
+
+    #[test]
+    fn file_eav_prefixes() {
+        let eav_storage = EavMemoryStorage::new();
+        EavTestSuite::test_prefixes::<ExampleAddressableContent, EavMemoryStorage>(
+            eav_storage,
+            vec!["a_", "b_", "c_", "d_"],
+        );
     }
 
 }

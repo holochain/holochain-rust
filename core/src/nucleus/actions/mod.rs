@@ -10,20 +10,16 @@ pub mod tests {
         context::Context,
         instance::{tests::test_instance_and_context_by_name, Instance},
     };
-    use futures::executor::block_on;
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::ChainHeader,
-        dna::{
-            capabilities::{Capability, CapabilityType},
-            entry_types::EntryTypeDef,
-            Dna,
-        },
+        dna::{entry_types::EntryTypeDef, Dna},
         entry::Entry,
         json::RawString,
     };
+
     use holochain_wasm_utils::wasm_target_dir;
-    use std::sync::Arc;
+    use std::{collections::BTreeMap, sync::Arc};
     use test_utils::*;
 
     #[cfg_attr(tarpaulin, skip)]
@@ -39,12 +35,8 @@ pub mod tests {
             wasm_target_dir("core/", "src/nucleus/actions/wasm-test/"),
         ));
 
-        let mut dna = create_test_dna_with_cap(
-            "test_zome",
-            "test_cap",
-            &Capability::new(CapabilityType::Public),
-            &wasm,
-        );
+        let defs = (Vec::new(), BTreeMap::new());
+        let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
 
         dna.zomes
             .get_mut("test_zome")
@@ -104,9 +96,9 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
-        let chain = context.state().unwrap().agent().chain();
+        let chain = context.state().unwrap().agent().chain_store();
 
-        let commit_result = block_on(commit_entry(entry.clone(), None, &context.clone()));
+        let commit_result = context.block_on(commit_entry(entry.clone(), None, &context.clone()));
         assert!(commit_result.is_ok());
 
         let top_header = context.state().unwrap().agent().top_chain_header();

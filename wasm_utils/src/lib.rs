@@ -15,10 +15,11 @@ pub extern crate holochain_core_types_derive;
 pub mod api_serialization;
 
 pub mod macros;
-pub mod memory_allocation;
-pub mod memory_serialization;
+pub mod memory;
 
 pub fn wasm_target_dir(test_path: &str, wasm_path: &str) -> String {
+    // this env var checker can't use holochain_common
+    // crate because that uses `directories` crate which doesn't compile to WASM
     match std::env::var("HC_TARGET_PREFIX") {
         Ok(prefix) => format!("{}{}{}target", prefix, test_path, wasm_path),
         Err(_) => format!("{}target", wasm_path),

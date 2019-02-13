@@ -3,46 +3,25 @@
 use crate::{
     dna::{
         bridges::{Bridge, BridgePresence},
+        capabilities::Capability,
+        fn_declarations::{FnDeclaration, FnParameter},
         wasm::DnaWasm,
     },
     entry::entry_type::EntryType,
     error::HolochainError,
     json::JsonString,
 };
-use dna::{
-    capabilities,
-    entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef},
-};
+use dna::entry_types::{self, deserialize_entry_types, serialize_entry_types, EntryTypeDef};
 use std::collections::BTreeMap;
-
-/// Enum for "zome" "config" "error_handling" property.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub enum ErrorHandling {
-    #[serde(rename = "throw-errors")]
-    ThrowErrors,
-}
-
-impl Default for ErrorHandling {
-    /// Default zome config error_handling is "throw-errors"
-    fn default() -> Self {
-        ErrorHandling::ThrowErrors
-    }
-}
 
 /// Represents the "config" object on a "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
-pub struct Config {
-    /// How errors should be handled within this zome.
-    #[serde(default)]
-    pub error_handling: ErrorHandling,
-}
+pub struct Config {}
 
 impl Default for Config {
     /// Provide defaults for the "zome" "config" object.
     fn default() -> Self {
-        Config {
-            error_handling: ErrorHandling::ThrowErrors,
-        }
+        Config {}
     }
 }
 
@@ -54,7 +33,8 @@ impl Config {
 }
 
 pub type ZomeEntryTypes = BTreeMap<EntryType, EntryTypeDef>;
-pub type ZomeCapabilities = BTreeMap<String, capabilities::Capability>;
+pub type ZomeCapabilities = BTreeMap<String, Capability>;
+pub type ZomeFnDeclarations = Vec<FnDeclaration>;
 
 /// Represents an individual "zome".
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
@@ -79,6 +59,10 @@ pub struct Zome {
     #[serde(default)]
     pub capabilities: ZomeCapabilities,
 
+    /// An array of functions declared in this this zome.
+    #[serde(default)]
+    pub fn_declarations: ZomeFnDeclarations,
+
     /// Validation code for this entry_type.
     #[serde(default)]
     pub code: DnaWasm,
@@ -97,6 +81,7 @@ impl Default for Zome {
             description: String::new(),
             config: Config::new(),
             entry_types: BTreeMap::new(),
+            fn_declarations: Vec::new(),
             capabilities: BTreeMap::new(),
             code: DnaWasm::new(),
             bridges: Vec::new(),
@@ -110,13 +95,15 @@ impl Zome {
         description: &str,
         config: &Config,
         entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
-        capabilities: &BTreeMap<String, capabilities::Capability>,
+        fn_declarations: &Vec<FnDeclaration>,
+        capabilities: &BTreeMap<String, Capability>,
         code: &DnaWasm,
     ) -> Zome {
         Zome {
             description: description.into(),
             config: config.clone(),
             entry_types: entry_types.to_owned(),
+            fn_declarations: fn_declarations.to_owned(),
             capabilities: capabilities.to_owned(),
             code: code.clone(),
             bridges: Vec::new(),
@@ -130,12 +117,28 @@ impl Zome {
             .cloned()
             .collect()
     }
+
+    pub fn add_fn_declaration(
+        &mut self,
+        name: String,
+        inputs: Vec<FnParameter>,
+        outputs: Vec<FnParameter>,
+    ) {
+        self.fn_declarations.push(FnDeclaration {
+            name,
+            inputs,
+            outputs,
+        });
+    }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::dna::zome::{entry_types::EntryTypeDef, Zome};
+    use crate::dna::{
+        fn_declarations::FnParameter,
+        zome::{entry_types::EntryTypeDef, Zome},
+    };
     use serde_json;
     use std::{collections::BTreeMap, convert::TryFrom};
 
@@ -148,10 +151,9 @@ pub mod tests {
         let fixture: Zome = serde_json::from_str(
             r#"{
                 "description": "test",
-                "config": {
-                    "error_handling": "throw-errors"
-                },
+                "config": {},
                 "entry_types": {},
+                "fn_delcarations": [],
                 "capabilities": {}
             }"#,
         )
@@ -159,7 +161,6 @@ pub mod tests {
 
         let mut zome = Zome::default();
         zome.description = String::from("test");
-        zome.config.error_handling = ErrorHandling::ThrowErrors;
 
         assert_eq!(fixture, zome);
     }
@@ -173,7 +174,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{\"error_handling\":\"throw-errors\"},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"code\":{\"code\":\"\"},\"bridges\":[]}";
+        let expected = "{\"description\":\"\",\"config\":{},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from(expected.clone()),
@@ -181,5 +182,23 @@ pub mod tests {
         );
 
         assert_eq!(zome, Zome::try_from(JsonString::from(expected)).unwrap(),);
+    }
+
+    #[test]
+    fn test_zome_add_fn_declaration() {
+        let mut zome = Zome::default();
+        assert_eq!(zome.fn_declarations.len(), 0);
+        zome.add_fn_declaration(
+            String::from("hello"),
+            vec![],
+            vec![FnParameter {
+                name: String::from("greeting"),
+                parameter_type: String::from("String"),
+            }],
+        );
+        assert_eq!(zome.fn_declarations.len(), 1);
+
+        let expected = "[FnDeclaration { name: \"hello\", inputs: [], outputs: [FnParameter { parameter_type: \"String\", name: \"greeting\" }] }]";
+        assert_eq!(expected, format!("{:?}", zome.fn_declarations),);
     }
 }

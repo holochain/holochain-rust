@@ -1,16 +1,17 @@
 use holochain_core_types::error::{HcResult, HolochainError};
-use std::{fs::DirBuilder, path::Path};
+use std::{
+    fs::DirBuilder,
+    path::{Path, PathBuf},
+};
 
-pub fn storage_path(path: &Path, folder_name: &str) -> HcResult<String> {
+pub fn storage_path(path: &Path, folder_name: &str) -> HcResult<PathBuf> {
     let full_path = path.join(".hc").join("storage").join(folder_name);
-    let path_as_string = full_path.to_str().ok_or(HolochainError::IoError(
-        "Could not find home directory".to_string(),
-    ))?;
-    Ok(String::from(path_as_string))
+
+    Ok(full_path)
 }
 
-pub fn create_path_if_not_exists(path: &str) -> HcResult<()> {
-    if !Path::new(path).exists() {
+pub fn create_path_if_not_exists(path: &Path) -> HcResult<()> {
+    if !path.exists() {
         return DirBuilder::new()
             .create(path)
             .map_err(|_| HolochainError::IoError("Could not create directory".to_string()));
@@ -23,14 +24,14 @@ pub mod tests {
     use super::create_path_if_not_exists;
     use crate::path::storage_path;
     use holochain_core_types::error::HolochainError;
-    use std::path::{Path, MAIN_SEPARATOR};
+    use std::path::{Path, PathBuf};
     extern crate tempfile;
     use self::tempfile::tempdir;
 
     #[test]
     fn test_storage_path() {
         let dummy_path = storage_path(Path::new("foo"), "bar").unwrap();
-        let expected_path = vec!["foo", ".hc", "storage", "bar"].join(&MAIN_SEPARATOR.to_string());
+        let expected_path: PathBuf = vec!["foo", ".hc", "storage", "bar"].iter().collect();
         assert_eq!(dummy_path, expected_path);
     }
 
@@ -46,8 +47,7 @@ pub mod tests {
             ),
         };
         let dir = tempdir().unwrap();
-        let file_path = dir.path();
-        let result = create_path_if_not_exists(file_path.to_str().unwrap());
+        let result = create_path_if_not_exists(dir.path());
         match result {
             Ok(val) => assert_eq!(val, ()),
             Err(_) => unreachable!(),

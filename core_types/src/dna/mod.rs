@@ -27,6 +27,7 @@ pub mod bridges;
 pub mod capabilities;
 pub mod dna;
 pub mod entry_types;
+pub mod fn_declarations;
 pub mod wasm;
 pub mod zome;
 
@@ -40,8 +41,9 @@ pub mod tests {
         cas::content::Address,
         dna::{
             bridges::{Bridge, BridgePresence, BridgeReference},
-            capabilities::{Capability, CapabilityType, FnDeclaration, FnParameter},
+            capabilities::CapabilityType,
             entry_types::EntryTypeDef,
+            fn_declarations::{FnDeclaration, FnParameter, Trait},
             zome::tests::test_zome,
         },
         entry::entry_type::{AppEntryType, EntryType},
@@ -107,9 +109,7 @@ pub mod tests {
                 "zomes": {
                     "test": {
                         "description": "test",
-                        "config": {
-                            "error_handling": "throw-errors"
-                        },
+                        "config": {},
                         "entry_types": {
                             "test": {
                                 "description": "test",
@@ -126,15 +126,16 @@ pub mod tests {
                         "capabilities": {
                             "test": {
                                 "type": "public",
-                                "functions": [
-                                    {
-                                        "name": "test",
-                                        "inputs": [],
-                                        "outputs": []
-                                    }
-                                ]
+                                "functions": ["test"]
                             }
                         },
+                        "fn_declarations": [
+                            {
+                                "name": "test",
+                                "inputs": [],
+                                "outputs": []
+                            }
+                        ],
                         "code": {
                             "code": "AAECAw=="
                         },
@@ -179,9 +180,7 @@ pub mod tests {
                 "zomes": {
                     "": {
                         "description": "",
-                        "config": {
-                            "error_handling": "throw-errors"
-                        },
+                        "config": {},
                         "entry_types": {
                             "": {
                                 "description": "",
@@ -191,6 +190,7 @@ pub mod tests {
                             }
                         },
                         "capabilities": {},
+                        "fn_declarations": [],
                         "code": {"code": ""}
                     }
                 }
@@ -210,23 +210,6 @@ pub mod tests {
         .unwrap();
 
         assert!(dna.uuid.len() > 0);
-    }
-
-    #[test]
-    fn parse_with_defaults_zome() {
-        let dna = Dna::try_from(JsonString::from(
-            r#"{
-                "zomes": {
-                    "zome1": {}
-                }
-            }"#,
-        ))
-        .unwrap();
-
-        assert_eq!(
-            dna.zomes.get("zome1").unwrap().config.error_handling,
-            zome::ErrorHandling::ThrowErrors
-        )
     }
 
     #[test]
@@ -384,18 +367,10 @@ pub mod tests {
                         "entry_types": {},
                         "capabilities": {
                             "test capability": {
-                                "type": "public",
-                                "fn_declarations": [
-                                    {
-                                        "name": "test",
-                                        "signature": {
-                                            "inputs": [],
-                                            "outputs": []
-                                        }
-                                    }
-                                ]
+                                "type": "public"
                             }
                         },
+                        "fn_declarations": [],
                         "code": {
                             "code": "AAECAw=="
                         }
@@ -432,9 +407,10 @@ pub mod tests {
                         "capabilities": {
                             "test capability": {
                                 "type": "public",
-                                "fn_declarations": []
+                                "functions": []
                             }
                         },
+                        "fn_declarations": [],
                         "entry_types": {
                             "test type": {
                                 "description": "",
@@ -480,9 +456,10 @@ pub mod tests {
                         "capabilities": {
                             "test capability": {
                                 "type": "public",
-                                "fn_declarations": []
+                                "functions": []
                             }
                         },
+                        "fn_declarations": [],
                         "entry_types": {
                             "test type": {
                                 "description": "",
@@ -504,7 +481,7 @@ pub mod tests {
                                 "presence": "optional",
                                 "handle": "Vault",
                                 "reference": {
-                                    "capabilities": {
+                                    "traits": {
                                         "persona_management": {
                                             "type": "public",
                                             "functions": [
@@ -522,7 +499,7 @@ pub mod tests {
                                 "presence": "required",
                                 "handle": "HCHC",
                                 "reference": {
-                                    "capabilities": {
+                                    "traits": {
                                         "happ_directory": {
                                             "type": "public",
                                             "functions": [
@@ -556,9 +533,9 @@ pub mod tests {
                 Bridge {
                     presence: BridgePresence::Required,
                     handle: String::from("HCHC"),
-                    reference: BridgeReference::Capability {
-                        capabilities: btreemap! {
-                            String::from("happ_directory") => Capability{
+                    reference: BridgeReference::Trait {
+                        traits: btreemap! {
+                            String::from("happ_directory") => Trait {
                                 cap_type: CapabilityType::Public,
                                 functions: vec![
                                     FnDeclaration {

@@ -23,6 +23,7 @@ extern crate num_traits;
 extern crate regex;
 
 extern crate config;
+extern crate holochain_common;
 extern crate holochain_net;
 #[macro_use]
 extern crate holochain_wasm_utils;
@@ -35,6 +36,8 @@ extern crate globset;
 extern crate holochain_net_connection;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate pretty_assertions;
 
 pub mod action;
 pub mod agent;

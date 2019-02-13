@@ -1,0 +1,25 @@
+[[agents]]
+id = "test agent 1"
+name = "Holo Tester 1"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+key_file = "holo_tester.key"
+
+[[ui_bundles]]
+id = "bundle1"
+root_dir = "./example-config/example-static-site"
+hash = "Qm000"
+
+[[ui_interfaces]]
+id = "ui-interface-1"
+bundle = "bundle1"
+port = 3000
+dna_interface = "websocket interface"
+
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+
+[interfaces.driver]
+port = 4000
+type = "websocket"

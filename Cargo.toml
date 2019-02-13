@@ -1,9 +1,10 @@
 [workspace]
 
 members = [
-  "cmd",
-  "container",
-  "container_api",
+  "cli",
+  "common",
+  "conductor",
+  "conductor_api",
   "core_api_c_binding",
   "core",
   "dna_c_binding",
@@ -13,12 +14,13 @@ members = [
   "net_ipc",
   "nodejs_waiter",
   "sodium",
+  "hc_dpki",
   "test_bin",
 ]
 exclude = [
   "test_utils",
   "app_spec",
-  "nodejs_container/native",
+  "nodejs_conductor/native",
   "rust_sodium-sys",
   "zmq-sys",
 ]

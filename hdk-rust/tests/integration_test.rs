@@ -1,5 +1,5 @@
 #![feature(try_from)]
-extern crate holochain_container_api;
+extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate tempfile;
@@ -14,20 +14,22 @@ extern crate holochain_wasm_utils;
 extern crate holochain_core_types_derive;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
-use holochain_container_api::{error::HolochainResult, *};
+use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
 use holochain_core_types::{
-    cas::content::Address,
+    cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType, FnDeclaration},
+        capabilities::{Capability, CapabilityCall, CapabilityType},
         entry_types::{EntryTypeDef, LinksTo},
+        fn_declarations::FnDeclaration,
+        zome::{ZomeCapabilities, ZomeFnDeclarations},
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
         Entry, EntryWithMeta,
     },
-    error::{CoreError, HolochainError},
+    error::{CoreError, HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
     hash::HashString,
     json::JsonString,
 };
@@ -35,11 +37,11 @@ use holochain_wasm_utils::{
     api_serialization::{
         get_entry::{GetEntryResult, StatusRequestKind},
         get_links::GetLinksResult,
-        QueryResult,
     },
     wasm_target_dir,
 };
 use std::{
+    collections::BTreeMap,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
@@ -47,55 +49,129 @@ use std::{
 use test_utils::*;
 
 #[no_mangle]
-pub fn hc_init_globals(_: u32) -> u32 {
-    0
+pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn zome_setup(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+#[no_mangle]
+pub fn __list_capabilities(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
 }
 #[no_mangle]
-pub fn hc_commit_entry(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_get_entry(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_entry_address(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_query(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_update_entry(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_remove_entry(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn hc_send(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn zome_setup(_: u32) -> u32 {
-    0
-}
-#[no_mangle]
-pub fn __list_capabilities(_: u32) -> u32 {
+pub fn __list_functions(_: u32) -> u32 {
     0
 }
 
-pub fn create_test_cap_with_fn_names(fn_names: Vec<&str>) -> Capability {
+#[no_mangle]
+pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
+    RibosomeEncodedValue::Success.into()
+}
+
+pub fn create_test_defs_with_fn_names(
+    fn_names: Vec<&str>,
+) -> (ZomeFnDeclarations, ZomeCapabilities) {
     let mut capability = Capability::new(CapabilityType::Public);
+    let mut fn_declarations = Vec::new();
 
     for fn_name in fn_names {
+        capability.functions.push(String::from(fn_name));
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);
-        capability.functions.push(fn_decl);
+        fn_declarations.push(fn_decl);
     }
-    capability
+    let mut capabilities = BTreeMap::new();
+    capabilities.insert("test_cap".to_string(), capability);
+    (fn_declarations, capabilities)
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]
@@ -116,14 +192,12 @@ fn example_valid_entry() -> Entry {
 
 fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
-    GetEntryResult::new(
-        StatusRequestKind::Latest,
-        Some(&EntryWithMeta {
-            entry: entry,
-            crud_status: CrudStatus::Live,
-            maybe_crud_link: None,
-        }),
-    )
+    let entry_with_meta = &EntryWithMeta {
+        entry: entry.clone(),
+        crud_status: CrudStatus::Live,
+        maybe_crud_link: None,
+    };
+    GetEntryResult::new(StatusRequestKind::Latest, Some((entry_with_meta, vec![])))
 }
 
 fn example_valid_entry_params() -> String {
@@ -146,7 +220,7 @@ fn start_holochain_instance<T: Into<String>>(
         "{}/wasm32-unknown-unknown/release/test_globals.wasm",
         wasm_target_dir("hdk-rust/", "wasm-test/"),
     ));
-    let capabability = create_test_cap_with_fn_names(vec![
+    let defs = create_test_defs_with_fn_names(vec![
         "check_global",
         "check_commit_entry",
         "check_commit_entry_macro",
@@ -168,8 +242,10 @@ fn start_holochain_instance<T: Into<String>>(
         "remove_entry_ok",
         "remove_modified_entry_ok",
         "send_message",
+        "sleep",
+        "remove_link",
     ]);
-    let mut dna = create_test_dna_with_cap("test_zome", "test_cap", &capabability, &wasm);
+    let mut dna = create_test_dna_with_defs("test_zome", defs, &wasm);
     dna.uuid = uuid.into();
 
     // TODO: construct test DNA using the auto-generated JSON feature
@@ -217,11 +293,7 @@ fn start_holochain_instance<T: Into<String>>(
 fn make_test_call(hc: &mut Holochain, fn_name: &str, params: &str) -> HolochainResult<JsonString> {
     hc.call(
         "test_zome",
-        Some(CapabilityCall::new(
-            "test_cap".to_string(),
-            Address::from("test_token"),
-            None,
-        )),
+        Some(CapabilityCall::new(Address::from("test_token"), None)),
         fn_name,
         params,
     )
@@ -296,8 +368,8 @@ fn can_round_trip() {
 
 #[test]
 #[cfg(not(windows))]
-fn can_get_entry() {
-    let (mut hc, _) = start_holochain_instance("can_get_entry", "alice");
+fn can_get_entry_ok() {
+    let (mut hc, _) = start_holochain_instance("can_get_entry_ok", "alice");
     // Call the exposed wasm function that calls the Commit API function
     let result = make_test_call(
         &mut hc,
@@ -306,7 +378,7 @@ fn can_get_entry() {
     );
     let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(expected),);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
 
     let result = make_test_call(
         &mut hc,
@@ -326,11 +398,24 @@ fn can_get_entry() {
             "entry_address": example_valid_entry_address()
         }))),
     );
-    println!("\t can_get_entry result = {:?}", result);
     let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
     assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(expected),);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
+}
 
+#[test]
+#[cfg(not(windows))]
+fn can_get_entry_bad() {
+    let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
+    // Call the exposed wasm function that calls the Commit API function
+    let result = make_test_call(
+        &mut hc,
+        "check_commit_entry_macro",
+        &example_valid_entry_params(),
+    );
+    let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
     // test the case with a bad address
     let result = make_test_call(
         &mut hc,
@@ -339,9 +424,7 @@ fn can_get_entry() {
             {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
         ))),
     );
-    println!("\t can_get_entry_result result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
-
     let empty_entry_result = GetEntryResult::new(StatusRequestKind::Latest, None);
     let expected: ZomeApiResult<GetEntryResult> = Ok(empty_entry_result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
@@ -354,7 +437,6 @@ fn can_get_entry() {
             {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
         ))),
     );
-    println!("\t can_get_entry result = {:?}", result);
     assert!(result.is_ok(), "\t result = {:?}", result);
     let expected: ZomeApiResult<Option<Entry>> = Ok(None);
     assert_eq!(result.unwrap(), JsonString::from(expected));
@@ -382,7 +464,7 @@ fn can_invalidate_invalid_commit() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"86\\\"}\"}}"),
+        JsonString::from("{\"Err\":{\"Internal\":\"{\\\"kind\\\":{\\\"ValidationFailed\\\":\\\"FAIL content is not allowed\\\"},\\\"file\\\":\\\"core/src/nucleus/ribosome/runtime.rs\\\",\\\"line\\\":\\\"94\\\"}\"}}"),
     );
 }
 
@@ -441,15 +523,56 @@ fn can_link_entries() {
 }
 
 #[test]
+fn can_remove_link() {
+    let (mut hc, _) = start_holochain_instance("can_link_entries", "alice");
+
+    let result = make_test_call(&mut hc, "link_two_entries", r#"{}"#);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
+}
+#[test]
 #[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
-
     // Create links
     let result = make_test_call(&mut hc, "links_roundtrip_create", r#"{}"#);
     let maybe_address: Result<Address, String> =
         serde_json::from_str(&String::from(result.unwrap())).unwrap();
-    let address = maybe_address.unwrap();
+    let entry_address = maybe_address.unwrap();
+
+    // expected results
+    let entry_2 = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry2".into(),
+        }
+        .into(),
+    );
+    let entry_3 = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: "entry3".into(),
+        }
+        .into(),
+    );
+    let entry_address_2 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
+    let entry_address_3 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
+
+    let expected_links: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
+        entry_address_2.clone(),
+        entry_address_3.clone(),
+    ]));
+    let expected_links = JsonString::from(expected_links);
+
+    let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
+        Ok(vec![Ok(entry_2.clone()), Ok(entry_3.clone())]);
+
+    let expected_links_reversed: Result<GetLinksResult, HolochainError> =
+        Ok(GetLinksResult::new(vec![entry_address_3, entry_address_2]));
+    let expected_links_reversed = JsonString::from(expected_links_reversed);
+
+    let expected_entries_reversed: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
+        Ok(vec![Ok(entry_3.clone()), Ok(entry_2.clone())]);
 
     // Polling loop because the links have to get pushed over the in-memory network and then validated
     // which includes requesting a validation package and receiving it over the in-memory network.
@@ -457,69 +580,46 @@ fn can_roundtrip_links() {
     // (i.e. longer on a slow CI and when multiple tests are run simultaneausly).
     let mut both_links_present = false;
     let mut tries = 0;
-    let mut result_string = JsonString::from("");
+    let mut result_of_get = JsonString::from("");
     while !both_links_present && tries < 10 {
         tries = tries + 1;
-
         // Now get_links on the base and expect both to be there
-        let result = make_test_call(
+        let maybe_result_of_get = make_test_call(
             &mut hc,
             "links_roundtrip_get",
-            &format!(r#"{{"address": "{}"}}"#, address),
+            &format!(r#"{{"address": "{}"}}"#, entry_address),
         );
-
-        let result_load = make_test_call(
+        let maybe_result_of_load = make_test_call(
             &mut hc,
             "links_roundtrip_get_and_load",
-            &format!(r#"{{"address": "{}"}}"#, address),
+            &format!(r#"{{"address": "{}"}}"#, entry_address),
         );
 
-        assert!(result.is_ok(), "result = {:?}", result);
-        assert!(result_load.is_ok(), ";load result = {:?}", result_load);
-
-        result_string = result.unwrap();
-        let address_1 = Address::from("QmdQVqSuqbrEJWC8Va85PSwrcPfAB3EpG5h83C3Vrj62hN");
-        let address_2 = Address::from("QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ");
-
-        let entries_result_string = result_load.unwrap();
-        let entry_1 = Entry::App(
-            "testEntryType".into(),
-            EntryStruct {
-                stuff: "entry2".into(),
-            }
-            .into(),
+        assert!(
+            maybe_result_of_get.is_ok(),
+            "maybe_result_of_get = {:?}",
+            maybe_result_of_get
         );
-        let entry_2 = Entry::App(
-            "testEntryType".into(),
-            EntryStruct {
-                stuff: "entry3".into(),
-            }
-            .into(),
+        assert!(
+            maybe_result_of_load.is_ok(),
+            "maybe_result_of_load = {:?}",
+            maybe_result_of_load
         );
 
-        let expected: Result<GetLinksResult, HolochainError> = Ok(GetLinksResult::new(vec![
-            address_1.clone(),
-            address_2.clone(),
-        ]));
-        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-            Ok(vec![Ok(entry_1.clone()), Ok(entry_2.clone())]);
+        result_of_get = maybe_result_of_get.unwrap();
+        let result_of_load = maybe_result_of_load.unwrap();
 
         println!(
-            "can_roundtrip_links result_string - try {}:\n {:?}\n expecting:\n {:?}",
-            tries, entries_result_string, &expected_entries
+            "can_roundtrip_links: result_of_load - try {}:\n {:?}\n expecting:\n {:?}",
+            tries, result_of_load, &expected_entries,
         );
 
-        let ordering1: bool = result_string == JsonString::from(expected);
-        let entries_ordering1: bool = entries_result_string == JsonString::from(expected_entries);
+        let ordering1: bool = result_of_get == expected_links;
+        let entries_ordering1: bool = result_of_load == JsonString::from(expected_entries.clone());
 
-        let expected: Result<GetLinksResult, HolochainError> =
-            Ok(GetLinksResult::new(vec![address_2, address_1]));
-
-        let expected_entries: ZomeApiResult<Vec<ZomeApiResult<Entry>>> =
-            Ok(vec![Ok(entry_2.clone()), Ok(entry_1.clone())]);
-
-        let ordering2: bool = result_string == JsonString::from(expected);
-        let entries_ordering2: bool = entries_result_string == JsonString::from(expected_entries);
+        let ordering2: bool = result_of_get == expected_links_reversed;
+        let entries_ordering2: bool =
+            result_of_load == JsonString::from(expected_entries_reversed.clone());
 
         both_links_present = (ordering1 || ordering2) && (entries_ordering1 || entries_ordering2);
         if !both_links_present {
@@ -528,7 +628,7 @@ fn can_roundtrip_links() {
         }
     }
 
-    assert!(both_links_present, "result = {:?}", result_string);
+    assert!(both_links_present, "result = {:?}", result_of_get);
 }
 
 #[test]
@@ -570,7 +670,7 @@ fn can_check_query() {
     );
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected: ZomeApiResult<QueryResult> = Ok(vec![Address::from(
+    let expected: ZomeApiResult<Vec<Address>> = Ok(vec![Address::from(
         "QmPn1oj8ANGtxS5sCGdKBdSBN63Bb6yBkmWrLc9wFRYPtJ",
     )]);
 
@@ -646,7 +746,7 @@ fn can_remove_entry() {
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from("{\"items\":[{\"meta\":{\"address\":\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\",\"entry_type\":{\"App\":\"testEntryType\"},\"crud_status\":\"deleted\"},\"entry\":{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]}}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
+        JsonString::from("{\"items\":[{\"meta\":{\"address\":\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\",\"entry_type\":{\"App\":\"testEntryType\"},\"crud_status\":\"deleted\"},\"entry\":{\"App\":[\"testEntryType\",\"{\\\"stuff\\\":\\\"non fail\\\"}\"]},\"headers\":[]}],\"crud_links\":{\"QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd\":\"QmUhD35RLLvDJ7dGsonTTiHUirckQSbf7ceDC1xWVTrHk6\"}}"
         ),
     );
 }
@@ -677,6 +777,35 @@ fn can_send_and_receive() {
     let result = make_test_call(&mut hc2, "send_message", &params);
     assert!(result.is_ok(), "result = {:?}", result);
 
-    let expected: ZomeApiResult<String> = Ok(String::from("Received: TEST"));
+    let entry_committed_by_receive = Entry::App(
+        "testEntryType".into(),
+        EntryStruct {
+            stuff: String::from("TEST"),
+        }
+        .into(),
+    );
+
+    let address = entry_committed_by_receive.address().to_string();
+
+    let expected: ZomeApiResult<String> = Ok(format!("Committed: 'TEST' / address: {}", address));
     assert_eq!(result.unwrap(), JsonString::from(expected),);
+
+    let result = make_test_call(
+        &mut hc,
+        "check_get_entry",
+        &String::from(JsonString::from(json!({
+            "entry_address": address,
+        }))),
+    );
+
+    let expected: ZomeApiResult<Entry> = Ok(entry_committed_by_receive);
+    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert_eq!(result.unwrap(), JsonString::from(expected),);
+}
+
+#[test]
+fn sleep_smoke_test() {
+    let (mut hc, _) = start_holochain_instance("sleep_smoke_test", "alice");
+    let result = make_test_call(&mut hc, "sleep", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
 }

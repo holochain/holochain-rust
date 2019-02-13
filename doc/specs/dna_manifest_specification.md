@@ -103,9 +103,7 @@ They are available in keyword specific Capabilities and function names.
       "description": "zome that implements micro-blogging",
       // Ribosome or HDK level config that might need to be set
       // to indicate how to handle this Zome. Not used yet, but anticipating.
-      "config": {
-        "error_handling": "throw-errors"
-      },
+      "config": {},
       // Zome code
       "code": "..", // an s-expression encoded wasm or an Base64 encoded wasm bytecode
       // Zome entry types
@@ -113,7 +111,6 @@ They are available in keyword specific Capabilities and function names.
         {
           "entry_type_name": "post",
           "description": "A blog post entry which has an author.",
-          "data_format": "string",
           "sharing": "public",  // or private, encrypted
           "links_to": [
             {
@@ -125,7 +122,6 @@ They are available in keyword specific Capabilities and function names.
         {
           "entry_type_name": "handle",
           "description": "An agent's handle on the network. The DNA indexes all the handles.",
-          "data_format": "string",
           "sharing": "public",
           "links_to": [
             {
@@ -145,33 +141,35 @@ They are available in keyword specific Capabilities and function names.
           ]
         }
       ], // end of entry-types
-      // Zome capabilities holding functions & signals
+      // Zome fn_declarations
+      "fn_declarations": [
+          {
+              "name": "newPost",
+              "inputs": [
+                  {
+                      "name": "post",
+                      "type": "string"
+                  }
+              ],
+              "outputs": [
+                  {
+                      "name": "hash",
+                      "type": "string"
+                  }
+              ]
+        },
+        // ...
+      ],
+      // Zome capabilities holding mapping of functions to capabilities
       "capabilities": {
         "web_gateway":
         {
           "type": "public",
-          "functions": [
-            {
-              "fn_name": "newPost",
-              "signature":
-              {
-                  "inputs": [
-                      {
-                          "name": "post",
-                          "type": "string"
-                      }
-                  ],
-                  "outputs": [
-                      {
-                          "name": "hash",
-                          "type": "string"
-                      }
-                  ]
-              },
-            },
-            // ...
-          ],
-          "signals": [
+          "functions": ["getPost"]
+        }
+      },
+      // Zome signals
+      "signals": [
             {
               "sig_name": "posted",
               "description": "signal emmited when a post is committed",
@@ -190,7 +188,7 @@ They are available in keyword specific Capabilities and function names.
             // ...
           ],
         },
-      } // end of capabilities
+      }
     }
   ] // end of zomes
 }

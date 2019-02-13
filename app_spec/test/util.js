@@ -1,5 +1,5 @@
 
-const defaultOpts = {timeout: 2000, interval: 100}
+const defaultOpts = {timeout: 20000, interval: 100}
 const identity = x => x
 
 /**

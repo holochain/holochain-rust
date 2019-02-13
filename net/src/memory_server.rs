@@ -759,8 +759,7 @@ impl InMemoryServer {
                         .next()
                         .expect("senders_by_dna.entry does not hold any value");
                     r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
-                        return Ok(());
-                    }
+                    return Ok(());
                 }
             },
             _ => (),

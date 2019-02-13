@@ -415,7 +415,8 @@ pub fn untrack_billy_test(
 
     // Making sure Untrack has been received
     // TODO: Have server reply with successResult
-    alex.listen(100);
+    alex.listen(1000);
+    billy.listen(1000);
 
     // Send a message from alex to billy
     alex.send_message(BILLY_AGENT_ID.to_string(), ENTRY_CONTENT_1.clone());

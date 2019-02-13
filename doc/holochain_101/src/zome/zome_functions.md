@@ -218,9 +218,9 @@ Notice right away how the arguments match perfectly with the `inputs: |...|` sec
 
 The name of the function, `handle_send_message` is the same as the name given as the `handler` in the `define_zome!` function declaration.
 
-Within the function, `handle_send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.3/hdk/api/fn.send.html).
+Within the function, `handle_send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.4/hdk/api/fn.send.html).
 
-The available functions, their purpose, and how to use them is fully documented elsewhere, in the [API reference](https://developer.holochain.org/api/0.0.3/hdk/api/index.html#functions) and the [List of API Functions](./api_functions.md).
+The available functions, their purpose, and how to use them is fully documented elsewhere, in the [API reference](https://developer.holochain.org/api/0.0.4/hdk/api/index.html#functions) and the [List of API Functions](./api_functions.md).
 
 In the example, `handle_send_message` simply forwards the result of calling `hdk::send` as its' own result.
 
@@ -244,6 +244,6 @@ define_zome! {
 }
 ```
 
-To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/v0.0.3/hdk-rust/wasm-test/src/lib.rs).
+To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/v0.0.4/hdk-rust/wasm-test/src/lib.rs).
 
 Otherwise, continue reading to learn all about the API Functions and examples of how to use them.

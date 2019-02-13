@@ -1,5 +1,12 @@
 # Managing the Conductor
 
+`Conductor` is a class that is exported from `holochain-nodejs`, and can be imported into your code.
+
+#### Import Example
+```javascript
+const { Conductor } = require('@holochain/holochain-nodejs')
+```
+
 ## Instantiating a Conductor
 
 ### `constructor(config)` => `Conductor`
@@ -15,9 +22,8 @@ ___
 ___
 
 #### Example
-
 ```javascript
-// config var should be defined using the Config helper functions
+// config var can be defined using the Config helper functions
 const conductor = new Conductor(config)
 ```
 
@@ -28,7 +34,6 @@ const conductor = new Conductor(config)
 Start running all instances. No Zome functions can be called within an instance if the instance is not started, so this must be called beforehand.
 
 #### Example
-
 ```javascript
 conductor.start()
 ```
@@ -38,7 +43,6 @@ conductor.start()
 Stop all running instances configured for the conductor. This function **should** be called after all desired Zome calls have been made, otherwise the conductor instances will continue running as processes in the background.
 
 #### Example
-
 ```javascript
 conductor.stop()
 ```

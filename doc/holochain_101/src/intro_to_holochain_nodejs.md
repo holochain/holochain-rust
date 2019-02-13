@@ -6,7 +6,7 @@ There are two primary capabilities of the module, which are introduced below.
 
 ## Simple, Single Node Integration Tests
 
-The point of this mode of testing is simply to call Zome functions, and ensure that they produce the result you expect. It is discussed further in [testing functions](./testing_functions.md).
+The point of this mode of testing is simply to call Zome functions, and ensure that they produce the result you expect. It is discussed further in [calling zome functions](./nodejs_calling_zome_functions.md) and [checking results](./testing_checking_results.md).
 
 ## Scenario Tests
 

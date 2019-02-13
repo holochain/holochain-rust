@@ -61,6 +61,57 @@ impl Ord for EntityAttributeValueIndex {
     }
 }
 
+/// Represents a set of filtering operations on the EAVI store.
+pub struct EaviQuery<'a> {
+    entity: Option<EntityFilter<'a>>,
+    attribute: Option<AttributeFilter<'a>>,
+    value: Option<ValueFilter<'a>>,
+    index: IndexRange,
+}
+
+type EntityFilter<'a> = EavFilter<'a, Entity>;
+type AttributeFilter<'a> = EavFilter<'a, Attribute>;
+type ValueFilter<'a> = EavFilter<'a, Value>;
+
+impl<'a> EaviQuery<'a> {
+    pub fn new(
+        entity: Option<EntityFilter<'a>>,
+        attribute: Option<AttributeFilter<'a>>,
+        value: Option<ValueFilter<'a>>,
+        index: IndexRange,
+    ) -> Self {
+        Self {
+            entity,
+            attribute,
+            value,
+            index,
+        }
+    }
+}
+
+pub enum EavFilter<'a, T: PartialEq> {
+    Single(T),
+    Predicate(Box<Fn(&'a T) -> bool + 'a>),
+}
+
+impl<'a, T: PartialEq> EavFilter<'a, T> {
+    pub fn single(val: T) -> Self {
+        EavFilter::Single(val)
+    }
+
+    pub fn predicate<F>(predicate: F) -> Self
+    where
+        F: Fn(&'a T) -> bool + 'a,
+    {
+        EavFilter::Predicate(Box::new(predicate))
+    }
+}
+
+pub struct IndexRange {
+    start: Option<i64>,
+    end: Option<i64>,
+}
+
 #[derive(Clone, Debug)]
 pub struct IndexQuery<'a> {
     start: Option<i64>,

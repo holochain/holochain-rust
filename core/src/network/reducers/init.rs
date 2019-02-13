@@ -22,14 +22,14 @@ pub fn reduce_init(
 
     // Configure network logger
     // Enable this for debugging network
-    {
-        let mut tweetlog = TWEETLOG.write().unwrap();
-        tweetlog.set(LogLevel::Debug, None);
-        // set level per tag
-        tweetlog.set(LogLevel::Debug, Some("memory_server".to_string()));
-        tweetlog.listen_to_tag("memory_server", Tweetlog::console);
-        tweetlog.listen(Tweetlog::console);
-    }
+    //    {
+    //        let mut tweetlog = TWEETLOG.write().unwrap();
+    //        tweetlog.set(LogLevel::Debug, None);
+    //        // set level per tag
+    //        tweetlog.set(LogLevel::Debug, Some("memory_server".to_string()));
+    //        tweetlog.listen_to_tag("memory_server", Tweetlog::console);
+    //        tweetlog.listen(Tweetlog::console);
+    //    }
 
     let _ = network
         .send(

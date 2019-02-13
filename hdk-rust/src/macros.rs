@@ -105,6 +105,8 @@ macro_rules! load_string {
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
@@ -195,7 +197,7 @@ macro_rules! define_zome {
                             outputs: | $( $output_param_name:ident : $output_param_type:ty ),* |,
                             handler: $handler_path:path
                         }
-            )+
+            )*
         ]
 
         capabilities : {
@@ -295,7 +297,7 @@ macro_rules! define_zome {
                         capability.functions = vec![
                             $(
                                 stringify!($cap_fn).into()
-                            ),+
+                            ),*
                         ];
 
                         cap_map.insert(stringify!($cap).into(), capability);
@@ -332,7 +334,7 @@ macro_rules! define_zome {
                                         ),*
                                     ]
                                 }
-                    ),+
+                    ),*
 
                 ]
             };
@@ -375,6 +377,6 @@ macro_rules! define_zome {
                         $crate::global_fns::write_json(execute(input))
                     ).into()
                 }
-        )+
+        )*
     };
 }

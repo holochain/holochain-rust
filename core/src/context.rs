@@ -19,7 +19,6 @@ use holochain_core_types::{
     dna::{wasm::DnaWasm, Dna},
     eav::EntityAttributeValueStorage,
     error::{HcResult, HolochainError},
-    json::JsonString,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
@@ -47,7 +46,7 @@ pub struct Context {
     pub chain_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<EntityAttributeValueStorage>>,
-    pub network_config: JsonString,
+    pub p2p_config: P2pConfig,
     pub conductor_api: Option<Arc<RwLock<IoHandler>>>,
     pub signal_tx: Option<SyncSender<Signal>>,
 }
@@ -64,7 +63,7 @@ impl Context {
         chain_storage: Arc<RwLock<ContentAddressableStorage>>,
         dht_storage: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
-        network_config: JsonString,
+        p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
     ) -> Self {
@@ -79,7 +78,7 @@ impl Context {
             chain_storage,
             dht_storage,
             eav_storage: eav,
-            network_config,
+            p2p_config,
             conductor_api,
         }
     }
@@ -93,7 +92,7 @@ impl Context {
         observer_channel: Option<SyncSender<Observer>>,
         cas: Arc<RwLock<ContentAddressableStorage>>,
         eav: Arc<RwLock<EntityAttributeValueStorage>>,
-        network_config: JsonString,
+        p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             agent_id,
@@ -106,7 +105,7 @@ impl Context {
             chain_storage: cas.clone(),
             dht_storage: cas,
             eav_storage: eav,
-            network_config,
+            p2p_config,
             conductor_api: None,
         })
     }
@@ -236,12 +235,6 @@ pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, Str
     Ok((dna.address(), agent_id))
 }
 
-/// create a unique test network
-#[cfg_attr(tarpaulin, skip)]
-pub fn unique_memory_network_config() -> JsonString {
-    JsonString::from(P2pConfig::new_with_unique_memory_backend())
-}
-
 /// Create an in-memory network config with the provided name,
 /// otherwise create a unique name and thus network using snowflake.
 /// This is the base function that many other `text_context*` functions use, and hence they also
@@ -249,10 +242,10 @@ pub fn unique_memory_network_config() -> JsonString {
 /// single instance may simply pass None and get a unique network name, but tests which require two
 /// instances to be on the same network need to ensure both contexts use the same network name.
 #[cfg_attr(tarpaulin, skip)]
-pub fn test_memory_network_config(network_name: Option<&str>) -> JsonString {
+pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
     network_name
-        .map(|name| JsonString::from(P2pConfig::new_with_memory_backend(name)))
-        .unwrap_or(unique_memory_network_config())
+        .map(|name| P2pConfig::new_with_memory_backend(name))
+        .unwrap_or(P2pConfig::new_with_unique_memory_backend())
 }
 
 #[cfg(test)]
@@ -261,10 +254,7 @@ pub mod tests {
     extern crate test_utils;
     use self::tempfile::tempdir;
     use super::*;
-    use crate::{
-        context::unique_memory_network_config, logger::test_logger, persister::SimplePersister,
-        state::State,
-    };
+    use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_core_types::agent::AgentId;
     use std::sync::{Arc, Mutex, RwLock};
@@ -289,7 +279,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_memory_network_config(),
+            P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
         );
@@ -322,7 +312,7 @@ pub mod tests {
                 EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
                     .unwrap(),
             )),
-            unique_memory_network_config(),
+            P2pConfig::new_with_unique_memory_backend(),
             None,
             None,
         );

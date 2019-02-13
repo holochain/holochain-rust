@@ -18,9 +18,10 @@ use holochain_core_types::{
     agent::AgentId,
     cas::content::Address,
     dna::{
-        capabilities::{CapabilityCall, ReservedTraitNames},
+        capabilities::CapabilityCall,
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
         fn_declarations::{FnDeclaration, TraitFns},
+        traits::ReservedTraitNames,
         wasm::DnaWasm,
         zome::{Config, Zome, ZomeFnDeclarations, ZomeTraits},
         Dna,

@@ -144,8 +144,9 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            capabilities::{CapabilityCall, CapabilityType, ReservedTraitNames},
+            capabilities::{CapabilityCall, CapabilityType},
             fn_declarations::{FnDeclaration, TraitFns},
+            traits::ReservedTraitNames,
             Dna,
         },
         entry::{cap_entries::CapTokenGrant, Entry},

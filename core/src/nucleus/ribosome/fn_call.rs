@@ -412,9 +412,10 @@ pub mod tests {
         cas::content::Address,
         dna::{
             capabilities::{
-                CallSignature, CapabilityCall, CapabilityType, ReservedTraitNames,
+                CallSignature, CapabilityCall, CapabilityType,
             },
             fn_declarations::{FnDeclaration, TraitFns},
+            traits::ReservedTraitNames,
             Dna,
         },
         entry::{cap_entries::CapTokenGrant, Entry},

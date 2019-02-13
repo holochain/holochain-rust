@@ -3,8 +3,8 @@
 use crate::{
     dna::{
         bridges::{Bridge, BridgePresence},
-        capabilities::ReservedTraitNames,
         fn_declarations::{FnDeclaration, FnParameter, TraitFns},
+        traits::ReservedTraitNames,
         wasm::DnaWasm,
     },
     entry::entry_type::EntryType,

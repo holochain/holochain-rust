@@ -404,7 +404,7 @@ fn can_get_entry_ok() {
 }
 
 #[test]
-#[cfg(not(windows))]
+// #[cfg(not(windows))]
 fn can_get_entry_bad() {
     let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function

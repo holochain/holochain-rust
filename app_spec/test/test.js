@@ -29,7 +29,7 @@ scenario1.runTape('show_env', async (t, { alice }) => {
   t.equal(result.Ok.agent_address, alice.agentId)
   t.equal(result.Ok.agent_id, '{"nick":"alice","key":"' + alice.agentId + '"}')
 })
-
+/*
 scenario3.runTape('get sources', async (t, { alice, bob, carol }) => {
   const params = { content: 'whatever', in_reply_to: null }
   const address = await alice.callSync('blog', 'create_post', params).then(x => x.Ok)
@@ -253,7 +253,7 @@ scenario1.runTape('create/get_post roundtrip', async (t, { alice }) => {
   t.equal(entry_value.date_created, "now")
 
 })
-
+*/
 scenario1.runTape('get_post with non-existant address returns null', async (t, { alice }) => {
 
   const post_address = "RANDOM"
@@ -285,8 +285,4 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const result = bob.call("blog", "get_post", params_get)
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
-})
-
-scenario2.runTape('silly test scenario', async (t, { alice, bob }) => {
-    t.equal(true, true)
 })

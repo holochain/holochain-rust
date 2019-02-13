@@ -180,7 +180,8 @@ pub fn create_new_chain_header(
             .sign(entry.address().to_string())
             .expect("Must be able to create signatures!"),
     );
-    let duration_since_epoch = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)
+    let duration_since_epoch = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
         .expect("System time must not be before UNIX EPOCH");
     ChainHeader::new(
         &entry.entry_type(),

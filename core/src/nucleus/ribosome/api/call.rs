@@ -75,11 +75,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
             "expecting zome call data in bridge call not null call".to_string(),
         )
     })?;
-    let conductor_api =
-        zome_call_data
-            .context
-            .conductor_api
-            .clone();
+    let conductor_api = zome_call_data.context.conductor_api.clone();
 
     let method = format!(
         "{}/{}/{}",

@@ -22,7 +22,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+use holochain_dpki::keypair::{Keypair, SEEDSIZE, SIGNATURESIZE};
 use holochain_sodium::secbuf::SecBuf;
 
 use holochain_net::p2p_config::P2pConfig;
@@ -60,7 +60,7 @@ pub fn mock_signer(payload: String) -> String {
     let mut message = SecBuf::with_insecure_from_string(payload);
 
     // Create signature
-    let mut message_signed = SecBuf::with_insecure(64);
+    let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
     keypair.sign(&mut message, &mut message_signed).unwrap();
     let message_signed = message_signed.read_lock();
 

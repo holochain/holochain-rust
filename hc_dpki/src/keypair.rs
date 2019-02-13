@@ -14,6 +14,7 @@ pub struct Keypair {
 }
 
 pub const SEEDSIZE: usize = 32 as usize;
+pub const SIGNATURESIZE: usize = 64 as usize;
 
 const BUNDLE_DATA_LEN_MISALIGN: usize = 1 // version byte
     + sign::PUBLICKEYBYTES
@@ -112,7 +113,7 @@ impl Keypair {
         let data: bundle::ReturnBundleData = json::decode(&bundle_string).unwrap();
         let mut decrypted_data = SecBuf::with_secure(BUNDLE_DATA_LEN);
         util::pw_dec(&data, passphrase, &mut decrypted_data, config)?;
-        let mut sign_priv = SecBuf::with_secure(64);
+        let mut sign_priv = SecBuf::with_secure(SIGNATURESIZE);
         let mut enc_priv = SecBuf::with_secure(32);
 
         let pub_keys = {
@@ -376,7 +377,7 @@ mod tests {
         let mut message = SecBuf::with_insecure(16);
         random_secbuf(&mut message);
 
-        let mut message_signed = SecBuf::with_insecure(64);
+        let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
 
         keypair.sign(&mut message, &mut message_signed).unwrap();
 
@@ -394,7 +395,7 @@ mod tests {
         let mut message = SecBuf::with_insecure(16);
         random_secbuf(&mut message);
 
-        let mut message_signed = SecBuf::with_insecure(64);
+        let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
 
         keypair.sign(&mut message, &mut message_signed).unwrap();
 

@@ -95,7 +95,7 @@ fn _unbookkeep_address(
 pub(crate) struct InMemoryServer {
     // keep track of senders by `dna_address::agent_id`
     senders: HashMap<BucketId, mpsc::Sender<Protocol>>,
-    // keep track of agents by dna_address 
+    // keep track of agents by dna_address
     senders_by_dna: HashMap<Address, HashMap<String, mpsc::Sender<Protocol>>>,
     // Unique identifier
     name: String,
@@ -359,7 +359,10 @@ impl InMemoryServer {
                 // Make sure we are already tracking this dna for this agent
                 let bucket_id = into_bucket_id(&msg.dna_address, &msg.agent_id);
                 if !self.trackdna_book.contains(&bucket_id) {
-                    self.log.w(&format!("Trying to untrack an already untracked DNA: {}", bucket_id));
+                    self.log.w(&format!(
+                        "Trying to untrack an already untracked DNA: {}",
+                        bucket_id
+                    ));
                     return Ok(());
                 }
                 self.trackdna_book.remove(&bucket_id);
@@ -431,11 +434,11 @@ impl InMemoryServer {
         maybe_sender_info: Option<(String, Option<String>)>,
     ) -> NetResult<bool> {
         let bucket_id = into_bucket_id(dna_address, agent_id);
-//        self.log.d(&format!(
-//            "---- '{}' checking '{}' ...",
-//            self.name.clone(),
-//            bucket_id,
-//        ));
+        //        self.log.d(&format!(
+        //            "---- '{}' checking '{}' ...",
+        //            self.name.clone(),
+        //            bucket_id,
+        //        ));
         if self.trackdna_book.contains(&bucket_id) {
             self.log.t(&format!(
                 "---- '{}' check OK: {}",
@@ -634,9 +637,9 @@ impl InMemoryServer {
                     let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
                     let published = self.published_entry_book.get(&bucket_id);
                     let stored = self.stored_entry_book.get(&bucket_id);
-                    let has_entry =
-                        (published.is_some() && published.unwrap().contains(&msg.entry_address))
-                    || (stored.is_some() && stored.unwrap().contains(&msg.entry_address));
+                    let has_entry = (published.is_some()
+                        && published.unwrap().contains(&msg.entry_address))
+                        || (stored.is_some() && stored.unwrap().contains(&msg.entry_address));
                     if has_entry {
                         self.log.d(&format!(
                             "<<<< '{}' sending to ({}): {:?}",
@@ -649,7 +652,7 @@ impl InMemoryServer {
                         return Ok(());
                     }
                 }
-            },
+            }
             _ => (),
         };
         // no other node found, send a FailureResult.
@@ -681,8 +684,8 @@ impl InMemoryServer {
             return Ok(());
         }
         // Requester must be tracking
-        let is_tracking = msg.requester_agent_id == "" ||
-            self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
+        let is_tracking = msg.requester_agent_id == ""
+            || self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }
@@ -761,7 +764,7 @@ impl InMemoryServer {
                     r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
                     return Ok(());
                 }
-            },
+            }
             _ => (),
         };
         // no other node found, send a FailureResult.
@@ -793,8 +796,8 @@ impl InMemoryServer {
             return Ok(());
         }
         // Requester must be tracking
-        let is_tracking = msg.requester_agent_id == "" ||
-            self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
+        let is_tracking = msg.requester_agent_id == ""
+            || self.priv_check_or_fail(&msg.dna_address, &msg.requester_agent_id, sender_info)?;
         if !is_tracking {
             return Ok(());
         }

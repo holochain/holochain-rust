@@ -58,13 +58,13 @@ impl NetWorker for InMemoryWorker {
                     match self
                         .receiver_per_dna
                         .entry(untrack_msg.dna_address.to_owned())
-                        {
-                            Entry::Vacant(_) => (),
-                            Entry::Occupied(e) => {
-                                server.unregister(&untrack_msg.dna_address, &untrack_msg.agent_id);
-                                e.remove();
-                            }
-                        };
+                    {
+                        Entry::Vacant(_) => (),
+                        Entry::Occupied(e) => {
+                            server.unregister(&untrack_msg.dna_address, &untrack_msg.agent_id);
+                            e.remove();
+                        }
+                    };
                 }
                 _ => (),
             }

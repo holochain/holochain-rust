@@ -357,7 +357,11 @@ pub fn no_setup_test(alex: &mut P2pNode, billy: &mut P2pNode, _connect: bool) ->
 }
 
 /// Sending a Message before doing a 'TrackDna' should fail
-pub fn untrack_alex_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn untrack_alex_test(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     println!("Testing: untrack_alex_test()");
     setup_two_nodes(alex, billy, can_connect)?;
@@ -369,9 +373,9 @@ pub fn untrack_alex_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: b
             dna_address: DNA_ADDRESS.clone(),
             agent_id: ALEX_AGENT_ID.to_string(),
         })
-            .into(),
+        .into(),
     )
-        .expect("Failed sending UntrackDna message on alex");
+    .expect("Failed sending UntrackDna message on alex");
 
     // Send a message from alex to billy
     let before_count = alex.count_recv_json_messages();
@@ -388,20 +392,25 @@ pub fn untrack_alex_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: b
 }
 
 /// Sending a Message before doing a 'TrackDna' should fail
-pub fn untrack_billy_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) -> NetResult<()> {
+pub fn untrack_billy_test(
+    alex: &mut P2pNode,
+    billy: &mut P2pNode,
+    can_connect: bool,
+) -> NetResult<()> {
     // Setup
     println!("Testing: untrack_billy_test()");
     setup_two_nodes(alex, billy, can_connect)?;
     log_i!("setup_two_nodes COMPLETE");
 
     // Send Untrack
-    billy.send(
-        JsonProtocol::UntrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: BILLY_AGENT_ID.to_string(),
-        })
+    billy
+        .send(
+            JsonProtocol::UntrackDna(TrackDnaData {
+                dna_address: DNA_ADDRESS.clone(),
+                agent_id: BILLY_AGENT_ID.to_string(),
+            })
             .into(),
-    )
+        )
         .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
@@ -433,14 +442,15 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     log_i!("setup_two_nodes COMPLETE");
 
     // Billy untracks DNA
-    billy.send(
-        JsonProtocol::UntrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: BILLY_AGENT_ID.to_string(),
-        })
+    billy
+        .send(
+            JsonProtocol::UntrackDna(TrackDnaData {
+                dna_address: DNA_ADDRESS.clone(),
+                agent_id: BILLY_AGENT_ID.to_string(),
+            })
             .into(),
-    )
-         .expect("Failed sending UntrackDna message on billy");
+        )
+        .expect("Failed sending UntrackDna message on billy");
 
     // Alex untracks DNA
     alex.send(
@@ -448,9 +458,9 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
             dna_address: DNA_ADDRESS.clone(),
             agent_id: ALEX_AGENT_ID.to_string(),
         })
-            .into(),
+        .into(),
     )
-         .expect("Failed sending UntrackDna message on alex");
+    .expect("Failed sending UntrackDna message on alex");
 
     // Making sure Untrack has been received
     // TODO: Have server reply with successResult
@@ -458,13 +468,14 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
     billy.listen(100);
 
     // Billy re-tracks DNA
-    billy.send(
-        JsonProtocol::TrackDna(TrackDnaData {
-            dna_address: DNA_ADDRESS.clone(),
-            agent_id: BILLY_AGENT_ID.to_string(),
-        })
+    billy
+        .send(
+            JsonProtocol::TrackDna(TrackDnaData {
+                dna_address: DNA_ADDRESS.clone(),
+                agent_id: BILLY_AGENT_ID.to_string(),
+            })
             .into(),
-    )
+        )
         .expect("Failed sending TrackDnaData on billy");
     // alex re-tracks DNA
     alex.send(
@@ -472,9 +483,9 @@ pub fn retrack_test(alex: &mut P2pNode, billy: &mut P2pNode, can_connect: bool) 
             dna_address: DNA_ADDRESS.clone(),
             agent_id: ALEX_AGENT_ID.to_string(),
         })
-            .into(),
+        .into(),
     )
-         .expect("Failed sending TrackDnaData on alex");
+    .expect("Failed sending TrackDnaData on alex");
 
     // Making sure Track has been received
     // TODO: Have server reply with successResult

@@ -131,7 +131,6 @@ pub struct P2pNode {
 
 /// Query logs
 impl P2pNode {
-
     /// Return number of JsonProtocol message this node has received
     pub fn count_recv_json_messages(&self) -> usize {
         let mut count = 0;

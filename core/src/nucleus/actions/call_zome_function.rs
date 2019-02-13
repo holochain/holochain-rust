@@ -38,18 +38,29 @@ impl ExecuteZomeFnResponse {
     }
 }
 
-/// Initialize Application, Action Creator
-/// This is the high-level initialization function that wraps the whole process of initializing an
-/// instance. It creates both InitApplication and ReturnInitializationResult actions asynchronously.
+/// Execution of zome calls
+/// This function is kicking off the execution of a given zome function with given parameters.
+/// It dispatches two actions:
+/// * `SignalZomeFunctionCall`: after passing checks and before actually starting the Ribosome,
+/// * `ReturnZomeFunctionResult`: asynchronously after execution of the Ribosome has completed.
 ///
-/// Returns a future that resolves to an Ok(NucleusStatus) or an Err(String) which carries either
-/// the Dna error or errors from the genesis callback.
+/// It is doing pre-checks (such as the capability check) synchronously but then spawns a new
+/// thread to run the Ribosome in.
 ///
-/// Use futures::executor::block_on to wait for an initialized instance.
+/// Being an async function, it returns a future that is polling the instance's State until
+/// the call result gets added there through the `RetunrZomeFunctionResult` action.
+///
+/// Use Context::block_on to wait for an initialized instance.
 pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: &Arc<Context>,
 ) -> Result<JsonString, HolochainError> {
+    // Get DNA name and WASM code from state.
+    // This happens in a code block to scope the read-lock that we acquire from the state
+    // so that it drops the lock and frees the state for mutation.
+    // If we would leak (and move) the lock into the Ribosome thread below, it would lead to a
+    // dead-lock since the existence of this read-lock prevents the redux loop from writing to
+    // the state..
     let (dna_name, code) = {
         let state = context.state().ok_or(HolochainError::ErrorGeneric(
             "Context not initialized".to_string(),
@@ -60,18 +71,19 @@ pub async fn call_zome_function(
             .as_ref()
             .ok_or(HolochainError::DnaMissing)?;
 
-        // 1. Validate the call (a number of things could go wrong)
-        // 1.a make sure the zome and function exists
+        // Validate the call
+        // 1. make sure the zome and function exists
         let _ = dna
             .get_function_with_zome_name(&zome_call.zome_name, &zome_call.fn_name)
             .map_err(HolochainError::Dna)?;
 
-        // 1.b make sure caller is allowed to call the function
+        // 2. make sure caller is allowed to call the function
         let public = is_fn_public(&dna, &zome_call)?;
         if !public && !check_capability(context.clone(), &zome_call.clone()) {
             return Err(HolochainError::CapabilityCheckFailed);
         }
 
+        // 3. read data needed to execute the zome function
         let dna_name = dna.name.clone();
         let code = dna
             .get_wasm_from_zome_name(zome_call.zome_name.clone())
@@ -82,11 +94,11 @@ pub async fn call_zome_function(
         (dna_name, code)
     };
 
-    // 2. function WASM and execute it in a separate thread
-
+    // Clone context and call data for the Ribosome thread
     let context_clone = context.clone();
     let zome_call_clone = zome_call.clone();
 
+    // Signal (currently mainly to the nodejs_waiter) that we are about to start a zome function:
     context
         .action_channel()
         .send(ActionWrapper::new(Action::SignalZomeFunctionCall(

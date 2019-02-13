@@ -15,6 +15,8 @@ extern crate arrayref;
 extern crate base64;
 extern crate chrono;
 extern crate futures;
+#[macro_use]
+extern crate lazy_static;
 extern crate multihash;
 extern crate reed_solomon;
 extern crate rust_base58;

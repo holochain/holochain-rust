@@ -8,11 +8,34 @@ jobs:
    - image: holochain/holochain-rust:circle.zz.end
   steps:
    - checkout
-
-   - run: nix-shell --run hc-fmt-check
    - run: nix-shell --run hc-test
 
- integration-tests:
+ fmt:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+   - run: nix-shell --run hc-fmt-check
+
+ app-spec-tests:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+
+   - run:
+       name: install cli
+       command: nix-shell --run hc-install-cli
+
+   - run:
+       name: install node conductor
+       command: nix-shell --run hc-install-node-conductor
+
+   - run:
+       name: app spec tests
+       command: nix-shell --run hc-test-app-spec
+
+ cli-tests:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
   steps:
@@ -26,13 +49,15 @@ jobs:
       name: test cli
       command: nix-shell --run hc-test-cli
 
+ nodejs-conductor-tests:
+  docker:
+   - image: holochain/holochain-rust:circle.zz.end
+  steps:
+   - checkout
+
    - run:
        name: install node conductor
        command: nix-shell --run hc-install-node-conductor
-
-   - run:
-       name: app spec tests
-       command: nix-shell --run hc-test-app-spec
 
    - run:
        name: nodejs conductor tests
@@ -88,7 +113,10 @@ workflows:
  tests:
   jobs:
    - build
-   - integration-tests
+   - fmt
+   - app-spec-tests
+   - cli-tests
+   - nodejs-conductor-tests
 
  cold:
   jobs:

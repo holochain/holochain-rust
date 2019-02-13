@@ -2,7 +2,11 @@ extern crate futures;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::{is_fn_public, ribosome, ZomeFnCall, ZomeFnResult},
+    nucleus::{
+        is_fn_public,
+        ribosome::{self, WasmCallData},
+        ZomeFnCall, ZomeFnResult,
+    },
 };
 use futures::{
     future::Future,
@@ -97,11 +101,13 @@ pub async fn call_zome_function(
     let _ = thread::spawn(move || {
         // Have Ribosome spin up DNA and call the zome function
         let call_result = ribosome::run_dna(
-            &dna_name,
-            context_clone.clone(),
             code,
-            &zome_call_clone,
             Some(zome_call_clone.clone().parameters.into_bytes()),
+            WasmCallData::new_zome_call(
+                context_clone.clone(),
+                dna_name.clone(),
+                zome_call_clone.clone(),
+            ),
         );
         // Construct response
         let response = ExecuteZomeFnResponse::new(zome_call_clone, call_result);

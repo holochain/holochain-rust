@@ -25,7 +25,7 @@ impl Logger for SimpleLogger {
         // note that this behaviour is documented within
         // holochain_common::env_vars module and should be updated
         // if this logic changes
-        if EnvVar::value(&EnvVar::SimpleLoggerMute).is_err() {
+        if EnvVar::SimpleLoggerMute.value().is_err() {
             let date = Local::now();
             println!("{}:{}", date.format("%Y-%m-%d %H:%M:%S"), msg);
         }

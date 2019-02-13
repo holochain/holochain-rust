@@ -5,6 +5,7 @@ use crate::{
         ribosome::{
             self,
             callback::{links_utils, CallbackResult},
+            runtime::WasmCallData,
         },
         ZomeFnCall,
     },
@@ -37,17 +38,16 @@ pub fn get_validation_package_definition(
                 .get_wasm(&zome_name)
                 .ok_or(HolochainError::ErrorGeneric(String::from("no wasm found")))?;
 
+            let call = ZomeFnCall::new(
+                &zome_name,
+                None,
+                "__hdk_get_validation_package_for_entry_type",
+                app_entry_type.clone().to_string(),
+            );
             ribosome::run_dna(
-                &dna.name.clone(),
-                context,
                 wasm.code.clone(),
-                &ZomeFnCall::new(
-                    &zome_name,
-                    None,
-                    "__hdk_get_validation_package_for_entry_type",
-                    app_entry_type.to_string(),
-                ),
                 Some(app_entry_type.to_string().into_bytes()),
+                WasmCallData::new_zome_call(context, dna.name, call),
             )?
         }
         EntryType::LinkAdd => {
@@ -81,11 +81,9 @@ pub fn get_validation_package_definition(
             let call = ZomeFnCall::new("", None, "__hdk_get_validation_package_for_link", params);
 
             ribosome::run_dna(
-                &dna.name.clone(),
-                context,
                 wasm.code.clone(),
-                &call,
                 Some(call.parameters.into_bytes()),
+                WasmCallData::new_zome_call(context.clone(), dna.name, call),
             )?
         }
         EntryType::LinkRemove => {
@@ -119,11 +117,9 @@ pub fn get_validation_package_definition(
             let call = ZomeFnCall::new("", None, "__hdk_get_validation_package_for_link", params);
 
             ribosome::run_dna(
-                &dna.name.clone(),
-                context,
                 wasm.code.clone(),
-                &call,
                 Some(call.parameters.into_bytes()),
+                WasmCallData::new_zome_call(context.clone(), dna.name.clone(), call),
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

@@ -72,8 +72,6 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     "warning/net/handle: FailureResult: {:?}",
                     failure_data
                 ));
-                println!("RECEIVED FailureResult: {:?}", failure_data);
-
                 // TODO: Handle the reception of a FailureResult
             }
             JsonProtocol::HandleStoreEntry(dht_entry_data) => {

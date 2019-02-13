@@ -123,7 +123,9 @@ pub mod tests {
             entry.address(),
             Timeout::new(100),
         ));
-        assert!(result.is_err(), "get_entry() result = {:?}", result);
+        assert!(result.is_ok(), "get_entry() result = {:?}", result);
+        let maybe_entry_with_meta = result.unwrap();
+        assert!(maybe_entry_with_meta.is_none());
     }
 
     #[test]

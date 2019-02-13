@@ -110,8 +110,6 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   })
 
   scenario1.runTape('delete_entry_post', async (t, { alice }) => {
-    t.plan(3)
-  
     const content = "Hello Holo world 321"
     const in_reply_to = null
     const params = { content, in_reply_to }
@@ -131,8 +129,6 @@ scenario2.runTape('delete_post', async (t, { alice, bob }) => {
   })
 
 scenario1.runTape('update_post', async (t, { alice }) => {
-  t.plan(4)
-
   const content = "Hello Holo world 123"
   const in_reply_to = null
   const params = { content, in_reply_to }
@@ -153,8 +149,6 @@ scenario1.runTape('update_post', async (t, { alice }) => {
 })
 
  scenario1.runTape('create_post with bad reply to', async (t, { alice }) => {
-  t.plan(5)
-
   const content = "Holo world"
   const in_reply_to = "bad"
   const params = { content, in_reply_to }

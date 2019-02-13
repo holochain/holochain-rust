@@ -2,6 +2,7 @@
 
 Please click "suggest an edit", and add something you built with Holochain to the list!
 
+- [Todo list UI (Gatsby/Redux)](https://github.com/kristoferlund/holochain-todo-redux)
 - [TODOlist example](https://github.com/holochain/tasktaskic)
 - [HoloChat Simple UI](https://github.com/holochain/holochat-rust)
 - [HoloVault](https://github.com/holochain/holochain-ui/tree/develop/dna-src/holo-vault)

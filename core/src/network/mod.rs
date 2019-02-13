@@ -61,7 +61,11 @@ pub mod tests {
         ));
         assert!(result.is_ok(), "get_entry() result = {:?}", result);
         let maybe_entry_with_meta = result.unwrap();
-        assert!(maybe_entry_with_meta.is_some(), "maybe_entry_with_meta = {:?}", maybe_entry_with_meta);
+        assert!(
+            maybe_entry_with_meta.is_some(),
+            "maybe_entry_with_meta = {:?}",
+            maybe_entry_with_meta
+        );
         let entry_with_meta = maybe_entry_with_meta.unwrap();
         assert_eq!(entry_with_meta.entry, entry);
         assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);

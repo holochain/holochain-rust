@@ -3,7 +3,7 @@
 #![allow(non_snake_case)]
 
 use crate::{error::NetworkError, tweetlog::*};
-use holochain_core_types::{cas::content::Address, entry::EntryWithMeta, hash::HashString};
+use holochain_core_types::{cas::content::Address, hash::HashString};
 use holochain_net_connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
@@ -662,15 +662,13 @@ impl InMemoryServer {
         //            to_agent_id: msg.requester_agent_id.clone(),
         //            error_info: json!("could not find an agent holding this Entry"),
         //        });
-        let maybe_entry: Option<EntryWithMeta> = None;
         let response = JsonProtocol::HandleFetchEntryResult(FetchEntryResultData {
             request_id: msg.request_id.clone(),
             requester_agent_id: msg.requester_agent_id.clone(),
             dna_address: msg.dna_address.clone(),
             provider_agent_id: msg.requester_agent_id.clone(),
             entry_address: msg.entry_address.clone(),
-            entry_content: serde_json::from_str(&serde_json::to_string(&maybe_entry).unwrap())
-                .unwrap(),
+            entry_content: json!(null),
         });
         self.priv_send_one(&msg.dna_address, &msg.requester_agent_id, response.into())?;
         // Done

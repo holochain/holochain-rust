@@ -18,6 +18,8 @@ use hdk::error::ZomeApiError;
 use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
+#[cfg(not(windows))]
+use holochain_core_types::error::CoreError;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::CrudStatus,
@@ -36,14 +38,9 @@ use holochain_core_types::{
     json::JsonString,
 };
 #[cfg(not(windows))]
-use holochain_core_types::error::CoreError;
-#[cfg(not(windows))]
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
 use holochain_wasm_utils::{
-    api_serialization::{
-        get_entry::StatusRequestKind,
-        get_links::GetLinksResult,
-    },
+    api_serialization::{get_entry::StatusRequestKind, get_links::GetLinksResult},
     wasm_target_dir,
 };
 use std::{
@@ -51,10 +48,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 #[cfg(not(windows))]
-use std::{
-    thread,
-    time::Duration,
-};
+use std::{thread, time::Duration};
 use test_utils::*;
 
 pub fn create_test_defs_with_fn_names(

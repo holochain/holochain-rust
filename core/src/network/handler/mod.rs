@@ -55,10 +55,10 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     let context = c.clone();
     Box::new(move |message| {
         let message = message.unwrap();
-         context.log(format!(
-             "trace/net/handle:({}): {:?}",
-             context.agent_id.nick, message
-         ));
+        context.log(format!(
+            "trace/net/handle:({}): {:?}",
+            context.agent_id.nick, message
+        ));
         let maybe_json_msg = JsonProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             return Ok(());

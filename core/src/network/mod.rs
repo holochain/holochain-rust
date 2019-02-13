@@ -16,8 +16,7 @@ pub mod tests {
         network::{
             actions::{
                 get_entry::get_entry, get_links::get_links,
-                get_validation_package::get_validation_package,
-                publish::publish,
+                get_validation_package::get_validation_package, publish::publish,
             },
             test_utils::test_wat_always_valid,
         },
@@ -49,16 +48,9 @@ pub mod tests {
         let entry = test_entry();
 
         // Store it on the network
-        let result = context1.block_on(commit_entry(
-            entry.clone(),
-            None,
-            &context1,
-        ));
+        let result = context1.block_on(commit_entry(entry.clone(), None, &context1));
         assert!(result.is_ok(), "commit_entry() result = {:?}", result);
-        let result = context1.block_on(publish(
-            entry.address(),
-            &context1,
-        ));
+        let result = context1.block_on(publish(entry.address(), &context1));
         assert!(result.is_ok(), "publish() result = {:?}", result);
 
         // Get it from the network
@@ -146,16 +138,9 @@ pub mod tests {
         let entry = test_entry();
 
         // Store it on the network
-        let result = context1.block_on(commit_entry(
-            entry.clone(),
-            None,
-            &context1,
-        ));
+        let result = context1.block_on(commit_entry(entry.clone(), None, &context1));
         assert!(result.is_ok(), "commit_entry() result = {:?}", result);
-        let result = context1.block_on(publish(
-            entry.address(),
-            &context1,
-        ));
+        let result = context1.block_on(publish(entry.address(), &context1));
         assert!(result.is_ok(), "publish() result = {:?}", result);
 
         // Get it from the network

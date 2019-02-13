@@ -51,6 +51,7 @@ impl EnvVar {
             EnvVar::SimpleLoggerMute => "HC_SIMPLE_LOGGER_MUTE",
         }
     }
+
     pub fn value(&self) -> Result<String, VarError> {
         std::env::var(self.as_str())
     }

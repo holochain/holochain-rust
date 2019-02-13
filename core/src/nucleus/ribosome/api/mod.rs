@@ -203,7 +203,7 @@ pub mod tests {
         context::Context,
         instance::{tests::test_instance_and_context, Instance},
         nucleus::{
-            ribosome::{self, Defn},
+            ribosome::{self, runtime::WasmCallData, Defn},
             tests::{test_capability_call, test_capability_name},
             ZomeFnCall,
         },
@@ -392,11 +392,9 @@ pub mod tests {
             test_parameters(),
         );
         ribosome::run_dna(
-            &dna_name,
-            context,
             wasm.clone(),
-            &zome_call,
             Some(args_bytes),
+            WasmCallData::new_zome_call(context, dna_name.to_string(), zome_call),
         )
         .expect("test should be callable")
     }

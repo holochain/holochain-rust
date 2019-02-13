@@ -1,3 +1,5 @@
+use serde_derive::{Deserialize, Serialize};
+
 /// This struct is the bundle for the Key pairs. i.e. signing and encryption keys
 ///
 /// The bundle_type tells if the bundle is a RootSeed bundle | DeviceSeed bundle | DevicePINSeed Bundle | ApplicationKeys Bundle

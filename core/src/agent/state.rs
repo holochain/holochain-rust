@@ -191,7 +191,7 @@ pub fn create_new_chain_header(
             .and_then(|chain_header| Some(chain_header.address())),
         crud_link,
         // @TODO timestamp
-        &Iso8601::from(""),
+        &Iso8601::from(0),
     )
 }
 

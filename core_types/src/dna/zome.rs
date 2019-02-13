@@ -3,8 +3,8 @@
 use crate::{
     dna::{
         bridges::{Bridge, BridgePresence},
-        capabilities::Capability,
-        fn_declarations::{FnDeclaration, FnParameter},
+        capabilities::ReservedTraitNames,
+        fn_declarations::{FnDeclaration, FnParameter, TraitFns},
         wasm::DnaWasm,
     },
     entry::entry_type::EntryType,
@@ -33,7 +33,7 @@ impl Config {
 }
 
 pub type ZomeEntryTypes = BTreeMap<EntryType, EntryTypeDef>;
-pub type ZomeCapabilities = BTreeMap<String, Capability>;
+pub type ZomeTraits = BTreeMap<String, TraitFns>;
 pub type ZomeFnDeclarations = Vec<FnDeclaration>;
 
 /// Represents an individual "zome".
@@ -55,9 +55,9 @@ pub struct Zome {
     #[serde(deserialize_with = "deserialize_entry_types")]
     pub entry_types: ZomeEntryTypes,
 
-    /// An array of capabilities associated with this zome.
+    /// An array of traits defined in this zome.
     #[serde(default)]
-    pub capabilities: ZomeCapabilities,
+    pub traits: ZomeTraits,
 
     /// An array of functions declared in this this zome.
     #[serde(default)]
@@ -82,7 +82,7 @@ impl Default for Zome {
             config: Config::new(),
             entry_types: BTreeMap::new(),
             fn_declarations: Vec::new(),
-            capabilities: BTreeMap::new(),
+            traits: BTreeMap::new(),
             code: DnaWasm::new(),
             bridges: Vec::new(),
         }
@@ -96,7 +96,7 @@ impl Zome {
         config: &Config,
         entry_types: &BTreeMap<EntryType, entry_types::EntryTypeDef>,
         fn_declarations: &Vec<FnDeclaration>,
-        capabilities: &BTreeMap<String, Capability>,
+        traits: &BTreeMap<String, TraitFns>,
         code: &DnaWasm,
     ) -> Zome {
         Zome {
@@ -104,7 +104,7 @@ impl Zome {
             config: config.clone(),
             entry_types: entry_types.to_owned(),
             fn_declarations: fn_declarations.to_owned(),
-            capabilities: capabilities.to_owned(),
+            traits: traits.to_owned(),
             code: code.clone(),
             bridges: Vec::new(),
         }
@@ -130,6 +130,24 @@ impl Zome {
             outputs,
         });
     }
+
+    /// Return a Function declaration from a Zome
+    pub fn get_function(&self, fn_name: &str) -> Option<&FnDeclaration> {
+        self.fn_declarations
+            .iter()
+            .find(|ref fn_decl| fn_decl.name == fn_name)
+    }
+
+    // Helper function for finding out if a given function call is public
+    pub fn is_fn_public(&self, fn_name: &String) -> bool {
+        let pub_trait = ReservedTraitNames::Public.as_str().to_string();
+        self.traits
+            .iter()
+            .find(|(trait_name, trait_fns)| {
+                trait_name.to_string() == pub_trait && trait_fns.functions.contains(fn_name)
+            })
+            .is_some()
+    }
 }
 
 #[cfg(test)]
@@ -154,7 +172,7 @@ pub mod tests {
                 "config": {},
                 "entry_types": {},
                 "fn_delcarations": [],
-                "capabilities": {}
+                "traits": {}
             }"#,
         )
         .unwrap();
@@ -174,7 +192,7 @@ pub mod tests {
             ..Default::default()
         };
 
-        let expected = "{\"description\":\"\",\"config\":{},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
+        let expected = "{\"description\":\"\",\"config\":{},\"entry_types\":{\"foo\":{\"description\":\"\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[],\"code\":{\"code\":\"\"},\"bridges\":[]}";
 
         assert_eq!(
             JsonString::from(expected.clone()),

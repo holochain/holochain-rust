@@ -71,7 +71,7 @@ define_zome! {
         }
     ]
 
-    capabilities: {
-        public (Public) [create_my_entry,get_my_entry]
+    traits: {
+        hc_public [create_my_entry,get_my_entry]
     }
 }

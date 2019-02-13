@@ -412,9 +412,9 @@ pub mod tests {
         cas::content::Address,
         dna::{
             capabilities::{
-                CallSignature, Capability, CapabilityCall, CapabilityType, ReservedCapabilityNames,
+                CallSignature, CapabilityCall, CapabilityType, ReservedTraitNames,
             },
-            fn_declarations::FnDeclaration,
+            fn_declarations::{FnDeclaration, TraitFns},
             Dna,
         },
         entry::{cap_entries::CapTokenGrant, Entry},
@@ -511,7 +511,7 @@ pub mod tests {
 
     /// dummy capability name compatible with ZomeFnCall
     pub fn test_capability_name() -> String {
-        "test_cap".to_string()
+        "hc_public".to_string()
     }
 
     /// dummy function name compatible with ZomeFnCall
@@ -779,23 +779,24 @@ pub mod tests {
 
     fn setup_dna_for_cap_test(cap_type: CapabilityType) -> Dna {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let mut capability = Capability::new(cap_type.clone());
+        let mut trait_fns = TraitFns::new();
         let fn_decl = FnDeclaration {
             name: test_function_name(),
             inputs: Vec::new(),
             outputs: Vec::new(),
         };
-        capability.functions = vec![fn_decl.name.clone()];
-        let mut capabilities = BTreeMap::new();
-        let cap_name = match CapabilityType::Public == cap_type {
-            true => ReservedCapabilityNames::Public.as_str().to_string(),
-            false => test_capability_name(),
+        trait_fns.functions = vec![fn_decl.name.clone()];
+        let mut traits = BTreeMap::new();
+        let trait_name = if cap_type == CapabilityType::Public {
+            ReservedTraitNames::Public.as_str().to_string()
+        } else {
+            "test_trait".to_string()
         };
-        capabilities.insert(cap_name, capability);
+        traits.insert(trait_name, trait_fns);
         let mut functions = Vec::new();
         functions.push(fn_decl);
 
-        create_test_dna_with_defs(&test_zome_name(), (functions, capabilities), &wasm)
+        create_test_dna_with_defs(&test_zome_name(), (functions, traits), &wasm)
     }
 
     // success to test_reduce_call is when the function gets called which shows up as a

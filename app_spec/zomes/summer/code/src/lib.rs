@@ -28,8 +28,8 @@ define_zome! {
         }
     ]
 
-    capabilities: {
-        public (Public) [sum]
+    traits: {
+        hc_public [sum]
     }
 
 }

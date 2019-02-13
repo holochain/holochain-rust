@@ -17,7 +17,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::get_entry::*;
 use serde_json;
-use std::{collections::HashMap, convert::TryFrom, sync::Arc};
+use std::{collections::HashMap, convert::TryFrom, sync::Arc, time::SystemTime};
 
 /// The state-slice for the Agent.
 /// Holds the agent's source chain and keys.
@@ -180,6 +180,8 @@ pub fn create_new_chain_header(
             .sign(entry.address().to_string())
             .expect("Must be able to create signatures!"),
     );
+    let duration_since_epoch = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)
+        .expect("System time must not be before UNIX EPOCH");
     ChainHeader::new(
         &entry.entry_type(),
         &entry.address(),
@@ -194,8 +196,7 @@ pub fn create_new_chain_header(
             .nth(0)
             .and_then(|chain_header| Some(chain_header.address())),
         crud_link,
-        // @TODO timestamp
-        &Iso8601::from(0),
+        &Iso8601::from(duration_since_epoch.as_secs()),
     )
 }
 
@@ -285,7 +286,6 @@ pub mod tests {
         error::HolochainError,
         json::JsonString,
         signature::Signature,
-        time::Iso8601,
     };
     use serde_json;
     use std::{
@@ -438,7 +438,7 @@ pub mod tests {
                 &None,
                 &None,
                 &None,
-                &Iso8601::from(""),
+                &header.timestamp(),
             )
         );
     }

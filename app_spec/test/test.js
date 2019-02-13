@@ -286,3 +286,7 @@ scenario2.runTape('scenario test create & publish post -> get from other instanc
   const value = JSON.parse(result.Ok.App[1])
   t.equal(value.content, initialContent)
 })
+
+scenario2.runTape('silly test scenario', async (t, { alice, bob }) => {
+    t.equal(true, true)
+})

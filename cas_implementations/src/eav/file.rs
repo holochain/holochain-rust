@@ -193,22 +193,44 @@ impl EntityAttributeValueStorage for EavFileStorage {
         index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.read()?;
-        let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
-        let attribute_set = self
-            .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)?
-            .clone();
-        let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value)?;
+        let prefixes = if !index_query.prefixes().is_empty() {
+            index_query.prefixes().clone()
+        } else {
+            vec![""]
+        };
+        let union_set: BTreeSet<String> = BTreeSet::new();
+        let entity_attribute_value_union = prefixes.iter().fold(
+            Ok(union_set.clone()),
+            |set: Result<BTreeSet<String>, HolochainError>, prefix: &&str| {
+                let entity_set =
+                    self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
+                let attribute_with_prefix = attribute
+                    .clone()
+                    .map(|attri| prefix.to_string() + &attri.clone());
+                let attribute_set = self
+                    .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute_with_prefix)
+                    .clone()?;
+                let value_set =
+                    self.read_from_dir::<Value>(VALUE_DIR.to_string(), value.clone())?;
 
-        let attribute_value_inter: BTreeSet<String> = value_set
-            .intersection(&attribute_set.clone())
-            .cloned()
-            .collect();
-        let entity_attribute_value_inter: BTreeSet<String> = attribute_value_inter
-            .intersection(&entity_set)
-            .cloned()
-            .collect();
+                let attribute_value_inter: BTreeSet<String> = value_set
+                    .intersection(&attribute_set.clone())
+                    .cloned()
+                    .collect();
+                let entity_attribute_value_inter: BTreeSet<String> = attribute_value_inter
+                    .intersection(&entity_set)
+                    .cloned()
+                    .collect();
+                let to_union = set?;
+                Ok(to_union
+                    .union(&entity_attribute_value_inter)
+                    .cloned()
+                    .collect())
+            },
+        );
 
-        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
+        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_union?
+            .clone()
             .into_iter()
             .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
             .partition(|c| c.is_ok());
@@ -232,7 +254,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                         .start()
                         .map(|start| start <= e.index())
                         .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone())
+                            let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                                 .unwrap_or(EntityAttributeValueIndex::default());
                             latest.index() == e.index()
                         })
@@ -242,7 +264,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                         .end()
                         .map(|end| end >= e.index())
                         .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone())
+                            let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                                 .unwrap_or(EntityAttributeValueIndex::default());
                             latest.index() == e.index()
                         })
@@ -301,11 +323,22 @@ pub mod tests {
     }
 
     #[test]
-    fn example_eav_range() {
+    fn file_eav_range() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
         EavTestSuite::test_range::<ExampleAddressableContent, EavFileStorage>(eav_storage);
+    }
+
+    #[test]
+    fn file_eav_prefixes() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavFileStorage::new(temp_path).unwrap();
+        EavTestSuite::test_prefixes::<ExampleAddressableContent, EavFileStorage>(
+            eav_storage,
+            vec!["a_", "b_", "c_", "d_"],
+        );
     }
 
 }

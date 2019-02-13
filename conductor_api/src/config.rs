@@ -461,12 +461,21 @@ pub struct NetworkConfig {
     /// configs above. Default is None.
     #[serde(default)]
     pub n3h_ipc_uri: Option<String>,
+    /// filepath to the json file holding the network settings for n3h
+    #[serde(default)]
+    pub networking_config_file: Option<String>,
 }
 
+// note that this behaviour is documented within
+// holochain_common::env_vars module and should be updated
+// if this logic changes
 pub fn default_n3h_mode() -> String {
     String::from("HACK")
 }
 
+// note that this behaviour is documented within
+// holochain_common::env_vars module and should be updated
+// if this logic changes
 pub fn default_n3h_path() -> String {
     if let Some(user_dirs) = directories::UserDirs::new() {
         user_dirs
@@ -481,6 +490,9 @@ pub fn default_n3h_path() -> String {
     }
 }
 
+// note that this behaviour is documented within
+// holochain_common::env_vars module and should be updated
+// if this logic changes
 pub fn default_n3h_persistence_path() -> String {
     env::temp_dir().to_string_lossy().to_string()
 }
@@ -512,10 +524,10 @@ pub fn serialize_configuration(config: &Configuration) -> HcResult<String> {
 pub mod tests {
     use super::*;
     use crate::config::{load_configuration, Configuration, NetworkConfig};
-    use holochain_core::context::unique_memory_network_config;
+    use holochain_net::p2p_config::P2pConfig;
 
     pub fn example_serialized_network_config() -> String {
-        String::from(unique_memory_network_config())
+        String::from(JsonString::from(P2pConfig::new_with_unique_memory_backend()))
     }
 
     #[test]
@@ -625,6 +637,7 @@ pub mod tests {
     bootstrap_nodes = ["/ip4/127.0.0.1/tcp/45737/ipfs/QmYaEMe288imZVHnHeNby75m9V6mwjqu6W71cEuziEBC5i"]
     n3h_path = "/Users/cnorris/.holochain/n3h"
     n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
+    networking_config_file = "/Users/cnorris/.holochain/network_config.json"
     "#;
 
         let config = load_configuration::<Configuration>(toml).unwrap();
@@ -652,6 +665,9 @@ pub mod tests {
                 n3h_mode: String::from("HACK"),
                 n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
                 n3h_ipc_uri: None,
+                networking_config_file: Some(String::from(
+                    "/Users/cnorris/.holochain/network_config.json"
+                )),
             }
         );
     }

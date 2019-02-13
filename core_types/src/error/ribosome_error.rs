@@ -211,9 +211,8 @@ impl From<RibosomeErrorCode> for String {
 
 impl RibosomeErrorCode {
     pub fn from_code_int(code: RibosomeCodeBits) -> Self {
-        println!("{:?}", code);
         match code {
-            0 => unreachable!(),
+            0 => panic!(format!("RibosomeErrorCode == {:?} encountered", code)),
             2 => ArgumentDeserializationFailed,
             3 => OutOfMemory,
             4 => ReceivedWrongActionResult,
@@ -230,7 +229,10 @@ impl RibosomeErrorCode {
     pub fn from_return_code(ret_code: RibosomeEncodedValue) -> Self {
         match ret_code {
             Failure(rib_err) => rib_err,
-            _ => unreachable!(),
+            _ => panic!(format!(
+                "RibosomeEncodedValue == {:?} encountered",
+                ret_code
+            )),
         }
     }
 }
@@ -286,8 +288,6 @@ pub mod tests {
 
     #[test]
     fn ribosome_error_code_round_trip() {
-        let code_int = RibosomeErrorCode::OutOfMemory as u64;
-        println!("zz {:?}", code_int);
         let oom = RibosomeErrorCode::from_code_int(
             ((RibosomeErrorCode::OutOfMemory as u64) >> 32) as RibosomeCodeBits,
         );

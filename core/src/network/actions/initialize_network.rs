@@ -19,7 +19,7 @@ use std::{pin::Pin, sync::Arc};
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     let (dna_address, agent_id) = await!(get_dna_and_agent(context))?;
     let network_settings = NetworkSettings {
-        config: context.network_config.clone(),
+        p2p_config: context.p2p_config.clone(),
         dna_address,
         agent_id: agent_id.clone(),
     };
@@ -42,7 +42,7 @@ pub async fn initialize_network_with_spoofed_dna(
 ) -> HcResult<()> {
     let (_, agent_id) = await!(get_dna_and_agent(context))?;
     let network_settings = NetworkSettings {
-        config: context.network_config.clone(),
+        p2p_config: context.p2p_config.clone(),
         dna_address,
         agent_id,
     };

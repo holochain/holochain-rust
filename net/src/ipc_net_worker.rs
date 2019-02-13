@@ -40,9 +40,11 @@ pub struct IpcNetWorker {
 // Constructors
 impl IpcNetWorker {
     // Constructor with config as a json string
-    pub fn new(handler: NetHandler, config: &JsonString) -> NetResult<Self> {
-        let opaque_net_config = String::from("{}");
-
+    pub fn new(
+        handler: NetHandler,
+        config: &JsonString,
+        enduser_config: String,
+    ) -> NetResult<Self> {
         // Load config
         let config: serde_json::Value = serde_json::from_str(config.into())?;
         // Only zmq protocol is handled for now
@@ -87,7 +89,7 @@ impl IpcNetWorker {
                     .map(|i| i.as_str().unwrap_or_default().to_string())
                     .collect(),
                 spawn_config["workDir"].as_str().unwrap().to_string(),
-                opaque_net_config,
+                enduser_config,
                 env,
                 block_connect,
                 bootstrap_nodes,
@@ -329,8 +331,8 @@ impl IpcNetWorker {
 mod tests {
     use super::*;
 
+    use crate::p2p_config::P2pConfig;
     use holochain_net_connection::protocol::{NamedBinaryData, PongData};
-
     use holochain_net_ipc::socket::make_test_channels;
 
     #[test]
@@ -338,6 +340,7 @@ mod tests {
         IpcNetWorker::new(
             Box::new(|_r| Ok(())),
             &JsonString::from(IpcNetWorker::ZMQ_URI_CONFIG).into(),
+            P2pConfig::default_end_user_config().to_string(),
         )
         .unwrap();
     }
@@ -357,6 +360,7 @@ mod tests {
                 "blockConnect": false
             })
             .into(),
+            P2pConfig::default_end_user_config().to_string(),
         ) {
             let e = format!("{:?}", e);
             assert!(e.contains("Invalid argument"), "res: {}", e);

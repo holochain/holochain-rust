@@ -50,7 +50,7 @@ impl ExecuteZomeFnResponse {
 /// Being an async function, it returns a future that is polling the instance's State until
 /// the call result gets added there through the `RetunrZomeFunctionResult` action.
 ///
-/// Use Context::block_on to wait for an initialized instance.
+/// Use Context::block_on to wait for the call result.
 pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: &Arc<Context>,
@@ -162,8 +162,8 @@ fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     }
 }
 
-/// InitializationFuture resolves to an Ok(NucleusStatus) or an Err(String).
-/// Tracks the nucleus status.
+/// CallResultFuture resolves to an Result<JsonString, HolochainError>.
+/// Tracks the nucleus State, waiting for a result to the given zome function call to appear.
 pub struct CallResultFuture {
     context: Arc<Context>,
     zome_call: ZomeFnCall,
@@ -173,10 +173,10 @@ impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 
     fn poll(self: Pin<&mut Self>, lw: &LocalWaker) -> Poll<Self::Output> {
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
+        // With our own executor implementation in Context::block_on we actually
+        // wouldn't need the waker since this executor is attached to the redux loop
+        // and re-polls after every State mutation.
+        // Leaving this in to be safe against running this future in another executor.
         lw.wake();
 
         if let Some(state) = self.context.state() {

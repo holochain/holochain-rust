@@ -100,6 +100,9 @@ pub enum Action {
     /// Does not validate, assumes link is valid.
     AddLink(Link),
 
+    //Removes a link for the local DHT
+    RemoveLink(Link),
+
     // ----------------
     // Network actions:
     // ----------------

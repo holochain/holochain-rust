@@ -203,13 +203,17 @@ impl Waiter {
                                     *aw.action() == Action::AddLink(link_add.clone().link().clone())
                                 });
                             }
-                            // Pair every `LinkRemove` with N `Hold`s
-                            Entry::LinkRemove(_link_remove) => {
+                            Entry::LinkRemove(link_remove) => {
+                                // Pair every `LinkRemove` with N `Hold`s
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
                                         *entry == committed_entry
                                     }
                                     _ => false,
+                                });
+                                checker.add(num_instances, move |aw| {
+                                    *aw.action()
+                                        == Action::RemoveLink(link_remove.clone().link().clone())
                                 });
                             }
                             _ => (),
@@ -334,7 +338,7 @@ mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_add::LinkAdd,
+        chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_data::LinkData,
     };
     use std::sync::mpsc::sync_channel;
 
@@ -544,7 +548,7 @@ mod tests {
     fn can_await_links() {
         let (mut waiter, sender_tx) = test_waiter();
         let call = zf_call("c1");
-        let link_add = LinkAdd::new(
+        let link_add = LinkData::new_add(
             &"base".to_string().into(),
             &"target".to_string().into(),
             "tag",

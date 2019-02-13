@@ -1,9 +1,9 @@
-use core::convert::TryFrom;
-use hdk::{
-    self,
+use std::convert::TryFrom;
+use crate::{
+    self as hdk,
     holochain_core_types::{
     	entry::{AppEntryValue, Entry},
-    	cas::content::{Address, AddressableContent},
+    	cas::content::{Address},
     },
     error::{ZomeApiResult, ZomeApiError},
 };
@@ -41,7 +41,6 @@ pub fn get_links_and_load_type<
 			)
 		}
 	})
-	.filter_map(Result::ok)
 	.collect())
 }
 

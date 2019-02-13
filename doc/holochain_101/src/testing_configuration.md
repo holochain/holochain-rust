@@ -157,7 +157,7 @@ const conductorConfig = Config.conductor([instanceConfig], { debugLog: false })
 ## Full Multi Instance Example
 
 ```javascript
-const { Config, Conductor } = require('@holochain/holochain-nodejs')
+const { Config } = require('@holochain/holochain-nodejs')
 
 // specify two agents...
 const aliceName = "alice"

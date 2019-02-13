@@ -30,7 +30,6 @@ ___
 ___
 
 #### Example
-
 ```javascript
 const callResult = conductor.call('alice', 'people', 'create_person', {name: 'Franklin'})
 ```

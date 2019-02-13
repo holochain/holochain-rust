@@ -9,12 +9,12 @@ const { Conductor } = require('@holochain/holochain-nodejs')
 
 ## Instantiating a Conductor
 
-### `constructor(config)` => `Conductor`
+### `constructor(conductorConfig)` => `Conductor`
 
 Instantiate a Conductor with a Conductor configuration, obtained by using one of the approaches outlined in the [configuration articles](./testing_configuration.md).
 
 ___
-**Name** config
+**Name** conductorConfig
 
 **Type** `string` or `object`
 

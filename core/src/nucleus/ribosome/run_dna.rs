@@ -1,9 +1,6 @@
-use crate::{
-    context::Context,
-    nucleus::{
-        ribosome::{api::ZomeApiFunction, memory::WasmPageManager, Runtime},
-        ZomeFnCall, ZomeFnResult,
-    },
+use crate::nucleus::{
+    ribosome::{api::ZomeApiFunction, memory::WasmPageManager, runtime::WasmCallData, Runtime},
+    ZomeFnResult,
 };
 use holochain_core_types::{
     error::{
@@ -12,7 +9,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_wasm_utils::memory::allocation::{AllocationError, WasmAllocation};
-use std::{convert::TryFrom, str::FromStr, sync::Arc};
+use std::{convert::TryFrom, str::FromStr};
 use wasmi::{
     self, Error as InterpreterError, FuncInstance, FuncRef, ImportsBuilder, ModuleImportResolver,
     ModuleInstance, NopExternals, RuntimeValue, Signature, ValueType,
@@ -21,13 +18,7 @@ use wasmi::{
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
-pub fn run_dna(
-    dna_name: &str,
-    context: Arc<Context>,
-    wasm: Vec<u8>,
-    zome_call: &ZomeFnCall,
-    parameters: Option<Vec<u8>>,
-) -> ZomeFnResult {
+pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     // Create wasm module from wasm binary
     let module =
         wasmi::Module::from_buffer(wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))?;
@@ -92,12 +83,11 @@ pub fn run_dna(
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
+    let fn_name = data.fn_name();
     // instantiate runtime struct for passing external state data over wasm but not to wasm
     let mut runtime = Runtime {
         memory_manager: WasmPageManager::new(&wasm_instance),
-        context,
-        zome_call: zome_call.clone(),
-        dna_name: dna_name.to_string(),
+        data,
     };
 
     // Write input arguments in wasm memory
@@ -129,12 +119,12 @@ pub fn run_dna(
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments
         // which have been set in memory module
-        let runtime_bits: RibosomeRuntimeBits =
-            RibosomeEncodingBits::from(encoded_allocation_of_input) as i64;
         returned_encoding = wasm_instance
             .invoke_export(
-                zome_call.fn_name.clone().as_str(),
-                &[RuntimeValue::I64(runtime_bits)],
+                &fn_name,
+                &[RuntimeValue::I64(
+                    RibosomeEncodingBits::from(encoded_allocation_of_input) as RibosomeRuntimeBits,
+                )],
                 mut_runtime,
             )
             .map_err(|err| {

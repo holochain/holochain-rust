@@ -4,6 +4,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Future handling and zome function execution refactored which enables using complex API functions like `commit_entry` in callbacks such as `receive`.
 - Added centralized documentation for environment variables in use by Holochain [PR](https://github.com/holochain/holochain-rust/pull/990)
 - Added command `hc keygen` which creates a new key pair, asks for a passphrase and writes an encrypted key bundle file to `~/.holochain/keys`.
 - `hash` properties for `UiBundleConfiguration` and `DnaConfiguration` in Conductor config files is now optional

@@ -200,6 +200,7 @@ pub enum Dispatch {
     Query,
     Send,
     Sleep,
+    RemoveLink,
 }
 
 impl Dispatch {
@@ -236,6 +237,7 @@ impl Dispatch {
                 Dispatch::Query => hc_query,
                 Dispatch::Send => hc_send,
                 Dispatch::Sleep => hc_sleep,
+                Dispatch::RemoveLink => hc_remove_link,
             })(encoded_input)
         };
 
@@ -314,6 +316,8 @@ impl Dispatch {
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -393,6 +397,8 @@ impl Dispatch {
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 ///
@@ -660,6 +666,68 @@ pub fn link_entries<S: Into<String>>(
     tag: S,
 ) -> Result<(), ZomeApiError> {
     Dispatch::LinkEntries.with_input(LinkEntriesArgs {
+        base: base.clone(),
+        target: target.clone(),
+        tag: tag.into(),
+    })
+}
+
+/// Consumes three values, two of which are the addresses of entries, and one of which is a string that removes a
+/// relationship between them, called a `tag`. Later, lists of entries.
+/// # Examples
+/// ```rust
+/// # #![feature(try_from)]
+/// # extern crate hdk;
+/// # extern crate serde_json;
+/// # #[macro_use]
+/// # extern crate serde_derive;
+/// # extern crate holochain_core_types;
+/// # #[macro_use]
+/// # extern crate holochain_core_types_derive;
+/// # use holochain_core_types::json::JsonString;
+/// # use holochain_core_types::error::HolochainError;
+/// # use holochain_core_types::entry::entry_type::AppEntryType;
+/// # use holochain_core_types::entry::Entry;
+/// # use holochain_core_types::cas::content::Address;
+/// # use hdk::AGENT_ADDRESS;
+/// # use hdk::error::ZomeApiResult;
+/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
+/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::StatusRequestKind;
+/// # fn main() {
+///
+/// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
+/// pub struct Post {
+///     content: String,
+///     date_created: String,
+/// }
+///
+/// pub fn handle_remove_link(content: String, in_reply_to: Option<Address>) -> ZomeApiResult<()> {
+///
+///     let post_entry = Entry::App("post".into(), Post{
+///             content,
+///             date_created: "now".into(),
+///     }.into());
+///
+///     let address = hdk::commit_entry(&post_entry)?;
+///
+///     hdk::remove_link(
+///         &AGENT_ADDRESS,
+///         &address,
+///         "authored_posts",
+///     )?;
+///
+///
+///     Ok(())
+///
+/// }
+/// # }
+/// ```
+pub fn remove_link<S: Into<String>>(
+    base: &Address,
+    target: &Address,
+    tag: S,
+) -> Result<(), ZomeApiError> {
+    Dispatch::RemoveLink.with_input(LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         tag: tag.into(),
@@ -1003,6 +1071,8 @@ pub fn query_result(
 /// # pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 /// # #[no_mangle]
 /// # pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # #[no_mangle]
+/// # pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {

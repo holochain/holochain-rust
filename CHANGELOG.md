@@ -72,6 +72,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   See rustdoc of `conductor_api::interface::ConductorApiBuilder` for a full description of these functions.
 - Conductor can serve static directories called ui_bundles over HTTP that can be configured in the container config toml file. This HTTP server also implements a virtual json file at "/_dna_connections.json" that returns the DNA interface (if any) the UI is configured to connect to. Hc-web-client will use this to automatically connect to the correct DNA interface on page load.
+- Adds utils submodule of hdk which contains the following helper functions:
+  + get_links_and_load_type - calls try_from for a given type when getting links
+  + get_as_type - Similar but for a single entry
+  + link_entries_bidir - Same as link_entries but creates link in both directions
+  + commit_and_link - Save a line and commit and link in a single function
 
 ### Removed
 

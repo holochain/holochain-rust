@@ -32,6 +32,7 @@ pub extern crate holochain_wasm_utils;
 pub extern crate pretty_assertions;
 
 pub mod api;
+pub mod utils;
 #[macro_use]
 pub mod entry_definition;
 pub mod error;

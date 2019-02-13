@@ -7,8 +7,9 @@ extern crate base64;
 extern crate bip39;
 extern crate boolinator;
 extern crate rustc_serialize;
-#[macro_use]
 extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 
 pub mod bundle;
 pub mod error;

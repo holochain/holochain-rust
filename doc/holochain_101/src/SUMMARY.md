@@ -44,7 +44,7 @@
     - [Configuration Alternatives](./configuration_alternatives.md)
   - [Managing the Conductor](./managing_the_conductor.md)
   - [Calling Zome Functions](./nodejs_calling_zome_functions.md)
-  - [Checking Results](./testing_checking_results.md)
+  - [(E) Checking Results](./testing_checking_results.md)
   - [Introspecting Instances](./introspecting_instances.md)
   - [Scenario Testing](./scenario_testing.md)
   - [Handling Networking Asynchronicity](./handling_async.md)

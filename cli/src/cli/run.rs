@@ -1,13 +1,14 @@
 use cli::{self, package};
 use colored::*;
 use error::DefaultResult;
+use holochain_common::env_vars::EnvVar;
 use holochain_conductor_api::{
     conductor::{mount_conductor_from_config, CONDUCTOR},
     config::*,
     logger::LogRules,
 };
 use holochain_core_types::agent::AgentId;
-use std::{env, fs};
+use std::fs;
 
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
@@ -16,7 +17,7 @@ const DNA_CONFIG_ID: &str = "hc-run-dna";
 const INSTANCE_CONFIG_ID: &str = "test-instance";
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
-/// Starts a small conductor with the current application running
+/// Starts a minimal configuration Conductor with the current application running
 pub fn run(
     package: bool,
     port: u16,
@@ -28,7 +29,10 @@ pub fn run(
         cli::package(true, Some(package::DEFAULT_BUNDLE_FILE_NAME.into()))?;
     }
 
-    let agent_name = env::var("HC_AGENT").ok();
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    let agent_name = EnvVar::value(&EnvVar::Agent).ok();
     let agent = AgentId::generate_fake(&agent_name.unwrap_or_else(|| String::from("testAgent")));
     let agent_config = AgentConfiguration {
         id: AGENT_CONFIG_ID.into(),
@@ -60,7 +64,12 @@ pub fn run(
         storage,
     };
 
-    let interface_type = env::var("HC_INTERFACE").ok().unwrap_or_else(|| interface);
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    let interface_type = EnvVar::value(&EnvVar::Interface)
+        .ok()
+        .unwrap_or_else(|| interface);
     let driver = if interface_type == String::from("websocket") {
         InterfaceDriver::Websocket { port }
     } else if interface_type == String::from("http") {
@@ -85,15 +94,21 @@ pub fn run(
         rules,
     };
 
-    let n3h_path = env::var("HC_N3H_PATH").ok();
+    // note that this behaviour is documented within
+    // holochain_common::env_vars module and should be updated
+    // if this logic changes
+    let n3h_path = EnvVar::value(&EnvVar::N3hPath).ok();
 
     // create an n3h network config if the --networked flag is set
     // or if a value where to find n3h has been put into the
     // HC_N3H_PATH environment variable
     let network_config = if networked || n3h_path.is_some() {
-        let n3h_mode = env::var("HC_N3H_MODE").ok();
-        let n3h_persistence_path = env::var("HC_N3H_WORK_DIR").ok();
-        let n3h_bootstrap_node = env::var("HC_N3H_BOOTSTRAP_NODE").ok();
+        // note that this behaviour is documented within
+        // holochain_common::env_vars module and should be updated
+        // if this logic changes
+        let n3h_mode = EnvVar::value(&EnvVar::N3hMode).ok();
+        let n3h_persistence_path = EnvVar::value(&EnvVar::N3hWorkDir).ok();
+        let n3h_bootstrap_node = EnvVar::value(&EnvVar::N3hBootstrapNode).ok();
         let mut n3h_bootstrap = Vec::new();
 
         if n3h_bootstrap_node.is_some() {
@@ -101,7 +116,10 @@ pub fn run(
         }
 
         // Load end_user config file
-        let networking_config_filepath = env::var("NETWORKING_CONFIG_FILE").ok();
+        // note that this behaviour is documented within
+        // holochain_common::env_vars module and should be updated
+        // if this logic changes
+        let networking_config_filepath = EnvVar::value(&EnvVar::NetworkingConfigFile).ok();
 
         Some(NetworkConfig {
             bootstrap_nodes: n3h_bootstrap,

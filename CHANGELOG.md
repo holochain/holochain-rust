@@ -4,6 +4,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Added centralized documentation for environment variables in use by Holochain [PR](https://github.com/holochain/holochain-rust/pull/990)
 - Added command `hc keygen` which creates a new key pair, asks for a passphrase and writes an encrypted key bundle file to `~/.holochain/keys`.
 - `hash` properties for `UiBundleConfiguration` and `DnaConfiguration` in Conductor config files is now optional
 - core now depends on `pretty_assertions` crate
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `hc run` now looks for the --interface flag or `HC_INTERFACE` env var if you want to specify the `http` interface [#846]((https://github.com/holochain/holochain-rust/pull/779)
 - Scenario API added to enable deterministic scenario tests for zome functions. See the [NodeJS Conductor README](nodejs_conductor/README.md) for details.
 - `hdk::query_result` API supports return of ChainHeader and/or Entry data for the matched EntryType(s)
+- `hdk::holochain_core_types::time::Iso8601` now supports validation and conversion to DateTime, and is sortable.
 - Admin RPC functions added to container interface. Any (websocket) container interface that is configured with
   `admin = true`  now can call the following functions to remotely change any aspect of the container config
   (intended to be used in an upcoming container admin UI):

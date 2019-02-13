@@ -17,6 +17,7 @@ pub mod tests {
             actions::{
                 get_entry::get_entry, get_links::get_links,
                 get_validation_package::get_validation_package,
+                publish::publish,
             },
             test_utils::test_wat_always_valid,
         },
@@ -37,28 +38,35 @@ pub mod tests {
     fn get_entry_roundtrip() {
         let netname = Some("get_entry_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
-        dna.uuid = String::from("get_entry_roundtrip");
+        dna.uuid = String::from(netname.unwrap());
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
         let (_, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
 
-        // Create Entry & crud-status metadata, and store it.
+        // Create Entry & metadata
         let entry = test_entry();
-        let result = context1.dht_storage.write().unwrap().add(&entry);
-        assert!(result.is_ok());
-        let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live)
-            .expect("Could not create EAV");
-        let result = context1.eav_storage.write().unwrap().add_eavi(&status_eav);
-        assert!(result.is_ok());
 
-        // Get it.
+        // Store it on the network
+        let result = context1.block_on(commit_entry(
+            entry.clone(),
+            None,
+            &context1,
+        ));
+        assert!(result.is_ok(), "commit_entry() result = {:?}", result);
+        let result = context1.block_on(publish(
+            entry.address(),
+            &context1,
+        ));
+        assert!(result.is_ok(), "publish() result = {:?}", result);
+
+        // Get it from the network
         let result = context2.block_on(get_entry(
             context2.clone(),
             entry.address(),
             Default::default(),
         ));
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "get_entry() result = {:?}", result);
         let maybe_entry_with_meta = result.unwrap();
         assert!(maybe_entry_with_meta.is_some());
         let entry_with_meta = maybe_entry_with_meta.unwrap();
@@ -184,7 +192,7 @@ pub mod tests {
         let wat = &test_wat_always_valid();
 
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
-        dna.uuid = String::from("get_links_roundtrip");
+        dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 

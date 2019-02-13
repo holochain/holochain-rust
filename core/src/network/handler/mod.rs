@@ -73,6 +73,8 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
                     failure_data
                 ));
                 println!("RECEIVED FailureResult: {:?}", failure_data);
+
+                // TODO: Handle the reception of a FailureResult
             }
             JsonProtocol::HandleStoreEntry(dht_entry_data) => {
                 if !is_my_dna(&context, &dht_entry_data.dna_address) {

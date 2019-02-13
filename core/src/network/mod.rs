@@ -25,9 +25,10 @@ pub mod tests {
     };
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
-        crud_status::{create_crud_status_eav, CrudStatus},
+        crud_status::CrudStatus,
         entry::{entry_type::test_app_entry_type, test_entry, Entry},
         link::Link,
+        time::Timeout,
     };
     use holochain_wasm_utils::api_serialization::get_entry::{
         GetEntryArgs, GetEntryOptions, GetEntryResultType,
@@ -38,7 +39,7 @@ pub mod tests {
     fn get_entry_roundtrip() {
         let netname = Some("get_entry_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
-        dna.uuid = String::from(netname.unwrap());
+        dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
         let (_, context2) =
@@ -78,7 +79,7 @@ pub mod tests {
     fn get_entry_results_roundtrip() {
         let netname = Some("get_entry_results_roundtrip");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
-        dna.uuid = String::from("get_entry_results_roundtrip");
+        dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
         let (_, context2) =
@@ -118,7 +119,7 @@ pub mod tests {
     fn get_non_existant_entry() {
         let netname = Some("get_non_existant_entry");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
-        dna.uuid = String::from("get_non_existant_entry");
+        dna.uuid = netname.unwrap().to_string();
         let (_, _) = test_instance_and_context_by_name(dna.clone(), "alice2", netname).unwrap();
         let (_, context2) =
             test_instance_and_context_by_name(dna.clone(), "bob2", netname).unwrap();
@@ -128,31 +129,47 @@ pub mod tests {
         let result = context2.block_on(get_entry(
             context2.clone(),
             entry.address(),
-            Default::default(),
+            Timeout::new(100),
         ));
-        assert!(result.is_ok());
-        let maybe_entry_with_meta = result.unwrap();
-        assert!(maybe_entry_with_meta.is_none());
+        assert!(result.is_err(), "get_entry() result = {:?}", result);
     }
 
     #[test]
-    fn get_when_alone() {
-        let netname = Some("get_when_alone");
+    fn get_entry_when_alone() {
+        let netname = Some("get_entry_when_alone");
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
-        dna.uuid = String::from("get_when_alone");
+        dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "bob3", netname).unwrap();
 
+        // Create Entry
         let entry = test_entry();
 
+        // Store it on the network
+        let result = context1.block_on(commit_entry(
+            entry.clone(),
+            None,
+            &context1,
+        ));
+        assert!(result.is_ok(), "commit_entry() result = {:?}", result);
+        let result = context1.block_on(publish(
+            entry.address(),
+            &context1,
+        ));
+        assert!(result.is_ok(), "publish() result = {:?}", result);
+
+        // Get it from the network
         let result = context1.block_on(get_entry(
             context1.clone(),
             entry.address(),
             Default::default(),
         ));
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "get_entry() result = {:?}", result);
         let maybe_entry_with_meta = result.unwrap();
-        assert!(maybe_entry_with_meta.is_none());
+        assert!(maybe_entry_with_meta.is_some());
+        let entry_with_meta = maybe_entry_with_meta.unwrap();
+        assert_eq!(entry_with_meta.entry, entry);
+        assert_eq!(entry_with_meta.crud_status, CrudStatus::Live);
     }
 
     #[test]
@@ -161,7 +178,7 @@ pub mod tests {
         let wat = &test_wat_always_valid();
 
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
-        dna.uuid = String::from("get_validation_package_roundtrip");
+        dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
 

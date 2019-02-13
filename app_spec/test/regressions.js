@@ -127,6 +127,6 @@ scenario.runTape('create & publish post -> recommend to other agent', async (t, 
   t.equal(recommendedPosts.Ok.addresses.length, 1)
 })
 
-scenario2.runTape('silly regression test scenario', async (t, { alice, bob }) => {
+scenario.runTape('silly regression test scenario', async (t, { alice, bob }) => {
     t.equal(true, true)
 })

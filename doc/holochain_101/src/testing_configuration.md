@@ -11,7 +11,7 @@ const { Config } = require('@holochain/holochain-nodejs')
 
 ### `Config.agent(agentName)` => `object`
 
-?? desc
+Takes an agent name and creates a simple configuration object for that agent
 ___
 **Name** agentName
 
@@ -22,14 +22,20 @@ ___
 
 #### Example
 ```javascript
-const agentAlice = Config.agent('alice')
+const agentConfig = Config.agent('alice')
+console.log(agentConfig)
+/*
+{
+    name: 'alice'
+}
+*/
 ```
 
 ## DNA
 
-### `Config.dna(dnaPath)` => `object`
+### `Config.dna(dnaPath, [dnaName])` => `object`
 
-?? desc
+Takes a path to a valid DNA package, and optionally a name and creates a simple configuration object for that DNA
 ___
 **Name** dnaPath
 
@@ -37,34 +43,73 @@ ___
 
 **Description** The path to a `bundle.json` file containing a valid DNA configuration
 ___
+**Name** dnaName *Optional*
+
+**Type** `string`
+
+**Description** The path to a `bundle.json` file containing a valid DNA configuration
+
+**Default** The same as the given `dnaPath`
+___
 
 #### Example
 ```javascript
-const dna = Config.dna('path/to/bundle.json')
+const dnaConfig = Config.dna('path/to/bundle.json')
+console.log(dnaConfig)
+/*
+{
+    path: 'path/to/bundle.json',
+    name: 'path/to/bundle.json'
+}
+*/
 ```
 
 ## Instances
 
 ### `Config.instance(agentConfig, dnaConfig)` => `object`
 
-?? desc
+Takes an agent config object and a dna confid object, and optionally a unique name, and returns a full configuration object
+for a DNA instance.
 ___
 **Name** agentConfig
 
 **Type** `object`
 
-**Description** 
+**Description** A config object with a `name` property, as produced by `Config.agent`
 ___
 **Name** dnaConfig
 
 **Type** `object`
 
+**Description** A config object with a `name` and `path` property, as produced by `Config.dna`
+___
+**Name** name *Optional*
+
+**Type** `string`
+
 **Description** 
+
+**Default** The same as the `name` property of the given `agentConfig` (`agentConfig.name`)
 ___
 
 #### Example
 ```javascript
-const instanceAlice = Config.instance(agentAlice, dna)
+const agentConfig = Config.agent('alice')
+const dnaConfig = Config.dna('path/to/bundle.json')
+const instanceConfig = Config.instance(agentConfig, dnaConfig)
+console.log(dnaConfig)
+/*
+{
+    agent: {
+        name: 'alice'
+    },
+    dna: {
+        path: 'path/to/bundle.json',
+        name: 'path/to/bundle.json'
+    },
+    name: 'alice'
+}
+*/
 ```
 
 ## Full Conductor Configuration
@@ -84,21 +129,31 @@ ___
 
 **Type** `object`
 
-**Description** 
+**Description** *conductorOptions.debugLog* `boolean` Which logger type to use. There are two options:
+- debugLog = true: Use the "debug" logger. This one has nicer, colorful output.
+- debugLog = false: Use the "simple" logger. This one has less interesting output, but can be silenced with the env variable `HC_SIMPLE_LOGGER_MUTE=1`
+
+**Default** `{ debugLog: true }`
 ___
 
 #### Example
 ```javascript
-const config = Config.conductor([instanceAlice])
+const agentConfig = Config.agent('alice')
+const dnaConfig = Config.dna('path/to/bundle.json')
+const instanceConfig = Config.instance(agentConfig, dnaConfig)
+const conductorConfig = Config.conductor([instanceConfig])
 ```
 
 #### Example With Opts
 ```javascript
-const config = Config.conductor([instanceAlice], { debugLog: false })
+const agentConfig = Config.agent('alice')
+const dnaConfig = Config.dna('path/to/bundle.json')
+const instanceConfig = Config.instance(agentConfig, dnaConfig)
+const conductorConfig = Config.conductor([instanceConfig], { debugLog: false })
 ```
 
 
-## Multi Agent Example
+## Full Multi Instance Example
 
 ```javascript
 const { Config, Conductor } = require('@holochain/holochain-nodejs')

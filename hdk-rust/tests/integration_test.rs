@@ -18,12 +18,6 @@ use hdk::error::ZomeApiError;
 use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
-#[cfg(not(windows))]
-use holochain_core_types::{
-    crud_status::CrudStatus,
-    entry::EntryWithMeta,
-    error::CoreError,
-};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     dna::{
@@ -32,11 +26,16 @@ use holochain_core_types::{
         fn_declarations::FnDeclaration,
         zome::{ZomeCapabilities, ZomeFnDeclarations},
     },
-    entry::{entry_type::{test_app_entry_type, EntryType}, Entry},
+    entry::{
+        entry_type::{test_app_entry_type, EntryType},
+        Entry,
+    },
     error::HolochainError,
     hash::HashString,
     json::JsonString,
 };
+#[cfg(not(windows))]
+use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
 #[cfg(not(windows))]
 use holochain_wasm_utils::api_serialization::{
     get_entry::{GetEntryResult, StatusRequestKind},

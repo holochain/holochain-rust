@@ -696,5 +696,5 @@ define_zome! {
         }
     ]
 
-    capabilities: {}
+    traits: {}
 }

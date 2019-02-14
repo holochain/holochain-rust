@@ -160,7 +160,7 @@ scenario1.runTape('update_post', async (t, { alice }) => {
   const error = JSON.parse(result.Err.Internal)
   t.deepEqual(error.kind, { ErrorGeneric: "Base for link not found" })
   t.ok(error.file)
-  t.equal(error.line, "94")
+  t.equal(error.line, "131")
 })
 
 scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
@@ -175,7 +175,7 @@ scenario2.runTape('delete_post_with_bad_link', async (t, { alice, bob }) => {
    const error = JSON.parse(result_bob_delete.Err.Internal)
    t.deepEqual(error.kind, { ErrorGeneric: "Target for link not found" })
    t.ok(error.file)
-   t.equal(error.line, "94")
+   t.equal(error.line, "131")
   
   })
 
@@ -194,7 +194,7 @@ scenario1.runTape('post max content size 280 characters', async (t, { alice }) =
 
   t.ok(inner.file)
   t.deepEqual(inner.kind, { "ValidationFailed": "Content too long" })
-  t.equals(inner.line, "94")
+  t.equals(inner.line, "131")
 })
 
 scenario1.runTape('posts_by_agent', async (t, { alice }) => {

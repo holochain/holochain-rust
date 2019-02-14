@@ -21,10 +21,10 @@ use holochain_core::logger::TestLogger;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     dna::{
-        capabilities::{Capability, CapabilityCall, CapabilityType},
+        capabilities::CapabilityCall,
         entry_types::{EntryTypeDef, LinksTo},
-        fn_declarations::FnDeclaration,
-        zome::{ZomeCapabilities, ZomeFnDeclarations},
+        fn_declarations::{FnDeclaration, TraitFns},
+        zome::{ZomeFnDeclarations, ZomeTraits},
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
@@ -50,21 +50,19 @@ use std::{
 use std::{thread, time::Duration};
 use test_utils::*;
 
-pub fn create_test_defs_with_fn_names(
-    fn_names: Vec<&str>,
-) -> (ZomeFnDeclarations, ZomeCapabilities) {
-    let mut capability = Capability::new(CapabilityType::Public);
+pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {
+    let mut traitfns = TraitFns::new();
     let mut fn_declarations = Vec::new();
 
     for fn_name in fn_names {
-        capability.functions.push(String::from(fn_name));
+        traitfns.functions.push(String::from(fn_name));
         let mut fn_decl = FnDeclaration::new();
         fn_decl.name = String::from(fn_name);
         fn_declarations.push(fn_decl);
     }
-    let mut capabilities = BTreeMap::new();
-    capabilities.insert("test_cap".to_string(), capability);
-    (fn_declarations, capabilities)
+    let mut traits = BTreeMap::new();
+    traits.insert("hc_public".to_string(), traitfns);
+    (fn_declarations, traits)
 }
 
 #[derive(Deserialize, Serialize, Default, Debug, DefaultJson)]

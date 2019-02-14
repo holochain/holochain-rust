@@ -3,7 +3,6 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{
-        is_fn_public,
         ribosome::{self, WasmCallData},
         ZomeFnCall, ZomeFnResult,
     },
@@ -81,8 +80,13 @@ pub async fn call_zome_function(
             .get_function_with_zome_name(&zome_call.zome_name, &zome_call.fn_name)
             .map_err(HolochainError::Dna)?;
 
+        let zome = dna
+            .get_zome(&zome_call.zome_name)
+            .map_err(HolochainError::Dna)?;
+
         // 2. make sure caller is allowed to call the function
-        let public = is_fn_public(&dna, &zome_call)?;
+        let public = zome.is_fn_public(&zome_call.fn_name);
+
         if !public && !check_capability(context.clone(), &zome_call.clone()) {
             return Err(HolochainError::CapabilityCheckFailed);
         }

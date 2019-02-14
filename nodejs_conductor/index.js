@@ -7,7 +7,8 @@ const binding_path = binary.find(path.resolve(path.join(__dirname, './package.js
 
 const { makeConfig, TestConductor: Conductor } = require(binding_path);
 
-const promiser = (fulfill, reject) => (err, val) => {
+// Create a traditional callback function from the functions that define a Promise
+const callbackFromPromise = (fulfill, reject) => (err, val) => {
     if (err) {
         reject(err)
     } else {
@@ -38,7 +39,7 @@ Conductor.prototype._callRaw = Conductor.prototype.call
 Conductor.prototype.start = function () {
     this._stopPromise = new Promise((fulfill, reject) => {
         try {
-            this._start(promiser(fulfill, reject))
+            this._start(callbackFromPromise(fulfill, reject))
         } catch (e) {
             reject(e)
         }
@@ -118,7 +119,7 @@ Conductor.run = function (config, fn) {
     const conductor = new Conductor(config)
     return new Promise((fulfill, reject) => {
         try {
-            conductor._start(promiser(fulfill, reject))
+            conductor._start(callbackFromPromise(fulfill, reject))
             fn(() => conductor._stop(), conductor)
         } catch (e) {
             reject(e)
@@ -154,7 +155,8 @@ class Scenario {
      *      })
      */
     run(fn) {
-        return Conductor.run(this.instances, this.opts, (stop, conductor) => {
+        const config = Config.conductor(this.instances, this.opts)
+        return Conductor.run(config, (stop, conductor) => {
             const callers = {}
             this.instances.forEach(instance => {
                 const name = instance.name

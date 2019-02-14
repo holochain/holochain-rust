@@ -778,9 +778,35 @@ impl InMemoryServer {
                     let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
                     let published = self.published_meta_book.get(&bucket_id);
                     let stored = self.stored_meta_book.get(&bucket_id);
-                    let has_attribute =
-                        (published.is_some() && published.unwrap().iter().find(|metaId| metaId_is(metaId, msg.entry_address.clone(), msg.attribute.clone())).is_some())
-                        || (stored.is_some() && stored.unwrap().iter().find(|metaId| metaId_is(metaId, msg.entry_address.clone(), msg.attribute.clone())).is_some());
+                    self.log.d(&format!(
+                        "metaId_is({}, {}, {})",
+                        agent_id,
+                        msg.entry_address.clone(),
+                        msg.attribute.clone()
+                    ));
+                    self.log.d(&format!("published = {:?}", published));
+                    let has_attribute = (published.is_some()
+                        && published
+                            .unwrap()
+                            .iter()
+                            .find(|metaId| {
+                                metaId_is(metaId, msg.entry_address.clone(), msg.attribute.clone())
+                            })
+                            .is_some())
+                        || (stored.is_some()
+                            && stored
+                                .unwrap()
+                                .iter()
+                                .find(|metaId| {
+                                    metaId_is(
+                                        metaId,
+                                        msg.entry_address.clone(),
+                                        msg.attribute.clone(),
+                                    )
+                                })
+                                .is_some());
+
+                    self.log.d(&format!("\n has_attribute = {}", has_attribute));
                     if has_attribute {
                         self.log.d(&format!(
                             "<<<< '{}' sending to ({}): {:?}",
@@ -807,11 +833,7 @@ impl InMemoryServer {
             attribute: msg.attribute.clone(),
             content_list: vec![json!(null)],
         });
-        self.priv_send_one(
-            &msg.dna_address,
-            &msg.requester_agent_id,
-            response.into(),
-        )?;
+        self.priv_send_one(&msg.dna_address, &msg.requester_agent_id, response.into())?;
         // Done
         Ok(())
     }

@@ -24,6 +24,7 @@
   - [App Entry Type Definitions](./zome/entry_type_definitions.md)
   - [Genesis](./zome/genesis.md)
   - [Zome Functions](./zome/zome_functions.md)
+  - [Capabilities](./zome/capabilities.md)
   - [(E) Read & Write Data Operations](./zome/read_and_write.md)
   - [(E) Entry Validation](./zome/entry_validation.md)
   - [(E) Linking](./zome/linking.md)

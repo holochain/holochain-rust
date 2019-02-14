@@ -79,8 +79,6 @@ pub async fn initialize_application(
         return Err(HolochainError::new("error committing Agent"));
     }
 
-    // TODO: Question: genesis is called AFTER dna and agent entries committed??
-
     // map genesis across every zome
     let results: Vec<_> = dna
         .zomes

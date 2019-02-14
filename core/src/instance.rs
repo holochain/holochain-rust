@@ -305,11 +305,7 @@ pub mod tests {
         json::{JsonString, RawString},
     };
 
-    use crate::{
-        nucleus::ribosome::{callback::Callback, Defn},
-        persister::SimplePersister,
-        state::State,
-    };
+    use crate::{persister::SimplePersister, state::State};
 
     use std::{
         sync::{mpsc::channel, Arc, Mutex},
@@ -625,11 +621,7 @@ pub mod tests {
     /// @TODO is this right? should return unimplemented?
     /// @see https://github.com/holochain/holochain-rust/issues/97
     fn test_missing_genesis() {
-        let dna = test_utils::create_test_dna_with_wat(
-            "test_zome",
-            Callback::Genesis.capability().as_str(),
-            None,
-        );
+        let dna = test_utils::create_test_dna_with_wat("test_zome", "test_cap", None);
 
         let instance = test_instance(dna, None);
 
@@ -643,7 +635,7 @@ pub mod tests {
     fn test_genesis_ok() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module
@@ -672,7 +664,7 @@ pub mod tests {
     fn test_genesis_err() {
         let dna = test_utils::create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module

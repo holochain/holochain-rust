@@ -4,6 +4,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Capabilities now separated from function declarations and renamed to `traits` in `define_zome!` and calling zome functions no longer uses capability name parameter [#997](https://github.com/holochain/holochain-rust/pull/895)
 - Future handling and zome function execution refactored which enables using complex API functions like `commit_entry` in callbacks such as `receive`.
 - Added centralized documentation for environment variables in use by Holochain [PR](https://github.com/holochain/holochain-rust/pull/990)
 - Added command `hc keygen` which creates a new key pair, asks for a passphrase and writes an encrypted key bundle file to `~/.holochain/keys`.

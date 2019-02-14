@@ -7,7 +7,7 @@ use crate::{entry_definition::ValidatingEntryType, globals::G_MEM_STACK};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
-        zome::{ZomeCapabilities, ZomeEntryTypes, ZomeFnDeclarations},
+        zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
     entry::entry_type::{AppEntryType, EntryType},
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
@@ -34,7 +34,7 @@ struct PartialZome {
     #[serde(serialize_with = "serialize_entry_types")]
     #[serde(deserialize_with = "deserialize_entry_types")]
     entry_types: ZomeEntryTypes,
-    capabilities: ZomeCapabilities,
+    traits: ZomeTraits,
     fn_declarations: ZomeFnDeclarations,
 }
 
@@ -59,7 +59,7 @@ impl ZomeDefinition {
 #[allow(improper_ctypes)]
 extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
-    fn __list_capabilities() -> ZomeCapabilities;
+    fn __list_traits() -> ZomeTraits;
     fn __list_functions() -> ZomeFnDeclarations;
 }
 
@@ -248,12 +248,12 @@ pub extern "C" fn __hdk_get_json_definition(
         );
     }
 
-    let capabilities = unsafe { __list_capabilities() };
+    let traits = unsafe { __list_traits() };
     let fn_declarations = unsafe { __list_functions() };
 
     let partial_zome = PartialZome {
         entry_types,
-        capabilities,
+        traits,
         fn_declarations,
     };
 
@@ -278,7 +278,7 @@ pub mod tests {
     use holochain_core_types::{
         dna::{
             entry_types::Sharing,
-            zome::{ZomeCapabilities, ZomeFnDeclarations},
+            zome::{ZomeFnDeclarations, ZomeTraits},
         },
         error::HolochainError,
         json::JsonString,
@@ -290,7 +290,7 @@ pub mod tests {
     #[no_mangle]
     pub fn zome_setup(_: &mut super::ZomeDefinition) {}
     #[no_mangle]
-    pub fn __list_capabilities() -> ZomeCapabilities {
+    pub fn __list_traits() -> ZomeTraits {
         BTreeMap::new()
     }
     #[no_mangle]
@@ -335,7 +335,7 @@ pub mod tests {
 
         assert_eq!(
             JsonString::from(partial_zome),
-            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"capabilities\":{},\"fn_declarations\":[]}"),
+            JsonString::from("{\"entry_types\":{\"post\":{\"description\":\"blog entry post\",\"sharing\":\"public\",\"links_to\":[],\"linked_from\":[]}},\"traits\":{},\"fn_declarations\":[]}"),
         );
     }
 }

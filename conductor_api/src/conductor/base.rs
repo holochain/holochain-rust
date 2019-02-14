@@ -79,7 +79,7 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
-    agent_keys: HashMap<String, Keypair>,
+    agent_keys: HashMap<String, Arc<Mutex<Keypair>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
@@ -395,6 +395,7 @@ impl Conductor {
                 // Agent:
                 let agent_id = {
                     let keypair = self.get_key_for_agent(&instance_config.agent)?;
+                    let keypair = keypair.lock().unwrap();
                     let pub_key = KeyBuffer::with_corrected(&keypair.get_id())?;
                     let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
                     AgentId::new(&agent_config.name, &pub_key)
@@ -426,7 +427,9 @@ impl Conductor {
                 let mut api_builder = ConductorApiBuilder::new();
                 // Signing callback:
                 api_builder = api_builder
-                    .with_agent_signature_callback(instance_config.agent.clone());
+                    .with_agent_signature_callback(
+                        self.get_key_for_agent(&instance_config.agent)?
+                    );
                 // Bridges:
                 let id = instance_config.id.clone();
                 for bridge in config.bridge_dependencies(id.clone()) {
@@ -468,7 +471,7 @@ impl Conductor {
             })
     }
 
-    fn get_key_for_agent(&mut self, agent_id: &String) -> Result<&Keypair, String> {
+    fn get_key_for_agent(&mut self, agent_id: &String) -> Result<Arc<Mutex<Keypair>>, String> {
         if !self.agent_keys.contains_key(agent_id) {
             let agent_config = self
                 .config
@@ -488,11 +491,11 @@ impl Conductor {
                 keypair.get_id(),
                 agent_config.public_address,
             ))?;
-            self.agent_keys.insert(agent_id.clone(), keypair);
+            self.agent_keys.insert(agent_id.clone(), Arc::new(Mutex::new(keypair)));
         }
 
         let keypair_ref = self.agent_keys.get(agent_id).unwrap();
-        Ok(keypair_ref)
+        Ok(keypair_ref.clone())
     }
 
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
@@ -652,10 +655,6 @@ impl Conductor {
         })?;
         serde_json::to_writer_pretty(&file, dna.into())?;
         Ok(path)
-    }
-
-    pub fn key_for_agent(&mut self, agent_id: &String) -> Option<&mut Keypair> {
-        self.agent_keys.get_mut(agent_id)
     }
 }
 

@@ -10,7 +10,7 @@ use std::{
     collections::HashMap,
     convert::TryFrom,
     path::PathBuf,
-    sync::{mpsc::Receiver, Arc, RwLock},
+    sync::{mpsc::Receiver, Arc, Mutex, RwLock},
 };
 
 use conductor::{ConductorAdmin, ConductorUiAdmin, CONDUCTOR};
@@ -741,7 +741,7 @@ impl ConductorApiBuilder {
         self
     }
 
-    pub fn with_agent_signature_callback(mut self, agent_id: String) -> Self {
+    pub fn with_agent_signature_callback(mut self, keypair: Arc<Mutex<Keypair>>) -> Self {
         self.io.add_method("agent/sign", move |params| {
             let params_map = Self::unwrap_params_map(params)?;
             let payload = Self::get_as_string("payload", &params_map)?;
@@ -750,13 +750,10 @@ impl ConductorApiBuilder {
             // Create signature
             let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
 
-            // Get mutuble key reference from conductor
-            conductor_call!(
-                |c| Ok(c.key_for_agent(&agent_id)) as Result<Option<&mut Keypair>, String>
-            )?
-                // unwrap the option
-                .ok_or(jsonrpc_core::Error::internal_error())?
-                // here we have the key pair, do signing:
+            // Get write lock on the key since we need a mutuble reference to lock the
+            // secure memory the key is in:
+            keypair.lock()
+                .unwrap()
                 .sign(&mut message, &mut message_signed).unwrap();
 
             let message_signed = message_signed.read_lock();

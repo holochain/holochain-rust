@@ -29,6 +29,9 @@ impl Default for LogRules {
         rules
             .add_rule("^debug/dna", false, Some("white".to_string()))
             .expect("rule is valid");
+        rules
+            .add_rule("^trace/", true, None)
+            .expect("rule is valid");
         rules.add_rule(".*", false, None).expect("rule is valid");
         rules
     }

@@ -144,6 +144,9 @@ impl Conductor {
         self.config.clone()
     }
 
+    /// Starts a new thread which monitors the signal channel and pushes signals out across all interfaces.
+    /// NB: This broadcast is far too broad! All signals will be broadcasted over all interfaces.
+    /// This needs to be integrated with the capabilities model when ready.
     pub fn start_signal_broadcast(&mut self, signal_rx: SignalReceiver) -> thread::JoinHandle<()> {
         let broadcasters = self.broadcasters.clone();
         self.log("starting broadcast loop".into());
@@ -540,6 +543,7 @@ impl Conductor {
 
     fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
+        // The "kill switch" is the channel which allows the interface to be stopped from outside its thread
         let (kill_switch_tx, kill_switch_rx) = channel();
         let broadcasters = self.broadcasters.clone();
 

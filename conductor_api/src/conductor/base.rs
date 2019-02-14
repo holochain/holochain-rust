@@ -424,6 +424,9 @@ impl Conductor {
 
                 // Conductor API
                 let mut api_builder = ConductorApiBuilder::new();
+                // Signing callback:
+                api_builder = api_builder
+                    .with_agent_signature_callback(instance_config.agent.clone());
                 // Bridges:
                 let id = instance_config.id.clone();
                 for bridge in config.bridge_dependencies(id.clone()) {
@@ -649,6 +652,10 @@ impl Conductor {
         })?;
         serde_json::to_writer_pretty(&file, dna.into())?;
         Ok(path)
+    }
+
+    pub fn key_for_agent(&mut self, agent_id: &String) -> Option<&mut Keypair> {
+        self.agent_keys.get_mut(agent_id)
     }
 }
 

@@ -7,7 +7,8 @@ const binding_path = binary.find(path.resolve(path.join(__dirname, './package.js
 
 const { makeConfig, TestConductor: Conductor } = require(binding_path);
 
-const promiser = (fulfill, reject) => (err, val) => {
+// Create a traditional callback function from the functions that define a Promise
+const callbackFromPromise = (fulfill, reject) => (err, val) => {
     if (err) {
         reject(err)
     } else {
@@ -38,7 +39,7 @@ Conductor.prototype._callRaw = Conductor.prototype.call
 Conductor.prototype.start = function () {
     this._stopPromise = new Promise((fulfill, reject) => {
         try {
-            this._start(promiser(fulfill, reject))
+            this._start(callbackFromPromise(fulfill, reject))
         } catch (e) {
             reject(e)
         }
@@ -51,92 +52,27 @@ Conductor.prototype.stop = function () {
     return this._stopPromise
 }
 
-Conductor.prototype.call = function (id, zome, fn, params) {
-    const stringInput = JSON.stringify(params)
-    let rawResult
-    let result
-    try {
-        rawResult = this._callRaw(id, zome, fn, stringInput)
-    } catch (e) {
-        console.error("Exception occurred while calling zome function: ", e)
-        throw e
-    }
-    try {
-        result = JSON.parse(rawResult)
-    } catch (e) {
-        console.warn("JSON.parse failed to parse the result. The raw value is: ", rawResult)
-        return rawResult
-    }
-    return result
-}
-
-Conductor.prototype.callWithPromise = function (...args) {
-    try {
-        const promise = new Promise((fulfill, reject) => {
-            this.register_callback(() => fulfill())
-        })
-        const result = this.call(...args)
-        return [result, promise]
-    } catch (e) {
-        return [undefined, Promise.reject(e)]
-    }
-}
-
-Conductor.prototype.callSync = function (...args) {
-    const [result, promise] = this.callWithPromise(...args)
-    return promise.then(() => result)
-}
-
-// Convenience function for making an object that can call into the conductor
-// in the context of a particular instance. This may be temporary.
-Conductor.prototype.makeCaller = function (instanceId) {
-  return {
-    call: (zome, fn, params) => this.call(instanceId, zome, fn, params),
-    agentId: this.agent_id(instanceId),
-    dnaAddress: this.dna_address(instanceId),
-  }
-}
-
-// DEPRECATED: use Conductor.run()
-Conductor.withInstances = function (instances, opts=defaultOpts) {
-    const config = Config.conductor(instances, opts)
-    return new Conductor(config)
-}
-
 /**
  * Run a new Conductor, specified by a closure:
- * (stop, callers, conductor) => { (code to run) }
+ * (stop, conductor) => { (code to run) }
  * where `stop` is a function that shuts down the Conductor and must be called in the closure body
- * `opts` is an optional object of configuration
- * and the `callers` is an Object of instances specified in the config, keyed by "name"
- * (name is the optional third parameter of `Config.instance`)
  *
  * e.g.:
- *      Conductor.run([
+ *      Conductor.run(Config.conductor([
  *          instanceAlice,
  *          instanceBob,
  *          instanceCarol,
- *      ], (stop, {alice, bob, carol}) => {
- *          const resultAlice = alice.call(...)
- *          const resultBob = bob.call(...)
- *          assert(resultAlice === resultBob)
+ *      ]), (stop, conductor) => {
+ *          doStuffWith(conductor)
  *          stop()
  *      })
  */
-Conductor.run = function (instances, opts, fn) {
-    if (typeof opts === 'function') {
-        fn = opts
-        opts = undefined
-    }
-    const conductor = Conductor.withInstances(instances, opts)
+Conductor.run = function (config, fn) {
+    const conductor = new Conductor(config)
     return new Promise((fulfill, reject) => {
         try {
-            conductor._start(promiser(fulfill, reject))
-            const callers = {}
-            instances.map(inst => {
-                callers[inst.name] = conductor.makeCaller(inst.name)
-            })
-            fn(() => conductor._stop(), callers, conductor)
+            conductor._start(callbackFromPromise(fulfill, reject))
+            fn(() => conductor._stop(), conductor)
         } catch (e) {
             reject(e)
         }
@@ -145,9 +81,59 @@ Conductor.run = function (instances, opts, fn) {
 
 /////////////////////////////////////////////////////////////
 
+class Instance {
+    constructor(instanceId, conductor) {
+        this.id = instanceId
+        this.conductor = conductor
+        this.agentId = this.conductor.agent_id(instanceId)
+        this.dnaAddress = this.conductor.dna_address(instanceId)
+    }
+
+    // internally calls `this.conductor._callRaw`
+    call(zome, fn, params) {
+        const stringInput = JSON.stringify(params)
+        let rawResult
+        let result
+        try {
+            rawResult = this.conductor._callRaw(this.id, zome, fn, stringInput)
+        } catch (e) {
+            console.error("Exception occurred while calling zome function: ", e)
+            throw e
+        }
+        try {
+            result = JSON.parse(rawResult)
+        } catch (e) {
+            console.warn("JSON.parse failed to parse the result. The raw value is: ", rawResult)
+            return rawResult
+        }
+        return result
+    }
+
+    // internally calls `this.call`
+    callWithPromise(...args) {
+        try {
+            const promise = new Promise((fulfill, reject) => {
+                this.conductor.register_callback(() => fulfill())
+            })
+            const result = this.call(...args)
+            return [result, promise]
+        } catch (e) {
+            return [undefined, Promise.reject(e)]
+        }
+    }
+
+    // internally calls `this.callWithPromise`
+    callSync(...args) {
+        const [result, promise] = this.callWithPromise(...args)
+        return promise.then(() => result)
+    }
+}
+
+/////////////////////////////////////////////////////////////
+
 class Scenario {
-    constructor(instances, opts=defaultOpts) {
-        this.instances = instances
+    constructor(instanceConfigs, opts=defaultOpts) {
+        this.instanceConfigs = instanceConfigs
         this.opts = opts
     }
 
@@ -171,22 +157,17 @@ class Scenario {
      *      })
      */
     run(fn) {
-        return Conductor.run(this.instances, this.opts, (stop, _, conductor) => {
-            const callers = {}
-            this.instances.forEach(instance => {
-                const name = instance.name
-                if (name in callers) {
+        const config = Config.conductor(this.instanceConfigs, this.opts)
+        return Conductor.run(config, (stop, conductor) => {
+            const instances = {}
+            this.instanceConfigs.forEach(instanceConfig => {
+                const name = instanceConfig.name
+                if (name in instances) {
                     throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
                 }
-                callers[name] = {
-                    call: (...args) => conductor.call(name, ...args),
-                    callSync: (...args) => conductor.callSync(name, ...args),
-                    callWithPromise: (...args) => conductor.callWithPromise(name, ...args),
-                    agentId: conductor.agent_id(name),
-                    dnaAddress: conductor.dna_address(name),
-                }
+                instances[name] = new Instance(name, conductor)
             })
-            return fn(stop, callers)
+            return fn(stop, instances)
         })
     }
 
@@ -209,4 +190,4 @@ class Scenario {
 
 /////////////////////////////////////////////////////////////
 
-module.exports = { Config, Conductor, Scenario };
+module.exports = { Config, Instance, Conductor, Scenario };

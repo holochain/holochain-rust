@@ -1,6 +1,7 @@
 # DNA Instances
 
 `DnaInstance` is a class that is exported from `holochain-nodejs` and can be imported into your code.
+This class is used externally and instances of it are built automatically for you to use, so you typically should not have to construct a `DnaInstance` yourself.
 
 A `DnaInstance` represents a running version of a DNA package by a particular agent. This means that the agent has a source chain for this DNA.
 In addition to these basic properties on a DnaInstance that are covered below, the following articles cover [how to make function calls into the Zomes](./nodejs_calling_zome_functions.md).

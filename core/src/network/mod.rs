@@ -215,12 +215,14 @@ pub mod tests {
             entry_addresses.push(address);
         }
 
+        println!("\n add_link(link1) ...");
         let link1 = Link::new(&entry_addresses[0], &entry_addresses[1], "test-tag");
-        let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
-
         assert!(context1.block_on(add_link(&link1, &context1)).is_ok());
+        println!("\n add_link(link2) ...");
+        let link2 = Link::new(&entry_addresses[0], &entry_addresses[2], "test-tag");
         assert!(context1.block_on(add_link(&link2, &context1)).is_ok());
 
+        println!("\n get_links() ...");
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             entry_addresses[0].clone(),

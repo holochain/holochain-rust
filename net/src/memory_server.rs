@@ -40,12 +40,31 @@ fn into_bucket_id(dna_address: &Address, agent_id: &str) -> BucketId {
     format!("{}::{}", dna_address, agent_id)
 }
 
-/// return a unique identifier out of a entry_address and attribute
-pub fn into_meta_id(meta_tuple: &MetaTuple) -> Address {
+/// return a unique identifier out of an entry_address and attribute
+fn into_meta_id(meta_tuple: &MetaTuple) -> Address {
     HashString::from(format!(
         "{}||{}||{}",
         meta_tuple.0, meta_tuple.1, meta_tuple.2
     ))
+}
+
+/// unmerge meta_id into a tuple
+fn undo_meta_id(meta_id: &Address) -> MetaTuple {
+    let meta_str = String::from(meta_id.clone());
+    let vec: Vec<&str> = meta_str.split("||").collect();
+    assert_eq!(vec.len(), 3);
+    // Convert & return
+    (
+        HashString::from(vec[0]),
+        vec[1].to_string(),
+        serde_json::from_str(vec[2]).expect("metaId not holding valid json content"),
+    )
+}
+
+/// Tells if metaId is of given entry and attribute
+fn metaId_is(metaId: &Address, entry_address: Address, attribute: String) -> bool {
+    let meta_tuple = undo_meta_id(metaId);
+    return meta_tuple.0 == entry_address && meta_tuple.1 == attribute;
 }
 
 /// Add an address to a book
@@ -630,7 +649,7 @@ impl InMemoryServer {
         if !is_tracking {
             return Ok(());
         }
-        // Find other node and forward request
+        // Have the first node known for holding that entry reply
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
             Entry::Occupied(e) => {
                 for (agent_id, sender) in e.get() {
@@ -656,7 +675,7 @@ impl InMemoryServer {
             _ => (),
         };
 
-        // No other node found, send an empty FetchEntryResultData
+        // No node found, send an empty FetchEntryResultData
         // TODO: should send a FailureResult instead?
         let response = JsonProtocol::FetchEntryResult(FetchEntryResultData {
             request_id: msg.request_id.clone(),
@@ -752,32 +771,46 @@ impl InMemoryServer {
         if !is_tracking {
             return Ok(());
         }
-        // Relay fetchMeta to first agent registered to that dna.
+        // Relay fetchMeta to first agent known to hold that attribute
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
-            Entry::Occupied(mut e) => {
-                if !e.get().is_empty() {
-                    let (_k, r) = &e
-                        .get_mut()
-                        .iter()
-                        .next()
-                        .expect("senders_by_dna.entry does not hold any value");
-                    r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
-                    return Ok(());
+            Entry::Occupied(e) => {
+                for (agent_id, sender) in e.get() {
+                    let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
+                    let published = self.published_meta_book.get(&bucket_id);
+                    let stored = self.stored_meta_book.get(&bucket_id);
+                    let has_attribute =
+                        (published.is_some() && published.unwrap().iter().find(|metaId| metaId_is(metaId, msg.entry_address.clone(), msg.attribute.clone())).is_some())
+                        || (stored.is_some() && stored.unwrap().iter().find(|metaId| metaId_is(metaId, msg.entry_address.clone(), msg.attribute.clone())).is_some());
+                    if has_attribute {
+                        self.log.d(&format!(
+                            "<<<< '{}' sending to ({}): {:?}",
+                            self.name.clone(),
+                            agent_id,
+                            msg.clone()
+                        ));
+                        let msg: Protocol = JsonProtocol::HandleFetchMeta(msg.clone()).into();
+                        sender.send(msg)?;
+                        return Ok(());
+                    }
                 }
             }
             _ => (),
         };
-        // no other node found, send a FailureResult.
+        // No node found, send an empty FetchMetaResultData
+        // TODO: should send a FailureResult instead?
+        let response = JsonProtocol::FetchMetaResult(FetchMetaResultData {
+            request_id: msg.request_id.clone(),
+            requester_agent_id: msg.requester_agent_id.clone(),
+            dna_address: msg.dna_address.clone(),
+            provider_agent_id: msg.requester_agent_id.clone(),
+            entry_address: msg.entry_address.clone(),
+            attribute: msg.attribute.clone(),
+            content_list: vec![json!(null)],
+        });
         self.priv_send_one(
             &msg.dna_address,
             &msg.requester_agent_id,
-            JsonProtocol::FailureResult(FailureResultData {
-                request_id: msg.request_id.clone(),
-                dna_address: msg.dna_address.clone(),
-                to_agent_id: msg.requester_agent_id.clone(),
-                error_info: json!("could not find nodes handling this dnaAddress"),
-            })
-            .into(),
+            response.into(),
         )?;
         // Done
         Ok(())

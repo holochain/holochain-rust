@@ -427,9 +427,7 @@ impl Conductor {
                 let mut api_builder = ConductorApiBuilder::new();
                 // Signing callback:
                 api_builder = api_builder
-                    .with_agent_signature_callback(
-                        self.get_key_for_agent(&instance_config.agent)?
-                    );
+                    .with_agent_signature_callback(self.get_key_for_agent(&instance_config.agent)?);
                 // Bridges:
                 let id = instance_config.id.clone();
                 for bridge in config.bridge_dependencies(id.clone()) {
@@ -491,7 +489,8 @@ impl Conductor {
                 keypair.get_id(),
                 agent_config.public_address,
             ))?;
-            self.agent_keys.insert(agent_id.clone(), Arc::new(Mutex::new(keypair)));
+            self.agent_keys
+                .insert(agent_id.clone(), Arc::new(Mutex::new(keypair)));
         }
 
         let keypair_ref = self.agent_keys.get(agent_id).unwrap();

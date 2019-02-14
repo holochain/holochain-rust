@@ -752,9 +752,11 @@ impl ConductorApiBuilder {
 
             // Get write lock on the key since we need a mutuble reference to lock the
             // secure memory the key is in:
-            keypair.lock()
+            keypair
+                .lock()
                 .unwrap()
-                .sign(&mut message, &mut message_signed).unwrap();
+                .sign(&mut message, &mut message_signed)
+                .unwrap();
 
             let message_signed = message_signed.read_lock();
             // Return as base64 encoded string

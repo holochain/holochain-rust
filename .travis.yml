@@ -132,8 +132,8 @@ _windows_nodejs_conductor_template: &_windows_nodejs_conductor_template
       - sh ./scripts/build_nodejs_conductor.sh
 # nodejs specific deployment templates stop here
 
-# holochain-cmd deploy template
-_cmd_deploy_template: &_cmd_deploy_template
+# holochain-clie deploy template
+_cli_deploy_template: &_cli_deploy_template
   dist: bionic
   language: rust
   rust: nightly-2019-01-24
@@ -141,16 +141,16 @@ _cmd_deploy_template: &_cmd_deploy_template
   before_script:
     - . ./scripts/install/release-deps-auto.sh
   script:
-    - cargo rustc --manifest-path cmd/Cargo.toml --target $TARGET --release -- -C lto
-    - mkdir cmd-$TRAVIS_TAG-$TARGET
-    - cp target/$TARGET/release/hc cmd/LICENSE cmd/README.md cmd-$TRAVIS_TAG-$TARGET/
-    - tar czf cmd-$TRAVIS_TAG-$TARGET.tar.gz cmd-$TRAVIS_TAG-$TARGET/
+    - cargo rustc --manifest-path cli/Cargo.toml --target $TARGET --release -- -C lto
+    - mkdir cli-$TRAVIS_TAG-$TARGET
+    - cp target/$TARGET/release/hc cli/LICENSE cli/README.md cli-$TRAVIS_TAG-$TARGET/
+    - tar czf cli-$TRAVIS_TAG-$TARGET.tar.gz cli-$TRAVIS_TAG-$TARGET/
   deploy:
     provider: releases
     api_key:
         secure: nrLixlb3mlfRoxBDp5+fBV3I81N2LhJIj7hIB+fg0RT452w0+hHuTCn79NJ4tN4M2DlENlS9o+no3wzGw/CRUuyW2/4BKQQ24B1Obf7gMQJD4p0NE8uX9SZ7er08Ndc5HjC0ZfIBTB53GKI/j5gv9vmM9qcrdeGMtCAzuM10WJBgesT7TCNrrD0iPXYtPfzyNMJXtu8VrRMBZt3dW2wrvUy73CujVECbH4BbFKOEl/EQ9Gyi8KkSSKZoeXLXHMJiuMTBrDVlUY69m9o37X6MePHmpFSDiykPGsYa8hAQcWnCY9a9LORq7scbqYeTBEVijS58jfiVPQM/tC7LPhWNPgZ2jw0V7t+tM6tTYpJjIiAf83rnNwd6I+uhjWd7QuJvgo7LfZKcSCEIW4MYgcaK14QuJv4e+tbzrJNqkskIHYcSAF5Zzvc7CkyTO5wEnfNsiKDKLmdVvgMzAxyBfT+7J0msBOvqLirSPGXJcYRpZT0kSDwfgYyqRw3gXOjUgtONS+nC3MiV/vZ74c53qt/37R2+GmDRpB4viEiYTHGZmM4woXUF58Jg6mgaLjMJaI80DbTUr8pKudNtS31EWCP0EdNflzv5Ewlu/CwAmPA0AHuk5ZyvQNtQFERVw80nP7g210Layj6rLKMvEMgiecLgw1VmzOEoGPnMksnyJpplyqA=
     file_glob: true
-    file: cmd-$TRAVIS_TAG-$TARGET.tar.gz
+    file: cli-$TRAVIS_TAG-$TARGET.tar.gz
     skip_cleanup: true
     on:
         tags: true
@@ -272,7 +272,7 @@ jobs:
       <<: *_windows_template_lite
       env:
        - TEST_P=hc
-       - TEST_PATH=cmd/
+       - TEST_PATH=cli/
 
     - name: "windows core_types"
       <<: *_windows_template_lite
@@ -319,30 +319,30 @@ jobs:
 #       - . ./scripts/install/auto.sh
 #       - make test
 
-    # holochain-cmd releases section
-    - name: "CMD DEPLOY - 64 bit Linux"
-      <<: *_cmd_deploy_template
+    # holochain-cli releases section
+    - name: "CLI DEPLOY - 64 bit Linux"
+      <<: *_cli_deploy_template
       env:
         - TARGET=x86_64-unknown-linux-gnu
         - CRATE_NAME=hc
       os: linux
 
-    - name: "CMD DEPLOY - 64 bit OSX"
-      <<: *_cmd_deploy_template
+    - name: "CLI DEPLOY - 64 bit OSX"
+      <<: *_cli_deploy_template
       env:
         - TARGET=x86_64-apple-darwin
         - CRATE_NAME=hc
       os: osx
-    - name: "CMD DEPLOY - 64 bit Windows MSVC"
-      <<: *_cmd_deploy_template
+    - name: "CLI DEPLOY - 64 bit Windows MSVC"
+      <<: *_cli_deploy_template
       os: windows
       rust: nightly-2019-01-24-x86_64-pc-windows-msvc
       env:
         - TARGET=x86_64-pc-windows-msvc
         - CRATE_NAME=hc
 
-    - name: "CMD DEPLOY - 64 bit Windows GNU"
-      <<: *_cmd_deploy_template
+    - name: "CLI DEPLOY - 64 bit Windows GNU"
+      <<: *_cli_deploy_template
       os: windows
       rust: nightly-2019-01-24-x86_64-pc-windows-gnu
       env:

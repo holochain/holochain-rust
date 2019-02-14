@@ -98,9 +98,9 @@ impl<'a> EaviQuery<'a> {
         }
     }
 
-    pub fn run<I>(&self, iter: I) -> BTreeSet<EntityAttributeValueIndex>
+    pub fn run<I>(self, iter: I) -> BTreeSet<EntityAttributeValueIndex>
     where
-        I: Clone + Iterator<Item = EntityAttributeValueIndex>,
+        I: Clone + Iterator<Item = EntityAttributeValueIndex> + 'a,
     {
         iter.clone()
             .filter(|v| {
@@ -108,41 +108,28 @@ impl<'a> EaviQuery<'a> {
                     && self.attribute.check(&v.attribute())
                     && self.value.check(&v.value())
             })
-            .filter(|v| {
-                match (self.index.start, self.index.end) {
-                    (None, None) => get_latest(v.clone(), iter.clone()),
+            .filter(|v| match (self.index.start, self.index.end) {
+                (None, None) => get_latest(v.clone(), iter.clone())
+                    .map(|latest| latest == *v)
+                    .unwrap_or_default(),
+                (start, end) => {
+                    start.map(|lo| lo <= v.index()).unwrap_or_default()
+                        && end.map(|hi| v.index() <= hi).unwrap_or_default()
                 }
-                self.index
-                    .start()
-                    .map(|start| start <= v.index())
-                    .unwrap_or_else(|| {
-                        let latest = get_latest(v.clone(), iter.clone()).unwrap_or_default();
-                        latest.index() == v.index()
-                    })
-            })
-            .filter(|e| {
-                self.index
-                    .end()
-                    .map(|end| end >= e.index())
-                    .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), iter.clone(), self.index.clone())
-                            .unwrap_or(EntityAttributeValueIndex::default());
-                        latest.index() == e.index()
-                    })
             })
             .collect()
     }
 }
 
-pub struct EavFilter<'a, T: PartialEq>(Box<Fn(&'a T) -> bool + 'a>);
+pub struct EavFilter<'a, T: PartialEq>(Box<dyn Fn(&'a T) -> bool + 'a>);
 
 impl<'a, T: PartialEq> EavFilter<'a, T> {
     pub fn single(val: T) -> Self {
-        Self(Box::new(|v| v == &val))
+        Self(Box::new(move |v| *v == val))
     }
 
     pub fn attribute_prefixes(prefixes: Vec<&'a str>, base: &'a str) -> AttributeFilter<'a> {
-        Self(Box::new(|v: &'a Attribute| {
+        Self(Box::new(move |v: &'a Attribute| {
             prefixes
                 .iter()
                 .map(|p| p.to_string() + base)
@@ -171,18 +158,6 @@ impl<'a, T: PartialEq> Default for EavFilter<'a, T> {
 impl<'a, T: PartialEq> From<Option<T>> for EavFilter<'a, T> {
     fn from(val: Option<T>) -> EavFilter<'a, T> {
         val.map(|v| EavFilter::single(v)).unwrap_or_default()
-    }
-}
-
-impl<'a, T: PartialEq> From<IndexRange> for EavFilter<'a, T> {
-    fn from(range: IndexRange) -> EavFilter<'a, T> {
-        EavFilter::predicate(|v| match (range.start, range.end) {
-            (None, None) => get_latest(v.clone(), iter.clone()),
-            (start, end) => {
-                start.map(|lo| lo <= v.index()).unwrap_or_default()
-                    && start.map(|hi| v.index() <= hi).unwrap_or_default()
-            }
-        })
     }
 }
 
@@ -370,7 +345,9 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
         &self,
         query: &EaviQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        let iter = self.storage.read()?.into_iter();
+        let lock = self.storage.read()?;
+        let set = (*lock).clone();
+        let iter = set.iter().cloned();
         Ok(query.run(iter))
     }
 }
@@ -448,12 +425,12 @@ pub fn eav_round_trip_test_runner(
     assert_eq!(
         BTreeSet::new(),
         eav_storage
-            .fetch_eavi(
-                Some(entity_content.address()),
-                Some(attribute.clone()),
-                Some(value_content.address()),
+            .fetch_eavi(&EaviQuery::new(
+                Some(entity_content.address()).into(),
+                Some(attribute.clone()).into(),
+                Some(value_content.address()).into(),
                 IndexRange::default()
-            )
+            ))
             .expect("could not fetch eav"),
     );
 

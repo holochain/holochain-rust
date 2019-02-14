@@ -4,6 +4,7 @@ use crate::{
     error::DefaultResult,
     util,
 };
+use holochain_common::env_vars::EnvVar;
 use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
@@ -27,8 +28,13 @@ fn generate_cargo_toml(name: &str, contents: &str) -> DefaultResult<String> {
 
     let authors_default = Value::from("[\"TODO\"]");
     let edition_default = Value::from("\"TODO\"");
-    // does this need changing? maybe a tag instead?
-    let version_default = String::from("branch = \"develop\"");
+
+    let maybe_version = EnvVar::ScaffoldVersion.value().ok();
+    let version_default = if maybe_version.is_some() {
+        maybe_version.unwrap()
+    } else {
+        String::from("tag = \"v0.0.4-alpha\"")
+    };
     let maybe_package = config.get("package");
 
     let name = Value::from(name);

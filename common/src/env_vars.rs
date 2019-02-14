@@ -19,6 +19,9 @@
 //! - **NETWORKING_CONFIG_FILE** *string* Path to a JSON file containing configuration for the n3h networking module. More on this soon. Recommended to
 //! not use this as this time.
 //!
+//! ### `hc generate`
+//! - HC_SCAFFOLD_VERSION allows you to set a string value to be used in the generated Cargo.toml.  We use this override the default which points to the current version tag, which a pointer to the develop branch for our CI tests, so for example in CI we can run our tests with: `HC_SCAFFOLD_VERSION='branch="develop"'` and that overrides the default.
+//!
 //! ### Other
 //! - **HC_SIMPLE_LOGGER_MUTE** *int* Setting this value to 1 will silence the log output of a SimpleLogger. Use with any Conductor.
 
@@ -36,6 +39,7 @@ pub enum EnvVar {
     N3hBootstrapNode,
     NetworkingConfigFile,
     SimpleLoggerMute,
+    ScaffoldVersion,
 }
 
 impl EnvVar {
@@ -49,6 +53,7 @@ impl EnvVar {
             EnvVar::N3hBootstrapNode => "HC_N3H_BOOTSTRAP_NODE",
             EnvVar::NetworkingConfigFile => "NETWORKING_CONFIG_FILE",
             EnvVar::SimpleLoggerMute => "HC_SIMPLE_LOGGER_MUTE",
+            EnvVar::ScaffoldVersion => "HC_SCAFFOLD_VERSION",
         }
     }
 

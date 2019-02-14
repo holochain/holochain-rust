@@ -71,10 +71,8 @@ pub mod tests {
     #[test]
     // flagged as broken for:
     // 1. taking 60+ seconds
-    // 2. because `generate_cargo_toml` in cli/src/scaffold/rust.rs sets the
-    //    branch to a fixed value rather than develop and currently there's no way to
-    //    adjust that on the fly.
-    // 3. because holochain-nodejs version doesn't exist yet
+    // NOTE, before re-enabling make sure to add an environment variable
+    // HC_SCAFFOLD_VERSION='branch="develop"' when you run the test.
     #[cfg(feature = "broken-tests")]
     fn test_command_basic_test() {
         let temp_dir = gen_dir();

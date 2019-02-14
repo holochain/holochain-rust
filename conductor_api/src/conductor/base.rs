@@ -1,3 +1,4 @@
+use boolinator::Boolinator;
 use crate::{
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
@@ -480,6 +481,13 @@ impl Conductor {
                     agent_config.key_file,
                 ))
             })?;
+            (agent_config.public_address == keypair.get_id())
+                .ok_or(format!(
+                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                    key_file_path.to_str().unwrap(),
+                    keypair.get_id(),
+                    agent_config.public_address,
+                ))?;
             self.agent_keys.insert(agent_id.clone(), keypair);
         }
 
@@ -705,7 +713,7 @@ pub mod tests {
         Arc::new(loader)
     }
 
-    fn test_key(index: u8) -> Keypair {
+    pub fn test_key(index: u8) -> Keypair {
         // Create deterministic seed:
         let mut seed = SecBuf::with_insecure(SEEDSIZE);
         let mock_seed: Vec<u8> = (1..SEEDSIZE).map(|e| e as u8 + index).collect();
@@ -1110,6 +1118,36 @@ pub mod tests {
 
         // "Holo World" comes for the callee_wat above which runs in the callee instance
         assert_eq!(result, JsonString::from(RawString::from("Holo World")));
+    }
+
+    #[test]
+    fn fails_if_key_address_does_not_match() {
+        // Config with well formatted public address but differing to the deterministic key
+        // created by test_key_loader for "holo_tester1.key"
+        let config = load_configuration::<Configuration>(r#"
+                [[agents]]
+                id = "test-agent-1"
+                name = "Holo Tester 1"
+                public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+                key_file = "holo_tester1.key"
+
+                [[dnas]]
+                id = "test-dna"
+                file = "app_spec.hcpkg"
+                hash = "Qm328wyq38924y"
+
+                [[instances]]
+                id = "test-instance-1"
+                dna = "test-dna"
+                agent = "test-agent-1"
+                [instances.storage]
+                type = "memory"
+                "#
+        ).unwrap();
+        let mut conductor = Conductor::from_config(config.clone());
+        conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
+        assert_eq!(conductor.load_config(), Err("Error while trying to create instance \"test-instance-1\": Key from file \'holo_tester1.key\' (\'dlyr9y0wpQplNX_Dv8oO_HHk8G8zEvFupuuIU-jKlaL-rykxWZgD4Oq2ZpF2VL7wzN1Z97X5s_8z0a-xVbyrRnwBlWf8\') does not match public address HoloTester1-----------------------------------------------------------------------AAACZp4xHB mentioned in config!".to_string()));
     }
 
 }

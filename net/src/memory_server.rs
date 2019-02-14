@@ -656,16 +656,8 @@ impl InMemoryServer {
             _ => (),
         };
 
-        // TODO: should send a FailureResult instead
-        // no other node found, send a FailureResult.
-        //        let response = JsonProtocol::FailureResult(FailureResultData {
-        //            request_id: msg.request_id.clone(),
-        //            dna_address: msg.dna_address.clone(),
-        //            to_agent_id: msg.requester_agent_id.clone(),
-        //            error_info: json!("could not find an agent holding this Entry"),
-        //        });
-
-        // no other node found, send an empty FetchEntryResultData
+        // No other node found, send an empty FetchEntryResultData
+        // TODO: should send a FailureResult instead?
         let response = JsonProtocol::FetchEntryResult(FetchEntryResultData {
             request_id: msg.request_id.clone(),
             requester_agent_id: msg.requester_agent_id.clone(),

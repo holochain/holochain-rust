@@ -167,7 +167,7 @@ _conductor_deploy_template: &_conductor_deploy_template
   script:
     - cargo rustc --manifest-path conductor/Cargo.toml --target $TARGET --release -- -C lto
     - mkdir conductor-$TRAVIS_TAG-$TARGET
-    - cp target/$TARGET/release/holochain_conductor conductor/LICENSE conductor/README.md conductor-$TRAVIS_TAG-$TARGET/
+    - cp target/$TARGET/release/holochain conductor/LICENSE conductor/README.md conductor-$TRAVIS_TAG-$TARGET/
     - tar czf conductor-$TRAVIS_TAG-$TARGET.tar.gz conductor-$TRAVIS_TAG-$TARGET/
   deploy:
     provider: releases

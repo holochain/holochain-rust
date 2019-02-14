@@ -52,54 +52,6 @@ Conductor.prototype.stop = function () {
     return this._stopPromise
 }
 
-Conductor.prototype.call = function (id, zome, fn, params) {
-    const stringInput = JSON.stringify(params)
-    let rawResult
-    let result
-    try {
-        rawResult = this._callRaw(id, zome, fn, stringInput)
-    } catch (e) {
-        console.error("Exception occurred while calling zome function: ", e)
-        throw e
-    }
-    try {
-        result = JSON.parse(rawResult)
-    } catch (e) {
-        console.warn("JSON.parse failed to parse the result. The raw value is: ", rawResult)
-        return rawResult
-    }
-    return result
-}
-
-Conductor.prototype.callWithPromise = function (...args) {
-    try {
-        const promise = new Promise((fulfill, reject) => {
-            this.register_callback(() => fulfill())
-        })
-        const result = this.call(...args)
-        return [result, promise]
-    } catch (e) {
-        return [undefined, Promise.reject(e)]
-    }
-}
-
-Conductor.prototype.callSync = function (...args) {
-    const [result, promise] = this.callWithPromise(...args)
-    return promise.then(() => result)
-}
-
-// Convenience function for making an object that can call into the conductor
-// in the context of a particular instance. This may be temporary.
-Conductor.prototype.makeCaller = function (name) {
-  return {
-    call: (...args) => this.call(name, ...args),
-    callSync: (...args) => this.callSync(name, ...args),
-    callWithPromise: (...args) => this.callWithPromise(name, ...args),
-    agentId: this.agent_id(name),
-    dnaAddress: this.dna_address(name),
-  }
-}
-
 /**
  * Run a new Conductor, specified by a closure:
  * (stop, conductor) => { (code to run) }
@@ -129,9 +81,59 @@ Conductor.run = function (config, fn) {
 
 /////////////////////////////////////////////////////////////
 
+class Instance {
+    constructor(instanceId, conductor) {
+        this.id = instanceId
+        this.conductor = conductor
+        this.agentId = this.conductor.agent_id(instanceId)
+        this.dnaAddress = this.conductor.dna_address(instanceId)
+    }
+
+    // internally calls `this.conductor._callRaw`
+    call(zome, fn, params) {
+        const stringInput = JSON.stringify(params)
+        let rawResult
+        let result
+        try {
+            rawResult = this.conductor._callRaw(this.id, zome, fn, stringInput)
+        } catch (e) {
+            console.error("Exception occurred while calling zome function: ", e)
+            throw e
+        }
+        try {
+            result = JSON.parse(rawResult)
+        } catch (e) {
+            console.warn("JSON.parse failed to parse the result. The raw value is: ", rawResult)
+            return rawResult
+        }
+        return result
+    }
+
+    // internally calls `this.call`
+    callWithPromise(...args) {
+        try {
+            const promise = new Promise((fulfill, reject) => {
+                this.conductor.register_callback(() => fulfill())
+            })
+            const result = this.call(...args)
+            return [result, promise]
+        } catch (e) {
+            return [undefined, Promise.reject(e)]
+        }
+    }
+
+    // internally calls `this.callWithPromise`
+    callSync(...args) {
+        const [result, promise] = this.callWithPromise(...args)
+        return promise.then(() => result)
+    }
+}
+
+/////////////////////////////////////////////////////////////
+
 class Scenario {
-    constructor(instances, opts=defaultOpts) {
-        this.instances = instances
+    constructor(instanceConfigs, opts=defaultOpts) {
+        this.instanceConfigs = instanceConfigs
         this.opts = opts
     }
 
@@ -155,17 +157,17 @@ class Scenario {
      *      })
      */
     run(fn) {
-        const config = Config.conductor(this.instances, this.opts)
+        const config = Config.conductor(this.instanceConfigs, this.opts)
         return Conductor.run(config, (stop, conductor) => {
-            const callers = {}
-            this.instances.forEach(instance => {
-                const name = instance.name
-                if (name in callers) {
+            const instances = {}
+            this.instanceConfigs.forEach(instanceConfig => {
+                const name = instanceConfig.name
+                if (name in instances) {
                     throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
                 }
-                callers[name] = conductor.makeCaller(name)
+                instances[name] = new Instance(name, conductor)
             })
-            return fn(stop, callers)
+            return fn(stop, instances)
         })
     }
 
@@ -188,4 +190,4 @@ class Scenario {
 
 /////////////////////////////////////////////////////////////
 
-module.exports = { Config, Conductor, Scenario };
+module.exports = { Config, Instance, Conductor, Scenario };

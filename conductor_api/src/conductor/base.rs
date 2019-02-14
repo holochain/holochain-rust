@@ -343,7 +343,7 @@ impl Conductor {
     /// Note that the `signal_tx` parameter represents an important bifurcation of signal handling functionality.
     /// if None, then the signal channel will be instantiated and the receive will be owned by the `Conductor`,
     /// allowing it to automatically handle signals and push them out across the Interfaces via Broadcasters.
-    /// if it is Some, then the signal receiver is externally owned, and signals will not be sent over Interfaces.
+    /// if it is Some, then the signal receiver is externally owned, and signals will not be sent over Interfaces.  This is for the use-case of the nodejs conductor that we use for testing, which expects not to have those interfaces
     ///
     /// @TODO: clean up the conductor creation process to prevent loading config before proper setup,
     ///        especially regarding the signal handler.

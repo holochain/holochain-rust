@@ -3,7 +3,7 @@ use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
         get_latest, increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
-        EntityAttributeValueStorage, IndexQuery, Value,
+        EntityAttributeValueStorage, IndexRange, Value,
     },
     error::{HcResult, HolochainError},
     json::JsonString,
@@ -174,7 +174,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             Some(eav.entity()),
             Some(eav.attribute()),
             Some(eav.value()),
-            IndexQuery::default(),
+            IndexRange::default(),
         )?;
         let _guard = self.lock.write()?;
         create_dir_all(self.dir_path.clone())?;
@@ -190,7 +190,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-        index_query: IndexQuery,
+        index_query: IndexRange,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.read()?;
         let prefixes = if !index_query.prefixes().is_empty() {

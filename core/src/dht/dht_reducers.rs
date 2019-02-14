@@ -9,7 +9,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::{EntityAttributeValueIndex, IndexQuery},
+    eav::{EntityAttributeValueIndex, IndexRange},
     entry::Entry,
     error::HolochainError,
 };
@@ -291,7 +291,7 @@ fn reduce_remove_entry_inner(
         Some(latest_deleted_address.clone()),
         Some(STATUS_NAME.to_string()),
         None,
-        IndexQuery::default(),
+        IndexRange::default(),
     );
     if let Err(err) = maybe_status_eav {
         return Err(err);
@@ -356,7 +356,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        eav::IndexQuery,
+        eav::IndexRange,
         entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };
@@ -432,7 +432,7 @@ pub mod tests {
             Some(entry.address()),
             None,
             None,
-            IndexQuery::default(),
+            IndexRange::default(),
         );
 
         assert!(fetched.is_ok());
@@ -478,7 +478,7 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
-        let indexed_query = IndexQuery::new_only_prefixes(vec!["link__", "removed_link__"]);
+        let indexed_query = IndexRange::new_only_prefixes(vec!["link__", "removed_link__"]);
         let fetched =
             storage
                 .read()
@@ -520,7 +520,7 @@ pub mod tests {
             Some(entry.address()),
             None,
             None,
-            IndexQuery::default(),
+            IndexRange::default(),
         );
 
         assert!(fetched.is_ok());

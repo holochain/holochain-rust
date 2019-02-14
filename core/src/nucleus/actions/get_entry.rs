@@ -3,7 +3,7 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::{EntityAttributeValueIndex, IndexQuery},
+    eav::{EntityAttributeValueIndex, IndexRange},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
@@ -58,7 +58,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         Some(address.clone()),
         Some(STATUS_NAME.to_string()),
         None,
-        IndexQuery::default(),
+        IndexRange::default(),
     )?;
     if status_eavs.len() == 0 {
         return Ok(None);
@@ -96,7 +96,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         Some(address),
         Some(LINK_NAME.to_string()),
         None,
-        IndexQuery::default(),
+        IndexRange::default(),
     )?;
     assert!(
         link_eavs.len() <= 1,

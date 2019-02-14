@@ -1,7 +1,7 @@
 use holochain_core_types::{
     eav::{
         get_latest, increment_key_till_no_collision, Attribute, Entity, EntityAttributeValueIndex,
-        EntityAttributeValueStorage, IndexQuery, Value,
+        EntityAttributeValueStorage, IndexRange, Value,
     },
     error::HolochainError,
 };
@@ -49,7 +49,7 @@ impl EntityAttributeValueStorage for EavMemoryStorage {
         entity: Option<Entity>,
         attribute: Option<Attribute>,
         value: Option<Value>,
-        index_query: IndexQuery,
+        index_query: IndexRange,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let map = self.storage.read()?;
         Ok(map

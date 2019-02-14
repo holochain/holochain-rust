@@ -63,9 +63,9 @@ impl Ord for EntityAttributeValueIndex {
 
 /// Represents a set of filtering operations on the EAVI store.
 pub struct EaviQuery<'a> {
-    entity: Option<EntityFilter<'a>>,
-    attribute: Option<AttributeFilter<'a>>,
-    value: Option<ValueFilter<'a>>,
+    entity: EntityFilter<'a>,
+    attribute: AttributeFilter<'a>,
+    value: ValueFilter<'a>,
     index: IndexRange,
 }
 
@@ -73,11 +73,21 @@ type EntityFilter<'a> = EavFilter<'a, Entity>;
 type AttributeFilter<'a> = EavFilter<'a, Attribute>;
 type ValueFilter<'a> = EavFilter<'a, Value>;
 
+impl<'a> Default for EaviQuery<'a> {
+    fn default() -> EaviQuery<'a> {
+        EaviQuery::new(
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+        )
+    }
+}
 impl<'a> EaviQuery<'a> {
     pub fn new(
-        entity: Option<EntityFilter<'a>>,
-        attribute: Option<AttributeFilter<'a>>,
-        value: Option<ValueFilter<'a>>,
+        entity: EntityFilter<'a>,
+        attribute: AttributeFilter<'a>,
+        value: ValueFilter<'a>,
         index: IndexRange,
     ) -> Self {
         Self {
@@ -87,39 +97,88 @@ impl<'a> EaviQuery<'a> {
             index,
         }
     }
+
+    pub fn run<I>(&self, iter: I) -> BTreeSet<EntityAttributeValueIndex>
+    where
+        I: Clone + Iterator<Item = EntityAttributeValueIndex>,
+    {
+        iter.clone()
+            .filter(|v| {
+                self.entity.check(&v.entity())
+                    && self.attribute.check(&v.attribute())
+                    && self.value.check(&v.value())
+            })
+            .filter(|e| {
+                self.index
+                    .start()
+                    .map(|start| start <= e.index())
+                    .unwrap_or_else(|| {
+                        let latest = get_latest(e.clone(), iter.clone(), self.index.clone())
+                            .unwrap_or_default();
+                        latest.index() == e.index()
+                    })
+            })
+            .filter(|e| {
+                self.index
+                    .end()
+                    .map(|end| end >= e.index())
+                    .unwrap_or_else(|| {
+                        let latest = get_latest(e.clone(), iter.clone(), self.index.clone())
+                            .unwrap_or(EntityAttributeValueIndex::default());
+                        latest.index() == e.index()
+                    })
+            })
+            .collect()
+    }
 }
 
-pub enum EavFilter<'a, T: PartialEq> {
-    Single(T),
-    Predicate(Box<Fn(&'a T) -> bool + 'a>),
-}
+pub struct EavFilter<'a, T: PartialEq>(Box<Fn(&'a T) -> bool + 'a>);
 
 impl<'a, T: PartialEq> EavFilter<'a, T> {
     pub fn single(val: T) -> Self {
-        EavFilter::Single(val)
+        Self(Box::new(|v| v == &val))
+    }
+
+    pub fn attribute_prefixes(prefixes: Vec<&'a str>, base: &'a str) -> AttributeFilter<'a> {
+        Self(Box::new(|v: &'a Attribute| {
+            prefixes
+                .iter()
+                .map(|p| p.to_string() + base)
+                .any(|attr| v.to_owned() == attr)
+        }))
     }
 
     pub fn predicate<F>(predicate: F) -> Self
     where
         F: Fn(&'a T) -> bool + 'a,
     {
-        EavFilter::Predicate(Box::new(predicate))
+        Self(Box::new(predicate))
+    }
+
+    pub fn check(&self, val: &'a T) -> bool {
+        self.0(val)
     }
 }
 
+impl<'a, T: PartialEq> Default for EavFilter<'a, T> {
+    fn default() -> EavFilter<'a, T> {
+        Self(Box::new(|_| true))
+    }
+}
+
+impl<'a, T: PartialEq> From<Option<T>> for EavFilter<'a, T> {
+    fn from(val: Option<T>) -> EavFilter<'a, T> {
+        val.map(|v| EavFilter::single(v)).unwrap_or_default()
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct IndexRange {
     start: Option<i64>,
     end: Option<i64>,
 }
 
-#[derive(Clone, Debug)]
-pub struct IndexQuery<'a> {
-    start: Option<i64>,
-    end: Option<i64>,
-    prefixes: Vec<&'a str>,
-}
-
-impl<'a> IndexQuery<'a> {
+impl IndexRange {
     pub fn start(&self) -> Option<i64> {
         self.start.clone()
     }
@@ -128,40 +187,23 @@ impl<'a> IndexQuery<'a> {
         self.end.clone()
     }
 
-    pub fn prefixes(&self) -> Vec<&str> {
-        self.prefixes.clone()
-    }
-    pub fn new(start: i64, end: i64) -> IndexQuery<'a> {
-        IndexQuery {
+    pub fn new(start: i64, end: i64) -> IndexRange {
+        IndexRange {
             start: Some(start),
             end: Some(end),
-            prefixes: Vec::new(),
         }
     }
 
-    pub fn new_with_options(start: Option<i64>, end: Option<i64>) -> IndexQuery<'a> {
-        IndexQuery {
-            start,
-            end,
-            prefixes: Vec::new(),
-        }
-    }
-
-    pub fn new_only_prefixes(prefixes: Vec<&'a str>) -> IndexQuery<'a> {
-        IndexQuery {
-            start: None,
-            end: None,
-            prefixes,
-        }
+    pub fn new_with_options(start: Option<i64>, end: Option<i64>) -> IndexRange {
+        IndexRange { start, end }
     }
 }
 
-impl<'a> Default for IndexQuery<'a> {
-    fn default() -> IndexQuery<'a> {
-        IndexQuery {
+impl Default for IndexRange {
+    fn default() -> IndexRange {
+        IndexRange {
             start: None,
             end: None,
-            prefixes: Vec::new(),
         }
     }
 }
@@ -238,34 +280,6 @@ impl EntityAttributeValueIndex {
     pub fn set_index(&mut self, new_index: i64) {
         self.index = new_index
     }
-
-    /// this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
-    pub fn filter_on_eav<T>(eav: &T, e: Option<&T>) -> bool
-    where
-        T: PartialOrd,
-    {
-        e.map(|a| a == eav).unwrap_or(true)
-    }
-
-    /// this is a predicate for matching on eav values. Useful for reducing duplicated filtered code.
-    pub fn filter_on_eav_with_prefix<'a>(
-        eav: &'a String,
-        e: Option<&'a String>,
-        index_query: &'a IndexQuery<'a>,
-    ) -> bool {
-        let prefixes = if !index_query.prefixes().is_empty() {
-            index_query.prefixes().clone()
-        } else {
-            vec![""]
-        };
-        e.map(|a| {
-            prefixes.iter().any(|prefix| {
-                let attribute_with_prefix = prefix.to_string() + &a.clone();
-                attribute_with_prefix.clone() == eav.clone()
-            })
-        })
-        .unwrap_or(true)
-    }
 }
 
 /// This provides a simple and flexible interface to define relationships between AddressableContent.
@@ -278,6 +292,7 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
         &mut self,
         eav: &EntityAttributeValueIndex,
     ) -> Result<Option<EntityAttributeValueIndex>, HolochainError>;
+
     /// Fetch the set of EntityAttributeValues that match constraints according to the latest hash version
     /// - None = no constraint
     /// - Some(Entity) = requires the given entity (e.g. all a/v pairs for the entity)
@@ -285,11 +300,13 @@ pub trait EntityAttributeValueStorage: objekt::Clone + Send + Sync + Debug {
     /// - Some(Value) = requires the given value (e.g. all entities referencing an Address)
     fn fetch_eavi(
         &self,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>,
-        index_query: IndexQuery,
+        query: &EaviQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError>;
+
+    // @TODO: would like to do this, but can't because of the generic type param
+    // fn iter<I>(&self) -> I
+    // where
+    //     I: Iterator<Item = EntityAttributeValueIndex>;
 }
 
 clone_trait_object!(EntityAttributeValueStorage);
@@ -324,7 +341,6 @@ pub fn increment_key_till_no_collision(
         Ok(eav)
     }
 }
-
 impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     fn add_eavi(
         &mut self,
@@ -338,58 +354,22 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
 
     fn fetch_eavi(
         &self,
-        entity: Option<Entity>,
-        attribute: Option<Attribute>,
-        value: Option<Value>,
-        index_query: IndexQuery,
+        query: &EaviQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        let map = self.storage.read()?;
-        let new_map = map.clone();
-        let filtered: BTreeSet<EntityAttributeValueIndex> = new_map
-            .into_iter()
-            .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), entity.as_ref()))
-            .filter(|e| {
-                EntityAttributeValueIndex::filter_on_eav_with_prefix(
-                    &e.attribute(),
-                    attribute.as_ref(),
-                    &index_query,
-                )
-            })
-            .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), value.as_ref()))
-            .filter(|e| {
-                index_query
-                    .start()
-                    .map(|start| start <= e.index())
-                    .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), map.clone(), index_query.clone())
-                            .unwrap_or_default();
-                        latest.index() == e.index()
-                    })
-            })
-            .filter(|e| {
-                index_query
-                    .end()
-                    .map(|end| end >= e.index())
-                    .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), map.clone(), index_query.clone())
-                            .unwrap_or(EntityAttributeValueIndex::default());
-                        latest.index() == e.index()
-                    })
-            })
-            .collect::<BTreeSet<EntityAttributeValueIndex>>();
-
-        Ok(filtered)
+        let iter = self.storage.read()?.into_iter();
+        Ok(query.run(iter))
     }
 }
 
-pub fn get_latest(
+pub fn get_latest<I>(
     eav: EntityAttributeValueIndex,
-    map: BTreeSet<EntityAttributeValueIndex>,
-    index_query: IndexQuery,
-) -> HcResult<EntityAttributeValueIndex> {
-    let filter = map
-        .clone()
-        .into_iter()
+    iter: I,
+    index_query: IndexRange,
+) -> HcResult<EntityAttributeValueIndex>
+where
+    I: Iterator<Item = EntityAttributeValueIndex>,
+{
+    let filter = iter
         .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), Some(&eav.entity())))
         .filter(|e| {
             let prefixes = index_query.prefixes();
@@ -417,8 +397,8 @@ pub fn get_latest(
 
 impl PartialEq for EntityAttributeValueStorage {
     fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
-        self.fetch_eavi(None, None, None, IndexQuery::default())
-            == other.fetch_eavi(None, None, None, IndexQuery::default())
+        let query = EaviQuery::default();
+        self.fetch_eavi(&query) == other.fetch_eavi(&query)
     }
 }
 
@@ -472,7 +452,7 @@ pub fn eav_round_trip_test_runner(
                 Some(entity_content.address()),
                 Some(attribute.clone()),
                 Some(value_content.address()),
-                IndexQuery::default()
+                IndexRange::default()
             )
             .expect("could not fetch eav"),
     );
@@ -509,7 +489,12 @@ pub fn eav_round_trip_test_runner(
         assert_eq!(
             expected,
             eav_storage
-                .fetch_eavi(e, a, v, IndexQuery::default())
+                .fetch_eavi(&EaviQuery::new(
+                    e.into(),
+                    a.into(),
+                    v.into(),
+                    IndexRange::default()
+                ))
                 .expect("could not fetch eav")
         );
     }

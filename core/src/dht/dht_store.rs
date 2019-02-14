@@ -5,7 +5,7 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
-    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage, IndexQuery},
+    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage, IndexRange},
     entry::Entry,
     error::HolochainError,
 };
@@ -58,7 +58,7 @@ impl DhtStore {
         address: Address,
         tag: String,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        let index_query = IndexQuery::new_only_prefixes(vec!["link__", "removed_link__"]);
+        let index_query = IndexRange::new_only_prefixes(vec!["link__", "removed_link__"]);
         let filtered =
             self.meta_storage
                 .read()?

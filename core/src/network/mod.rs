@@ -203,6 +203,8 @@ pub mod tests {
         dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
             test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
+        let (_, context2) =
+            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {
@@ -219,9 +221,6 @@ pub mod tests {
         assert!(context1.block_on(add_link(&link1, &context1)).is_ok());
         assert!(context1.block_on(add_link(&link2, &context1)).is_ok());
 
-        let (_, context2) =
-            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
-
         let maybe_links = context2.block_on(get_links(
             context2.clone(),
             entry_addresses[0].clone(),
@@ -231,6 +230,7 @@ pub mod tests {
 
         assert!(maybe_links.is_ok());
         let links = maybe_links.unwrap();
+        assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
             (links[0] == entry_addresses[1] || links[0] == entry_addresses[2])

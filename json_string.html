@@ -1,0 +1,1024 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Understanding JsonString - The Holochain Guidebook</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">var path_to_root = "";</script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <ol class="chapter"><li><a href="welcome.html"><strong aria-hidden="true">1.</strong> Welcome</a></li><li><ol class="section"><li><a href="overview.html"><strong aria-hidden="true">1.1.</strong> Overview</a></li><li><a href="how_to_contribute.html"><strong aria-hidden="true">1.2.</strong> How to contribute</a></li></ol></li><li><a href="planning_a_dapp.html"><strong aria-hidden="true">2.</strong> Planning a dApp</a></li><li><a href="building_apps.html"><strong aria-hidden="true">3.</strong> Building Holochain Apps: Intro</a></li><li><ol class="section"><li><a href="building_for_different_platforms.html"><strong aria-hidden="true">3.1.</strong> Building for Different Platforms</a></li><li><a href="intro_to_dna_config.html"><strong aria-hidden="true">3.2.</strong> Intro to DNA: Configuration</a></li><li><a href="intro_to_dna_code.html"><strong aria-hidden="true">3.3.</strong> Intro to DNA: Code</a></li><li><a href="intro_to_command_line_tools.html"><strong aria-hidden="true">3.4.</strong> Intro to Command Line Tools</a></li><li><a href="new_project.html"><strong aria-hidden="true">3.5.</strong> Create A New Project</a></li><li><a href="project_source_folders.html"><strong aria-hidden="true">3.6.</strong> Project Source Folders</a></li><li><a href="configuring_an_app.html"><strong aria-hidden="true">3.7.</strong> Configuring an App</a></li><li><a href="zome/rust.html"><strong aria-hidden="true">3.8.</strong> Writing in Rust</a></li><li><a href="zome/assemblyscript.html"><strong aria-hidden="true">3.9.</strong> Writing in Assemblyscript</a></li><li><a href="zome/intro_to_webassembly.html"><strong aria-hidden="true">3.10.</strong> Intro to WebAssembly</a></li><li><a href="alpha_migrate.html"><strong aria-hidden="true">3.11.</strong> Updating to Alpha 2</a></li><li><a href="built_with_holochain.html"><strong aria-hidden="true">3.12.</strong> Built With Holochain</a></li></ol></li><li><a href="zome/welcome.html"><strong aria-hidden="true">4.</strong> Building Holochain Apps: Zome Code</a></li><li><ol class="section"><li><a href="zome/adding_a_zome.html"><strong aria-hidden="true">4.1.</strong> Adding a Zome</a></li><li><a href="zome/intro_to_hdk.html"><strong aria-hidden="true">4.2.</strong> Intro to HDK</a></li><li><a href="zome/define_zome.html"><strong aria-hidden="true">4.3.</strong> Intro to Zome Definition</a></li><li><a href="zome/entry_type_definitions.html"><strong aria-hidden="true">4.4.</strong> App Entry Type Definitions</a></li><li><a href="zome/genesis.html"><strong aria-hidden="true">4.5.</strong> Genesis</a></li><li><a href="zome/zome_functions.html"><strong aria-hidden="true">4.6.</strong> Zome Functions</a></li><li><a href="zome/capabilities.html"><strong aria-hidden="true">4.7.</strong> Capabilities</a></li><li><a href="zome/read_and_write.html"><strong aria-hidden="true">4.8.</strong> (E) Read &amp; Write Data Operations</a></li><li><a href="zome/entry_validation.html"><strong aria-hidden="true">4.9.</strong> (E) Entry Validation</a></li><li><a href="zome/linking.html"><strong aria-hidden="true">4.10.</strong> (E) Linking</a></li><li><a href="zome/node_to_node_messages.html"><strong aria-hidden="true">4.11.</strong> (E) Node to Node Messaging</a></li><li><a href="zome/calling_other_zomes.html"><strong aria-hidden="true">4.12.</strong> (E) Calling Other Zomes</a></li><li><a href="zome/signatures.html"><strong aria-hidden="true">4.13.</strong> (E) Cryptographic Signatures</a></li><li><a href="zome/bundling.html"><strong aria-hidden="true">4.14.</strong> (E) Bundling</a></li><li><a href="zome/emitting_signals.html"><strong aria-hidden="true">4.15.</strong> (E) Emitting Signals</a></li><li><a href="zome/dna_variables.html"><strong aria-hidden="true">4.16.</strong> API DNA Variables</a></li><li><a href="zome/api_functions.html"><strong aria-hidden="true">4.17.</strong> List of API Functions</a></li></ol></li><li><a href="packaging.html"><strong aria-hidden="true">5.</strong> Building Holochain Apps: Packaging</a></li><li><ol class="section"><li><a href="build_files.html"><strong aria-hidden="true">5.1.</strong> .build Files</a></li><li><a href="hcignore_files.html"><strong aria-hidden="true">5.2.</strong> .hcignore Files</a></li></ol></li><li><a href="intro_to_testing.html"><strong aria-hidden="true">6.</strong> Building Holochain Apps: Testing</a></li><li><ol class="section"><li><a href="running_tests.html"><strong aria-hidden="true">6.1.</strong> Running Tests</a></li><li><a href="intro_to_holochain_nodejs.html"><strong aria-hidden="true">6.2.</strong> Intro to holochain-nodejs</a></li><li><a href="testing_configuration.html"><strong aria-hidden="true">6.3.</strong> Configuration</a></li><li><ol class="section"><li><a href="configuration_alternatives.html"><strong aria-hidden="true">6.3.1.</strong> Configuration Alternatives</a></li></ol></li><li><a href="managing_the_conductor.html"><strong aria-hidden="true">6.4.</strong> Managing the Conductor</a></li><li><a href="nodejs_calling_zome_functions.html"><strong aria-hidden="true">6.5.</strong> Calling Zome Functions</a></li><li><a href="testing_checking_results.html"><strong aria-hidden="true">6.6.</strong> (E) Checking Results</a></li><li><a href="introspecting_instances.html"><strong aria-hidden="true">6.7.</strong> Introspecting Instances</a></li><li><a href="scenario_testing.html"><strong aria-hidden="true">6.8.</strong> Scenario Testing</a></li><li><a href="handling_async.html"><strong aria-hidden="true">6.9.</strong> Handling Networking Asynchronicity</a></li><li><a href="other_test_harnesses.html"><strong aria-hidden="true">6.10.</strong> Other Test Harnesses</a></li></ol></li><li><a href="conductors.html"><strong aria-hidden="true">7.</strong> Running Holochain Apps: Conductors</a></li><li><ol class="section"><li><a href="development_conductor.html"><strong aria-hidden="true">7.1.</strong> Development Conductor</a></li><li><ol class="section"><li><a href="hc_configuring_networking.html"><strong aria-hidden="true">7.1.1.</strong> Configuring Networking</a></li></ol></li><li><a href="production_conductor.html"><strong aria-hidden="true">7.2.</strong> Production Conductor</a></li><li><ol class="section"><li><a href="intro_to_toml_config.html"><strong aria-hidden="true">7.2.1.</strong> Intro to TOML Config Files</a></li><li><a href="conductor_agents.html"><strong aria-hidden="true">7.2.2.</strong> Agents</a></li><li><a href="conductor_dnas.html"><strong aria-hidden="true">7.2.3.</strong> DNAs</a></li><li><a href="conductor_instances.html"><strong aria-hidden="true">7.2.4.</strong> Instances</a></li><li><a href="conductor_interfaces.html"><strong aria-hidden="true">7.2.5.</strong> Interfaces</a></li><li><a href="conductor_bridges.html"><strong aria-hidden="true">7.2.6.</strong> Bridges</a></li><li><a href="conductor_ui_bundles.html"><strong aria-hidden="true">7.2.7.</strong> UI Bundles</a></li><li><a href="conductor_ui_interfaces.html"><strong aria-hidden="true">7.2.8.</strong> UI Interfaces</a></li><li><a href="conductor_logging.html"><strong aria-hidden="true">7.2.9.</strong> Logging</a></li><li><a href="conductor_networking.html"><strong aria-hidden="true">7.2.10.</strong> Networking</a></li><li><a href="conductor_persistence_dir.html"><strong aria-hidden="true">7.2.11.</strong> Persistence Directory</a></li></ol></li><li><a href="json_rpc_interfaces.html"><strong aria-hidden="true">7.3.</strong> Intro to JSON-RPC Interfaces</a></li><li><a href="conductor_json_rpc_api.html"><strong aria-hidden="true">7.4.</strong> Conductor JSON-RPC API</a></li><li><ol class="section"><li><a href="json_rpc_http.html"><strong aria-hidden="true">7.4.1.</strong> HTTP</a></li><li><a href="json_rpc_websockets.html"><strong aria-hidden="true">7.4.2.</strong> WebSockets</a></li></ol></li><li><a href="conductor_admin.html"><strong aria-hidden="true">7.5.</strong> Conductor Admin</a></li></ol></li><li><a href="apps_user_interfaces.html"><strong aria-hidden="true">8.</strong> Building Holochain Apps: User Interfaces</a></li><li><a href="bridging.html"><strong aria-hidden="true">9.</strong> (E) Building Holochain Apps: Briding</a></li><li><a href="live_hc_apps.html"><strong aria-hidden="true">10.</strong> (E) Going Live with Holochain Apps</a></li><li><ol class="section"><li><a href="creating_versioned_releases.html"><strong aria-hidden="true">10.1.</strong> (E) Creating Versioned Releases</a></li></ol></li><li><a href="apps_advanced_topics.html"><strong aria-hidden="true">11.</strong> (E) Building Holochain Apps: Advanced Topics</a></li><li><ol class="section"><li><a href="json_string.html" class="active"><strong aria-hidden="true">11.1.</strong> Understanding JsonString</a></li><li><a href="building_for_android.html"><strong aria-hidden="true">11.2.</strong> Building For Android</a></li></ol></li><li><a href="extending_holochain.html"><strong aria-hidden="true">12.</strong> (E) Extending Holochain</a></li><li><ol class="section"><li><a href="embedding_holochain.html"><strong aria-hidden="true">12.1.</strong> (E) Embedding Holochain</a></li><li><ol class="section"><li><a href="core_api.html"><strong aria-hidden="true">12.1.1.</strong> (E) Core API</a></li></ol></li><li><a href="naming_conventions.html"><strong aria-hidden="true">12.2.</strong> Naming conventions</a></li><li><a href="writing_development_kit.html"><strong aria-hidden="true">12.3.</strong> Writing a Development Kit (HDK)</a></li><li><a href="zome/implementation.html"><strong aria-hidden="true">12.4.</strong> Implementing Zome API functions</a></li><li><a href="state_actions.html"><strong aria-hidden="true">12.5.</strong> Redux Architecture</a></li><li><ol class="section"><li><a href="state/actions.html"><strong aria-hidden="true">12.5.1.</strong> State actions</a></li></ol></li><li><a href="state/actors.html"><strong aria-hidden="true">12.6.</strong> State actors</a></li></ol></li><li><a href="faq.html"><strong aria-hidden="true">13.</strong> FAQ</a></li><li><a href="glossary.html"><strong aria-hidden="true">14.</strong> (E) Glossary</a></li><li><ol class="section"><li><a href="agent.html"><strong aria-hidden="true">14.1.</strong> (E) Agent</a></li><li><a href="keys.html"><strong aria-hidden="true">14.2.</strong> (E) Keys</a></li><li><a href="dna.html"><strong aria-hidden="true">14.3.</strong> (E) DNA</a></li><li><a href="zome.html"><strong aria-hidden="true">14.4.</strong> (E) Zome</a></li><li><a href="source_chain.html"><strong aria-hidden="true">14.5.</strong> (E) Source Chain</a></li><li><a href="distributed_hash_table.html"><strong aria-hidden="true">14.6.</strong> Distributed Hash Table</a></li></ol></li></ol>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light <span class="default">(default)</span></button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                            <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/json_string.md">
+                                <i class="fa fa-edit"></i>
+                            </a>
+                        </div>
+
+                        <h1 class="menu-title">The Holochain Guidebook</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <a class="header" href="#serialization-and-jsonstring" id="serialization-and-jsonstring"><h1>Serialization and JsonString</h1></a>
+<a class="header" href="#why-serialize-anything-why-json" id="why-serialize-anything-why-json"><h2>Why serialize anything? Why JSON?</h2></a>
+<a class="header" href="#holochain-zomes-are-written-in-wasm" id="holochain-zomes-are-written-in-wasm"><h3>Holochain zomes are written in WASM.</h3></a>
+<p>WASM only supports working directly with integers and manually allocating
+memory. This means that sharing any data between holochain core and zome
+functions must be serialized. There is no way that WASM functions can
+understand the Rust type system natively. Serialized data can be allocated for
+WASM to read out and deserialize into Rust types/structs/enums.</p>
+<p>Any developers using the Rust HDK get the serialization/deserialization and
+type handling <em>almost</em> &quot;for free&quot;. The macros for defining entities and zomes
+automatically wrap the memory work and serialization round trips for anything
+that implements <code>Into&lt;JsonString&gt;</code> and <code>TryFrom&lt;JsonString&gt;</code> (see below).</p>
+<p>We use <code>serde</code> for our serialization round trips as it is by far the most
+popular and mature option for Rust. Many serialization formats other than JSON
+are supported by <code>serde</code> but JSON is a solid option. JSON allows us to easily
+bring the Rust type system across to WASM with decent performance.</p>
+<p>From the <code>serde_json</code> github repository README:</p>
+<blockquote>
+<p>It is fast. You should expect in the ballpark of 500 to 1000 megabytes per
+second deserialization and 600 to 900 megabytes per second serialization,
+depending on the characteristics of your data. This is competitive with the
+fastest C and C++ JSON libraries or even 30% faster for many use cases.
+Benchmarks live in the serde-rs/json-benchmark repo.</p>
+</blockquote>
+<a class="header" href="#holochain-aims-to-support-all-wasm-languages-not-just-rustjs" id="holochain-aims-to-support-all-wasm-languages-not-just-rustjs"><h3>Holochain aims to support all WASM languages not just Rust/JS</h3></a>
+<p>The official Holochain HDKs are Rust and AssemblyScript. The Rust HDK will
+always be the most tightly integrated HDK with core simply because Holochain
+itself is Rust based.</p>
+<p>Generally though, we are hoping and expecting many different WASM zome
+languages build an ecosystem over time. Personally I'm hoping for a decent LISP
+to appear ;)</p>
+<p>To encourage as many languages as possible we want to keep the minimum
+requirements for interacting with holochain core as minimal as possible.</p>
+<p>Currently the two requirements for writing zomes in <code>&lt;your favourite language&gt;</code>:</p>
+<ul>
+<li>Must compile to WASM</li>
+<li>Must be able to serialize UTF-8 data and allocate to memory read by core</li>
+</ul>
+<p>We can't do much about the first requirement but here are some lists to watch:</p>
+<ul>
+<li>https://github.com/appcypher/awesome-wasm-langs</li>
+<li>https://github.com/mbasso/awesome-wasm</li>
+</ul>
+<p>The second requirement means that we must be very mindful of choosing a
+serialization format that can round trip through as many languages as possible.</p>
+<p>In the end, this is the main reason we chose JSON for communication with core.</p>
+<p>Note that at the time of writing, the AssemblyScript (ostentisbly JavaScript)
+WASM implementation does not even provide a native <code>JSON.parse()</code> method!
+To do something as apparently simple as serialize JSON in JavaScript we have
+had to implement a custom JSON parser. At least JSON (naturally) maps very well
+to JavaScript native data, other serialization/language combinations are even
+further from maturity.</p>
+<p>WASM is very promising but very immature so esoteric serialization options are
+not really viable options right now, even if <code>serde</code> supports them in Rust.</p>
+<a class="header" href="#json-serialization-only-pertains-to-communication-with-core" id="json-serialization-only-pertains-to-communication-with-core"><h3>JSON serialization only pertains to communication with core</h3></a>
+<p>Holochain often makes a distinction between &quot;app data&quot; and &quot;core data&quot;.
+Following the biomimicry theme we sometimes call this &quot;conscious&quot; vs.
+&quot;subconscious&quot; when this data is used in zomes or core logic respectively.</p>
+<p>The most obvious example of this is the <code>Entry</code> enum that has an <code>Entry::App</code>
+variant explicitly for app data, and other variants for system logic.</p>
+<p>The <code>Entry</code> enum itself is serialized via JSON so that is has maximal
+compatibility across all zome languages (see above) across the core/wasm
+boundary. However, the <em>contents</em> of <code>Entry::App(..)</code> are treated as an opaque
+UTF-8 string by Holochain core. Naturally the HDK macros we offer provide sugar
+to work with the value of app entries but this is not enforced anywhere within
+core. Because the Rust serialization round tripping must work across both core
+and the HDK it must work equally well while treating the app entry values as
+opaque in the subconscious and meaningful structs in the conscious. This is
+achieved through a healthy dose of compiler and macro magic.</p>
+<p>This means that zome developers can implement their own serialization logic for
+their own data if they wish. Simply by wrapping a zome-serialized app entry
+value in <code>&quot;\&quot;...\&quot;&quot;</code> it becomes a string primitive from core's perspective. The
+zome can do anything needed with this, including custom validation logic, etc.
+The <code>RawString</code> type handles this automatically with <code>JsonString</code> (see below).</p>
+<a class="header" href="#serialization-through-rust-types" id="serialization-through-rust-types"><h2>Serialization through Rust types</h2></a>
+<a class="header" href="#how-rust-serializes-serde-from-1000m" id="how-rust-serializes-serde-from-1000m"><h3>How Rust serializes: serde from 1000m</h3></a>
+<p>The <code>serde</code> crate leans heavily on the Rust compiler for serialization round
+tripping.</p>
+<p>Using the &quot;vanilla&quot; <code>serde_json</code> crate affords this logic on the way in:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let foo_json = serde_json::to_string(foo).unwrap();
+#}</code></pre></pre>
+<p>Notes:</p>
+<ul>
+<li>There is an <code>unwrap</code> but this can't fail for simple structs/enums in practise
+<ul>
+<li>The <code>unwrap</code> can fail e.g. serializing streams but we don't do that</li>
+<li>The compiler enforces that everything we pass to <code>serde</code> can <code>Serialize</code></li>
+</ul>
+</li>
+<li><code>foo</code> can be anything that implements <code>Serialize</code></li>
+<li>we have no direct control over the structure of the JSON output
+<ul>
+<li>the <code>Serialize</code> implementation of <code>foo</code> decides this for us</li>
+<li>in the case of nested data e.g. hash maps, <code>Serialize</code> works recursively</li>
+</ul>
+</li>
+</ul>
+<p>OR using the manual <code>json!</code> macro:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let foo_json = json!({&quot;foo&quot;: foo.inner()});
+#}</code></pre></pre>
+<p>Notes:</p>
+<ul>
+<li>We no longer have an <code>unwrap</code> so there is slightly less boilerplate to type</li>
+<li>We have a lot of direct control over the structure of our output JSON</li>
+<li>For better or worse we avoid what the compiler says about <code>Serialize</code> on <code>Foo</code></li>
+<li>We must now manually ensure that <code>&quot;{\&quot;foo\&quot;:...}&quot;</code> is handled <em>everywhere</em>
+<ul>
+<li>Including in crates we don't control</li>
+<li>Including when we change our JSON structure across future releases</li>
+<li>Including across WASM boundaries in HDK consumers</li>
+</ul>
+</li>
+</ul>
+<p>AND on the way out:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let foo: Foo = serde_json::from_str(&amp;hopefully_foo_json).unwrap();
+#}</code></pre></pre>
+<p>Notes:</p>
+<ul>
+<li>Serde relies on compiler info, the type <code>Foo</code> on the left, to deserialize</li>
+<li>Serde requires that <code>hopefully_foo_json</code> makes sense as <code>Foo</code>
+<ul>
+<li>This <em>definitely can</em> fail as the json is just a <code>String</code> to the compiler</li>
+<li>In real code do not <code>unwrap</code> this, handle the <code>Err</code> carefully!</li>
+</ul>
+</li>
+</ul>
+<a class="header" href="#json-structure-the-rust-compiler-and-you" id="json-structure-the-rust-compiler-and-you"><h3>JSON structure, the Rust compiler and you</h3></a>
+<p>All this means that our JSON data MUST closely align with the types we define
+for the compiler. There is a lot of flexibility offered by <code>serde</code> for tweaking
+the output (e.g. lowercasing names of things, modifying strings, etc.) but the
+tweaks involve a lot of boilerplate and have limits.</p>
+<p>For example this can be awkard when handling <code>Result</code> values. The <code>Result</code> enum
+has two variants in Rust, <code>Ok</code> and <code>Err</code>. Both of these, like all enum variants
+in Rust, follow the title case convention.</p>
+<p>This means that in a JS conductor/HDK consuming JSON values returned from zome
+functions that return a <code>Result</code> (a good idea!) we see this JavaScript:</p>
+<pre><code class="language-javascript">const result = app.call(...)
+const myVar = result.Ok...
+</code></pre>
+<p>We get a <code>result.Ok</code> rather than the <code>result.ok</code> that we'd expect from
+idiomatic JavaScript.</p>
+<p>As the JSON structure comes from the Rust compiler, we have two options:</p>
+<ul>
+<li>Force serde to output JSON that follows the conventions of another language</li>
+<li>Force conductors/HDKs to provide sugar to map between Rust/XXX idioms</li>
+<li>Force developers to work with a very leaky abstraction over the Rust compiler</li>
+</ul>
+<p>As the first option requires a lot of boilerplate and isn't interoperable
+across all languages anyway (e.g. kebab case, snake case, etc.) we currently
+are pushing this sugar down to conductor/HDK implementations. Additionally, the
+serialized form of entries is used to calculate <code>Address</code> values for storage
+and retrieval from the local chain and DHT so we need to be very careful here
+as it will be hard to change in the future.</p>
+<p>That said, we are open to constructive feedback on what this sugar looks like
+and how it works! Ideally zome development is as idiomatic as possible across
+as many languages as possible 🕶</p>
+<a class="header" href="#binary-data-as-base64" id="binary-data-as-base64"><h3>Binary data as base64</h3></a>
+<p>We recommend base64 encoding binary data straight into an app entry string that
+you can use in your zome logic directly (see above).</p>
+<p>Yes this uses more space than binary data, 33% more to be specific :(</p>
+<p>But there are benefits:</p>
+<ul>
+<li>It is UTF-8 and web (e.g. data URI) friendly</li>
+<li>Simply wrapped in <code>&quot;\&quot;..\&quot;&quot;</code> it becomes valid JSON (see <code>RawString</code> below)</li>
+<li>It has wide language support (see above for why this is important)</li>
+<li>It will be supported by all persistence backends for the forseeable future
+<ul>
+<li>At least these storage systems require base64 encoded data at some point:
+<ul>
+<li>Browser based localStorage</li>
+<li>MongoDB</li>
+<li>Elasticsearch</li>
+<li>Amazon SimpleDB</li>
+<li>Amazon DynamoDB.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>The performance penalty can be minimal:</p>
+<p>https://lemire.me/blog/2018/01/17/ridiculously-fast-base64-encoding-and-decoding/</p>
+<a class="header" href="#json-is-lame-can-holochain-support-my-favourite-serialization-format" id="json-is-lame-can-holochain-support-my-favourite-serialization-format"><h3>JSON is lame! Can Holochain support <code>&lt;my favourite serialization format&gt;</code>?</h3></a>
+<p>Yes... and no...</p>
+<p>It depends what you mean by &quot;support&quot;.</p>
+<p>Right now, most serialization formats are supported in app/zome data simply by
+wrapping the output in double quotes so core sees it as a JSON string literal.
+Holochain core won't try to interpret/mangle any of that data so the zome can
+theoretically do whatever it wants at that point without a performance hit.</p>
+<p>In practise, there are some limitations as mentioned in this doc:</p>
+<ul>
+<li>WASM languages tend to have no or limited serialization options
+<ul>
+<li>you may need to roll your own parse/stringify logic</li>
+<li>seriously... e.g. we pushed our own <code>JSON.parse</code> implementation upstream
+for the AssemblyScript team, that's <em>JSON parsing in JavaScript</em>!</li>
+<li>don't underestimate how bleeding edge and limited the WASM tooling still is
+<ul>
+<li>to work directly with WASM you must be prepared to bleed</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>If you don't use JSON you can't use <code>hdk</code> macros for that part of your zome</li>
+<li>Only valid UTF-8 strings are supported (may change in the future)</li>
+</ul>
+<p>If you're looking for a way to provide core data in non-JSON format then NO
+that is not supported and won't be in the short-mid term future.</p>
+<p>Yes, <code>serde</code> supports many serialization options but:</p>
+<ul>
+<li>Not all data in core uses default <code>serde</code> serialization logic
+<ul>
+<li>e.g. this document explaining non-default serde serialization logic</li>
+</ul>
+</li>
+<li>Swapping to a different serializer in serde is not just a matter of passing
+config to serde
+<ul>
+<li>we'd have to centralise/<code>match</code> everywhere and swap out <code>serde_json</code> for
+analogous crates in each other format we'd want to use</li>
+<li>even using a <code>SerialString</code> instead of <code>JsonString</code> (see below) would not
+clear out every implementation without a lot of work</li>
+</ul>
+</li>
+<li>Serde is already quite heavy in compilation/WASM files so we don't want to
+bloat that more with edge-case serialization needs
+<ul>
+<li>every new format is a new crate</li>
+</ul>
+</li>
+<li>We don't (yet) have any use-cases showing that JSON is a problem/bottlenec&lt;k</li>
+<li>Adding more serialization options would exacerbate non-idiomatic conductor
+and HDK data structure mapping issues (see above)</li>
+</ul>
+<a class="header" href="#jsonstring" id="jsonstring"><h2>JsonString</h2></a>
+<a class="header" href="#the-problem-and-our-solution" id="the-problem-and-our-solution"><h3>The problem and our solution</h3></a>
+<p>Sometimes we want to <em>nest</em> serialization (e.g. <code>hdk::call</code>) and sometimes we
+want to <em>wrap</em> serialization (e.g. <code>Entry::App</code>), sometimes converting to a
+string uses entirely different logic (e.g. error values). Ideally we want the
+compiler to guide us through this process as mistakes are common and difficult
+to debug. We also want serialization logic to be as invisible as possible to
+zome developers using our HDKs.</p>
+<p>Serde will serialize anything that implements <code>Serialize</code>, including <code>String</code>
+so we added a type <code>JsonString</code> that does not <em>automatically</em> round trip to act
+as a logical &quot;checkpoint&quot; in our code.</p>
+<p><code>JsonString</code> doesn't &quot;do&quot; anything beyond giving ourselves and the compiler a
+shared target while stepping through the serialization round trip.</p>
+<p>Essentially we trade this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// foo_a is a Foo
+// foo_json is a String
+// Foo implements Serialize and Deserialize
+let foo_json = serde_json::to_string(&amp;foo_a)?;
+let foo_b: Foo = serde_json::from_str(&amp;foo_json)?;
+#}</code></pre></pre>
+<p>for this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// foo_a is a Foo
+// JsonString implements From&lt;Foo&gt;
+// Foo implements TryFrom&lt;JsonString&gt;
+let foo_json = JsonString::from(foo_a);
+let foo_b = Foo::try_from(hopefully_foo_json)?;
+#}</code></pre></pre>
+<p>Which looks very similar but protects us from this bug:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let foo_json = serde_json::to_string(&amp;foo_a)?;
+let foo_json = serde_json::to_string(&amp;foo_json)?; // &lt;-- double serialized :/
+let foo_b: Foo = serde_json::from_str(&amp;foo_json)?; // &lt;-- will fail :(
+#}</code></pre></pre>
+<p>Because nesting <code>JsonString::from()</code> calls is a compiler error:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let foo_json = JsonString::from(JsonString::from(foo_a)); // &lt;-- compiler saves us :)
+#}</code></pre></pre>
+<p>and this bug:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let foo_a: Foo = serde_json::from_str(&amp;string_but_not_json)?; // &lt;-- runtime error :(
+#}</code></pre></pre>
+<p>Because calling <code>Foo::try_from(String)</code> is (probably) a compiler error:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let foo_a = Foo::try_from(string_but_not_json)?; // &lt;-- compiler saves us again :)
+#}</code></pre></pre>
+<p>and this bug:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+type Foo = Result&lt;String, String&gt;;
+let foo_json_a = json!({&quot;Err&quot;: some_error.to_string()}); // &lt;-- good key `Err`
+// somewhere else... maybe a different crate or old crate version...
+let foo_json_b = json!({&quot;error&quot;: some_error.to_string()}); // &lt;-- bad key `error` :/
+
+let foo: Foo = serde_json::from(&amp;foo_json_a)?; // &lt;-- works, key matches variant name
+let foo: Foo = serde_json::from(&amp;foo_json_b)?; // &lt;-- runtime error! :(
+#}</code></pre></pre>
+<p>Because the structure of the JSON data is defined centrally at compile time:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// Result&lt;Into&lt;JsonString&gt;, Into&lt;JsonString&gt;&gt; is implemented for you by HC core
+let foo_json_a = JsonString::from(Err(some_error.to_string()));
+// only one way to do things, automatically consistent across all crates
+// doing anything different is a compiler issue
+let foo_json_b = JsonString::from(Err(some_error.to_string()));
+#}</code></pre></pre>
+<p>Which is great for the majority of data that needs serializing. There are some
+important edge cases that we need to cover with additional techniques/tooling.</p>
+<a class="header" href="#string-handling" id="string-handling"><h4>String handling</h4></a>
+<p><code>JsonString::from</code> assumes any <code>String</code> or <code>&amp;str</code> passed to it is already a
+serialized JSON value.</p>
+<p>We can use <code>serde_json::to_string</code> and <code>json!</code> to create JSON data that we can
+then wrap in <code>JsonString</code>.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// same end result for both of these...
+let foo_json = JsonString::from(serde_json::to_string(&amp;foo));
+let foo_json = JsonString::from(foo);
+#}</code></pre></pre>
+<p>More commonly useful, we can move back and forward between <code>String</code> and
+<code>JsonString</code> without incurring serialization overhead or human error:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// this does a round trip through types without triggering any serde
+JsonString::from(String::from(JsonString::from(foo)));
+#}</code></pre></pre>
+<p>This is helpful when a function signature requires a <code>String</code> or <code>JsonString</code>
+argument and we have the inverse type. It also helps when manually building
+JSON data by <em>wrapping</em> already serialized data e.g. with <code>format!</code>.</p>
+<p>An example taken from core:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+impl&lt;T: Into&lt;JsonString&gt;, E: Into&lt;JsonString&gt; + JsonError&gt; From&lt;Result&lt;T, E&gt;&gt; for JsonString {
+    fn from(result: Result&lt;T, E&gt;) -&gt; JsonString {
+        let is_ok = result.is_ok();
+        let inner_json: JsonString = match result {
+            Ok(inner) =&gt; inner.into(),
+            Err(inner) =&gt; inner.into(),
+        };
+        let inner_string = String::from(inner_json);
+        format!(
+            &quot;{{\&quot;{}\&quot;:{}}}&quot;,
+            if is_ok { &quot;Ok&quot; } else { &quot;Err&quot; },
+            inner_string
+        )
+        .into()
+    }
+}
+#}</code></pre></pre>
+<p>Which looks like this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let result: Result&lt;String, HolochainError&gt; =
+    Err(HolochainError::ErrorGeneric(&quot;foo&quot;.into()));
+
+assert_eq!(
+    JsonString::from(result),
+    JsonString::from(&quot;{\&quot;Err\&quot;:{\&quot;ErrorGeneric\&quot;:\&quot;foo\&quot;}}&quot;),
+);
+#}</code></pre></pre>
+<p>When given a <code>Result</code> containing any value that can be turned into a
+<code>JsonString</code> (see below), we can <em>convert</em> it first, then <em>wrap</em> it with
+<code>String::from</code> + <code>format!</code>.</p>
+<a class="header" href="#string-serialization" id="string-serialization"><h3>String serialization</h3></a>
+<p>Sometimes we <em>want</em> a <code>String</code> to be serialized as a JSON string primitive
+rather than simply wrapped in a <code>JsonString</code> struct. <code>JsonString::from</code> won't
+do what we need because it always wraps strings, we need to <em>nest</em> the <code>String</code>
+serialization.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let foo = String::from(JsonString::from(&quot;foo&quot;)); // &quot;foo&quot; = not what we want
+let foo = ???; // &quot;\&quot;foo\&quot;&quot; = what we want
+#}</code></pre></pre>
+<p>To keep the type safety from <code>JsonString</code> and nest String serialization use
+<code>RawString</code> wrapped in <code>JsonString</code>. <code>RawString</code> wraps <code>String</code> and serializes
+it to a JSON string primitive when <code>JsonString</code>ified.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// does what we need :)
+let foo = String::from(JsonString::from(RawString::from(&quot;foo&quot;))); // &quot;\&quot;foo\&quot;&quot;
+#}</code></pre></pre>
+<p>An example of this can be seen in the core version of the <code>Result</code>
+serialization from above that deals with <code>String</code> error values:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+impl&lt;T: Into&lt;JsonString&gt;&gt; From&lt;Result&lt;T, String&gt;&gt; for JsonString {
+    fn from(result: Result&lt;T, String&gt;) -&gt; JsonString {
+        let is_ok = result.is_ok();
+        let inner_json: JsonString = match result {
+            Ok(inner) =&gt; inner.into(),
+            // strings need this special handling c.f. Error
+            Err(inner) =&gt; RawString::from(inner).into(), // &lt;-- RawString here!
+        };
+        let inner_string = String::from(inner_json);
+        format!(
+            &quot;{{\&quot;{}\&quot;:{}}}&quot;,
+            if is_ok { &quot;Ok&quot; } else { &quot;Err&quot; },
+            inner_string
+        )
+        .into()
+    }
+}
+#}</code></pre></pre>
+<p>Which looks like this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let result: Result&lt;String, String&gt; = Err(String::from(&quot;foo&quot;));
+
+assert_eq!(
+    JsonString::from(result),
+    JsonString::from(&quot;{\&quot;Err\&quot;:\&quot;foo\&quot;}&quot;),
+)
+#}</code></pre></pre>
+<p>If we didn't do this then the <code>format!</code> would return invalid JSON data with the
+String error value missing the wrapping double quotes.</p>
+<p><code>RawString</code> is useful when working with types that have a <code>.to_string()</code> method
+or similar where the returned string is <em>not</em> valid JSON.</p>
+<p>Examples of when <code>RawString</code> could be useful:</p>
+<ul>
+<li>Error descriptions that return plain text in a string</li>
+<li>Base64 encoded binary data</li>
+<li>Enum variants with custom string representations</li>
+<li>&quot;Black boxing&quot; JSON data that Rust should not attempt to parse</li>
+</ul>
+<a class="header" href="#implementing-jsonstring-for-custom-types" id="implementing-jsonstring-for-custom-types"><h3>Implementing <code>JsonString</code> for custom types</h3></a>
+<p>As mentioned above, there are two trait implementations that every struct or
+enum should implement to be compatible with core serialization logic:</p>
+<ul>
+<li><code>impl From&lt;MyType&gt; for JsonString</code> to serialize <code>MyType</code></li>
+<li><code>impl TryFrom&lt;JsonString&gt; for MyType</code> to attempt to deserialize into <code>MyType</code></li>
+</ul>
+<p>Note that <code>TryFrom</code> is currently an unstable Rust feature. To enable it add
+<code>!#[feature(try_from)]</code> to your crate/zome.</p>
+<p>Based on discussions in the Rust community issue queues/forums, we expect this
+feature to eventually stabilise and no longer require feature flags to use.</p>
+<p>The <code>TryFrom</code> trait will need to be added as <code>use std::convert::TryFrom</code> to
+each module/zome implementing it for a struct/enum.</p>
+<a class="header" href="#boilerplate" id="boilerplate"><h4>Boilerplate</h4></a>
+<p>To defer all the logic to standard <code>serde</code> defaults with some sensible
+debug logic in the case of an error, there are two utility functions in core,
+<code>default_to_json</code> and <code>default_try_from_json</code>.</p>
+<p>The standard minimal boilerplate looks like this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+struct MyType {}
+
+impl From&lt;MyType&gt; for JsonString {
+  fn from(my_type: MyType) -&gt; Self {
+    default_to_json(my_type)
+  }
+}
+
+impl TryFrom&lt;JsonString&gt; for MyType {
+  type Error = HolochainError;
+  fn try_from(json_string: JsonString) -&gt; Result&lt;Self, Self::Error&gt; {
+    default_try_from_json(json_string)
+  }
+}
+#}</code></pre></pre>
+<a class="header" href="#automatic-derive" id="automatic-derive"><h4>Automatic derive</h4></a>
+<p>The standard boilerplate has been implemented as a derive macro in the
+<code>holochain_core_types_derive</code> crate.</p>
+<p>Simply <code>#[derive(DefaultJson)]</code> to add the above boilerplate plus some extra
+conveniences (e.g. for references) to your type.</p>
+<p><code>DefaultJson</code> requires:</p>
+<ul>
+<li><code>JsonString</code> is included</li>
+<li><code>HolochainError</code> is included</li>
+<li><code>MyType</code> implements <code>Serialize</code>, <code>Deserialize</code> and <code>Debug</code> from serde/std</li>
+</ul>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+use holochain_core_types::json::JsonString;
+use holochain_core_types::error::HolochainError;
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct MyType {}
+#}</code></pre></pre>
+<a class="header" href="#using-jsonstring-as-the-property-of-a-structenum" id="using-jsonstring-as-the-property-of-a-structenum"><h3>Using JsonString as the property of a struct/enum</h3></a>
+<p>Because <code>JsonString</code> cannot <em>automatically</em> be round tripped with <code>Serialize</code>
+and <code>Deserialize</code>, the following can cause difficulty:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[derive(Serialize, Deserialize)]
+struct Foo {
+  bar: JsonString,
+}
+#}</code></pre></pre>
+<p>The compiler will complain about this because anything deriving <code>Serialize</code>
+recursively must consist only of values that also implement <code>Serialize</code>.</p>
+<p>There are a few approaches here, each with benefits and tradeoffs.</p>
+<ol start="0">
+<li>Swap out <code>JsonString</code> with <code>String</code></li>
+<li>Use a serde attribute to manually serialize <code>Bar</code></li>
+<li>Use a serde attribute to skip <code>Bar</code></li>
+<li>Create a &quot;new type&quot; or wrapper/conversion struct</li>
+</ol>
+<a class="header" href="#swap-jsonstring-with-string" id="swap-jsonstring-with-string"><h4>Swap <code>JsonString</code> with <code>String</code></h4></a>
+<p>This approach is quick and dirty. Simply change the type of <code>Bar</code> to <code>String</code>.
+When prototyping or on deadline, this might be the most attractive option ;)</p>
+<p>This will likely cause problems upstream and downstream of what you are doing,
+or may be symptomatic of poorly handled JSON somewhere. This is <em>roughly</em> how
+<code>Entry</code> used to work, with a <code>String</code> valued <code>SerializedEntry</code>and <code>JsonString</code>
+valued <code>Entry</code> that could be swapped between using a <code>From</code> implementation.</p>
+<p>Done correctly we can &quot;onboard&quot; values to <code>Foo</code> by simply carefully wrapping
+and unwrapping the <code>String</code>. Done badly, we reintroduce the possibility for
+invalid wrap/nest/etc. logic to creep in.</p>
+<p>This works best when the fields on <code>Foo</code> are private and immutable, exposed
+only through getter/setter/new style methods that internally convert between
+<code>JsonString</code> and <code>String</code>.</p>
+<p>This option is less suitable if we <em>want</em> to double serialize the nested JSON
+data when serializing <code>Foo</code>. For an example of where we preserve JSON rather
+than trying to automatically deserialize or wrap it with structs, see the
+return values from <code>hdk::call</code> (not using structs, but similar ideas).</p>
+<p>Also consider that somebody reading your code might entirely miss the fact that
+<code>Foo::bar</code> is JSON data if all they read is the struct definition.</p>
+<p>It may be worthwhile adding methods to <code>Foo</code> to enforce this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[derive(Serialize, Deserialize)]
+pub struct Foo {
+  bar: String,
+}
+
+impl Foo {
+  pub fn new(bar: JsonString) -&gt; Foo {
+    Foo {bar: String::from(bar)}
+  }
+
+  pub fn bar(&amp;self) -&gt; JsonString {
+    JsonString::from(self.bar.clone())
+  }
+}
+#}</code></pre></pre>
+<p>Treat <code>bar</code> as though it was going to be stored as a <code>JsonString</code> right until
+the last moment.</p>
+<p>Avoid this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let bar_json = json!({&quot;bar&quot;: bar.inner()}).to_string();
+// somwhere later...
+let foo = Foo{bar: bar_json};
+#}</code></pre></pre>
+<p>Because then <em>everything</em> that needs to use <code>Foo</code> must consistently implement
+the manual jsonification logic. This is especially important if <code>Foo</code> and/or
+bar is to be used across multiple crates.</p>
+<p>Instead, prefer this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct Bar {
+  bar: ..
+}
+
+let bar_json = JsonString::from(Bar{bar: ..});
+let foo = Foo::new(bar); // assuming impl Foo::new from above
+#}</code></pre></pre>
+<p>The result is still a raw <code>String</code> in <code>Foo</code> but the validity and consistency of
+the JSON data is enforced across all crates by <code>JsonString::from(bar)</code>.</p>
+<p>It is even possible to internalise the <code>JsonString</code> completely within the <code>Foo</code>
+methods using <code>Into&lt;JsonString&gt;</code>. This is covered in more detail below.</p>
+<a class="header" href="#using-serde-attributes" id="using-serde-attributes"><h4>Using serde attributes</h4></a>
+<p>Serde allows us to set serialization logic at the field level for structs.</p>
+<p>The best example of this is handling of <code>AppEntryValue</code> in core.
+As all zome data is treated as JSON, assumed to line up with internal structs
+in the HDK but potentially opaque string primitives (see above) we simply alias
+<code>AppEntryValue</code> to <code>JsonString</code>.</p>
+<p>The <code>Entry</code> enum needs to be serialized for many reasons in different contexts,
+including for system entries that zome logic never handles directly.</p>
+<p>It looks something like this (at the time of writing):</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
+pub enum Entry {
+    #[serde(serialize_with = &quot;serialize_app_entry&quot;)]
+    #[serde(deserialize_with = &quot;deserialize_app_entry&quot;)]
+    App(AppEntryType, AppEntryValue),
+
+    Dna(Dna),
+    AgentId(AgentId),
+    Delete(Delete),
+    LinkAdd(LinkAdd),
+    LinkRemove(LinkRemove),
+    LinkList(LinkList),
+    ChainHeader(ChainHeader),
+    ChainMigrate(ChainMigrate),
+}
+#}</code></pre></pre>
+<p>Note that <code>Entry</code>:</p>
+<ul>
+<li>Derives <code>Serialize</code> and <code>Deserialize</code> and even <code>DefaultJson</code>!</li>
+<li>Contains <code>AppEntryValue</code> in a tuple, which is a <code>JsonString</code></li>
+<li>Uses some serde serialization attributes</li>
+</ul>
+<p>This works because the serialization attributes tell serde how to handle the
+<code>JsonString</code> <em>in this context</em>. This is a double edged sword. We have explicit
+control over the serialization so we can never accidentally wrap/nest/etc. JSON
+data in an invalid way. We also only define the serialization for this type in
+this one place. If <code>AppEntryValue</code> was used in some other struct/enum, we would
+have to manually remember to use the same or compatible serialize/deserialize
+callbacks.</p>
+<p>This approach also gives a lot of control over the final JSON structure. We can
+avoid stutters and reams of redundant data in the final output. This can
+mitigate the verbosity and awkwardness of compiler-driven JSON structures
+when sending data to other languages (see above).</p>
+<p>The serde documentation explains in great (technical) detail how to implement
+custom serialization and deserialization logic for many different data types:</p>
+<p>https://serde.rs/field-attrs.html</p>
+<p>For reference, the callbacks used in <code>Entry</code> above look like this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+pub type AppEntryValue = JsonString;
+
+fn serialize_app_entry&lt;S&gt;(
+    app_entry_type: &amp;AppEntryType,
+    app_entry_value: &amp;AppEntryValue,
+    serializer: S,
+) -&gt; Result&lt;S::Ok, S::Error&gt;
+where
+    S: Serializer,
+{
+    let mut state = serializer.serialize_tuple(2)?;
+    state.serialize_element(&amp;app_entry_type.to_string())?;
+    state.serialize_element(&amp;app_entry_value.to_string())?;
+    state.end()
+}
+
+fn deserialize_app_entry&lt;'de, D&gt;(deserializer: D) -&gt; Result&lt;(AppEntryType, AppEntryValue), D::Error&gt;
+where
+    D: Deserializer&lt;'de&gt;,
+{
+    #[derive(Deserialize)]
+    struct SerializedAppEntry(String, String);
+
+    let serialized_app_entry = SerializedAppEntry::deserialize(deserializer)?;
+    Ok((
+        AppEntryType::from(serialized_app_entry.0),
+        AppEntryValue::from(serialized_app_entry.1),
+    ))
+}
+#}</code></pre></pre>
+<p>Obviously this is a lot of boilerplate for one tuple, and is really only the
+tip of the iceberg for how complex custom serde implementations can get. Use
+this for surgical implementations along critical path type safety/ergonomics.</p>
+<a class="header" href="#skip-the-attribute" id="skip-the-attribute"><h4>Skip the attribute</h4></a>
+<p>Serde also allows for attributes to be completely skipped during serialization.</p>
+<p>In the context of a <code>JsonString</code> this is unlikely to be the desired behaviour.
+If we are serializing the outer struct we <em>probably</em> want the inner JSON data
+to also be serialized, but not necessarily, or perhaps we don't <em>need</em> it and
+so can live without it.</p>
+<p>This option has very clear tradeoffs. We lose the JSON data when the outer
+struct is serialized but also don't have to worry about how it might be
+represented.</p>
+<p>This option is very handy during development/prototyping/debugging when you
+want to sketch out a larger idea without immediately tackling serde logic.</p>
+<p>Simply add the <code>#[serde(skip)]</code> attribute to your struct.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[derive(Serialize, Deserialize)]
+struct Foo {
+  #[serde(skip)]
+  bar: JsonString,
+}
+#}</code></pre></pre>
+<a class="header" href="#wrapconvert-to-a-new-type-or-struct" id="wrapconvert-to-a-new-type-or-struct"><h4>Wrap/convert to a new type or struct</h4></a>
+<p>If it is possible to create a struct that better represents the data, or a new
+type to hold it, then <em>that</em> struct can implement to/try_from <code>JsonString</code>.</p>
+<p>This is very similar to the first option where we put a <code>String</code> into <code>Foo</code> but
+it provides semantics, information for the compiler and somewhere to hook
+<code>into()</code> for our code.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// Bar as a new type
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct Bar(String)
+
+#[derive(Serialize, Deserialize)]
+struct Foo {
+  bar: Bar,
+}
+
+impl Foo {
+  fn new(bar: Bar) -&gt; Foo {
+    Foo { bar }
+  }
+
+  fn bar(&amp;self) -&gt; Bar {
+    self.bar.clone()
+  }
+}
+
+// somewhere else...
+let json = JsonString::from(..);
+let bar = Bar::from(json);
+let foo = Foo::new(bar);
+
+// or...
+let json = JsonString::from(..);
+let foo = Foo::new(json.into());
+#}</code></pre></pre>
+<p>The biggest drawback to this approach is the potential for stutter. With lots
+of nested types we give the compiler more power but also can incidentally bloat
+the JSON output a lot.</p>
+<p>Many ad-hoc/once-off types can also become confusing for humans and lead to
+duplicated/redundant code over time.</p>
+<p>It is easy to end up with JSON like <code>{&quot;Foo&quot;:{&quot;bar&quot;:{&quot;Bar&quot;:[&quot;..&quot;]}}}</code> with a
+poorly chosen combination of enum variants and tuples.</p>
+<p>As per all the considerations outlined for using <code>String</code> directly on <code>Foo</code>,
+avoid using <code>json!</code> or similar to build up the internal <code>String</code> of <code>Bar</code>.</p>
+<a class="header" href="#hiding-jsonstring-with-intojsonstring" id="hiding-jsonstring-with-intojsonstring"><h2>Hiding JsonString with <code>Into&lt;JsonString&gt;</code></h2></a>
+<p>It is possible in function signatures to simply leave an argument open to
+anything that can be converted to <code>JsonString</code>.</p>
+<p>This is exactly like using <code>Into&lt;String&gt;</code> but for JSON data. An even looser
+option is to only require <code>TryInto&lt;JsonString&gt;</code> but this makes little or no
+difference to us in practise.</p>
+<p>An example of this is the <code>store_as_json</code> used to pass native Rust typed data
+across the WASM boundary. This is used internally by the <code>define_zome!</code> macro
+for all zome funtions:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+pub fn store_as_json&lt;J: TryInto&lt;JsonString&gt;&gt;(
+    stack: &amp;mut WasmStack,
+    jsonable: J,
+) -&gt; Result&lt;SinglePageAllocation, RibosomeErrorCode&gt; {
+    let j: JsonString = jsonable
+        .try_into()
+        .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
+
+    let json_bytes = j.into_bytes();
+    let json_bytes_len = json_bytes.len() as u32;
+    if json_bytes_len &gt; U16_MAX {
+        return Err(RibosomeErrorCode::OutOfMemory);
+    }
+    write_in_wasm_memory(stack, &amp;json_bytes, json_bytes_len as u16)
+}
+#}</code></pre></pre>
+<p>The relevant <code>into()</code> or <code>try_into()</code> method is called <em>internally</em> by the
+function accepting <code>Into&lt;JsonString&gt;</code>, meaning the caller needs to know almost
+nothing about <em>how</em> the serialization is done. Additionally, the caller <em>could</em>
+do its own custom serialization, passing a <code>String</code> through, which would be
+wrapped as-is into a <code>JsonString</code>.</p>
+<p>Unfortunately this doesn't work as well for structs because of the way trait
+bounds work (or don't work) without complex boxing etc. See above for simple
+strategies to cope with nested/wrapped serialization in nested native data
+structures.</p>
+<p>This approach can be combined with the &quot;quick and dirty&quot; <code>Foo</code> with private
+<code>String</code> internals to create a <code>Foo</code> that can store <em>anything</em> that round trips
+through <code>JsonString</code>:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+struct Foo {
+  bar: String,
+}
+
+impl Foo {
+  fn new&lt;J: Into&lt;JsonString&gt;&gt; (bar: J) -&gt; Foo {
+    Foo{ bar: String::from(JsonString::from(bar)) }
+  }
+
+  fn bar&lt;T: TryFrom&lt;JsonString&gt;&gt;(&amp;self) -&gt; Result&lt;T, HolochainError&gt; {
+    Ok(JsonString::from(self.bar.clone()).try_into()?)
+  }
+}
+
+// somewhere later..
+// we can build MyBar ad-hoc to send to Foo as long as it implements JsonString
+// we could create MyOtherBar in the same way and send to Foo in the same way
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+struct MyBar { .. }
+
+let my_bar = MyBar::new(..);
+// auto stores as String via. JsonString internally
+let foo = Foo::new(my_bar);
+// note we must provide the MyBar type at restore time because we destroyed
+// that type info during the serialization process
+let restored_bar: MyBar = foo.bar()?;
+#}</code></pre></pre>
+<p>This is how the <code>ContentAddressableStorage</code> trait used to work. It would
+&quot;magically&quot; restore the correct <code>Content</code> from storage based on an <code>Address</code>
+and type alone, provided the compiler had the type info available at compile
+time.</p>
+<p>We had to sacrifice this neat trick due to incompatible constraints from the
+type system elsewhereon the CAS, but it should work well in most scenarios :)</p>
+
+                        <hr />
+                        <a href="https://github.com/holochain/holochain-rust/edit/develop/doc/holochain_101/src/json_string.md">suggest an edit</a>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="apps_advanced_topics.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="building_for_android.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="apps_advanced_topics.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="building_for_android.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

@@ -81,7 +81,7 @@ Conductor.run = function (config, fn) {
 
 /////////////////////////////////////////////////////////////
 
-class Instance {
+class DnaInstance {
     constructor(instanceId, conductor) {
         this.id = instanceId
         this.conductor = conductor
@@ -165,7 +165,7 @@ class Scenario {
                 if (name in instances) {
                     throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
                 }
-                instances[name] = new Instance(name, conductor)
+                instances[name] = new DnaInstance(name, conductor)
             })
             return fn(stop, instances)
         })
@@ -190,4 +190,4 @@ class Scenario {
 
 /////////////////////////////////////////////////////////////
 
-module.exports = { Config, Instance, Conductor, Scenario };
+module.exports = { Config, DnaInstance, Conductor, Scenario };

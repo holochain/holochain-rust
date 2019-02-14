@@ -513,7 +513,7 @@ impl Conductor {
 
     /// Default KeyLoader that actually reads files from the filesystem
     fn load_key(file: &PathBuf) -> Result<Keypair, HolochainError> {
-        notify(format!("Reading DNA from {}", file.display()));
+        notify(format!("Reading agent key from {}", file.display()));
 
         let mut file = File::open(file)?;
         let mut contents = String::new();

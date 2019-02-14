@@ -49,7 +49,7 @@ fn into_meta_id(meta_tuple: &MetaTuple) -> Address {
 }
 
 /// unmerge meta_id into a tuple
-fn undo_meta_id(meta_id: &Address) -> MetaTuple {
+fn _undo_meta_id(meta_id: &Address) -> MetaTuple {
     let meta_str = String::from(meta_id.clone());
     let vec: Vec<&str> = meta_str.split("||").collect();
     assert_eq!(vec.len(), 3);
@@ -62,8 +62,8 @@ fn undo_meta_id(meta_id: &Address) -> MetaTuple {
 }
 
 /// Tells if metaId is of given entry and attribute
-fn metaId_is(metaId: &Address, entry_address: Address, attribute: String) -> bool {
-    let meta_tuple = undo_meta_id(metaId);
+fn _metaId_is(metaId: &Address, entry_address: Address, attribute: String) -> bool {
+    let meta_tuple = _undo_meta_id(metaId);
     return meta_tuple.0 == entry_address && meta_tuple.1 == attribute;
 }
 
@@ -771,55 +771,60 @@ impl InMemoryServer {
         if !is_tracking {
             return Ok(());
         }
-        // Relay fetchMeta to first agent known to hold that attribute
         match self.senders_by_dna.entry(msg.dna_address.to_owned()) {
-            Entry::Occupied(e) => {
-                for (agent_id, sender) in e.get() {
-                    let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
-                    let published = self.published_meta_book.get(&bucket_id);
-                    let stored = self.stored_meta_book.get(&bucket_id);
-                    self.log.d(&format!(
-                        "metaId_is({}, {}, {})",
-                        agent_id,
-                        msg.entry_address.clone(),
-                        msg.attribute.clone()
-                    ));
-                    self.log.d(&format!("published = {:?}", published));
-                    let has_attribute = (published.is_some()
-                        && published
-                            .unwrap()
-                            .iter()
-                            .find(|metaId| {
-                                metaId_is(metaId, msg.entry_address.clone(), msg.attribute.clone())
-                            })
-                            .is_some())
-                        || (stored.is_some()
-                            && stored
-                                .unwrap()
-                                .iter()
-                                .find(|metaId| {
-                                    metaId_is(
-                                        metaId,
-                                        msg.entry_address.clone(),
-                                        msg.attribute.clone(),
-                                    )
-                                })
-                                .is_some());
-
-                    self.log.d(&format!("\n has_attribute = {}", has_attribute));
-                    if has_attribute {
-                        self.log.d(&format!(
-                            "<<<< '{}' sending to ({}): {:?}",
-                            self.name.clone(),
-                            agent_id,
-                            msg.clone()
-                        ));
-                        let msg: Protocol = JsonProtocol::HandleFetchMeta(msg.clone()).into();
-                        sender.send(msg)?;
-                        return Ok(());
-                    }
+            // Relay fetchMeta to first agent tracking this DNA
+            Entry::Occupied(mut e) => {
+                if !e.get().is_empty() {
+                    let (_k, r) = &e
+                        .get_mut()
+                        .iter()
+                        .next()
+                        .expect("senders_by_dna.entry does not hold any value");
+                    r.send(JsonProtocol::HandleFetchMeta(msg.clone()).into())?;
+                    return Ok(());
                 }
             }
+            // TODO: Once linking meta is properly implemented in Core
+            // Relay fetchMeta to first agent known to hold that attribute
+            //            Entry::Occupied(e) => {
+            //                for (agent_id, sender) in e.get() {
+            //                    let bucket_id = into_bucket_id(&msg.dna_address, agent_id);
+            //                    let published = self.published_meta_book.get(&bucket_id);
+            //                    let stored = self.stored_meta_book.get(&bucket_id);
+            //                    let has_attribute = (published.is_some()
+            //                        && published
+            //                            .unwrap()
+            //                            .iter()
+            //                            .find(|metaId| {
+            //                                metaId_is(metaId, msg.entry_address.clone(), msg.attribute.clone())
+            //                            })
+            //                            .is_some())
+            //                        || (stored.is_some()
+            //                            && stored
+            //                                .unwrap()
+            //                                .iter()
+            //                                .find(|metaId| {
+            //                                    metaId_is(
+            //                                        metaId,
+            //                                        msg.entry_address.clone(),
+            //                                        msg.attribute.clone(),
+            //                                    )
+            //                                })
+            //                                .is_some());
+            //
+            //                    if has_attribute {
+            //                        self.log.d(&format!(
+            //                            "<<<< '{}' sending to ({}): {:?}",
+            //                            self.name.clone(),
+            //                            agent_id,
+            //                            msg.clone()
+            //                        ));
+            //                        let msg: Protocol = JsonProtocol::HandleFetchMeta(msg.clone()).into();
+            //                        sender.send(msg)?;
+            //                        return Ok(());
+            //                    }
+            //                }
+            //            }
             _ => (),
         };
         // No node found, send an empty FetchMetaResultData

@@ -98,15 +98,15 @@ impl<'a> EaviQuery<'a> {
         }
     }
 
-    pub fn run<I>(self, iter: I) -> BTreeSet<EntityAttributeValueIndex>
+    pub fn run<I>(&self, iter: I) -> BTreeSet<EntityAttributeValueIndex>
     where
         I: Clone + Iterator<Item = EntityAttributeValueIndex> + 'a,
     {
         iter.clone()
             .filter(|v| {
-                self.entity.check(&v.entity())
-                    && self.attribute.check(&v.attribute())
-                    && self.value.check(&v.value())
+                self.entity.check(v.entity())
+                    && self.attribute.check(v.attribute())
+                    && self.value.check(v.value())
             })
             .filter(|v| match (self.index.start, self.index.end) {
                 (None, None) => get_latest(v.clone(), iter.clone())
@@ -121,15 +121,15 @@ impl<'a> EaviQuery<'a> {
     }
 }
 
-pub struct EavFilter<'a, T: PartialEq>(Box<dyn Fn(&'a T) -> bool + 'a>);
+pub struct EavFilter<'a, T: 'a + PartialEq>(Box<dyn Fn(T) -> bool + 'a>);
 
-impl<'a, T: PartialEq> EavFilter<'a, T> {
+impl<'a, T: 'a + PartialEq> EavFilter<'a, T> {
     pub fn single(val: T) -> Self {
-        Self(Box::new(move |v| *v == val))
+        Self(Box::new(move |v| v == val))
     }
 
     pub fn attribute_prefixes(prefixes: Vec<&'a str>, base: &'a str) -> AttributeFilter<'a> {
-        Self(Box::new(move |v: &'a Attribute| {
+        Self(Box::new(move |v: Attribute| {
             prefixes
                 .iter()
                 .map(|p| p.to_string() + base)
@@ -139,12 +139,12 @@ impl<'a, T: PartialEq> EavFilter<'a, T> {
 
     pub fn predicate<F>(predicate: F) -> Self
     where
-        F: Fn(&'a T) -> bool + 'a,
+        F: Fn(T) -> bool + 'a,
     {
         Self(Box::new(predicate))
     }
 
-    pub fn check(&self, val: &'a T) -> bool {
+    pub fn check(&self, val: T) -> bool {
         self.0(val)
     }
 }

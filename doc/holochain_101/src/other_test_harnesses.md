@@ -12,7 +12,7 @@ const scenario = new Scenario([instanceAlice, instanceBob])
 // scenario.run only manages the Conductor for us now, but we have to manage the test itself
 scenario.run((stop, {alice, bob}) => {
     tape("test something", t => {
-        const result = alice.call('zome', 'capability', 'function', {params: 'go here'})
+        const result = alice.call('zome', 'function', {params: 'go here'})
         t.equal(result, 'expected value')
         // the following two steps were not necessary when using runTape:
         t.end() // end the test

@@ -108,14 +108,16 @@ impl<'a> EaviQuery<'a> {
                     && self.attribute.check(&v.attribute())
                     && self.value.check(&v.value())
             })
-            .filter(|e| {
+            .filter(|v| {
+                match (self.index.start, self.index.end) {
+                    (None, None) => get_latest(v.clone(), iter.clone()),
+                }
                 self.index
                     .start()
-                    .map(|start| start <= e.index())
+                    .map(|start| start <= v.index())
                     .unwrap_or_else(|| {
-                        let latest = get_latest(e.clone(), iter.clone(), self.index.clone())
-                            .unwrap_or_default();
-                        latest.index() == e.index()
+                        let latest = get_latest(v.clone(), iter.clone()).unwrap_or_default();
+                        latest.index() == v.index()
                     })
             })
             .filter(|e| {
@@ -169,6 +171,18 @@ impl<'a, T: PartialEq> Default for EavFilter<'a, T> {
 impl<'a, T: PartialEq> From<Option<T>> for EavFilter<'a, T> {
     fn from(val: Option<T>) -> EavFilter<'a, T> {
         val.map(|v| EavFilter::single(v)).unwrap_or_default()
+    }
+}
+
+impl<'a, T: PartialEq> From<IndexRange> for EavFilter<'a, T> {
+    fn from(range: IndexRange) -> EavFilter<'a, T> {
+        EavFilter::predicate(|v| match (range.start, range.end) {
+            (None, None) => get_latest(v.clone(), iter.clone()),
+            (start, end) => {
+                start.map(|lo| lo <= v.index()).unwrap_or_default()
+                    && start.map(|hi| v.index() <= hi).unwrap_or_default()
+            }
+        })
     }
 }
 
@@ -361,38 +375,24 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     }
 }
 
-pub fn get_latest<I>(
-    eav: EntityAttributeValueIndex,
-    iter: I,
-    index_query: IndexRange,
-) -> HcResult<EntityAttributeValueIndex>
+pub fn get_latest<I>(eav: EntityAttributeValueIndex, iter: I) -> HcResult<EntityAttributeValueIndex>
 where
-    I: Iterator<Item = EntityAttributeValueIndex>,
+    I: Clone + Iterator<Item = EntityAttributeValueIndex>,
 {
-    let filter = iter
-        .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.entity(), Some(&eav.entity())))
-        .filter(|e| {
-            let prefixes = index_query.prefixes();
-            //find a better way of handling tags with prefixes already
-            let attribute_without_prefix =
-                prefixes.iter().fold(eav.attribute(), |attribute, prefix| {
-                    if eav.attribute().starts_with(prefix) {
-                        let attri = attribute.clone();
-                        attri.replace(prefix, "")
-                    } else {
-                        attribute.clone()
-                    }
-                });
-            EntityAttributeValueIndex::filter_on_eav_with_prefix(
-                &e.attribute(),
-                Some(&attribute_without_prefix),
-                &index_query,
-            )
-        })
-        .filter(|e| EntityAttributeValueIndex::filter_on_eav(&e.value(), Some(&eav.value())));
-    filter.last().ok_or(HolochainError::ErrorGeneric(
-        "Could not get last value".to_string(),
-    ))
+    let query = EaviQuery::new(
+        EavFilter::single(eav.entity().clone()),
+        EavFilter::single(eav.attribute().clone()),
+        EavFilter::single(eav.value().clone()),
+        IndexRange::default(),
+    );
+    query
+        .run(iter)
+        .iter()
+        .last()
+        .ok_or(HolochainError::ErrorGeneric(
+            "Could not get last value".to_string(),
+        ))
+        .map(|eavi| eavi.clone())
 }
 
 impl PartialEq for EntityAttributeValueStorage {

@@ -27,7 +27,7 @@ define_zome! {
         }
     ]
 
-    capabilities: {
-        public (Public) [call_bridge]
+    traits: {
+        hc_public [call_bridge]
     }
 }

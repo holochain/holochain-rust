@@ -402,7 +402,7 @@ pub struct Bridge {
     /// This instance depends on the callee.
     pub caller_id: String,
 
-    /// ID of the instance that exposes capabilities through this bridge.
+    /// ID of the instance that exposes traits through this bridge.
     /// This instance is used by the caller.
     pub callee_id: String,
 

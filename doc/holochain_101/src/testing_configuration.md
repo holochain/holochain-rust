@@ -87,7 +87,7 @@ ___
 
 **Type** `string`
 
-**Description** The name acts like the instance ID, and in fact will be used as such
+**Description** The name acts like the instance ID, and in fact will be used as such when [calling Zome functions](./nodejs_calling_zome_functions.md)
 
 **Default** The same as the `name` property of the given `agentConfig` (`agentConfig.name`)
 ___
@@ -117,6 +117,9 @@ console.log(dnaConfig)
 ### `Config.conductor(instancesList, [conductorOptions])` => `object`
 
 Consumes an array of configured instances and produces an object which is a fully valid Conductor configuration. It can be passed into the Conductor constructor, which is covered in the next articles.
+
+> The return value of this function comes from the Rust <> Nodejs bindings, and contains all the right values,
+but those values are not visible when using `console.log` on the result.
 
 ___
 **Name** instancesList

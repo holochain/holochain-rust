@@ -29,7 +29,7 @@ const conductor = new Conductor(config)
 
 ## Starting and Stopping a Conductor
 
-### `conductor.start()`
+### `conductor.start()` => null
 
 Start running all instances. No Zome functions can be called within an instance if the instance is not started, so this must be called beforehand.
 
@@ -38,9 +38,11 @@ Start running all instances. No Zome functions can be called within an instance 
 conductor.start()
 ```
 
-### `conductor.stop()`
+### `conductor.stop()` => `Promise`
 
 Stop all running instances configured for the conductor. This function **should** be called after all desired Zome calls have been made, otherwise the conductor instances will continue running as processes in the background.
+
+Returns a Promise that you can optionally wait on, which will wait for internal cleanup to happen prior to shutting down.
 
 #### Example
 ```javascript

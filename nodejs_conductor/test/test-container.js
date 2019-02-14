@@ -4,7 +4,7 @@ const path = require('path');
 const { Config, Conductor } = require('..')
 
 const dnaValid = Config.dna(
-    path.join(__dirname, "../../app_spec/dist/app_spec.hcpkg"),
+    path.join(__dirname, "bundle.json"),
     'dna-valid'
 )
 const dnaInvalid = Config.dna(
@@ -14,20 +14,11 @@ const dnaInvalid = Config.dna(
 
 const agent = Config.agent("007")
 
-const instanceValid = Config.instance(agent, dnaValid, 'valorie')
-const instanceInvalid = Config.instance(agent, dnaInvalid, 'ingrid')
-
-test('can create a conductor two ways', t => {
-    const conductor1 = Conductor.withInstances([instanceValid])
-    const conductor2 = new Conductor(Config.conductor([instanceValid]))
-    // unfortunately these objects are totally opaque so can't really test them
-    t.deepEqual(conductor1, {})
-    t.deepEqual(conductor2, {})
-    t.end()
-})
+const configValid = Config.conductor([Config.instance(agent, dnaValid, 'valorie')])
+const configInvalid = Config.conductor([Config.instance(agent, dnaInvalid, 'ingrid')])
 
 test('can start and stop a conductor', t => {
-    const conductor = Conductor.withInstances([instanceValid])
+    const conductor = new Conductor(configValid)
     conductor.start()
     conductor.stop()
     t.end()
@@ -35,21 +26,8 @@ test('can start and stop a conductor', t => {
 
 test('can start and stop a conductor via `run`', t => {
     const result = Conductor.run(
-        [instanceValid],
-        (stop, {valorie}) => {
-            t.equal(valorie.agentId.indexOf('007'), 0)
-            stop()
-            t.end()
-        }
-    ).catch(t.fail)
-})
-
-test('can pass options to `run`', t => {
-    const result = Conductor.run(
-        [instanceValid],
-        {debugLog: false},
-        (stop, {valorie}) => {
-            t.equal(valorie.agentId.indexOf('007'), 0)
+        configValid,
+        (stop, conductor) => {
             stop()
             t.end()
         }
@@ -57,7 +35,7 @@ test('can pass options to `run`', t => {
 })
 
 test('conductor throws if it cannot start', t => {
-    const result = Conductor.run([instanceInvalid], (stop, {ingrid}) => {
+    const result = Conductor.run(configInvalid, (stop) => {
         t.fail("should have thrown exception!")
     }).catch(err => {
         t.equal(String(err).indexOf('Error: unable to start conductor'), 0)

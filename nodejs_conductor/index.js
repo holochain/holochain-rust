@@ -89,54 +89,37 @@ Conductor.prototype.callSync = function (...args) {
 
 // Convenience function for making an object that can call into the conductor
 // in the context of a particular instance. This may be temporary.
-Conductor.prototype.makeCaller = function (instanceId) {
+Conductor.prototype.makeCaller = function (name) {
   return {
-    call: (zome, fn, params) => this.call(instanceId, zome, fn, params),
-    agentId: this.agent_id(instanceId),
-    dnaAddress: this.dna_address(instanceId),
+    call: (...args) => this.call(name, ...args),
+    callSync: (...args) => this.callSync(name, ...args),
+    callWithPromise: (...args) => this.callWithPromise(name, ...args),
+    agentId: this.agent_id(name),
+    dnaAddress: this.dna_address(name),
   }
-}
-
-// DEPRECATED: use Conductor.run()
-Conductor.withInstances = function (instances, opts=defaultOpts) {
-    const config = Config.conductor(instances, opts)
-    return new Conductor(config)
 }
 
 /**
  * Run a new Conductor, specified by a closure:
- * (stop, callers, conductor) => { (code to run) }
+ * (stop, conductor) => { (code to run) }
  * where `stop` is a function that shuts down the Conductor and must be called in the closure body
- * `opts` is an optional object of configuration
- * and the `callers` is an Object of instances specified in the config, keyed by "name"
- * (name is the optional third parameter of `Config.instance`)
  *
  * e.g.:
- *      Conductor.run([
+ *      Conductor.run(Config.conductor([
  *          instanceAlice,
  *          instanceBob,
  *          instanceCarol,
- *      ], (stop, {alice, bob, carol}) => {
- *          const resultAlice = alice.call(...)
- *          const resultBob = bob.call(...)
- *          assert(resultAlice === resultBob)
+ *      ]), (stop, conductor) => {
+ *          doStuffWith(conductor)
  *          stop()
  *      })
  */
-Conductor.run = function (instances, opts, fn) {
-    if (typeof opts === 'function') {
-        fn = opts
-        opts = undefined
-    }
-    const conductor = Conductor.withInstances(instances, opts)
+Conductor.run = function (config, fn) {
+    const conductor = new Conductor(config)
     return new Promise((fulfill, reject) => {
         try {
             conductor._start(promiser(fulfill, reject))
-            const callers = {}
-            instances.map(inst => {
-                callers[inst.name] = conductor.makeCaller(inst.name)
-            })
-            fn(() => conductor._stop(), callers, conductor)
+            fn(() => conductor._stop(), conductor)
         } catch (e) {
             reject(e)
         }
@@ -171,20 +154,14 @@ class Scenario {
      *      })
      */
     run(fn) {
-        return Conductor.run(this.instances, this.opts, (stop, _, conductor) => {
+        return Conductor.run(this.instances, this.opts, (stop, conductor) => {
             const callers = {}
             this.instances.forEach(instance => {
                 const name = instance.name
                 if (name in callers) {
                     throw `instance with duplicate name '${name}', please give one of these instances a new name,\ne.g. Config.instance(agent, dna, "newName")`
                 }
-                callers[name] = {
-                    call: (...args) => conductor.call(name, ...args),
-                    callSync: (...args) => conductor.callSync(name, ...args),
-                    callWithPromise: (...args) => conductor.callWithPromise(name, ...args),
-                    agentId: conductor.agent_id(name),
-                    dnaAddress: conductor.dna_address(name),
-                }
+                callers[name] = conductor.makeCaller(name)
             })
             return fn(stop, callers)
         })

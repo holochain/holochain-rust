@@ -114,7 +114,7 @@ console.log(dnaConfig)
 
 ## Full Conductor Configuration
 
-### `Config.conductor(instancesList, [conductorOptions])` => `object`
+### `Config.conductor(instancesArray, [conductorOptions])` => `object`
 
 Consumes an array of configured instances and produces an object which is a fully valid Conductor configuration. It can be passed into the Conductor constructor, which is covered in the next articles.
 
@@ -122,7 +122,7 @@ Consumes an array of configured instances and produces an object which is a full
 but those values are not visible when using `console.log` on the result.
 
 ___
-**Name** instancesList
+**Name** instancesArray
 
 **Type** `array`
 

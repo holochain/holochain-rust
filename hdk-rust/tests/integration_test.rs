@@ -19,30 +19,30 @@ use hdk::error::ZomeApiResult;
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
 #[cfg(not(windows))]
-use holochain_core_types::error::CoreError;
+use holochain_core_types::{
+    crud_status::CrudStatus,
+    entry::EntryWithMeta,
+    error::CoreError,
+};
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::CrudStatus,
     dna::{
         capabilities::{Capability, CapabilityCall, CapabilityType},
         entry_types::{EntryTypeDef, LinksTo},
         fn_declarations::FnDeclaration,
         zome::{ZomeCapabilities, ZomeFnDeclarations},
     },
-    entry::{
-        entry_type::{test_app_entry_type, EntryType},
-        Entry, EntryWithMeta,
-    },
+    entry::{entry_type::{test_app_entry_type, EntryType}, Entry},
     error::HolochainError,
     hash::HashString,
     json::JsonString,
 };
 #[cfg(not(windows))]
-use holochain_wasm_utils::api_serialization::get_entry::GetEntryResult;
-use holochain_wasm_utils::{
-    api_serialization::{get_entry::StatusRequestKind, get_links::GetLinksResult},
-    wasm_target_dir,
+use holochain_wasm_utils::api_serialization::{
+    get_entry::{GetEntryResult, StatusRequestKind},
+    get_links::GetLinksResult,
 };
+use holochain_wasm_utils::wasm_target_dir;
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},

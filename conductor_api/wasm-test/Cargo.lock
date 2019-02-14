@@ -81,11 +81,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "example_api_wasm"
-version = "0.0.3"
+version = "0.0.4-alpha"
 dependencies = [
- "holochain_core_types 0.0.3",
- "holochain_core_types_derive 0.0.3",
- "holochain_wasm_utils 0.0.3",
+ "holochain_core_types 0.0.4-alpha",
+ "holochain_core_types_derive 0.0.4-alpha",
+ "holochain_wasm_utils 0.0.4-alpha",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -201,7 +201,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_core_types"
-version = "0.0.3"
+version = "0.0.4-alpha"
 dependencies = [
  "arrayref 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -213,7 +213,7 @@ dependencies = [
  "futures-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-sink-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-util-preview 0.3.0-alpha.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_core_types_derive 0.0.3",
+ "holochain_core_types_derive 0.0.4-alpha",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "multihash 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "objekt 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -229,7 +229,7 @@ dependencies = [
 
 [[package]]
 name = "holochain_core_types_derive"
-version = "0.0.3"
+version = "0.0.4-alpha"
 dependencies = [
  "quote 0.6.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -239,10 +239,10 @@ dependencies = [
 
 [[package]]
 name = "holochain_wasm_utils"
-version = "0.0.3"
+version = "0.0.4-alpha"
 dependencies = [
- "holochain_core_types 0.0.3",
- "holochain_core_types_derive 0.0.3",
+ "holochain_core_types 0.0.4-alpha",
+ "holochain_core_types_derive 0.0.4-alpha",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",

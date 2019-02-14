@@ -720,7 +720,7 @@ pattern = '.*'"#
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.hcpkg'
-hash = 'QmX8Waqm8HDqoHdG4E3Z19iXEoL3QdAk45KqLcjypXXTN1'
+hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
 id = 'new-dna'"#,
             ),
         );
@@ -883,7 +883,7 @@ id = 'new-dna'"#,
             String::from(
                 r#"[[dnas]]
 file = 'new-dna.hcpkg'
-hash = 'QmX8Waqm8HDqoHdG4E3Z19iXEoL3QdAk45KqLcjypXXTN1'
+hash = 'QmQVLgFxUpd1ExVkBzvwASshpG6fmaJGxDEgf1cFf7S73a'
 id = 'new-dna'"#,
             ),
         );

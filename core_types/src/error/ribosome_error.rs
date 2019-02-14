@@ -288,8 +288,6 @@ pub mod tests {
 
     #[test]
     fn ribosome_error_code_round_trip() {
-        let code_int = RibosomeErrorCode::OutOfMemory as u64;
-        println!("zz {:?}", code_int);
         let oom = RibosomeErrorCode::from_code_int(
             ((RibosomeErrorCode::OutOfMemory as u64) >> 32) as RibosomeCodeBits,
         );

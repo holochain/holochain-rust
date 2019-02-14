@@ -1,7 +1,7 @@
 # Capabilities
 
 ## Overview
-Holochain uses a modified version of the [capabilities](https://en.wikipedia.org/wiki/Capability-based_security) security model.  Holochain DNA instances will grant revokable, cryptographic capability tokens which are shared as access credentials. Appropriate access credentials must be used to access to functions and private data.
+Holochain uses a modified version of the [capabilities](https://en.wikipedia.org/wiki/Capability-based_security) security model.  Holochain DNA instances will grant revokable, cryptographic capability tokens which are shared as access credentials. Appropriate access credentials must be used to access functions and private data.
 
 This enables us to use a single security pattern for:
 

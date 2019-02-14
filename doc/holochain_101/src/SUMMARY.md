@@ -71,7 +71,7 @@
     - [WebSockets](./json_rpc_websockets.md)
   - [Conductor Admin](./conductor_admin.md)
 - [Building Holochain Apps: User Interfaces](./apps_user_interfaces.md)
-- [(E) Building Holochain Apps: Briding](./bridging.md)
+- [(E) Building Holochain Apps: Bridging](./bridging.md)
 - [(E) Going Live with Holochain Apps](./live_hc_apps.md)
   - [(E) Creating Versioned Releases](./creating_versioned_releases.md)
 - [(E) Building Holochain Apps: Advanced Topics](./apps_advanced_topics.md)

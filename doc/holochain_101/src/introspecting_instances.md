@@ -16,6 +16,8 @@ ___
 
 ```javascript
 const aliceAgentId = conductor.agent_id('alice')
+console.log(aliceAgentId)
+// alice-----------------------------------------------------------------------------AAAIuDJb4M
 ```
 
 ### `conductor.dna_address(instanceId)` => `string`
@@ -34,4 +36,6 @@ ___
 
 ```javascript
 const dnaAddress = conductor.dna_address('alice')
+console.log(dnaAddress)
+// QmYiUmMEq1WQmSSjbM7pcLCy1GkdkfbwH5cxugGmeNZPE3
 ```

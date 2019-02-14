@@ -19,8 +19,14 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
+use holochain_dpki::{
+    bundle::KeyBundle,
+    keypair::Keypair,
+    util::PwHashConfig,
+};
+use holochain_sodium::{pwhash, secbuf::SecBuf};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-
+use rpassword;
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -76,9 +82,11 @@ pub fn mount_conductor_from_config(config: Configuration) {
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
+    agent_keys: HashMap<String, Keypair>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
     pub(in crate::conductor) interface_threads: HashMap<String, Sender<()>>,
+    pub(in crate::conductor) key_loader: KeyLoader,
     pub(in crate::conductor) dna_loader: DnaLoader,
     pub(in crate::conductor) ui_dir_copier: UiDirCopier,
     signal_tx: Option<SignalSender>,
@@ -96,6 +104,7 @@ impl Drop for Conductor {
 }
 
 type SignalSender = SyncSender<Signal>;
+pub type KeyLoader = Arc<Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>>;
 pub type DnaLoader = Arc<Box<FnMut(&PathBuf) -> Result<Dna, HolochainError> + Send + Sync>>;
 pub type UiDirCopier =
     Arc<Box<FnMut(&PathBuf, &PathBuf) -> Result<(), HolochainError> + Send + Sync>>;
@@ -111,9 +120,11 @@ impl Conductor {
 
         Conductor {
             instances: HashMap::new(),
+            agent_keys: HashMap::new(),
             interface_threads: HashMap::new(),
             static_servers: HashMap::new(),
             config,
+            key_loader: Arc::new(Box::new(Self::load_key)),
             dna_loader: Arc::new(Box::new(Self::load_dna)),
             ui_dir_copier: Arc::new(Box::new(Self::copy_ui_dir)),
             signal_tx: None,
@@ -385,10 +396,15 @@ impl Conductor {
                 let mut context_builder = ContextBuilder::new();
 
                 // Agent:
-                let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
-                let pub_key = KeyBuffer::with_corrected(&agent_config.public_address)?;
+                let agent_id = {
+                    let keypair = self.get_key_for_agent(&instance_config.agent)?;
+                    let pub_key = KeyBuffer::with_corrected(&keypair.get_id())?;
+                    let agent_config = config.agent_by_id(&instance_config.agent).unwrap();
+                    AgentId::new(&agent_config.name, &pub_key)
+                };
+
                 context_builder =
-                    context_builder.with_agent(AgentId::new(&agent_config.name, &pub_key));
+                    context_builder.with_agent(agent_id);
 
                 context_builder = context_builder.with_p2p_config(self.instance_p2p_config());
 
@@ -453,6 +469,24 @@ impl Conductor {
             })
     }
 
+    fn get_key_for_agent(&mut self, agent_id: &String) -> Result<&Keypair, String> {
+        if ! self.agent_keys.contains_key(agent_id) {
+            let agent_config = self.config.agent_by_id(agent_id)
+                .ok_or( format!("Agent '{}' not found", agent_id))?;
+            let key_file_path = PathBuf::from(agent_config.key_file.clone());
+            let keypair = Arc::get_mut(&mut self.key_loader).unwrap()(&key_file_path).map_err(|_| {
+                HolochainError::ConfigError(format!(
+                    "Could not load key file \"{}\"",
+                    agent_config.key_file,
+                ))
+            })?;
+            self.agent_keys.insert(agent_id.clone(), keypair);
+        }
+
+        let keypair_ref = self.agent_keys.get(agent_id).unwrap();
+        Ok(keypair_ref)
+    }
+
     fn start_interface(&mut self, config: &InterfaceConfiguration) -> Result<(), String> {
         if self.interface_threads.contains_key(&config.id) {
             return Err(format!("Interface {} already started!", config.id));
@@ -470,6 +504,29 @@ impl Conductor {
         let mut contents = String::new();
         f.read_to_string(&mut contents)?;
         Dna::try_from(JsonString::from(contents))
+    }
+
+    /// Default KeyLoader that actually reads files from the filesystem
+    fn load_key(file: &PathBuf) -> Result<Keypair, HolochainError> {
+        notify(format!("Reading DNA from {}", file.display()));
+
+        let passphrase = rpassword::read_password_from_tty(Some("Passphrase: "))?;
+
+        let mut file = File::open(file)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+
+        let bundle: KeyBundle = serde_json::from_str(&contents)?;
+        let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
+        Keypair::from_bundle(
+            &bundle,
+            &mut passphrase,
+            Some(PwHashConfig(
+                pwhash::OPSLIMIT_INTERACTIVE,
+                pwhash::MEMLIMIT_INTERACTIVE,
+                pwhash::ALG_ARGON2ID13,
+            )),
+        )
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
@@ -624,6 +681,8 @@ pub mod tests {
     use crate::config::load_configuration;
     use holochain_core::{action::Action, signal::signal_channel};
     use holochain_core_types::{cas::content::Address, dna, json::RawString};
+    use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+    use holochain_sodium::secbuf::SecBuf;
     use holochain_wasm_utils::wasm_target_dir;
     use std::{
         fs::{File, OpenOptions},
@@ -644,25 +703,49 @@ pub mod tests {
         Arc::new(loader)
     }
 
+    pub fn test_key_loader() -> KeyLoader {
+        let loader = Box::new(|path: &PathBuf| {
+            match path.to_str().unwrap().as_ref() {
+                "holo_tester1.key" => Ok(test_key(1)),
+                "holo_tester2.key" => Ok(test_key(2)),
+                "holo_tester3.key" => Ok(test_key(3)),
+                unknown => Err(HolochainError::ErrorGeneric(format!("No test key for {}", unknown))),
+            }
+        })
+            as Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>;
+        Arc::new(loader)
+    }
+
+    fn test_key(index: u8) -> Keypair {
+        // Create deterministic seed:
+        let mut seed = SecBuf::with_insecure(SEEDSIZE);
+        let mock_seed: Vec<u8> = (1..SEEDSIZE).map(|e| e as u8 + index).collect();
+        seed.write(0, mock_seed.as_slice())
+            .expect("SecBuf must be writeable");
+
+        // Create keypair from seed:
+        Keypair::new_from_seed(&mut seed).unwrap()
+    }
+
     pub fn test_toml() -> String {
-        r#"
+        format!(r#"
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
-    public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
-    key_file = "holo_tester.key"
+    public_address = "{}"
+    key_file = "holo_tester1.key"
 
     [[agents]]
     id = "test-agent-2"
     name = "Holo Tester 2"
-    public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
-    key_file = "holo_tester.key"
+    public_address = "{}"
+    key_file = "holo_tester2.key"
 
     [[agents]]
     id = "test-agent-3"
     name = "Holo Tester 3"
-    public_address = "HoloTester2-----------------------------------------------------------------------AAAGy4WW9e"
-    key_file = "holo_tester.key"
+    public_address = "{}"
+    key_file = "holo_tester3.key"
 
     [[dnas]]
     id = "test-dna"
@@ -735,14 +818,14 @@ pub mod tests {
     caller_id = "bridge-caller"
     callee_id = "test-instance-1"
     handle = "test-callee"
-    "#
-        .to_string()
+    "#, test_key(1).get_id(), test_key(2).get_id(), test_key(3).get_id())
     }
 
     pub fn test_conductor() -> Conductor {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
         conductor.load_config().unwrap();
         conductor
     }
@@ -751,6 +834,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut conductor = Conductor::from_config(config.clone()).with_signal_channel(signal_tx);
         conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
         conductor.load_config().unwrap();
         conductor
     }
@@ -862,7 +946,7 @@ pub mod tests {
         assert_eq!(
             maybe_conductor.err().unwrap(),
             HolochainError::ConfigError(
-                "Error while trying to create instance \"test-instance-1\": Could not load DNA file \"bridge/callee.dna\"".to_string()
+                "Error while trying to create instance \"test-instance-1\": Could not load key file \"holo_tester1.key\"".to_string()
             )
         );
     }
@@ -1030,6 +1114,7 @@ pub mod tests {
         let config = load_configuration::<Configuration>(&test_toml()).unwrap();
         let mut conductor = Conductor::from_config(config.clone());
         conductor.dna_loader = test_dna_loader();
+        conductor.key_loader = test_key_loader();
         conductor.load_config().expect("Test config must be sane");
         conductor
             .start_all_instances()

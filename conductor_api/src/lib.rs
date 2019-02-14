@@ -135,6 +135,7 @@ extern crate tokio;
 #[macro_use]
 extern crate pretty_assertions;
 extern crate fs_extra;
+extern crate rpassword;
 
 pub mod conductor;
 pub mod config;

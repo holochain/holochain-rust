@@ -510,11 +510,11 @@ impl Conductor {
     fn load_key(file: &PathBuf) -> Result<Keypair, HolochainError> {
         notify(format!("Reading DNA from {}", file.display()));
 
-        let passphrase = rpassword::read_password_from_tty(Some("Passphrase: "))?;
-
         let mut file = File::open(file)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
+
+        let passphrase = rpassword::read_password_from_tty(Some("Passphrase: "))?;
 
         let bundle: KeyBundle = serde_json::from_str(&contents)?;
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);

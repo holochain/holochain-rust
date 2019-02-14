@@ -15,9 +15,9 @@ pub trait Bufferable {
     where
         Self: Sized;
     fn len(&self) -> usize;
-    fn readable(&mut self);
+    fn readable(&self);
     fn writable(&mut self);
-    fn noaccess(&mut self);
+    fn noaccess(&self);
     fn ref_(&self) -> &[u8];
     fn ref_mut(&mut self) -> &mut [u8];
 }
@@ -43,11 +43,11 @@ impl Bufferable for RustBuf {
         self.b.len()
     }
 
-    fn readable(&mut self) {}
+    fn readable(&self) {}
 
     fn writable(&mut self) {}
 
-    fn noaccess(&mut self) {}
+    fn noaccess(&self) {}
 
     fn ref_(&self) -> &[u8] {
         &self.b
@@ -91,7 +91,7 @@ impl Bufferable for SodiumBuf {
         self.s
     }
 
-    fn readable(&mut self) {
+    fn readable(&self) {
         unsafe {
             rust_sodium_sys::sodium_mprotect_readonly(self.z);
         }
@@ -103,7 +103,7 @@ impl Bufferable for SodiumBuf {
         }
     }
 
-    fn noaccess(&mut self) {
+    fn noaccess(&self) {
         unsafe {
             rust_sodium_sys::sodium_mprotect_noaccess(self.z);
         }
@@ -126,6 +126,12 @@ impl Drop for SodiumBuf {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum SecurityType {
+    Insecure,
+    Secure,
+}
+
 /// Represents the memory protection state of a SecBuf
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProtectState {
@@ -138,8 +144,29 @@ pub enum ProtectState {
 /// It can be backed by insecure (raw) memory for things like public keys,
 /// or secure (mlocked / mprotected) memory for things like private keys.
 pub struct SecBuf {
+    t: SecurityType,
     b: Box<Bufferable>,
     p: ProtectState,
+}
+
+impl Clone for SecBuf {
+    fn clone(&self) -> Self {
+        let mut out = match self.t {
+            SecurityType::Insecure => SecBuf::with_insecure(self.len()),
+            SecurityType::Secure => SecBuf::with_secure(self.len()),
+        };
+        self.b.readable();
+        unsafe {
+            let mut out_lock = out.write_lock();
+            std::ptr::copy(
+                self.b.ref_().as_ptr(),
+                (**out_lock).as_mut_ptr(),
+                self.len(),
+            );
+        }
+        self.b.noaccess();
+        out
+    }
 }
 
 impl std::fmt::Debug for SecBuf {
@@ -152,6 +179,7 @@ impl SecBuf {
     /// create a new SecBuf backed by insecure memory (for things like public keys)
     pub fn with_insecure(s: usize) -> Self {
         SecBuf {
+            t: SecurityType::Insecure,
             b: RustBuf::new(s),
             p: ProtectState::NoAccess,
         }
@@ -161,6 +189,7 @@ impl SecBuf {
     /// warning: funky sizes may result in mis-alignment
     pub fn with_secure(s: usize) -> Self {
         SecBuf {
+            t: SecurityType::Secure,
             b: SodiumBuf::new(s),
             p: ProtectState::NoAccess,
         }
@@ -168,6 +197,7 @@ impl SecBuf {
 
     pub fn with_insecure_from_string(s: String) -> Self {
         SecBuf {
+            t: SecurityType::Insecure,
             b: RustBuf::from_string(s),
             p: ProtectState::NoAccess,
         }
@@ -345,6 +375,28 @@ mod tests {
             let b = b.read_lock();
             assert_eq!(ProtectState::ReadOnly, b.protect_state());
             assert_eq!(b[0], 12);
+        }
+    }
+
+    #[test]
+    fn it_should_clone_insecure() {
+        let mut b = SecBuf::with_insecure(16);
+        b.write(0, &[1, 2, 3]).unwrap();
+        let mut c = b.clone();
+        {
+            let c = c.read_lock();
+            assert_eq!(&c[0..3], &[1, 2, 3]);
+        }
+    }
+
+    #[test]
+    fn it_should_clone_secure() {
+        let mut b = SecBuf::with_secure(16);
+        b.write(0, &[1, 2, 3]).unwrap();
+        let mut c = b.clone();
+        {
+            let c = c.read_lock();
+            assert_eq!(&c[0..3], &[1, 2, 3]);
         }
     }
 

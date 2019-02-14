@@ -58,7 +58,6 @@ ___
 ```javascript
 const { Config, Scenario } = require('@holochain/holochain-nodejs')
 
-// again note this is a static function on the class, not an instance function
 Scenario.setTape(require('tape'))
 ```
 

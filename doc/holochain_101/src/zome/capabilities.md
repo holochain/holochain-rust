@@ -1,11 +1,31 @@
 # Capabilities
 
-Holochain uses a modified version of the [capabilities](https://en.wikipedia.org/wiki/Capability-based_security) security model. Instead of the more familiar access control list (ACL) security model, Holochain DNA instances grant revokable capability tokens which can then be given out as a credential to be provided back when access to some function is desired. 
+## Overview
+Holochain uses a modified version of the [capabilities](https://en.wikipedia.org/wiki/Capability-based_security) security model.  Holochain DNA instances will grant revokable, cryptographic capability tokens which are shared as access credentials. Appropriate access credentials must be used to access to functions and private data.
 
-These capability grants are recorded as private entries on an agent's chain, and are checked for every access.  We currently have implemented three different levels of capability grants:  `Public`, `Transferable`, and `Assigned`.  
+This enables us to use a single security pattern for:
 
-`Public` grants are meant to be used by the Conductor for functions which are available for anyone to call.
+- connecting end-user UIs,
+- calls across zomes within a DNA,
+- bridging calls between different DNAs,
+- and providing selective users of a DNA the ability to query private entries on the local chain via send/receive.
 
-`Transferable` grants provide tokens that are valid from any source.
+Each capability grant gets recorded as a private entry on the grantor’s chain, and are validated against for every zome function call.
 
-`Assigned` grants generate tokens that are only valid for specific set of agents.
+## Using Capabilities
+
+As of version 0.0.4-alpha capabilities are not fully implemented. In this version, however you must declare all functions as public using the special `hc_public` marker trait in your `define_zome!` call.  Functions in that trait will be added to the public capability grant which gets auto-committed during genesis, and thus, because other capability grants aren't yet available in 0.0.4, all zome functions must be made public.
+
+```
+define_zome! {
+
+...
+
+   traits: {
+       hc_public [read_post, write_post]
+   }
+
+...
+
+}
+```

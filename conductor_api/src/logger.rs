@@ -171,13 +171,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_log_rules_default() {
-        let rules = LogRules::default();
-        assert_eq!(rules.rules.len(), 3);
-        assert_eq!(format!("{:?}",rules),"LogRules { rules: [LogRule { pattern: ^err/, exclude: false, color: Some(\"red\") }, LogRule { pattern: ^debug/dna, exclude: false, color: Some(\"white\") }, LogRule { pattern: .*, exclude: false, color: None }] }".to_string());
-    }
-
-    #[test]
     fn test_bad_log_rules() {
         let mut rules = LogRules::new();
         assert_eq!(

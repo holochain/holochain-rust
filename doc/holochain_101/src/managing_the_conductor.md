@@ -42,7 +42,7 @@ conductor.start()
 
 Stop all running instances configured for the conductor. This function **should** be called after all desired Zome calls have been made, otherwise the conductor instances will continue running as processes in the background.
 
-Returns a Promise that you can optionally wait on, which will wait for internal cleanup to happen prior to shutting down.
+Returns a Promise that you can optionally wait on to ensure that internal cleanup is complete.
 
 #### Example
 ```javascript

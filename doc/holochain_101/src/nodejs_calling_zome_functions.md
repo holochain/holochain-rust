@@ -6,7 +6,7 @@ A `Conductor` instance allows making calls to the custom functions defined the Z
 This is necessary in order to be able to test them. It calls synchronously and returns the result that the Zome function provides. An error could also be thrown, or returned.
 
 Note that Holochain has to serialize the actual arguments for the
-function call into JSON strings, which the Conductor instance will handle for you automatically. It also parses the result from a JSON string into an object. If for some reason you don't want it to do that, do `conductor._callRaw` instead, and pass a string as the fourth argument instead of an object.
+function call into JSON strings, which the Conductor instance will handle for you automatically. It also parses the result from a JSON string into an object. If for some reason you don't want it to do that, do `conductor._callRaw` instead, and pass a string as the last argument instead of an object.
 
 This function will only succeed if `conductor.start()` has been called before it.
 ___

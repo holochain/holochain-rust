@@ -857,9 +857,8 @@ pub mod tests {
                                 "sharing": "public"
                             }
                         },
-                        "capabilities": {
+                        "traits": {
                             "test": {
-                                "type": "public",
                                 "functions": ["test"]
                              }
                         },
@@ -1021,7 +1020,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -1030,10 +1029,10 @@ pub mod tests {
 
     (func
         (export "__list_functions")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 
     (func
@@ -1075,8 +1074,8 @@ pub mod tests {
         dna.zomes
             .get_mut("greeter")
             .unwrap()
-            .capabilities
-            .get_mut("test_cap")
+            .traits
+            .get_mut("hc_public")
             .unwrap()
             .functions
             .push("hello".into());

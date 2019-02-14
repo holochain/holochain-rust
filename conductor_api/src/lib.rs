@@ -25,7 +25,6 @@
 ///
 /// # Example
 /// ```rust
-/// #![feature(try_from)]
 /// extern crate clap;
 /// extern crate holochain_conductor_api;
 /// extern crate holochain_core_types;
@@ -37,7 +36,7 @@
 ///     conductor::Conductor,
 /// };
 /// use holochain_core_types::error::HolochainError;
-/// use std::{convert::TryFrom, fs::File, io::prelude::*, path::PathBuf};
+/// use std::{fs::File, io::prelude::*, path::PathBuf};
 /// use structopt::StructOpt;
 ///
 /// #[derive(StructOpt, Debug)]
@@ -78,7 +77,9 @@
 ///     config
 ///         .check_consistency()
 ///         .map_err(|string| HolochainError::ConfigError(string))?;
-///     Conductor::try_from(&config)
+///     let mut conductor = Conductor::from_config(config);
+///     conductor.load_config()?;
+///     Ok(conductor)
 /// }
 ///
 /// fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {

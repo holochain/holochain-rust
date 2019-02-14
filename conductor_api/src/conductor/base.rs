@@ -647,17 +647,6 @@ impl Conductor {
     }
 }
 
-impl<'a> TryFrom<&'a Configuration> for Conductor {
-    type Error = HolochainError;
-    fn try_from(config: &'a Configuration) -> Result<Self, Self::Error> {
-        let mut conductor = Conductor::from_config((*config).clone());
-        conductor
-            .load_config()
-            .map_err(|string| HolochainError::ConfigError(string))?;
-        Ok(conductor)
-    }
-}
-
 /// This can eventually be dependency injected for third party Interface definitions
 fn make_interface(interface_config: &InterfaceConfiguration) -> Box<Interface> {
     use interface_impls::{http::HttpInterface, websocket::WebsocketInterface};
@@ -934,21 +923,6 @@ pub mod tests {
             serialize_configuration(&conductor.config),
             serialize_configuration(&restored_config)
         )
-    }
-
-    #[test]
-    fn test_conductor_try_from_configuration() {
-        let config = load_configuration::<Configuration>(&test_toml()).unwrap();
-
-        let maybe_conductor = Conductor::try_from(&config);
-
-        assert!(maybe_conductor.is_err());
-        assert_eq!(
-            maybe_conductor.err().unwrap(),
-            HolochainError::ConfigError(
-                "Error while trying to create instance \"test-instance-1\": Could not load key file \"holo_tester1.key\"".to_string()
-            )
-        );
     }
 
     #[test]

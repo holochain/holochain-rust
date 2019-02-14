@@ -23,7 +23,8 @@ ___
 
 **Type** `string`
 
-**Description** The instance id of the DnaInstance within the `conductor` passed as the second argument. If using the [Config](./testing_configuration.md) helpers, it can often be the same as "name", as taken from the optional third parameter of [Config.instance](./testing_configuration.md#instances), which itself defaults to what was given in [Config.agent](./testing_configuration.md#agents).
+**Description** The instance id of the DnaInstance as specified in the configuration of `conductor`. 
+Note that when using the [Config.instance](./testing_configuration.md#instances) helper, the instance ID defaults to the agent name (as specified in [Config.agent](./testing_configuration.md#agents)) if not explicitly passed as a third argument.
 ___
 **Name** conductor
 

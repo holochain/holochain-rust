@@ -11,7 +11,7 @@ ___
 
 **Type** `string`
 
-**Description** Specifies an instance by its instanceId. This instanceId should be the equivalent thing as an `instanceConfig.name` which was passed to [Config.instance](./testing_configuration.md#instances). This in turn would be equivalent to the original name given to [Config.agent](./testing_configuration.md#agents), unless you overrode it when calling [Config.instance](./testing_configuration.md#instances). See more [here](./testing_configuration.md#example-2).
+**Description** Specifies an instance by its instanceId. This instanceId should be the equivalent to an `instanceConfig.name` which was passed to [Config.instance](./testing_configuration.md#instances). This in turn would be equivalent to the original name given to [Config.agent](./testing_configuration.md#agents), unless you overrode it when calling [Config.instance](./testing_configuration.md#instances). See more [here](./testing_configuration.md#example-2).
 ___
 
 #### Example
@@ -31,7 +31,7 @@ ___
 
 **Type** `string`
 
-**Description** Specifies an instance by its instanceId. This instanceId should be the equivalent thing as an `instanceConfig.name` which was passed to [Config.instance](./testing_configuration.md#instances). This in turn would be equivalent to the original name given to [Config.agent](./testing_configuration.md#agents), unless you overrode it when calling [Config.instance](./testing_configuration.md#instances). See more [here](./testing_configuration.md#example-2).
+**Description** Specifies an instance by its instanceId. This instanceId should be the equivalent to an `instanceConfig.name` which was passed to [Config.instance](./testing_configuration.md#instances). This in turn would be equivalent to the original name given to [Config.agent](./testing_configuration.md#agents), unless you overrode it when calling [Config.instance](./testing_configuration.md#instances). See more [here](./testing_configuration.md#example-2).
 ___
 
 #### Example

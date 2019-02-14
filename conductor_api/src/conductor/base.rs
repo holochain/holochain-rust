@@ -1,4 +1,3 @@
-use boolinator::Boolinator;
 use crate::{
     config::{
         serialize_configuration, Configuration, InterfaceConfiguration, InterfaceDriver,
@@ -9,6 +8,7 @@ use crate::{
     logger::DebugLogger,
     Holochain,
 };
+use boolinator::Boolinator;
 use holochain_core::{
     logger::{ChannelLogger, Logger},
     signal::Signal,
@@ -20,11 +20,7 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{
-    bundle::KeyBundle,
-    keypair::Keypair,
-    util::PwHashConfig,
-};
+use holochain_dpki::{bundle::KeyBundle, keypair::Keypair, util::PwHashConfig};
 use holochain_sodium::{pwhash, secbuf::SecBuf};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
@@ -404,8 +400,7 @@ impl Conductor {
                     AgentId::new(&agent_config.name, &pub_key)
                 };
 
-                context_builder =
-                    context_builder.with_agent(agent_id);
+                context_builder = context_builder.with_agent(agent_id);
 
                 context_builder = context_builder.with_p2p_config(self.instance_p2p_config());
 
@@ -471,23 +466,25 @@ impl Conductor {
     }
 
     fn get_key_for_agent(&mut self, agent_id: &String) -> Result<&Keypair, String> {
-        if ! self.agent_keys.contains_key(agent_id) {
-            let agent_config = self.config.agent_by_id(agent_id)
-                .ok_or( format!("Agent '{}' not found", agent_id))?;
+        if !self.agent_keys.contains_key(agent_id) {
+            let agent_config = self
+                .config
+                .agent_by_id(agent_id)
+                .ok_or(format!("Agent '{}' not found", agent_id))?;
             let key_file_path = PathBuf::from(agent_config.key_file.clone());
-            let keypair = Arc::get_mut(&mut self.key_loader).unwrap()(&key_file_path).map_err(|_| {
-                HolochainError::ConfigError(format!(
-                    "Could not load key file \"{}\"",
-                    agent_config.key_file,
-                ))
-            })?;
-            (agent_config.public_address == keypair.get_id())
-                .ok_or(format!(
-                    "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
-                    key_file_path.to_str().unwrap(),
-                    keypair.get_id(),
-                    agent_config.public_address,
-                ))?;
+            let keypair =
+                Arc::get_mut(&mut self.key_loader).unwrap()(&key_file_path).map_err(|_| {
+                    HolochainError::ConfigError(format!(
+                        "Could not load key file \"{}\"",
+                        agent_config.key_file,
+                    ))
+                })?;
+            (agent_config.public_address == keypair.get_id()).ok_or(format!(
+                "Key from file '{}' ('{}') does not match public address {} mentioned in config!",
+                key_file_path.to_str().unwrap(),
+                keypair.get_id(),
+                agent_config.public_address,
+            ))?;
             self.agent_keys.insert(agent_id.clone(), keypair);
         }
 
@@ -701,13 +698,14 @@ pub mod tests {
     }
 
     pub fn test_key_loader() -> KeyLoader {
-        let loader = Box::new(|path: &PathBuf| {
-            match path.to_str().unwrap().as_ref() {
-                "holo_tester1.key" => Ok(test_key(1)),
-                "holo_tester2.key" => Ok(test_key(2)),
-                "holo_tester3.key" => Ok(test_key(3)),
-                unknown => Err(HolochainError::ErrorGeneric(format!("No test key for {}", unknown))),
-            }
+        let loader = Box::new(|path: &PathBuf| match path.to_str().unwrap().as_ref() {
+            "holo_tester1.key" => Ok(test_key(1)),
+            "holo_tester2.key" => Ok(test_key(2)),
+            "holo_tester3.key" => Ok(test_key(3)),
+            unknown => Err(HolochainError::ErrorGeneric(format!(
+                "No test key for {}",
+                unknown
+            ))),
         })
             as Box<FnMut(&PathBuf) -> Result<Keypair, HolochainError> + Send + Sync>;
         Arc::new(loader)
@@ -725,7 +723,8 @@ pub mod tests {
     }
 
     pub fn test_toml() -> String {
-        format!(r#"
+        format!(
+            r#"
     [[agents]]
     id = "test-agent-1"
     name = "Holo Tester 1"
@@ -815,7 +814,11 @@ pub mod tests {
     caller_id = "bridge-caller"
     callee_id = "test-instance-1"
     handle = "test-callee"
-    "#, test_key(1).get_id(), test_key(2).get_id(), test_key(3).get_id())
+    "#,
+            test_key(1).get_id(),
+            test_key(2).get_id(),
+            test_key(3).get_id()
+        )
     }
 
     pub fn test_conductor() -> Conductor {

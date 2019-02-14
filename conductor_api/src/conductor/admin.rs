@@ -509,7 +509,10 @@ impl ConductorAdmin for Conductor {
 pub mod tests {
     use super::*;
     use crate::{
-        conductor::base::{tests::{example_dna_string, test_key_loader, test_key}, DnaLoader},
+        conductor::base::{
+            tests::{example_dna_string, test_key, test_key_loader},
+            DnaLoader,
+        },
         config::{load_configuration, Configuration, InterfaceConfiguration, InterfaceDriver},
     };
     use holochain_core_types::{agent::AgentId, dna::Dna, json::JsonString};
@@ -552,21 +555,25 @@ pub mod tests {
     }
 
     pub fn agent1() -> String {
-        format!(r#"[[agents]]
+        format!(
+            r#"[[agents]]
 id = 'test-agent-1'
 key_file = 'holo_tester1.key'
 name = 'Holo Tester 1'
 public_address = '{}'"#,
-        test_key(1).get_id())
+            test_key(1).get_id()
+        )
     }
 
     pub fn agent2() -> String {
-        format!(r#"[[agents]]
+        format!(
+            r#"[[agents]]
 id = 'test-agent-2'
 key_file = 'holo_tester2.key'
 name = 'Holo Tester 2'
 public_address = '{}'"#,
-        test_key(2).get_id())
+            test_key(2).get_id()
+        )
     }
 
     pub fn dna() -> String {

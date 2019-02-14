@@ -177,7 +177,7 @@ Some helpful links:
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-Copyright (C) 2018, Holochain Trust
+Copyright (C) 2018, Holochain Foundation
 
 This program is free software: you can redistribute it and/or modify it under the terms of the license p
 rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu

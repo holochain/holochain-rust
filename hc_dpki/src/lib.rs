@@ -7,7 +7,6 @@ extern crate base64;
 extern crate bip39;
 extern crate boolinator;
 extern crate rustc_serialize;
-#[macro_use]
 extern crate serde;
 
 pub mod bundle;

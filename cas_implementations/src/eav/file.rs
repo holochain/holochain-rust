@@ -205,7 +205,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .cloned()
             .collect();
 
-        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
+        let (eavis, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
             .clone()
             .into_iter()
             .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
@@ -215,20 +215,15 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 "Error Converting EAVs".to_string(),
             ))
         } else {
-            let map: BTreeSet<EntityAttributeValueIndex> = eav
-                .clone()
-                .into_iter()
-                .map(|value: HcResult<EntityAttributeValueIndex>| {
-                    value.unwrap_or(EntityAttributeValueIndex::default())
-                })
-                .collect();
             let index_query = EaviQuery::new(
                 Default::default(),
                 Default::default(),
                 Default::default(),
                 query.index().clone(),
             );
-            let results = index_query.run(map.iter().cloned());
+            // We expect eavis to consist entirely of `Ok`s now, so we can filter out the `Err`s (of which there should be none)
+            let it = eavis.iter().cloned().filter_map(|r| r.ok());
+            let results = index_query.run(it);
             Ok(results)
         }
     }

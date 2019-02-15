@@ -479,10 +479,7 @@ impl InMemoryServer {
         }
         let sender_info = maybe_sender_info.unwrap();
         let sender_agent_id = sender_info.0;
-        let sender_request_id = match sender_info.1 {
-            None => String::new(),
-            Some(req_id) => req_id,
-        };
+        let sender_request_id = sender_info.1.unwrap_or_default();
         let fail_msg = FailureResultData {
             dna_address: dna_address.clone(),
             request_id: sender_request_id,

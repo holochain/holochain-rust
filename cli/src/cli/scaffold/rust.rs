@@ -1,3 +1,5 @@
+use failure::Error;
+use colored::*;
 use crate::{
     cli::{package, scaffold::Scaffold},
     config_files::Build,
@@ -6,8 +8,9 @@ use crate::{
 };
 use holochain_wasm_utils::wasm_target_dir;
 use std::{
+    process::Command,
     fs::{self, OpenOptions},
-    io::{Read, Seek, SeekFrom, Write},
+    io::{Read, Seek, SeekFrom, Write, ErrorKind},
     path::Path,
 };
 use toml::{self, value::Value};
@@ -110,6 +113,33 @@ impl RustScaffold {
 
 impl Scaffold for RustScaffold {
     fn gen<P: AsRef<Path>>(&self, base_path: P) -> DefaultResult<()> {
+
+        // First, check whether they have `cargo` installed
+        let mut check_cargo = Command::new("carg");
+        match check_cargo.status() {
+            Ok(_) => {},
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::NotFound => {
+                        println!("This command requires the `cargo` command, which is part of the Rust toolchain.");
+                        println!("Before you can generate a Rust based Zome, you must install Rust.");
+                        println!("As a first step, get Rust installed by using rustup https://rustup.rs/.");
+                        println!("Holochain requires you use the nightly-2019-01-24 toolchain.");
+                        println!("With Rust already installed switch to it by running the following commands:");
+                        println!("$ rustup toolchain install nightly-2019-01-24");
+                        println!("$ rustup default nightly-2019-01-24");
+                        println!("Having taken those steps, retry this command.");
+                        // early exit with Ok, since this is the graceful exit
+                        return Ok(())
+                    },
+                    // convert from a std::io::Error into a failure::Error
+                    // and actually return that error since it's something
+                    // different than just not finding `cargo`
+                    _ => return Err(Error::from(e))
+                }
+            }
+        };
+
         fs::create_dir_all(&base_path)?;
 
         // use cargo to initialise a library Rust crate without any version control
@@ -129,6 +159,13 @@ impl Scaffold for RustScaffold {
         // create and fill in a build file appropriate for Rust
         let build_file_path = base_path.as_ref().join(package::BUILD_CONFIG_FILE_NAME);
         self.build_template.save_as(build_file_path)?;
+
+        // CLI feedback
+        println!(
+            "{} {:?} Zome",
+            "Generated".green().bold(),
+            self.package_name
+        );
 
         Ok(())
     }

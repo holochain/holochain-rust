@@ -61,7 +61,6 @@ mod tests {
     use super::*;
     use crate::nucleus;
 
-    use futures::executor::block_on;
     use holochain_core_types::{cas::content::AddressableContent, entry::Entry, link::Link};
 
     #[cfg_attr(tarpaulin, skip)]
@@ -71,7 +70,7 @@ mod tests {
 
     #[test]
     fn can_add_valid_link() {
-        let (_instance, context) = nucleus::actions::tests::instance();
+        let (_instance, context) = nucleus::actions::tests::instance(None);
 
         let base = test_entry();
         nucleus::actions::tests::commit(base.clone(), &context);
@@ -79,20 +78,20 @@ mod tests {
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-tag");
 
-        let result = block_on(add_link(&link, &context.clone()));
+        let result = context.block_on(add_link(&link, &context.clone()));
 
         assert!(result.is_ok(), "result = {:?}", result);
     }
 
     #[test]
     fn errors_when_link_base_not_present() {
-        let (_instance, context) = nucleus::actions::tests::instance();
+        let (_instance, context) = nucleus::actions::tests::instance(None);
 
         let base = test_entry();
         let target = base.clone();
         let link = Link::new(&base.address(), &target.address(), "test-tag");
 
-        let result = block_on(add_link(&link, &context.clone()));
+        let result = context.block_on(add_link(&link, &context.clone()));
 
         assert!(result.is_err());
         assert_eq!(

@@ -1,7 +1,9 @@
 use crate::{
     agent::state::AgentState,
     context::Context,
-    network::{direct_message::DirectMessage, state::NetworkState},
+    network::{
+        direct_message::DirectMessage, entry_with_header::EntryWithHeader, state::NetworkState,
+    },
     nucleus::{
         state::{NucleusState, ValidationResult},
         ExecuteZomeFnResponse, ZomeFnCall,
@@ -13,12 +15,12 @@ use holochain_core_types::{
     dna::Dna,
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
-    json::JsonString,
     link::Link,
     validation::ValidationPackage,
 };
-use holochain_net_connection::protocol_wrapper::{
-    DhtData, DhtMetaData, GetDhtData, GetDhtMetaData,
+use holochain_net::p2p_config::P2pConfig;
+use holochain_net_connection::json_protocol::{
+    FetchEntryData, FetchEntryResultData, FetchMetaData, FetchMetaResultData,
 };
 use snowflake;
 use std::{
@@ -92,11 +94,14 @@ pub enum Action {
     // -------------
     /// Adds an entry to the local DHT shard.
     /// Does not validate, assumes entry is valid.
-    Hold(Entry),
+    Hold(EntryWithHeader),
 
     /// Adds a link to the local DHT shard's meta/EAV storage
     /// Does not validate, assumes link is valid.
     AddLink(Link),
+
+    //Removes a link for the local DHT
+    RemoveLink(Link),
 
     // ----------------
     // Network actions:
@@ -110,31 +115,31 @@ pub enum Action {
     /// (only publish for AppEntryType, publish and publish_meta for links etc)
     Publish(Address),
 
-    /// GetEntry by address
-    GetEntry(Address),
+    /// Fetch an Entry on the network by address
+    FetchEntry(GetEntryKey),
 
-    /// Lets the network module respond to a GET request.
+    /// Lets the network module respond to a FETCH request.
     /// Triggered from the corresponding workflow after retrieving the
     /// requested entry from our local DHT shard.
-    RespondGet((GetDhtData, Option<EntryWithMeta>)),
+    RespondFetch((FetchEntryData, Option<EntryWithMeta>)),
 
-    /// We got a response for our GET request which needs to be
-    /// added to the state.
+    /// We got a response for our FETCH request which needs to be added to the state.
     /// Triggered from the network handler.
-    HandleGetResult(DhtData),
+    HandleFetchResult(FetchEntryResultData),
 
     ///
     UpdateEntry((Address, Address)),
     ///
     RemoveEntry((Address, Address)),
     ///
-    GetEntryTimeout(Address),
+    GetEntryTimeout(GetEntryKey),
 
     /// get links from entry address and tag name
-    GetLinks((Address, String)),
-    GetLinksTimeout((Address, String)),
-    RespondGetLinks((GetDhtMetaData, Vec<Address>)),
-    HandleGetLinksResult((DhtMetaData, String)),
+    /// Last string is the stringified process unique id of this `hdk::get_links` call.
+    GetLinks(GetLinksKey),
+    GetLinksTimeout(GetLinksKey),
+    RespondGetLinks((FetchMetaData, Vec<Address>)),
+    HandleGetLinksResult((FetchMetaResultData, String)),
 
     /// Makes the network module send a direct (node-to-node) message
     /// to the address given in [DirectMessageData](struct.DirectMessageData.html)
@@ -174,14 +179,14 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
-    /// execute a function in a zome WASM
-    ExecuteZomeFunction(ZomeFnCall),
+    /// Gets dispatched when a zome function call starts.
+    /// There is no reducer for this action so this does not change state
+    /// (hence "Signal").
+    /// Is received as signal in the nodejs waiter to attach wait conditions.
+    SignalZomeFunctionCall(ZomeFnCall),
 
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
-
-    /// Execute a zome function call called by another zome function
-    Call(ZomeFnCall),
 
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context
@@ -206,6 +211,31 @@ pub type NetworkReduceFn = ReduceFn<NetworkState>;
 pub type NucleusReduceFn = ReduceFn<NucleusState>;
 pub type ReduceFn<S> = fn(Arc<Context>, &mut S, &ActionWrapper);
 
+/// The unique key that represents a GetLinks request, used to associate the eventual
+/// response with this GetLinks request
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct GetLinksKey {
+    /// The address of the Link base
+    pub base_address: Address,
+
+    /// The link tag
+    pub tag: String,
+
+    /// A unique ID that is used to pair the eventual result to this request
+    pub id: String,
+}
+
+/// The unique key that represents a Get request, used to associate the eventual
+/// response with this Get request
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct GetEntryKey {
+    /// The address of the entry to get
+    pub address: Address,
+
+    /// A unique ID that is used to pair the eventual result to this request
+    pub id: String,
+}
+
 /// Everything the network module needs to know in order to send a
 /// direct message.
 #[derive(Clone, PartialEq, Debug)]
@@ -228,9 +258,9 @@ pub struct DirectMessageData {
 /// Everything the network needs to initialize
 #[derive(Clone, PartialEq, Debug)]
 pub struct NetworkSettings {
-    /// JSON config that gets passed to [P2pNetwork](struct.P2pNetwork.html)
+    /// P2pConfig that gets passed to [P2pNetwork](struct.P2pNetwork.html)
     /// determines how to connect to the network module.
-    pub config: JsonString,
+    pub p2p_config: P2pConfig,
 
     /// DNA address is needed so the network module knows which network to
     /// connect us to.
@@ -245,7 +275,7 @@ pub struct NetworkSettings {
 pub mod tests {
 
     use crate::{
-        action::{Action, ActionWrapper},
+        action::{Action, ActionWrapper, GetEntryKey},
         nucleus::tests::test_call_response,
     };
     use holochain_core_types::entry::{expected_entry_address, test_entry};
@@ -253,7 +283,10 @@ pub mod tests {
 
     /// dummy action
     pub fn test_action() -> Action {
-        Action::GetEntry(expected_entry_address())
+        Action::FetchEntry(GetEntryKey {
+            address: expected_entry_address(),
+            id: String::from("test-id"),
+        })
     }
 
     /// dummy action wrapper with test_action()
@@ -268,7 +301,10 @@ pub mod tests {
 
     /// dummy action for a get of test_hash()
     pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::GetEntry(expected_entry_address()))
+        ActionWrapper::new(Action::FetchEntry(GetEntryKey {
+            address: expected_entry_address(),
+            id: snowflake::ProcessUniqueId::new().to_string(),
+        }))
     }
 
     pub fn test_action_wrapper_rzfr() -> ActionWrapper {

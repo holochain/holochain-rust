@@ -5,12 +5,16 @@ use crate::{
         state::{AgentState, AgentStateSnapshot},
     },
     context::Context,
-    dht::dht_store::DhtStore,
+    dht::{dht_reducers::ENTRY_HEADER_ATTRIBUTE, dht_store::DhtStore},
     network::state::NetworkState,
     nucleus::state::NucleusState,
 };
 use holochain_core_types::{
-    cas::storage::ContentAddressableStorage,
+    cas::{
+        content::{Address, AddressableContent},
+        storage::ContentAddressableStorage,
+    },
+    chain_header::ChainHeader,
     dna::Dna,
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
@@ -64,7 +68,7 @@ impl State {
             cas: Arc<RwLock<dyn ContentAddressableStorage>>,
         ) -> HcResult<Dna> {
             let dna_entry_header = agent_state
-                .chain()
+                .chain_store()
                 .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
                 .last()
                 .ok_or(HolochainError::ErrorGeneric(
@@ -97,7 +101,6 @@ impl State {
     }
 
     pub fn reduce(&self, context: Arc<Context>, action_wrapper: ActionWrapper) -> Self {
-        context.log(format!("debug/reduce: {:?}", action_wrapper));
         let mut new_state = State {
             nucleus: crate::nucleus::reduce(
                 Arc::clone(&context),
@@ -154,6 +157,50 @@ impl State {
             context.clone(),
             Arc::new(agent_state),
         ))
+    }
+
+    /// Get all headers for an entry by first looking in the DHT meta store
+    /// for header addresses, then resolving them with the DHT CAS
+    pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
+        let headers: Vec<ChainHeader> = self
+            .agent()
+            .iter_chain()
+            .filter(|h| h.entry_address() == &entry_address)
+            .collect();
+        let header_addresses: Vec<Address> = headers.iter().map(|h| h.address()).collect();
+        let mut dht_headers = self
+            .dht()
+            .meta_storage()
+            .read()
+            .unwrap()
+            // fetch all EAV references to chain headers for this entry
+            .fetch_eavi(
+                Some(entry_address),
+                Some(ENTRY_HEADER_ATTRIBUTE.to_string()),
+                None,
+                Default::default(),
+            )?
+            .into_iter()
+            // get the header addresses
+            .map(|eavi| eavi.value())
+            // don't include the chain header twice
+            .filter(|a| !header_addresses.contains(a))
+            // fetch the header content from CAS
+            .map(|a| self.dht().content_storage().read().unwrap().fetch(&a))
+            // rearrange
+            .collect::<Result<Vec<Option<_>>, _>>()
+            .map(|r| {
+                r.into_iter()
+                    // ignore None values
+                    .flatten()
+                    .map(|content| ChainHeader::try_from_content(&content))
+                    .collect::<Result<Vec<_>, _>>()
+            })??;
+        {
+            let mut all_headers = headers;
+            all_headers.append(&mut dht_headers);
+            Ok(all_headers)
+        }
     }
 }
 

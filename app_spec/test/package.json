@@ -1,12 +1,12 @@
 {
-  "devDependencies": {
-    "faucet": "0.0.1"
-  },
+  "devDependencies": {},
   "dependencies": {
+    "faucet": "0.0.1",
     "json3": "*",
+    "sleep": "^5.2.3",
     "tape": "^4.9.1"
   },
   "scripts": {
-    "test": "node test.js"
+    "test": "./run.sh"
   }
 }

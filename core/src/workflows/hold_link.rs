@@ -41,7 +41,6 @@ pub async fn hold_link_workflow<'a>(
     // 2. Create validation data struct
     let validation_data = ValidationData {
         package: validation_package,
-        sources: header.sources().clone(),
         lifecycle: EntryLifecycle::Meta,
         action: EntryAction::Create,
     };
@@ -69,7 +68,9 @@ pub mod tests {
         network::test_utils::*, nucleus::actions::tests::*, workflows::author_entry::author_entry,
     };
     use futures::executor::block_on;
-    use holochain_core_types::{entry::test_entry, link::link_add::LinkAdd};
+    use holochain_core_types::{
+        cas::content::AddressableContent, entry::test_entry, link::link_data::LinkData,
+    };
     use test_utils::*;
 
     #[test]
@@ -93,21 +94,26 @@ pub mod tests {
 
         let (_, context1) =
             test_instance_with_spoofed_dna(hacked_dna, dna_address, "alice").unwrap();
-        let (_instance2, context2) = instance_by_name("jack", dna);
+        let netname = Some("test_reject_invalid_link_on_remove_workflow");
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
         // Commit entry on attackers node
         let entry = test_entry();
-        let entry_address = block_on(author_entry(&entry, None, &context1)).unwrap();
+        let entry_address = context1
+            .block_on(author_entry(&entry, None, &context1))
+            .unwrap();
 
-        let link_add = LinkAdd::new(&entry_address, &entry_address, "test-tag");
+        let link_add = LinkData::new_add(&entry_address, &entry_address, "test-tag");
         let link_entry = Entry::LinkAdd(link_add);
 
-        let _ = block_on(author_entry(&link_entry, None, &context1)).unwrap();
+        let _ = context1
+            .block_on(author_entry(&link_entry, None, &context1))
+            .unwrap();
 
         // Get header which we need to trigger hold_entry_workflow
         let agent1_state = context1.state().unwrap().agent();
         let header = agent1_state
-            .get_header_for_entry(&link_entry)
+            .get_most_recent_header_for_entry(&link_entry)
             .expect("There must be a header in the author's source chain after commit");
         let entry_with_header = EntryWithHeader {
             entry: link_entry,
@@ -115,7 +121,7 @@ pub mod tests {
         };
 
         // Call hold_entry_workflow on victim DHT node
-        let result = block_on(hold_link_workflow(&entry_with_header, &context2));
+        let result = context2.block_on(hold_link_workflow(&entry_with_header, &context2));
 
         // ... and expect validation to fail with message defined in test WAT:
         assert!(result.is_err());

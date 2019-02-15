@@ -56,6 +56,10 @@ pub fn validate_entry<'a>(
             // LinkAdd can always be validated
         }
 
+        EntryType::LinkRemove => {
+            // LinkAdd can always be validated
+        }
+
         EntryType::Deletion => {
             // FIXME
         }
@@ -93,9 +97,10 @@ pub fn validate_entry<'a>(
                 Ok(validation_result) => match validation_result {
                     CallbackResult::Fail(error_string) => Err(error_string),
                     CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented => Err(format!(
-                        "Validation callback not implemented for {:?}",
-                        entry.entry_type().clone()
+                    CallbackResult::NotImplemented(reason) => Err(format!(
+                        "Validation callback not implemented for {:?} ({})",
+                        entry.entry_type().clone(),
+                        reason
                     )),
                     _ => unreachable!(),
                 },

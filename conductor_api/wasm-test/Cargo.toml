@@ -1,0 +1,21 @@
+[package]
+name = "example_api_wasm"
+version = "0.0.4-alpha"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+panic = "abort"
+
+[workspace]
+members = []
+
+[dependencies]
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
+holochain_wasm_utils = { path = "../../wasm_utils"}
+holochain_core_types = { path = "../../core_types"}
+holochain_core_types_derive = { path = "../../core_types_derive"}

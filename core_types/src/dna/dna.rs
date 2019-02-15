@@ -1,6 +1,11 @@
 use crate::{
     cas::content::{AddressableContent, Content},
-    dna::{bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef, wasm, zome},
+    dna::{
+        bridges::Bridge,
+        entry_types::EntryTypeDef,
+        fn_declarations::{FnDeclaration, TraitFns},
+        wasm, zome,
+    },
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
     json::JsonString,
@@ -113,51 +118,73 @@ impl Dna {
     }
 
     /// Return a Zome
-    pub fn get_zome(&self, zome_name: &str) -> Option<&zome::Zome> {
-        self.zomes.get(zome_name)
+    pub fn get_zome(&self, zome_name: &str) -> Result<&zome::Zome, DnaError> {
+        self.zomes
+            .get(zome_name)
+            .ok_or_else(|| DnaError::ZomeNotFound(format!("Zome '{}' not found", &zome_name,)))
     }
 
-    /// Return a Zome's Capability from a Zome and a Capability name.
-    pub fn get_capability<'a>(
+    /// Return a Zome's TraitFns from a Zome and a Trait name.
+    pub fn get_trait<'a>(&'a self, zome: &'a zome::Zome, trait_name: &str) -> Option<&'a TraitFns> {
+        zome.traits.get(trait_name)
+    }
+
+    /// Return a Function declaration from a Zome
+    pub fn get_function<'a>(
         &'a self,
         zome: &'a zome::Zome,
-        capability_name: &str,
-    ) -> Option<&'a Capability> {
-        zome.capabilities.get(capability_name)
+        function_name: &str,
+    ) -> Option<&'a FnDeclaration> {
+        zome.fn_declarations
+            .iter()
+            .find(|ref fn_decl| fn_decl.name == function_name)
+    }
+
+    /// Return a Zome Function declaration from a Zome name and Function name.
+    pub fn get_function_with_zome_name(
+        &self,
+        zome_name: &str,
+        fn_name: &str,
+    ) -> Result<&FnDeclaration, DnaError> {
+        let zome = self.get_zome(zome_name)?;
+
+        // Function must exist in Zome
+        let fn_decl = self.get_function(zome, &fn_name);
+        if fn_decl.is_none() {
+            return Err(DnaError::ZomeFunctionNotFound(format!(
+                "Zome function '{}' not found in Zome '{}'",
+                &fn_name, &zome_name
+            )));
+        }
+        // Everything OK
+        Ok(fn_decl.unwrap())
     }
 
     /// Find a Zome and return it's WASM bytecode for a specified Capability
     pub fn get_wasm_from_zome_name<T: Into<String>>(&self, zome_name: T) -> Option<&wasm::DnaWasm> {
         let zome_name = zome_name.into();
-        let zome = self.get_zome(&zome_name)?;
+        let zome = self.get_zome(&zome_name).ok()?;
         Some(&zome.code)
     }
 
-    /// Return a Zome's Capability from a Zome name and Capability name.
-    pub fn get_capability_with_zome_name(
+    /// Return a Zome's Trait functions from a Zome name and trait name.
+    pub fn get_trait_fns_with_zome_name(
         &self,
         zome_name: &str,
-        cap_name: &str,
-    ) -> Result<&Capability, DnaError> {
-        // Zome must exist in DNA
-        let zome = self.get_zome(zome_name);
-        if zome.is_none() {
-            return Err(DnaError::ZomeNotFound(format!(
-                "Zome '{}' not found",
-                &zome_name,
-            )));
-        }
-        let zome = zome.unwrap();
-        // Capability must exist in Zome
-        let cap = self.get_capability(zome, &cap_name);
-        if cap.is_none() {
-            return Err(DnaError::CapabilityNotFound(format!(
-                "Capability '{}' not found in Zome '{}'",
-                &cap_name, &zome_name
+        trait_name: &str,
+    ) -> Result<&TraitFns, DnaError> {
+        let zome = self.get_zome(zome_name)?;
+
+        // Trait must exist in Zome
+        let trait_fns = self.get_trait(zome, &trait_name);
+        if trait_fns.is_none() {
+            return Err(DnaError::TraitNotFound(format!(
+                "Trait '{}' not found in Zome '{}'",
+                &trait_name, &zome_name
             )));
         }
         // Everything OK
-        Ok(cap.unwrap())
+        Ok(trait_fns.unwrap())
     }
 
     /// Return the name of the zome holding a specified app entry_type
@@ -225,4 +252,146 @@ impl PartialEq for Dna {
         // need to guarantee that PartialEq and Hash always agree
         JsonString::from(self.to_owned()) == JsonString::from(other.to_owned())
     }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+    fn test_dna() -> Dna {
+        let fixture = String::from(
+            r#"{
+                "name": "test",
+                "description": "test",
+                "version": "test",
+                "uuid": "00000000-0000-0000-0000-000000000000",
+                "dna_spec_version": "2.0",
+                "properties": {
+                    "test": "test"
+                },
+                "zomes": {
+                    "test": {
+                        "description": "test",
+                        "config": {},
+                        "entry_types": {
+                            "test": {
+                                "description": "test",
+                                "sharing": "public",
+                                "links_to": [
+                                    {
+                                        "target_type": "test",
+                                        "tag": "test"
+                                    }
+                                ],
+                                "linked_from": []
+                            }
+                        },
+                        "traits": {
+                            "hc_public": {
+                                "functions": ["test"]
+                            }
+                        },
+                        "fn_declarations": [
+                            {
+                                "name": "test",
+                                "inputs": [],
+                                "outputs": []
+                            }
+                        ],
+                        "code": {
+                            "code": "AAECAw=="
+                        },
+                        "bridges": []
+                    }
+                }
+            }"#,
+        );
+        Dna::try_from(JsonString::from(fixture)).unwrap()
+    }
+
+    #[test]
+    fn test_dna_new() {
+        let dna = Dna::new();
+        assert_eq!(format!("{:?}",dna),"Dna { name: \"\", description: \"\", version: \"\", uuid: \"00000000-0000-0000-0000-000000000000\", dna_spec_version: \"2.0\", properties: Object({}), zomes: {} }")
+    }
+
+    #[test]
+    fn test_dna_to_json_pretty() {
+        let dna = Dna::new();
+        assert_eq!(format!("{:?}",dna.to_json_pretty()),"Ok(\"{\\n  \\\"name\\\": \\\"\\\",\\n  \\\"description\\\": \\\"\\\",\\n  \\\"version\\\": \\\"\\\",\\n  \\\"uuid\\\": \\\"00000000-0000-0000-0000-000000000000\\\",\\n  \\\"dna_spec_version\\\": \\\"2.0\\\",\\n  \\\"properties\\\": {},\\n  \\\"zomes\\\": {}\\n}\")")
+    }
+
+    #[test]
+    fn test_dna_get_zome() {
+        let dna = test_dna();
+        let result = dna.get_zome("foo zome");
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))"
+        );
+        let zome = dna.get_zome("test").unwrap();
+        assert_eq!(zome.description, "test");
+    }
+
+    #[test]
+    fn test_dna_get_trait() {
+        let dna = test_dna();
+        let zome = dna.get_zome("test").unwrap();
+        let result = dna.get_trait(zome, "foo trait");
+        assert!(result.is_none());
+        let cap = dna.get_trait(zome, "hc_public").unwrap();
+        assert_eq!(format!("{:?}", cap), "TraitFns { functions: [\"test\"] }");
+    }
+
+    #[test]
+    fn test_dna_get_trait_with_zome_name() {
+        let dna = test_dna();
+        let result = dna.get_trait_fns_with_zome_name("foo zome", "foo trait");
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))"
+        );
+        let result = dna.get_trait_fns_with_zome_name("test", "foo trait");
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(TraitNotFound(\"Trait \\\'foo trait\\\' not found in Zome \\\'test\\\'\"))"
+        );
+        let trait_fns = dna
+            .get_trait_fns_with_zome_name("test", "hc_public")
+            .unwrap();
+        assert_eq!(
+            format!("{:?}", trait_fns),
+            "TraitFns { functions: [\"test\"] }"
+        );
+    }
+
+    #[test]
+    fn test_dna_get_function() {
+        let dna = test_dna();
+        let zome = dna.get_zome("test").unwrap();
+        let result = dna.get_function(zome, "foo func");
+        assert!(result.is_none());
+        let fun = dna.get_function(zome, "test").unwrap();
+        assert_eq!(
+            format!("{:?}", fun),
+            "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
+        );
+    }
+
+    #[test]
+    fn test_dna_get_function_with_zome_name() {
+        let dna = test_dna();
+        let result = dna.get_function_with_zome_name("foo zome", "foo fun");
+        assert_eq!(
+            format!("{:?}", result),
+            "Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))"
+        );
+        let result = dna.get_function_with_zome_name("test", "foo fun");
+        assert_eq!(format!("{:?}",result),"Err(ZomeFunctionNotFound(\"Zome function \\\'foo fun\\\' not found in Zome \\\'test\\\'\"))");
+        let fun = dna.get_function_with_zome_name("test", "test").unwrap();
+        assert_eq!(
+            format!("{:?}", fun),
+            "FnDeclaration { name: \"test\", inputs: [], outputs: [] }"
+        );
+    }
+
 }

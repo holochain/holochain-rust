@@ -1,0 +1,51 @@
+[package]
+name = "holochain_conductor_api"
+version = "0.0.4-alpha"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+
+[dependencies]
+holochain_cas_implementations = { path = "../cas_implementations" }
+holochain_core = { path = "../core" }
+holochain_core_types = { path = "../core_types" }
+holochain_net = { path = "../net" }
+chrono = "0.4"
+futures-preview = "=0.3.0-alpha.12"
+futures-core-preview = "=0.3.0-alpha.12"
+futures-channel-preview = "=0.3.0-alpha.12"
+futures-executor-preview = "=0.3.0-alpha.12"
+futures-io-preview = "=0.3.0-alpha.12"
+futures-sink-preview = "=0.3.0-alpha.12"
+futures-util-preview = "=0.3.0-alpha.12"
+tempfile = "3"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
+toml = "0.4.8"
+boolinator = "2.4"
+tiny_http = "0.6.0"
+jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc" }
+petgraph = "0.4.13"
+colored = "1.6"
+regex = "1"
+serde_regex = "0.3.1"
+holochain_net_connection = { path = "../net_connection" }
+holochain_net_ipc = { path = "../net_ipc" }
+maplit = "1.0.1"
+dirs = "1.0.4"
+lazy_static = "1.2"
+directories = "1.0"
+json-patch = "0.2.2"
+hyper = "0.12.21"
+hyper-staticfile = "0.3.0"
+tokio = "0.1.14"
+fs_extra = "1.1"
+
+[dev-dependencies]
+test_utils = { path = "../test_utils"}
+holochain_wasm_utils = { path = "../wasm_utils" }
+clap = "2"
+structopt = "0.2"
+tempfile = "3"
+reqwest = "0.9"
+pretty_assertions = "*"

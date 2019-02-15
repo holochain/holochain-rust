@@ -8,24 +8,23 @@ use crate::{
         respond_validation_package_request::respond_validation_package_request,
     },
 };
-use futures::executor::block_on;
 use holochain_core_types::cas::content::Address;
 use std::{sync::Arc, thread};
 
-use holochain_net_connection::protocol_wrapper::MessageData;
+use holochain_net_connection::json_protocol::MessageData;
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
-pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
+pub fn handle_send_message(message_data: MessageData, context: Arc<Context>) {
     let message: DirectMessage =
-        serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
+        serde_json::from_str(&serde_json::to_string(&message_data.content).unwrap()).unwrap();
 
     match message {
         DirectMessage::Custom(custom_direct_message) => {
             thread::spawn(move || {
-                if let Err(error) = block_on(handle_custom_direct_message(
+                if let Err(error) = context.block_on(handle_custom_direct_message(
                     Address::from(message_data.from_agent_id),
-                    message_data.msg_id,
+                    message_data.request_id,
                     custom_direct_message,
                     context.clone(),
                 )) {
@@ -39,9 +38,9 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
             // network thread, so I use block_on to poll the async function but do that in
             // another thread:
             thread::spawn(move || {
-                block_on(respond_validation_package_request(
+                context.block_on(respond_validation_package_request(
                     Address::from(message_data.from_agent_id),
-                    message_data.msg_id,
+                    message_data.request_id,
                     address,
                     context.clone(),
                 ));
@@ -53,11 +52,11 @@ pub fn handle_send(message_data: MessageData, context: Arc<Context>) {
     };
 }
 
-/// We got a ProtocolWrapper::HandleSendResult, this means somebody has responded to our message
-/// -> we called and this is the answer
-pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
+/// We got a JsonProtocol::HandleSendMessageResult.
+/// This means somebody has responded to our message that we called and this is the answer
+pub fn handle_send_message_result(message_data: MessageData, context: Arc<Context>) {
     let response: DirectMessage =
-        serde_json::from_str(&serde_json::to_string(&message_data.data).unwrap()).unwrap();
+        serde_json::from_str(&serde_json::to_string(&message_data.content).unwrap()).unwrap();
 
     let initial_message = context
         .state()
@@ -65,7 +64,7 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
         .network()
         .as_ref()
         .direct_message_connections
-        .get(&message_data.msg_id)
+        .get(&message_data.request_id)
         .cloned();
 
     match response {
@@ -76,13 +75,13 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
             }
 
             let action_wrapper = ActionWrapper::new(Action::HandleCustomSendResponse((
-                message_data.msg_id.clone(),
+                message_data.request_id.clone(),
                 custom_direct_message.payload,
             )));
             dispatch_action(context.action_channel(), action_wrapper.clone());
 
             let action_wrapper =
-                ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
+                ActionWrapper::new(Action::ResolveDirectConnection(message_data.request_id));
             dispatch_action(context.action_channel(), action_wrapper.clone());
         }
         DirectMessage::RequestValidationPackage(_) => context.log(
@@ -104,7 +103,7 @@ pub fn handle_send_result(message_data: MessageData, context: Arc<Context>) {
             dispatch_action(context.action_channel(), action_wrapper.clone());
 
             let action_wrapper =
-                ActionWrapper::new(Action::ResolveDirectConnection(message_data.msg_id));
+                ActionWrapper::new(Action::ResolveDirectConnection(message_data.request_id));
             dispatch_action(context.action_channel(), action_wrapper.clone());
         }
     };

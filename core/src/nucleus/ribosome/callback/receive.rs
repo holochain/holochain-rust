@@ -4,6 +4,7 @@ use crate::{
         ribosome::{
             self,
             callback::{Callback, CallbackParams, CallbackResult},
+            runtime::WasmCallData,
             Defn,
         },
         ZomeFnCall,
@@ -23,7 +24,7 @@ pub fn receive(
 ) -> CallbackResult {
     let params = match params {
         CallbackParams::Receive(payload) => payload,
-        _ => return CallbackResult::NotImplemented,
+        _ => return CallbackResult::NotImplemented("receive/1".into()),
     };
 
     let zome_call = ZomeFnCall::new(
@@ -37,22 +38,20 @@ pub fn receive(
 
     let maybe_wasm = dna.get_wasm_from_zome_name(zome);
     if maybe_wasm.is_none() {
-        return CallbackResult::NotImplemented;
+        return CallbackResult::NotImplemented("receive/2".into());
     }
     let wasm = maybe_wasm.unwrap();
     if wasm.code.is_empty() {
-        return CallbackResult::NotImplemented;
+        return CallbackResult::NotImplemented("receive/3".into());
     }
 
     match ribosome::run_dna(
-        &dna.name,
-        context,
         wasm.code.clone(),
-        &zome_call,
         Some(zome_call.clone().parameters.into_bytes()),
+        WasmCallData::new_zome_call(context, dna.name, zome_call),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
-        Err(_) => CallbackResult::NotImplemented,
+        Err(_) => CallbackResult::NotImplemented("receive/4".into()),
     }
 }
 
@@ -71,26 +70,33 @@ pub mod tests {
     #[test]
     fn not_implemented() {
         let zome = "test_zome";
+        let netname = Some("not_implemented test");
         let instance = test_callback_instance(
             zome,
             // anything other than Genesis is fine here
             Callback::MissingNo.as_str(),
             0,
+            netname,
         )
         .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context("test", netname));
 
-        let result = receive(context, zome, &CallbackParams::Receive(String::from("")));
-
-        assert_eq!(CallbackResult::NotImplemented, result);
+        if let CallbackResult::NotImplemented(_) =
+            receive(context, zome, &CallbackParams::Receive(String::from("")))
+        {
+            ()
+        } else {
+            panic!("unexpected result");
+        }
     }
 
     #[test]
     fn implemented_with_null() {
         let zome = "test_zome";
-        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0)
+        let netname = Some("implemented_with_null");
+        let instance = test_callback_instance(zome, Callback::Receive.as_str(), 0, netname)
             .expect("Test callback instance could not be initialized");
-        let context = instance.initialize_context(test_context("test"));
+        let context = instance.initialize_context(test_context("test", netname));
 
         let result = receive(context, zome, &CallbackParams::Receive(String::from("")));
 

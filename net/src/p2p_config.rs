@@ -1,6 +1,6 @@
 use holochain_core_types::{error::HolochainError, json::JsonString};
 use snowflake;
-use std::{fs::File, str::FromStr};
+use std::{fs::File, io::prelude::*, str::FromStr};
 
 //--------------------------------------------------------------------------------------------------
 // P2pBackendKind
@@ -8,7 +8,7 @@ use std::{fs::File, str::FromStr};
 
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
-    MOCK,
+    MEMORY,
     IPC,
 }
 
@@ -16,7 +16,7 @@ impl FromStr for P2pBackendKind {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "MOCK" => Ok(P2pBackendKind::MOCK),
+            "MEMORY" => Ok(P2pBackendKind::MEMORY),
             "IPC" => Ok(P2pBackendKind::IPC),
             _ => Err(()),
         }
@@ -26,7 +26,7 @@ impl FromStr for P2pBackendKind {
 impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
-            P2pBackendKind::MOCK => "MOCK",
+            P2pBackendKind::MEMORY => "MEMORY",
             P2pBackendKind::IPC => "IPC",
         })
     }
@@ -52,6 +52,7 @@ impl From<&'static str> for P2pBackendKind {
 pub struct P2pConfig {
     pub backend_kind: P2pBackendKind,
     pub backend_config: serde_json::Value,
+    pub maybe_end_user_config: Option<serde_json::Value>,
 }
 
 // Conversions
@@ -71,11 +72,16 @@ impl P2pConfig {
 
 // Constructors
 impl P2pConfig {
-    pub fn new(backend_kind: P2pBackendKind, backend_config: &str) -> Self {
+    pub fn new(
+        backend_kind: P2pBackendKind,
+        backend_config: &str,
+        maybe_end_user_config: Option<serde_json::Value>,
+    ) -> Self {
         P2pConfig {
             backend_kind,
             backend_config: serde_json::from_str(backend_config)
                 .expect("Invalid backend_config json on P2pConfig creation."),
+            maybe_end_user_config,
         }
     }
 
@@ -91,59 +97,118 @@ impl P2pConfig {
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
+    pub fn new_ipc_uri(
+        maybe_ipc_binding: Option<String>,
+        bootstrap_nodes: &Vec<String>,
+        maybe_end_user_config_filepath: Option<String>,
+    ) -> Self {
+        let backend_config = json!({
+            "socketType": "zmq",
+            "blockConnect": false,
+            "bootstrapNodes": bootstrap_nodes,
+            "ipcUri": maybe_ipc_binding
+        })
+        .to_string();
+        P2pConfig::new(
+            P2pBackendKind::IPC,
+            &backend_config,
+            Some(P2pConfig::load_end_user_config(
+                maybe_end_user_config_filepath,
+            )),
+        )
+    }
+
     pub fn default_ipc_uri(maybe_ipc_binding: Option<&str>) -> Self {
         match maybe_ipc_binding {
             None => P2pConfig::from_str(P2pConfig::DEFAULT_IPC_URI_CONFIG)
                 .expect("Invalid backend_config json on P2pConfig creation."),
             Some(ipc_binding) => {
                 let backend_config = json!({
-                "backend_kind": "IPC",
-                "backend_config": {
                     "socketType": "zmq",
                     "blockConnect": false,
                     "ipcUri": ipc_binding
-                }})
+                })
                 .to_string();
-                println!("config_str = {}", backend_config);
-                P2pConfig::from_str(&backend_config)
-                    .expect("Invalid backend_config json on P2pConfig creation.")
+                P2pConfig::new(
+                    P2pBackendKind::IPC,
+                    &backend_config,
+                    Some(P2pConfig::default_end_user_config()),
+                )
             }
         }
     }
 
-    pub fn unique_mock() -> Self {
-        Self::named_mock(&format!(
-            "mock-auto-{}",
+    pub fn new_with_memory_backend(server_name: &str) -> Self {
+        P2pConfig::new(
+            P2pBackendKind::MEMORY,
+            &Self::memory_backend_string(server_name),
+            None,
+        )
+    }
+
+    pub fn new_with_unique_memory_backend() -> Self {
+        Self::new_with_memory_backend(&format!(
+            "memory-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
         ))
     }
 
-    pub fn unique_mock_config() -> String {
-        Self::named_mock_config(&format!(
-            "mock-auto-{}",
+    pub fn unique_memory_backend_string() -> String {
+        Self::memory_backend_string(&format!(
+            "memory-auto-{}",
             snowflake::ProcessUniqueId::new().to_string()
         ))
     }
 
-    pub fn named_mock(network_name: &str) -> Self {
-        P2pConfig::from_str(&Self::named_mock_config(network_name))
-            .expect("Invalid backend_config json on P2pConfig creation.")
-    }
-
-    pub fn named_mock_config(network_name: &str) -> String {
+    pub fn memory_backend_string(server_name: &str) -> String {
         format!(
             r#"{{
-    "backend_kind": "MOCK",
-    "backend_config": {{
-        "networkName": "{}"
-    }}
-}}"#,
-            network_name
+            "serverName": "{}"
+            }}"#,
+            server_name
         )
     }
 }
 
-// statics
+/// end_user config
+impl P2pConfig {
+    pub fn default_end_user_config() -> serde_json::Value {
+        json!({
+          "webproxy": {
+            "connection": {
+              "rsaBits": 1024,
+              "bind": [
+                "wss://0.0.0.0:0/"
+              ]
+            },
+            "wssAdvertise": "auto",
+            "wssRelayPeers": null
+          }
+        })
+    }
+
+    pub fn load_end_user_config(
+        maybe_end_user_config_filepath: Option<String>,
+    ) -> serde_json::Value {
+        fn load_config_file(filepath: String) -> Result<serde_json::Value, std::io::Error> {
+            let mut file = File::open(filepath)?;
+            let mut contents = String::new();
+            file.read_to_string(&mut contents)?;
+            let res = serde_json::from_str(&contents);
+            res.map_err(|_e| std::io::Error::new(std::io::ErrorKind::Other, "serde fail"))
+        }
+
+        match maybe_end_user_config_filepath {
+            None => P2pConfig::default_end_user_config(),
+            Some(filepath) => match load_config_file(filepath) {
+                Err(_) => return P2pConfig::default_end_user_config(),
+                Ok(json) => json,
+            },
+        }
+    }
+}
+
+/// statics
 impl P2pConfig {
     pub const DEFAULT_IPC_SPAWN_CONFIG: &'static str = r#"
     {
@@ -177,12 +242,13 @@ mod tests {
 
     #[test]
     fn it_can_json_round_trip() {
-        let mock_name = "mock";
-        let p2p_config = P2pConfig::from_str(&P2pConfig::named_mock_config(mock_name)).unwrap();
+        let server_name = "memory_test";
+        let p2p_config =
+            P2pConfig::from_str(&P2pConfig::new_with_memory_backend(server_name).as_str()).unwrap();
         let json_str = p2p_config.as_str();
         let p2p_config_2 = P2pConfig::from_str(&json_str).unwrap();
         assert_eq!(p2p_config, p2p_config_2);
-        assert_eq!(p2p_config, P2pConfig::named_mock(mock_name));
+        assert_eq!(p2p_config, P2pConfig::new_with_memory_backend(server_name));
     }
 
     #[test]

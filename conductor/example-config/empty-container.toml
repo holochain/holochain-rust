@@ -1,0 +1,28 @@
+[[agents]]
+id = "test agent 1"
+name = "Holo Tester 1"
+public_address = "HoloTester1-----------------------------------------------------------------------AAACZp4xHB"
+key_file = "holo_tester.key"
+
+dnas = []
+
+instances = []
+
+[[interfaces]]
+admin = true
+id = "http interface"
+instances = []
+[interfaces.driver]
+type = "http"
+port = 4000
+
+[[interfaces]]
+admin = true
+id = "websocket interface"
+instances = []
+[interfaces.driver]
+type = "websocket"
+port = 3000
+
+[logger]
+type = "debug"

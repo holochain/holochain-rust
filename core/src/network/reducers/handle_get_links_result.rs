@@ -1,15 +1,24 @@
-use crate::{action::ActionWrapper, context::Context, network::state::NetworkState};
+use crate::{
+    action::{ActionWrapper, GetLinksKey},
+    context::Context,
+    network::state::NetworkState,
+};
 use holochain_core_types::{cas::content::Address, error::HolochainError};
-use holochain_net_connection::protocol_wrapper::DhtMetaData;
+use holochain_net_connection::json_protocol::FetchMetaResultData;
 use std::sync::Arc;
 
-fn inner(
+fn reduce_handle_get_links_result_inner(
     network_state: &mut NetworkState,
-    dht_meta_data: &DhtMetaData,
+    dht_meta_data: &FetchMetaResultData,
 ) -> Result<Vec<Address>, HolochainError> {
     network_state.initialized()?;
-
-    let res = serde_json::from_str(&serde_json::to_string(&dht_meta_data.content).unwrap());
+    // expecting dht_meta_data.content_list to be a jsonified array of EntryWithHeader or Address
+    // TODO: do a loop on content once links properly implemented
+    assert_eq!(dht_meta_data.content_list.len(), 1);
+    let res = serde_json::from_str(
+        &serde_json::to_string(&dht_meta_data.content_list[0])
+            .expect("Failed to deserialize dht_meta_data"),
+    );
     if let Err(_) = res {
         return Err(HolochainError::ErrorGeneric(
             "Failed to deserialize Vec<Address> from HandleGetLinkResult DhtMetaData content"
@@ -20,17 +29,24 @@ fn inner(
 }
 
 pub fn reduce_handle_get_links_result(
-    _context: Arc<Context>,
+    context: Arc<Context>,
     network_state: &mut NetworkState,
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
     let (dht_meta_data, tag) = unwrap_to!(action => crate::action::Action::HandleGetLinksResult);
 
-    let result = inner(network_state, dht_meta_data);
+    context.log(format!(
+        "debug/reduce/handle_get_links_result: Got response from {}: {:?}",
+        dht_meta_data.provider_agent_id, dht_meta_data.content_list,
+    ));
 
-    network_state.get_links_results.insert(
-        (Address::from(dht_meta_data.address.clone()), tag.clone()),
-        Some(result),
-    );
+    let result = reduce_handle_get_links_result_inner(network_state, dht_meta_data);
+    let key = GetLinksKey {
+        base_address: Address::from(dht_meta_data.entry_address.clone()),
+        tag: tag.clone(),
+        id: dht_meta_data.request_id.clone(),
+    };
+
+    network_state.get_links_results.insert(key, Some(result));
 }

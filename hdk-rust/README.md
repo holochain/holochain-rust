@@ -10,7 +10,7 @@
 ## Usage
 First, [Rust](https://www.rust-lang.org/en-US/install.html) must be installed on your computer.
 
-Being a Rust library, `hdk-rust` can be added as a dependency to any Rust crate. When you generate Rust based Zomes with [hc](https://github.com/holochain/holochain-rust/tree/develop/cmd) it will automatically be added as a dependency, and imported into your code.
+Being a Rust library, `hdk-rust` can be added as a dependency to any Rust crate. When you generate Rust based Zomes with [hc](https://github.com/holochain/holochain-rust/tree/develop/cli) it will automatically be added as a dependency, and imported into your code.
 
 To see the documentation for usage, check out https://holochain.github.io/rust-api/0.0.1/hdk
 
@@ -25,7 +25,7 @@ Holochain is an open source project.  We welcome all sorts of participation and 
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-Copyright (C) 2018, Holochain Trust
+Copyright (C) 2018, Holochain Foundation
 
 This program is free software: you can redistribute it and/or modify it under the terms of the license p
 rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu

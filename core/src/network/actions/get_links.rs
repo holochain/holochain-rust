@@ -1,6 +1,6 @@
 extern crate futures;
 use crate::{
-    action::{Action, ActionWrapper},
+    action::{Action, ActionWrapper, GetLinksKey},
     context::Context,
     instance::dispatch_action,
 };
@@ -8,30 +8,38 @@ use futures::{
     future::Future,
     task::{LocalWaker, Poll},
 };
-use holochain_core_types::{cas::content::Address, error::HcResult};
-use std::{pin::Pin, sync::Arc, thread::sleep, time::Duration};
+use holochain_core_types::{cas::content::Address, error::HcResult, time::Timeout};
+use snowflake::ProcessUniqueId;
+use std::{pin::Pin, sync::Arc, thread};
 
 /// GetLinks Action Creator
 /// This is the network version of get_links that makes the network module start
 /// a look-up process.
-pub async fn get_links<'a>(
-    context: &'a Arc<Context>,
-    address: &'a Address,
+pub async fn get_links(
+    context: Arc<Context>,
+    address: Address,
     tag: String,
+    timeout: Timeout,
 ) -> HcResult<Vec<Address>> {
-    let action_wrapper = ActionWrapper::new(Action::GetLinks((address.clone(), tag.clone())));
+    let key = GetLinksKey {
+        base_address: address.clone(),
+        tag: tag.clone(),
+        id: ProcessUniqueId::new().to_string(),
+    };
+    let action_wrapper = ActionWrapper::new(Action::GetLinks(key.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
-    let _ = async {
-        sleep(Duration::from_secs(60));
-        let action_wrapper =
-            ActionWrapper::new(Action::GetLinksTimeout((address.clone(), tag.clone())));
-        dispatch_action(context.action_channel(), action_wrapper.clone());
-    };
+    let key_inner = key.clone();
+    let context_inner = context.clone();
+    let _ = thread::spawn(move || {
+        thread::sleep(timeout.into());
+        let action_wrapper = ActionWrapper::new(Action::GetLinksTimeout(key_inner));
+        dispatch_action(context_inner.action_channel(), action_wrapper.clone());
+    });
 
     await!(GetLinksFuture {
         context: context.clone(),
-        key: (address.clone(), tag.clone())
+        key
     })
 }
 
@@ -39,7 +47,7 @@ pub async fn get_links<'a>(
 /// Tracks the state of the network module
 pub struct GetLinksFuture {
     context: Arc<Context>,
-    key: (Address, String),
+    key: GetLinksKey,
 }
 
 impl Future for GetLinksFuture {

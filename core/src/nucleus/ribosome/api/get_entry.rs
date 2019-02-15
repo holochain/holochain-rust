@@ -2,23 +2,23 @@ use crate::{
     nucleus::ribosome::{api::ZomeApiResult, Runtime},
     workflows::get_entry_result::get_entry_result_workflow,
 };
-use futures::executor::block_on;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::GetAppEntry function code
-/// args: [0] encoded MemoryAllocation as u32
+/// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetEntryArgs
-/// Returns an HcApiReturnCode as I32
+/// Returns an HcApiReturnCode as I64
 pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let input = match GetEntryArgs::try_from(args_str.clone()) {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            runtime.context.log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_get_entry() failed to deserialize: {:?}",
                 args_str
             ));
@@ -26,7 +26,9 @@ pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
         }
     };
     // Create workflow future and block on it
-    let result = block_on(get_entry_result_workflow(&runtime.context, &input));
+    let result = zome_call_data
+        .context
+        .block_on(get_entry_result_workflow(&zome_call_data.context, &input));
     // Store result in wasm memory
     runtime.store_result(result)
 }
@@ -46,6 +48,7 @@ pub mod tests {
                     commit::tests::test_commit_args_bytes,
                     tests::{test_parameters, test_zome_name},
                 },
+                runtime::WasmCallData,
             },
             tests::{test_capability_call, test_capability_name},
             ZomeFnCall,
@@ -65,7 +68,12 @@ pub mod tests {
     pub fn test_get_args_bytes() -> Vec<u8> {
         let entry_args = GetEntryArgs {
             address: test_entry().address(),
-            options: GetEntryOptions::new(StatusRequestKind::Latest, true, false, false),
+            options: GetEntryOptions::new(
+                StatusRequestKind::Latest,
+                true,
+                false,
+                Default::default(),
+            ),
         };
         JsonString::from(entry_args).into_bytes()
     }
@@ -74,7 +82,12 @@ pub mod tests {
     pub fn test_get_args_unknown() -> Vec<u8> {
         let entry_args = GetEntryArgs {
             address: Address::from("xxxxxxxxx"),
-            options: GetEntryOptions::new(StatusRequestKind::Latest, true, false, false),
+            options: GetEntryOptions::new(
+                StatusRequestKind::Latest,
+                true,
+                false,
+                Default::default(),
+            ),
         };
         JsonString::from(entry_args).into_bytes()
     }
@@ -89,15 +102,15 @@ pub mod tests {
 (module
     (import "env" "hc_get_entry"
         (func $get
-            (param i32)
-            (result i32)
+            (param i64)
+            (result i64)
         )
     )
 
     (import "env" "hc_commit_entry"
         (func $commit
-            (param i32)
-            (result i32)
+            (param i64)
+            (result i64)
         )
     )
 
@@ -106,8 +119,8 @@ pub mod tests {
 
     (func
         (export "get_dispatch")
-            (param $allocation i32)
-            (result i32)
+            (param $allocation i64)
+            (result i64)
 
         (call
             $get
@@ -117,8 +130,8 @@ pub mod tests {
 
     (func
         (export "commit_dispatch")
-            (param $allocation i32)
-            (result i32)
+            (param $allocation i64)
+            (result i64)
 
         (call
             $commit
@@ -128,35 +141,43 @@ pub mod tests {
 
     (func
         (export "__hdk_validate_app_entry")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 
     (func
         (export "__hdk_get_validation_package_for_entry_type")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
         ;; This writes "Entry" into memory
-        (i32.store (i32.const 0) (i32.const 34))
-        (i32.store (i32.const 1) (i32.const 69))
-        (i32.store (i32.const 2) (i32.const 110))
-        (i32.store (i32.const 3) (i32.const 116))
-        (i32.store (i32.const 4) (i32.const 114))
-        (i32.store (i32.const 5) (i32.const 121))
-        (i32.store (i32.const 6) (i32.const 34))
+        (i64.store (i32.const 0) (i64.const 34))
+        (i64.store (i32.const 1) (i64.const 69))
+        (i64.store (i32.const 2) (i64.const 110))
+        (i64.store (i32.const 3) (i64.const 116))
+        (i64.store (i32.const 4) (i64.const 114))
+        (i64.store (i32.const 5) (i64.const 121))
+        (i64.store (i32.const 6) (i64.const 34))
 
-        (i32.const 7)
+        (i64.const 7)
     )
 
     (func
-        (export "__list_capabilities")
-        (param $allocation i32)
-        (result i32)
+        (export "__list_traits")
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
+    )
+
+    (func
+        (export "__list_functions")
+        (param $allocation i64)
+        (result i64)
+
+        (i64.const 0)
     )
 )
                 "#,
@@ -169,14 +190,16 @@ pub mod tests {
     #[test]
     /// test that we can round trip bytes through a get action and it comes back from wasm
     fn test_get_round_trip() {
+        let netname = Some("test_get_round_trip");
         let wasm = test_get_round_trip_wat();
         let dna = test_utils::create_test_dna_with_wasm(
             &test_zome_name(),
             &test_capability_name(),
             wasm.clone(),
         );
-        let instance = test_instance(dna.clone()).expect("Could not initialize test instance");
-        let (context, _) = test_context_and_logger("joan");
+        let instance =
+            test_instance(dna.clone(), netname).expect("Could not initialize test instance");
+        let (context, _) = test_context_and_logger("joan", netname);
         let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().top_chain_header());
@@ -197,11 +220,9 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            &dna.name.to_string(),
-            Arc::clone(&context),
             wasm.clone(),
-            &commit_call,
             Some(test_commit_args_bytes()),
+            WasmCallData::new_zome_call(Arc::clone(&context), dna.name.clone(), commit_call),
         )
         .expect("test should be callable");
 
@@ -221,22 +242,21 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = ribosome::run_dna(
-            &dna.name.to_string(),
-            Arc::clone(&context),
             wasm.clone(),
-            &get_call,
             Some(test_get_args_bytes()),
+            WasmCallData::new_zome_call(Arc::clone(&context), dna.name, get_call),
         )
         .expect("test should be callable");
 
-        let entry_result = GetEntryResult::new(
-            StatusRequestKind::Latest,
-            Some(&EntryWithMeta {
-                entry: test_entry(),
-                crud_status: CrudStatus::Live,
-                maybe_crud_link: None,
-            }),
-        );
+        let entry = test_entry();
+        let entry_with_meta = EntryWithMeta {
+            entry: entry.clone(),
+            crud_status: CrudStatus::Live,
+            maybe_crud_link: None,
+        };
+        // let header = create_new_chain_header(&entry, context.clone(), &None);
+        let entry_result =
+            GetEntryResult::new(StatusRequestKind::Latest, Some((&entry_with_meta, vec![])));
         assert_eq!(
             JsonString::from(String::from(JsonString::from(
                 ZomeApiInternalResult::success(entry_result)

@@ -29,7 +29,6 @@ pub async fn author_entry<'a>(
     let validation_package = await!(build_validation_package(&entry, &context))?;
     let validation_data = ValidationData {
         package: validation_package,
-        sources: vec![Address::from("<insert your agent key here>")],
         lifecycle: EntryLifecycle::Chain,
         action: EntryAction::Create,
     };
@@ -79,20 +78,22 @@ pub async fn author_entry<'a>(
 pub mod tests {
     use super::author_entry;
     use crate::nucleus::actions::tests::*;
-    use futures::executor::block_on;
     use holochain_core_types::{entry::test_entry, json::JsonString};
     use std::{thread, time};
 
     #[test]
     #[cfg(not(windows))]
-    /// test that a commit will publish and entry to the dht of a connected instance via the mock network
+    /// test that a commit will publish and entry to the dht of a connected instance via the in-memory network
     fn test_commit_with_dht_publish() {
         let mut dna = test_dna();
         dna.uuid = "test_commit_with_dht_publish".to_string();
-        let (_instance1, context1) = instance_by_name("jill", dna.clone());
-        let (_instance2, context2) = instance_by_name("jack", dna);
+        let netname = Some("test_commit_with_dht_publish, the network");
+        let (_instance1, context1) = instance_by_name("jill", dna.clone(), netname);
+        let (_instance2, context2) = instance_by_name("jack", dna, netname);
 
-        let entry_address = block_on(author_entry(&test_entry(), None, &context1)).unwrap();
+        let entry_address = context1
+            .block_on(author_entry(&test_entry(), None, &context1))
+            .unwrap();
         thread::sleep(time::Duration::from_millis(500));
 
         let mut json: Option<JsonString> = None;

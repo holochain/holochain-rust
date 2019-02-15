@@ -1,13 +1,13 @@
 [package]
 name = "holochain_core_types_derive"
-version = "0.0.3"
+version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = "0.14.4"
+syn = "0.15"
 quote = "0.6.3"
 serde = "1.0"
 serde_json = { version = "1.0", features = ["preserve_order"] }

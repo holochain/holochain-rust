@@ -1,0 +1,15 @@
+[package]
+name = "holochain_node_test_waiter"
+version = "0.0.4-alpha"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+
+[dependencies]
+colored = "1"
+neon = "0.2.0"
+neon-serde = "0.1.1"
+holochain_conductor_api = { path = "../conductor_api" }
+holochain_core = { path = "../core" }
+holochain_net = { path = "../net" }
+holochain_core_types = { path = "../core_types" }
+holochain_cas_implementations = { path = "../cas_implementations" }

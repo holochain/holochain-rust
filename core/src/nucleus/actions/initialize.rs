@@ -18,7 +18,7 @@ use std::{pin::Pin, sync::Arc, time::*};
 
 /// Timeout in seconds for initialization process.
 /// Future will resolve to an error after this duration.
-const INITIALIZATION_TIMEOUT: u64 = 30;
+const INITIALIZATION_TIMEOUT: u64 = 60;
 
 /// Initialize Application, Action Creator
 /// This is the high-level initialization function that wraps the whole process of initializing an
@@ -38,14 +38,10 @@ pub async fn initialize_application(
         ));
     }
 
-    let context_clone = context.clone();
-
     let action_wrapper = ActionWrapper::new(Action::InitApplication(dna.clone()));
-    dispatch_action_and_wait(
-        &context_clone.action_channel(),
-        &context_clone.observer_channel(),
-        action_wrapper.clone(),
-    );
+    dispatch_action_and_wait(context.clone(), action_wrapper.clone());
+
+    let context_clone = context.clone();
 
     // Commit DNA to chain
     let dna_entry = Entry::Dna(dna.clone());
@@ -66,7 +62,7 @@ pub async fn initialize_application(
 
     // Commit AgentId to chain
     let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
-    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone,));
+    let agent_id_commit = await!(commit_entry(agent_id_entry, None, &context_clone));
 
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates
@@ -90,15 +86,16 @@ pub async fn initialize_application(
         .map(|zome_name| genesis(context_clone.clone(), zome_name, &CallbackParams::Genesis))
         .collect();
 
-    let fail_result = results.iter().find(|ref r| match r {
-        CallbackResult::Fail(_) => true,
-        _ => false,
-    });
-
-    let maybe_error = fail_result.and_then(|result| match result {
-        CallbackResult::Fail(error_string) => Some(error_string.clone()),
-        _ => None,
-    });
+    let maybe_error = results
+        .iter()
+        .find(|ref r| match r {
+            CallbackResult::Fail(_) => true,
+            _ => false,
+        })
+        .and_then(|result| match result {
+            CallbackResult::Fail(error_string) => Some(error_string.clone()),
+            _ => None,
+        });
 
     context_clone
         .action_channel()

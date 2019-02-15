@@ -4,11 +4,12 @@ use crate::holochain_core_types::{
     error::{HolochainError, RibosomeErrorCode},
     json::{JsonError, JsonString},
 };
+use holochain_wasm_utils::memory::allocation::AllocationError;
 use std::{error::Error, fmt};
 
 /// Error for DNA developers to use in their Zome code.
 /// This does not have to be sent back to Ribosome unless its an InternalError.
-#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,
@@ -23,14 +24,14 @@ impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
         match zome_api_error {
             ZomeApiError::ValidationFailed(s) => HolochainError::ValidationFailed(s),
-            _ => HolochainError::RibosomeFailed(zome_api_error.description().into()),
+            _ => HolochainError::RibosomeFailed(zome_api_error.to_string().into()),
         }
     }
 }
 
 impl From<ZomeApiError> for String {
     fn from(zome_api_error: ZomeApiError) -> Self {
-        zome_api_error.description().into()
+        zome_api_error.to_string().into()
     }
 }
 
@@ -39,7 +40,7 @@ impl From<HolochainError> for ZomeApiError {
         match holochain_error {
             HolochainError::ValidationFailed(s) => ZomeApiError::ValidationFailed(s),
             HolochainError::Timeout => ZomeApiError::Timeout,
-            _ => ZomeApiError::Internal(holochain_error.description().into()),
+            _ => ZomeApiError::Internal(holochain_error.to_string().into()),
         }
     }
 }
@@ -62,26 +63,34 @@ impl From<RibosomeErrorCode> for ZomeApiError {
     }
 }
 
-impl Error for ZomeApiError {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn description(&self) -> &str {
-        match self {
-            ZomeApiError::Internal(msg)           => &msg,
-            ZomeApiError::FunctionNotImplemented  => "Function not implemented",
-            ZomeApiError::HashNotFound            => "Hash not found",
-            ZomeApiError::ValidationFailed(msg)   => &msg,
-            ZomeApiError::Timeout                 => "Timeout",
+impl From<AllocationError> for ZomeApiError {
+    fn from(allocation_error: AllocationError) -> ZomeApiError {
+        match allocation_error {
+            AllocationError::OutOfBounds => {
+                ZomeApiError::Internal("Allocation out of bounds".into())
+            }
+            AllocationError::ZeroLength => ZomeApiError::Internal("Allocation zero length".into()),
+            AllocationError::BadStackAlignment => {
+                ZomeApiError::Internal("Allocation out of alignment with stack".into())
+            }
+            AllocationError::Serialization => {
+                ZomeApiError::Internal("Allocation serialization failure".into())
+            }
         }
     }
 }
 
+impl Error for ZomeApiError {}
+
 impl fmt::Display for ZomeApiError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // @TODO seems weird to use debug for display
-        // replacing {:?} with {} gives a stack overflow on to_string() (there's a test for this)
-        // what is the right way to do this?
-        // @see https://github.com/holochain/holochain-rust/issues/223
-        write!(f, "{:?}", self)
+        match self {
+            ZomeApiError::Internal(msg) => write!(f, "{}", msg),
+            ZomeApiError::FunctionNotImplemented => write!(f, "Function not implemented"),
+            ZomeApiError::HashNotFound => write!(f, "Hash not found"),
+            ZomeApiError::ValidationFailed(msg) => write!(f, "{}", msg),
+            ZomeApiError::Timeout => write!(f, "Timeout"),
+        }
     }
 }
 

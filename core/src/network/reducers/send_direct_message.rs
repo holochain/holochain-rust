@@ -4,7 +4,7 @@ use crate::{
     network::{reducers::send, state::NetworkState},
 };
 use holochain_core_types::error::HolochainError;
-use holochain_net_connection::protocol_wrapper::{MessageData, ProtocolWrapper};
+use holochain_net_connection::json_protocol::{JsonProtocol, MessageData};
 use std::sync::Arc;
 
 fn inner(
@@ -14,21 +14,23 @@ fn inner(
     network_state.initialized()?;
 
     let data = MessageData {
-        msg_id: direct_message_data.msg_id.clone(),
+        request_id: direct_message_data.msg_id.clone(),
         dna_address: network_state.dna_address.clone().unwrap(),
         to_agent_id: direct_message_data.address.to_string(),
         from_agent_id: network_state.agent_id.clone().unwrap(),
-        data: serde_json::from_str(&serde_json::to_string(&direct_message_data.message).unwrap())
-            .unwrap(),
+        content: serde_json::from_str(
+            &serde_json::to_string(&direct_message_data.message).unwrap(),
+        )
+        .unwrap(),
     };
 
     let protocol_object = if direct_message_data.is_response {
-        ProtocolWrapper::HandleSendResult(data)
+        JsonProtocol::HandleSendMessageResult(data)
     } else {
         network_state
             .direct_message_connections
-            .insert(data.msg_id.clone(), direct_message_data.message.clone());
-        ProtocolWrapper::SendMessage(data)
+            .insert(data.request_id.clone(), direct_message_data.message.clone());
+        JsonProtocol::SendMessage(data)
     };
 
     send(network_state, protocol_object)
@@ -71,7 +73,7 @@ mod tests {
 
     use crate::{
         action::{Action, ActionWrapper, DirectMessageData, NetworkSettings},
-        context::mock_network_config,
+        context::test_memory_network_config,
         instance::tests::test_context,
         network::direct_message::{CustomDirectMessage, DirectMessage},
         state::test_store,
@@ -81,16 +83,17 @@ mod tests {
 
     #[test]
     pub fn reduce_send_direct_message_timeout_test() {
-        let mut context = test_context("alice");
+        let netname = Some("reduce_send_direct_message_timeout_test");
+        let mut context = test_context("alice", netname);
         let store = test_store(context.clone());
         let store = Arc::new(RwLock::new(store));
 
         Arc::get_mut(&mut context).unwrap().set_state(store.clone());
 
         let action_wrapper = ActionWrapper::new(Action::InitNetwork(NetworkSettings {
-            config: mock_network_config(),
-            dna_address: "abcd".into(),
-            agent_id: String::from("abcd"),
+            p2p_config: test_memory_network_config(netname),
+            dna_address: "reduce_send_direct_message_timeout_test".into(),
+            agent_id: String::from("alice"),
         }));
 
         {

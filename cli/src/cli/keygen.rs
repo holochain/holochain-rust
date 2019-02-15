@@ -3,9 +3,8 @@ use holochain_common::paths::keys_directory;
 use holochain_dpki::{
     bundle::KeyBundle,
     keypair::{Keypair, SEEDSIZE},
-    util::PwHashConfig,
 };
-use holochain_sodium::{pwhash, random::random_secbuf, secbuf::SecBuf};
+use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
 use rpassword;
 use std::{
     fs::{create_dir_all, File},
@@ -27,15 +26,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         .expect("SecBuf must be writeable");
 
     let bundle: KeyBundle = keypair
-        .get_bundle(
-            &mut passphrase_buf,
-            "hint".to_string(),
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
-        )
+        .get_bundle(&mut passphrase_buf, "hint".to_string(), None)
         .unwrap();
 
     let path = if None == path {
@@ -75,15 +66,7 @@ pub mod test {
 
         let bundle: KeyBundle = serde_json::from_str(&contents).unwrap();
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let keypair = Keypair::from_bundle(
-            &bundle,
-            &mut passphrase,
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
-        );
+        let keypair = Keypair::from_bundle(&bundle, &mut passphrase, None);
 
         assert!(keypair.is_ok());
 

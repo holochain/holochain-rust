@@ -46,10 +46,8 @@ use std::{
 pub fn mock_signer(payload: String) -> String {
     // Create deterministic seed:
     let mut seed = SecBuf::with_insecure(SEEDSIZE);
-    let mut mock_seed: Vec<u8> = Vec::new();
-    for i in 1..SEEDSIZE {
-        mock_seed.push(i as u8);
-    }
+    let mock_seed: Vec<u8> = (1..SEEDSIZE).map(|num| num as u8).collect();
+
     seed.write(0, mock_seed.as_slice())
         .expect("SecBuf must be writeable");
 
@@ -234,7 +232,8 @@ impl Context {
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
         let dna = self.get_dna().expect("Callback called without DNA set!");
         dna.get_wasm_from_zome_name(zome)
-            .and_then(|wasm| Some(wasm.clone()).filter(|_| !wasm.code.is_empty()))
+            .cloned()
+            .filter(|wasm| !wasm.code.is_empty())
     }
 
     // @NB: these three getters smell bad because previously Instance and Context had SyncSenders

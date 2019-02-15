@@ -20,8 +20,8 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{bundle::KeyBundle, keypair::Keypair, util::PwHashConfig};
-use holochain_sodium::{pwhash, secbuf::SecBuf};
+use holochain_dpki::{bundle::KeyBundle, keypair::Keypair};
+use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
 use std::{
@@ -114,7 +114,7 @@ pub fn notify(msg: String) {
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
-
+        holochain_sodium::check_init();
         Conductor {
             instances: HashMap::new(),
             agent_keys: HashMap::new(),
@@ -469,6 +469,19 @@ impl Conductor {
             })
     }
 
+    /// Checks if the key for the given agent can be loaded or was already loaded.
+    /// Will trigger loading if key is not loaded yet.
+    /// Meant to be used in conductor executable to first try to load all keys (which will trigger
+    /// passphrase prompts) before bootstrapping the whole config and have prompts appear
+    /// in between other initialization output.
+    pub fn check_load_key_for_agent(&mut self, agent_id: &String) -> Result<(), String> {
+        self.get_key_for_agent(agent_id)?;
+        Ok(())
+    }
+
+    /// Get reference to key for given agent ID.
+    /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
+    /// to do so.
     fn get_key_for_agent(&mut self, agent_id: &String) -> Result<Arc<Mutex<Keypair>>, String> {
         if !self.agent_keys.contains_key(agent_id) {
             let agent_config = self
@@ -518,25 +531,30 @@ impl Conductor {
 
     /// Default KeyLoader that actually reads files from the filesystem
     fn load_key(file: &PathBuf) -> Result<Keypair, HolochainError> {
-        notify(format!("Reading DNA from {}", file.display()));
+        notify(format!("Reading agent key from {}", file.display()));
 
+        // Read key file
         let mut file = File::open(file)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-
-        let passphrase = rpassword::read_password_from_tty(Some("Passphrase: "))?;
-
         let bundle: KeyBundle = serde_json::from_str(&contents)?;
-        let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        Keypair::from_bundle(
-            &bundle,
-            &mut passphrase,
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
-        )
+
+        // Prompt for passphrase
+        let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
+
+        // Move passphrase in secure memory
+        let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
+        let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
+        passphrase_buf
+            .write(0, passphrase_bytes.as_slice())
+            .expect("SecBuf must be writeable");
+
+        // Overwrite the unsafe passphrase memory with zeros
+        for byte in passphrase_bytes.iter_mut() {
+            *byte = 0u8;
+        }
+
+        Keypair::from_bundle(&bundle, &mut passphrase_buf, None)
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {
@@ -862,9 +880,8 @@ pub mod tests {
                                 "sharing": "public"
                             }
                         },
-                        "capabilities": {
+                        "traits": {
                             "test": {
-                                "type": "public",
                                 "functions": ["test"]
                              }
                         },
@@ -1026,7 +1043,7 @@ pub mod tests {
     )
 
     (func
-        (export "__list_capabilities")
+        (export "__list_traits")
         (param $allocation i64)
         (result i64)
 
@@ -1035,10 +1052,10 @@ pub mod tests {
 
     (func
         (export "__list_functions")
-        (param $allocation i32)
-        (result i32)
+        (param $allocation i64)
+        (result i64)
 
-        (i32.const 0)
+        (i64.const 0)
     )
 
     (func
@@ -1080,8 +1097,8 @@ pub mod tests {
         dna.zomes
             .get_mut("greeter")
             .unwrap()
-            .capabilities
-            .get_mut("test_cap")
+            .traits
+            .get_mut("hc_public")
             .unwrap()
             .functions
             .push("hello".into());

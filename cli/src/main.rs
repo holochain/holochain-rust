@@ -75,7 +75,7 @@ enum Cli {
     #[structopt(
         name = "generate",
         alias = "g",
-        about = "Generates a new zome and scaffolds the given capabilities"
+        about = "Generates a new zome and scaffolds the given functions"
     )]
     Generate {
         #[structopt(
@@ -149,6 +149,7 @@ enum Cli {
 }
 
 fn main() {
+    holochain_sodium::check_init();
     run().unwrap_or_else(|err| {
         eprintln!("{}", err);
 

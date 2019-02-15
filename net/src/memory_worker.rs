@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]
-    fn can_memory_double_track() {
+    fn can_memory_worker_double_track() {
         // setup client 1
         let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_string());
         let (handler_send_1, handler_recv_1) = mpsc::channel::<Protocol>();
@@ -182,6 +182,11 @@ mod tests {
             )
             .unwrap(),
         );
+
+        // Should receive p2pready on first tick
+        memory_worker_1.tick().unwrap();
+        let message = handler_recv_1.recv().unwrap();
+        assert_eq!(message, Protocol::P2pReady);
 
         // First Track
         memory_worker_1

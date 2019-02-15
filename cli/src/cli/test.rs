@@ -1,6 +1,12 @@
 use crate::{cli::package, error::DefaultResult, util};
 use colored::*;
-use std::{fs, path::PathBuf};
+use failure::Error;
+use std::{
+    fs,
+    io::ErrorKind,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 pub const TEST_DIR_NAME: &str = "test";
 pub const DIST_DIR_NAME: &str = "dist";
@@ -11,6 +17,34 @@ pub fn test(
     testfile: &str,
     skip_build: bool,
 ) -> DefaultResult<()> {
+    // First, check whether they have `node` installed
+    match Command::new("node")
+        .args(&["--version"])
+        .stdout(Stdio::null())
+        .status()
+    {
+        Ok(_) => {}
+        Err(e) => {
+            match e.kind() {
+                ErrorKind::NotFound => {
+                    println!("This command requires the `node` and `npm` commands.");
+                    println!("The built in test suite utilizes nodejs.");
+                    println!("Other methods of testing Zomes will be integrated in the future.");
+                    println!(
+                        "Visit https://nodejs.org to install node and npm (which comes with node)."
+                    );
+                    println!("Once installed, retry this command.");
+                    // early exit with Ok, since this is the graceful exit
+                    return Ok(());
+                }
+                // convert from a std::io::Error into a failure::Error
+                // and actually return that error since it's something
+                // different than just not finding `node`
+                _ => return Err(Error::from(e)),
+            }
+        }
+    };
+
     // create dist folder
     let dist_path = path.join(&DIST_DIR_NAME);
 
@@ -107,7 +141,10 @@ pub mod tests {
             .exists());
     }
 
+    // TODO: this test is non-deterministic, pivoting around the fact that the
+    // behaviour of the command is different, depending whether nodejs is installed on the system or not
     #[test]
+    #[cfg(not(windows))]
     fn test_command_no_test_folder() {
         let temp_dir = gen_dir();
         let temp_dir_path = temp_dir.path();

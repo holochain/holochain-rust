@@ -5,6 +5,7 @@ use crate::{
     util,
 };
 use holochain_common::env_vars::EnvVar;
+use colored::*;
 use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},
@@ -117,6 +118,16 @@ impl RustScaffold {
 
 impl Scaffold for RustScaffold {
     fn gen<P: AsRef<Path>>(&self, base_path: P) -> DefaultResult<()> {
+        // First, check whether they have `cargo` installed
+        let should_continue = util::check_for_cargo(
+            "Generating a Rust based Zome depends on having Rust installed.",
+            None,
+        )?;
+        if !should_continue {
+            // early exit, but user will have received feedback within check_for_cargo about why
+            return Ok(());
+        }
+
         fs::create_dir_all(&base_path)?;
 
         // use cargo to initialise a library Rust crate without any version control
@@ -136,6 +147,13 @@ impl Scaffold for RustScaffold {
         // create and fill in a build file appropriate for Rust
         let build_file_path = base_path.as_ref().join(package::BUILD_CONFIG_FILE_NAME);
         self.build_template.save_as(build_file_path)?;
+
+        // CLI feedback
+        println!(
+            "{} {:?} Zome",
+            "Generated".green().bold(),
+            self.package_name
+        );
 
         Ok(())
     }

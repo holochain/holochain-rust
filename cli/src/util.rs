@@ -1,6 +1,10 @@
 use crate::error::DefaultResult;
 use colored::*;
-use std::{io::ErrorKind, path::PathBuf, process::Command};
+use std::{
+    io::ErrorKind,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 pub fn run_cmd(base_path: PathBuf, bin: String, args: &[&str]) -> DefaultResult<()> {
     let pretty_command = format!("{} {}", bin.green(), args.join(" ").cyan());
@@ -37,7 +41,7 @@ pub fn file_name_string(path: &PathBuf) -> DefaultResult<String> {
 /// which should indicate whether the caller should continue with execution
 /// or perform a graceful and early exit
 pub fn check_for_cargo(use_case: &str, extra_help: Option<Vec<&str>>) -> DefaultResult<bool> {
-    match Command::new("cargo").status() {
+    match Command::new("cargo").stdout(Stdio::null()).status() {
         // no problems checking, and cargo is installed
         Ok(_) => Ok(true),
         Err(e) => {

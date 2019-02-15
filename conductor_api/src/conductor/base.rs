@@ -114,7 +114,7 @@ pub fn notify(msg: String) {
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         let rules = config.logger.rules.clone();
-
+        holochain_sodium::check_init();
         Conductor {
             instances: HashMap::new(),
             agent_keys: HashMap::new(),

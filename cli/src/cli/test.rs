@@ -1,7 +1,12 @@
 use crate::{cli::package, error::DefaultResult, util};
 use colored::*;
 use failure::Error;
-use std::{fs, io::ErrorKind, path::PathBuf, process::Command};
+use std::{
+    fs,
+    io::ErrorKind,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 pub const TEST_DIR_NAME: &str = "test";
 pub const DIST_DIR_NAME: &str = "dist";
@@ -13,7 +18,11 @@ pub fn test(
     skip_build: bool,
 ) -> DefaultResult<()> {
     // First, check whether they have `node` installed
-    match Command::new("node").args(&["--version"]).status() {
+    match Command::new("node")
+        .args(&["--version"])
+        .stdout(Stdio::null())
+        .status()
+    {
         Ok(_) => {}
         Err(e) => {
             match e.kind() {
@@ -134,7 +143,10 @@ pub mod tests {
             .exists());
     }
 
+    // TODO: this test is non-deterministic, pivoting around the fact that the
+    // behaviour of the command is different, depending whether nodejs is installed on the system or not
     #[test]
+    #[cfg(not(windows))]
     fn test_command_no_test_folder() {
         let temp_dir = gen_dir();
         let temp_dir_path = temp_dir.path();

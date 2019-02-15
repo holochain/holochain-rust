@@ -1,9 +1,9 @@
 use crate::{
     context::Context,
     network::entry_with_header::EntryWithHeader,
-    workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow},
+    workflows::{hold_entry::hold_entry_workflow, hold_link::hold_link_workflow,crud_status::crud_status_workflow},
 };
-use holochain_core_types::crud_status::{LINK_NAME, STATUS_NAME};
+use holochain_core_types::crud_status::{LINK_NAME, STATUS_NAME,CrudStatus};
 use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 
@@ -41,7 +41,22 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         }
         STATUS_NAME => {
             context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
-            // FIXME: block_on hold crud_status metadata in DHT?
+            assert_eq!(dht_meta_data.content_list.len(), 1);
+            let entry_with_header: EntryWithHeader = serde_json::from_str(
+                &serde_json::to_string(&dht_meta_data.content_list[0])
+                    .expect("dht_meta_data should be EntryWithHeader"),
+            )
+            .expect("dht_meta_data should be EntryWithHeader");
+            let crud_status : CrudStatus = serde_json::from_str(
+                &serde_json::to_string(&dht_meta_data.content_list[0])
+                    .expect("dht_meta_data should be EntryWithHeader"),
+            ).expect("Could not extract crudstatus from content list");
+            thread::spawn(move || {
+                match context.block_on(crud_status_workflow(&entry_with_header, &context.clone(),crud_status)) {
+                    Err(error) => context.log(format!("err/net/dht: {}", error)),
+                    _ => (),
+                }
+            });
         }
         LINK_NAME => {
             context.log("debug/net/handle: HandleStoreMeta: got CRUD LINK. processing...");

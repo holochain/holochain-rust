@@ -17,21 +17,21 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
-pub async fn crud_workflow<'a>(
-    entry_with_header: EntryWithHeader,
-    context: Arc<Context>,
-    old_store : Arc<DhtStore>,
-    crud_status : CrudStatus
-) -> Result<Option<DhtStore>, HolochainError> {
+pub async fn crud_status_workflow<'a>(
+    entry_with_header: &'a EntryWithHeader,
+    context: &'a Context,
+    crud_status :CrudStatus
+) -> Result<(), HolochainError> {
     let EntryWithHeader { entry, header } = &entry_with_header;
-
+    let state = context.state().ok_or(HolochainError::ErrorGeneric("Could not get state".to_string()))?;
+    let store = state.clone().dht();
     match crud_status
     {
         CrudStatus::Live => {
-            store_entry(context,&old_store,&entry)
+            store_entry(&entry,&store)
         },
         CrudStatus::Modified => {
-            modify_entry(context,&old_store,&entry)
+            unimplemented!("MODIFIED NOT IMPLEMENTED")
         },
         CrudStatus::Deleted => {
             unimplemented!("DELETED NOT IMPLEMENTED")
@@ -44,49 +44,14 @@ pub async fn crud_workflow<'a>(
 
 }
 
-pub fn modify_entry(context: Arc<Context>,
-    old_store: &DhtStore,
-    entry: &Entry) ->Result<Option<DhtStore>,HolochainError>
+fn store_entry(entry:&Entry,dht_store : &DhtStore) ->Result<(),HolochainError>
 {
-    let new_status_eav = create_crud_status_eav(latest_old_address, CrudStatus::Modified)?;
-    Ok((*meta_storage.write().unwrap()).add_eavi(&new_status_eav)
-              .map(|_| None)
-                .map_err(|err| {
-                    closure_store
-                        .clone()
-                        .actions_mut()
-                        .insert(action_wrapper.clone(), Err(err));
-                    Some(closure_store.clone())
-                })
-                .ok()
-                .unwrap_or(Some(closure_store.clone())))
-              
-
-}
-pub fn store_entry(context: Arc<Context>,
-    old_store: &DhtStore,
-    entry: &Entry) ->Result<Option<DhtStore>,HolochainError>
-{
-    // Add it to local storage
-    let new_store = (*old_store).clone();
-    let content_storage = &new_store.content_storage().clone();
-    let res = (*content_storage.write().unwrap()).add(entry).map(|err|{
-        context.log(format!(
-            "err/dht: dht::reduce_hold_entry() FAILED {:?}",
-            err
-        ));
-        err
+    let live_status = create_crud_status_eav(&entry.address(), CrudStatus::Live)?;
+    let store = dht_store.meta_storage().clone();
+    let mut meta_storage = store.try_write().map_err(|err|{
+        HolochainError::ErrorGeneric("THREAD PROBLEM : Could not get lock from meta storage".to_string())
     })?;
-    let meta_storage = new_store.meta_storage().clone();
-    let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live)?;
-    Ok((meta_storage.write().unwrap()).add_eavi(&status_eav)
-                    .map(|_| Some(new_store))
-                    .map_err(|err| {
-                        context.log(format!(
-                            "err/dht: reduce_hold_entry: meta_storage write failed!: {:?}",
-                            err
-                        ));
-                        err
-                    })?)
-  
+    meta_storage.add_eavi(&live_status)?;
+    Ok(())
 }
+

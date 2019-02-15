@@ -81,6 +81,7 @@ fn reduce_store_entry_common(
     let content_storage = &new_store.content_storage().clone();
     let res = (*content_storage.write().unwrap()).add(entry).ok();
     if res.is_some() {
+
         let meta_storage = &new_store.meta_storage().clone();
         create_crud_status_eav(&entry.address(), CrudStatus::Live)
             .map(|status_eav| {

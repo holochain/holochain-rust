@@ -20,8 +20,8 @@ use holochain_core_types::{
     error::HolochainError,
     json::JsonString,
 };
-use holochain_dpki::{bundle::KeyBundle, keypair::Keypair, util::PwHashConfig};
-use holochain_sodium::{pwhash, secbuf::SecBuf};
+use holochain_dpki::{bundle::KeyBundle, keypair::Keypair};
+use holochain_sodium::{secbuf::SecBuf};
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
 use std::{
@@ -526,11 +526,7 @@ impl Conductor {
         Keypair::from_bundle(
             &bundle,
             &mut passphrase,
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
+            None
         )
     }
 

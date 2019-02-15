@@ -13,8 +13,8 @@ pub struct Keypair {
     pub enc_priv: SecBuf,
 }
 
-pub const SEEDSIZE: usize = 32 as usize;
-pub const SIGNATURESIZE: usize = 64 as usize;
+pub const SEEDSIZE: usize = 32;
+pub const SIGNATURESIZE: usize = 64;
 
 const BUNDLE_DATA_LEN_MISALIGN: usize = 1 // version byte
     + sign::PUBLICKEYBYTES

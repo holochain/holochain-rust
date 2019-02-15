@@ -32,14 +32,14 @@ pub fn reduce_init(
     //    }
 
     let json = JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: network_settings.dna_address.clone(),
-                agent_id: network_settings.agent_id.clone(),
+        dna_address: network_settings.dna_address.clone(),
+        agent_id: network_settings.agent_id.clone(),
     });
 
     let _ = network.send(json.into()).and_then(|_| {
-            state.network = Some(Arc::new(Mutex::new(network)));
-            state.dna_address = Some(network_settings.dna_address.clone());
-            state.agent_id = Some(network_settings.agent_id.clone());
-            Ok(())
-        });
+        state.network = Some(Arc::new(Mutex::new(network)));
+        state.dna_address = Some(network_settings.dna_address.clone());
+        state.agent_id = Some(network_settings.agent_id.clone());
+        Ok(())
+    });
 }

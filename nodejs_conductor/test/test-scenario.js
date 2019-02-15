@@ -4,7 +4,7 @@ const path = require('path');
 const { Config, Scenario } = require('..')
 
 const dnaValid = Config.dna(
-    path.join(__dirname, "../../app_spec/dist/app_spec.hcpkg"),
+    path.join(__dirname, "test-bundle.json"),
     'dna-valid'
 )
 const dnaInvalid = Config.dna(

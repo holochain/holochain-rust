@@ -17,7 +17,7 @@ Those are the basic functions of a Conductor, but in addition to that, a Conduct
 In regards to the Zome functions APIs, Conductors can implement a diversity of interfaces to perform these function calls, creating an abundance of opportunity. Another way to build Holochain into an application is to use language bindings from the Rust built version of the Conductor, to another language, that then allows for the direct use of Holochain in that language.
 
 There are currently three Conductor implementations:
-- [Nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs)
+- [Nodejs](./intro_to_holochain_nodejs.md)
     - this is built using the language bindings approach, using [neon](https://github.com/neon-bindings/neon)
 - [hc run](./development_conductor.md)
     - this is a zero config quick Conductor for development

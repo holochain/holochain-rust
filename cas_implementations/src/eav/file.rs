@@ -2,7 +2,7 @@ use glob::glob;
 use holochain_core_types::{
     cas::content::AddressableContent,
     eav::{
-        get_latest, increment_key_till_no_collision, Attribute, EavFilter, EaviQuery, Entity,
+        increment_key_till_no_collision, Attribute, EavFilter, EaviQuery, Entity,
         EntityAttributeValueIndex, EntityAttributeValueStorage, IndexFilter, Value,
     },
     error::{HcResult, HolochainError},

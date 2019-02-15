@@ -7,7 +7,6 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     eav::{
         Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
-        IndexFilter,
     },
     entry::Entry,
     error::HolochainError,

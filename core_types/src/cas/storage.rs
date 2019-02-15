@@ -554,7 +554,6 @@ impl EavTestSuite {
         let new_eavi = eav_storage.add_eavi(&new_eav);
         // get only last value in set of prefix
         let results = eav_storage.fetch_eavi(&query).unwrap();
-        println!("query {:?}", results.clone());
         assert_eq!(&new_eavi.unwrap().unwrap(), results.iter().last().unwrap())
     }
 

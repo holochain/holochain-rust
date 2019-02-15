@@ -15,6 +15,7 @@ use std::{
 };
 
 /// a p2p worker for mocking in-memory scenario tests
+#[allow(non_snake_case)]
 pub struct InMemoryWorker {
     handler: NetHandler,
     receiver_per_dna: HashMap<Address, mpsc::Receiver<Protocol>>,

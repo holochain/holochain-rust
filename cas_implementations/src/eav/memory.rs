@@ -62,6 +62,7 @@ pub mod tests {
             content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
+        eav::Attribute,
         json::RawString,
     };
 
@@ -101,9 +102,12 @@ pub mod tests {
     #[test]
     fn file_eav_prefixes() {
         let eav_storage = EavMemoryStorage::new();
-        EavTestSuite::test_prefixes::<ExampleAddressableContent, EavMemoryStorage>(
+        EavTestSuite::test_multiple_attributes::<ExampleAddressableContent, EavMemoryStorage>(
             eav_storage,
-            vec!["a_", "b_", "c_", "d_"],
+            vec!["a_", "b_", "c_", "d_"]
+                .into_iter()
+                .map(|p| Attribute::LinkTag(p.to_string() + "one_to_many"))
+                .collect(),
         );
     }
 

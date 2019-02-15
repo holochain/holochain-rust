@@ -16,6 +16,7 @@ use std::{
     cmp::Ordering,
     collections::BTreeSet,
     convert::TryInto,
+    option::NoneError,
     sync::{Arc, RwLock},
 };
 
@@ -41,6 +42,26 @@ pub enum Attribute {
     PendingEntry,
 }
 
+pub enum AttributeError {
+    Unrecognized(String),
+    ParseError,
+}
+
+impl From<AttributeError> for HolochainError {
+    fn from(err: AttributeError) -> HolochainError {
+        let msg = match err {
+            AttributeError::Unrecognized(a) => format!("Unknown attribute: {}", a),
+            AttributeError::ParseError => format!("Could not parse attribute, bad regex match"),
+        };
+        HolochainError::ErrorGeneric(msg)
+    }
+}
+impl From<NoneError> for AttributeError {
+    fn from(_: NoneError) -> AttributeError {
+        AttributeError::ParseError
+    }
+}
+
 impl fmt::Display for Attribute {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -60,7 +81,7 @@ lazy_static! {
 }
 
 impl TryFrom<&str> for Attribute {
-    type Error = HolochainError;
+    type Error = AttributeError;
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         use self::Attribute::*;
         if LINK_REGEX.is_match(s) {
@@ -73,17 +94,14 @@ impl TryFrom<&str> for Attribute {
                 "entry-header" => Ok(EntryHeader),
                 "link" => Ok(Link),
                 "pending-entry" => Ok(PendingEntry),
-                a => Err(HolochainError::ErrorGeneric(format!(
-                    "Unknown attribute: {}",
-                    a
-                ))),
+                a => Err(AttributeError::Unrecognized(a.to_string())),
             }
         }
     }
 }
 
 impl TryFrom<String> for Attribute {
-    type Error = HolochainError;
+    type Error = AttributeError;
     fn try_from(s: String) -> Result<Self, Self::Error> {
         s.as_str().try_into()
     }
@@ -211,17 +229,8 @@ impl<'a, T: 'a + Eq> EavFilter<'a, T> {
         Self(Box::new(move |v| v == val))
     }
 
-    pub fn attribute_prefixes(
-        prefixes: Vec<&'a str>,
-        base: Option<&'a str>,
-    ) -> AttributeFilter<'a> {
-        Self(Box::new(move |v: Attribute| match base {
-            Some(base) => prefixes
-                .iter()
-                .map(|p| p.to_string() + base)
-                .any(|attr| v.to_owned() == attr),
-            None => prefixes.iter().any(|prefix| v.starts_with(prefix)),
-        }))
+    pub fn multiple(vals: Vec<T>) -> Self {
+        Self(Box::new(move |val| vals.iter().any(|v| *v == val)))
     }
 
     pub fn predicate<F>(predicate: F) -> Self
@@ -245,6 +254,12 @@ impl<'a, T: Eq> Default for EavFilter<'a, T> {
 impl<'a, T: Eq> From<Option<T>> for EavFilter<'a, T> {
     fn from(val: Option<T>) -> EavFilter<'a, T> {
         val.map(|v| EavFilter::single(v)).unwrap_or_default()
+    }
+}
+
+impl<'a, T: Eq> From<Vec<T>> for EavFilter<'a, T> {
+    fn from(vals: Vec<T>) -> EavFilter<'a, T> {
+        EavFilter::multiple(vals)
     }
 }
 

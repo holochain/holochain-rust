@@ -497,7 +497,7 @@ impl EavTestSuite {
         );
     }
 
-    pub fn test_prefixes<A, S>(mut eav_storage: S, prefixes: Vec<&str>)
+    pub fn test_multiple_attributes<A, S>(mut eav_storage: S, attributes: Vec<Attribute>)
     where
         A: AddressableContent + Clone,
         S: EntityAttributeValueStorage,
@@ -509,27 +509,22 @@ impl EavTestSuite {
         // it can reference itself, why not?
         let many_one = A::try_from_content(&foo_content)
             .expect("could not create AddressableContent from Content");
-        let attribute = "one_to_many".to_string();
-        let mut expected_prefix = BTreeSet::new();
+        let mut expected = BTreeSet::new();
 
-        prefixes.iter().for_each(|prefix| {
-            let attribute_with_prefix = prefix.to_string() + &attribute;
-            let eav = EntityAttributeValueIndex::new(
-                &many_one.address(),
-                &attribute_with_prefix,
-                &one.address(),
-            )
-            .expect("could not create EAV");
+        attributes.iter().for_each(|attribute| {
+            let eav =
+                EntityAttributeValueIndex::new(&many_one.address(), &attribute, &one.address())
+                    .expect("could not create EAV");
             let eavi = eav_storage
                 .add_eavi(&eav.clone())
                 .expect("could not add eav")
                 .expect("Could not get eavi option");
-            expected_prefix.insert(eavi.clone());
+            expected.insert(eavi.clone());
         });
 
         let query = EaviQuery::new(
             Some(many_one.address()).into(),
-            EavFilter::<Attribute>::attribute_prefixes(prefixes.clone(), Some(&attribute)),
+            attributes.into(),
             EavFilter::default(),
             IndexFilter::default(),
         );
@@ -539,12 +534,12 @@ impl EavTestSuite {
         assert_eq!(1, results.len());
 
         assert_eq!(
-            expected_prefix.iter().last().unwrap(),
+            expected.iter().last().unwrap(),
             results.iter().last().unwrap()
         );
 
         //add another value just to prove we get last of prefix
-        let first_eav = expected_prefix.iter().next().unwrap();
+        let first_eav = expected.iter().next().unwrap();
         //timestamp in constructor generates new time
         let new_eav = EntityAttributeValueIndex::new(
             &first_eav.entity(),

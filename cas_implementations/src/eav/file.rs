@@ -10,6 +10,7 @@ use holochain_core_types::{
 };
 use std::{
     collections::BTreeSet,
+    convert::{TryFrom, TryInto},
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
     path::{Path, PathBuf},
@@ -122,7 +123,7 @@ impl EavFileStorage {
         eav_filter: &EavFilter<T>,
     ) -> HcResult<BTreeSet<String>>
     where
-        T: Eq + ToString + From<String>,
+        T: Eq + ToString + TryFrom<String>,
     {
         let path = self.dir_path.join(&subscript);
 
@@ -140,7 +141,13 @@ impl EavFileStorage {
                     pathbuf
                         .iter()
                         .last()
-                        .map(|v| eav_filter.check(v.to_string_lossy().to_string().into()))
+                        .and_then(|v| {
+                            v.to_string_lossy()
+                                .to_string()
+                                .try_into()
+                                .ok()
+                                .map(|val| eav_filter.check(val))
+                        })
                         .unwrap_or_default()
                 })
                 .map(|pathbuf| read_eav(pathbuf.clone()));
@@ -204,15 +211,15 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .intersection(&entity_set)
             .cloned()
             .collect();
-
-        let (eavis, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
+        let total = entity_attribute_value_inter.len();
+        let eavis: BTreeSet<_> = entity_attribute_value_inter
             .clone()
             .into_iter()
             .filter_map(|content| {
                 EntityAttributeValueIndex::try_from_content(&JsonString::from(content)).ok()
             })
             .collect();
-        if eav.len() < total {
+        if eavis.len() < total {
             // not all EAVs were converted
             Err(HolochainError::ErrorGeneric(
                 "Error Converting EAVs".to_string(),
@@ -224,8 +231,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 Default::default(),
                 query.index().clone(),
             );
-            // We expect eavis to consist entirely of `Ok`s now, so we can filter out the `Err`s (of which there should be none)
-            let it = eavis.iter().cloned().filter_map(|r| r.ok());
+            let it = eavis.iter().cloned();
             let results = index_query.run(it);
             Ok(results)
         }
@@ -242,6 +248,7 @@ pub mod tests {
             content::{AddressableContent, ExampleAddressableContent},
             storage::EavTestSuite,
         },
+        eav::Attribute,
         json::RawString,
     };
 
@@ -293,9 +300,12 @@ pub mod tests {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
-        EavTestSuite::test_prefixes::<ExampleAddressableContent, EavFileStorage>(
+        EavTestSuite::test_multiple_attributes::<ExampleAddressableContent, EavFileStorage>(
             eav_storage,
-            vec!["a_", "b_", "c_", "d_"],
+            vec!["a_", "b_", "c_", "d_"]
+                .into_iter()
+                .map(|p| Attribute::LinkTag(p.to_string() + "one_to_many"))
+                .collect(),
         );
     }
 

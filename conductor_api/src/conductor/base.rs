@@ -21,7 +21,7 @@ use holochain_core_types::{
     json::JsonString,
 };
 use holochain_dpki::{bundle::KeyBundle, keypair::Keypair};
-use holochain_sodium::{secbuf::SecBuf};
+use holochain_sodium::secbuf::SecBuf;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use rpassword;
 use std::{
@@ -515,19 +515,28 @@ impl Conductor {
     fn load_key(file: &PathBuf) -> Result<Keypair, HolochainError> {
         notify(format!("Reading agent key from {}", file.display()));
 
+        // Read key file
         let mut file = File::open(file)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-
-        let passphrase = rpassword::read_password_from_tty(Some("Passphrase: "))?;
-
         let bundle: KeyBundle = serde_json::from_str(&contents)?;
-        let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        Keypair::from_bundle(
-            &bundle,
-            &mut passphrase,
-            None
-        )
+
+        // Prompt for passphrase
+        let mut passphrase_string = rpassword::read_password_from_tty(Some("Passphrase: "))?;
+
+        // Move passphrase in secure memory
+        let passphrase_bytes = unsafe { passphrase_string.as_mut_vec() };
+        let mut passphrase_buf = SecBuf::with_insecure(passphrase_bytes.len());
+        passphrase_buf
+            .write(0, passphrase_bytes.as_slice())
+            .expect("SecBuf must be writeable");
+
+        // Overwrite the unsafe passphrase memory with zeros
+        for byte in passphrase_bytes.iter_mut() {
+            *byte = 0u8;
+        }
+
+        Keypair::from_bundle(&bundle, &mut passphrase_buf, None)
     }
 
     fn copy_ui_dir(source: &PathBuf, dest: &PathBuf) -> Result<(), HolochainError> {

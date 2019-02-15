@@ -13,8 +13,84 @@ use holochain_core_types::{
     hash::HashString,
     validation::ValidationData,
 };
-use snowflake;
+use snowflake::{self, ProcessUniqueId};
 use std::{pin::Pin, sync::Arc, thread};
+
+fn check_entry_type(entry_type: EntryType, context: &Arc<Context>) -> Result<(), HolochainError> {
+    match entry_type {
+        EntryType::App(app_entry_type) => {
+            // Check if app_entry_type is defined in DNA
+            let _ = context
+                .state()
+                .unwrap()
+                .nucleus()
+                .dna()
+                .unwrap()
+                .get_zome_name_for_app_entry_type(&app_entry_type)
+                .ok_or(HolochainError::ValidationFailed(
+                    format!(
+                        "Attempted to validate unknown app entry type {:?}",
+                        app_entry_type,
+                    ),
+                ))?;
+        }
+
+        EntryType::LinkAdd => {}
+        EntryType::LinkRemove => {}
+        EntryType::Deletion => {}
+        EntryType::CapTokenGrant => {}
+        EntryType::AgentId => {}
+
+        _ => {
+            return Err(HolochainError::ValidationFailed(
+                format!(
+                    "Attempted to validate system entry type {:?}",
+                    entry_type,
+                ),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn spawn_validation_ribosome(
+    id: ProcessUniqueId,
+    entry: Entry,
+    validation_data: ValidationData,
+    context: Arc<Context>
+) {
+    thread::spawn(move || {
+        let address = entry.address();
+        let maybe_validation_result = callback::validate_entry::validate_entry(
+            entry.clone(),
+            validation_data.clone(),
+            context.clone(),
+        );
+
+        let result = match maybe_validation_result {
+            Ok(validation_result) => match validation_result {
+                CallbackResult::Fail(error_string) => Err(error_string),
+                CallbackResult::Pass => Ok(()),
+                CallbackResult::NotImplemented(reason) => Err(format!(
+                    "Validation callback not implemented for {:?} ({})",
+                    entry.entry_type().clone(),
+                    reason
+                )),
+                _ => unreachable!(),
+            },
+            Err(error) => Err(error.to_string()),
+        };
+
+        context
+            .action_channel()
+            .send(ActionWrapper::new(Action::ReturnValidationResult((
+                (id, address),
+                result,
+            ))))
+            .expect("action channel to be open in reducer");
+    });
+}
 
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
@@ -29,90 +105,8 @@ pub async fn validate_entry(
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
-    match entry.entry_type() {
-        EntryType::App(app_entry_type) => {
-            if context
-                .state()
-                .unwrap()
-                .nucleus()
-                .dna()
-                .unwrap()
-                .get_zome_name_for_app_entry_type(&app_entry_type)
-                .is_none()
-            {
-                return Err(HolochainError::ValidationFailed(
-                    format!(
-                        "Attempted to validate unknown app entry type {:?}",
-                        app_entry_type,
-                    ),
-                ));
-            }
-        }
-
-        EntryType::LinkAdd => {
-            // LinkAdd can always be validated
-        }
-
-        EntryType::LinkRemove => {
-            // LinkAdd can always be validated
-        }
-
-        EntryType::Deletion => {
-            // FIXME
-        }
-
-        EntryType::CapTokenGrant => {
-            // FIXME
-        }
-
-        EntryType::AgentId => {
-            // FIXME
-        }
-        _ => {
-            return Err(HolochainError::ValidationFailed(
-                format!(
-                    "Attempted to validate system entry type {:?}",
-                    entry.entry_type(),
-                ),
-            ));
-        }
-    }
-
-    {
-        let id = id.clone();
-        let address = address.clone();
-        let entry = entry.clone();
-        let context = context.clone();
-        thread::spawn(move || {
-            let maybe_validation_result = callback::validate_entry::validate_entry(
-                entry.clone(),
-                validation_data.clone(),
-                context.clone(),
-            );
-
-            let result = match maybe_validation_result {
-                Ok(validation_result) => match validation_result {
-                    CallbackResult::Fail(error_string) => Err(error_string),
-                    CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented(reason) => Err(format!(
-                        "Validation callback not implemented for {:?} ({})",
-                        entry.entry_type().clone(),
-                        reason
-                    )),
-                    _ => unreachable!(),
-                },
-                Err(error) => Err(error.to_string()),
-            };
-
-            context
-                .action_channel()
-                .send(ActionWrapper::new(Action::ReturnValidationResult((
-                    (id, address),
-                    result,
-                ))))
-                .expect("action channel to be open in reducer");
-        });
-    };
+    check_entry_type(entry.entry_type(), context)?;
+    spawn_validation_ribosome(id.clone(), entry, validation_data, context.clone());
 
     await!(ValidationFuture {
         context: context.clone(),

@@ -76,9 +76,9 @@ pub mod tests {
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", None);
         dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
-            test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
+            test_instance_and_context_by_name(dna.clone(), "alex", netname).unwrap();
         let (_, context2) =
-            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
+            test_instance_and_context_by_name(dna.clone(), "billy", netname).unwrap();
 
         // Create Entry & crud-status metadata, and store it.
         let entry = test_entry();
@@ -202,9 +202,9 @@ pub mod tests {
         let mut dna = create_test_dna_with_wat("test_zome", "test_cap", Some(wat));
         dna.uuid = netname.unwrap().to_string();
         let (_, context1) =
-            test_instance_and_context_by_name(dna.clone(), "alice1", netname).unwrap();
+            test_instance_and_context_by_name(dna.clone(), "alex2", netname).unwrap();
         let (_, context2) =
-            test_instance_and_context_by_name(dna.clone(), "bob1", netname).unwrap();
+            test_instance_and_context_by_name(dna.clone(), "billy2", netname).unwrap();
 
         let mut entry_addresses: Vec<Address> = Vec::new();
         for i in 0..3 {

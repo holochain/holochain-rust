@@ -1,5 +1,6 @@
 extern crate futures;
 extern crate serde_json;
+use boolinator::Boolinator;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
@@ -13,6 +14,8 @@ use holochain_core_types::{
     hash::HashString,
     validation::ValidationData,
 };
+use holochain_dpki::keypair::Keypair;
+use holochain_sodium::secbuf::SecBuf;
 use snowflake::{self, ProcessUniqueId};
 use std::{pin::Pin, sync::Arc, thread};
 
@@ -92,6 +95,42 @@ fn spawn_validation_ribosome(
     });
 }
 
+fn validate_provenances(validation_data: &ValidationData) -> Result<(), HolochainError> {
+    let header = &validation_data.package.chain_header;
+    header
+        .provenances()
+        .iter()
+        .map(|provenance| {
+            let author = &provenance.0;
+            let signature = &provenance.1;
+            let signature_string: String = signature.clone().into();
+            let signature_bytes: Vec<u8> = base64::decode(&signature_string)
+                .map_err(|_| HolochainError::ValidationFailed(
+                    "Signature syntactically invalid".to_string()
+                ))?;
+
+            let mut signature_buf = SecBuf::with_insecure(signature_bytes.len());
+            signature_buf.write(0, signature_bytes.as_slice())
+                .expect("SecBuf must be writeable");
+
+            let mut message_buf = SecBuf::with_insecure_from_string(
+                header.entry_address().to_string()
+            );
+            let result = Keypair::verify(
+                author.to_string(),
+                &mut signature_buf,
+                &mut message_buf
+            )?;
+
+            (result == 0)
+                .ok_or(HolochainError::ValidationFailed(
+                    "Signature invalid".to_string()
+                ))
+        })
+        .collect::<Result<Vec<()>, HolochainError>>()?;
+    Ok(())
+}
+
 /// ValidateEntry Action Creator
 /// This is the high-level validate function that wraps the whole validation process and is what should
 /// be called from zome api functions and other contexts that don't care about implementation details.
@@ -106,6 +145,7 @@ pub async fn validate_entry(
     let address = entry.address();
 
     check_entry_type(entry.entry_type(), context)?;
+    validate_provenances(&validation_data)?;
     spawn_validation_ribosome(id.clone(), entry, validation_data, context.clone());
 
     await!(ValidationFuture {

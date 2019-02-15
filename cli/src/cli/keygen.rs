@@ -26,11 +26,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         .expect("SecBuf must be writeable");
 
     let bundle: KeyBundle = keypair
-        .get_bundle(
-            &mut passphrase_buf,
-            "hint".to_string(),
-            None
-        )
+        .get_bundle(&mut passphrase_buf, "hint".to_string(), None)
         .unwrap();
 
     let path = if None == path {
@@ -70,11 +66,7 @@ pub mod test {
 
         let bundle: KeyBundle = serde_json::from_str(&contents).unwrap();
         let mut passphrase = SecBuf::with_insecure_from_string(passphrase);
-        let keypair = Keypair::from_bundle(
-            &bundle,
-            &mut passphrase,
-            None,
-        );
+        let keypair = Keypair::from_bundle(&bundle, &mut passphrase, None);
 
         assert!(keypair.is_ok());
 

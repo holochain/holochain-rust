@@ -89,7 +89,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
             conductor.check_load_key_for_agent(&agent_config.id)
         })
         .collect::<Result<Vec<()>, String>>()
-        .map_err(|error|HolochainError::ConfigError(error))?;
+        .map_err(|error| HolochainError::ConfigError(error))?;
     conductor.load_config()?;
     Ok(())
 }

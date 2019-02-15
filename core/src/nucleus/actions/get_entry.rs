@@ -3,7 +3,7 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::{EntityAttributeValueIndex, IndexRange},
+    eav::{EaviQuery, EntityAttributeValueIndex, IndexRange},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
@@ -54,12 +54,12 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let dht = context.state().unwrap().dht().meta_storage();
     let storage = &dht.clone();
     // Get crud-status
-    let status_eavs = (*storage.read().unwrap()).fetch_eavi(
-        Some(address.clone()),
-        Some(STATUS_NAME.to_string()),
-        None,
+    let status_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+        Some(address.clone()).into(),
+        Some(STATUS_NAME.to_string()).into(),
+        None.into(),
         IndexRange::default(),
-    )?;
+    ))?;
     if status_eavs.len() == 0 {
         return Ok(None);
     }
@@ -92,12 +92,12 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     }
     // Get crud-link
     let mut maybe_crud_link = None;
-    let link_eavs = (*storage.read().unwrap()).fetch_eavi(
-        Some(address),
-        Some(LINK_NAME.to_string()),
-        None,
+    let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+        Some(address).into(),
+        Some(LINK_NAME.to_string()).into(),
+        None.into(),
         IndexRange::default(),
-    )?;
+    ))?;
     assert!(
         link_eavs.len() <= 1,
         "link_eavs.len() = {}",
@@ -118,13 +118,17 @@ pub fn get_entry_with_meta<'a>(
     address: Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. try to get the entry
+
+    println!(":::::::::<git it 1>");
     let entry = match get_entry_from_dht(context, &address) {
         Err(err) => return Err(err),
         Ok(None) => return Ok(None),
         Ok(Some(entry)) => entry,
     };
     // 2. try to get the entry's metadata
+    println!(":::::::::<git it 2>");
     let maybe_meta = get_entry_crud_meta_from_dht(context, address);
+    println!(":::::::::<git it 3>");
     if let Err(err) = maybe_meta {
         return Err(err);
     }

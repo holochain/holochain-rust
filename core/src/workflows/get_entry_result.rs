@@ -19,11 +19,15 @@ pub async fn get_entry_with_meta_workflow<'a>(
     timeout: &'a Timeout,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
+
+    println!(":::::::<getentrywithmetaworklfo>");
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
+    println!(":::::::<getentrywithmetaworklfo>");
     if maybe_entry_with_meta.is_some() {
         return Ok(maybe_entry_with_meta);
     }
+    println!(":::::::<getentrywithmetaworklfo>");
     // 2. No result, so try on the network
     await!(network::actions::get_entry::get_entry(
         context.clone(),
@@ -43,14 +47,17 @@ pub async fn get_entry_result_workflow<'a>(
 
     // Accumulate entry history in a loop unless only request initial.
     while maybe_address.is_some() {
+        println!(":::::::<while maybe_address is some>");
         let address = maybe_address.unwrap();
         maybe_address = None;
         // Try to get entry
+        println!(":::::::<before>");
         let maybe_entry_with_meta = await!(get_entry_with_meta_workflow(
             context,
             &address,
             &args.options.timeout
         ))?;
+        println!(":::::::<after>");
         // Entry found
         if let Some(entry_with_meta) = maybe_entry_with_meta {
             // Erase history if request is for latest

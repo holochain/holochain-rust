@@ -5,7 +5,10 @@ use holochain_core_types::{
         storage::ContentAddressableStorage,
     },
     chain_header::ChainHeader,
-    eav::{EntityAttributeValueIndex, EntityAttributeValueStorage, IndexRange},
+    eav::{
+        Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
+        IndexRange,
+    },
     entry::Entry,
     error::HolochainError,
 };
@@ -58,11 +61,15 @@ impl DhtStore {
         address: Address,
         tag: String,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
-        let index_query = IndexRange::new_only_prefixes(vec!["link__", "removed_link__"]);
-        let filtered =
-            self.meta_storage
-                .read()?
-                .fetch_eavi(Some(address), Some(tag), None, index_query)?;
+        let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
+            Some(address).into(),
+            EavFilter::<Attribute>::attribute_prefixes(
+                vec!["link__", "removed_link__"],
+                Some(&tag),
+            ),
+            None.into(),
+            Default::default(),
+        ))?;
 
         Ok(filtered
             .into_iter()
@@ -77,12 +84,12 @@ impl DhtStore {
             .read()
             .unwrap()
             // fetch all EAV references to chain headers for this entry
-            .fetch_eavi(
-                Some(entry_address),
-                Some(ENTRY_HEADER_ATTRIBUTE.to_string()),
-                None,
+            .fetch_eavi(&EaviQuery::new(
+                Some(entry_address).into(),
+                Some(ENTRY_HEADER_ATTRIBUTE.to_string()).into(),
+                None.into(),
                 Default::default(),
-            )?
+            ))?
             .into_iter()
             // get the header addresses
             .map(|eavi| eavi.value())

@@ -528,7 +528,7 @@ impl EavTestSuite {
 
         let query = EaviQuery::new(
             Some(many_one.address()).into(),
-            EavFilter::<Attribute>::attribute_prefixes(prefixes.clone(), &attribute),
+            EavFilter::<Attribute>::attribute_prefixes(prefixes.clone(), Some(&attribute)),
             EavFilter::default(),
             IndexRange::default(),
         );

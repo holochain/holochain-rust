@@ -83,6 +83,7 @@ impl<'a> Default for EaviQuery<'a> {
         )
     }
 }
+
 impl<'a> EaviQuery<'a> {
     pub fn new(
         entity: EntityFilter<'a>,
@@ -119,21 +120,38 @@ impl<'a> EaviQuery<'a> {
             })
             .collect()
     }
+
+    pub fn entity(&self) -> &EntityFilter<'a> {
+        &self.entity
+    }
+    pub fn attribute(&self) -> &AttributeFilter<'a> {
+        &self.attribute
+    }
+    pub fn value(&self) -> &ValueFilter<'a> {
+        &self.value
+    }
+    pub fn index(&self) -> &IndexRange {
+        &self.index
+    }
 }
 
-pub struct EavFilter<'a, T: 'a + PartialEq>(Box<dyn Fn(T) -> bool + 'a>);
+pub struct EavFilter<'a, T: 'a + Eq>(Box<dyn Fn(T) -> bool + 'a>);
 
-impl<'a, T: 'a + PartialEq> EavFilter<'a, T> {
+impl<'a, T: 'a + Eq> EavFilter<'a, T> {
     pub fn single(val: T) -> Self {
         Self(Box::new(move |v| v == val))
     }
 
-    pub fn attribute_prefixes(prefixes: Vec<&'a str>, base: &'a str) -> AttributeFilter<'a> {
-        Self(Box::new(move |v: Attribute| {
-            prefixes
+    pub fn attribute_prefixes(
+        prefixes: Vec<&'a str>,
+        base: Option<&'a str>,
+    ) -> AttributeFilter<'a> {
+        Self(Box::new(move |v: Attribute| match base {
+            Some(base) => prefixes
                 .iter()
                 .map(|p| p.to_string() + base)
-                .any(|attr| v.to_owned() == attr)
+                .any(|attr| v.to_owned() == attr),
+            None => prefixes.iter().any(|prefix| v.starts_with(prefix)),
         }))
     }
 
@@ -149,13 +167,13 @@ impl<'a, T: 'a + PartialEq> EavFilter<'a, T> {
     }
 }
 
-impl<'a, T: PartialEq> Default for EavFilter<'a, T> {
+impl<'a, T: Eq> Default for EavFilter<'a, T> {
     fn default() -> EavFilter<'a, T> {
         Self(Box::new(|_| true))
     }
 }
 
-impl<'a, T: PartialEq> From<Option<T>> for EavFilter<'a, T> {
+impl<'a, T: Eq> From<Option<T>> for EavFilter<'a, T> {
     fn from(val: Option<T>) -> EavFilter<'a, T> {
         val.map(|v| EavFilter::single(v)).unwrap_or_default()
     }

@@ -16,6 +16,7 @@ use holochain_core_types::{
     },
     chain_header::ChainHeader,
     dna::Dna,
+    eav::EaviQuery,
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
@@ -174,12 +175,12 @@ impl State {
             .read()
             .unwrap()
             // fetch all EAV references to chain headers for this entry
-            .fetch_eavi(
-                Some(entry_address),
-                Some(ENTRY_HEADER_ATTRIBUTE.to_string()),
-                None,
+            .fetch_eavi(&EaviQuery::new(
+                Some(entry_address).into(),
+                Some(ENTRY_HEADER_ATTRIBUTE.to_string()).into(),
+                None.into(),
                 Default::default(),
-            )?
+            ))?
             .into_iter()
             // get the header addresses
             .map(|eavi| eavi.value())

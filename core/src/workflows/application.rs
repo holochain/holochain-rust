@@ -15,6 +15,7 @@ pub async fn initialize(
     context: Arc<Context>,
 ) -> HcResult<Arc<Context>> {
     let instance_context = instance.initialize_context(context.clone());
+    println!(":::::<app init 1>");
     await!(get_dna_and_agent(&instance_context)
         .map_ok(|_| ())
         .or_else(

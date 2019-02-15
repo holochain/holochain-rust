@@ -143,7 +143,7 @@ enum Cli {
     #[structopt(
         name = "keygen",
         alias = "k",
-        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\Users\Alice\AppData\Roaming\holochain\holochain\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
+        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
     )]
     KeyGen,
 }

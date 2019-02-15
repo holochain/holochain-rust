@@ -31,17 +31,12 @@ pub fn reduce_init(
     //        tweetlog.listen(Tweetlog::console);
     //    }
 
-    println!("REDUCE INIT: network = {:?}", network);
-
-    let _ = network
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
+    let json = JsonProtocol::TrackDna(TrackDnaData {
                 dna_address: network_settings.dna_address.clone(),
                 agent_id: network_settings.agent_id.clone(),
-            })
-            .into(),
-        )
-        .and_then(|_| {
+    });
+
+    let _ = network.send(json.into()).and_then(|_| {
             state.network = Some(Arc::new(Mutex::new(network)));
             state.dna_address = Some(network_settings.dna_address.clone());
             state.agent_id = Some(network_settings.agent_id.clone());

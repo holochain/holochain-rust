@@ -132,11 +132,9 @@ ___
 
 **Type** `object`
 
-**Description** *conductorOptions.debugLog* `boolean` Which logger type to use. There are two options:
-- debugLog = true: Use the "debug" logger. This one has nicer, colorful output.
-- debugLog = false: Use the "simple" logger. This one has less interesting output, but can be silenced with the env variable `HC_SIMPLE_LOGGER_MUTE=1`
+**Description** *conductorOptions.debugLog* `boolean` Enables debug logging. The logger produces nice, colorful output of the internal workings of Holochain.
 
-**Default** `{ debugLog: true }`
+**Default** `{ debugLog: false }`
 ___
 
 #### Example
@@ -152,7 +150,7 @@ const conductorConfig = Config.conductor([instanceConfig])
 const agentConfig = Config.agent('alice')
 const dnaConfig = Config.dna('path/to/bundle.json')
 const instanceConfig = Config.instance(agentConfig, dnaConfig)
-const conductorConfig = Config.conductor([instanceConfig], { debugLog: false })
+const conductorConfig = Config.conductor([instanceConfig], { debugLog: true })
 ```
 
 

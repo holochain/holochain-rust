@@ -4,8 +4,8 @@ use crate::{
     error::DefaultResult,
     util,
 };
-use holochain_common::env_vars::EnvVar;
 use colored::*;
+use holochain_common::env_vars::EnvVar;
 use holochain_wasm_utils::wasm_target_dir;
 use std::{
     fs::{self, OpenOptions},

@@ -115,7 +115,7 @@ impl Scaffold for RustScaffold {
     fn gen<P: AsRef<Path>>(&self, base_path: P) -> DefaultResult<()> {
 
         // First, check whether they have `cargo` installed
-        let mut check_cargo = Command::new("carg");
+        let mut check_cargo = Command::new("cargo");
         match check_cargo.status() {
             Ok(_) => {},
             Err(e) => {

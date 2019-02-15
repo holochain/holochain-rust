@@ -104,22 +104,28 @@ impl<'a> EaviQuery<'a> {
         I: Clone + Iterator<Item = EntityAttributeValueIndex> + 'a,
     {
         let iter2 = iter.clone();
-        iter.clone()
-            .filter(|eavi| {
-                self.entity.check(eavi.entity())
-                    && self.attribute.check(eavi.attribute())
-                    && self.value.check(eavi.value())
-            })
-            .filter(|eavi| match self.index {
-                IndexFilter::Latest => get_latest(eavi.clone(), iter2.clone())
-                    .map(|latest| latest == *eavi)
-                    .unwrap_or_default(),
-                IndexFilter::Range(start, end) => {
+        let filtered = iter.clone().filter(|eavi| {
+            self.entity.check(eavi.entity())
+                && self.attribute.check(eavi.attribute())
+                && self.value.check(eavi.value())
+        });
+
+        match self.index {
+            IndexFilter::LatestAbsolute => filtered.last().into_iter().collect(),
+            IndexFilter::LatestGrouped => filtered
+                .filter(|eavi| {
+                    get_latest(eavi.clone(), iter2.clone())
+                        .map(|latest| latest == *eavi)
+                        .unwrap_or_default()
+                })
+                .collect(),
+            IndexFilter::Range(start, end) => filtered
+                .filter(|eavi| {
                     start.map(|lo| lo <= eavi.index()).unwrap_or(true)
                         && end.map(|hi| eavi.index() <= hi).unwrap_or(true)
-                }
-            })
-            .collect()
+                })
+                .collect(),
+        }
     }
 
     pub fn entity(&self) -> &EntityFilter<'a> {
@@ -180,15 +186,22 @@ impl<'a, T: Eq> From<Option<T>> for EavFilter<'a, T> {
     }
 }
 
+/// Specifies options for filtering on Index:
+/// LatestAbsolute always results in a result set of one item: the latest item among all results returned by previous filters.
+///    This is also the default.
+/// LatestGrouped returns multiple results, but only one for each unique grouping of E, A, and V
+/// Range returns all results within a particular range of indices.
+/// TODO: tests for LatestGrouped and Range
 #[derive(Clone, Debug)]
 pub enum IndexFilter {
-    Latest,
+    LatestAbsolute,
+    LatestGrouped,
     Range(Option<i64>, Option<i64>),
 }
 
 impl Default for IndexFilter {
     fn default() -> IndexFilter {
-        IndexFilter::Latest
+        IndexFilter::LatestAbsolute
     }
 }
 

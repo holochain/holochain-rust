@@ -5,10 +5,7 @@ use crate::{
     context::Context,
     nucleus::ribosome::callback::{self, CallbackResult},
 };
-use futures::{
-    future::{self, Future, FutureObj},
-    task::{LocalWaker, Poll},
-};
+use futures::{future::Future, task::{LocalWaker, Poll}};
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{entry_type::EntryType, Entry},
@@ -24,11 +21,11 @@ use std::{pin::Pin, sync::Arc, thread};
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
-pub fn validate_entry<'a>(
+pub async fn validate_entry(
     entry: Entry,
     validation_data: ValidationData,
-    context: &'a Arc<Context>,
-) -> FutureObj<'a, Result<HashString, HolochainError>> {
+    context: &Arc<Context>,
+) -> Result<HashString, HolochainError> {
     let id = snowflake::ProcessUniqueId::new();
     let address = entry.address();
 
@@ -43,12 +40,12 @@ pub fn validate_entry<'a>(
                 .get_zome_name_for_app_entry_type(&app_entry_type)
                 .is_none()
             {
-                return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
+                return Err(HolochainError::ValidationFailed(
                     format!(
                         "Attempted to validate unknown app entry type {:?}",
                         app_entry_type,
                     ),
-                ))));
+                ));
             }
         }
 
@@ -72,12 +69,12 @@ pub fn validate_entry<'a>(
             // FIXME
         }
         _ => {
-            return FutureObj::new(Box::new(future::err(HolochainError::ValidationFailed(
+            return Err(HolochainError::ValidationFailed(
                 format!(
                     "Attempted to validate system entry type {:?}",
                     entry.entry_type(),
                 ),
-            ))));
+            ));
         }
     }
 
@@ -117,10 +114,10 @@ pub fn validate_entry<'a>(
         });
     };
 
-    FutureObj::new(Box::new(ValidationFuture {
+    await!(ValidationFuture {
         context: context.clone(),
         key: (id, address),
-    }))
+    })
 }
 
 /// ValidationFuture resolves to an Ok(ActionWrapper) or an Err(error_message:String).

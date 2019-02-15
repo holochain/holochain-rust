@@ -14,21 +14,22 @@ use std::{
 };
 
 pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResult<()> {
-    println!("This will create a new agent key bundle - that is all keys needed to represent one agent.");
+    println!(
+        "This will create a new agent key bundle - that is all keys needed to represent one agent."
+    );
     println!("This key bundle will be stored in a file, encrypted with a passphrase.");
     println!("The passphrase is securing the keys and will be needed, together with the key file, in order to use the key.");
     println!("Please enter a secret passphrase below, you will have to enter it again when unlocking this key to use within a Holochain conductor.");
 
-    let passphrase = passphrase
-        .unwrap_or_else(|| {
-            let passphrase1 = rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap();
-            let passphrase2 = rpassword::read_password_from_tty(Some("Reenter Passphrase: ")).unwrap();
-            if passphrase1 != passphrase2 {
-                println!("Passphrases do not match. Please retry...");
-                ::std::process::exit(1);
-            }
-            passphrase1
-        });
+    let passphrase = passphrase.unwrap_or_else(|| {
+        let passphrase1 = rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap();
+        let passphrase2 = rpassword::read_password_from_tty(Some("Reenter Passphrase: ")).unwrap();
+        if passphrase1 != passphrase2 {
+            println!("Passphrases do not match. Please retry...");
+            ::std::process::exit(1);
+        }
+        passphrase1
+    });
 
     let mut seed = SecBuf::with_secure(SEEDSIZE);
     random_secbuf(&mut seed);

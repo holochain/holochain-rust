@@ -24,7 +24,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
             let passphrase1 = rpassword::read_password_from_tty(Some("Passphrase: ")).unwrap();
             let passphrase2 = rpassword::read_password_from_tty(Some("Reenter Passphrase: ")).unwrap();
             if passphrase1 != passphrase2 {
-                println!("Passphrase do not match. Bailing...");
+                println!("Passphrases do not match. Please retry...");
                 ::std::process::exit(1);
             }
             passphrase1

@@ -341,8 +341,8 @@ impl Dispatch {
 ///             }
 ///     ]
 ///
-///     capabilities: {
-///         public (Public) [sum]
+///     traits: {
+///         hc_public [sum]
 ///     }
 /// }
 ///
@@ -430,8 +430,8 @@ impl Dispatch {
 ///             }
 ///     ]
 ///
-///     capabilities: {
-///         public (Public) [sum]
+///     traits: {
+///         hc_public [sum]
 ///     }
 /// }
 ///
@@ -1099,8 +1099,8 @@ pub fn query_result(
 ///            }
 ///    ]
 ///
-///     capabilities: {
-///         public (Public) [send_message]
+///     traits: {
+///         hc_public [send_message]
 ///     }
 ///}
 /// # }

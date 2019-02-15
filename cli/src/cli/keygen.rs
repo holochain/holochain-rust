@@ -3,9 +3,8 @@ use holochain_common::paths::keys_directory;
 use holochain_dpki::{
     bundle::KeyBundle,
     keypair::{Keypair, SEEDSIZE},
-    util::PwHashConfig,
 };
-use holochain_sodium::{pwhash, random::random_secbuf, secbuf::SecBuf};
+use holochain_sodium::{random::random_secbuf, secbuf::SecBuf};
 use rpassword;
 use std::{
     fs::{create_dir_all, File},
@@ -30,11 +29,7 @@ pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>) -> DefaultResul
         .get_bundle(
             &mut passphrase_buf,
             "hint".to_string(),
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
+            None
         )
         .unwrap();
 
@@ -78,11 +73,7 @@ pub mod test {
         let keypair = Keypair::from_bundle(
             &bundle,
             &mut passphrase,
-            Some(PwHashConfig(
-                pwhash::OPSLIMIT_INTERACTIVE,
-                pwhash::MEMLIMIT_INTERACTIVE,
-                pwhash::ALG_ARGON2ID13,
-            )),
+            None,
         );
 
         assert!(keypair.is_ok());

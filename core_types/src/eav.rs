@@ -66,7 +66,7 @@ pub struct EaviQuery<'a> {
     entity: EntityFilter<'a>,
     attribute: AttributeFilter<'a>,
     value: ValueFilter<'a>,
-    index: IndexRange,
+    index: IndexFilter,
 }
 
 type EntityFilter<'a> = EavFilter<'a, Entity>;
@@ -89,7 +89,7 @@ impl<'a> EaviQuery<'a> {
         entity: EntityFilter<'a>,
         attribute: AttributeFilter<'a>,
         value: ValueFilter<'a>,
-        index: IndexRange,
+        index: IndexFilter,
     ) -> Self {
         Self {
             entity,
@@ -103,19 +103,20 @@ impl<'a> EaviQuery<'a> {
     where
         I: Clone + Iterator<Item = EntityAttributeValueIndex> + 'a,
     {
+        let iter2 = iter.clone();
         iter.clone()
-            .filter(|v| {
-                self.entity.check(v.entity())
-                    && self.attribute.check(v.attribute())
-                    && self.value.check(v.value())
+            .filter(|eavi| {
+                self.entity.check(eavi.entity())
+                    && self.attribute.check(eavi.attribute())
+                    && self.value.check(eavi.value())
             })
-            .filter(|v| match (self.index.start, self.index.end) {
-                (None, None) => get_latest(v.clone(), iter.clone())
-                    .map(|latest| latest == *v)
+            .filter(|eavi| match self.index {
+                IndexFilter::Latest => get_latest(eavi.clone(), iter2.clone())
+                    .map(|latest| latest == *eavi)
                     .unwrap_or_default(),
-                (start, end) => {
-                    start.map(|lo| lo <= v.index()).unwrap_or_default()
-                        && end.map(|hi| v.index() <= hi).unwrap_or_default()
+                IndexFilter::Range(start, end) => {
+                    start.map(|lo| lo <= eavi.index()).unwrap_or(true)
+                        && end.map(|hi| eavi.index() <= hi).unwrap_or(true)
                 }
             })
             .collect()
@@ -130,7 +131,7 @@ impl<'a> EaviQuery<'a> {
     pub fn value(&self) -> &ValueFilter<'a> {
         &self.value
     }
-    pub fn index(&self) -> &IndexRange {
+    pub fn index(&self) -> &IndexFilter {
         &self.index
     }
 }
@@ -180,38 +181,14 @@ impl<'a, T: Eq> From<Option<T>> for EavFilter<'a, T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct IndexRange {
-    start: Option<i64>,
-    end: Option<i64>,
+pub enum IndexFilter {
+    Latest,
+    Range(Option<i64>, Option<i64>),
 }
 
-impl IndexRange {
-    pub fn start(&self) -> Option<i64> {
-        self.start.clone()
-    }
-
-    pub fn end(&self) -> Option<i64> {
-        self.end.clone()
-    }
-
-    pub fn new(start: i64, end: i64) -> IndexRange {
-        IndexRange {
-            start: Some(start),
-            end: Some(end),
-        }
-    }
-
-    pub fn new_with_options(start: Option<i64>, end: Option<i64>) -> IndexRange {
-        IndexRange { start, end }
-    }
-}
-
-impl Default for IndexRange {
-    fn default() -> IndexRange {
-        IndexRange {
-            start: None,
-            end: None,
-        }
+impl Default for IndexFilter {
+    fn default() -> IndexFilter {
+        IndexFilter::Latest
     }
 }
 
@@ -370,15 +347,18 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     }
 }
 
-pub fn get_latest<I>(eav: EntityAttributeValueIndex, iter: I) -> HcResult<EntityAttributeValueIndex>
+pub fn get_latest<I>(
+    eavi: EntityAttributeValueIndex,
+    iter: I,
+) -> HcResult<EntityAttributeValueIndex>
 where
     I: Clone + Iterator<Item = EntityAttributeValueIndex>,
 {
     let query = EaviQuery::new(
-        EavFilter::single(eav.entity().clone()),
-        EavFilter::single(eav.attribute().clone()),
-        EavFilter::single(eav.value().clone()),
-        IndexRange::default(),
+        EavFilter::single(eavi.entity().clone()),
+        EavFilter::single(eavi.attribute().clone()),
+        EavFilter::single(eavi.value().clone()),
+        IndexFilter::Range(None, None),
     );
     query
         .run(iter)
@@ -447,7 +427,7 @@ pub fn eav_round_trip_test_runner(
                 Some(entity_content.address()).into(),
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
-                IndexRange::default()
+                IndexFilter::default()
             ))
             .expect("could not fetch eav"),
     );
@@ -488,7 +468,7 @@ pub fn eav_round_trip_test_runner(
                     e.into(),
                     a.into(),
                     v.into(),
-                    IndexRange::default()
+                    IndexFilter::default()
                 ))
                 .expect("could not fetch eav")
         );

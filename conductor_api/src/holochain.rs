@@ -83,9 +83,7 @@ pub struct Holochain {
 impl Holochain {
     /// create a new Holochain instance
     pub fn new(dna: Dna, context: Arc<Context>) -> HolochainResult<Self> {
-        println!(":::::<new 1>");
         let instance = Instance::new(context.clone());
-        println!(":::::<new 2>");
         Self::from_dna_and_context_and_instance(dna, context, instance)
     }
 
@@ -96,7 +94,7 @@ impl Holochain {
     ) -> HolochainResult<Self> {
         let name = dna.name.clone();
         let result = instance.initialize(Some(dna), context.clone());
-        println!(":::::<initialized>");
+
         match result {
             Ok(new_context) => {
                 context.log(format!("debug/conductor: {} instantiated", name));
@@ -105,7 +103,6 @@ impl Holochain {
                     context: new_context.clone(),
                     active: false,
                 };
-                println!(":::::<got hc>");
                 Ok(hc)
             }
             Err(err) => Err(HolochainInstanceError::InternalFailure(err)),

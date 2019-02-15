@@ -6,7 +6,7 @@
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     eav::{
-        EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage, IndexRange,
+        EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage, IndexFilter,
     },
     entry::{test_entry_unique, Entry},
     error::HolochainError,
@@ -264,7 +264,7 @@ impl EavTestSuite {
                 Some(entity_content.address()).into(),
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
-                IndexRange::default(),
+                IndexFilter::default(),
             );
             assert_eq!(
                 BTreeSet::new(),
@@ -309,7 +309,7 @@ impl EavTestSuite {
                             e.into(),
                             a.into(),
                             v.into(),
-                            IndexRange::default()
+                            IndexFilter::default()
                         ))
                         .expect("could not fetch eav")
                 );
@@ -370,7 +370,7 @@ impl EavTestSuite {
                     Some(one.address()).into(),
                     Some(attribute.clone()).into(),
                     None.into(),
-                    IndexRange::default()
+                    IndexFilter::default()
                 ))
                 .expect("could not fetch eav")
         );
@@ -387,7 +387,7 @@ impl EavTestSuite {
                     None.into(),
                     Some(attribute.clone()).into(),
                     Some(many.address()).into(),
-                    IndexRange::default(),
+                    IndexFilter::default(),
                 ))
                 .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(), expected_one.clone().len());
@@ -445,9 +445,9 @@ impl EavTestSuite {
         });
 
         // get only many one values per specified range
-        let index_query_many_one = IndexRange::new(
-            expected_many_one.iter().next().unwrap().index(),
-            expected_many_one.iter().last().unwrap().index(),
+        let index_query_many_one = IndexFilter::Range(
+            Some(expected_many_one.iter().next().unwrap().index()),
+            Some(expected_many_one.iter().last().unwrap().index()),
         );
         assert_eq!(
             expected_many_one,
@@ -462,9 +462,9 @@ impl EavTestSuite {
         );
 
         // get only many two values per specified range
-        let index_query_many_two = IndexRange::new(
-            expected_many_two.iter().next().unwrap().index(),
-            expected_many_two.iter().last().unwrap().index(),
+        let index_query_many_two = IndexFilter::Range(
+            Some(expected_many_two.iter().next().unwrap().index()),
+            Some(expected_many_two.iter().last().unwrap().index()),
         );
         assert_eq!(
             expected_many_two,
@@ -479,9 +479,9 @@ impl EavTestSuite {
         );
 
         // get all values per specified range
-        let index_query_all = IndexRange::new(
-            expected_all_range.iter().next().unwrap().index(),
-            expected_all_range.iter().last().unwrap().index(),
+        let index_query_all = IndexFilter::Range(
+            Some(expected_all_range.iter().next().unwrap().index()),
+            Some(expected_all_range.iter().last().unwrap().index()),
         );
         assert_eq!(
             expected_all_range,
@@ -530,7 +530,7 @@ impl EavTestSuite {
             Some(many_one.address()).into(),
             EavFilter::<Attribute>::attribute_prefixes(prefixes.clone(), Some(&attribute)),
             EavFilter::default(),
-            IndexRange::default(),
+            IndexFilter::default(),
         );
 
         // get only last value in set of prefix query
@@ -609,7 +609,7 @@ impl EavTestSuite {
             EavFilter::default(),
             EavFilter::single(attribute.clone()),
             EavFilter::single(one.address()),
-            IndexRange::default(),
+            IndexFilter::default(),
         );
         // show the many referencing one
         assert_eq!(
@@ -629,7 +629,7 @@ impl EavTestSuite {
                     Some(many.address()).into(),
                     Some(attribute.clone()).into(),
                     None.into(),
-                    IndexRange::default(),
+                    IndexFilter::default(),
                 ))
                 .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(), expected_one.clone().len());

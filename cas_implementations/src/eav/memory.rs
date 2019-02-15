@@ -1,7 +1,7 @@
 use holochain_core_types::{
     eav::{
         get_latest, increment_key_till_no_collision, Attribute, EaviQuery, Entity,
-        EntityAttributeValueIndex, EntityAttributeValueStorage, IndexRange, Value,
+        EntityAttributeValueIndex, EntityAttributeValueStorage, IndexFilter, Value,
     },
     error::HolochainError,
 };

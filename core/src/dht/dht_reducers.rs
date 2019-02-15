@@ -9,7 +9,7 @@ use crate::{
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::{EavFilter, EaviQuery, EntityAttributeValueIndex, IndexRange},
+    eav::{EavFilter, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::Entry,
     error::HolochainError,
 };
@@ -291,7 +291,7 @@ fn reduce_remove_entry_inner(
         Some(latest_deleted_address.clone()).into(),
         Some(STATUS_NAME.to_string()).into(),
         None.into(),
-        IndexRange::default(),
+        IndexFilter::default(),
     ));
     if let Err(err) = maybe_status_eav {
         return Err(err);
@@ -356,7 +356,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        eav::{Attribute, EavFilter, EaviQuery, IndexRange},
+        eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };
@@ -432,7 +432,7 @@ pub mod tests {
             Some(entry.address()).into(),
             None.into(),
             None.into(),
-            IndexRange::default(),
+            IndexFilter::default(),
         ));
 
         assert!(fetched.is_ok());
@@ -482,7 +482,7 @@ pub mod tests {
             Some(entry.address()).into(),
             EavFilter::<Attribute>::attribute_prefixes(vec!["link__", "removed_link__"], None),
             None.into(),
-            IndexRange::default(),
+            IndexFilter::default(),
         ));
 
         assert!(fetched.is_ok());
@@ -520,7 +520,7 @@ pub mod tests {
             Some(entry.address()).into(),
             None.into(),
             None.into(),
-            IndexRange::default(),
+            IndexFilter::default(),
         ));
 
         assert!(fetched.is_ok());

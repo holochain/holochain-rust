@@ -279,18 +279,14 @@ fn start_holochain_instance<T: Into<String>>(
         });
         entry_types.insert(EntryType::from("link_validator"), link_validator);
     }
-    println!(":::<>");
 
     let (context, test_logger) =
         test_context_and_logger_with_network_name(&agent_name.into(), Some(&dna.uuid));
-    println!(":::<>");
     let mut hc =
         Holochain::new(dna.clone(), context).expect("could not create new Holochain instance.");
-    println!(":::<>");
 
     // Run the holochain instance
     hc.start().expect("couldn't start");
-    println!(":::<>");
     (hc, test_logger)
 }
 

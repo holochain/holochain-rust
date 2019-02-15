@@ -79,6 +79,17 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     mount_conductor_from_config(config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
+    println!("Unlocking agent keys:");
+    conductor
+        .config()
+        .agents
+        .iter()
+        .map(|agent_config| {
+            println!("Unlocking key for agent '{}': ", &agent_config.id);
+            conductor.check_load_key_for_agent(&agent_config.id)
+        })
+        .collect::<Result<Vec<()>, String>>()
+        .map_err(|error|HolochainError::ConfigError(error))?;
     conductor.load_config()?;
     Ok(())
 }

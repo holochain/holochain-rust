@@ -465,6 +465,19 @@ impl Conductor {
             })
     }
 
+    /// Checks if the key for the given agent can be loaded or was already loaded.
+    /// Will trigger loading if key is not loaded yet.
+    /// Meant to be used in conductor executable to first try to load all keys (which will trigger
+    /// passphrase prompts) before bootstrapping the whole config and have prompts appear
+    /// in between other initialization output.
+    pub fn check_load_key_for_agent(&mut self, agent_id: &String) -> Result<(), String> {
+        self.get_key_for_agent(agent_id)?;
+        Ok(())
+    }
+
+    /// Get reference to key for given agent ID.
+    /// If the key was not loaded (into secure memory) yet, this will use the KeyLoader
+    /// to do so.
     fn get_key_for_agent(&mut self, agent_id: &String) -> Result<&Keypair, String> {
         if !self.agent_keys.contains_key(agent_id) {
             let agent_config = self

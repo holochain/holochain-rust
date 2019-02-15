@@ -12,9 +12,9 @@ const instanceAlice = Config.instance(agentAlice, dna)
 const instanceBob = Config.instance(agentBob, dna)
 const instanceCarol = Config.instance(agentCarol, dna)
 
-const scenario1 = new Scenario([instanceAlice])
-const scenario2 = new Scenario([instanceAlice, instanceBob])
-const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol])
+const scenario1 = new Scenario([instanceAlice], { debugLog: true })
+const scenario2 = new Scenario([instanceAlice, instanceBob], { debugLog: true })
+const scenario3 = new Scenario([instanceAlice, instanceBob, instanceCarol], { debugLog: true })
 
 scenario2.runTape('agentId', async (t, { alice, bob }) => {
   t.ok(alice.agentId)

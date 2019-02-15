@@ -19,19 +19,15 @@ pub fn reduce_init(
     let network_settings = unwrap_to!(action => Action::InitNetwork);
     let mut network =
         P2pNetwork::new(create_handler(&context), &network_settings.p2p_config).unwrap();
+    let json = JsonProtocol::TrackDna(TrackDnaData {
+        dna_address: network_settings.dna_address.clone(),
+        agent_id: network_settings.agent_id.clone(),
+    });
 
-    let _ = network
-        .send(
-            JsonProtocol::TrackDna(TrackDnaData {
-                dna_address: network_settings.dna_address.clone(),
-                agent_id: network_settings.agent_id.clone(),
-            })
-            .into(),
-        )
-        .and_then(|_| {
-            state.network = Some(Arc::new(Mutex::new(network)));
-            state.dna_address = Some(network_settings.dna_address.clone());
-            state.agent_id = Some(network_settings.agent_id.clone());
-            Ok(())
-        });
+    let _ = network.send(json.into()).and_then(|_| {
+        state.network = Some(Arc::new(Mutex::new(network)));
+        state.dna_address = Some(network_settings.dna_address.clone());
+        state.agent_id = Some(network_settings.agent_id.clone());
+        Ok(())
+    });
 }

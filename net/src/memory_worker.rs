@@ -19,6 +19,7 @@ pub struct InMemoryWorker {
     handler: NetHandler,
     receiver_per_dna: HashMap<Address, mpsc::Receiver<Protocol>>,
     server_name: String,
+    can_send_P2pReady: bool,
 }
 
 impl NetWorker for InMemoryWorker {
@@ -75,6 +76,12 @@ impl NetWorker for InMemoryWorker {
 
     /// check for messages from our InMemoryServer
     fn tick(&mut self) -> NetResult<bool> {
+        // Send p2pready on first tick
+        if self.can_send_P2pReady {
+            self.can_send_P2pReady = false;
+            (self.handler)(Ok(Protocol::P2pReady))?;
+        }
+        // check for messages from our InMemoryServer
         let mut did_something = false;
         for (_, receiver) in self.receiver_per_dna.iter_mut() {
             if let Ok(data) = receiver.try_recv() {
@@ -125,6 +132,7 @@ impl InMemoryWorker {
             handler,
             receiver_per_dna: HashMap::new(),
             server_name,
+            can_send_P2pReady: true,
         })
     }
 }

@@ -24,7 +24,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::{Address, AddressableContent},
         crud_status::CrudStatus,
-        entry::{entry_type::test_app_entry_type, test_entry, Entry},
+        entry::{entry_type::test_app_entry_type, test_entry, Entry, EntryWithMeta},
         link::link_data::LinkData,
         time::Timeout,
     };
@@ -53,13 +53,20 @@ pub mod tests {
         assert!(result.is_ok(), "publish() result = {:?}", result);
 
         // Get it from the network
-        let result = context2.block_on(get_entry(
-            context2.clone(),
-            entry.address(),
-            Default::default(),
-        ));
-        assert!(result.is_ok(), "get_entry() result = {:?}", result);
-        let maybe_entry_with_meta = result.unwrap();
+        // HACK: doing a loop because publish returns before actual confirmation from the network
+        let mut maybe_entry_with_meta: Option<EntryWithMeta> = None;
+        let mut loop_count = 0;
+        while maybe_entry_with_meta.is_none() && loop_count < 10 {
+            loop_count += 1;
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            let result = context2.block_on(get_entry(
+                context2.clone(),
+                entry.address(),
+                Default::default(),
+            ));
+            assert!(result.is_ok(), "get_entry() result = {:?}", result);
+            maybe_entry_with_meta = result.unwrap();
+        }
         assert!(
             maybe_entry_with_meta.is_some(),
             "maybe_entry_with_meta = {:?}",

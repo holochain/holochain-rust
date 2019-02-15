@@ -87,7 +87,7 @@ fn publish_link_meta(
     network_state: &mut NetworkState,
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
-    let (link_type, link_attribute) = match entry_with_header.entry.clone() {
+    let (link_type, _link_attribute) = match entry_with_header.entry.clone() {
         Entry::LinkAdd(link_add_entry) => (link_add_entry, "link"),
         Entry::LinkRemove(link_remove) => (link_remove, "link_remove"),
         _ => {

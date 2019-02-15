@@ -8,8 +8,8 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
-    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter, IndexQuery},
+    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::Entry,
     error::HolochainError,
 };
@@ -167,7 +167,7 @@ pub(crate) fn reduce_remove_link(
     } else {
         let eav = EntityAttributeValueIndex::new(
             link.base(),
-            &format!("removed_link__{}", link.tag()),
+            &Attribute::RemovedLink(link.tag().to_string()),
             link.target(),
         );
         eav.map(|e| {
@@ -354,7 +354,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        eav::{Attribute, EavFilter, EaviQuery, IndexFilter, IndexQuery},
+        eav::{Attribute, EavFilter, EaviQuery, IndexFilter},
         entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };
@@ -478,7 +478,10 @@ pub mod tests {
         let storage = new_dht_store.meta_storage();
         let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
             Some(entry.address()).into(),
-            EavFilter::<Attribute>::attribute_prefixes(vec!["link__", "removed_link__"], None),
+            EavFilter::predicate(|a| match a {
+                Attribute::LinkTag(_) | Attribute::RemovedLink(_) => true,
+                _ => false,
+            }),
             None.into(),
             IndexFilter::default(),
         ));
@@ -489,7 +492,10 @@ pub mod tests {
         let eav = hash_set.iter().nth(0).unwrap();
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
-        assert_eq!(eav.attribute(), format!("removed_link__{}", link.tag()));
+        assert_eq!(
+            eav.attribute(),
+            Attribute::RemovedLink(link.tag().to_string())
+        );
     }
 
     #[test]

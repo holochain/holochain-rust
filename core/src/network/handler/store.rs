@@ -6,11 +6,7 @@ use crate::{
         remove_link::remove_link_workflow,
     },
 };
-use holochain_core_types::{
-    cas::content::Address,
-    crud_status::{CrudStatus, LINK_NAME, STATUS_NAME},
-    eav::Attribute,
-};
+use holochain_core_types::eav::Attribute;
 use holochain_net_connection::json_protocol::{DhtMetaData, EntryData};
 use std::{sync::Arc, thread};
 
@@ -47,7 +43,7 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
                 _ => (),
             }
         });
-    } else if attr == unimplemented!("TODO link_remove attribute") {
+    } else if attr == Attribute::LinkRemove.to_string() {
         context.log("debug/net/handle: HandleStoreMeta: got LINK REMOVAL. processing...");
         // TODO: do a loop on content once links properly implemented
         assert_eq!(dht_meta_data.content_list.len(), 1);

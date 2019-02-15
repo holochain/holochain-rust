@@ -38,10 +38,13 @@ pub enum Attribute {
     CrudLink,
     EntryHeader,
     Link,
+    LinkRemove,
     LinkTag(String),
+    RemovedLink(String),
     PendingEntry,
 }
 
+#[derive(PartialEq, Debug)]
 pub enum AttributeError {
     Unrecognized(String),
     ParseError,
@@ -69,7 +72,9 @@ impl fmt::Display for Attribute {
             Attribute::CrudLink => write!(f, "crud-link"),
             Attribute::EntryHeader => write!(f, "entry-header"),
             Attribute::Link => write!(f, "link"),
-            Attribute::LinkTag(name) => write!(f, "link__{}", name),
+            Attribute::LinkRemove => write!(f, "link_remove"),
+            Attribute::LinkTag(tag) => write!(f, "link__{}", tag),
+            Attribute::RemovedLink(tag) => write!(f, "removed_link__{}", tag),
             Attribute::PendingEntry => write!(f, "pending-entry"),
         }
     }
@@ -77,6 +82,8 @@ impl fmt::Display for Attribute {
 
 lazy_static! {
     static ref LINK_REGEX: Regex =
+        Regex::new(r"^link__(.*)$").expect("This string literal is a valid regex");
+    static ref REMOVED_LINK_REGEX: Regex =
         Regex::new(r"^link__(.*)$").expect("This string literal is a valid regex");
 }
 
@@ -87,12 +94,16 @@ impl TryFrom<&str> for Attribute {
         if LINK_REGEX.is_match(s) {
             let tag = LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
             Ok(LinkTag(tag))
+        } else if REMOVED_LINK_REGEX.is_match(s) {
+            let tag = REMOVED_LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
+            Ok(RemovedLink(tag))
         } else {
             match s {
                 "crud-status" => Ok(CrudStatus),
                 "crud-link" => Ok(CrudLink),
                 "entry-header" => Ok(EntryHeader),
                 "link" => Ok(Link),
+                "link_remove" => Ok(LinkRemove),
                 "pending-entry" => Ok(PendingEntry),
                 a => Err(AttributeError::Unrecognized(a.to_string())),
             }
@@ -626,9 +637,15 @@ pub mod tests {
 
     #[test]
     fn example_eav_prefixes() {
-        EavTestSuite::test_prefixes::<ExampleAddressableContent, ExampleEntityAttributeValueStorage>(
+        EavTestSuite::test_multiple_attributes::<
+            ExampleAddressableContent,
+            ExampleEntityAttributeValueStorage,
+        >(
             test_eav_storage(),
-            vec!["a_", "b_", "c_", "d_"],
+            vec!["a_", "b_", "c_", "d_"]
+                .into_iter()
+                .map(|p| Attribute::LinkTag(p.to_string() + "one_to_many"))
+                .collect(),
         );
     }
 

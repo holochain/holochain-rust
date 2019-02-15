@@ -7,7 +7,6 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     eav::{
         Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
-        IndexQuery,
     },
     entry::Entry,
     error::HolochainError,
@@ -63,17 +62,20 @@ impl DhtStore {
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let filtered = self.meta_storage.read()?.fetch_eavi(&EaviQuery::new(
             Some(address).into(),
-            EavFilter::<Attribute>::attribute_prefixes(
-                vec!["link__", "removed_link__"],
-                Some(&tag),
-            ),
+            EavFilter::multiple(vec![
+                Attribute::LinkTag(tag.clone()),
+                Attribute::RemovedLink(tag),
+            ]),
             None.into(),
             Default::default(),
         ))?;
 
         Ok(filtered
             .into_iter()
-            .filter(|eav| eav.attribute().starts_with("link__"))
+            .filter(|eav| match eav.attribute() {
+                Attribute::LinkTag(_) => true,
+                _ => false,
+            })
             .collect())
     }
 

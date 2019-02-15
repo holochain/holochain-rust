@@ -3,7 +3,7 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     crud_status::CrudStatus,
-    eav::{Attribute, EntityAttributeValueIndex, IndexFilter},
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };

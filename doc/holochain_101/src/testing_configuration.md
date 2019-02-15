@@ -118,8 +118,7 @@ console.log(dnaConfig)
 
 Consumes an array of configured instances and produces an object which is a fully valid Conductor configuration. It can be passed into the Conductor constructor, which is covered in the next articles.
 
-> The return value of this function comes from the Rust <> Nodejs bindings, and contains all the right values,
-but those values are not visible when using `console.log` on the result.
+> This function is mostly useful in conjunction with [manually instantiating a Conductor](./managing_the_conductor.md#instantiating-a-conductor).
 
 ___
 **Name** instancesArray
@@ -157,7 +156,7 @@ const conductorConfig = Config.conductor([instanceConfig], { debugLog: false })
 ```
 
 
-## Full Multi Instance Example
+## Multiple Instances Example
 
 ```javascript
 const { Config } = require('@holochain/holochain-nodejs')

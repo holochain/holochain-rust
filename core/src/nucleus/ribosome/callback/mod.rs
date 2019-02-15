@@ -13,6 +13,7 @@ use crate::{
         ribosome::{
             self,
             callback::{genesis::genesis, receive::receive},
+            runtime::WasmCallData,
             Defn,
         },
         ZomeFnCall,
@@ -20,10 +21,7 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::Address,
-    dna::{
-        capabilities::{CapabilityCall, ReservedCapabilityNames},
-        wasm::DnaWasm,
-    },
+    dna::{capabilities::CapabilityCall, wasm::DnaWasm},
     entry::Entry,
     error::{HolochainError, RibosomeEncodedValue},
     json::{default_to_json, JsonString},
@@ -44,14 +42,8 @@ pub enum Callback {
     /// Error index for unimplemented functions
     MissingNo = 0,
 
-    /// MissingNo Capability
-
-    /// LifeCycle Capability
-
     /// genesis() -> bool
     Genesis,
-
-    /// Communication Capability
 
     /// receive(from: String, message: String) -> String
     Receive,
@@ -109,16 +101,6 @@ impl Defn for Callback {
         match FromPrimitive::from_usize(i) {
             Some(v) => v,
             None => Callback::MissingNo,
-        }
-    }
-
-    fn capability(&self) -> ReservedCapabilityNames {
-        match *self {
-            Callback::MissingNo => ReservedCapabilityNames::MissingNo,
-            Callback::Genesis => ReservedCapabilityNames::LifeCycle,
-            // @TODO call this from somewhere
-            // @see https://github.com/holochain/holochain-rust/issues/201
-            Callback::Receive => ReservedCapabilityNames::Communication,
         }
     }
 }
@@ -192,11 +174,9 @@ pub(crate) fn run_callback(
     dna_name: String,
 ) -> CallbackResult {
     match ribosome::run_dna(
-        &dna_name,
-        context,
         wasm.code.clone(),
-        &fc,
         Some(fc.clone().parameters.into_bytes()),
+        WasmCallData::new_zome_call(context, dna_name, fc),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {
@@ -335,10 +315,7 @@ pub mod tests {
     ) -> Result<Instance, String> {
         let dna = test_utils::create_test_dna_with_wasm(
             zome,
-            Callback::from_str(canonical_name)
-                .expect("string argument canonical_name should be valid callback")
-                .capability()
-                .as_str(),
+            "test_cap",
             test_callback_wasm(canonical_name, result),
         );
 

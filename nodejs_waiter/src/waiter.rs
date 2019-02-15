@@ -1,4 +1,3 @@
-use colored::*;
 use holochain_core::{
     action::{Action, ActionWrapper},
     network::entry_with_header::EntryWithHeader,
@@ -77,29 +76,14 @@ impl CallFxChecker {
     {
         self.conditions
             .push(CallFxCondition::new(count, Box::new(f)));
-        println!(
-            "\n*** Condition {}: {} -> {}",
-            "ADDED".green(),
-            self.conditions.len() - 1,
-            self.conditions.len()
-        );
     }
 
     pub fn run_checks(&mut self, aw: &ActionWrapper) -> bool {
         let was_empty = self.conditions.is_empty();
-        let size = self.conditions.len();
         for condition in &mut self.conditions {
             condition.run(aw)
         }
         self.conditions.retain(|condition| !condition.satisfied());
-        if size != self.conditions.len() {
-            println!(
-                "\n*** Condition {}: {} -> {}",
-                "REMOVED".red(),
-                size,
-                size - 1
-            );
-        }
         if self.conditions.is_empty() && !was_empty {
             self.stop();
             return false;
@@ -147,10 +131,6 @@ impl Task for CallBlockingTask {
     }
 }
 
-fn log(msg: &str) {
-    println!("{}:\n{}\n", "(((LOG)))".bold(), msg);
-}
-
 /// A singleton which runs in a Task and is the receiver for the Signal channel.
 /// - handles incoming `ZomeFnCall`s, attaching and activating a new `CallFxChecker`
 /// - handles incoming Signals, running all `CallFxChecker` closures
@@ -181,8 +161,8 @@ impl Waiter {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
-                    // Pair every `ExecuteZomeFunction` with one `ReturnZomeFunctionResult`
-                    (_, Action::ExecuteZomeFunction(call)) => match self.sender_rx.try_recv() {
+                    // Pair every `SignalZomeFunctionCall` with one `ReturnZomeFunctionResult`
+                    (_, Action::SignalZomeFunctionCall(call)) => match self.sender_rx.try_recv() {
                         Ok(sender) => {
                             self.add_call(call.clone(), sender);
                             self.current_checker().unwrap().add(1, move |aw| {
@@ -195,7 +175,6 @@ impl Waiter {
                         }
                         Err(_) => {
                             self.deactivate_current();
-                            log("Waiter: deactivate_current");
                         }
                     },
 
@@ -224,15 +203,18 @@ impl Waiter {
                                     *aw.action() == Action::AddLink(link_add.clone().link().clone())
                                 });
                             }
-                            // Pair every `LinkRemove` with N `Hold`s
-                            Entry::LinkRemove(_link_remove) => {
+                            Entry::LinkRemove(link_remove) => {
+                                // Pair every `LinkRemove` with N `Hold`s
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
                                         *entry == committed_entry
                                     }
                                     _ => false,
                                 });
-                                println!("warn/waiter: LinkRemove not implemented!");
+                                checker.add(num_instances, move |aw| {
+                                    *aw.action()
+                                        == Action::RemoveLink(link_remove.clone().link().clone())
+                                });
                             }
                             _ => (),
                         }
@@ -271,16 +253,7 @@ impl Waiter {
     }
 
     fn run_checks(&mut self, aw: &ActionWrapper) {
-        let size = self.checkers.len();
         self.checkers.retain(|_, checker| checker.run_checks(aw));
-        if size != self.checkers.len() {
-            println!(
-                "\n{}: {} -> {}",
-                "Num checkers".italic(),
-                size,
-                self.checkers.len()
-            );
-        }
     }
 
     fn current_checker(&mut self) -> Option<&mut CallFxChecker> {
@@ -291,8 +264,6 @@ impl Waiter {
 
     fn add_call(&mut self, call: ZomeFnCall, tx: ControlSender) {
         let checker = CallFxChecker::new(tx);
-
-        log("Waiter: add_call...");
         self.checkers.insert(call.clone(), checker);
         self.current = Some(call);
     }
@@ -348,10 +319,8 @@ impl Task for MainBackgroundTask {
         }
 
         for (_, checker) in self.waiter.borrow_mut().checkers.iter_mut() {
-            println!("{}", "Shutting down lingering checker...".magenta().bold());
             checker.shutdown();
         }
-        println!("Terminating MainBackgroundTask::perform() loop");
         Ok(())
     }
 
@@ -360,7 +329,6 @@ impl Task for MainBackgroundTask {
             let error_string = cx.string(format!("unable to shut down background task: {}", e));
             cx.throw(error_string)
         })?;
-        println!("MainBackgroundTask shut down");
         Ok(cx.undefined())
     }
 }
@@ -370,7 +338,7 @@ mod tests {
     use super::{Action::*, *};
     use holochain_core::nucleus::ExecuteZomeFnResponse;
     use holochain_core_types::{
-        chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_add::LinkAdd,
+        chain_header::test_chain_header, entry::Entry, json::JsonString, link::link_data::LinkData,
     };
     use std::sync::mpsc::sync_channel;
 
@@ -459,7 +427,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -488,7 +456,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -527,7 +495,7 @@ mod tests {
 
         // an "unregistered" zome call (not using `callSync` or `callWithPromise`)
         assert_eq!(waiter.checkers.len(), 0);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_1.clone())));
         assert_eq!(waiter.checkers.len(), 0);
         waiter.process_signal(sig(Commit((entry_1.clone(), None))));
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
@@ -539,7 +507,7 @@ mod tests {
         // which shouldn't change the checkers count yet
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_2.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 
@@ -557,7 +525,7 @@ mod tests {
 
         // one more unregistered function call
         assert_eq!(waiter.checkers.len(), 1);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_3.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_3.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         waiter.process_signal(sig(Commit((entry_4.clone(), None))));
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_3.clone()))));
@@ -580,7 +548,7 @@ mod tests {
     fn can_await_links() {
         let (mut waiter, sender_tx) = test_waiter();
         let call = zf_call("c1");
-        let link_add = LinkAdd::new(
+        let link_add = LinkData::new_add(
             &"base".to_string().into(),
             &"target".to_string().into(),
             "tag",
@@ -591,7 +559,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -627,7 +595,7 @@ mod tests {
         let control_rx_1 = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_1.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call_1), 1);
 
@@ -642,7 +610,7 @@ mod tests {
         // which shouldn't change the checkers count yet
         assert_eq!(waiter.checkers.len(), 1);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_2.clone())));
         assert_eq!(waiter.checkers.len(), 2);
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 

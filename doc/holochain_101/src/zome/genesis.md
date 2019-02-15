@@ -36,7 +36,7 @@ define_zome! {
 
     functions: []
 
-    capabilitites: {}
+    traits: {}
 }
 ```
 
@@ -51,6 +51,6 @@ define_zome! {
 
     functions: []
 
-    capabilitites: {}
+    traits: {}
 }
 ```

@@ -1,8 +1,11 @@
 extern crate holochain_cas_implementations;
+extern crate holochain_common;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_dpki;
 extern crate holochain_net;
+extern crate holochain_sodium;
 extern crate holochain_wasm_utils;
 extern crate structopt;
 #[macro_use]
@@ -19,6 +22,7 @@ extern crate toml;
 #[macro_use]
 extern crate serde_json;
 extern crate ignore;
+extern crate rpassword;
 extern crate rustyline;
 extern crate tempfile;
 extern crate uuid;
@@ -36,15 +40,9 @@ use structopt::StructOpt;
 #[structopt(about = "A command line for Holochain")]
 enum Cli {
     #[structopt(
-        name = "agent",
-        alias = "a",
-        about = "Starts a Holochain node as an agent"
-    )]
-    Agent,
-    #[structopt(
         name = "package",
         alias = "p",
-        about = "Builds the current Holochain app into a .hcpkg file"
+        about = "Builds DNA source files into a single bundle.json DNA file"
     )]
     Package {
         #[structopt(
@@ -77,7 +75,7 @@ enum Cli {
     #[structopt(
         name = "generate",
         alias = "g",
-        about = "Generates a new zome and scaffolds the given capabilities"
+        about = "Generates a new zome and scaffolds the given functions"
     )]
     Generate {
         #[structopt(
@@ -142,6 +140,12 @@ enum Cli {
         #[structopt(long = "skip-package", short = "s", help = "Skip packaging DNA")]
         skip_build: bool,
     },
+    #[structopt(
+        name = "keygen",
+        alias = "k",
+        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
+    )]
+    KeyGen,
 }
 
 fn main() {
@@ -156,7 +160,6 @@ fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
     match args {
-        Cli::Agent => cli::agent().map_err(HolochainError::Default)?,
         Cli::Package { strip_meta, output } => {
             cli::package(strip_meta, output).map_err(HolochainError::Default)?
         }
@@ -183,6 +186,9 @@ fn run() -> HolochainResult<()> {
             cli::test(&current_path, &dir, &testfile, skip_build)
         }
         .map_err(HolochainError::Default)?,
+        Cli::KeyGen => {
+            cli::keygen(None, None).map_err(|e| HolochainError::Default(format_err!("{}", e)))?
+        }
     }
 
     Ok(())

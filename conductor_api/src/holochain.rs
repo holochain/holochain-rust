@@ -61,7 +61,7 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{call_and_wait_for_result, ZomeFnCall},
+    nucleus::{call_zome_function, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
 };
@@ -94,6 +94,7 @@ impl Holochain {
     ) -> HolochainResult<Self> {
         let name = dna.name.clone();
         let result = instance.initialize(Some(dna), context.clone());
+
         match result {
             Ok(new_context) => {
                 context.log(format!("debug/conductor: {} instantiated", name));
@@ -152,7 +153,8 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
         let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
-        Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
+        let context = self.context();
+        Ok(context.block_on(call_zome_function(zome_call, context))?)
     }
 
     /// checks to see if an instance is active
@@ -180,7 +182,6 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna, json::RawString};
@@ -271,7 +272,7 @@ mod tests {
     fn fails_instantiate_if_genesis_fails() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module

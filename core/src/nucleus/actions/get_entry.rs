@@ -3,7 +3,7 @@ use crate::context::Context;
 use holochain_core_types::{
     cas::{content::Address, storage::ContentAddressableStorage},
     crud_status::CrudStatus,
-    eav::{Attribute, EntityAttributeValueIndex, IndexQuery},
+    eav::{Attribute, EntityAttributeValueIndex, IndexFilter},
     entry::{Entry, EntryWithMeta},
     error::HolochainError,
 };
@@ -54,12 +54,12 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     let dht = context.state().unwrap().dht().meta_storage();
     let storage = &dht.clone();
     // Get crud-status
-    let status_eavs = (*storage.read().unwrap()).fetch_eavi(
-        Some(address.clone()),
-        Some(Attribute::CrudStatus),
-        None,
-        IndexQuery::default(),
-    )?;
+    let status_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+        Some(address.clone()).into(),
+        Some(Attribute::CrudStatus).into(),
+        None.into(),
+        IndexFilter::default(),
+    ))?;
     if status_eavs.len() == 0 {
         return Ok(None);
     }
@@ -92,12 +92,12 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     }
     // Get crud-link
     let mut maybe_crud_link = None;
-    let link_eavs = (*storage.read().unwrap()).fetch_eavi(
-        Some(address),
-        Some(Attribute::CrudLink),
-        None,
-        IndexQuery::default(),
-    )?;
+    let link_eavs = (*storage.read().unwrap()).fetch_eavi(&EaviQuery::new(
+        Some(address).into(),
+        Some(Attribute::CrudLink).into(),
+        None.into(),
+        IndexFilter::default(),
+    ))?;
     assert!(
         link_eavs.len() <= 1,
         "link_eavs.len() = {}",
@@ -118,6 +118,7 @@ pub fn get_entry_with_meta<'a>(
     address: Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. try to get the entry
+
     let entry = match get_entry_from_dht(context, &address) {
         Err(err) => return Err(err),
         Ok(None) => return Ok(None),

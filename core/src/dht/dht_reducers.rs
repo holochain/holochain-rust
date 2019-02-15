@@ -8,8 +8,8 @@ use crate::{
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
-    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
-    eav::{Attribute, EntityAttributeValueIndex, IndexQuery},
+    crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus, STATUS_NAME},
+    eav::{Attribute, EaviQuery, EntityAttributeValueIndex, IndexFilter, IndexQuery},
     entry::Entry,
     error::HolochainError,
 };
@@ -48,6 +48,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
         Action::UpdateEntry(_) => Some(reduce_update_entry),
         Action::RemoveEntry(_) => Some(reduce_remove_entry),
         Action::AddLink(_) => Some(reduce_add_link),
+        Action::RemoveLink(_) => Some(reduce_remove_link),
         _ => None,
     }
 }
@@ -130,6 +131,43 @@ pub(crate) fn reduce_add_link(
         let eav = EntityAttributeValueIndex::new(
             link.base(),
             &Attribute::LinkTag(link.tag().to_owned()),
+            link.target(),
+        );
+        eav.map(|e| {
+            let storage = new_store.meta_storage();
+            let result = storage.write().unwrap().add_eavi(&e);
+            new_store
+                .actions_mut()
+                .insert(action_wrapper.clone(), result.map(|_| link.base().clone()));
+            Some(new_store)
+        })
+        .ok()
+        .unwrap_or(None)
+    }
+}
+
+pub(crate) fn reduce_remove_link(
+    _context: Arc<Context>,
+    old_store: &DhtStore,
+    action_wrapper: &ActionWrapper,
+) -> Option<DhtStore> {
+    // Get Action's input data
+    let action = action_wrapper.action();
+    let link = unwrap_to!(action => Action::RemoveLink);
+    let mut new_store = (*old_store).clone();
+    let storage = &old_store.content_storage().clone();
+    if !(*storage.read().unwrap()).contains(link.base()).unwrap() {
+        new_store.actions_mut().insert(
+            action_wrapper.clone(),
+            Err(HolochainError::ErrorGeneric(String::from(
+                "Base for link not found for remove",
+            ))),
+        );
+        Some(new_store)
+    } else {
+        let eav = EntityAttributeValueIndex::new(
+            link.base(),
+            &format!("removed_link__{}", link.tag()),
             link.target(),
         );
         eav.map(|e| {
@@ -247,12 +285,12 @@ fn reduce_remove_entry_inner(
     // pre-condition: Current status must be Live
     // get current status
     let meta_storage = &new_store.meta_storage().clone();
-    let maybe_status_eav = meta_storage.read().unwrap().fetch_eavi(
-        Some(latest_deleted_address.clone()),
-        Some(Attribute::CrudStatus),
-        None,
-        IndexQuery::default(),
-    );
+    let maybe_status_eav = meta_storage.read().unwrap().fetch_eavi(&EaviQuery::new(
+        Some(latest_deleted_address.clone()).into(),
+        Some(Attribute::CrudStatus).into(),
+        None.into(),
+        IndexFilter::default(),
+    ));
     if let Err(err) = maybe_status_eav {
         return Err(err);
     }
@@ -316,7 +354,7 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::AddressableContent,
         chain_header::test_chain_header,
-        eav::{Attribute, IndexQuery},
+        eav::{Attribute, EavFilter, EaviQuery, IndexFilter, IndexQuery},
         entry::{test_entry, test_sys_entry, Entry},
         link::Link,
     };
@@ -388,12 +426,12 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
-        let fetched = storage.read().unwrap().fetch_eavi(
-            Some(entry.address()),
-            None,
-            None,
-            IndexQuery::default(),
-        );
+        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
+            Some(entry.address()).into(),
+            None.into(),
+            None.into(),
+            IndexFilter::default(),
+        ));
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
@@ -402,6 +440,56 @@ pub mod tests {
         assert_eq!(eav.entity(), *link.base());
         assert_eq!(eav.value(), *link.target());
         assert_eq!(eav.attribute(), Attribute::LinkTag(link.tag().to_owned()));
+    }
+
+    #[test]
+    fn can_remove_links() {
+        let context = test_context("bob", None);
+        let store = test_store(context.clone());
+        let entry = test_entry();
+
+        let locked_state = Arc::new(RwLock::new(store));
+
+        let mut context = (*context).clone();
+        context.set_state(locked_state.clone());
+        let storage = context.dht_storage.clone();
+        let _ = (storage.write().unwrap()).add(&entry);
+        let context = Arc::new(context);
+
+        let link = Link::new(&entry.address(), &entry.address(), "test-tag");
+        let mut action = ActionWrapper::new(Action::AddLink(link.clone()));
+
+        let new_dht_store: DhtStore;
+        {
+            let state = locked_state.read().unwrap();
+
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+        }
+        action = ActionWrapper::new(Action::RemoveLink(link.clone()));
+
+        let _ = new_dht_store.meta_storage();
+
+        let new_dht_store: DhtStore;
+        {
+            let state = locked_state.read().unwrap();
+
+            new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
+        }
+        let storage = new_dht_store.meta_storage();
+        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
+            Some(entry.address()).into(),
+            EavFilter::<Attribute>::attribute_prefixes(vec!["link__", "removed_link__"], None),
+            None.into(),
+            IndexFilter::default(),
+        ));
+
+        assert!(fetched.is_ok());
+        let hash_set = fetched.unwrap();
+        assert_eq!(hash_set.len(), 1);
+        let eav = hash_set.iter().nth(0).unwrap();
+        assert_eq!(eav.entity(), *link.base());
+        assert_eq!(eav.value(), *link.target());
+        assert_eq!(eav.attribute(), format!("removed_link__{}", link.tag()));
     }
 
     #[test]
@@ -426,12 +514,12 @@ pub mod tests {
             new_dht_store = (*reduce(Arc::clone(&context), state.dht(), &action)).clone();
         }
         let storage = new_dht_store.meta_storage();
-        let fetched = storage.read().unwrap().fetch_eavi(
-            Some(entry.address()),
-            None,
-            None,
-            IndexQuery::default(),
-        );
+        let fetched = storage.read().unwrap().fetch_eavi(&EaviQuery::new(
+            Some(entry.address()).into(),
+            None.into(),
+            None.into(),
+            IndexFilter::default(),
+        ));
 
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();

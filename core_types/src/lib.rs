@@ -10,12 +10,15 @@
 #![feature(try_from)]
 #![feature(try_trait)]
 #![feature(never_type)]
+#![feature(trait_alias)]
 
 #[macro_use]
 extern crate arrayref;
 extern crate base64;
 extern crate chrono;
 extern crate futures;
+#[macro_use]
+extern crate lazy_static;
 extern crate multihash;
 extern crate reed_solomon;
 extern crate rust_base58;
@@ -31,8 +34,6 @@ extern crate regex;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
-#[macro_use]
-extern crate lazy_static;
 
 extern crate uuid;
 

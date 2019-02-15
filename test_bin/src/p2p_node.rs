@@ -1,21 +1,103 @@
 #![allow(non_snake_case)]
 
-use holochain_net::{p2p_config::*, p2p_network::P2pNetwork};
+use holochain_core_types::{cas::content::Address, hash::HashString};
+use holochain_net::{
+    p2p_config::*,
+    p2p_network::P2pNetwork,
+    tweetlog::{TweetProxy, *},
+};
 use holochain_net_connection::{
     json_protocol::{
         DhtMetaData, EntryData, EntryListData, FailureResultData, FetchEntryData,
         FetchEntryResultData, FetchMetaData, FetchMetaResultData, GetListData, JsonProtocol,
-        MessageData, MetaListData,
+        MessageData, MetaKey, MetaListData, MetaTuple,
     },
     net_connection::NetSend,
     protocol::Protocol,
     NetResult,
 };
+use multihash::Hash;
 use std::{collections::HashMap, convert::TryFrom, sync::mpsc};
 
-use holochain_core_types::cas::content::Address;
-
 static TIMEOUT_MS: usize = 5000;
+
+pub type MetaStoreValue = serde_json::Value;
+
+pub struct MetaStore {
+    // TODO: Changed once meta is only Addresses
+    // pub meta_store: HashMap<MetaKey, HashSet<Address>>,
+    store: HashMap<MetaKey, HashMap<Address, serde_json::Value>>,
+}
+
+impl MetaStore {
+    pub fn new() -> Self {
+        MetaStore {
+            store: HashMap::new(),
+        }
+    }
+
+    /// Check if this value is already stored
+    pub fn has(&self, meta_key: MetaKey, v: &MetaStoreValue) -> bool {
+        let hash = HashString::encode_from_str(&v.to_string(), Hash::SHA2256);
+        let maybe_map = self.store.get(&meta_key);
+        if maybe_map.is_none() {
+            return false;
+        }
+        maybe_map.unwrap().get(&hash).is_some()
+    }
+
+    ///
+    pub fn insert(&mut self, meta_key: MetaKey, v: MetaStoreValue) {
+        let hash = HashString::encode_from_str(&v.to_string(), Hash::SHA2256);
+        if let None = self.store.get_mut(&meta_key) {
+            let mut map = HashMap::new();
+            log_tt!(
+                "metastore",
+                "MetaStore: first content for '{:?}' = {} | {}",
+                meta_key,
+                v,
+                hash,
+            );
+            map.insert(hash, v);
+            self.store.insert(meta_key, map);
+        } else {
+            if let Some(map) = self.store.get_mut(&meta_key) {
+                assert!(map.get(&hash).is_none());
+                log_tt!(
+                    "metastore",
+                    "MetaStore: adding content for '{:?}' = {} | {}",
+                    meta_key,
+                    v,
+                    hash,
+                );
+                map.insert(hash, v);
+            };
+        };
+    }
+
+    /// Get all values for a meta_key as a vec
+    pub fn get(&self, meta_key: MetaKey) -> Vec<serde_json::Value> {
+        let maybe_metas = self.store.get(&meta_key);
+        let metas = match maybe_metas.clone() {
+            Some(map) => map.clone(),
+            // if meta not found return empty list (will make the aggregation easier)
+            None => HashMap::new(),
+        };
+        let res = metas.iter().map(|(_, v)| v.clone()).collect();
+        res
+    }
+
+    /// Get all values stored
+    pub fn get_all(&self) -> Vec<MetaTuple> {
+        let mut meta_list: Vec<MetaTuple> = Vec::new();
+        for (meta_key, meta_map) in self.store.clone() {
+            for (_, v) in meta_map {
+                meta_list.push((meta_key.0.clone(), meta_key.1.clone(), v));
+            }
+        }
+        meta_list
+    }
+}
 
 /// Core Mock
 pub struct P2pNode {
@@ -39,9 +121,12 @@ pub struct P2pNode {
     // TODO: Have a datastore per dna ; perhaps in a CoreMock struct
     pub dna_address: Address,
     pub entry_store: HashMap<Address, serde_json::Value>,
-    pub meta_store: HashMap<(Address, String), serde_json::Value>,
+
+    pub meta_store: MetaStore,
     pub authored_entry_store: HashMap<Address, serde_json::Value>,
-    pub authored_meta_store: HashMap<(Address, String), serde_json::Value>,
+    pub authored_meta_store: MetaStore,
+
+    pub logger: TweetProxy,
 }
 
 // Search logs
@@ -98,28 +183,32 @@ impl P2pNode {
         &mut self,
         entry_address: &Address,
         attribute: &str,
-        content: &serde_json::Value,
+        link_entry_address: &serde_json::Value,
         can_publish: bool,
-    ) -> NetResult<()> {
-        let meta_address = (entry_address.clone(), attribute.to_string());
-        assert!(!self.authored_meta_store.get(&meta_address).is_some());
-        assert!(!self.meta_store.get(&meta_address).is_some());
-        self.authored_meta_store.insert(
-            (entry_address.clone(), attribute.to_string()),
-            content.clone(),
-        );
+    ) -> NetResult<MetaKey> {
+        let meta_key = (entry_address.clone(), attribute.to_string());
+
+        // bookkeep
+        {
+            // Must not already have meta
+            assert!(!self.meta_store.has(meta_key.clone(), link_entry_address));
+            self.authored_meta_store
+                .insert(meta_key.clone(), link_entry_address.clone());
+        }
+        // publish it
         if can_publish {
             let msg_data = DhtMetaData {
                 dna_address: self.dna_address.clone(),
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: entry_address.clone(),
                 attribute: attribute.to_string(),
-                content: content.clone(),
+                content_list: vec![link_entry_address.clone()],
             };
-            return self.send(JsonProtocol::PublishMeta(msg_data).into());
+            let res = self.send(JsonProtocol::PublishMeta(msg_data).into());
+            return res.map(|_| meta_key);
         }
         // Done
-        Ok(())
+        Ok(meta_key.clone())
     }
 
     pub fn hold_entry(&mut self, entry_address: &Address, entry_content: &serde_json::Value) {
@@ -133,15 +222,14 @@ impl P2pNode {
         &mut self,
         entry_address: &Address,
         attribute: &str,
-        content: &serde_json::Value,
+        link_entry_address: &serde_json::Value,
     ) {
-        let meta_address = (entry_address.clone(), attribute.to_string());
-        assert!(!self.authored_meta_store.get(&meta_address).is_some());
-        assert!(!self.meta_store.get(&meta_address).is_some());
-        self.meta_store.insert(
-            (entry_address.clone(), attribute.to_string()),
-            content.clone(),
-        );
+        let meta_key = (entry_address.clone(), attribute.to_string());
+        // Must not already have meta
+        assert!(!self
+            .authored_meta_store
+            .has(meta_key.clone(), link_entry_address));
+        self.meta_store.insert(meta_key, link_entry_address.clone());
     }
 }
 
@@ -255,6 +343,10 @@ impl P2pNode {
                 }
             };
         }
+        self.logger.t(&format!(
+            "> ({}) reply_to_HandleFetchEntry() sending",
+            self.agent_id,
+        ));
         self.send(msg)
     }
 
@@ -264,16 +356,12 @@ impl P2pNode {
         let msg;
         {
             // Get meta from local datastores
-            let meta_pair = &(request.entry_address.clone(), request.attribute.clone());
-            let mut maybe_data = self.authored_meta_store.get(meta_pair);
-            if maybe_data.is_none() {
-                maybe_data = self.meta_store.get(meta_pair);
+            let meta_key = (request.entry_address.clone(), request.attribute.clone());
+            let mut metas = self.authored_meta_store.get(meta_key.clone());
+            if metas.is_empty() {
+                metas = self.meta_store.get(meta_key);
             }
-            // if meta not found send empty content (will make the aggregation easier)
-            let data = match maybe_data.clone() {
-                Some(data) => data.clone(),
-                None => json!(""),
-            };
+            self.logger.t(&format!("metas = {:?}", metas));
             msg = FetchMetaResultData {
                 request_id: request.request_id.clone(),
                 requester_agent_id: request.requester_agent_id.clone(),
@@ -281,7 +369,7 @@ impl P2pNode {
                 provider_agent_id: self.agent_id.clone(),
                 entry_address: request.entry_address.clone(),
                 attribute: request.attribute.clone(),
-                content: data.clone(),
+                content_list: metas,
             };
         }
         self.send(JsonProtocol::HandleFetchMetaResult(msg).into())
@@ -323,20 +411,19 @@ impl P2pNode {
     /// Reply to a HandleGetPublishingMetaList request
     pub fn reply_to_HandleGetPublishingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
-        let meta_list = self
-            .authored_meta_store
-            .iter()
-            .map(|(k, _)| k.clone())
-            .collect();
         let msg = MetaListData {
-            meta_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
+            meta_list: self.authored_meta_store.get_all(),
         };
         self.send(JsonProtocol::HandleGetPublishingMetaListResult(msg).into())
     }
     /// Look for the first HandleGetPublishingMetaList request received from network module and reply
     pub fn reply_to_first_HandleGetPublishingMetaList(&mut self) {
+        self.logger.t(&format!(
+            "--- HandleGetPublishingMetaList: {}",
+            self.agent_id
+        ));
         let request = self
             .find_recv_msg(
                 0,
@@ -353,9 +440,9 @@ impl P2pNode {
         assert_eq!(request.dna_address, self.dna_address);
         let entry_address_list = self.entry_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = EntryListData {
-            entry_address_list: entry_address_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
+            entry_address_list: entry_address_list,
         };
         self.send(JsonProtocol::HandleGetHoldingEntryListResult(msg).into())
     }
@@ -377,11 +464,10 @@ impl P2pNode {
     /// Reply to a HandleGetHoldingMetaList request
     pub fn reply_to_HandleGetHoldingMetaList(&mut self, request: &GetListData) -> NetResult<()> {
         assert_eq!(request.dna_address, self.dna_address);
-        let meta_list = self.meta_store.iter().map(|(k, _)| k.clone()).collect();
         let msg = MetaListData {
-            meta_list,
             request_id: request.request_id.clone(),
             dna_address: request.dna_address.clone(),
+            meta_list: self.meta_store.get_all(),
         };
         self.send(JsonProtocol::HandleGetHoldingMetaListResult(msg).into())
     }
@@ -410,16 +496,20 @@ impl P2pNode {
         config: &P2pConfig,
         _maybe_temp_dir: Option<tempfile::TempDir>,
     ) -> Self {
+        log_dd!(
+            "p2pnode",
+            "new P2pNode '{}' with config: {:?}",
+            agent_id_arg,
+            config
+        );
+
         // use a mpsc channel for messaging between p2p connection and main thread
         let (sender, receiver) = mpsc::channel::<Protocol>();
         // create a new P2pNetwork instance with the handler that will send the received Protocol to a channel
-
         let agent_id = agent_id_arg.clone();
-
         let p2p_connection = P2pNetwork::new(
             Box::new(move |r| {
-                // Debugging code (do not remove)
-                // println!("<<< ({}) handler: {:?}", agent_id_arg, r);
+                log_tt!("p2pnode", "<<< ({}) handler: {:?}", agent_id_arg, r);
                 sender.send(r?)?;
                 Ok(())
             }),
@@ -439,9 +529,10 @@ impl P2pNode {
             recv_dm_log: Vec::new(),
             dna_address,
             entry_store: HashMap::new(),
-            meta_store: HashMap::new(),
+            meta_store: MetaStore::new(),
             authored_entry_store: HashMap::new(),
-            authored_meta_store: HashMap::new(),
+            authored_meta_store: MetaStore::new(),
+            logger: TweetProxy::new("p2pnode"),
         }
     }
 
@@ -470,10 +561,15 @@ impl P2pNode {
         dna_address: Address,
         n3h_path: &str,
         maybe_config_filepath: Option<&str>,
+        maybe_end_user_config_filepath: Option<String>,
         bootstrap_nodes: Vec<String>,
     ) -> Self {
-        let (p2p_config, temp_dir) =
-            create_ipc_config(n3h_path, maybe_config_filepath, bootstrap_nodes);
+        let (p2p_config, temp_dir) = create_ipc_config(
+            n3h_path,
+            maybe_config_filepath,
+            maybe_end_user_config_filepath,
+            bootstrap_nodes,
+        );
         return P2pNode::new_with_config(agent_id, dna_address, &p2p_config, Some(temp_dir));
     }
 
@@ -482,12 +578,21 @@ impl P2pNode {
     #[cfg_attr(tarpaulin, skip)]
     pub fn try_recv(&mut self) -> NetResult<JsonProtocol> {
         let data = self.receiver.try_recv()?;
-        // Debugging code: Print non-ping messages
-        // match data {
-        //     Protocol::NamedBinary(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
-        //     Protocol::Json(_) => println!("<< ({}) recv: {:?}", self.agent_id, data),
-        //     _ => (),
-        // };
+        // logging depending on received type
+        match data {
+            Protocol::NamedBinary(_) => {
+                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
+                self.logger.d(&dbg_msg);
+            }
+            Protocol::Json(_) => {
+                let dbg_msg = format!("<< ({}) recv: {:?}", self.agent_id, data);
+                self.logger.d(&dbg_msg);
+            }
+            _ => {
+                let dbg_msg = format!("<< ({}) recv <other>", self.agent_id);
+                self.logger.t(&dbg_msg);
+            }
+        };
 
         self.recv_msg_log.push(data.clone());
 
@@ -499,7 +604,10 @@ impl P2pNode {
             Err(e) => {
                 let s = format!("{:?}", e);
                 if !s.contains("Empty") && !s.contains("Pong(PongData") {
-                    println!("###### Received parse error ###### {} {:?}", s, data);
+                    self.logger.e(&format!(
+                        "({}) ###### Received parse error: {} {:?}",
+                        self.agent_id, s, data,
+                    ));
                 }
                 Err(e)
             }
@@ -516,12 +624,11 @@ impl P2pNode {
         loop {
             let mut has_recved = false;
 
-            if let Ok(_p2p_msg) = self.try_recv() {
-                // Debugging code (do not remove)
-                //                println!(
-                //                    "({})::listen() - received: {:?}",
-                //                    self.agent_id, p2p_msg
-                //                );
+            if let Ok(p2p_msg) = self.try_recv() {
+                self.logger.t(&format!(
+                    "({})::listen() - received: {:?}",
+                    self.agent_id, p2p_msg,
+                ));
                 has_recved = true;
                 time_ms = 0;
                 count += 1;
@@ -581,13 +688,18 @@ impl P2pNode {
             let mut did_something = false;
 
             if let Ok(p2p_msg) = self.try_recv() {
-                println!("({})::wait() - received: {:?}", self.agent_id, p2p_msg);
+                self.logger.i(&format!(
+                    "({})::wait() - received: {:?}",
+                    self.agent_id, p2p_msg
+                ));
                 did_something = true;
                 if predicate(&p2p_msg) {
-                    println!("\t ({})::wait() - match", self.agent_id);
+                    self.logger
+                        .i(&format!("({})::wait() - match", self.agent_id));
                     return Some(p2p_msg);
                 } else {
-                    println!("\t ({})::wait() - NO match", self.agent_id);
+                    self.logger
+                        .i(&format!("({})::wait() - NO match", self.agent_id));
                 }
             }
 
@@ -595,7 +707,8 @@ impl P2pNode {
                 std::thread::sleep(std::time::Duration::from_millis(10));
                 time_ms += 10;
                 if time_ms > timeout_ms {
-                    println!("({})::wait() has TIMEOUT", self.agent_id);
+                    self.logger
+                        .i(&format!("({})::wait() has TIMEOUT", self.agent_id));
                     return None;
                 }
             }
@@ -665,8 +778,7 @@ impl P2pNode {
             }
             JsonProtocol::HandleFetchEntry(msg) => {
                 assert_eq!(msg.dna_address, self.dna_address);
-                self.reply_to_HandleFetchEntry(&msg)
-                    .expect("Should reply to a HandleFetchEntry");
+                // n/a
             }
             JsonProtocol::HandleFetchEntryResult(_msg) => {
                 // n/a
@@ -695,8 +807,7 @@ impl P2pNode {
             }
             JsonProtocol::HandleFetchMeta(msg) => {
                 assert_eq!(msg.dna_address, self.dna_address);
-                self.reply_to_HandleFetchMeta(&msg)
-                    .expect("Should reply to a HandleFetchMeta");
+                // n/a
             }
             JsonProtocol::HandleFetchMetaResult(_msg) => {
                 // n/a
@@ -708,14 +819,17 @@ impl P2pNode {
             JsonProtocol::HandleStoreMeta(msg) => {
                 assert_eq!(msg.dna_address, self.dna_address);
                 // Store data in local datastore
-                self.meta_store
-                    .insert((msg.entry_address, msg.attribute), msg.content);
+                let meta_key = (msg.entry_address, msg.attribute);
+                for content in msg.content_list {
+                    self.meta_store.insert(meta_key.clone(), content);
+                }
             }
-            JsonProtocol::HandleDropMeta(msg) => {
-                assert_eq!(msg.dna_address, self.dna_address);
-                // Remove data in local datastore
-                self.meta_store.remove(&(msg.entry_address, msg.attribute));
-            }
+            // TODO
+            //            JsonProtocol::HandleDropMeta(msg) => {
+            //                assert_eq!(msg.dna_address, self.dna_address);
+            //                // Remove data in local datastore
+            //                self.meta_store.remove(&(msg.entry_address, msg.attribute));
+            //            }
 
             // -- Publish & Hold data -- //
             JsonProtocol::HandleGetPublishingEntryList(msg) => {
@@ -759,8 +873,8 @@ impl P2pNode {
 impl NetSend for P2pNode {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Protocol) -> NetResult<()> {
-        // Debugging code (do not delete)
-        // println!(">> ({}) send: {:?}", self.agent_id, data);
+        self.logger
+            .d(&format!(">> ({}) send: {:?}", self.agent_id, data));
         self.p2p_connection.send(data)
     }
 }
@@ -774,17 +888,19 @@ impl NetSend for P2pNode {
 fn create_ipc_config(
     n3h_path: &str,
     maybe_config_filepath: Option<&str>,
+    maybe_end_user_config_filepath: Option<String>,
     bootstrap_nodes: Vec<String>,
 ) -> (P2pConfig, tempfile::TempDir) {
     // Create temp directory
     let dir_ref = tempfile::tempdir().expect("Failed to created a temp directory.");
     let dir = dir_ref.path().to_string_lossy().to_string();
 
-    println!("create_ipc_config() dir = {}\n", dir);
+    log_i!("create_ipc_config() dir = {}", dir);
 
     // Create config
-    let config = match maybe_config_filepath {
+    let mut config: P2pConfig = match maybe_config_filepath {
         Some(filepath) => {
+            log_d!("filepath = {}", filepath);
             // Get config from file
             let p2p_config = P2pConfig::from_file(filepath);
             assert_eq!(p2p_config.backend_kind, P2pBackendKind::IPC);
@@ -808,7 +924,7 @@ fn create_ipc_config(
                         "N3H_IPC_SOCKET": p2p_config.backend_config["spawn"]["env"]["N3H_IPC_SOCKET"],
                     }
                 },
-            }})).unwrap()
+            }})).expect("Failled making valid P2pConfig with filepath")
         }
         None => {
             // use default config
@@ -832,8 +948,11 @@ fn create_ipc_config(
                 }
             },
             }}))
-            .unwrap()
+            .expect("Failled making valid default P2pConfig")
         }
     };
+    config.maybe_end_user_config = Some(P2pConfig::load_end_user_config(
+        maybe_end_user_config_filepath,
+    ));
     return (config, dir_ref);
 }

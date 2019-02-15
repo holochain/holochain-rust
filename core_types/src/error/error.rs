@@ -298,7 +298,7 @@ mod tests {
                 "foo",
             ),
             (
-                HolochainError::Dna(DnaError::CapabilityNotFound(String::from("foo"))),
+                HolochainError::Dna(DnaError::TraitNotFound(String::from("foo"))),
                 "foo",
             ),
             (

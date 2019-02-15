@@ -42,7 +42,7 @@ enum Cli {
     #[structopt(
         name = "package",
         alias = "p",
-        about = "Builds the current Holochain app into a .hcpkg file"
+        about = "Builds DNA source files into a single bundle.json DNA file"
     )]
     Package {
         #[structopt(
@@ -75,7 +75,7 @@ enum Cli {
     #[structopt(
         name = "generate",
         alias = "g",
-        about = "Generates a new zome and scaffolds the given capabilities"
+        about = "Generates a new zome and scaffolds the given functions"
     )]
     Generate {
         #[structopt(
@@ -143,7 +143,7 @@ enum Cli {
     #[structopt(
         name = "keygen",
         alias = "k",
-        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to ~/.config/holochain/keys"
+        about = "Creates a new agent key pair, asks for a passphrase and writes an encrypted key bundle to disk in the XDG compliant config directory of Holochain, which is dependent on the OS platform (/home/alice/.config/holochain/keys or C:\\Users\\Alice\\AppData\\Roaming\\holochain\\holochain\\keys or /Users/Alice/Library/Preferences/com.holochain.holochain/keys)"
     )]
     KeyGen,
 }

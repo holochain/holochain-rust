@@ -25,6 +25,7 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let zome_call_data = runtime.zome_call_data()?;
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
 
@@ -32,7 +33,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         Ok(input) => input,
         // Exit on error
         Err(_) => {
-            runtime.context.log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_call failed to deserialize: {:?}",
                 args_str
             ));
@@ -45,7 +46,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         let zome_call = ZomeFnCall::from_args(input.clone());
 
         // Don't allow recursive calls
-        if zome_call.same_fn_as(&runtime.zome_call) {
+        if zome_call.same_fn_as(&zome_call_data.zome_call) {
             return ribosome_error_code!(RecursiveCallForbidden);
         }
         local_call(runtime, input)
@@ -57,15 +58,25 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
 }
 
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+    let zome_call_data = runtime.zome_call_data().map_err(|_| {
+        HolochainError::ErrorGeneric(
+            "expecting zome call data in local call not null call".to_string(),
+        )
+    })?;
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(input);
-    let context = &runtime.context;
+    let context = &zome_call_data.context;
     context.block_on(call_zome_function(zome_call, context))
 }
 
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+    let zome_call_data = runtime.zome_call_data().map_err(|_| {
+        HolochainError::ErrorGeneric(
+            "expecting zome call data in bridge call not null call".to_string(),
+        )
+    })?;
     let conductor_api =
-        runtime
+        zome_call_data
             .context
             .conductor_api
             .clone()
@@ -133,8 +144,9 @@ pub mod tests {
     use holochain_core_types::{
         cas::content::Address,
         dna::{
-            capabilities::{Capability, CapabilityCall, CapabilityType},
-            fn_declarations::FnDeclaration,
+            capabilities::{CapabilityCall, CapabilityType},
+            fn_declarations::{FnDeclaration, TraitFns},
+            traits::ReservedTraitNames,
             Dna,
         },
         entry::{cap_entries::CapTokenGrant, Entry},
@@ -225,19 +237,24 @@ pub mod tests {
 
     fn setup_dna_for_cap_test(cap_type: CapabilityType) -> Dna {
         let wasm = test_zome_api_function_wasm(ZomeApiFunction::Call.as_str());
-        let mut capability = Capability::new(cap_type);
+        let mut trait_fns = TraitFns::new();
         let fn_decl = FnDeclaration {
             name: test_function_name(),
             inputs: Vec::new(),
             outputs: Vec::new(),
         };
-        capability.functions = vec![fn_decl.name.clone()];
-        let mut capabilities = BTreeMap::new();
-        capabilities.insert(test_capability_name(), capability);
+        trait_fns.functions = vec![fn_decl.name.clone()];
+        let mut traits = BTreeMap::new();
+        let trait_name = if cap_type == CapabilityType::Public {
+            ReservedTraitNames::Public.as_str().to_string()
+        } else {
+            "test_trait".to_string()
+        };
+        traits.insert(trait_name, trait_fns);
         let mut functions = Vec::new();
         functions.push(fn_decl);
 
-        create_test_dna_with_defs(&test_zome_name(), (functions, capabilities), &wasm)
+        create_test_dna_with_defs(&test_zome_name(), (functions, traits), &wasm)
     }
 
     #[test]

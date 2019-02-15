@@ -17,9 +17,7 @@ ___
 
 **Type** `object`
 
-**Description** *conductorOptions.debugLog* `boolean` Which logging to use. There are two options:
-- debugLog = true: Use the "debug" logger. This one has full debug logging and nice, colorful output.
-- debugLog = false: Doesn't output any logs.
+**Description** *conductorOptions.debugLog* `boolean` Enables debug logging. The logger produces nice, colorful output of the internal workings of Holochain.
 
 **Default** `{ debugLog: false }`
 ___

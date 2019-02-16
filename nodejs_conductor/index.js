@@ -19,7 +19,7 @@ const callbackFromPromise = (fulfill, reject) => (err, val) => {
 /////////////////////////////////////////////////////////////
 
 const defaultOpts = {
-    debugLog: true
+    debugLog: false
 }
 
 const Config = {

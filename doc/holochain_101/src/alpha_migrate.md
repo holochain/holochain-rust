@@ -1,4 +1,4 @@
-# Updating to Alpha 2
+# Updating from holochain-proto to holochain-rust
 
 If you wrote an application for [holochain-proto](https://github.com/holochain/holochain-proto), you are likely wondering what it may take to port your app to the new [holochain-rust](https://github.com/holochain/holochain-proto) version of Holochain.
 

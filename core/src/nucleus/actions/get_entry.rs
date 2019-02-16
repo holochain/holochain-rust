@@ -58,7 +58,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         Some(address.clone()).into(),
         Some(STATUS_NAME.to_string()).into(),
         None.into(),
-        IndexFilter::default(),
+        IndexFilter::LatestByAttribute,
     ))?;
     if status_eavs.len() == 0 {
         return Ok(None);
@@ -96,7 +96,7 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         Some(address).into(),
         Some(LINK_NAME.to_string()).into(),
         None.into(),
-        IndexFilter::default(),
+        IndexFilter::LatestByAttribute,
     ))?;
     assert!(
         link_eavs.len() <= 1,

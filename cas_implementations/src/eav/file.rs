@@ -173,7 +173,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
             Some(eav.entity()).into(),
             Some(eav.attribute()).into(),
             Some(eav.value()).into(),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         ))?;
         let _guard = self.lock.write()?;
         create_dir_all(self.dir_path.clone())?;

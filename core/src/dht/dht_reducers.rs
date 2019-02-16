@@ -291,7 +291,7 @@ fn reduce_remove_entry_inner(
         Some(latest_deleted_address.clone()).into(),
         Some(STATUS_NAME.to_string()).into(),
         None.into(),
-        IndexFilter::default(),
+        IndexFilter::LatestByAttribute,
     ));
     if let Err(err) = maybe_status_eav {
         return Err(err);
@@ -432,7 +432,7 @@ pub mod tests {
             Some(entry.address()).into(),
             None.into(),
             None.into(),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         ));
 
         assert!(fetched.is_ok());
@@ -482,7 +482,7 @@ pub mod tests {
             Some(entry.address()).into(),
             EavFilter::<Attribute>::attribute_prefixes(vec!["link__", "removed_link__"], None),
             None.into(),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         ));
 
         assert!(fetched.is_ok());
@@ -520,7 +520,7 @@ pub mod tests {
             Some(entry.address()).into(),
             None.into(),
             None.into(),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         ));
 
         assert!(fetched.is_ok());

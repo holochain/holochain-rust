@@ -7,6 +7,7 @@ use holochain_core_types::{
     chain_header::ChainHeader,
     eav::{
         Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
+        IndexFilter,
     },
     entry::Entry,
     error::HolochainError,
@@ -67,7 +68,7 @@ impl DhtStore {
                 Some(&tag),
             ),
             None.into(),
-            Default::default(),
+            IndexFilter::LatestByAttribute,
         ))?;
 
         Ok(filtered
@@ -87,7 +88,7 @@ impl DhtStore {
                 Some(entry_address).into(),
                 Some(ENTRY_HEADER_ATTRIBUTE.to_string()).into(),
                 None.into(),
-                Default::default(),
+                IndexFilter::LatestByAttribute,
             ))?
             .into_iter()
             // get the header addresses

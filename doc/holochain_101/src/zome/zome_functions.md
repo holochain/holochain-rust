@@ -226,7 +226,6 @@ define_zome! {
     traits: {
         hc_public [read_post]
         authoring [create_post, update_post]
-        }
     }
 }
 ```

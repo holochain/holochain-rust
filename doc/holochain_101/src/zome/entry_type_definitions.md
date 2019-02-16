@@ -107,7 +107,7 @@ entry!(
 )
 ```
 
-As mentioned above, sharing refers to whether entries of this type are private to their author, or whether they will be gossiped to other peers to hold copies of. The value must be referenced from an [enum in the HDK](/api/latest/holochain_core_types/dna/entry_types/enum.Sharing.html). Holochain currently supports the first two values in the enum: Public, and Private.
+As mentioned above, sharing refers to whether entries of this type are private to their author, or whether they will be gossiped to other peers to hold copies of. The value must be referenced from an [enum in the HDK](/api/0.0.4-alpha/holochain_core_types/dna/entry_types/enum.Sharing.html). Holochain currently supports the first two values in the enum: Public, and Private.
 
 ---
 

@@ -265,7 +265,7 @@ impl EavTestSuite {
                 Some(entity_content.address()).into(),
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
-                IndexFilter::default(),
+                IndexFilter::LatestByAttribute,
             );
             assert_eq!(
                 BTreeSet::new(),
@@ -310,7 +310,7 @@ impl EavTestSuite {
                             e.into(),
                             a.into(),
                             v.into(),
-                            IndexFilter::default()
+                            IndexFilter::LatestByAttribute
                         ))
                         .expect("could not fetch eav")
                 );
@@ -371,7 +371,7 @@ impl EavTestSuite {
                     Some(one.address()).into(),
                     Some(attribute.clone()).into(),
                     None.into(),
-                    IndexFilter::default()
+                    IndexFilter::LatestByAttribute
                 ))
                 .expect("could not fetch eav")
         );
@@ -388,7 +388,7 @@ impl EavTestSuite {
                     None.into(),
                     Some(attribute.clone()).into(),
                     Some(many.address()).into(),
-                    IndexFilter::default(),
+                    IndexFilter::LatestByAttribute,
                 ))
                 .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(), expected_one.clone().len());
@@ -526,7 +526,7 @@ impl EavTestSuite {
             Some(many_one.address()).into(),
             attributes.into(),
             EavFilter::default(),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         );
 
         // get only last value in set of prefix query
@@ -604,7 +604,7 @@ impl EavTestSuite {
             EavFilter::default(),
             EavFilter::single(attribute.clone()),
             EavFilter::single(one.address()),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         );
         // show the many referencing one
         assert_eq!(
@@ -624,7 +624,7 @@ impl EavTestSuite {
                     Some(many.address()).into(),
                     Some(attribute.clone()).into(),
                     None.into(),
-                    IndexFilter::default(),
+                    IndexFilter::LatestByAttribute,
                 ))
                 .expect("could not fetch eav");
             assert_eq!(fetch_set.clone().len(), expected_one.clone().len());

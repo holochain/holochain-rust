@@ -16,7 +16,7 @@ use holochain_core_types::{
     },
     chain_header::ChainHeader,
     dna::Dna,
-    eav::{Attribute, EaviQuery},
+    eav::{Attribute, EaviQuery, IndexFilter},
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
@@ -179,7 +179,7 @@ impl State {
                 Some(entry_address).into(),
                 Some(Attribute::EntryHeader).into(),
                 None.into(),
-                Default::default(),
+                IndexFilter::LatestByAttribute,
             ))?
             .into_iter()
             // get the header addresses

@@ -170,7 +170,7 @@ impl<'a> Default for EaviQuery<'a> {
             Default::default(),
             Default::default(),
             Default::default(),
-            Default::default(),
+            IndexFilter::LatestByAttribute,
         )
     }
 }
@@ -195,19 +195,26 @@ impl<'a> EaviQuery<'a> {
         I: Clone + Iterator<Item = EntityAttributeValueIndex> + 'a,
     {
         let iter2 = iter.clone();
-        let filtered = iter.clone().filter(|eavi| {
-            self.entity.check(eavi.entity())
-                && self.attribute.check(eavi.attribute())
-                && self.value.check(eavi.value())
-        });
+        let filtered = iter
+            .clone()
+            .filter(|eavi| EaviQuery::eav_check(&eavi, &self.entity, &self.attribute, &self.value));
 
         match self.index {
-            IndexFilter::LatestAbsolute => filtered.last().into_iter().collect(),
-            IndexFilter::LatestGrouped => filtered
+            IndexFilter::LatestByAttribute => filtered
                 .filter(|eavi| {
-                    get_latest(eavi.clone(), iter2.clone())
-                        .map(|latest| latest == *eavi)
-                        .unwrap_or_default()
+                    iter2
+                        .clone()
+                        .filter(|eavi_inner| {
+                            EaviQuery::eav_check(
+                                &eavi_inner,
+                                &Some(eavi.entity()).into(),
+                                &self.attribute,
+                                &Some(eavi.value()).into(),
+                            )
+                        })
+                        .last()
+                        .map(|latest| latest.index() == eavi.index())
+                        .unwrap_or(false)
                 })
                 .collect(),
             IndexFilter::Range(start, end) => filtered
@@ -217,6 +224,15 @@ impl<'a> EaviQuery<'a> {
                 })
                 .collect(),
         }
+    }
+
+    fn eav_check(
+        eavi: &EntityAttributeValueIndex,
+        e: &EntityFilter<'a>,
+        a: &AttributeFilter<'a>,
+        v: &ValueFilter<'a>,
+    ) -> bool {
+        e.check(eavi.entity()) && a.check(eavi.attribute()) && v.check(eavi.value())
     }
 
     pub fn entity(&self) -> &EntityFilter<'a> {
@@ -275,22 +291,12 @@ impl<'a, T: Eq> From<Vec<T>> for EavFilter<'a, T> {
 }
 
 /// Specifies options for filtering on Index:
-/// LatestAbsolute always results in a result set of one item: the latest item among all results returned by previous filters.
-///    This is also the default.
-/// LatestGrouped returns multiple results, but only one for each unique grouping of E, A, and V
+/// LatestByAttribute is a special kind of lookup used for links. TODO: describe in words
 /// Range returns all results within a particular range of indices.
-/// TODO: tests for LatestGrouped and Range
 #[derive(Clone, Debug)]
 pub enum IndexFilter {
-    LatestAbsolute,
-    LatestGrouped,
+    LatestByAttribute,
     Range(Option<i64>, Option<i64>),
-}
-
-impl Default for IndexFilter {
-    fn default() -> IndexFilter {
-        IndexFilter::LatestAbsolute
-    }
 }
 
 impl AddressableContent for EntityAttributeValueIndex {
@@ -452,29 +458,6 @@ impl EntityAttributeValueStorage for ExampleEntityAttributeValueStorage {
     }
 }
 
-pub fn get_latest<I>(
-    eavi: EntityAttributeValueIndex,
-    iter: I,
-) -> HcResult<EntityAttributeValueIndex>
-where
-    I: Clone + Iterator<Item = EntityAttributeValueIndex>,
-{
-    let query = EaviQuery::new(
-        EavFilter::single(eavi.entity().clone()),
-        EavFilter::single(eavi.attribute().clone()),
-        EavFilter::single(eavi.value().clone()),
-        IndexFilter::Range(None, None),
-    );
-    query
-        .run(iter)
-        .iter()
-        .last()
-        .ok_or(HolochainError::ErrorGeneric(
-            "Could not get last value".to_string(),
-        ))
-        .map(|eavi| eavi.clone())
-}
-
 impl PartialEq for EntityAttributeValueStorage {
     fn eq(&self, other: &EntityAttributeValueStorage) -> bool {
         let query = EaviQuery::default();
@@ -532,7 +515,7 @@ pub fn eav_round_trip_test_runner(
                 Some(entity_content.address()).into(),
                 Some(attribute.clone()).into(),
                 Some(value_content.address()).into(),
-                IndexFilter::default()
+                IndexFilter::LatestByAttribute
             ))
             .expect("could not fetch eav"),
     );
@@ -573,7 +556,7 @@ pub fn eav_round_trip_test_runner(
                     e.into(),
                     a.into(),
                     v.into(),
-                    IndexFilter::default()
+                    IndexFilter::LatestByAttribute
                 ))
                 .expect("could not fetch eav")
         );

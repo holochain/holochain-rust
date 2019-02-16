@@ -289,7 +289,7 @@ fn reduce_remove_entry_inner(
         Some(latest_deleted_address.clone()).into(),
         Some(Attribute::CrudStatus).into(),
         None.into(),
-        IndexFilter::default(),
+        IndexFilter::LatestByAttribute,
     ));
     if let Err(err) = maybe_status_eav {
         return Err(err);
@@ -430,7 +430,7 @@ pub mod tests {
             Some(entry.address()).into(),
             None.into(),
             None.into(),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         ));
 
         assert!(fetched.is_ok());
@@ -483,7 +483,7 @@ pub mod tests {
                 _ => false,
             }),
             None.into(),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         ));
 
         assert!(fetched.is_ok());
@@ -524,7 +524,7 @@ pub mod tests {
             Some(entry.address()).into(),
             None.into(),
             None.into(),
-            IndexFilter::default(),
+            IndexFilter::LatestByAttribute,
         ));
 
         assert!(fetched.is_ok());

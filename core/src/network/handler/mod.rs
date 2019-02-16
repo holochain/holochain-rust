@@ -56,14 +56,24 @@ pub fn create_handler(c: &Arc<Context>) -> NetHandler {
     Box::new(move |message| {
         let message = message.unwrap();
         // context.log(format!(
-        //     "debug/net/handle:({}): {:?}",
-        //     context.agent_id.nick, message
+        //   "trace/net/handle:({}): {:?}",
+        //   context.agent_id.nick, message
         // ));
         let maybe_json_msg = JsonProtocol::try_from(message);
         if let Err(_) = maybe_json_msg {
             return Ok(());
         }
         match maybe_json_msg.unwrap() {
+            JsonProtocol::FailureResult(failure_data) => {
+                if !is_my_dna(&context, &failure_data.dna_address) {
+                    return Ok(());
+                }
+                context.log(format!(
+                    "warning/net/handle: FailureResult: {:?}",
+                    failure_data
+                ));
+                // TODO: Handle the reception of a FailureResult
+            }
             JsonProtocol::HandleStoreEntry(dht_entry_data) => {
                 if !is_my_dna(&context, &dht_entry_data.dna_address) {
                     return Ok(());

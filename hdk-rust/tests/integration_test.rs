@@ -368,10 +368,8 @@ fn can_round_trip() {
 #[test]
 #[cfg(not(windows))]
 fn can_get_entry_ok() {
-    println!(":<>");
     let (mut hc, _) = start_holochain_instance("can_get_entry_ok", "alice");
     // Call the exposed wasm function that calls the Commit API function
-    println!(":<>");
     let result = make_test_call(
         &mut hc,
         "check_commit_entry_macro",
@@ -380,7 +378,6 @@ fn can_get_entry_ok() {
     let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
-    println!(":<>");
     let result = make_test_call(
         &mut hc,
         "check_get_entry_result",
@@ -388,7 +385,6 @@ fn can_get_entry_ok() {
             "entry_address": example_valid_entry_address()
         }))),
     );
-    println!(":<>");
     let expected: ZomeApiResult<GetEntryResult> = Ok(example_valid_entry_result());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
@@ -400,7 +396,6 @@ fn can_get_entry_ok() {
             "entry_address": example_valid_entry_address()
         }))),
     );
-    println!(":<>");
     let expected: ZomeApiResult<Entry> = Ok(example_valid_entry());
     assert!(result.is_ok(), "\t result = {:?}", result);
     assert_eq!(result.unwrap(), JsonString::from(expected));

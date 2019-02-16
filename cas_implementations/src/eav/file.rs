@@ -210,11 +210,14 @@ impl EntityAttributeValueStorage for EavFileStorage {
             .into_iter()
             .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
             .partition(|c| c.is_ok());
+
         if error.len() > 0 {
             Err(HolochainError::ErrorGeneric(
                 "Error Converting EAVs".to_string(),
             ))
         } else {
+            // Build a query that only filters by Index, to be run on the collection that was already filtered
+            // by the above code
             let index_query = EaviQuery::new(
                 Default::default(),
                 Default::default(),

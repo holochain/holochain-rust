@@ -322,21 +322,23 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
+        let content_file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
+        ));
+        let meta_file_storage = Arc::new(RwLock::new(
+            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
         ));
         let logger = test_logger();
         (
             Arc::new(Context::new(
                 agent,
                 logger.clone(),
-                Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
-                file_storage.clone(),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
+                Arc::new(Mutex::new(SimplePersister::new(
+                    content_file_storage.clone(),
+                ))),
+                content_file_storage.clone(),
+                content_file_storage.clone(),
+                meta_file_storage,
                 test_memory_network_config(network_name),
                 None,
                 None,

@@ -84,7 +84,7 @@ lazy_static! {
     static ref LINK_REGEX: Regex =
         Regex::new(r"^link__(.*)$").expect("This string literal is a valid regex");
     static ref REMOVED_LINK_REGEX: Regex =
-        Regex::new(r"^link__(.*)$").expect("This string literal is a valid regex");
+        Regex::new(r"^removed_link__(.*)$").expect("This string literal is a valid regex");
 }
 
 impl TryFrom<&str> for Attribute {
@@ -310,7 +310,7 @@ impl AddressableContent for EntityAttributeValueIndex {
 }
 
 fn validate_attribute(attribute: &Attribute) -> HcResult<()> {
-    if let Attribute::LinkTag(name) = attribute {
+    if let Attribute::LinkTag(name) | Attribute::RemovedLink(name) = attribute {
         let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
             .build()
             .map_err(|_| HolochainError::ErrorGeneric("Could not create regex".to_string()))?;

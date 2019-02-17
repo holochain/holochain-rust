@@ -296,7 +296,6 @@ fn can_get_entry_ok() {
 }
 
 #[test]
-#[cfg(not(windows))]
 fn can_get_entry_bad() {
     let (mut hc, _) = start_holochain_instance("can_get_entry_bad", "alice");
     // Call the exposed wasm function that calls the Commit API function
@@ -306,8 +305,8 @@ fn can_get_entry_bad() {
         &example_valid_entry_params(),
     );
     let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
-    assert!(result.is_ok(), "\t result = {:?}", result);
-    assert_eq!(result.unwrap(), JsonString::from(expected),);
+    assert!(result.is_ok(), "result = {:?}", result);
+    assert_eq!(result.unwrap(), JsonString::from(expected));
     // test the case with a bad address
     let result = make_test_call(
         &mut hc,
@@ -316,7 +315,7 @@ fn can_get_entry_bad() {
             {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
         ))),
     );
-    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
     let empty_entry_result = GetEntryResult::new(StatusRequestKind::Latest, None);
     let expected: ZomeApiResult<GetEntryResult> = Ok(empty_entry_result);
     assert_eq!(result.unwrap(), JsonString::from(expected));
@@ -329,7 +328,7 @@ fn can_get_entry_bad() {
             {"entry_address": Address::from("QmbC71ggSaEa1oVPTeNN7ZoB93DYhxowhKSF6Yia2Vjxxx")}
         ))),
     );
-    assert!(result.is_ok(), "\t result = {:?}", result);
+    assert!(result.is_ok(), "result = {:?}", result);
     let expected: ZomeApiResult<Option<Entry>> = Ok(None);
     assert_eq!(result.unwrap(), JsonString::from(expected));
 }

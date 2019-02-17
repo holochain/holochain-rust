@@ -165,7 +165,7 @@ mod tests {
         let entry = test_entry();
         let key = GetEntryKey {
             address: entry.address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: "req_alice_1".to_string(),
         };
         let action_wrapper = ActionWrapper::new(Action::FetchEntry(key.clone()));
 
@@ -207,7 +207,7 @@ mod tests {
         };
         let new_key = GetEntryKey {
             address: entry.address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: "req_alice_2".to_string(),
         };
         let dht_data = DhtData {
             msg_id: new_key.id.clone(),

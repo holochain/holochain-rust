@@ -42,6 +42,22 @@ impl Packager {
     }
 
     pub fn package(strip_meta: bool, output: Option<PathBuf>) -> DefaultResult<()> {
+        // First, check whether they have `cargo` installed, since it will be needed for packaging
+        // TODO: in the future, don't check for this here, since other build tools and languages
+        // could be used
+        let should_continue = util::check_for_cargo(
+            "Compiling a Rust based Zome to WASM depends on having Rust installed.",
+            Some(vec![
+                "Compiling to WASM also requires adding WASM as a compile target.",
+                "For this, also run:",
+                "$ rustup target add wasm32-unknown-unknown --toolchain nightly-2019-01-24",
+            ]),
+        )?;
+        if !should_continue {
+            // early exit, but user will have received feedback within check_for_cargo about why
+            return Ok(());
+        }
+
         let output = output.unwrap_or_else(|| PathBuf::from(DEFAULT_BUNDLE_FILE_NAME));
 
         Packager::new(strip_meta).run(&output)

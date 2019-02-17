@@ -17,11 +17,9 @@ ___
 
 **Type** `object`
 
-**Description** *conductorOptions.debugLog* `boolean` Which logger type to use. There are two options:
-- debugLog = true: Use the "debug" logger. This one has nicer, colorful output.
-- debugLog = false: Use the "simple" logger. This one has less interesting output, but can be silenced with the env variable `HC_SIMPLE_LOGGER_MUTE=1`
+**Description** *conductorOptions.debugLog* `boolean` Enables debug logging. The logger produces nice, colorful output of the internal workings of Holochain.
 
-**Default** `{ debugLog: true }`
+**Default** `{ debugLog: false }`
 ___
 
 #### Example
@@ -32,12 +30,12 @@ const instanceBob = Config.instance(Config.agent("bob"), dna)
 const scenario = new Scenario([instanceAlice])
 ```
 
-#### With Config Example
+#### With conductorOptions Example
 ```javascript
 const dna = Config.dna("path/to/happ.hcpkg")
 const instanceAlice = Config.instance(Config.agent("alice"), dna)
 const instanceBob = Config.instance(Config.agent("bob"), dna)
-const scenario = new Scenario([instanceAlice], { debugLog: false })
+const scenario = new Scenario([instanceAlice], { debugLog: true })
 ```
 
 ## Inject Tape Version

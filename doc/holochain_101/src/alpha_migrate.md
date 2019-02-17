@@ -1,4 +1,4 @@
-# Updating to Alpha 2
+# Updating from holochain-proto to holochain-rust
 
 If you wrote an application for [holochain-proto](https://github.com/holochain/holochain-proto), you are likely wondering what it may take to port your app to the new [holochain-rust](https://github.com/holochain/holochain-proto) version of Holochain.
 
@@ -65,7 +65,7 @@ entry!(
 
 The callback `validation`, replaces `validateCommit` and all the rest from holochain-proto. However, validation still happens at various times in the lifecycle of an entry, so if the validation is to operate differently between initial `commit` to the chain, `update`, or `remove`, then that logic must be written into this single validation function. To determine which context validation is being called within, you can check in a property of the second parameter of the callback, which in the example above is called `validation_data`.
 
-For this, you can use the Rust `match` operator, and check against the `validation_data.action`. It will be one of an enum that can be seen in detail [in the API reference](/api/0.0.4/hdk/enum.EntryAction.html).
+For this, you can use the Rust `match` operator, and check against the `validation_data.action`. It will be one of an enum that can be seen in detail [in the API reference](/api/0.0.4-alpha/hdk/enum.EntryAction.html).
 
 
 

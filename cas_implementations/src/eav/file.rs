@@ -225,6 +225,8 @@ impl EntityAttributeValueStorage for EavFileStorage {
                 "Error Converting EAVs".to_string(),
             ))
         } else {
+            // Build a query that only filters by Index, to be run on the collection that was already filtered
+            // by the above code
             let index_query = EaviQuery::new(
                 Default::default(),
                 Default::default(),

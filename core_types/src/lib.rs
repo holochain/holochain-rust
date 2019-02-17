@@ -10,7 +10,6 @@
 #![feature(try_from)]
 #![feature(try_trait)]
 #![feature(never_type)]
-#![feature(trait_alias)]
 
 #[macro_use]
 extern crate arrayref;

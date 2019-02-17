@@ -90,6 +90,7 @@ pub enum HolochainError {
     InvalidOperationOnSysEntry,
     CapabilityCheckFailed,
     ValidationFailed(String),
+    ValidationNotImplemented(String),
     Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
     ConfigError(String),
@@ -119,6 +120,7 @@ impl fmt::Display for HolochainError {
             }
             CapabilityCheckFailed => write!(f, "Caller does not have Capability to make that call"),
             ValidationFailed(fail_msg) => write!(f, "{}", fail_msg),
+            ValidationNotImplemented(fail_msg) => write!(f, "{}", fail_msg),
             Ribosome(err_code) => write!(f, "{}", err_code.as_str()),
             RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
             ConfigError(err_msg) => write!(f, "{}", err_msg),

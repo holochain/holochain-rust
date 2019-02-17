@@ -6,7 +6,7 @@ use crate::{
     instance::dispatch_action_and_wait,
     nucleus::{
         ribosome::callback::{genesis::genesis, CallbackParams, CallbackResult},
-        state::NucleusStatus,
+        state::{NucleusStatus, ValidationResult},
     },
 };
 use futures::{
@@ -89,11 +89,13 @@ pub async fn initialize_application(
     let maybe_error = results
         .iter()
         .find(|ref r| match r {
-            CallbackResult::Fail(_) => true,
+            CallbackResult::ValidationResult(ValidationResult::Fail(_)) => true,
             _ => false,
         })
         .and_then(|result| match result {
-            CallbackResult::Fail(error_string) => Some(error_string.clone()),
+            CallbackResult::ValidationResult(ValidationResult::Fail(error_string)) => {
+                Some(error_string.clone())
+            }
             _ => None,
         });
 

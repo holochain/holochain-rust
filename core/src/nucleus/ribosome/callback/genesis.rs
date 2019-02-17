@@ -20,9 +20,14 @@ pub mod tests {
     use super::genesis;
     use crate::{
         instance::tests::test_context,
-        nucleus::ribosome::{
-            callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
-            Defn,
+        nucleus::{
+            ribosome::{
+                callback::{
+                    tests::test_callback_instance, Callback, CallbackParams, CallbackResult,
+                },
+                Defn,
+            },
+            state::ValidationResult,
         },
     };
 
@@ -36,7 +41,10 @@ pub mod tests {
 
         let result = genesis(context, zome, &CallbackParams::Genesis);
 
-        assert_eq!(CallbackResult::Pass, result);
+        assert_eq!(
+            CallbackResult::ValidationResult(ValidationResult::Pass),
+            result
+        );
     }
 
     #[test]

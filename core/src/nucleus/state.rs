@@ -19,7 +19,12 @@ impl Default for NucleusStatus {
     }
 }
 
-pub type ValidationResult = Result<(), String>;
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
+pub enum ValidationResult {
+    Pass,
+    Fail(String),
+    MissingReference(Address),
+}
 
 /// The state-slice for the Nucleus.
 /// Holds the dynamic parts of the DNA, i.e. zome calls and validation requests.
@@ -32,7 +37,8 @@ pub struct NucleusState {
     // @TODO should this use the standard ActionWrapper/ActionResponse format?
     // @see https://github.com/holochain/holochain-rust/issues/196
     pub zome_calls: HashMap<ZomeFnCall, Option<Result<JsonString, HolochainError>>>,
-    pub validation_results: HashMap<(snowflake::ProcessUniqueId, Address), ValidationResult>,
+    pub validation_results:
+        HashMap<(snowflake::ProcessUniqueId, Address), Result<ValidationResult, HolochainError>>,
     pub validation_packages:
         HashMap<snowflake::ProcessUniqueId, Result<ValidationPackage, HolochainError>>,
 }

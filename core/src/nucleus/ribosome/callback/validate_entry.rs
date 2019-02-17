@@ -2,11 +2,8 @@ extern crate serde_json;
 use crate::{
     context::Context,
     nucleus::{
-        ribosome::{
-            self,
-            callback::{links_utils, CallbackResult},
-            runtime::WasmCallData,
-        },
+        ribosome::{self, callback::links_utils, runtime::WasmCallData},
+        state::ValidationResult,
         ZomeFnCall,
     },
 };
@@ -27,8 +24,8 @@ use std::sync::Arc;
 /// This function determines and runs the appropriate validation callback for the given entry
 /// with the given validation data (which includes the validation package).
 /// It returns a CallbackResult which would be
-/// * CallbackResult::Pass when the entry is valid
-/// * CallbackResult::Fail(message) when the entry is invalid, giving the fail string from the
+/// * CallbackResult::ValidationResult(ValidationResult::Pass) when the entry is valid
+/// * CallbackResult::ValidationResult(ValidationResult::Fail(message)) when the entry is invalid, giving the fail string from the
 ///         validation callback
 /// * CallbackResult::NotImplemented if a validation callback is not implemented for the given
 ///         entry's type.
@@ -36,11 +33,11 @@ pub fn validate_entry(
     entry: Entry,
     validation_data: ValidationData,
     context: Arc<Context>,
-) -> Result<CallbackResult, HolochainError> {
+) -> Result<ValidationResult, HolochainError> {
     match entry.entry_type() {
         // DNA entries are not validated currently and always valid
         // TODO: Specify when DNA can be commited as an update and how to implement validation of DNA entries then.
-        EntryType::Dna => Ok(CallbackResult::Pass),
+        EntryType::Dna => Ok(ValidationResult::Pass),
 
         EntryType::App(app_entry_type) => Ok(validate_app_entry(
             entry.clone(),
@@ -63,10 +60,10 @@ pub fn validate_entry(
 
         // Deletion entries are not validated currently and always valid
         // TODO: Specify how Deletion can be commited to chain.
-        EntryType::Deletion => Ok(CallbackResult::Pass),
+        EntryType::Deletion => Ok(ValidationResult::Pass),
 
         // a grant should always be private, so it should always pass
-        EntryType::CapTokenGrant => Ok(CallbackResult::Pass),
+        EntryType::CapTokenGrant => Ok(ValidationResult::Pass),
 
         // TODO: actually check agent against app specific membrane validation rule
         // like for instance: validate_agent_id(
@@ -74,9 +71,11 @@ pub fn validate_entry(
         //                      validation_data,
         //                      context,
         //                    )?
-        EntryType::AgentId => Ok(CallbackResult::Pass),
+        EntryType::AgentId => Ok(ValidationResult::Pass),
 
-        _ => Ok(CallbackResult::NotImplemented("validate_entry".into())),
+        _ => Err(HolochainError::ValidationNotImplemented(
+            "validate_entry".into(),
+        )),
     }
 }
 
@@ -84,7 +83,7 @@ fn validate_link_entry(
     entry: Entry,
     validation_data: ValidationData,
     context: Arc<Context>,
-) -> Result<CallbackResult, HolochainError> {
+) -> Result<ValidationResult, HolochainError> {
     let link = match entry {
         Entry::LinkAdd(link_add) => link_add,
         Entry::LinkRemove(link_remove) => link_remove,
@@ -133,11 +132,11 @@ fn validate_app_entry(
     app_entry_type: AppEntryType,
     validation_data: ValidationData,
     context: Arc<Context>,
-) -> Result<CallbackResult, HolochainError> {
+) -> Result<ValidationResult, HolochainError> {
     let dna = context.get_dna().expect("Callback called without DNA set!");
     let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
     if zome_name.is_none() {
-        return Ok(CallbackResult::NotImplemented(
+        return Err(HolochainError::ValidationNotImplemented(
             "validate_app_entry/1".into(),
         ));
     }
@@ -158,7 +157,7 @@ fn validate_app_entry(
                 dna.name.clone(),
             ))
         }
-        None => Ok(CallbackResult::NotImplemented(
+        None => Err(HolochainError::ValidationNotImplemented(
             "validate_app_entry/2".into(),
         )),
     }
@@ -189,24 +188,24 @@ fn run_validation_callback(
     zome_call: ZomeFnCall,
     wasm: &DnaWasm,
     dna_name: String,
-) -> CallbackResult {
+) -> ValidationResult {
     match ribosome::run_dna(
         wasm.code.clone(),
         Some(zome_call.clone().parameters.into_bytes()),
         WasmCallData::new_zome_call(context, dna_name, zome_call),
     ) {
         Ok(call_result) => match call_result.is_null() {
-            true => CallbackResult::Pass,
-            false => CallbackResult::Fail(call_result.to_string()),
+            true => ValidationResult::Pass,
+            false => ValidationResult::Fail(call_result.to_string()),
         },
         // TODO: have "not matching schema" be its own error
         Err(HolochainError::RibosomeFailed(error_string)) => {
             if error_string == "Argument deserialization failed" {
-                CallbackResult::Fail(String::from("JSON object does not match entry schema"))
+                ValidationResult::Fail(String::from("JSON object does not match entry schema"))
             } else {
-                CallbackResult::Fail(error_string)
+                ValidationResult::Fail(error_string)
             }
         }
-        Err(error) => CallbackResult::Fail(error.to_string()),
+        Err(error) => ValidationResult::Fail(error.to_string()),
     }
 }

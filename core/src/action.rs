@@ -191,7 +191,12 @@ pub enum Action {
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context
     /// and the hash of the entry that was validated
-    ReturnValidationResult(((snowflake::ProcessUniqueId, Address), ValidationResult)),
+    ReturnValidationResult(
+        (
+            (snowflake::ProcessUniqueId, Address),
+            Result<ValidationResult, HolochainError>,
+        ),
+    ),
 
     /// A validation package was created locally and is reported back
     /// to be added to the state

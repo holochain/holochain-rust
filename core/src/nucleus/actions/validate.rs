@@ -3,7 +3,7 @@ extern crate serde_json;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    nucleus::ribosome::callback::{self, CallbackResult},
+    nucleus::{ribosome::callback, state::ValidationResult},
 };
 use futures::{
     future::{self, Future, FutureObj},
@@ -87,25 +87,11 @@ pub fn validate_entry<'a>(
         let entry = entry.clone();
         let context = context.clone();
         thread::spawn(move || {
-            let maybe_validation_result = callback::validate_entry::validate_entry(
+            let result = callback::validate_entry::validate_entry(
                 entry.clone(),
                 validation_data.clone(),
                 context.clone(),
             );
-
-            let result = match maybe_validation_result {
-                Ok(validation_result) => match validation_result {
-                    CallbackResult::Fail(error_string) => Err(error_string),
-                    CallbackResult::Pass => Ok(()),
-                    CallbackResult::NotImplemented(reason) => Err(format!(
-                        "Validation callback not implemented for {:?} ({})",
-                        entry.entry_type().clone(),
-                        reason
-                    )),
-                    _ => unreachable!(),
-                },
-                Err(error) => Err(error.to_string()),
-            };
 
             context
                 .action_channel()
@@ -141,8 +127,14 @@ impl Future for ValidationFuture {
         lw.wake();
         if let Some(state) = self.context.state() {
             match state.nucleus().validation_results.get(&self.key) {
-                Some(Ok(())) => Poll::Ready(Ok(self.key.1.clone())),
-                Some(Err(e)) => Poll::Ready(Err(HolochainError::ValidationFailed(e.clone()))),
+                Some(Ok(ValidationResult::Pass)) => Poll::Ready(Ok(self.key.1.clone())),
+                Some(Ok(ValidationResult::MissingReference(_))) => {
+                    unimplemented!("TODO: handle missing reference")
+                }
+                Some(Ok(ValidationResult::Fail(reason))) => {
+                    Poll::Ready(Err(HolochainError::ValidationFailed(reason.to_string())))
+                }
+                Some(Err(e)) => Poll::Ready(Err(HolochainError::ValidationFailed(e.to_string()))),
                 None => Poll::Pending,
             }
         } else {

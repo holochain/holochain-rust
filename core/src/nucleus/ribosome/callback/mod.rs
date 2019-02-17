@@ -16,6 +16,7 @@ use crate::{
             runtime::WasmCallData,
             Defn,
         },
+        state::ValidationResult,
         ZomeFnCall,
     },
 };
@@ -68,7 +69,7 @@ impl Callback {
         &self,
     ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {
         fn noop(_context: Arc<Context>, _zome: &str, _params: &CallbackParams) -> CallbackResult {
-            CallbackResult::Pass
+            CallbackResult::ValidationResult(ValidationResult::Pass)
         }
 
         match *self {
@@ -126,8 +127,7 @@ impl ToString for CallbackParams {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CallbackResult {
-    Pass,
-    Fail(String),
+    ValidationResult(ValidationResult),
     NotImplemented(String),
     ValidationPackageDefinition(ValidationPackageDefinition),
     ReceiveResult(String),
@@ -145,7 +145,9 @@ impl From<JsonString> for CallbackResult {
             serde_json::from_str(&String::from(json_string.clone()));
         match r#try {
             Ok(callback_result) => callback_result,
-            Err(_) => CallbackResult::Fail(String::from(json_string)),
+            Err(_) => {
+                CallbackResult::ValidationResult(ValidationResult::Fail(String::from(json_string)))
+            }
         }
     }
 }
@@ -153,16 +155,22 @@ impl From<JsonString> for CallbackResult {
 impl From<RibosomeEncodedValue> for CallbackResult {
     fn from(ribosome_return_code: RibosomeEncodedValue) -> CallbackResult {
         match ribosome_return_code {
-            RibosomeEncodedValue::Failure(ribosome_error_code) => {
-                CallbackResult::Fail(ribosome_error_code.to_string())
-            }
+            RibosomeEncodedValue::Failure(ribosome_error_code) => CallbackResult::ValidationResult(
+                ValidationResult::Fail(ribosome_error_code.to_string()),
+            ),
             RibosomeEncodedValue::Allocation(ribosome_allocation) => {
                 match WasmAllocation::try_from(ribosome_allocation) {
-                    Ok(allocation) => CallbackResult::Fail(allocation.read_to_string()),
-                    Err(allocation_error) => CallbackResult::Fail(String::from(allocation_error)),
+                    Ok(allocation) => CallbackResult::ValidationResult(ValidationResult::Fail(
+                        allocation.read_to_string(),
+                    )),
+                    Err(allocation_error) => CallbackResult::ValidationResult(
+                        ValidationResult::Fail(String::from(allocation_error)),
+                    ),
                 }
             }
-            RibosomeEncodedValue::Success => CallbackResult::Pass,
+            RibosomeEncodedValue::Success => {
+                CallbackResult::ValidationResult(ValidationResult::Pass)
+            }
         }
     }
 }
@@ -180,9 +188,9 @@ pub(crate) fn run_callback(
     ) {
         Ok(call_result) => {
             if call_result.is_null() {
-                CallbackResult::Pass
+                CallbackResult::ValidationResult(ValidationResult::Pass)
             } else {
-                CallbackResult::Fail(call_result.to_string())
+                CallbackResult::ValidationResult(ValidationResult::Fail(call_result.to_string()))
             }
         }
         Err(_) => CallbackResult::NotImplemented("run_callback".into()),

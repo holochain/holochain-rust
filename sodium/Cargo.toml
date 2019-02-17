@@ -1,6 +1,6 @@
 [package]
 name = "holochain_sodium"
-version = "0.1.0"
+version = "0.0.4-alpha"
 authors = ["neonphog <neonphog@gmail.com>","zo-el<zo@el.org>"]
 edition = "2018"
 

@@ -237,8 +237,8 @@ clean: ${C_BINDING_CLEAN}
 	@$(RM) -rf nodejs_conductor/dist
 	@$(RM) -rf app_spec/dist
 	@for cargo in $$( find . -name 'Cargo.toml' ); do \
-	    echo -e "\033[0;93m## 'cargo update' in $${cargo%/*} ##\033[0m"; \
-	    ( cd $${cargo%/*} && cargo update ); \
+	    echo -e "\033[0;93m## 'cargo clean' in $${cargo%/*} ##\033[0m"; \
+	    ( cd $${cargo%/*} && cargo clean ); \
 	done
 
 # clean up the extraneous "C" binding test files

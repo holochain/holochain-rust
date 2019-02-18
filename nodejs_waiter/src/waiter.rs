@@ -342,7 +342,7 @@ mod tests {
     };
     use holochain_core_types::{
         cas::content::Address, chain_header::test_chain_header, entry::Entry, json::JsonString,
-        link::link_add::LinkAdd, signature::Signature,
+        link::link_data::LinkData, signature::Signature,
     };
     use std::sync::mpsc::sync_channel;
 

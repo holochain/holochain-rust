@@ -6,6 +6,8 @@ brew install cmake
 brew install zmq
 brew upgrade zeromq
 brew install qt
+# https://superuser.com/questions/256232/how-can-i-get-qmake-on-mac-os-x#comment1880535_422785
+brew link qt
 
 export INSTALL_NODE_VERSION=8.14
 

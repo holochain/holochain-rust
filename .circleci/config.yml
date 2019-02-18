@@ -90,6 +90,7 @@ jobs:
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
    - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop .
    - run: docker push holochain/holochain-rust:circle.zz.end
+   - run: docker push holochain/holochain-rust:develop
 
  cold.ubuntu:
   docker:

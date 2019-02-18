@@ -440,9 +440,6 @@ pub fn debug<J: TryInto<JsonString>>(msg: J) -> ZomeApiResult<()> {
 /// # use holochain_core_types::cas::content::Address;
 /// # use holochain_core_types::error::RibosomeEncodingBits;
 ///
-/// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
-///
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]

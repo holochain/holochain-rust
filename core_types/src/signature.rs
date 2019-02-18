@@ -21,5 +21,7 @@ impl From<String> for Signature {
 }
 
 impl From<Signature> for String {
-    fn from(s: Signature) -> String { s.0 }
+    fn from(s: Signature) -> String {
+        s.0
+    }
 }

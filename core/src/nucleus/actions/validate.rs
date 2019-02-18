@@ -1,12 +1,15 @@
 extern crate futures;
 extern crate serde_json;
-use boolinator::Boolinator;
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::ribosome::callback::{self, CallbackResult},
 };
-use futures::{future::Future, task::{LocalWaker, Poll}};
+use boolinator::Boolinator;
+use futures::{
+    future::Future,
+    task::{LocalWaker, Poll},
+};
 use holochain_core_types::{
     cas::content::AddressableContent,
     entry::{entry_type::EntryType, Entry},
@@ -30,12 +33,10 @@ fn check_entry_type(entry_type: EntryType, context: &Arc<Context>) -> Result<(),
                 .dna()
                 .unwrap()
                 .get_zome_name_for_app_entry_type(&app_entry_type)
-                .ok_or(HolochainError::ValidationFailed(
-                    format!(
-                        "Attempted to validate unknown app entry type {:?}",
-                        app_entry_type,
-                    ),
-                ))?;
+                .ok_or(HolochainError::ValidationFailed(format!(
+                    "Attempted to validate unknown app entry type {:?}",
+                    app_entry_type,
+                )))?;
         }
 
         EntryType::LinkAdd => {}
@@ -45,12 +46,10 @@ fn check_entry_type(entry_type: EntryType, context: &Arc<Context>) -> Result<(),
         EntryType::AgentId => {}
 
         _ => {
-            return Err(HolochainError::ValidationFailed(
-                format!(
-                    "Attempted to validate system entry type {:?}",
-                    entry_type,
-                ),
-            ));
+            return Err(HolochainError::ValidationFailed(format!(
+                "Attempted to validate system entry type {:?}",
+                entry_type,
+            )));
         }
     }
 
@@ -61,7 +60,7 @@ fn spawn_validation_ribosome(
     id: ProcessUniqueId,
     entry: Entry,
     validation_data: ValidationData,
-    context: Arc<Context>
+    context: Arc<Context>,
 ) {
     thread::spawn(move || {
         let address = entry.address();
@@ -104,28 +103,22 @@ fn validate_provenances(validation_data: &ValidationData) -> Result<(), Holochai
             let author = &provenance.0;
             let signature = &provenance.1;
             let signature_string: String = signature.clone().into();
-            let signature_bytes: Vec<u8> = base64::decode(&signature_string)
-                .map_err(|_| HolochainError::ValidationFailed(
-                    "Signature syntactically invalid".to_string()
-                ))?;
+            let signature_bytes: Vec<u8> = base64::decode(&signature_string).map_err(|_| {
+                HolochainError::ValidationFailed("Signature syntactically invalid".to_string())
+            })?;
 
             let mut signature_buf = SecBuf::with_insecure(signature_bytes.len());
-            signature_buf.write(0, signature_bytes.as_slice())
+            signature_buf
+                .write(0, signature_bytes.as_slice())
                 .expect("SecBuf must be writeable");
 
-            let mut message_buf = SecBuf::with_insecure_from_string(
-                header.entry_address().to_string()
-            );
-            let result = Keypair::verify(
-                author.to_string(),
-                &mut signature_buf,
-                &mut message_buf
-            )?;
+            let mut message_buf =
+                SecBuf::with_insecure_from_string(header.entry_address().to_string());
+            let result = Keypair::verify(author.to_string(), &mut signature_buf, &mut message_buf)?;
 
-            (result == 0)
-                .ok_or(HolochainError::ValidationFailed(
-                    "Signature invalid".to_string()
-                ))
+            (result == 0).ok_or(HolochainError::ValidationFailed(
+                "Signature invalid".to_string(),
+            ))
         })
         .collect::<Result<Vec<()>, HolochainError>>()?;
     Ok(())

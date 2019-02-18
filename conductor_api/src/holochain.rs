@@ -182,7 +182,10 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::{actions::call_zome_function::make_cap_request_for_call, ribosome::capabilities::CapabilityRequest},
+        nucleus::{
+            actions::call_zome_function::make_cap_request_for_call,
+            ribosome::capabilities::CapabilityRequest,
+        },
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna, json::RawString};

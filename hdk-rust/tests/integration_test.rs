@@ -13,12 +13,12 @@ extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_core_types_derive;
 
-use hdk::error::ZomeApiError;
-use hdk::error::ZomeApiResult;
+use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_conductor_api::{error::HolochainResult, *};
 use holochain_core::logger::TestLogger;
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
+    crud_status::CrudStatus,
     dna::{
         capabilities::CapabilityCall,
         entry_types::{EntryTypeDef, LinksTo},
@@ -27,23 +27,25 @@ use holochain_core_types::{
     },
     entry::{
         entry_type::{test_app_entry_type, EntryType},
-        Entry,
+        Entry, EntryWithMeta,
     },
-    error::HolochainError,
+    error::{CoreError, HolochainError},
     hash::HashString,
     json::JsonString,
 };
-use holochain_core_types::{crud_status::CrudStatus, entry::EntryWithMeta, error::CoreError};
-use holochain_wasm_utils::api_serialization::{
-    get_entry::{GetEntryResult, StatusRequestKind},
-    get_links::GetLinksResult,
+use holochain_wasm_utils::{
+    api_serialization::{
+        get_entry::{GetEntryResult, StatusRequestKind},
+        get_links::GetLinksResult,
+    },
+    wasm_target_dir,
 };
-use holochain_wasm_utils::wasm_target_dir;
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
+    thread,
+    time::Duration,
 };
-use std::{thread, time::Duration};
 use test_utils::*;
 
 pub fn create_test_defs_with_fn_names(fn_names: Vec<&str>) -> (ZomeFnDeclarations, ZomeTraits) {

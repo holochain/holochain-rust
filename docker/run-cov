@@ -4,4 +4,4 @@ docker run -h holochain \
   -e HOST_UID \
   -v `pwd`:/holochain \
   --security-opt seccomp=unconfined \
-  --rm -it holochain/holochain-rust:circle.zz.end ./docker/entry make cov
+  --rm -it holochain/holochain-rust:develop make cov

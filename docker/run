@@ -4,4 +4,4 @@ docker run -h holochain \
   -e HOST_UID \
   -v `pwd`:/holochain \
   -v $HOME/.cargo/registry:/home/holochain/.cargo/registry \
-  --rm -it holochain/holochain-rust:circle.zz.end "$@"
+  --rm -it holochain/holochain-rust:develop "$@"

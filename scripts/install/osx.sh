@@ -5,6 +5,7 @@
 brew install cmake
 brew install zmq
 brew upgrade zeromq
+brew install qt
 
 export INSTALL_NODE_VERSION=8.14
 

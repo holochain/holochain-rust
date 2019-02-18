@@ -1,29 +1,15 @@
 # Building Holochain Apps: Testing
 
-By default, when you use `hc init` to create a new project folder, it creates a sub-directory called `test`. The files in that folder are equipped for testing your project.
+In order to provide a familiar testing framework, a [nodejs](https://nodejs.org) version of the Holochain framework has been compiled using Rust to nodejs bindings. It is called ["holochain-nodejs"](https://www.npmjs.com/package/@holochain/holochain-nodejs) and is a publicly installable package on the NPM package manager for nodejs. It enables the execution of Holochain and DNA instances from nodejs.
 
-Once you have a project folder initiated, you can run `hc test` to execute your tests. This combines the following steps:
-  1. Packaging your files into a DNA file, located at `dist/bundle.json`. This step will fail if your packaging step fails.
-  2. Installing build and testing dependencies, if they're not installed (`npm install`)
-  4. Executing (with [holochain-nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs)) the test file found at `test/index.js`
+At a basic level, here is how testing the Holochain DNA you are developing works:
+- Use the `hc test` command to run a series of steps optimal for testing
+- call a JS file containing tests
+- In the JS file, import the nodejs Holochain Conductor
+- load your packaged DNA into the Conductor, and otherwise configure it
+- use exposed methods on the Conductor to make function calls to the DNA
+- check that the results are what you expect them to be
 
-`hc test` also has some configurable options.
+For checking the results, a basic JavaScript test framework called [Tape](https://github.com/substack/tape) has received priority support thus far, but other test frameworks can be used.
 
-If you want to run it without repackaging the DNA, run it with
-```shell
-hc test --skip-package
-```
-
-If your tests are in a different folder than `test`, run it with
-```shell
-hc test --dir tests
-```
- where `tests` is the name of the folder.
-
-If the file you wish to actually execute is somewhere besides `test/index.js` then run it with
-```shell
-hc test --testfile test/test.js
-```
-where `test/test.js` is the path of the file.
-
-You have the flexibility to write tests in quite a variety of ways, open to you to explore.
+You have the flexibility to write tests in quite a variety of ways, open to you to explore. This chapter will overview how to approach testing Holochain DNA.

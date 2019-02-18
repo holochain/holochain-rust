@@ -12,7 +12,7 @@ use std::{
     collections::BTreeSet,
     fs::{create_dir_all, File, OpenOptions},
     io::prelude::*,
-    path::{Path, PathBuf, MAIN_SEPARATOR},
+    path::{Path, PathBuf},
     sync::{Arc, RwLock},
 };
 use uuid::Uuid;
@@ -23,7 +23,7 @@ const VALUE_DIR: &str = "v";
 
 #[derive(Clone, Debug)]
 pub struct EavFileStorage {
-    dir_path: String,
+    dir_path: PathBuf,
     id: Uuid,
 
     lock: Arc<RwLock<()>>,
@@ -38,51 +38,48 @@ impl PartialEq for EavFileStorage {
 #[warn(unused_must_use)]
 pub fn read_eav(parent_path: PathBuf) -> HcResult<Vec<String>> {
     //glob all  files
-    let full_path = vec![
-        parent_path.to_str().unwrap_or("").to_string(),
-        "*".to_string(),
-        "*.txt".to_string(),
-    ]
-    .join(&MAIN_SEPARATOR.to_string());
+    let full_path = parent_path.join("*").join("*.txt");
 
-    let paths = glob(&*full_path)
+    let paths = glob(full_path.to_str().unwrap())
         .map_err(|_| HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
 
     // let path_result = paths.last().ok_or(HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
     let (eav, error): (BTreeSet<_>, BTreeSet<_>) = paths
         .map(|path| {
-            let path_buf = path.unwrap_or(PathBuf::new());
+            let path_buf: PathBuf = path.unwrap_or_default();
             OpenOptions::new()
                 .read(true)
                 .open(path_buf.clone())
                 .map(|mut file| {
-                    let mut content: String = String::new();
+                    let mut content = String::new();
                     file.read_to_string(&mut content)
                         .map(|_| Ok(content))
-                        .unwrap_or(Err(HolochainError::ErrorGeneric(
-                            "Could not read from string".to_string(),
-                        )))
+                        .unwrap_or_else(|_| {
+                            Err(HolochainError::ErrorGeneric(
+                                "Could not read from string".to_string(),
+                            ))
+                        })
                 })
-                .unwrap_or(Err(HolochainError::ErrorGeneric(
-                    "Could not read from string".to_string(),
-                )))
+                .unwrap_or_else(|_| {
+                    Err(HolochainError::ErrorGeneric(
+                        "Could not read from string".to_string(),
+                    ))
+                })
         })
         .partition(Result::is_ok);
-    if error.len() > 0 {
+    if !error.is_empty() {
         Err(HolochainError::ErrorGeneric(
             "Could not read from string".to_string(),
         ))
     } else {
-        Ok(eav
-            .iter()
-            .cloned()
-            .map(|s| s.unwrap_or(String::from("")))
-            .collect())
+        Ok(eav.iter().cloned().map(|s| s.unwrap_or_default()).collect())
     }
 }
 
 impl EavFileStorage {
-    pub fn new(dir_path: String) -> HcResult<EavFileStorage> {
+    pub fn new<P: AsRef<Path>>(dir_path: P) -> HcResult<EavFileStorage> {
+        let dir_path = dir_path.as_ref().into();
+
         Ok(EavFileStorage {
             dir_path,
             id: Uuid::new_v4(),
@@ -101,18 +98,21 @@ impl EavFileStorage {
             VALUE_DIR => eav.value().to_string(),
             _ => String::new(),
         };
-        let path = vec![
-            self.dir_path.clone(),
-            subscript,
-            address,
-            eav.index().clone().to_string(),
-        ]
-        .join(&MAIN_SEPARATOR.to_string());
-        create_dir_all(path.clone())?;
-        let address_path = vec![path, eav.address().to_string()].join(&MAIN_SEPARATOR.to_string());
-        let full_path = vec![address_path.clone(), "txt".to_string()].join(&".".to_string());
-        let mut f = File::create(full_path)?;
-        writeln!(f, "{}", eav.content())?;
+
+        let path = self
+            .dir_path
+            .join(&subscript)
+            .join(&address)
+            .join(&eav.index().to_string());
+
+        create_dir_all(&path)?;
+
+        let address_path = path.join(eav.address().to_string());
+
+        let full_path = address_path.with_extension("txt");
+
+        let mut file = File::create(full_path)?;
+        writeln!(file, "{}", eav.content())?;
         Ok(())
     }
 
@@ -126,12 +126,14 @@ impl EavFileStorage {
     {
         let address = eav_constraint
             .map(|e| e.to_string())
-            .unwrap_or(String::from("*"));
-        let path = vec![self.dir_path.clone(), subscript].join(&MAIN_SEPARATOR.to_string());
-        if Path::new(&path.clone()).exists() {
-            let full_path = vec![path.clone(), address.clone()].join(&MAIN_SEPARATOR.to_string());
+            .unwrap_or("*".to_string());
 
-            let paths = glob(&*full_path.clone())
+        let path = self.dir_path.join(&subscript);
+
+        if path.exists() {
+            let full_path = path.join(&address);
+
+            let paths = glob(full_path.to_str().unwrap())
                 .map_err(|_| HolochainError::ErrorGeneric("Could not get form path".to_string()))?;
 
             let (eavs, errors): (Vec<_>, Vec<_>) = paths
@@ -154,6 +156,7 @@ impl EavFileStorage {
                         ordmap.insert(value.clone());
                     })
                 });
+
                 Ok(ordmap)
             }
         } else {
@@ -190,22 +193,44 @@ impl EntityAttributeValueStorage for EavFileStorage {
         index_query: IndexQuery,
     ) -> Result<BTreeSet<EntityAttributeValueIndex>, HolochainError> {
         let _guard = self.lock.read()?;
-        let entity_set = self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
-        let attribute_set = self
-            .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute)?
-            .clone();
-        let value_set = self.read_from_dir::<Value>(VALUE_DIR.to_string(), value)?;
+        let prefixes = if !index_query.prefixes().is_empty() {
+            index_query.prefixes().clone()
+        } else {
+            vec![""]
+        };
+        let union_set: BTreeSet<String> = BTreeSet::new();
+        let entity_attribute_value_union = prefixes.iter().fold(
+            Ok(union_set.clone()),
+            |set: Result<BTreeSet<String>, HolochainError>, prefix: &&str| {
+                let entity_set =
+                    self.read_from_dir::<Entity>(ENTITY_DIR.to_string(), entity.clone())?;
+                let attribute_with_prefix = attribute
+                    .clone()
+                    .map(|attri| prefix.to_string() + &attri.clone());
+                let attribute_set = self
+                    .read_from_dir::<Attribute>(ATTRIBUTE_DIR.to_string(), attribute_with_prefix)
+                    .clone()?;
+                let value_set =
+                    self.read_from_dir::<Value>(VALUE_DIR.to_string(), value.clone())?;
 
-        let attribute_value_inter: BTreeSet<String> = value_set
-            .intersection(&attribute_set.clone())
-            .cloned()
-            .collect();
-        let entity_attribute_value_inter: BTreeSet<String> = attribute_value_inter
-            .intersection(&entity_set)
-            .cloned()
-            .collect();
+                let attribute_value_inter: BTreeSet<String> = value_set
+                    .intersection(&attribute_set.clone())
+                    .cloned()
+                    .collect();
+                let entity_attribute_value_inter: BTreeSet<String> = attribute_value_inter
+                    .intersection(&entity_set)
+                    .cloned()
+                    .collect();
+                let to_union = set?;
+                Ok(to_union
+                    .union(&entity_attribute_value_inter)
+                    .cloned()
+                    .collect())
+            },
+        );
 
-        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_inter
+        let (eav, error): (BTreeSet<_>, BTreeSet<_>) = entity_attribute_value_union?
+            .clone()
             .into_iter()
             .map(|content| EntityAttributeValueIndex::try_from_content(&JsonString::from(content)))
             .partition(|c| c.is_ok());
@@ -229,7 +254,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                         .start()
                         .map(|start| start <= e.index())
                         .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone())
+                            let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                                 .unwrap_or(EntityAttributeValueIndex::default());
                             latest.index() == e.index()
                         })
@@ -239,7 +264,7 @@ impl EntityAttributeValueStorage for EavFileStorage {
                         .end()
                         .map(|end| end >= e.index())
                         .unwrap_or_else(|| {
-                            let latest = get_latest(e.clone(), map.clone())
+                            let latest = get_latest(e.clone(), map.clone(), index_query.clone())
                                 .unwrap_or(EntityAttributeValueIndex::default());
                             latest.index() == e.index()
                         })
@@ -298,11 +323,22 @@ pub mod tests {
     }
 
     #[test]
-    fn example_eav_range() {
+    fn file_eav_range() {
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let eav_storage = EavFileStorage::new(temp_path).unwrap();
         EavTestSuite::test_range::<ExampleAddressableContent, EavFileStorage>(eav_storage);
+    }
+
+    #[test]
+    fn file_eav_prefixes() {
+        let temp = tempdir().expect("test was supposed to create temp dir");
+        let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
+        let eav_storage = EavFileStorage::new(temp_path).unwrap();
+        EavTestSuite::test_prefixes::<ExampleAddressableContent, EavFileStorage>(
+            eav_storage,
+            vec!["a_", "b_", "c_", "d_"],
+        );
     }
 
 }

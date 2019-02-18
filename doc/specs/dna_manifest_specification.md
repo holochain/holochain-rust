@@ -53,26 +53,6 @@ hc_start_bundle_mode();
 hc_end_bundle_mode(FINISH_BUNDLE); // or CANCEL_BUNDLE
 ```
 
-### Reserved Capabilities and functions
-
-Some functions are required for core process/features of Holochain to work.
-They are available in keyword specific Capabilities and function names.
-
-#### LifeCycle Capability
-
-- name: `hc_lifecycle`
-- Functions:
-  - `genesis(...)`
-  - `bridge_genesis(side, dna, appData)`
-  - `migrate(...)`
-
-#### Communication Capability
-
-- name: `hc_web_gateway`
-- Functions:
-  - `receive(from, message)`
-  - `send(...)`
-
 ## Specification as example DNA Manifest
 
 ``` javascript
@@ -103,9 +83,7 @@ They are available in keyword specific Capabilities and function names.
       "description": "zome that implements micro-blogging",
       // Ribosome or HDK level config that might need to be set
       // to indicate how to handle this Zome. Not used yet, but anticipating.
-      "config": {
-        "error_handling": "throw-errors"
-      },
+      "config": {},
       // Zome code
       "code": "..", // an s-expression encoded wasm or an Base64 encoded wasm bytecode
       // Zome entry types
@@ -113,7 +91,6 @@ They are available in keyword specific Capabilities and function names.
         {
           "entry_type_name": "post",
           "description": "A blog post entry which has an author.",
-          "data_format": "string",
           "sharing": "public",  // or private, encrypted
           "links_to": [
             {
@@ -125,7 +102,6 @@ They are available in keyword specific Capabilities and function names.
         {
           "entry_type_name": "handle",
           "description": "An agent's handle on the network. The DNA indexes all the handles.",
-          "data_format": "string",
           "sharing": "public",
           "links_to": [
             {
@@ -164,11 +140,10 @@ They are available in keyword specific Capabilities and function names.
         },
         // ...
       ],
-      // Zome capabilities holding mapping of functions to capabilities
-      "capabilities": {
-        "web_gateway":
+      // Zome traits which group functions for composiblity
+      "traits": {
+        "hc_public":
         {
-          "type": "public",
           "functions": ["getPost"]
         }
       },

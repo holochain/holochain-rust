@@ -12,11 +12,14 @@ use holochain_core::{
 };
 use holochain_core_types::{
     agent::AgentId, cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
-    error::HolochainError, json::JsonString,
+    error::HolochainError,
 };
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use std::sync::{Arc, Mutex, RwLock};
+use std::{
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex, RwLock},
+};
 
 /// This type helps building [context objects](struct.Context.html) that need to be
 /// passed in to Holochain intances.
@@ -35,7 +38,7 @@ pub struct ContextBuilder {
     chain_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     dht_storage: Option<Arc<RwLock<ContentAddressableStorage>>>,
     eav_storage: Option<Arc<RwLock<EntityAttributeValueStorage>>>,
-    network_config: Option<JsonString>,
+    p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
 }
@@ -48,7 +51,7 @@ impl ContextBuilder {
             chain_storage: None,
             dht_storage: None,
             eav_storage: None,
-            network_config: None,
+            p2p_config: None,
             conductor_api: None,
             signal_tx: None,
         }
@@ -74,10 +77,10 @@ impl ContextBuilder {
     /// Sets all three storages, chain, DHT and EAV storage, to persistent file based implementations.
     /// Chain and DHT storages get set to the same file CAS.
     /// Returns an error if no file storage could be spawned on the given path.
-    pub fn with_file_storage<T: Into<String>>(mut self, path: T) -> Result<Self, HolochainError> {
-        let path: String = path.into();
-        let cas_path = format!("{}/cas", path);
-        let eav_path = format!("{}/eav", path);
+    pub fn with_file_storage<P: AsRef<Path>>(mut self, path: P) -> Result<Self, HolochainError> {
+        let base_path: PathBuf = path.as_ref().into();
+        let cas_path = base_path.join("cas");
+        let eav_path = base_path.join("eav");
         create_path_if_not_exists(&cas_path)?;
         create_path_if_not_exists(&eav_path)?;
 
@@ -90,8 +93,8 @@ impl ContextBuilder {
     }
 
     /// Sets the network config.
-    pub fn with_network_config(mut self, network_config: JsonString) -> Self {
-        self.network_config = Some(network_config);
+    pub fn with_p2p_config(mut self, p2p_config: P2pConfig) -> Self {
+        self.p2p_config = Some(p2p_config);
         self
     }
 
@@ -131,9 +134,8 @@ impl ContextBuilder {
             chain_storage,
             dht_storage,
             eav_storage,
-            self.network_config.unwrap_or(JsonString::from(
-                P2pConfig::new_with_unique_memory_backend().as_str(),
-            )),
+            self.p2p_config
+                .unwrap_or(P2pConfig::new_with_unique_memory_backend()),
             self.conductor_api,
             self.signal_tx,
         )
@@ -143,16 +145,14 @@ impl ContextBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use holochain_net::p2p_config::P2pBackendKind;
     use tempfile::tempdir;
 
     #[test]
     fn vanilla() {
         let context = ContextBuilder::new().spawn();
         assert_eq!(context.agent_id, AgentId::generate_fake("alice"));
-        assert!(context
-            .network_config
-            .to_string()
-            .contains(r#""backend_kind":"MEMORY""#));
+        assert_eq!(P2pBackendKind::MEMORY, context.p2p_config.backend_kind);
     }
 
     #[test]
@@ -164,11 +164,9 @@ mod tests {
 
     #[test]
     fn with_network_config() {
-        let net = JsonString::from(P2pConfig::new_with_unique_memory_backend().as_str());
-        let context = ContextBuilder::new()
-            .with_network_config(net.clone())
-            .spawn();
-        assert_eq!(context.network_config, net);
+        let net = P2pConfig::new_with_unique_memory_backend();
+        let context = ContextBuilder::new().with_p2p_config(net.clone()).spawn();
+        assert_eq!(context.p2p_config, net);
     }
 
     #[test]

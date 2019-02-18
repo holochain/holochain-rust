@@ -61,7 +61,7 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::{call_and_wait_for_result, ZomeFnCall},
+    nucleus::{call_zome_function, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
 };
@@ -152,7 +152,8 @@ impl Holochain {
             return Err(HolochainInstanceError::InstanceNotActiveYet);
         }
         let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
-        Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
+        let context = self.context();
+        Ok(context.block_on(call_zome_function(zome_call, context))?)
     }
 
     /// checks to see if an instance is active
@@ -180,7 +181,6 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::ribosome::{callback::Callback, Defn},
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna, json::RawString};
@@ -211,7 +211,7 @@ mod tests {
         )
     }
 
-    use std::{fs::File, io::prelude::*, path::MAIN_SEPARATOR};
+    use std::{fs::File, io::prelude::*};
 
     fn example_api_wasm_path() -> String {
         format!(
@@ -247,17 +247,14 @@ mod tests {
         assert!(format!("{:?}", *test_logger).contains("\"debug/conductor: TestApp instantiated\""));
     }
 
-    fn write_agent_state_to_file() -> String {
-        let tempdir = tempdir().unwrap();
-        let path = tempdir.path().to_str().unwrap();
-        let tempfile = vec![path, "Agentstate.txt"].join(&*MAIN_SEPARATOR.to_string());
-        let mut file = File::create(tempfile).unwrap();
-        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"sandwich--------------------------------------------------------------------------AAAEqzh28L\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
-        path.to_string()
-    }
     #[test]
     fn can_load() {
-        let path = write_agent_state_to_file();
+        let tempdir = tempdir().unwrap();
+        let tempfile = tempdir.path().join("Agentstate.txt");
+        let mut file = File::create(&tempfile).unwrap();
+        file.write_all(b"{\"top_chain_header\":{\"entry_type\":\"AgentId\",\"entry_address\":\"Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq\",\"sources\":[\"sandwich--------------------------------------------------------------------------AAAEqzh28L\"],\"entry_signatures\":[\"fake-signature\"],\"link\":null,\"link_same_type\":null,\"timestamp\":\"2018-10-11T03:23:38+00:00\"}}").unwrap();
+        let path = tempdir.path().to_str().unwrap().to_string();
+
         let (context, _, _) = test_context("bob");
         let result = Holochain::load(path, context.clone());
         assert!(result.is_ok());
@@ -265,8 +262,8 @@ mod tests {
         assert!(!loaded_holo.active);
         assert_eq!(loaded_holo.context.agent_id.nick, "bob".to_string());
         let network_state = loaded_holo.context.state().unwrap().network().clone();
-        assert_eq!(network_state.agent_id.is_some(), true);
-        assert_eq!(network_state.dna_address.is_some(), true);
+        assert!(network_state.agent_id.is_some());
+        assert!(network_state.dna_address.is_some());
         assert!(loaded_holo.instance.state().nucleus().has_initialized());
     }
 
@@ -274,7 +271,7 @@ mod tests {
     fn fails_instantiate_if_genesis_fails() {
         let dna = create_test_dna_with_wat(
             "test_zome",
-            Callback::Genesis.capability().as_str(),
+            "test_cap",
             Some(
                 r#"
             (module

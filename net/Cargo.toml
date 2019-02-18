@@ -1,6 +1,6 @@
 [package]
 name = "holochain_net"
-version = "0.0.3"
+version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
@@ -16,3 +16,4 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = { version = "1", features = ["preserve_order"] }
 snowflake = "1"
+multihash = "0.8.0"

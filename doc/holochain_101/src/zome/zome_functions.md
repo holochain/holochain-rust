@@ -1,6 +1,6 @@
 # Zome Functions
 
-Finally, it is time to address the core application logic of Zomes.
+It is time to address the core application logic of Zomes.
 
 What Zome functions you write depends, of course, on what you are building your application to do. By exposing a number of native capacities of Holochain to Zomes, developers have been given access to a rich suite of tools that offer limitless ways they can be combined. Holochain achieves this by exposing core functions to the WASM code of Zomes.
 
@@ -17,9 +17,9 @@ How these different functions work and how to use them will be covered throughou
 
 Recall that Zomes will be written in diverse programming languages, any one that compiles to WebAssembly. Towards the bottom of this article, "Building in Rust" gives examples of what writing functions in Rust will be like. It is difficult to show what a function in WASM looks like, since even the "human-readable" version of WASM, WAT, is not highly readable.
 
-## DNA, Zomes, Capabilities, and Functions
+## DNA, Zomes, Functions, Traits, and Capabilities
 
-When Holochain loads a DNA file, to start an instance from it, it expects the presence of one or more Zomes in the definition. Here is a skeletal (incomplete) DNA JSON file that can illustrate this:
+When Holochain loads a DNA file, to start an instance from it, it expects the presence of one or more Zomes in the definition. Here is a skeletal (incomplete) DNA JSON file to illustrate this:
 
 ```json
 {
@@ -27,9 +27,8 @@ When Holochain loads a DNA file, to start an instance from it, it expects the pr
     "zomes": {
         "test_zome": {
             "name": "test_zome",
-            "capabilities": {
-                "test_capability": {
-                    "type": "public"
+            "traits": {
+                "hc_public": {
                     "functions": [],
                 }
             },
@@ -44,40 +43,15 @@ When Holochain loads a DNA file, to start an instance from it, it expects the pr
 
 This theoretical DNA has one Zome, "test_zome". However, it has no functions. Note that the nested `fn_declarations` property is an empty array.
 
-There are few things to learn from this DNA JSON. The first, that is simple to explain, is that the code, Base64 encoded WASM, is actually embedded in the Zome's definition, nested under `code.code`. All the functions Holochain expects to be implemented need to be encapsulated within that WASM code.
+There are a few things to learn from this DNA JSON. The first, is that the code, Base64 encoded WASM, is actually embedded in the Zome's definition, nested under `code.code`. All the functions Holochain expects to be implemented need to be encapsulated within that WASM code.
 
 The second is that even outside of the WASM code, Holochain expects a certain level of visibility into the functions contained within, at least the ones meant to be called via Holochain (as oppose to private/internal functions).
 
 There are at least two reasons for this:
-- to define a permission based system for those functions
 - to be able to reason about data inputs and outputs for those functions
+- to group those functions semantically for composition
 
 These will both be discussed below.
-
-## Capabilities
-
-In order to operate securely, but still be full featured, Holochain has a permissions system for function calls. This is being called "Capabilities".
-
-A Zome can have multiple Capabilities, and each Capability has one CapabilityType, from a defined set of options, as well as list of functions that are accessible using that capability. The point of selecting a CapabilityType for a set of functions is that it will allow granular control of who can call which functions of a Zome.
-
-In the example, the name of the capability was "test_capability".
-
-```json
-"capabilities": {
-    "test_capability": {
-        "type": "public"
-        "functions": ["get_task_list"]
-    }
-}
-```
-
-The CapabilityType, or just "type" in the JSON, for the Capability is set to "public". The current options for a CapabilityType are `public`, `transferable` and `assigned`.
-
-At this moment, Holochain's capability system is still under development, so these values aren't final. More documentation for Capabilities will be released as the implementation evolves within Holochain.
-
-Important notes for the current use of Capabilities:
-- Holochain does not yet check the identity of the user making function calls
-- Capability names are ALSO needed when function calls are being made
 
 ## Function Declarations
 
@@ -97,28 +71,33 @@ Each function declaration is an object that includes the `name`, and the `inputs
 
 The `name` is the most important thing here, because when a function call to an instance is being performed, it will have to match a name which Holochain can find in the `functions`. If the function isn't declared, Holochain will treat it as if it doesn't exist, even if it is an exposed function in the WASM code.
 
+## Traits
+Traits provide a way to group functions by name.  The primary use of this feature is for creating a composibility space where DNA creators can implement different DNAs to emergent function interfaces and then compose with them in the conductor by matching on the function group names and signatures.  Additionally Holochain may reserve a few special trait names that have specific side-effects.  The first of such reserved names is `hc_public`.  Functions grouped in this name will have automatically added to a public capability grant that happens at genesis time, thus making them accessible to any caller.  For more details on the Holochain security model please see the [Capabilities](capabilities.md) section.
+
+Here is an example of what a trait definition using the public reserved trait name might look like:
+
+```json
+"traits": {
+    "hc_public": {
+        "functions": ["get_task_list"]
+    }
+}
+```
+
 ## Data Interchange - Inputs and Outputs
 
-In order to maintain compabitility with a variety of languages, it was decided to use a language agnostic data interchange format for inputs and ouputs. JSON, the modern web format was selected. Other formats may be supported in the future.
+In order to support building zomes in a variety of languages, we decided to use a simple language agnostic function specification format, using JSON.  Other formats may be supported in the future.
 
-Put simply, this has two big implications: Holochain Conductor implementations must handle JSON serialization and deserialization on the "outside", and HDKs and Zomes must handle JSON serialization and deserialization on the "inside". Holochain agrees only to mediate between the two by passing a string (which should represent valid JSON data).
+This has two big implications: Holochain Conductor implementations must handle JSON serialization and deserialization on the "outside", and HDKs and Zomes must handle JSON serialization and deserialization on the "inside". Holochain agrees only to mediate between the two by passing a string (which should represent valid JSON data).
 
-## Introducing "Conductors"
+## How Zome Functions Are Called
 
-To discuss the functions developers will build within Zomes, it is useful to zoom out for a moment, to the level of how Holochain runs on devices. Because there was an intention to make Holochain highly platform and system compatible, the core logic was written in such a way that it could be included into many different codebases. Think MacOSX, Linux, Windows, Android, iOS, and more. Thus Holochain core is actually simply a library that needs to be included in another project which mounts, executes and manages it. Because filling this new need is becoming such a foundational aspect of Holochain, it has its' own name: *Conductor*.
-
-Conductors install and uninstall, start and stop instances of DNA on devices. There is one more important function of Conductors: *they create a channel to securely make function calls into the Zome functions of DNA instances*.
-
-Imagine that there are many DNA instances running within one Conductor, and each DNA can have multiple Zomes. Clearly, function calls will need to include a complete enough set of arguments to know the following:
-- which instance?
+Function calls are received by Holochain from client requests (which there are a variety of implementations of, discussed later).  When function calls are being made, they will need to include a complete enough set of arguments to know the following:
 - which Zome?
-- which Capability token?
 - which function?
-- what arguments?
+- what values should the function be called with?
 
-Conductors can implement whatever interfaces to perform these function calls they wish to, opening a wealth of opportunity. Holochain provides two reference Conductors, one for [Nodejs](https://www.npmjs.com/package/@holochain/holochain-nodejs), and the other a [Rust built binary executable](https://github.com/holochain/holochain-rust/tree/develop/conductor). With the Rust built binary Conductor, interfaces for making function calls already includes HTTP and WebSockets. More details about Conductors can be found in [another chapter](../conductors.md), it is simply important context for proceeding.
-
-When a call to a Zome function is being made from the Conductor, it first passes the arguments to Holochain. Before making the function call, Holochain will check the validity of the request, and fail if necessary. If the request is deemed valid, Holochain will mount the WASM code for a Zome using its' WASM interpreter, and then make a function call into it, giving it the arguments given to it in the request. When it receives the response from the WASM, it will then pass that return value as the response to the request. This may sound complex, but that's just what's going on internally, actually using it with an HDK and a Conductor is easy.
+Before making the function call, Holochain will check the validity of the request, and fail if necessary. If the request is deemed valid, Holochain will mount the WASM code for a Zome using its' WASM interpreter, and then make a function call into it, giving it the arguments given to it in the request. When it receives the response from the WASM, it will then pass that return value as the response to the request. This may sound complex, but that's just what's going on internally, actually using it with an HDK and a [Conductor](../conductors.md) (which is discussed later) is easy.
 
 
 ## Building in Rust: Zome Functions
@@ -158,26 +137,7 @@ define_zome! {
 }
 ```
 
-`functions` is where the Capabilities, and function declarations will be made.
-
-### Adding a Capability
-
-A Zome can have multiple Capabilities within it. This is what adding some Capabilities might look like:
-
-```rust
-...
-
-define_zome! {
-    ...
-    capabilities: {
-        public (Public) [read_post]
-        authoring (Assigned) [create_post, update_post]
-        }
-    }
-}
-```
-
-In this example, `public` is the name of a capability which grants `Public` Capbility-type access to the `read_post` function, and `authoring` is the name of a capability which for which token grants can be assigned to specific agents for access to the `create_post` and `update_post` functions.  The implication of `Public` is that from your local device, any request to Holochain to make a function call to this Capability of this Zome will succeed, without needing authorization.
+`functions` is where the function declarations will be made.
 
 ### Adding a Zome Function
 
@@ -226,9 +186,9 @@ Notice right away how the arguments match perfectly with the `inputs: |...|` sec
 
 The name of the function, `handle_send_message` is the same as the name given as the `handler` in the `define_zome!` function declaration.
 
-Within the function, `handle_send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.3/hdk/api/fn.send.html).
+Within the function, `handle_send_message` makes use of a Holochain/HDK function that [sends messages directly node-to-node](https://developer.holochain.org/api/0.0.4-alpha/hdk/api/fn.send.html).
 
-The available functions, their purpose, and how to use them is fully documented elsewhere, in the [API reference](https://developer.holochain.org/api/0.0.3/hdk/api/index.html#functions) and the [List of API Functions](./api_functions.md).
+The available functions, their purpose, and how to use them is fully documented elsewhere, in the [API reference](https://developer.holochain.org/api/0.0.4-alpha/hdk/api/index.html#functions) and the [List of API Functions](./api_functions.md).
 
 In the example, `handle_send_message` simply forwards the result of calling `hdk::send` as its' own result.
 
@@ -252,6 +212,24 @@ define_zome! {
 }
 ```
 
-To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/v0.0.3/hdk-rust/wasm-test/src/lib.rs).
+To see plenty of examples of adding functions, check out a file used for [testing the many capacities of the HDK](https://github.com/holochain/holochain-rust/blob/v0.0.4/hdk-rust/wasm-test/src/lib.rs).
 
-Otherwise, continue reading to learn all about the API Functions and examples of how to use them.
+### Adding Traits:
+
+Here are some sample traits
+
+```rust
+...
+
+define_zome! {
+    ...
+    traits: {
+        hc_public [read_post]
+        authoring [create_post, update_post]
+    }
+}
+```
+
+In this example, `hc_public` is the reserved trait name which create a `Public` Capbility-type grant at genesis time for access to the `read_post` function.  Additionally it names an `authoring` trait the `create_post` and `update_post` functions.
+
+Continue reading to learn all about the API Functions and examples of how to use them.

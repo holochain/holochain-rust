@@ -1,8 +1,10 @@
 use crate::{
     cas::content::{AddressableContent, Content},
     dna::{
-        bridges::Bridge, capabilities::Capability, entry_types::EntryTypeDef,
-        fn_declarations::FnDeclaration, wasm, zome,
+        bridges::Bridge,
+        entry_types::EntryTypeDef,
+        fn_declarations::{FnDeclaration, TraitFns},
+        wasm, zome,
     },
     entry::entry_type::EntryType,
     error::{DnaError, HolochainError},
@@ -122,13 +124,9 @@ impl Dna {
             .ok_or_else(|| DnaError::ZomeNotFound(format!("Zome '{}' not found", &zome_name,)))
     }
 
-    /// Return a Zome's Capability from a Zome and a Capability name.
-    pub fn get_capability<'a>(
-        &'a self,
-        zome: &'a zome::Zome,
-        capability_name: &str,
-    ) -> Option<&'a Capability> {
-        zome.capabilities.get(capability_name)
+    /// Return a Zome's TraitFns from a Zome and a Trait name.
+    pub fn get_trait<'a>(&'a self, zome: &'a zome::Zome, trait_name: &str) -> Option<&'a TraitFns> {
+        zome.traits.get(trait_name)
     }
 
     /// Return a Function declaration from a Zome
@@ -169,24 +167,24 @@ impl Dna {
         Some(&zome.code)
     }
 
-    /// Return a Zome's Capability from a Zome name and Capability name.
-    pub fn get_capability_with_zome_name(
+    /// Return a Zome's Trait functions from a Zome name and trait name.
+    pub fn get_trait_fns_with_zome_name(
         &self,
         zome_name: &str,
-        cap_name: &str,
-    ) -> Result<&Capability, DnaError> {
+        trait_name: &str,
+    ) -> Result<&TraitFns, DnaError> {
         let zome = self.get_zome(zome_name)?;
 
-        // Capability must exist in Zome
-        let cap = self.get_capability(zome, &cap_name);
-        if cap.is_none() {
-            return Err(DnaError::CapabilityNotFound(format!(
-                "Capability '{}' not found in Zome '{}'",
-                &cap_name, &zome_name
+        // Trait must exist in Zome
+        let trait_fns = self.get_trait(zome, &trait_name);
+        if trait_fns.is_none() {
+            return Err(DnaError::TraitNotFound(format!(
+                "Trait '{}' not found in Zome '{}'",
+                &trait_name, &zome_name
             )));
         }
         // Everything OK
-        Ok(cap.unwrap())
+        Ok(trait_fns.unwrap())
     }
 
     /// Return the name of the zome holding a specified app entry_type
@@ -273,9 +271,7 @@ pub mod tests {
                 "zomes": {
                     "test": {
                         "description": "test",
-                        "config": {
-                            "error_handling": "throw-errors"
-                        },
+                        "config": {},
                         "entry_types": {
                             "test": {
                                 "description": "test",
@@ -289,9 +285,8 @@ pub mod tests {
                                 "linked_from": []
                             }
                         },
-                        "capabilities": {
-                            "test": {
-                                "type": "public",
+                        "traits": {
+                            "hc_public": {
                                 "functions": ["test"]
                             }
                         },
@@ -338,32 +333,34 @@ pub mod tests {
     }
 
     #[test]
-    fn test_dna_get_capability() {
+    fn test_dna_get_trait() {
         let dna = test_dna();
         let zome = dna.get_zome("test").unwrap();
-        let result = dna.get_capability(zome, "foo cap");
+        let result = dna.get_trait(zome, "foo trait");
         assert!(result.is_none());
-        let cap = dna.get_capability(zome, "test").unwrap();
-        assert_eq!(
-            format!("{:?}", cap),
-            "Capability { cap_type: Public, functions: [\"test\"] }"
-        );
+        let cap = dna.get_trait(zome, "hc_public").unwrap();
+        assert_eq!(format!("{:?}", cap), "TraitFns { functions: [\"test\"] }");
     }
 
     #[test]
-    fn test_dna_get_capability_with_zome_name() {
+    fn test_dna_get_trait_with_zome_name() {
         let dna = test_dna();
-        let result = dna.get_capability_with_zome_name("foo zome", "foo cap");
+        let result = dna.get_trait_fns_with_zome_name("foo zome", "foo trait");
         assert_eq!(
             format!("{:?}", result),
             "Err(ZomeNotFound(\"Zome \\\'foo zome\\\' not found\"))"
         );
-        let result = dna.get_capability_with_zome_name("test", "foo cap");
-        assert_eq!(format!("{:?}",result),"Err(CapabilityNotFound(\"Capability \\\'foo cap\\\' not found in Zome \\\'test\\\'\"))");
-        let cap = dna.get_capability_with_zome_name("test", "test").unwrap();
+        let result = dna.get_trait_fns_with_zome_name("test", "foo trait");
         assert_eq!(
-            format!("{:?}", cap),
-            "Capability { cap_type: Public, functions: [\"test\"] }"
+            format!("{:?}", result),
+            "Err(TraitNotFound(\"Trait \\\'foo trait\\\' not found in Zome \\\'test\\\'\"))"
+        );
+        let trait_fns = dna
+            .get_trait_fns_with_zome_name("test", "hc_public")
+            .unwrap();
+        assert_eq!(
+            format!("{:?}", trait_fns),
+            "TraitFns { functions: [\"test\"] }"
         );
     }
 

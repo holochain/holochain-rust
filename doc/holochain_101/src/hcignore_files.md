@@ -8,4 +8,6 @@ dist
 .DS_Store
 ```
 
-The `package` command includes patterns inside `.gitignore` files automatically, so you don't have to write everything twice. Also *hidden* files are ignored by default as well.
+The `hc package` command includes patterns inside `.gitignore` files automatically, so you don't have to write everything twice. Also *hidden* files are ignored by default as well.
+
+Because `hc package` will attempt to package everything in the directory that is not explicitly ignored, Holochain will return an error if the DNA package is malformed. It is a common mistake to forget to exclude files or folders in the .hcignore file, so that your DNA will be valid.

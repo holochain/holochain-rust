@@ -420,7 +420,6 @@ fn can_remove_link() {
     assert_eq!(result.unwrap(), JsonString::from(r#"{"Ok":null}"#));
 }
 #[test]
-#[cfg(not(windows))]
 fn can_roundtrip_links() {
     let (mut hc, _) = start_holochain_instance("can_roundtrip_links", "alice");
     // Create links

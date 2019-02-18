@@ -16,7 +16,7 @@ pub fn setup_three_nodes(
     camille: &mut P2pNode,
     can_connect: bool,
 ) -> NetResult<()> {
-    // Send TrackDna message on both nodes
+    // Send TrackDna message on all nodes
     // alex
     alex.send(
         JsonProtocol::TrackDna(TrackDnaData {
@@ -188,6 +188,8 @@ pub fn hold_and_publish_test(
     }
     // Have billy author the same data
     billy.author_entry(&ENTRY_ADDRESS_2, &ENTRY_CONTENT_2, true)?;
+
+    let _msg_count = camille.listen(3000);
 
     // Camille requests that entry
     let fetch_entry = camille.request_entry(ENTRY_ADDRESS_1.clone());

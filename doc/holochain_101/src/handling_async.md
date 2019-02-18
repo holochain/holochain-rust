@@ -16,10 +16,11 @@ If the test just uses `call()` to call that zome function, there is no guarantee
 // If we make the closure `async`, we can use `await` syntax to keep things cleaner
 scenario.run(async (stop, {alice, bob}) => {
     tape("test something", t => {
-        // we can await on `callSync` immediately, causing it to block until network activity has died down
-        const result1 = await alice.callSync('zome', 'cap', 'do_something_that_adds_links', {})
+        // we can await on `callSync` immediately, causing it
+        // to block until network activity has died down
+        const result1 = await alice.callSync('zome', 'do_something_that_adds_links', {})
         // now bob can be sure he has access to the latest data
-        const result2 = bob.call('zome', 'cap', 'get_those_links', {})
+        const result2 = bob.call('zome', 'get_those_links', {})
         t.equal(result, 'expected value')
         // the following two steps were not necessary when using runTape:
         t.end() // end the test

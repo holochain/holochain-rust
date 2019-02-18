@@ -100,6 +100,9 @@ pub enum Action {
     /// Does not validate, assumes link is valid.
     AddLink(Link),
 
+    //Removes a link for the local DHT
+    RemoveLink(Link),
+
     // ----------------
     // Network actions:
     // ----------------
@@ -176,14 +179,14 @@ pub enum Action {
     /// the result is Some arbitrary string
     ReturnInitializationResult(Option<String>),
 
-    /// execute a function in a zome WASM
-    ExecuteZomeFunction(ZomeFnCall),
+    /// Gets dispatched when a zome function call starts.
+    /// There is no reducer for this action so this does not change state
+    /// (hence "Signal").
+    /// Is received as signal in the nodejs waiter to attach wait conditions.
+    SignalZomeFunctionCall(ZomeFnCall),
 
     /// return the result of a zome WASM function call
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
-
-    /// Execute a zome function call called by another zome function
-    Call(ZomeFnCall),
 
     /// A validation result is returned from a local callback execution
     /// Key is an unique id of the calling context

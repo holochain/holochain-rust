@@ -1,6 +1,6 @@
 [package]
 name = "holochain_core"
-version = "0.0.3"
+version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
@@ -31,6 +31,7 @@ num-derive = "0.2"
 config = "0.8"
 regex = "1"
 toml = "0.4.8"
+holochain_common = { path = "../common" }
 holochain_core_types = { path = "../core_types" }
 holochain_core_types_derive = { path = "../core_types_derive" }
 holochain_cas_implementations = { path = "../cas_implementations" }

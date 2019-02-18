@@ -53,26 +53,6 @@ hc_start_bundle_mode();
 hc_end_bundle_mode(FINISH_BUNDLE); // or CANCEL_BUNDLE
 ```
 
-### Reserved Capabilities and functions
-
-Some functions are required for core process/features of Holochain to work.
-They are available in keyword specific Capabilities and function names.
-
-#### LifeCycle Capability
-
-- name: `hc_lifecycle`
-- Functions:
-  - `genesis(...)`
-  - `bridge_genesis(side, dna, appData)`
-  - `migrate(...)`
-
-#### Communication Capability
-
-- name: `hc_web_gateway`
-- Functions:
-  - `receive(from, message)`
-  - `send(...)`
-
 ## Specification as example DNA Manifest
 
 ``` javascript
@@ -160,11 +140,10 @@ They are available in keyword specific Capabilities and function names.
         },
         // ...
       ],
-      // Zome capabilities holding mapping of functions to capabilities
-      "capabilities": {
-        "web_gateway":
+      // Zome traits which group functions for composiblity
+      "traits": {
+        "hc_public":
         {
-          "type": "public",
           "functions": ["getPost"]
         }
       },

@@ -8,6 +8,7 @@ use holochain_net_connection::{
     protocol::Protocol,
     NetResult,
 };
+use std::{thread::sleep, time::Duration};
 
 use super::{ipc_net_worker::IpcNetWorker, memory_worker::InMemoryWorker, p2p_config::*};
 
@@ -49,6 +50,9 @@ impl P2pNetwork {
         };
         // Create NetConnectionThread with appropriate worker factory
         let connection = NetConnectionThread::new(handler, worker_factory, None)?;
+        if let P2pBackendKind::IPC = p2p_config.backend_kind {
+            sleep(Duration::from_millis(1000));
+        }
         // Done
         Ok(P2pNetwork { connection })
     }

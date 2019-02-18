@@ -402,7 +402,7 @@ pub struct Bridge {
     /// This instance depends on the callee.
     pub caller_id: String,
 
-    /// ID of the instance that exposes capabilities through this bridge.
+    /// ID of the instance that exposes traits through this bridge.
     /// This instance is used by the caller.
     pub callee_id: String,
 
@@ -466,10 +466,16 @@ pub struct NetworkConfig {
     pub networking_config_file: Option<String>,
 }
 
+// note that this behaviour is documented within
+// holochain_common::env_vars module and should be updated
+// if this logic changes
 pub fn default_n3h_mode() -> String {
     String::from("HACK")
 }
 
+// note that this behaviour is documented within
+// holochain_common::env_vars module and should be updated
+// if this logic changes
 pub fn default_n3h_path() -> String {
     if let Some(user_dirs) = directories::UserDirs::new() {
         user_dirs
@@ -484,6 +490,9 @@ pub fn default_n3h_path() -> String {
     }
 }
 
+// note that this behaviour is documented within
+// holochain_common::env_vars module and should be updated
+// if this logic changes
 pub fn default_n3h_persistence_path() -> String {
     env::temp_dir().to_string_lossy().to_string()
 }

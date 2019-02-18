@@ -5,7 +5,6 @@ pub mod package;
 mod run;
 mod scaffold;
 pub mod test;
-mod test_context;
 
 pub use self::{
     generate::generate,

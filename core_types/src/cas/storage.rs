@@ -6,13 +6,13 @@
 use crate::{
     cas::content::{Address, AddressableContent, Content},
     eav::{
-        EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage, IndexFilter,
+        Attribute, EavFilter, EaviQuery, EntityAttributeValueIndex, EntityAttributeValueStorage,
+        IndexFilter,
     },
     entry::{test_entry_unique, Entry},
     error::HolochainError,
     json::RawString,
 };
-use eav::Attribute;
 use objekt;
 use std::{
     collections::{BTreeSet, HashMap},

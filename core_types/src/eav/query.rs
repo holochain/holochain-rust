@@ -140,8 +140,10 @@ impl<'a, T: Eq> From<Vec<T>> for EavFilter<'a, T> {
 }
 
 /// Specifies options for filtering on Index:
-/// LatestByAttribute is a special kind of lookup used for links. TODO: describe in words
 /// Range returns all results within a particular range of indices.
+/// LatestByAttribute is more complex. It first does a normal filter by E, A, and V.
+/// Then, for each group of items which differ *only* by Attribute and Index, only the item with
+/// highest Index is retained for that grouping.
 #[derive(Clone, Debug)]
 pub enum IndexFilter {
     LatestByAttribute,

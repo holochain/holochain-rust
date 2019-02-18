@@ -46,3 +46,5 @@ pub mod meta;
 
 pub use crate::api::*;
 pub use holochain_core_types::validation::*;
+
+mod panic_handler;

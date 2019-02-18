@@ -120,7 +120,7 @@ pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -
         // HDK-rust implements a function __panic_handler that reroutes output of
         // PanicInfo to hdk::debug.
         // Try calling it but fail silently if this function is not there.
-        let _ = wasm_instance.invoke_export("__panic_handler", &[], mut_runtime);
+        let _ = wasm_instance.invoke_export("__install_panic_handler", &[], mut_runtime);
 
         // invoke function in wasm instance
         // arguments are info for wasm on how to retrieve complex input arguments

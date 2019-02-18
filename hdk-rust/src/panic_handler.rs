@@ -3,7 +3,7 @@ use holochain_core_types::json::RawString;
 use std::panic;
 
 #[no_mangle]
-pub extern "C" fn __panic_handler() -> () {
+pub extern "C" fn __install_panic_handler() -> () {
     panic::set_hook(Box::new(move |info| {
         let _ = debug(RawString::from(
             info.payload().downcast_ref::<String>().unwrap().clone(),

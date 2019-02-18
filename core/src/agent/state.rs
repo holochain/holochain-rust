@@ -433,9 +433,10 @@ pub mod tests {
                 &test_entry().address(),
                 &[(
                     context.agent_id.address(),
-                    Signature::from(
-                        mock_signer(test_entry().address().to_string(), &context.agent_id)
-                    )
+                    Signature::from(mock_signer(
+                        test_entry().address().to_string(),
+                        &context.agent_id
+                    ))
                 )]
                 .to_vec(),
                 &None,

@@ -60,9 +60,10 @@ impl Context {
     }
 
     #[cfg(not(test))]
-    fn test_check_conductor_api(conductor_api: Option<Arc<RwLock<IoHandler>>>, _agent_id: AgentId)
-        -> Arc<RwLock<IoHandler>>
-    {
+    fn test_check_conductor_api(
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        _agent_id: AgentId,
+    ) -> Arc<RwLock<IoHandler>> {
         // If you get here through this panic make sure that the context passed into the instance
         // gets created with a real container API. In test config it will be populated with mock API
         // that implements agent/sign with the mock_signer. We need this for testing but should
@@ -72,11 +73,14 @@ impl Context {
     }
 
     #[cfg(test)]
-    fn test_check_conductor_api(conductor_api: Option<Arc<RwLock<IoHandler>>>, agent_id: AgentId)
-        -> Arc<RwLock<IoHandler>>
-    {
+    fn test_check_conductor_api(
+        conductor_api: Option<Arc<RwLock<IoHandler>>>,
+        agent_id: AgentId,
+    ) -> Arc<RwLock<IoHandler>> {
         conductor_api
-            .or(Some(Arc::new(RwLock::new(tests::mock_conductor_api(agent_id)))))
+            .or(Some(Arc::new(RwLock::new(tests::mock_conductor_api(
+                agent_id,
+            )))))
             .unwrap()
     }
 
@@ -309,12 +313,12 @@ pub mod tests {
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::agent::{AgentId};
-    use test_utils::TEST_AGENT_KEYS;
+    use holochain_core_types::agent::AgentId;
     use holochain_dpki::keypair::SIGNATURESIZE;
     use holochain_sodium::secbuf::SecBuf;
     use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params};
     use std::sync::{Arc, Mutex, RwLock};
+    use test_utils::TEST_AGENT_KEYS;
 
     /// This is a local mock for the `agent/sign` conductor API function.
     /// It creates a syntactically equivalent signature using dpki::Keypair
@@ -346,7 +350,7 @@ pub mod tests {
     /// Wraps `fn mock_signer(String) -> String` in an `IoHandler` to mock the conductor API
     /// in a way that core can safely assume the conductor API to be present with at least
     /// the `agent/sign` method.
-    pub(in super) fn mock_conductor_api(agent_id: AgentId) -> IoHandler {
+    pub(super) fn mock_conductor_api(agent_id: AgentId) -> IoHandler {
         let mut handler = IoHandler::new();
         handler.add_method("agent/sign", move |params| {
             let params_map = match params {

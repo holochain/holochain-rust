@@ -278,7 +278,7 @@ pub mod tests {
     };
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
-        context::mock_signer, instance::tests::test_context, state::State,
+        context::tests::mock_signer, instance::tests::test_context, state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -433,7 +433,9 @@ pub mod tests {
                 &test_entry().address(),
                 &[(
                     context.agent_id.address(),
-                    Signature::from(mock_signer(test_entry().address().to_string()))
+                    Signature::from(
+                        mock_signer(test_entry().address().to_string(), &context.agent_id)
+                    )
                 )]
                 .to_vec(),
                 &None,

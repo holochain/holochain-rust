@@ -2,7 +2,11 @@ extern crate holochain_cas_implementations;
 extern crate holochain_conductor_api;
 extern crate holochain_core;
 extern crate holochain_core_types;
+extern crate holochain_dpki;
 extern crate holochain_net;
+extern crate holochain_sodium;
+#[macro_use]
+extern crate lazy_static;
 extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
@@ -15,8 +19,8 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::AgentId,
-    cas::content::Address,
+    agent::{AgentId, KeyBuffer},
+    cas::content::{Address, AddressableContent},
     dna::{
         capabilities::CapabilityCall,
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
@@ -269,4 +273,42 @@ where
             _ => continue,
         }
     }
+}
+
+
+use holochain_dpki::keypair::{Keypair, SEEDSIZE};
+use holochain_sodium::secbuf::SecBuf;
+use std::{
+    collections::HashMap,
+};
+
+lazy_static! {
+        pub static ref TEST_AGENT_KEYS: Mutex<HashMap<Address, Arc<Mutex<Keypair>>>>
+            = Mutex::new(HashMap::new());
+    }
+
+pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
+    let nick = nick.into();
+    // Create deterministic seed from nick:
+    let mut seed = SecBuf::with_insecure(SEEDSIZE);
+    let nick_bytes = nick.as_bytes();
+    let seed_bytes: Vec<u8> = (1..SEEDSIZE).map(|num| {
+        if num < nick_bytes.len(){
+            nick_bytes[num]
+        } else {
+            num as u8
+        }
+    }).collect();
+
+    seed.write(0, seed_bytes.as_slice())
+        .expect("SecBuf must be writeable");
+
+    // Create keypair from seed:
+    let keypair = Keypair::new_from_seed(&mut seed).unwrap();
+    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
+    let agent_id = AgentId::new(&nick, &pub_key);
+
+    // Register key in static TEST_AGENT_KEYS
+    TEST_AGENT_KEYS.lock().unwrap().insert(agent_id.address(), Arc::new(Mutex::new(keypair)));
+    agent_id
 }

@@ -6,7 +6,6 @@ use crate::{
     signal::{Signal, SignalSender},
     state::State,
 };
-use base64;
 use futures::{
     task::{noop_local_waker_ref, Poll},
     Future,
@@ -22,12 +21,9 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
 };
 
-use holochain_dpki::keypair::{Keypair, SEEDSIZE, SIGNATURESIZE};
-use holochain_sodium::secbuf::SecBuf;
-
 use holochain_net::p2p_config::P2pConfig;
 use jsonrpc_lite::JsonRpc;
-use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params, IoHandler};
+use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -37,64 +33,6 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-
-/// This is a local mock for the `agent/sign` conductor API function.
-/// It creates a syntactically equivalent signature using dpki::Keypair
-/// but with key generated from a static/deterministic mock seed.
-/// This enables unit testing of core code that creates signatures without
-/// depending on the conductor or actual key files.
-pub fn mock_signer(payload: String) -> String {
-    // Create deterministic seed:
-    let mut seed = SecBuf::with_insecure(SEEDSIZE);
-    let mock_seed: Vec<u8> = (1..SEEDSIZE).map(|num| num as u8).collect();
-
-    seed.write(0, mock_seed.as_slice())
-        .expect("SecBuf must be writeable");
-
-    // Create keypair from seed:
-    let mut keypair = Keypair::new_from_seed(&mut seed).unwrap();
-
-    // Convert payload string into a SecBuf
-    let mut message = SecBuf::with_insecure_from_string(payload);
-
-    // Create signature
-    let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
-    keypair.sign(&mut message, &mut message_signed).unwrap();
-    let message_signed = message_signed.read_lock();
-
-    // Return as base64 encoded string
-    base64::encode(&**message_signed)
-}
-
-/// Wraps `fn mock_signer(String) -> String` in an `IoHandler` to mock the conductor API
-/// in a way that core can safely assume the conductor API to be present with at least
-/// the `agent/sign` method.
-fn mock_conductor_api() -> IoHandler {
-    let mut handler = IoHandler::new();
-    handler.add_method("agent/sign", move |params| {
-        let params_map = match params {
-            Params::Map(map) => Ok(map),
-            _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
-        }?;
-
-        let key = "payload";
-        let payload = Ok(params_map
-            .get(key)
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` param not provided",
-                key
-            )))?
-            .as_str()
-            .ok_or(jsonrpc_core::Error::invalid_params(format!(
-                "`{}` is not a valid json string",
-                key
-            )))?
-            .to_string())?;
-
-        Ok(json!({"payload": payload, "signature": mock_signer(payload)}))
-    });
-    handler
-}
 
 /// Context holds the components that parts of a Holochain instance need in order to operate.
 /// This includes components that are injected from the outside like logger and persister
@@ -121,6 +59,27 @@ impl Context {
         100
     }
 
+    #[cfg(not(test))]
+    fn test_check_conductor_api(conductor_api: Option<Arc<RwLock<IoHandler>>>, _agent_id: AgentId)
+        -> Arc<RwLock<IoHandler>>
+    {
+        // If you get here through this panic make sure that the context passed into the instance
+        // gets created with a real container API. In test config it will be populated with mock API
+        // that implements agent/sign with the mock_signer. We need this for testing but should
+        // never use that code in production!
+        // Hence the two different cases here.
+        conductor_api.expect("Context can't be created without conductor API")
+    }
+
+    #[cfg(test)]
+    fn test_check_conductor_api(conductor_api: Option<Arc<RwLock<IoHandler>>>, agent_id: AgentId)
+        -> Arc<RwLock<IoHandler>>
+    {
+        conductor_api
+            .or(Some(Arc::new(RwLock::new(tests::mock_conductor_api(agent_id)))))
+            .unwrap()
+    }
+
     pub fn new(
         agent_id: AgentId,
         logger: Arc<Mutex<Logger>>,
@@ -133,7 +92,7 @@ impl Context {
         signal_tx: Option<SignalSender>,
     ) -> Self {
         Context {
-            agent_id,
+            agent_id: agent_id.clone(),
             logger,
             persister,
             state: None,
@@ -144,9 +103,7 @@ impl Context {
             dht_storage,
             eav_storage: eav,
             p2p_config,
-            conductor_api: conductor_api
-                .or(Some(Arc::new(RwLock::new(mock_conductor_api()))))
-                .unwrap(),
+            conductor_api: Self::test_check_conductor_api(conductor_api, agent_id),
         }
     }
 
@@ -162,7 +119,7 @@ impl Context {
         p2p_config: P2pConfig,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
-            agent_id,
+            agent_id: agent_id.clone(),
             logger,
             persister,
             state: None,
@@ -173,7 +130,7 @@ impl Context {
             dht_storage: cas,
             eav_storage: eav,
             p2p_config,
-            conductor_api: Arc::new(RwLock::new(mock_conductor_api())),
+            conductor_api: Self::test_check_conductor_api(None, agent_id),
         })
     }
 
@@ -352,8 +309,69 @@ pub mod tests {
     use super::*;
     use crate::{logger::test_logger, persister::SimplePersister, state::State};
     use holochain_cas_implementations::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-    use holochain_core_types::agent::AgentId;
+    use holochain_core_types::agent::{AgentId};
+    use test_utils::TEST_AGENT_KEYS;
+    use holochain_dpki::keypair::SIGNATURESIZE;
+    use holochain_sodium::secbuf::SecBuf;
+    use jsonrpc_ws_server::jsonrpc_core::{self, types::params::Params};
     use std::sync::{Arc, Mutex, RwLock};
+
+    /// This is a local mock for the `agent/sign` conductor API function.
+    /// It creates a syntactically equivalent signature using dpki::Keypair
+    /// but with key generated from a static/deterministic mock seed.
+    /// This enables unit testing of core code that creates signatures without
+    /// depending on the conductor or actual key files.
+    pub fn mock_signer(payload: String, agent_id: &AgentId) -> String {
+        TEST_AGENT_KEYS
+            .lock()
+            .unwrap()
+            .get(&agent_id.address())
+            .expect("Test agent keys need to be registered first")
+            .lock()
+            .map(|mut keypair| {
+                // Convert payload string into a SecBuf
+                let mut message = SecBuf::with_insecure_from_string(payload);
+
+                // Create signature
+                let mut message_signed = SecBuf::with_insecure(SIGNATURESIZE);
+                keypair.sign(&mut message, &mut message_signed).unwrap();
+                let message_signed = message_signed.read_lock();
+
+                // Return as base64 encoded string
+                base64::encode(&**message_signed)
+            })
+            .unwrap()
+    }
+
+    /// Wraps `fn mock_signer(String) -> String` in an `IoHandler` to mock the conductor API
+    /// in a way that core can safely assume the conductor API to be present with at least
+    /// the `agent/sign` method.
+    pub(in super) fn mock_conductor_api(agent_id: AgentId) -> IoHandler {
+        let mut handler = IoHandler::new();
+        handler.add_method("agent/sign", move |params| {
+            let params_map = match params {
+                Params::Map(map) => Ok(map),
+                _ => Err(jsonrpc_core::Error::invalid_params("expected params map")),
+            }?;
+
+            let key = "payload";
+            let payload = Ok(params_map
+                .get(key)
+                .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                    "`{}` param not provided",
+                    key
+                )))?
+                .as_str()
+                .ok_or(jsonrpc_core::Error::invalid_params(format!(
+                    "`{}` is not a valid json string",
+                    key
+                )))?
+                .to_string())?;
+
+            Ok(json!({"payload": payload, "signature": mock_signer(payload, &agent_id)}))
+        });
+        handler
+    }
 
     #[test]
     fn default_buffer_size_test() {

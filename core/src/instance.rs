@@ -313,6 +313,8 @@ pub mod tests {
         time::Duration,
     };
 
+    use test_utils::registered_test_agent;
+
     use holochain_core_types::entry::Entry;
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
@@ -321,7 +323,7 @@ pub mod tests {
         agent_name: &str,
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-        let agent = AgentId::generate_fake(agent_name);
+        let agent = registered_test_agent(agent_name);
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
@@ -390,7 +392,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
         ));
         let mut context = Context::new(
-            AgentId::generate_fake("Florence"),
+            registered_test_agent("Florence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(file_storage.clone()))),
             file_storage.clone(),
@@ -414,7 +416,7 @@ pub mod tests {
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
         let cas = Arc::new(RwLock::new(file_system.clone()));
         let mut context = Context::new(
-            AgentId::generate_fake("Florence"),
+            registered_test_agent("Florence"),
             test_logger(),
             Arc::new(Mutex::new(SimplePersister::new(cas.clone()))),
             cas.clone(),

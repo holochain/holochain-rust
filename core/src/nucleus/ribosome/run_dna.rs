@@ -117,7 +117,7 @@ pub fn run_dna(wasm: Vec<u8>, parameters: Option<Vec<u8>>, data: WasmCallData) -
         let mut_runtime = &mut runtime;
 
         // Try installing a custom panic handler.
-        // HDK-rust implements a function __panic_handler that reroutes output of
+        // HDK-rust implements a function __install_panic_handler that reroutes output of
         // PanicInfo to hdk::debug.
         // Try calling it but fail silently if this function is not there.
         let _ = wasm_instance.invoke_export("__install_panic_handler", &[], mut_runtime);

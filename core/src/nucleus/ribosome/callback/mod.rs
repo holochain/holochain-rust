@@ -9,13 +9,16 @@ pub mod validation_package;
 
 use crate::{
     context::Context,
-    nucleus::ribosome::{
-        self,
-        callback::{genesis::genesis, receive::receive},
-        capabilities::CapabilityRequest,
-        fn_call::{make_cap_request_for_call, ZomeFnCall},
-        runtime::WasmCallData,
-        Defn,
+    nucleus::{
+        actions::call_zome_function::make_cap_request_for_call,
+        ribosome::{
+            self,
+            callback::{genesis::genesis, receive::receive},
+            capabilities::CapabilityRequest,
+            runtime::WasmCallData,
+            Defn,
+        },
+        ZomeFnCall,
     },
 };
 use holochain_core_types::{
@@ -323,7 +326,6 @@ pub mod tests {
     ) -> Result<Instance, String> {
         let dna =
             test_utils::create_test_dna_with_wasm(zome, test_callback_wasm(canonical_name, result));
-
         test_instance(dna, network_name)
     }
 

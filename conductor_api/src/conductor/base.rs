@@ -623,7 +623,7 @@ pub mod tests {
     use super::*;
     use crate::config::load_configuration;
     use holochain_core::{
-        action::Action, nucleus::ribosome::fn_call::make_cap_request_for_call,
+        action::Action, nucleus::actions::call_zome_function::make_cap_request_for_call,
         signal::signal_channel,
     };
     use holochain_core_types::{cas::content::Address, dna, json::RawString};

@@ -43,7 +43,7 @@ pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         options: Default::default(),
     };
     let maybe_entry_result = zome_call_data.context.block_on(get_entry_result_workflow(
-        &zome_call_data.context.clone(),
+        &zome_call_data.context,
         &get_args,
     ));
     if let Err(_err) = maybe_entry_result {

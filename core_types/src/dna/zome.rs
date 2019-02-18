@@ -4,6 +4,7 @@ use crate::{
     dna::{
         bridges::{Bridge, BridgePresence},
         fn_declarations::{FnDeclaration, FnParameter, TraitFns},
+        traits::ReservedTraitNames,
         wasm::DnaWasm,
     },
     entry::entry_type::EntryType,
@@ -136,6 +137,17 @@ impl Zome {
         self.fn_declarations
             .iter()
             .find(|ref fn_decl| fn_decl.name == fn_name)
+    }
+
+    // Helper function for finding out if a given function call is public
+    pub fn is_fn_public(&self, fn_name: &String) -> bool {
+        let pub_trait = ReservedTraitNames::Public.as_str().to_string();
+        self.traits
+            .iter()
+            .find(|(trait_name, trait_fns)| {
+                trait_name.to_string() == pub_trait && trait_fns.functions.contains(fn_name)
+            })
+            .is_some()
     }
 }
 

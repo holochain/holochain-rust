@@ -351,6 +351,13 @@ pub mod tests {
             format!("{:?}", trait_fns),
             "TraitFns { functions: [\"test\"] }"
         );
+        let trait_fns = dna
+            .get_trait_fns_with_zome_name("test", "hc_public")
+            .unwrap();
+        assert_eq!(
+            format!("{:?}", trait_fns),
+            "TraitFns { functions: [\"test\"] }"
+        );
     }
 
     #[test]

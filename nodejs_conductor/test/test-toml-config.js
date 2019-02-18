@@ -17,7 +17,7 @@ public_address = "sandwich------------------------------------------------------
 
 [[dnas]]
 id = "test/dna"
-file = "../app_spec/dist/app_spec.hcpkg"
+file = "test/test-bundle.json"
 hash = "Qm328wyq38924y"
 
 [[instances]]
@@ -47,6 +47,23 @@ id = "test/instance/2"
 [logger]
 type = "debug"
 `
+
+test('can create config from TOML (run)', t => {
+    Conductor.run(toml, (stop, conductor) => {
+        t.throws(
+            () => conductor.call('x', 'x', 'x', 'x'),
+            /No instance with id/
+        )
+        t.throws(
+            () => conductor.call(
+                'test/instance/1', 'blog', 'not-a-function', 'param'
+            ),
+            /Zome function .*? not found/
+        )
+        stop()
+        t.end()
+    })
+})
 
 test('can create config from TOML', t => {
     const conductor = new Conductor(toml)

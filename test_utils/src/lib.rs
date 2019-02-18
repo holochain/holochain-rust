@@ -13,8 +13,8 @@ use holochain_core::{
     context::Context,
     logger::{test_logger, TestLogger},
     signal::Signal,
-    nucleus::ribosome::fn_call::make_cap_request_for_call,
-};
+    nucleus::actions::call_zome_function::make_cap_request_for_call,
+    };
 use holochain_core_types::{
     agent::AgentId,
     cas::content::Address,

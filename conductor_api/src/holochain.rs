@@ -64,10 +64,7 @@ use crate::error::{HolochainInstanceError, HolochainResult};
 use holochain_core::{
     context::Context,
     instance::Instance,
-    nucleus::ribosome::{
-        capabilities::CapabilityRequest,
-        fn_call::{call_and_wait_for_result, ZomeFnCall},
-    },
+    nucleus::{call_zome_function, ribosome::capabilities::CapabilityRequest, ZomeFnCall},
     persister::{Persister, SimplePersister},
     state::State,
 };
@@ -155,7 +152,8 @@ impl Holochain {
         }
 
         let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, String::from(params));
-        Ok(call_and_wait_for_result(zome_call, &mut self.instance)?)
+        let context = self.context();
+        Ok(context.block_on(call_zome_function(zome_call, context))?)
     }
 
     /// checks to see if an instance is active
@@ -183,7 +181,7 @@ mod tests {
         action::Action,
         context::Context,
         logger::{test_logger, TestLogger},
-        nucleus::ribosome::{capabilities::CapabilityRequest, fn_call::make_cap_request_for_call},
+        nucleus::{actions::call_zome_function, ribosome::capabilities::CapabilityRequest},
         signal::{signal_channel, SignalReceiver},
     };
     use holochain_core_types::{agent::AgentId, cas::content::Address, dna::Dna, json::RawString};

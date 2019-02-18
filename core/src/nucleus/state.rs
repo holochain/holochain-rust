@@ -1,4 +1,4 @@
-use crate::nucleus::{actions::initialize::Initialization, ribosome::fn_call::ZomeFnCall};
+use crate::nucleus::{actions::initialize::Initialization, ZomeFnCall};
 use holochain_core_types::{
     cas::content::Address, dna::Dna, error::HolochainError, json::JsonString,
     validation::ValidationPackage,

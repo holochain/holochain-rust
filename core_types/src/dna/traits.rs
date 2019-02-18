@@ -1,10 +1,6 @@
-//! File holding all the structs for handling capabilities
+//! Module for zome trait structures
 
 use std::str::FromStr;
-
-//--------------------------------------------------------------------------------------------------
-// Reserved Trait names
-//--------------------------------------------------------------------------------------------------
 
 #[derive(Debug, PartialEq)]
 /// Enumeration of all Traits known and used by HC Core
@@ -12,6 +8,8 @@ use std::str::FromStr;
 pub enum ReservedTraitNames {
     /// Development placeholder, no production fn should use MissingNo
     MissingNo,
+
+    /// used for declaring functions that will auto-generate a public grant during genesis
     Public,
 }
 
@@ -53,7 +51,7 @@ mod tests {
 
     #[test]
     /// test that a canonical string can be created from ReservedTraitNames
-    fn test_traits_as_str() {
+    fn test_reserved_traits_as_str() {
         assert_eq!(ReservedTraitNames::Public.as_str(), "hc_public");
     }
 }

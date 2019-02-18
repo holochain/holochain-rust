@@ -840,7 +840,6 @@ pub mod tests {
     }
 
     #[test]
-    #[cfg(feature = "broken-tests")] // too slow or blocked.
     fn test_call_assigned() {
         let dna = setup_dna_for_test(false);
         let test_setup = setup_test(dna);
@@ -891,50 +890,6 @@ pub mod tests {
             "{}",
         );
         test_reduce_call(&test_setup, cap_request, success_expected());
-    }
-
-    #[test]
-    fn test_call_signatures() {
-        let context1 = test_context("alice", None);
-        let context2 = test_context("bob", None);
-
-        // only exact same call signed by the same person should verify
-        let call_sig1 = make_call_sig(context1.clone(), "func", "{}");
-        assert!(verify_call_sig(context1.clone(), &call_sig1, "func", "{}"));
-        assert!(!verify_call_sig(
-            context1.clone(),
-            &call_sig1,
-            "func1",
-            "{}"
-        ));
-        assert!(!verify_call_sig(context1, &call_sig1, "func", "{\"x\":1}"));
-
-        assert!(!verify_call_sig(context2.clone(), &call_sig1, "func", "{}"));
-        assert!(!verify_call_sig(
-            context2.clone(),
-            &call_sig1,
-            "func1",
-            "{}"
-        ));
-        assert!(!verify_call_sig(context2, &call_sig1, "func", "{\"x\":1}"));
-    }
-
-    #[test]
-    fn test_make_cap_request_for_call() {
-        let context = test_context("alice", None);
-        let cap_request = make_cap_request_for_call(
-            context.clone(),
-            dummy_capability_token(),
-            Address::from("caller"),
-            "some_fn",
-            "{}",
-        );
-        assert_eq!(cap_request.cap_token, dummy_capability_token());
-        assert_eq!(cap_request.provenance.0, Address::from("caller"));
-        assert_eq!(
-            cap_request.provenance.1,
-            make_call_sig(context, "some_fn", "{}")
-        );
     }
 
     #[test]
@@ -1012,45 +967,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_agent_as_token() {
-        let context = test_context("alice", None);
-        let agent_token = Address::from(context.agent_id.key.clone());
-        let cap_request = make_cap_request_for_call(
-            context.clone(),
-            agent_token.clone(),
-            agent_token.clone(),
-            "test",
-            "{}",
-        );
-        assert!(is_token_the_agent(context.clone(), &cap_request));
-
-        // bogus token should fail
-        let cap_request = CapabilityRequest::new(
-            Address::from("fake_token"),
-            Address::from("someone"),
-            Signature::fake(),
-        );
-        assert!(!is_token_the_agent(context, &cap_request));
-    }
-
-    #[test]
-    fn test_get_grant() {
-        let dna = setup_dna_for_test(false);
-        let test_setup = setup_test(dna);
-        let grant = CapTokenGrant::create(
-            CapabilityType::Transferable,
-            None,
-            vec![String::from("test")],
-        )
-        .unwrap();
-        let grant_entry = Entry::CapTokenGrant(grant.clone());
-        let grant_addr = block_on(author_entry(&grant_entry, None, &test_setup.context)).unwrap();
-        let context = test_setup.context;
-        let maybe_grant = get_grant(context.clone(), &grant_addr);
-        assert_eq!(maybe_grant, Some(grant));
-    }
-
-    #[test]
     fn test_check_capability_transferable() {
         let dna = setup_dna_for_test(false);
         let test_setup = setup_test(dna);
@@ -1095,153 +1011,4 @@ pub mod tests {
         assert!(check_capability(context.clone(), &zome_call));
     }
 
-    #[test]
-    fn test_verify_grant() {
-        let context = test_context("alice", None);
-        let test_address1 = Address::from("agent 1");
-        let test_address2 = Address::from("some other identity");
-
-        fn zome_call_valid(context: Arc<Context>, token: &Address, addr: &Address) -> ZomeFnCall {
-            ZomeFnCall::new(
-                "test_zome",
-                make_cap_request_for_call(
-                    context.clone(),
-                    token.clone(),
-                    addr.clone(),
-                    "test",
-                    "{}",
-                ),
-                "test",
-                "{}",
-            )
-        }
-
-        let zome_call_from_addr1_bad_token = &ZomeFnCall::new(
-            "test_zome",
-            make_cap_request_for_call(
-                context.clone(),
-                Address::from("bad token"),
-                test_address1.clone(),
-                "test",
-                "{}",
-            ),
-            "test",
-            "{}",
-        );
-
-        let grant = CapTokenGrant::create(CapabilityType::Public, None, vec![String::from("test")])
-            .unwrap();
-        let token = grant.token();
-        assert!(verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_valid(context.clone(), &token, &test_address1)
-        ));
-        assert!(!verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_from_addr1_bad_token
-        ));
-
-        let grant_for_other_fn = CapTokenGrant::create(
-            CapabilityType::Transferable,
-            None,
-            vec![String::from("other_fn")],
-        )
-        .unwrap();
-        assert!(!verify_grant(
-            context.clone(),
-            &grant_for_other_fn,
-            &zome_call_valid(context.clone(), &grant_for_other_fn.token(), &test_address1)
-        ));
-
-        let grant = CapTokenGrant::create(
-            CapabilityType::Transferable,
-            None,
-            vec![String::from("test")],
-        )
-        .unwrap();
-
-        let token = grant.token();
-        assert!(!verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_from_addr1_bad_token
-        ));
-
-        // call with cap_request for a different function than the zome call
-        let zome_call_from_addr1_bad_cap_request = &ZomeFnCall::new(
-            "test_zome",
-            make_cap_request_for_call(
-                context.clone(),
-                token.clone(),
-                test_address1.clone(),
-                "foo-fn",
-                "{}",
-            ),
-            "test",
-            "{}",
-        );
-        assert!(!verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_from_addr1_bad_cap_request
-        ));
-
-        assert!(verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_valid(context.clone(), &token, &test_address1)
-        ));
-        // should work with same token from a different adddress
-        assert!(verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_valid(context.clone(), &token, &test_address2)
-        ));
-
-        let grant = CapTokenGrant::create(
-            CapabilityType::Assigned,
-            Some(vec![test_address1.clone()]),
-            vec![String::from("test")],
-        )
-        .unwrap();
-        let token = grant.token();
-        assert!(!verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_from_addr1_bad_token
-        ));
-
-        // call with cap_request for a different function than the zome call
-        let zome_call_from_addr1_bad_cap_request = &ZomeFnCall::new(
-            "test_zome",
-            make_cap_request_for_call(
-                context.clone(),
-                token.clone(),
-                test_address1.clone(),
-                "foo-fn",
-                "{}",
-            ),
-            "test",
-            "{}",
-        );
-        assert!(!verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_from_addr1_bad_cap_request
-        ));
-
-        assert!(verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_valid(context.clone(), &token, &test_address1)
-        ));
-        // should NOT work with same token from a different adddress
-        assert!(!verify_grant(
-            context.clone(),
-            &grant,
-            &zome_call_valid(context.clone(), &token, &test_address2)
-        ));
-    }
 }

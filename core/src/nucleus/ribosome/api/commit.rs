@@ -18,7 +18,7 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         Ok(entry_input) => entry_input,
         // Exit on error
         Err(_) => {
-            zome_call_data.context.clone().log(format!(
+            zome_call_data.context.log(format!(
                 "err/zome: invoke_commit_app_entry failed to deserialize Entry: {:?}",
                 args_str
             ));
@@ -28,7 +28,6 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
     // Wait for future to be resolved
     let task_result: Result<Address, HolochainError> = zome_call_data
         .context
-        .clone()
         .block_on(author_entry(&entry, None, &zome_call_data.context));
 
     runtime.store_result(task_result)

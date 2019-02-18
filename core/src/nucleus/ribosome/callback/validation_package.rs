@@ -1,11 +1,13 @@
 extern crate serde_json;
 use crate::{
     context::Context,
-    nucleus::ribosome::{
-        self,
-        callback::{links_utils, make_internal_capability_call, CallbackResult},
-        fn_call::ZomeFnCall,
-        runtime::WasmCallData,
+    nucleus::{
+        ribosome::{
+            self,
+            callback::{links_utils, make_internal_capability_call, CallbackResult},
+            runtime::WasmCallData,
+        },
+        ZomeFnCall,
     },
 };
 use holochain_core_types::{
@@ -95,6 +97,51 @@ pub fn get_validation_package_definition(
                 wasm.code.clone(),
                 Some(call.parameters.into_bytes()),
                 WasmCallData::new_zome_call(context.clone(), dna.name, call),
+            )?
+        }
+        EntryType::LinkRemove => {
+            let link_remove = match entry {
+                Entry::LinkRemove(link_remove) => link_remove,
+                _ => {
+                    return Err(HolochainError::ValidationFailed(
+                        "Failed to extract LinkRemove".into(),
+                    ));
+                }
+            };
+            let (base, target) = links_utils::get_link_entries(link_remove.link(), &context)?;
+
+            let link_definition_path = links_utils::find_link_definition_in_dna(
+                &base.entry_type(),
+                link_remove.link().tag(),
+                &target.entry_type(),
+                &context,
+            )?;
+
+            let wasm = context
+                .get_wasm(&link_definition_path.zome_name)
+                .expect("Couldn't get WASM for zome");
+
+            let params = LinkValidationPackageArgs {
+                entry_type: link_definition_path.entry_type_name,
+                tag: link_definition_path.tag,
+                direction: link_definition_path.direction,
+            };
+
+            let call = ZomeFnCall::new(
+                &link_definition_path.zome_name,
+                make_internal_capability_call(
+                    context.clone(),
+                    "__hdk_get_validation_package_for_link",
+                    params.clone().into(),
+                ),
+                "__hdk_get_validation_package_for_link",
+                params,
+            );
+
+            ribosome::run_dna(
+                wasm.code.clone(),
+                Some(call.parameters.into_bytes()),
+                WasmCallData::new_zome_call(context.clone(), dna.name.clone(), call),
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

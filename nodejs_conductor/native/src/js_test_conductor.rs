@@ -16,7 +16,7 @@ use holochain_conductor_api::{
 use holochain_core::{
     action::Action,
     signal::{signal_channel, Signal, SignalReceiver},
-    nucleus::ribosome::fn_call::make_cap_request_for_call,
+    nucleus::actions::call_zome_function::make_cap_request_for_call,
 };
 use holochain_core_types::{
     cas::content::{Address, AddressableContent},
@@ -177,7 +177,8 @@ declare_types! {
             };
 
             let res_string = call_result.or_else(|e| {
-                let error_string = cx.string(format!("unable to call zome function: {:?}", &e));
+                let error_string = cx.string(format!("unable to call zome {:?} function {:?}: {:?}",
+                                                     zome, fn_name, &e));
                 cx.throw(error_string)
             })?;
 

@@ -215,7 +215,7 @@ impl From<RibosomeErrorCode> for String {
 impl RibosomeErrorCode {
     pub fn from_code_int(code: RibosomeCodeBits) -> Self {
         match code {
-            0 => unreachable!(),
+            0 => panic!(format!("RibosomeErrorCode == {:?} encountered", code)),
             2 => ArgumentDeserializationFailed,
             3 => OutOfMemory,
             4 => ReceivedWrongActionResult,
@@ -232,7 +232,10 @@ impl RibosomeErrorCode {
     pub fn from_return_code(ret_code: RibosomeEncodedValue) -> Self {
         match ret_code {
             Failure(rib_err) => rib_err,
-            _ => unreachable!(),
+            _ => panic!(format!(
+                "RibosomeEncodedValue == {:?} encountered",
+                ret_code
+            )),
         }
     }
 }

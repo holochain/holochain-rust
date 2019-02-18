@@ -40,14 +40,17 @@ pub mod tests {
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::tests::{test_context_and_logger, test_instance},
-        nucleus::ribosome::{
-            self,
-            api::{
-                commit::tests::test_commit_args_bytes,
-                tests::{test_parameters, test_zome_name},
+        nucleus::{
+            ribosome::{
+                self,
+                api::{
+                    commit::tests::test_commit_args_bytes,
+                    tests::{test_parameters, test_zome_name},
+                },
+                runtime::WasmCallData,
             },
-            fn_call::{tests::test_capability_call, ZomeFnCall},
-            runtime::WasmCallData,
+            tests::test_capability_call,
+            ZomeFnCall,
         },
     };
     use holochain_core_types::{
@@ -214,7 +217,7 @@ pub mod tests {
         let call_result = ribosome::run_dna(
             wasm.clone(),
             Some(test_commit_args_bytes()),
-            WasmCallData::new_zome_call(Arc::clone(&context), dna.name.to_string(), commit_call),
+            WasmCallData::new_zome_call(Arc::clone(&context), dna.name.clone(), commit_call),
         )
         .expect("test should be callable");
 
@@ -236,7 +239,7 @@ pub mod tests {
         let call_result = ribosome::run_dna(
             wasm.clone(),
             Some(test_get_args_bytes()),
-            WasmCallData::new_zome_call(Arc::clone(&context), dna.name.to_string(), get_call),
+            WasmCallData::new_zome_call(Arc::clone(&context), dna.name, get_call),
         )
         .expect("test should be callable");
 

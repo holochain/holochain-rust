@@ -1,7 +1,7 @@
 use holochain_core::{
     action::{Action, ActionWrapper},
     network::entry_with_header::EntryWithHeader,
-    nucleus::ribosome::fn_call::ZomeFnCall,
+    nucleus::ZomeFnCall,
     signal::{Signal, SignalReceiver},
 };
 use holochain_core_types::entry::Entry;
@@ -161,8 +161,8 @@ impl Waiter {
             Signal::Internal(ref aw) => {
                 let aw = aw.clone();
                 match (self.current_checker(), aw.action().clone()) {
-                    // Pair every `ExecuteZomeFunction` with one `ReturnZomeFunctionResult`
-                    (_, Action::ExecuteZomeFunction(call)) => match self.sender_rx.try_recv() {
+                    // Pair every `SignalZomeFunctionCall` with one `ReturnZomeFunctionResult`
+                    (_, Action::SignalZomeFunctionCall(call)) => match self.sender_rx.try_recv() {
                         Ok(sender) => {
                             self.add_call(call.clone(), sender);
                             self.current_checker().unwrap().add(1, move |aw| {
@@ -203,13 +203,17 @@ impl Waiter {
                                     *aw.action() == Action::AddLink(link_add.clone().link().clone())
                                 });
                             }
-                            // Pair every `LinkRemove` with N `Hold`s
-                            Entry::LinkRemove(_link_remove) => {
+                            Entry::LinkRemove(link_remove) => {
+                                // Pair every `LinkRemove` with N `Hold`s
                                 checker.add(num_instances, move |aw| match aw.action() {
                                     Action::Hold(EntryWithHeader { entry, header: _ }) => {
                                         *entry == committed_entry
                                     }
                                     _ => false,
+                                });
+                                checker.add(num_instances, move |aw| {
+                                    *aw.action()
+                                        == Action::RemoveLink(link_remove.clone().link().clone())
                                 });
                             }
                             _ => (),
@@ -332,8 +336,9 @@ impl Task for MainBackgroundTask {
 #[cfg(test)]
 mod tests {
     use super::{Action::*, *};
-    use holochain_core::nucleus::ribosome::{
-        capabilities::CapabilityRequest, fn_call::ExecuteZomeFnResponse,
+    use holochain_core::nucleus::{
+        actions::call_zome_function::ExecuteZomeFnResponse,
+        ribosome::capabilities::CapabilityRequest,
     };
     use holochain_core_types::{
         cas::content::Address, chain_header::test_chain_header, entry::Entry, json::JsonString,
@@ -435,7 +440,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -464,7 +469,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -503,7 +508,7 @@ mod tests {
 
         // an "unregistered" zome call (not using `callSync` or `callWithPromise`)
         assert_eq!(waiter.checkers.len(), 0);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_1.clone())));
         assert_eq!(waiter.checkers.len(), 0);
         waiter.process_signal(sig(Commit((entry_1.clone(), None))));
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_1.clone()))));
@@ -515,7 +520,7 @@ mod tests {
         // which shouldn't change the checkers count yet
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_2.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 
@@ -533,7 +538,7 @@ mod tests {
 
         // one more unregistered function call
         assert_eq!(waiter.checkers.len(), 1);
-        waiter.process_signal(sig(ExecuteZomeFunction(call_3.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_3.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         waiter.process_signal(sig(Commit((entry_4.clone(), None))));
         waiter.process_signal(sig(ReturnZomeFunctionResult(zf_response(call_3.clone()))));
@@ -556,7 +561,7 @@ mod tests {
     fn can_await_links() {
         let (mut waiter, sender_tx) = test_waiter();
         let call = zf_call("c1");
-        let link_add = LinkAdd::new(
+        let link_add = LinkData::new_add(
             &"base".to_string().into(),
             &"target".to_string().into(),
             "tag",
@@ -567,7 +572,7 @@ mod tests {
         let control_rx = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call), 1);
 
@@ -603,7 +608,7 @@ mod tests {
         let control_rx_1 = test_register(&sender_tx);
         assert_eq!(waiter.checkers.len(), 0);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_1.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_1.clone())));
         assert_eq!(waiter.checkers.len(), 1);
         assert_eq!(num_conditions(&waiter, &call_1), 1);
 
@@ -618,7 +623,7 @@ mod tests {
         // which shouldn't change the checkers count yet
         assert_eq!(waiter.checkers.len(), 1);
 
-        waiter.process_signal(sig(ExecuteZomeFunction(call_2.clone())));
+        waiter.process_signal(sig(SignalZomeFunctionCall(call_2.clone())));
         assert_eq!(waiter.checkers.len(), 2);
         assert_eq!(num_conditions(&waiter, &call_2), 1);
 

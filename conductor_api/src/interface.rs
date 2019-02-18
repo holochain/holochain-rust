@@ -1,4 +1,6 @@
-use holochain_core::{nucleus::ribosome::fn_call::make_cap_request_for_call, state::State};
+use holochain_core::{
+    nucleus::actions::call_zome_function::make_cap_request_for_call, state::State,
+};
 use holochain_core_types::cas::content::Address;
 use Holochain;
 

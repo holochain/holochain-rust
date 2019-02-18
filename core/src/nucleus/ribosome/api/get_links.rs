@@ -42,8 +42,8 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
     }
 
     // Get links from DHT
-    let maybe_links = zome_call_data.context.clone().block_on(get_links(
-        zome_call_data.context,
+    let maybe_links = zome_call_data.context.block_on(get_links(
+        zome_call_data.context.clone(),
         input.entry_address,
         input.tag,
         input.options.timeout,

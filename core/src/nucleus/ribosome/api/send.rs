@@ -24,7 +24,7 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         zome: zome_call_data.zome_call.zome_name.clone(),
     };
 
-    let result = zome_call_data.context.clone().block_on(custom_send(
+    let result = zome_call_data.context.block_on(custom_send(
         args.to_agent,
         message,
         args.options.0,

@@ -297,7 +297,6 @@ impl Dispatch {
 /// # use hdk::holochain_core_types::error::HolochainError;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
-/// # use hdk::holochain_core_types::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -379,6 +378,7 @@ impl Dispatch {
 /// # use std::convert::TryInto;
 /// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
 /// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
+/// # use hdk::holochain_core_types::cas::content::Address;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
@@ -422,7 +422,7 @@ impl Dispatch {
 ///         num1: num1,
 ///         num2: num2,
 ///     };
-///     hdk::call(hdk::THIS_INSTANCE, "summer", Address::from(PUBLIC_TOKEN.to_string()), "sum", call_input.into())
+///     hdk::call(hdk::THIS_INSTANCE, "summer", Address::from(hdk::PUBLIC_TOKEN.to_string()), "sum", call_input.into())
 /// }
 ///
 /// define_zome! {

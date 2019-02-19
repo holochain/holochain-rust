@@ -17,6 +17,8 @@ let
 
   hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
+   export RUST_SODIUM_LIB_DIR=/nix/store/l1nbc3vgr37lswxny8pwhkq4m937y2g4-libsodium-1.0.16;
+   export RUST_SODIUM_SHARED=1;
    . ./scripts/build_nodejs_conductor.sh;
   '';
 
@@ -113,6 +115,7 @@ stdenv.mkDerivation rec {
     hc-fmt-check
 
     zeromq4
+    libsodium
 
     # dev tooling
     git

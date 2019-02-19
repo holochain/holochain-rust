@@ -34,6 +34,7 @@ tokio = "0.1.14"
 fs_extra = "1.1"
 rpassword = "2.1.0"
 dirs = "1.0.4"
+base64 = "0.10"
 
 [dev-dependencies]
 test_utils = { path = "../test_utils"}

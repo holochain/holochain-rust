@@ -197,8 +197,8 @@ pub mod tests {
             &test_capability_name(),
             wasm.clone(),
         );
-        let (instance, context) =
-            test_instance_and_context(dna.clone(), netname).expect("Could not initialize test instance");
+        let (instance, context) = test_instance_and_context(dna.clone(), netname)
+            .expect("Could not initialize test instance");
         let context = instance.initialize_context(context);
 
         println!("{:?}", instance.state().agent().top_chain_header());

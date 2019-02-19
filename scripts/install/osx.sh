@@ -10,7 +10,7 @@ brew install qt5
 # https://superuser.com/a/1153338
 brew link qt5 --force
 
-export INSTALL_NODE_VERSION=8.14
+export INSTALL_NODE_VERSION=8.14.0
 
 rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install $INSTALL_NODE_VERSION
 curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.10.1

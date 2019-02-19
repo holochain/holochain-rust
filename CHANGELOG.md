@@ -4,8 +4,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Node JS version relaxed to 8.x in nix shell
+- develop docker tag now uses nix
+- legacy docker files removed
+- nixos friendly shebang added to bash scripts
 ### Removed
 ### Added
+- mac os x install script installs cmake and qt
 ### Fixed
 
 ## [0.0.4-alpha] - 2019-02-15

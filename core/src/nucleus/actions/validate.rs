@@ -134,6 +134,14 @@ fn validate_header_address(entry: &Entry, header: &ChainHeader) -> Result<(), Ho
 /// This is the high-level validate function that wraps the whole validation process and is what should
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
+/// 1. Checks if the entry type is either an app entry type defined in the DNA or a system entry
+///    type that should be validated. Bails early if not.
+/// 2. Checks if the entry's address matches the address in given header provided by
+///    the validation package.
+/// 3. Validates provenances given in the header by verifying the cryptographic signatures
+///    against the source agent addresses.
+/// 4. Finally spawns a thread to run the custom validation callback in a Ribosome.
+///
 /// Returns a future that resolves to an Ok(ActionWrapper) or an Err(error_message:String).
 pub async fn validate_entry(
     entry: Entry,

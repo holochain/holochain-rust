@@ -1,6 +1,6 @@
 use crate::{
     context::Context,
-    dht::{actions::crud_status::crud_status as init_crud_future,dht_store::DhtStore},
+    dht::{dht_store::DhtStore},
     network::{
         actions::get_validation_package::get_validation_package, entry_with_header::EntryWithHeader,
     },
@@ -18,31 +18,26 @@ use holochain_core_types::{
 use std::sync::Arc;
 
 pub async fn crud_status_workflow<'a>(
-    entry_with_header: &'a EntryWithHeader,
-    context: &'a Arc<Context>,
-    crud_status :CrudStatus
-) -> Result<(), HolochainError> {
+     context: &'a Arc<Context>,
+    address: &'a Address,
+    crud_status :&'a CrudStatus
+) -> Result<(), HolochainError> 
+{
 
+     //grab state from context
+    let state = context.state().ok_or(HolochainError::ErrorGeneric("Could not find state".to_string()))?;
 
-    let EntryWithHeader { entry, header } = &entry_with_header;
+    //grab meta from state
+    let dht = state.dht().clone();
+    let dht_meta = dht.meta_storage().clone();
+    //grab lock from meta_storage
+    let mut meta_storage = dht_meta.try_write().map_err(|_|HolochainError::ErrorGeneric("Could not get lock".to_string()))?;
+    
+    //create crud_status passed in
+    let status = create_crud_status_eav(address, *crud_status)?;
 
-     // 1. Get validation package from source
-    let maybe_validation_package = await!(get_validation_package(header.clone(), &context))?;
-    let validation_package = maybe_validation_package
-        .ok_or("Could not get validation package from source".to_string())?;
-
-    // 2. Create validation data struct
-    let validation_data = ValidationData {
-        package: validation_package,
-        lifecycle: EntryLifecycle::Dht,
-        action: EntryAction::Create,
-    };
-
-    // 3. Validate the entry
-    await!(validate_entry(entry.clone(), validation_data, &context))?;
-
-    // 4. If valid store the entry in the local DHT shard
-    await!(init_crud_future(entry_with_header.clone(), context.clone(),crud_status.clone()))
-
+    //add status to eavi
+    meta_storage.add_eavi(&status)?;
+    Ok(()) 
 }
 

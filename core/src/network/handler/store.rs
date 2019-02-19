@@ -64,17 +64,13 @@ pub fn handle_store_meta(dht_meta_data: DhtMetaData, context: Arc<Context>) {
         STATUS_NAME => {
             context.log("debug/net/handle: HandleStoreMeta: got CRUD status. processing...");
             assert_eq!(dht_meta_data.content_list.len(), 1);
-            let entry_with_header: EntryWithHeader = serde_json::from_str(
-                &serde_json::to_string(&dht_meta_data.content_list[0])
-                    .expect("dht_meta_data should be EntryWithHeader"),
-            )
-            .expect("dht_meta_data should be EntryWithHeader");
+            let entity_address = dht_meta_data.entry_address;
             let crud_status : CrudStatus = serde_json::from_str(
                 &serde_json::to_string(&dht_meta_data.content_list[0])
                     .expect("dht_meta_data should be EntryWithHeader"),
             ).expect("Could not extract crudstatus from content list");
             thread::spawn(move || {
-                match context.block_on(crud_status_workflow(&entry_with_header, &context.clone(),crud_status)) {
+                match context.block_on(crud_status_workflow(&context.clone(),&entity_address,&crud_status)) {
                     Err(error) => context.log(format!("err/net/dht: {}", error)),
                     _ => (),
                 }

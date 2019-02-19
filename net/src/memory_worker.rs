@@ -43,7 +43,7 @@ impl NetWorker for InMemoryWorker {
                         Entry::Occupied(_) => (),
                         Entry::Vacant(e) => {
                             let (tx, rx) = mpsc::channel();
-                            server.register(&track_msg.dna_address, &track_msg.agent_id, tx)?;
+                            server.register_cell(&track_msg.dna_address, &track_msg.agent_id, tx)?;
                             e.insert(rx);
                         }
                     };
@@ -63,7 +63,7 @@ impl NetWorker for InMemoryWorker {
                     {
                         Entry::Vacant(_) => (),
                         Entry::Occupied(e) => {
-                            server.unregister(&untrack_msg.dna_address, &untrack_msg.agent_id);
+                            server.unregister_cell(&untrack_msg.dna_address, &untrack_msg.agent_id);
                             e.remove();
                         }
                     };

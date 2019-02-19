@@ -293,8 +293,8 @@ pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
     let mut seed = SecBuf::with_insecure(SEEDSIZE);
     let nick_bytes = nick.as_bytes();
     let seed_bytes: Vec<u8> = (1..SEEDSIZE).map(|num| {
-        if num < nick_bytes.len(){
-            nick_bytes[num]
+        if num <= nick_bytes.len(){
+            nick_bytes[num-1]
         } else {
             num as u8
         }

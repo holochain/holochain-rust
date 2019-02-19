@@ -20,7 +20,7 @@ jobs:
  app-spec-tests:
   docker:
    - image: holochain/holochain-rust:circle.zz.end
-  resource_class: medium+
+  resource_class: large
   steps:
    - checkout
 
@@ -88,8 +88,9 @@ jobs:
   steps:
    - checkout
    - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
-   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end .
+   - run: docker build -f .circleci/Dockerfile.zz.end -t holochain/holochain-rust:circle.zz.end -t holochain/holochain-rust:develop .
    - run: docker push holochain/holochain-rust:circle.zz.end
+   - run: docker push holochain/holochain-rust:develop
 
  cold.ubuntu:
   docker:

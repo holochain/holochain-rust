@@ -65,51 +65,39 @@ pub(crate) fn bookkeep_address_with_bucket(
     } // unborrow book
     // None: Create and add a new address list
     let mut map = HashMap::new();
-    map.insert(base_address.clone(), data_address);
-    book.insert(bucket_id, vec);
+    map.insert(base_address.clone(), data_address.clone());
+    book.insert(bucket_id, map);
 }
 
-impl AddressBook {
-    // Return true if data is in book
-    pub fn has_bookkept(
-        &self,
-        bucket_id: BucketId,
-        base_address: &Address,
-        data_address: &Address,
-    ) -> bool {
-        let maybe_bucket_map = book.get(&bucket_id);
-        if let None = maybe_bucket_map {
-            return false;
-        }
-        let bucket_map = maybe_bucket_map.unwrap();
-        let maybe_entry_map = bucket_map.get(base_address);
-        if let None = maybe_entry_map {
-            return false;
-        }
-        let entry_map = maybe_entry_map.unwrap();
-        has_entry.contains(data_address)
+// Return true if data is in book
+pub fn book_has(
+    &book: &AddressBook,
+    bucket_id: BucketId,
+    base_address: &Address,
+    data_address: &Address,
+) -> bool {
+    let maybe_bucket_map = book.get(&bucket_id);
+    if let None = maybe_bucket_map {
+        return false;
     }
-
-    ///
-    pub fn has_entry(
-        &self,
-        bucket_id: BucketId,
-        entry_address: &Address,
-    ) -> bool {
-        self.has_bookkept(bucket_id, entry_address, entry_address)
+    let bucket_map = maybe_bucket_map.unwrap();
+    let maybe_entry_map = bucket_map.get(base_address);
+    if let None = maybe_entry_map {
+        return false;
     }
-
-//    ///
-//    pub fn has_metaId(
-//        &self,
-//        bucket_id: BucketId,
-//        entry_address: &Address,
-//        meta_id: &Address,
-//    ) -> bool {
-//        self.has_bookkept(bucket_id, entry_address, meta_id)
-//    }
-
+    let entry_map = maybe_entry_map.unwrap();
+    entry_map.contains(data_address)
 }
+
+///
+pub fn book_has_entry(
+    &book: &AddressBook,
+    bucket_id: BucketId,
+    entry_address: &Address,
+) -> bool {
+    book.has_bookkept(bucket_id, entry_address, entry_address)
+}
+
 
 
 /// Add an address to a book (sugar)

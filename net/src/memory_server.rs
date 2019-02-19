@@ -825,7 +825,7 @@ impl InMemoryServer {
         // Compare with already published list
         // For each data not already published, request it and publish it ourselves.
         for entry_address in msg.entry_address_list.clone() {
-            if self.published_book.has_entry(&bucket_id, entry_address) {
+            if book_has_entry(published_book, bucket_id, &entry_address) {
                 continue;
             }
             let request_id = self.priv_create_request_with_bucket(&bucket_id);
@@ -855,7 +855,7 @@ impl InMemoryServer {
         // Compare with current stored_data_book
         // For each data not already holding, add it to stored_data_book?
         for entry_address in msg.entry_address_list.clone() {
-            if self.stored_book.has_entry(&bucket_id, entry_address) {
+            if book_has_entry(stored_book, bucket_id, &entry_address) {
                 continue;
             }
             bookkeep_address_with_bucket(
@@ -895,7 +895,7 @@ impl InMemoryServer {
         for meta_tuple in msg.meta_list.clone() {
             let meta_id = into_meta_id(&meta_tuple);
             // dont send request for a known meta
-            if self.published_book.has_entry(&bucket_id, entry_address, meta_id) {
+            if book_has(published_book, bucket_id, &meta_tuple.0, &meta_id) {
                 continue;
             }
             // dont send same request twice
@@ -934,7 +934,7 @@ impl InMemoryServer {
         // For each data not already holding, add it to stored_meta_book?
         for meta_tuple in msg.meta_list.clone() {
             let meta_id = into_meta_id(&meta_tuple);
-            if self.published_book.has_bookkept(&bucket_id, entry_address, meta_id) {
+            if book_has(stored_book, bucket_id, &meta_tuple.0, &meta_id) {
                 continue;
             }
             bookkeep_address_with_bucket(

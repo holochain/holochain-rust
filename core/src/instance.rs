@@ -312,7 +312,7 @@ pub mod tests {
         time::Duration,
     };
 
-    use test_utils::registered_test_agent;
+    use test_utils::mock_signing::registered_test_agent;
 
     use holochain_core_types::entry::Entry;
 

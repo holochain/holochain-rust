@@ -5,11 +5,15 @@ extern crate holochain_core_types;
 extern crate holochain_dpki;
 extern crate holochain_net;
 extern crate holochain_sodium;
+extern crate jsonrpc_ws_server;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
 extern crate serde_json;
 extern crate tempfile;
 extern crate wabt;
+
+pub mod mock_signing;
 
 use holochain_conductor_api::{context_builder::ContextBuilder, error::HolochainResult, Holochain};
 use holochain_core::{
@@ -19,8 +23,8 @@ use holochain_core::{
     signal::Signal,
 };
 use holochain_core_types::{
-    agent::{AgentId, KeyBuffer},
-    cas::content::{Address, AddressableContent},
+    agent::AgentId,
+    cas::content::Address,
     dna::{
         capabilities::CapabilityCall,
         entry_types::{EntryTypeDef, LinkedFrom, LinksTo},
@@ -176,7 +180,7 @@ pub fn test_context_and_logger_with_network_name(
     agent_name: &str,
     network_name: Option<&str>,
 ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
-    let agent = AgentId::generate_fake(agent_name);
+    let agent = mock_signing::registered_test_agent(agent_name);
     let logger = test_logger();
     (
         Arc::new({
@@ -273,42 +277,4 @@ where
             _ => continue,
         }
     }
-}
-
-
-use holochain_dpki::keypair::{Keypair, SEEDSIZE};
-use holochain_sodium::secbuf::SecBuf;
-use std::{
-    collections::HashMap,
-};
-
-lazy_static! {
-        pub static ref TEST_AGENT_KEYS: Mutex<HashMap<Address, Arc<Mutex<Keypair>>>>
-            = Mutex::new(HashMap::new());
-    }
-
-pub fn registered_test_agent<S: Into<String>>(nick: S) -> AgentId {
-    let nick = nick.into();
-    // Create deterministic seed from nick:
-    let mut seed = SecBuf::with_insecure(SEEDSIZE);
-    let nick_bytes = nick.as_bytes();
-    let seed_bytes: Vec<u8> = (1..SEEDSIZE).map(|num| {
-        if num <= nick_bytes.len(){
-            nick_bytes[num-1]
-        } else {
-            num as u8
-        }
-    }).collect();
-
-    seed.write(0, seed_bytes.as_slice())
-        .expect("SecBuf must be writeable");
-
-    // Create keypair from seed:
-    let keypair = Keypair::new_from_seed(&mut seed).unwrap();
-    let pub_key = KeyBuffer::with_corrected(&keypair.get_id()).unwrap();
-    let agent_id = AgentId::new(&nick, &pub_key);
-
-    // Register key in static TEST_AGENT_KEYS
-    TEST_AGENT_KEYS.lock().unwrap().insert(agent_id.address(), Arc::new(Mutex::new(keypair)));
-    agent_id
 }

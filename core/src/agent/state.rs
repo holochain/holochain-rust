@@ -278,7 +278,7 @@ pub mod tests {
     };
     use crate::{
         action::tests::test_action_wrapper_commit, agent::chain_store::tests::test_chain_store,
-        context::tests::mock_signer, instance::tests::test_context, state::State,
+        instance::tests::test_context, state::State,
     };
     use holochain_core_types::{
         cas::content::AddressableContent,
@@ -293,6 +293,7 @@ pub mod tests {
         collections::HashMap,
         sync::{Arc, RwLock},
     };
+    use test_utils::mock_signing::mock_signer;
 
     /// dummy agent state
     pub fn test_agent_state() -> AgentState {

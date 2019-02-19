@@ -2,6 +2,7 @@
 name = "test_utils"
 version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
 
 [dependencies]
 holochain_net = { path = "../net" }
@@ -15,3 +16,5 @@ wabt = "0.7.2"
 tempfile = "3"
 serde_json = { version = "1.0", features = ["preserve_order"] }
 lazy_static = "1.2"
+jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc" }
+base64 = "0.10"

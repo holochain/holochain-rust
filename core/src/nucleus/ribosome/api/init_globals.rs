@@ -62,7 +62,7 @@ pub mod tests {
     use holochain_core_types::{error::ZomeApiInternalResult, json::JsonString};
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
-    use test_utils::registered_test_agent;
+    use test_utils::mock_signing::registered_test_agent;
 
     #[test]
     /// test that bytes passed to debug end up in the log

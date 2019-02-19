@@ -142,9 +142,10 @@ impl EavFileStorage {
                         .iter()
                         .last()
                         .and_then(|v| {
-                            v.to_string_lossy()
-                                .to_string()
+                            let v = v.to_string_lossy();
+                            v.to_string()
                                 .try_into()
+                                .map_err(|_| println!("warn/eav: invalid EAV string: {}", v))
                                 .ok()
                                 .map(|val| eav_filter.check(val))
                         })

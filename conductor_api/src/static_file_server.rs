@@ -207,7 +207,7 @@ pub mod tests {
             .expect("Could not make request to /")
             .text()
             .expect("Response body is not valid text");
-        assert_eq!(get_root_result, "test_success");
+        assert_eq!(get_root_result.trim(), "test_success");
 
         let get_result: serde_json::Value =
             reqwest::get("http://localhost:3000/_dna_connections.json")

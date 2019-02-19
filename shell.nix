@@ -9,15 +9,6 @@ let
 
   rust-build = (nixpkgs.rustChannelOfTargets "nightly" date [ wasmTarget ]);
 
-  nodejs-8_13 = nixpkgs.nodejs-8_x.overrideAttrs(oldAttrs: rec {
-    name = "nodejs-${version}";
-    version = "8.13.0";
-    src = nixpkgs.fetchurl {
-      url = "https://nodejs.org/dist/v${version}/node-v${version}.tar.xz";
-      sha256 = "1qidcj4smxsz3pmamg3czgk6hlbw71yw537h2jfk7iinlds99a9a";
-    };
-  });
-
   hc-flush-cargo-registry = nixpkgs.writeShellScriptBin "hc-flush-cargo-registry"
   ''
    rm -rf ~/.cargo/registry;
@@ -26,6 +17,8 @@ let
 
   hc-install-node-conductor = nixpkgs.writeShellScriptBin "hc-install-node-conductor"
   ''
+   export RUST_SODIUM_LIB_DIR=/nix/store/l1nbc3vgr37lswxny8pwhkq4m937y2g4-libsodium-1.0.16;
+   export RUST_SODIUM_SHARED=1;
    . ./scripts/build_nodejs_conductor.sh;
   '';
 
@@ -99,7 +92,7 @@ stdenv.mkDerivation rec {
     pkgconfig
     rust-build
 
-    nodejs-8_13
+    nodejs-8_x
     yarn
 
     hc-flush-cargo-registry
@@ -122,6 +115,7 @@ stdenv.mkDerivation rec {
     hc-fmt-check
 
     zeromq4
+    libsodium
 
     # dev tooling
     git

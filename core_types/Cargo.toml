@@ -2,6 +2,7 @@
 name = "holochain_core_types"
 version = "0.0.4-alpha"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+build = "build.rs"
 
 [dependencies]
 arrayref = "0.3.5"

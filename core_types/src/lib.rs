@@ -53,3 +53,8 @@ pub mod link;
 pub mod signature;
 pub mod time;
 pub mod validation;
+
+pub const GIT_HASH: &str = env!(
+    "GIT_HASH",
+    "failed to obtain git hash from build environment. Check build.rs"
+);

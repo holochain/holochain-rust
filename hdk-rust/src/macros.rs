@@ -340,11 +340,11 @@ macro_rules! define_zome {
             return_value
         }
 
-        use $crate::{api::debug, holochain_core_types::json::RawString};
-        use std::panic;
 
         #[no_mangle]
         pub extern "C" fn __install_panic_handler() -> () {
+            use $crate::{api::debug, holochain_core_types::json::RawString};
+            use std::panic;
             panic::set_hook(Box::new(move |info| {
                 let _ = debug(RawString::from(
                     info.payload().downcast_ref::<String>().unwrap().clone(),

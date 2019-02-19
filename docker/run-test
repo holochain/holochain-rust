@@ -1,2 +1,3 @@
-#!/bin/bash
-./docker/run make test
+#!/usr/bin/env bash
+
+./docker/run nix-shell --run 'hc-build-wasm && hc-test'

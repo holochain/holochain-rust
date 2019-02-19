@@ -4,10 +4,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Node JS version relaxed to 8.x in nix shell
+- develop docker tag now uses nix
+- legacy docker files removed
+- nixos friendly shebang added to bash scripts
 ### Removed
 ### Added
 - Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029).
-### Fixed 
+- mac os x install script installs cmake and qt
+### Fixed
 
 ## [0.0.4-alpha] - 2019-02-15
 

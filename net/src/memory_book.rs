@@ -114,7 +114,7 @@ pub fn book_has(
     data_address: &Address,
 ) -> bool {
     let maybe_entry_book = cell_book.get(&cell_id);
-    if let None = maybe_entry_book {
+    if maybe_entry_book.is_none() {
         return false;
     }
     let entry_book = maybe_entry_book.unwrap();

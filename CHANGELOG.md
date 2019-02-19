@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Adds a panic handler to HDK-Rust and that reroutes infos about panics happening inside the WASM Ribosome to the instances logger [PR#1029](https://github.com/holochain/holochain-rust/pull/1029).
 - mac os x install script installs cmake and qt
+- Adds PUBLIC_TOKENS global variable for use by hdk::call in calling public functions.
 ### Fixed
 
 ## [0.0.4-alpha] - 2019-02-15

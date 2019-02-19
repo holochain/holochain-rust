@@ -22,6 +22,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         agent_address: Address::from(zome_call_data.context.agent_id.address()),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
+        public_token: Address::from(""),
     };
 
     // Update fields
@@ -46,6 +47,18 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
                 globals.agent_initial_hash = found_entries.pop().unwrap();
                 globals.agent_address = globals.agent_latest_hash.clone();
             }
+
+            let mut found_entries: Vec<Address> = vec![];
+            for chain_header in state
+                .agent()
+                .chain_store()
+                .iter_type(&maybe_top, &EntryType::CapTokenGrant)
+            {
+                found_entries.push(chain_header.entry_address().to_owned());
+            }
+            if found_entries.len() > 0 {
+                globals.public_token = found_entries[0].clone();
+            }
         }
     };
 
@@ -59,7 +72,10 @@ pub mod tests {
         api::{tests::test_zome_api_function, ZomeApiFunction},
         Defn,
     };
-    use holochain_core_types::{agent::AgentId, error::ZomeApiInternalResult, json::JsonString};
+    use holochain_core_types::{
+        agent::AgentId, cas::content::Address, error::ZomeApiInternalResult, json::JsonString,
+    };
+
     use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
     use std::convert::TryFrom;
 
@@ -83,5 +99,12 @@ pub mod tests {
         //     AgentId::generate_fake("jane").address()
         // );
         assert_eq!(globals.agent_initial_hash, globals.agent_latest_hash);
+
+        // this hash should stay the same as long as the public functions in the test zome
+        // don't change.
+        assert_eq!(
+            globals.public_token,
+            Address::from("QmQ3rYEGoPCrfciYyxi28Y5C3UcD717r1JRaKhinPXbb6R")
+        );
     }
 }

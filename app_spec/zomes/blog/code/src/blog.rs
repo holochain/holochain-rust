@@ -8,7 +8,7 @@ use hdk::{
         get_entry::{GetEntryOptions, GetEntryResultType},
         get_links::{GetLinksOptions, GetLinksResult},
     },
-    AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME,
+    AGENT_ADDRESS, AGENT_ID_STR, DNA_ADDRESS, DNA_NAME, PUBLIC_TOKEN,
 };
 use post::Post;
 use std::convert::TryFrom;
@@ -72,7 +72,7 @@ pub fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
     hdk::call(
         hdk::THIS_INSTANCE,
         "summer",
-        "test_token",
+        Address::from(PUBLIC_TOKEN.to_string()),
         "sum",
         check_sum_args(num1, num2).into(),
     )
